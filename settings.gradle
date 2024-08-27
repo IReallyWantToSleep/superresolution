@@ -4,8 +4,6 @@ pluginManagement {
         maven { url "https://crystal.app.lss233.com/repositories/minecraft/" }
         maven { url "https://maven.fabricmc.net/" }
         maven { url "https://maven.architectury.dev/" }
-
-
         gradlePluginPortal()
     }
 }
