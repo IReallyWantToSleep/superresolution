@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "io.homo.superresolution.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "GameRendererMixin",
+    "MinecraftMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

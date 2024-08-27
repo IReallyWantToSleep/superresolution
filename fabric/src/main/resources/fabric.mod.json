@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "super_resolution",
+  "version": "${version}",
+  "name": "Super Resolution",
+  "description": "",
+  "authors": [
+    ""
+  ],
+  "contact": {
+    "homepage": ""
+  },
+  "license": "MIT",
+  "icon": "assets/super_resolution/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.homo.superresolution.fabric.SuperResolutionFabric"
+    ],
+    "client": [
+      "io.homo.superresolution.fabric.client.SuperResolutionFabricClient"
+    ]
+  },
+  "mixins": [
+    "super_resolution.mixins.json",
+    "super_resolution-resolutioncontrol-common.mixins.json",
+    "super_resolution-resolutioncontrol-fabric.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.2",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "architectury": ">=9.1.12",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "another-mod": "*"
+  },
+  "accessWidener": "super_resolution.accesswidener"
+}

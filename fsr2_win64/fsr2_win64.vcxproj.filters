@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\fsr2">
+      <UniqueIdentifier>{1bb531e2-c24c-473f-94c0-4b1654ce5c08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\glad">
+      <UniqueIdentifier>{f97a7fd8-7712-444e-9d33-c942498d57c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\fsr2\gl">
+      <UniqueIdentifier>{a5769d5c-0448-42c4-a972-b04920f6dd60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\fsr2\gl\shaders">
+      <UniqueIdentifier>{22121dbc-6bd3-4550-b619-41c44719d3ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\fsr2\shaders">
+      <UniqueIdentifier>{269511f2-9744-4b16-8df5-700ce7126eb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\glad\KHR">
+      <UniqueIdentifier>{e8ed3c88-b51e-4709-a15e-ea9fe110e39b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="jni.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="jni_md.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="io_homo_superresolution_fsr2_nativelib_ffx_fsr2_api.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_assert.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_error.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_fsr2.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_fsr2_interface.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_fsr2_maximum_bias.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_fsr2_private.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_types.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\ffx_util.h">
+      <Filter>头文件\fsr2</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\gl\ffx_fsr2_gl.h">
+      <Filter>头文件\fsr2\gl</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\shaders\ffx_fsr2_common.h">
+      <Filter>头文件\fsr2\shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\shaders\ffx_fsr2_resources.h">
+      <Filter>头文件\fsr2\shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="fsr2\gl\shaders\ffx_fsr2_shaders_gl.h">
+      <Filter>头文件\fsr2\gl\shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="glfw3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="glfw3native.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="glad\glad.h">
+      <Filter>头文件\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="glad\KHR\khrplatform.h">
+      <Filter>头文件\glad\KHR</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ffxFsr2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
