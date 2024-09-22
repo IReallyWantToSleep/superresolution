@@ -1,4 +1,4 @@
-package io.homo.superresolution.resolutioncontrol.utils;
+package io.homo.superresolution.utils;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 

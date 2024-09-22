@@ -1,10 +1,22 @@
 pluginManagement {
     repositories {
-        maven { url "https://maven.minecraftforge.net/" }
+
+        //mavenCentral()
+        maven {
+            allowInsecureProtocol = true
+            url "http://127.0.0.1:8080/releases"}
+        
+
+        maven {
+            name = 'Fabric'
+            url = 'https://repository.hanbings.io/proxy'
+        }
+
         maven { url "https://crystal.app.lss233.com/repositories/minecraft/" }
-        maven { url "https://maven.fabricmc.net/" }
-        maven { url "https://maven.architectury.dev/" }
-        gradlePluginPortal()
+gradlePluginPortal()
+
+
+
     }
 }
 

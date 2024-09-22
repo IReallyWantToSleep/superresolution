@@ -1,18 +1,17 @@
 package io.homo.superresolution.fsr2.nativelib;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.SuperResolution;
+import io.homo.superresolution.config.Config;
 import io.homo.superresolution.fsr2.FFXError;
+import io.homo.superresolution.utils.FrameBuffer;
 import org.lwjgl.Version;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL11.*;
-import org.lwjgl.opengl.GL46;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
-import java.util.Objects;
 
 import static io.homo.superresolution.fsr2.types.enums.FfxFsr2InitializationFlagBits.*;
 import static io.homo.superresolution.fsr2.types.enums.FfxFsr2InitializationFlagBits.FFX_FSR2_ALLOW_NULL_DEVICE_AND_COMMAND_LIST;
@@ -25,14 +24,23 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class test {
     private long window;
     private ffx_fsr2_api api;
-
-    public void run() {
+    private FrameBuffer mv;
+    private FrameBuffer color;
+    private FrameBuffer out;
+    public void run() throws InterruptedException {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
+        RenderSystem.initRenderThread();
         api = new ffx_fsr2_api("I:/superresolution/fsr2_win64/x64/Release/fsr2_win64.dll");
-        init();
-        loop();
         api.init();
-
+        init();
+        initFsr2();
+        System.out.println((api.ffxGetTextureResourceGL(0,1,1,0)));
+        //loop();
+        SuperResolution.LOGGER.debug("FSR2 ffxFsr2ContextDestroy: {}",
+                FFXError.returnErrorText(
+                        api.ffxFsr2ContextDestroy()
+                )
+        );
         // Free the window callbacks and destroy the window
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);
@@ -40,6 +48,7 @@ public class test {
         // Terminate GLFW and free the error callback
         glfwTerminate();
         glfwSetErrorCallback(null).free();
+
     }
 
     private void init() {
@@ -54,10 +63,10 @@ public class test {
         // Configure GLFW
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
 
         // Create the window
-        window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
+        window = glfwCreateWindow(1600, 900, "Hello World!", NULL, NULL);
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
@@ -93,10 +102,6 @@ public class test {
 
         // Make the window visible
         glfwShowWindow(window);
-
-
-        //System.out.println(GLFW.glfwGetProcAddress(Objects.requireNonNull(glGetString(GL11.GL_VENDOR))));
-
     }
 
     private void loop() {
@@ -113,19 +118,35 @@ public class test {
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.
         while ( !glfwWindowShouldClose(window) ) {
-            System.out.println(api.ffxFsr2Test());
-            System.out.println(glfwGetProcAddress("glCreateTextures"));
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-
-            glfwSwapBuffers(window); // swap the color buffers
-
-            // Poll for window events. The key callback above will only be
-            // invoked during this call.
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glfwSwapBuffers(window);
             glfwPollEvents();
         }
     }
-    public static void main(String[] args){
+    public void initFsr2(){
+        SuperResolution.LOGGER.debug("FSR2 ffxFsr2GetInterfaceGL: {}",
+                FFXError.returnErrorText(
+                        api.ffxFsr2GetInterfaceGL(
+                                api.ffxFsr2GetScratchMemorySizeGL(),
+                                Config.getFsr2Ratio(),
+                                1600,
+                                900,
+                                FFX_FSR2_ENABLE_DEBUG_CHECKING.getValue() |
+                                        FFX_FSR2_ENABLE_AUTO_EXPOSURE.getValue() |
+                                        FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE.getValue() |
+                                        FFX_FSR2_ALLOW_NULL_DEVICE_AND_COMMAND_LIST.getValue()
+                        )
+                )
+        );
+        SuperResolution.LOGGER.debug("FSR2 ffxFsr2CreateContext: {}",
+                FFXError.returnErrorText(
+                        api.ffxFsr2CreateContext()
+                )
+        );
+
+    }
+    public static void main(String[] args) throws InterruptedException {
         new test().run();
     }
 }

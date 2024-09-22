@@ -5,7 +5,7 @@ import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.config.Config;
 import io.homo.superresolution.resolutioncontrol.mixin.MinecraftAccessor;
-import io.homo.superresolution.resolutioncontrol.utils.FrameBuffer;
+import io.homo.superresolution.utils.FrameBuffer;
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,8 +51,9 @@ public class ResolutionControl {
             this.shouldScale = true;
             calculateSize();
             framebuffer = new FrameBuffer(true);
-            framebuffer.resize(window.getWidth(),window.getHeight(),Minecraft.ON_OSX);
+            SuperResolution.LOGGER.info("init framebuffer");
         }
+        SuperResolution.FSR.setWorldFramebuffer((FrameBuffer) framebuffer);
         this.shouldScale = shouldScale;
         minecraft.getProfiler().popPush(shouldScale ? "startScaling" : "finishScaling");
         if (shouldScale) {
@@ -61,13 +62,15 @@ public class ResolutionControl {
             framebuffer.bindWrite(true);
         } else {
             setClientFramebuffer(clientFramebuffer);
-            minecraft.getMainRenderTarget().bindWrite(true);
-            //clientFramebuffer.getColorTextureId();
-            //framebuffer.blitToScreen(
-            //        window.getScreenWidth(),
-            //        window.getScreenHeight()
-            //);
+            clientFramebuffer.bindWrite(true);
+            /*
+            framebuffer.blitToScreen(
+                    window.getScreenWidth(),
+                    window.getScreenHeight()
+            );
 
+             */
+            SuperResolution.FSR.blitToScreen();
         }
         minecraft.getProfiler().popPush("level");
     }
@@ -116,13 +119,14 @@ public class ResolutionControl {
         minecraftFramebuffers.forEach(this::resize);
     }
     public void onResolutionChanged() {
+        if (minecraft.level == null) return;
         updateFramebufferSize();
     }
 
     public void updateFramebufferSize() {
 
         if (warnFramebufferNull()) return;
-        resize(framebuffer);
+        framebuffer.resize(SuperResolution.FSR.getHelper().renderWidth,SuperResolution.FSR.getHelper().renderHeight,Minecraft.ON_OSX);
         resize(minecraft.levelRenderer.entityTarget());
         calculateSize();
     }
@@ -132,9 +136,6 @@ public class ResolutionControl {
     private boolean warnFramebufferNull(){
         if (framebuffer == null){
             SuperResolution.LOGGER.warn("framebuffer is null");
-            if (minecraft.level != null) {
-                setShouldScale(true);
-            }
             return true;
         }
         return false;

@@ -20,6 +20,8 @@ public final class SuperResolution implements CanResize, CanDestroy {
     public static boolean isInit;
     private static final Minecraft minecraft = Minecraft.getInstance();
     public static boolean gameIsLoad = false;
+    public static float frameTimeDelta = 16.6f;
+    public static float frameTimeDelta_fsr = 16.6f;
     public SuperResolution(){}
     public void init() {
         instance = this;
@@ -33,7 +35,6 @@ public final class SuperResolution implements CanResize, CanDestroy {
         }
         FSR2LibManager.load();
         FSR = new FSR2();
-        this.resize(minecraft.getWindow().getWidth(),minecraft.getWindow().getHeight());
         LOGGER.info("Loading FSR2 library completed.");
         LOGGER.info("Initialization completed.");
         isInit = true;
@@ -42,9 +43,7 @@ public final class SuperResolution implements CanResize, CanDestroy {
         return instance;
     }
     public void resize(int width,int height){
-        if (minecraft.level != null){
-            FSR.resize(width, height);
-        }
+        FSR.resize(width, height);
     }
 
     public static int getMinecraftWidth(){
@@ -55,6 +54,12 @@ public final class SuperResolution implements CanResize, CanDestroy {
     }
     public void destroy(){
         FSR.destroy();
+    }
+    public static void setFrameTimeDelta(float value){
+        frameTimeDelta = value;
+    }
+    public static void setFrameTimeDeltaFSR(float value){
+        frameTimeDelta_fsr = value;
     }
 }
 

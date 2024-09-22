@@ -13,10 +13,9 @@ public class CPPHelper {
         }
     }
 
-    public static long CPP_glfwGetProcAddress(String name) throws InterruptedException {
-        long o = GLFW.glfwGetProcAddress(name);
-        SuperResolution.LOGGER.info("ID:{} {}",o,name);
-        return o;
+    public static long CPP_glfwGetProcAddress(String name) {
+        SuperResolution.LOGGER.info(String.valueOf(GLFW.glfwGetProcAddress(name)));
+        return GLFW.glfwGetProcAddress(name);
     }
 
 }

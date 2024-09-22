@@ -1,28 +1,48 @@
 package io.homo.superresolution.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.SuperResolution;
-import net.minecraft.client.Camera;
+import io.homo.superresolution.debug.DebugInfo;
+import io.homo.superresolution.resolutioncontrol.ResolutionControl;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
+    @Shadow @Final
+    Minecraft minecraft;
     @Unique
-    public Matrix4f curMatrix4f = new Matrix4f();
+    public Matrix4f super_resolution$curMatrix4f = new Matrix4f();
     @Unique
-    public Matrix4f lastMatrix4f = new Matrix4f();
+    public Matrix4f super_resolution$lastMatrix4f = new Matrix4f();
+
+    @Unique
+    public float super_resolution$frameTimeDelta_fsr = 16.6f;
+    @Unique
+    public float super_resolution$lastRenderTime_fsr = -1;
     @Inject(method = "resize",at = @At(value = "HEAD"))
     private void onResize(int i,int j,CallbackInfo ci){
         if (SuperResolution.isInit&&SuperResolution.gameIsLoad){
             SuperResolution.getInstance().resize(SuperResolution.getMinecraftWidth(),SuperResolution.getMinecraftHeight());
+
+        }
+    }
+
+    @Inject(at = @At(value = "RETURN"), method = "render")
+    private void onRenderEnd(CallbackInfo ci) {
+        if (minecraft.level != null && ResolutionControl.getInstance().getWorldFramebuffer() != null){
+            super_resolution$lastRenderTime_fsr = Util.getMillis();
+            SuperResolution.FSR.CallFSR2(SuperResolution.frameTimeDelta);
+            super_resolution$frameTimeDelta_fsr = Util.getMillis()-super_resolution$lastRenderTime_fsr;
+            DebugInfo.setFrameTimeDelta_fsr(super_resolution$frameTimeDelta_fsr);
         }
     }
     /*

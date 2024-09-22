@@ -1,7 +1,7 @@
 package io.homo.superresolution.fsr2.nativelib;
 
 import io.homo.superresolution.fsr2.types.impl.FfxFsr2Interface;
-import io.homo.superresolution.fsr2.types.impl.FfxResource;
+import io.homo.superresolution.fsr2.types.FfxResource;
 
 import java.util.function.Function;
 

@@ -23,6 +23,7 @@
   },
   "mixins": [
     "super_resolution.mixins.json",
+    "super_resolution-fabric.mixins.json",
     "super_resolution-resolutioncontrol-common.mixins.json",
     "super_resolution-resolutioncontrol-fabric.mixins.json"
   ],

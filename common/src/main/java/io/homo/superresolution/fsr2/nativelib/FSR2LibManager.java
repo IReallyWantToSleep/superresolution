@@ -70,7 +70,9 @@ public class FSR2LibManager {
         ffx_fsr2_api_gl_path = Paths.get(lib_path, ffx_fsr2_api_gl_NAME).toAbsolutePath().toString();
         SuperResolution.LOGGER.info("FSR2 library path: {} {}",ffx_fsr2_api_path,ffx_fsr2_api_gl_path);
         //ffx_fsr2_api_gl = new ffx_fsr2_api_gl(ffx_fsr2_api_gl_path);
-        ffx_fsr2_api = new ffx_fsr2_api("I:/superresolution/fsr2_win64/x64/Release/fsr2_win64.dll");
+        System.load("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_gl_x64.dll");
+        System.load("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_x64.dll");
+        ffx_fsr2_api = new ffx_fsr2_api("N:\\fsr2_opengl_java\\bin\\libfsr2javalib.dll");
         ffx_fsr2_api.init();
     }
 

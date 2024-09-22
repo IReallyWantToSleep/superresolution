@@ -29,12 +29,21 @@ subprojects {
         // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
         // See https://docs.gradle.org/current/userguide/declaring_repositories.html
         // for more information about repositories.
+        maven {
+            allowInsecureProtocol = true
+            url "http://127.0.0.1:8080/releases"
+        }
     }
 
     dependencies {
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
-        mappings loom.officialMojangMappings()
+       // mappings loom.officialMojangMappings()
+        		mappings loom.layered() {
+                  officialMojangMappings()
+                  parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:2023.09.03@zip")
+              }
     }
+
 
     java {
         // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task

@@ -1,5 +1,6 @@
 package io.homo.superresolution.resolutioncontrol.mixin;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.resolutioncontrol.ResolutionControl;
 import net.minecraft.client.Minecraft;
@@ -11,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = GameRenderer.class)
 public abstract class GameRendererMixin {
-
 	@Inject(at = @At(value = "HEAD"), method = "renderLevel")
 	private void onRenderBegin(CallbackInfo callbackInfo) {
 		if (Minecraft.getInstance().level != null){
@@ -19,10 +19,9 @@ public abstract class GameRendererMixin {
 		}
 	}
 	@Inject(at = @At(value = "RETURN"), method = "renderLevel")
-	private void onRenderEnd(CallbackInfo callbackInfo) {
+	private void onRenderEnd(CallbackInfo ci) {
 		if (Minecraft.getInstance().level != null){
 			ResolutionControl.getInstance().setShouldScale(false);
 		}
-
 	}
 }
