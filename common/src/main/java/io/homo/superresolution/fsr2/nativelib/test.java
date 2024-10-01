@@ -22,12 +22,14 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class test {
+    /*
     private long window;
     private ffx_fsr2_api api;
     private FrameBuffer mv;
     private FrameBuffer color;
     private FrameBuffer out;
     public void run() throws InterruptedException {
+
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
         RenderSystem.initRenderThread();
         api = new ffx_fsr2_api("I:/superresolution/fsr2_win64/x64/Release/fsr2_win64.dll");
@@ -149,4 +151,5 @@ public class test {
     public static void main(String[] args) throws InterruptedException {
         new test().run();
     }
+    */
 }

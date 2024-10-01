@@ -37,8 +37,8 @@ public class DebugInfo {
         if (Util.getMillis()-lastUpdateTime > updateTime){
             frameTimeDelta = _frameTimeDelta;
             frameTimeDelta_fsr = _frameTimeDelta_fsr;
-            text_frameTimeDelta = "Rendering World Time "+ frameTimeDelta+"ms "+Math.round(1000/frameTimeDelta)+"fps";
-            text_frameTimeDelta_fsr = "FSR2 calculation time "+ frameTimeDelta_fsr+"ms "+Math.round(1000/frameTimeDelta_fsr)+"fps";
+            text_frameTimeDelta = "世界渲染用时 "+ frameTimeDelta+"ms "+Math.round(1000/frameTimeDelta)+"fps";
+            text_frameTimeDelta_fsr = "FSR2计算用时 "+ frameTimeDelta_fsr+"ms "+Math.round(1000/frameTimeDelta_fsr)+"fps";
             lastUpdateTime = Util.getMillis();
         }
    }

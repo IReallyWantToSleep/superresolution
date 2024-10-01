@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "io.homo.superresolution.forge.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "MinecraftMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

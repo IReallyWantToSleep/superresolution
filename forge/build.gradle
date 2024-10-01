@@ -5,8 +5,10 @@ plugins {
 loom {
     forge {
         mixinConfig "super_resolution.mixins.json"
+        mixinConfig "super_resolution-forge.mixins.json"
         mixinConfig "super_resolution-resolutioncontrol-forge.mixins.json"
         mixinConfig "super_resolution-resolutioncontrol-common.mixins.json"
+        mixinConfig "super_resolution-imgui-common.mixins.json"
 
     }
 }
@@ -40,6 +42,12 @@ dependencies {
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle(project(path: ":common", configuration: "transformProductionForge"))
+
+    forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
+    forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
+    forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
+    forgeRuntimeLibrary "io.github.spair:imgui-java-natives-windows:1.87.5"
+    forgeRuntimeLibrary "io.github.spair:imgui-java-natives-linux:1.87.5"
 }
 
 processResources {

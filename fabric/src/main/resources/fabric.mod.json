@@ -25,7 +25,8 @@
     "super_resolution.mixins.json",
     "super_resolution-fabric.mixins.json",
     "super_resolution-resolutioncontrol-common.mixins.json",
-    "super_resolution-resolutioncontrol-fabric.mixins.json"
+    "super_resolution-resolutioncontrol-fabric.mixins.json",
+    "super_resolution-imgui-common.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.16.2",

@@ -15,21 +15,17 @@ import java.util.Set;
 public class ResolutionControl {
     private static ResolutionControl instance;
     private static Minecraft minecraft;
-    private static Config config;
-    private RenderTarget framebuffer;
+    private FrameBuffer framebuffer;
     private boolean shouldScale = false;
     public int currentWidth;
     public int currentHeight;
-    private RenderTarget clientFramebuffer;
     private Set<RenderTarget> minecraftFramebuffers;
     public ResolutionControl(Minecraft mc){
         minecraft = mc;
         instance = this;
-        new FrameBuffer(false);
     }
     public void init(){
         onResolutionChanged();
-        config = SuperResolution.config;
     }
 
     public static ResolutionControl getInstance() {
@@ -45,32 +41,20 @@ public class ResolutionControl {
     public void setShouldScale(boolean shouldScale) {
         if (shouldScale == this.shouldScale) return;
         if (getScaleFactor() == 1) return;
-
-        Window window = getWindow();
         if (framebuffer == null) {
             this.shouldScale = true;
             calculateSize();
             framebuffer = new FrameBuffer(true);
-            SuperResolution.LOGGER.info("init framebuffer");
         }
-        SuperResolution.FSR.setWorldFramebuffer((FrameBuffer) framebuffer);
         this.shouldScale = shouldScale;
         minecraft.getProfiler().popPush(shouldScale ? "startScaling" : "finishScaling");
         if (shouldScale) {
-            clientFramebuffer = minecraft.getMainRenderTarget();
             setClientFramebuffer(framebuffer);
+            SuperResolution.FSR.setWorldFramebuffer(framebuffer);
             framebuffer.bindWrite(true);
         } else {
-            setClientFramebuffer(clientFramebuffer);
-            clientFramebuffer.bindWrite(true);
-            /*
-            framebuffer.blitToScreen(
-                    window.getScreenWidth(),
-                    window.getScreenHeight()
-            );
-
-             */
-            SuperResolution.FSR.blitToScreen();
+            setClientFramebuffer(SuperResolution.mainTarget);
+            SuperResolution.mainTarget.bindWrite(true);
         }
         minecraft.getProfiler().popPush("level");
     }
@@ -80,7 +64,7 @@ public class ResolutionControl {
         currentWidth = framebuffer.width;
         currentHeight = framebuffer.height;
     }
-    private void setClientFramebuffer(RenderTarget framebuffer){
+    public void setClientFramebuffer(RenderTarget framebuffer){
         ((MinecraftAccessor)Minecraft.getInstance()).setFramebuffer(framebuffer);
     }
     public float getCurrentScaleFactor(){
@@ -130,12 +114,10 @@ public class ResolutionControl {
         resize(minecraft.levelRenderer.entityTarget());
         calculateSize();
     }
-    public RenderTarget getWorldFramebuffer(){
-        return clientFramebuffer;
-    }
+
     private boolean warnFramebufferNull(){
         if (framebuffer == null){
-            SuperResolution.LOGGER.warn("framebuffer is null");
+            SuperResolution.LOGGER.warn("framebuffer=null");
             return true;
         }
         return false;

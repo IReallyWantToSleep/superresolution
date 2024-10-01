@@ -1,6 +1,5 @@
 package io.homo.superresolution.mixin;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.SuperResolution;
@@ -31,30 +30,27 @@ public class KeyboardHandlerMixin {
         Screenshot.grab(Minecraft.getInstance().gameDirectory,"mv.png", SuperResolution.FSR.getHelper().getMotionVectorsBuffer(),(a)->{
             SuperResolution.LOGGER.info("mv buffer: {}",a.getString());
         });
-        Screenshot.grab(Minecraft.getInstance().gameDirectory,"sc.png", FSR2.fsr2OutFramebuffer,(a)->{
-            SuperResolution.LOGGER.info("sc buffer: {}",a.getString());
+        Screenshot.grab(Minecraft.getInstance().gameDirectory,"fsr2OutTexture.png", FSR2.fsr2OutTexture,(a)->{
+            SuperResolution.LOGGER.info("fsr2OutTexture buffer: {}",a.getString());
         });
         Screenshot.grab(Minecraft.getInstance().gameDirectory,"world.png", FSR2.worldFramebuffer,(a)->{
             SuperResolution.LOGGER.info("world buffer: {}",a.getString());
         });
-        grab(Minecraft.getInstance().gameDirectory,"world_d.png", Minecraft.getInstance().getMainRenderTarget(),(a)->{
+        grab(Minecraft.getInstance().gameDirectory,"world_d.png",(a)->{
             SuperResolution.LOGGER.info("world_d buffer: {}",a.getString());
-        });
-
+        }, FSR2.worldFramebuffer.getDepthTextureId(), FSR2.worldFramebuffer.width, FSR2.worldFramebuffer.height);
     }
 
-    private static NativeImage takeScreenshot(RenderTarget framebuffer) {
-        int i = framebuffer.width;
-        int j = framebuffer.height;
+    private static NativeImage super_resolution$takeScreenshot(int id, int i, int j) {
         NativeImage nativeImage = new NativeImage(i, j, false);
-        RenderSystem.bindTexture(framebuffer.getDepthTextureId());
+        RenderSystem.bindTexture(id);
         nativeImage.downloadTexture(0, true);
         nativeImage.flipY();
         return nativeImage;
     }
 
-    private static void grab(File gameDirectory, @Nullable String screenshotName, RenderTarget buffer, Consumer<Component> messageConsumer) {
-        NativeImage nativeImage = takeScreenshot(buffer);
+    private static void grab(File gameDirectory, @Nullable String screenshotName, Consumer<Component> messageConsumer,int id,int i,int j) {
+        NativeImage nativeImage = super_resolution$takeScreenshot(id,i,j);
         File file = new File(gameDirectory, "screenshots");
         file.mkdir();
         File file2;
@@ -70,10 +66,9 @@ public class KeyboardHandlerMixin {
                 Component component = Component.literal(file2.getName()).withStyle(ChatFormatting.UNDERLINE).withStyle((style) -> {
                     return style.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file2.getAbsolutePath()));
                 });
-                messageConsumer.accept(Component.translatable("screenshot.success", new Object[]{component}));
+                messageConsumer.accept(Component.translatable("screenshot.success", component));
             } catch (Exception var7) {
-                Exception exception = var7;
-                messageConsumer.accept(Component.translatable("screenshot.failure", new Object[]{exception.getMessage()}));
+                messageConsumer.accept(Component.translatable("screenshot.failure", var7.getMessage()));
             } finally {
                 nativeImage.close();
             }

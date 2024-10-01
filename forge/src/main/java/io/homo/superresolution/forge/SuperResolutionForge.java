@@ -9,10 +9,10 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(SuperResolution.MOD_ID)
 public final class SuperResolutionForge {
-    private SuperResolution common;
+    public static SuperResolution mod;
     public SuperResolutionForge() {
+        SuperResolution.initFSR2Lib();
         EventBuses.registerModEventBus(SuperResolution.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
-        this.common = new SuperResolution();
-        this.common.init();
+        mod = new SuperResolution();
     }
 }

@@ -38,12 +38,6 @@ public class GameRendererMixin {
 
     @Inject(at = @At(value = "RETURN"), method = "render")
     private void onRenderEnd(CallbackInfo ci) {
-        if (minecraft.level != null && ResolutionControl.getInstance().getWorldFramebuffer() != null){
-            super_resolution$lastRenderTime_fsr = Util.getMillis();
-            SuperResolution.FSR.CallFSR2(SuperResolution.frameTimeDelta);
-            super_resolution$frameTimeDelta_fsr = Util.getMillis()-super_resolution$lastRenderTime_fsr;
-            DebugInfo.setFrameTimeDelta_fsr(super_resolution$frameTimeDelta_fsr);
-        }
     }
     /*
     @Inject(method = "renderLevel",

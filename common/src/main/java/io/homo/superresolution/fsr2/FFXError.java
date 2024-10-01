@@ -1,8 +1,5 @@
 package io.homo.superresolution.fsr2;
 
-import io.homo.superresolution.SuperResolution;
-import org.lwjgl.glfw.GLFW;
-
 public class FFXError {
     public static final int FFX_OK = 0;
     public static final int FFX_ERROR_INVALID_POINTER = 0x80000000;
