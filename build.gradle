@@ -32,6 +32,10 @@ subprojects {
         maven {
             url = "http://127.0.0.1:8080/releases"
         }
+        maven {
+            name 'ParchmentMC'
+            url 'https://ldtteam.jfrog.io/artifactory/parchmentmc/'
+        }
 
     }
 
