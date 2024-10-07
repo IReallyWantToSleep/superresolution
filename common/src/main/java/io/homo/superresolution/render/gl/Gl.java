@@ -4,7 +4,14 @@ import org.lwjgl.opengl.*;
 
 import java.nio.IntBuffer;
 
+import static io.homo.superresolution.render.gl.GlConst.GL_MAJOR_VERSION;
+import static io.homo.superresolution.render.gl.GlConst.GL_MINOR_VERSION;
+
 public class Gl {
+    public static int[] getVersion() {
+        return new int[]{glGetInteger(GL_MAJOR_VERSION), glGetInteger(GL_MINOR_VERSION)};
+    }
+
     public static void glTexParameteri(int target, int pname, int param) {
         GL11C.glTexParameteri(target, pname, param);
     }

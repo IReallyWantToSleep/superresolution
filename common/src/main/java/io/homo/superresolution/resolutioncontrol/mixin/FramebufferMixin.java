@@ -1,10 +1,8 @@
 package io.homo.superresolution.resolutioncontrol.mixin;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import static io.homo.superresolution.render.gl.GlConst.*;
-import static io.homo.superresolution.render.gl.Gl.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -12,6 +10,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static io.homo.superresolution.render.gl.Gl.glGenerateMipmap;
+import static io.homo.superresolution.render.gl.GlConst.*;
 
 @Mixin(value = RenderTarget.class)
 public abstract class FramebufferMixin {

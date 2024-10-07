@@ -1,11 +1,11 @@
 package io.homo.superresolution.utils;
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
-
-import org.apache.commons.codec.binary.Hex;
 
 public class Md5CaculateUtil {
     public static String getMD5(File file) {

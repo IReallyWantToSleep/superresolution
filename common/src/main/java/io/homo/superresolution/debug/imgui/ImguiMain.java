@@ -1,6 +1,5 @@
 package io.homo.superresolution.debug.imgui;
 
-import imgui.ImFont;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiConfigFlags;

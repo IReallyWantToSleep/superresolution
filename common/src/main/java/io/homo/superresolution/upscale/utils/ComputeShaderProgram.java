@@ -11,8 +11,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.homo.superresolution.render.gl.GlConst.*;
 import static io.homo.superresolution.render.gl.Gl.*;
+import static io.homo.superresolution.render.gl.GlConst.GL_COMPILE_STATUS;
+import static io.homo.superresolution.render.gl.GlConst.GL_COMPUTE_SHADER;
 
 /**
  * PS:这是计算着色器

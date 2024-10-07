@@ -2,9 +2,7 @@ package io.homo.superresolution.mixin.debug;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.resolutioncontrol.ResolutionControl;
-import io.homo.superresolution.upscale.fsr2.FSR2;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyboardHandler;

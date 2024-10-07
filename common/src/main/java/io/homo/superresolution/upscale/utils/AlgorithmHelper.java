@@ -14,17 +14,21 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import static io.homo.superresolution.render.gl.GlConst.*;
 import static io.homo.superresolution.render.gl.Gl.*;
+import static io.homo.superresolution.render.gl.GlConst.GL_EXTENSIONS;
+import static io.homo.superresolution.render.gl.GlConst.GL_NUM_EXTENSIONS;
 
 public class AlgorithmHelper implements CanResize, CanDestroy {
     public int renderWidth;
     public int renderHeight;
     public int screenWidth;
     public int screenHeight;
+    public static int[] GLVersion = new int[]{0, 0};
     private final ArrayList<String> GLExtension = new ArrayList<>();
+
     public AlgorithmHelper(){
         RenderSystem.assertOnRenderThread();
+        GLVersion = getVersion();
         int l = glGetInteger(GL_NUM_EXTENSIONS);
         for (int i = 0; i < l; ++i) {
             GLExtension.add(glGetStringi(GL_EXTENSIONS,i));

@@ -3,7 +3,6 @@ package io.homo.superresolution.upscale.utils;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.SuperResolution;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,8 +12,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.homo.superresolution.render.gl.GlConst.*;
 import static io.homo.superresolution.render.gl.Gl.*;
+import static io.homo.superresolution.render.gl.GlConst.GL_FRAGMENT_SHADER;
+import static io.homo.superresolution.render.gl.GlConst.GL_VERTEX_SHADER;
 
 /**
  * PS:这是计算着色器
