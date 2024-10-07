@@ -1,21 +1,22 @@
 package io.homo.superresolution.resolutioncontrol;
 
+import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.config.Config;
+import io.homo.superresolution.impl.CanDestroy;
 import io.homo.superresolution.resolutioncontrol.mixin.MinecraftAccessor;
-import io.homo.superresolution.utils.FrameBuffer;
+import io.homo.superresolution.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class ResolutionControl {
+public class ResolutionControl implements CanDestroy {
     private static ResolutionControl instance;
     private static Minecraft minecraft;
-    private FrameBuffer framebuffer;
+    private MainTarget framebuffer;
     private boolean shouldScale = false;
     public int currentWidth;
     public int currentHeight;
@@ -26,31 +27,34 @@ public class ResolutionControl {
     }
     public void init(){
         onResolutionChanged();
+        calculateSize();
+        framebuffer = new MainTarget(
+                AlgorithmManager.helper.renderWidth,
+                AlgorithmManager.helper.renderHeight
+        );
     }
 
     public static ResolutionControl getInstance() {
         return instance;
     }
+
+    public MainTarget getFramebuffer() {
+        return framebuffer;
+    }
+
     public static boolean isInit(){
         return !(instance == null);
     }
     public float getScaleFactor() {
         return Config.getRenderScaleFactor();
     }
-    private Window getWindow() { return minecraft.getWindow(); }
     public void setShouldScale(boolean shouldScale) {
         if (shouldScale == this.shouldScale) return;
-        if (getScaleFactor() == 1) return;
-        if (framebuffer == null) {
-            this.shouldScale = true;
-            calculateSize();
-            framebuffer = new FrameBuffer(true);
-        }
         this.shouldScale = shouldScale;
         minecraft.getProfiler().popPush(shouldScale ? "startScaling" : "finishScaling");
         if (shouldScale) {
             setClientFramebuffer(framebuffer);
-            SuperResolution.FSR.setWorldFramebuffer(framebuffer);
+            SuperResolution.currentAlgorithm.setInput(framebuffer);
             framebuffer.bindWrite(true);
         } else {
             setClientFramebuffer(SuperResolution.mainTarget);
@@ -61,8 +65,8 @@ public class ResolutionControl {
 
     private void calculateSize() {
         if (warnFramebufferNull()) return;
-        currentWidth = framebuffer.width;
-        currentHeight = framebuffer.height;
+        currentWidth = AlgorithmManager.helper.renderWidth;
+        currentHeight = AlgorithmManager.helper.renderHeight;
     }
     public void setClientFramebuffer(RenderTarget framebuffer){
         ((MinecraftAccessor)Minecraft.getInstance()).setFramebuffer(framebuffer);
@@ -90,8 +94,8 @@ public class ResolutionControl {
         shouldScale = true;
         if (framebuffer != null) {
             framebuffer.resize(
-                    getWindow().getWidth(),
-                    getWindow().getHeight(),
+                    AlgorithmManager.helper.renderWidth,
+                    AlgorithmManager.helper.renderHeight,
                     Minecraft.ON_OSX
             );
         }
@@ -108,19 +112,22 @@ public class ResolutionControl {
     }
 
     public void updateFramebufferSize() {
-
         if (warnFramebufferNull()) return;
-        framebuffer.resize(SuperResolution.FSR.getHelper().renderWidth,SuperResolution.FSR.getHelper().renderHeight,Minecraft.ON_OSX);
+        framebuffer.resize(
+                AlgorithmManager.helper.renderWidth,
+                AlgorithmManager.helper.renderHeight,
+                Minecraft.ON_OSX
+        );
         resize(minecraft.levelRenderer.entityTarget());
         calculateSize();
     }
 
     private boolean warnFramebufferNull(){
-        if (framebuffer == null){
-            SuperResolution.LOGGER.warn("framebuffer=null");
-            return true;
-        }
-        return false;
+        return framebuffer == null;
+    }
+
+    public void destroy() {
+        this.framebuffer.destroyBuffers();
     }
 }
 

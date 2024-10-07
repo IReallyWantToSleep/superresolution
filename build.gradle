@@ -1,12 +1,18 @@
+
+
 plugins {
-    id 'dev.architectury.loom' version '1.7-SNAPSHOT' apply false
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
-    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+    id "dev.architectury.loom" version "1.7-SNAPSHOT" apply false
+    id "architectury-plugin" version "3.4-SNAPSHOT"
+    id "com.github.johnrengelman.shadow" version "8.1.1" apply false
+    id "io.github.pacifistmc.forgix" version "1.2.9"
 }
+
+
 
 architectury {
     minecraft = project.minecraft_version
 }
+
 
 allprojects {
     group = rootProject.maven_group
@@ -14,9 +20,9 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'dev.architectury.loom'
-    apply plugin: 'architectury-plugin'
-    apply plugin: 'maven-publish'
+    apply plugin: "dev.architectury.loom"
+    apply plugin: "architectury-plugin"
+    apply plugin: "maven-publish"
 
     base {
         archivesName = "$rootProject.archives_name-$project.name"
@@ -24,7 +30,7 @@ subprojects {
 
     repositories {
         maven {
-            url = 'http://127.0.0.1:8080/releases'
+            url = "http://127.0.0.1:8080/releases"
         }
 
     }
@@ -34,14 +40,23 @@ subprojects {
         mappings loom.layered() {
                   officialMojangMappings()
                   parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:2023.09.03@zip")
-              }
+        }
+        configurations.configureEach {
+            //钠需要lwjgl3.3.1😅
+            resolutionStrategy{
+                force "org.lwjgl:lwjgl:$lwjglVersion"
+                force "org.lwjgl:lwjgl-glfw:$lwjglVersion"
+                force "org.lwjgl:lwjgl-opengl:$lwjglVersion"
+                force "org.lwjgl:lwjgl-openal:$lwjglVersion"
+                force "org.lwjgl:lwjgl-stb:$lwjglVersion"
+                force "org.lwjgl:lwjgl-jemalloc:$lwjglVersion"
+                force "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
+            }
+        }
     }
 
 
     java {
-        // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-        // if it is present.
-        // If you remove this line, sources will not be generated.
         withSourcesJar()
 
         sourceCompatibility = JavaVersion.VERSION_17
@@ -52,7 +67,6 @@ subprojects {
         it.options.release = 17
     }
 
-    // Configure Maven publishing.
     publishing {
         publications {
             mavenJava(MavenPublication) {
@@ -61,12 +75,14 @@ subprojects {
             }
         }
 
-        // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
         repositories {
-            // Add repositories to publish to here.
-            // Notice: This block does NOT have the same function as the block in the top level.
-            // The repositories here will be used for publishing your artifact, not for
-            // retrieving dependencies.
+
         }
     }
+}
+
+forgix {
+    group = "io.homo.superresolution"
+    mergedJarName = "superresolution-${rootProject.mod_version}-${rootProject.minecraft_version}.jar"
+    outputDir = "build/"
 }

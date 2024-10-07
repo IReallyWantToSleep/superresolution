@@ -7,16 +7,12 @@ dependencies {
     // which get remapped to the correct annotations on each platform.
     // Do NOT use other classes from Fabric Loader.
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
+    modImplementation "me.shedaniel.cloth:cloth-config:${project.cloth_config_version}"
+    //modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}+${project.minecraft_version}-fabric"
+    modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
+    implementation("io.github.spair:imgui-java-app:1.87.5")
+    implementation("io.github.spair:imgui-java-binding:1.87.5")
+    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
 
-    modImplementation "dev.architectury:architectury:$rootProject.architectury_api_version"
-    implementation(include ("io.github.spair:imgui-java-app:1.87.5"))
-    implementation(include ("io.github.spair:imgui-java-binding:1.87.5"))
-    implementation(include ("io.github.spair:imgui-java-lwjgl3:1.87.5"))
-    implementation(include ("io.github.spair:imgui-java-natives-windows:1.87.5"))
-    implementation(include ("io.github.spair:imgui-java-natives-linux:1.87.5"))
-/*
-    implementation(annotationProcessor("io.github.llamalad7:mixinextras-common:0.2.0"))
-    implementation(include("io.github.llamalad7:mixinextras-forge:0.2.0"))
-    */
 
 }

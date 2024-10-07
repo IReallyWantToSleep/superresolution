@@ -6,6 +6,7 @@ loom {
     forge {
         mixinConfig "super_resolution.mixins.json"
         mixinConfig "super_resolution-forge.mixins.json"
+        mixinConfig "super_resolution-forge-compat.mixins.json"
         mixinConfig "super_resolution-resolutioncontrol-forge.mixins.json"
         mixinConfig "super_resolution-resolutioncontrol-common.mixins.json"
         mixinConfig "super_resolution-imgui-common.mixins.json"
@@ -35,19 +36,46 @@ configurations {
     }
 }
 
+repositories{
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+}
+
 dependencies {
     forge "net.minecraftforge:forge:$rootProject.forge_version"
 
     modImplementation "dev.architectury:architectury-forge:$rootProject.architectury_api_version"
+    modImplementation "curse.maven:embeddedt-908741:5681725-sources-5681725-api-5681725"
+    modImplementation "curse.maven:oculus-581495:5299671-sources-5299671-api-5299671"
+    modImplementation "me.shedaniel.cloth:cloth-config-forge:${project.cloth_config_version}"
+    modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle(project(path: ":common", configuration: "transformProductionForge"))
 
+    //oculus要用
+    implementation("org.anarres:jcpp:1.4.14") {
+        transitive = false
+    }
+    implementation "org.slf4j:slf4j-api:1.7.12"
+    forgeRuntimeLibrary "org.anarres:jcpp:1.4.14"
+    forgeRuntimeLibrary "org.slf4j:slf4j-api:1.7.12"
+
+    implementation("io.github.spair:imgui-java-app:1.87.5")
+    implementation("io.github.spair:imgui-java-binding:1.87.5")
+    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
+
     forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
     forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
     forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
-    forgeRuntimeLibrary "io.github.spair:imgui-java-natives-windows:1.87.5"
-    forgeRuntimeLibrary "io.github.spair:imgui-java-natives-linux:1.87.5"
+
+    include("io.github.spair:imgui-java-app:1.87.5")
+    include("io.github.spair:imgui-java-binding:1.87.5")
+    include("io.github.spair:imgui-java-lwjgl3:1.87.5")
 }
 
 processResources {

@@ -1,6 +1,5 @@
 package io.homo.superresolution.forge.resolutioncontrol.mixin;
 
-import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.resolutioncontrol.ResolutionControl;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.PostChain;

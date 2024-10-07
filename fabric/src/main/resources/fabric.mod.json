@@ -19,20 +19,24 @@
     ],
     "client": [
       "io.homo.superresolution.fabric.client.SuperResolutionFabricClient"
+    ],
+    "modmenu": [
+      "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
     ]
   },
   "mixins": [
     "super_resolution.mixins.json",
     "super_resolution-fabric.mixins.json",
+    "super_resolution-fabric-compat.mixins.json",
     "super_resolution-resolutioncontrol-common.mixins.json",
     "super_resolution-resolutioncontrol-fabric.mixins.json",
     "super_resolution-imgui-common.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.16.2",
+    "fabricloader": "*",
     "minecraft": "~1.20.1",
     "java": ">=17",
-    "architectury": ">=9.1.12",
+    "architectury": "*",
     "fabric-api": "*"
   },
   "suggests": {

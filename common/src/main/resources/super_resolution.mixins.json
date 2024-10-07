@@ -4,11 +4,11 @@
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
-    "DebugMixin",
-    "GameRendererMixin",
-    "KeyboardHandlerMixin",
-    "MinecraftMixin",
-    "TestMixin"
+    "core.GameRendererMixin",
+    "core.MinecraftMixin",
+    "debug.DebugMixin",
+    "debug.KeyboardHandlerMixin",
+    "debug.TestMixin"
   ],
   "mixins": [
   ],

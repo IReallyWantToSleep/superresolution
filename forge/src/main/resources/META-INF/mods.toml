@@ -33,3 +33,6 @@ mandatory = true
 versionRange = "[9.1.12,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[mods."sodium:options"]
+"mixin.features.render.gui.debug"=false

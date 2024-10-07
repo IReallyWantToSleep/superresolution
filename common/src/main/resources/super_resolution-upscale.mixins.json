@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "io.homo.superresolution.upscale.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "LevelRendererMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

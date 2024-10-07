@@ -24,17 +24,36 @@ configurations {
     }
 }
 
+repositories{
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+    maven {
+        name = "Terraformers"
+        url = "https://maven.terraformersmc.com/"
+    }
+}
+
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
+    modImplementation "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"
+    modImplementation fileTree(dir: 'libs', include: ['*.jar'])
+    modImplementation "curse.maven:iris+1.7.2-455508:5485649-sources-5485649-api-5485649"
+    modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
     implementation "io.github.spair:imgui-java-app:1.87.5"
     implementation "io.github.spair:imgui-java-binding:1.87.5"
     implementation "io.github.spair:imgui-java-lwjgl3:1.87.5"
-    implementation "io.github.spair:imgui-java-natives-windows:1.87.5"
-    implementation "io.github.spair:imgui-java-natives-linux:1.87.5"
+
+    include("io.github.spair:imgui-java-app:1.87.5")
+    include("io.github.spair:imgui-java-binding:1.87.5")
+    include("io.github.spair:imgui-java-lwjgl3:1.87.5")
 }
 
 processResources {

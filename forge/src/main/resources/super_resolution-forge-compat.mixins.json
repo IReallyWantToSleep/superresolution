@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "io.homo.superresolution.forge.compat",
+  "plugin": "io.homo.superresolution.forge.compat.CompatMixinPlugin",
+
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "embeddium.EmbeddiumOptionMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

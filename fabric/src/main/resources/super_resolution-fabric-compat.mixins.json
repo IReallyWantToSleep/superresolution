@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "io.homo.superresolution.fabric.compat",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "sodium.SoidumD3DKMTMixin"
+  ],
+  "mixins": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

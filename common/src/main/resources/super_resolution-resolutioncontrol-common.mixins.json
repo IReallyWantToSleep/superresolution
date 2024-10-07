@@ -5,9 +5,7 @@
   "minVersion": "0.8",
   "client": [
     "FramebufferMixin",
-    "GameRendererMixin",
     "MinecraftAccessor",
-    "MinecraftClientMixin",
     "WindowMixin"
   ],
   "mixins": [
