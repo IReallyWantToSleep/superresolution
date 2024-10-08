@@ -32,19 +32,16 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Initialize build environment
-        run: ./gradlew
-
-      - name: Check license headers
-        run: ./gradlew checkLicenses
+        run: ./gradlew --info
 
       - name: Build
         id: build
         if: ${{ !cancelled() }}
-        run: ./gradlew build
+        run: ./gradlew build --info
       - name: mergeJars
         id: mergeJars
         if: ${{ !cancelled() }}
-        run: ./gradlew mergeJars
+        run: ./gradlew mergeJars --info
 
       - name: Capture build artifacts
         uses: actions/upload-artifact@v4

@@ -1,5 +1,5 @@
 package io.homo.superresolution.fabric.compat.sodium;
-
+/*
 
 import me.jellysquid.mods.sodium.client.platform.windows.api.d3dkmt.D3DKMT;
 import net.fabricmc.loader.api.FabricLoader;
@@ -20,3 +20,4 @@ public class SoidumD3DKMTMixin {
     }
 
 }
+*/
