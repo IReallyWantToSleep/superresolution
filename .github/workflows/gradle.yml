@@ -32,16 +32,16 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Initialize build environment
-        run: ./gradlew --info
+        run: ./gradlew
 
       - name: Build
         id: build
         if: ${{ !cancelled() }}
-        run: ./gradlew build --info
+        run: ./gradlew build
       - name: mergeJars
         id: mergeJars
         if: ${{ !cancelled() }}
-        run: ./gradlew mergeJars --info
+        run: ./gradlew mergeJars
 
       - name: Capture build artifacts
         uses: actions/upload-artifact@v4
