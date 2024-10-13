@@ -33,7 +33,7 @@ public final class SuperResolution implements CanResize, CanDestroy {
     public static MainTarget mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
     public static boolean isRenderingWorld = false;
     public static boolean notSupportFSR2 = false;
-    public static AlgorithmManager.AlgorithmType algorithmType = AlgorithmManager.AlgorithmType.FSR2;
+    public static AlgorithmManager.AlgorithmType algorithmType = AlgorithmManager.AlgorithmType.FSR1;
     public SuperResolution(){}
     public static void initFSR2Lib(){
         if (NativeLibManager.exists(minecraft.gameDirectory.getAbsolutePath())) {

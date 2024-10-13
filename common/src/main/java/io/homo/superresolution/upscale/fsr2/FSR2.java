@@ -105,7 +105,7 @@ public class FSR2 extends AbstractAlgorithm {
         if (SuperResolution.notSupportFSR2) return false;
         RenderSystem.assertOnRenderThread();
         window = Minecraft.getInstance().getWindow();
-        //helper.update();
+        helper.update();
         return FFXError.isOK(
                 fsr2_api.ffxFsr2ContextDispatch(
                         fsr2_api.ffxGetTextureResourceGL(
