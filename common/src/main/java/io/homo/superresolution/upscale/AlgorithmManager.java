@@ -75,6 +75,8 @@ public class AlgorithmManager{
         public PoseStack poseStack;
         public Matrix4f lastProjectionMatrix;
         public Matrix4f currentProjectionMatrix;
+
+        public Matrix4f currentModelViewMatrix;
     }
 
     public static void setProjectionMatrix(Matrix4f cur){
@@ -84,5 +86,8 @@ public class AlgorithmManager{
             param.lastProjectionMatrix = param.currentProjectionMatrix;
         }
         param.currentProjectionMatrix = cur;
+    }
+    public static void setModelViewMatrix(Matrix4f cur) {
+        param.currentModelViewMatrix = cur;
     }
 }
