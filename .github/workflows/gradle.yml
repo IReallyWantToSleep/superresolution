@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ '*' ]
+    branches: [ '1.21.1' ]
 
 jobs:
   build:
@@ -27,7 +27,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             .gradle
-          key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/gradle-wrapper.properties', 'settings.gradle', 'build.gradle', 'gradle.properties') }}
+          key: ${{ runner.os }}-gradle-
           restore-keys: |
             ${{ runner.os }}-gradle-
 
