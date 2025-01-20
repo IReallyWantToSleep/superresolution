@@ -2,7 +2,8 @@ package io.homo.superresolution.mixin.debug;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.resolutioncontrol.ResolutionControl;
+import io.homo.superresolution.render.MinecraftRenderingStates;
+import io.homo.superresolution.SuperResolution;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyboardHandler;
@@ -23,12 +24,6 @@ import static org.apache.commons.io.FileUtils.getFile;
 
 @Mixin(KeyboardHandler.class)
 public class KeyboardHandlerMixin {
-
-    @Inject(at= @At(value = "INVOKE", target ="Lnet/minecraft/client/Screenshot;grab(Ljava/io/File;Lcom/mojang/blaze3d/pipeline/RenderTarget;Ljava/util/function/Consumer;)V"),method = "keyPress")
-    private void debugScreenshot(CallbackInfo ci){
-        Screenshot.grab(Minecraft.getInstance().gameDirectory,"world.png", ResolutionControl.getInstance().getFramebuffer(),(a)->{
-        });
-    }
 
     private static NativeImage super_resolution$takeScreenshot(int id, int i, int j) {
         NativeImage nativeImage = new NativeImage(i, j, false);
@@ -62,6 +57,14 @@ public class KeyboardHandlerMixin {
                 nativeImage.close();
             }
 
+        });
+    }
+
+    @Inject(at= @At(value = "INVOKE", target ="Lnet/minecraft/client/Screenshot;grab(Ljava/io/File;Lcom/mojang/blaze3d/pipeline/RenderTarget;Ljava/util/function/Consumer;)V"),method = "keyPress")
+    private void debugScreenshot(CallbackInfo ci){
+        Screenshot.grab(Minecraft.getInstance().gameDirectory,"world.png", MinecraftRenderingStates.getRenderTarget(),(a)->{
+        });
+        Screenshot.grab(Minecraft.getInstance().gameDirectory,"world1.png", SuperResolution.currentAlgorithm.getInputFrameBuffer(),(a)->{
         });
     }
 }

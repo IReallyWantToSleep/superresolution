@@ -1,11 +1,11 @@
 package io.homo.superresolution.upscale;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.upscale.fsr1.FSR1;
 import io.homo.superresolution.upscale.fsr2.FSR2;
 import io.homo.superresolution.upscale.none.None;
 import io.homo.superresolution.upscale.utils.AlgorithmHelper;
-import io.homo.superresolution.upscale.utils.Requirement;
 import org.joml.Matrix4f;
 
 public class AlgorithmManager{
@@ -22,6 +22,7 @@ public class AlgorithmManager{
     public static void resize(int width, int height) {
         helper.resize(width, height);
     }
+
     public static AbstractAlgorithm getAlgorithm(AlgorithmType type){
         AbstractAlgorithm algo = null;
         switch (type){
@@ -45,41 +46,8 @@ public class AlgorithmManager{
         return support;
     }
 
-    public enum AlgorithmType {
-        FSR1(
-                Requirement.nothing()
-                        .majorVersion(4)
-                        .majorVersion(3)
-        ),
-        FSR2(
-                Requirement.nothing()
-                        .includeExtension("GL_KHR_shader_subgroup")
-                        .majorVersion(4)
-                        .majorVersion(5)
-        ),
-        NONE(
-                Requirement.nothing()
-        );
-        private final Requirement value;
-
-        AlgorithmType(Requirement value) {
-            this.value = value;
-        }
-
-        public Requirement getValue() {
-            return value;
-        }
-    }
-
-    public static class AlgorithmParam{
-        public PoseStack poseStack;
-        public Matrix4f lastProjectionMatrix;
-        public Matrix4f currentProjectionMatrix;
-
-        public Matrix4f currentModelViewMatrix;
-    }
-
     public static void setProjectionMatrix(Matrix4f cur){
+        //SuperResolution.LOGGER.info(param.currentProjectionMatrix.toString());
         if (param.lastProjectionMatrix == null){
             param.lastProjectionMatrix = cur;
         }else {
@@ -87,7 +55,21 @@ public class AlgorithmManager{
         }
         param.currentProjectionMatrix = cur;
     }
+
     public static void setModelViewMatrix(Matrix4f cur) {
+        if (param.lastModelViewMatrix == null){
+            param.lastModelViewMatrix = cur;
+        }else {
+            param.lastModelViewMatrix = param.currentModelViewMatrix;
+        }
         param.currentModelViewMatrix = cur;
+    }
+    public static void setFov(double fov){param.fov = fov;}
+    public static class AlgorithmParam{
+        public Matrix4f lastProjectionMatrix;
+        public Matrix4f currentProjectionMatrix;
+        public Matrix4f currentModelViewMatrix;
+        public Matrix4f lastModelViewMatrix;
+        public double fov;
     }
 }

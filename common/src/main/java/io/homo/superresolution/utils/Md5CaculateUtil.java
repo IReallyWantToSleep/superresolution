@@ -23,13 +23,38 @@ public class Md5CaculateUtil {
             return null;
         } finally {
             try {
-                if (fileInputStream != null){
+                if (fileInputStream != null) {
                     fileInputStream.close();
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            }
         }
     }
+
     public static void main(String[] args) {
-        System.out.println(getMD5(new File("L:/FidelityFX-FSR2-OpenGL-master/FidelityFX-FSR2-OpenGL/bin/ffx_fsr2_api_x64d.dll")));
+        String s = """
+                if (os.contains("linux")){
+                    libs.add(new NativeLib("libffx_fsr2_api_gl_x64","%s"));
+                    libs.add(new NativeLib("libffx_fsr2_api_vk_x64","%s"));
+                    libs.add(new NativeLib("libffx_fsr2_api_x64","%s"));
+                    libs.add(new NativeLib("libfsr2javalib","%s",1));
+                }else if (os.contains("windows")){
+                    libs.add(new NativeLib("libffx_fsr2_api_gl_x64","%s"));
+                    libs.add(new NativeLib("libffx_fsr2_api_vk_x64","%s"));
+                    libs.add(new NativeLib("libffx_fsr2_api_x64","%s"));
+                    libs.add(new NativeLib("libfsr2javalib","%s",1));
+                }
+                """
+                .formatted(
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_gl_x64.so")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_vk_x64.so")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_x64.so")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libfsr2javalib.so")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_gl_x64.dll")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_vk_x64.dll")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_x64.dll")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libfsr2javalib.dll"))
+                );
+        System.out.println(s);
     }
 }

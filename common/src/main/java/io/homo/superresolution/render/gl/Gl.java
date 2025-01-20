@@ -1,11 +1,11 @@
 package io.homo.superresolution.render.gl;
 
 import org.lwjgl.opengl.*;
+import org.lwjgl.system.NativeType;
 
 import java.nio.IntBuffer;
 
-import static io.homo.superresolution.render.gl.GlConst.GL_MAJOR_VERSION;
-import static io.homo.superresolution.render.gl.GlConst.GL_MINOR_VERSION;
+import static io.homo.superresolution.render.gl.GlConst.*;
 
 public class Gl {
     public static int[] getVersion() {
@@ -134,5 +134,28 @@ public class Gl {
 
     public static String glGetShaderInfoLog(int shader, int maxLength) {
         return GL20C.glGetShaderInfoLog(shader, maxLength);
+    }
+
+    public static void glClearColor(float r,float g,float b,float alpha){
+        GL20C.glClearColor(r,g,b,alpha);
+    }
+
+    public static void glUniform3f(int location, float v0, float v1,float v2){
+        GL20C.glUniform3f(location,v0,v1,v2);
+    };
+
+    public static int glGetMaxTextureSize(){
+        return glGetInteger(GL_MAX_TEXTURE_SIZE);
+    }
+    public static int glGenFramebuffers(){
+        return GL30C.glGenFramebuffers();
+    }
+
+    public static void glDeleteFramebuffers(int framebuffer) {
+        GL30C.glDeleteFramebuffers(framebuffer);
+    }
+
+    public static void glCopyImageSubData(int srcName, int srcTarget, int srcLevel,  int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
+        GL43C.glCopyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
     }
 }

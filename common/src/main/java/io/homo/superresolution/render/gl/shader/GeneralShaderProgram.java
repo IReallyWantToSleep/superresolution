@@ -1,0 +1,91 @@
+package io.homo.superresolution.render.gl.shader;
+
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.SuperResolution;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.homo.superresolution.render.gl.Gl.*;
+import static io.homo.superresolution.render.gl.GlConst.GL_FRAGMENT_SHADER;
+import static io.homo.superresolution.render.gl.GlConst.GL_VERTEX_SHADER;
+
+public class GeneralShaderProgram extends AbstractShaderProgram{
+    private GeneralShaderProgram() {}
+    public static GeneralShaderProgramBuilder create() {
+        return new GeneralShaderProgramBuilder();
+    }
+
+    public GeneralShaderProgram compileShader() {
+        RenderSystem.assertOnRenderThread();
+        int FRAGMENT_SHADER = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(FRAGMENT_SHADER, getFragShaderText());
+        glCompileShader(FRAGMENT_SHADER);
+        if (glGetShaderi(FRAGMENT_SHADER, 35713) == 0) {
+            try (PrintWriter out = new PrintWriter(new FileOutputStream("ERROR_FRAGMENT_SHADER_SRC.glsl"))) {
+                out.println(this.getFragShaderText());
+            } catch (IOException e) {
+                SuperResolution.LOGGER.error(e.toString());
+            }
+            throw new RuntimeException("FRAGMENT_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(FRAGMENT_SHADER, 32768));
+        }
+
+        int VERTEX_SHADER = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(VERTEX_SHADER, getVertShaderText());
+        glCompileShader(VERTEX_SHADER);
+        if (glGetShaderi(VERTEX_SHADER, 35713) == 0) {
+            try (PrintWriter out = new PrintWriter(new FileOutputStream("ERROR_VERTEX_SHADER_SRC.glsl"))) {
+                out.println(this.getVertShaderText());
+            } catch (IOException e) {
+                SuperResolution.LOGGER.error(e.toString());
+            }
+            throw new RuntimeException("VERTEX_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(FRAGMENT_SHADER, 32768));
+        }
+
+        this.shaderProgram = glCreateProgram();
+        glAttachShader(shaderProgram, FRAGMENT_SHADER);
+        glAttachShader(shaderProgram, VERTEX_SHADER);
+        glLinkProgram(shaderProgram);
+        glDeleteShader(FRAGMENT_SHADER);
+        return this;
+    }
+
+    public void use() {
+        RenderSystem.assertOnRenderThread();
+        glUseProgram(this.shaderProgram);
+    }
+
+    public void clear() {
+        RenderSystem.assertOnRenderThread();
+        glUseProgram(0);
+    }
+
+    public static class ShaderInclude {
+        public String name;
+        public ArrayList<String> textList;
+
+        private ShaderInclude() {
+        }
+
+        public static ShaderInclude create(Collection<String> textList, String name) {
+            ShaderInclude i = new ShaderInclude();
+            i.textList = new ArrayList<>();
+            i.textList.addAll(textList);
+            i.name = name;
+            return i;
+        }
+    }
+
+    public static class GeneralShaderProgramBuilder extends AbstractShaderProgramBuilder{
+        @Override
+        public GeneralShaderProgram build() {
+            return (GeneralShaderProgram) setShaderText(new GeneralShaderProgram());
+        }
+    }
+}

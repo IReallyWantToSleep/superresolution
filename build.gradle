@@ -1,12 +1,10 @@
-
-
 plugins {
     id "dev.architectury.loom" version "1.7-SNAPSHOT" apply false
     id "architectury-plugin" version "3.4-SNAPSHOT"
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
     id "io.github.pacifistmc.forgix" version "1.2.9"
 }
-
+project.ext.lwjglVersion = "3.3.3"
 
 
 architectury {
@@ -30,11 +28,14 @@ subprojects {
 
     repositories {
         maven {
+            url = "http://127.0.0.1:8080/releases"
+        }
+        maven {
             name 'ParchmentMC'
             url 'https://ldtteam.jfrog.io/artifactory/parchmentmc/'
         }
         maven {
-            url = "http://127.0.0.1:8080/releases"
+            url "https://maven.neoforged.net/releases"
         }
 
     }
@@ -42,12 +43,11 @@ subprojects {
     dependencies {
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
         mappings loom.layered() {
-                  officialMojangMappings()
-                  parchment("org.parchmentmc.data:parchment-${rootProject.minecraft_version}:2023.09.03@zip")
+            officialMojangMappings()
+            parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:2024.07.28@zip")
         }
         configurations.configureEach {
-            //钠需要lwjgl3.3.1😅
-            resolutionStrategy{
+            resolutionStrategy {
                 force "org.lwjgl:lwjgl:$lwjglVersion"
                 force "org.lwjgl:lwjgl-glfw:$lwjglVersion"
                 force "org.lwjgl:lwjgl-opengl:$lwjglVersion"
@@ -55,20 +55,27 @@ subprojects {
                 force "org.lwjgl:lwjgl-stb:$lwjglVersion"
                 force "org.lwjgl:lwjgl-jemalloc:$lwjglVersion"
                 force "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
+                force "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
+                force "org.lwjgl:lwjgl-freetype:$lwjglVersion"
+                force "org.lwjgl:lwjgl-shaderc:$lwjglVersion"
             }
         }
+        implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
+        implementation("org.lwjgl:lwjgl-shaderc")
+        implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
+        implementation "org.lwjgl:lwjgl-glfw:$lwjglVersion"
     }
 
 
     java {
         withSourcesJar()
 
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     tasks.withType(JavaCompile).configureEach {
-        it.options.release = 17
+        it.options.release = 21
     }
 
     publishing {

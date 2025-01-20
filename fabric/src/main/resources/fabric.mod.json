@@ -3,22 +3,23 @@
   "id": "super_resolution",
   "version": "${version}",
   "name": "Super Resolution",
-  "description": "",
+  "description": "喵",
   "authors": [
-    ""
+    "187J3X1"
   ],
   "contact": {
-    "homepage": ""
+    "homepage": "https://github.com/187J3X1-114514/superresolution",
+    "issues": "https://github.com/187J3X1-114514/superresolution/issues"
   },
   "license": "MIT",
-  "icon": "assets/super_resolution/icon.png",
-  "environment": "*",
+  "icon": "icon.png",
+  "environment": "client",
   "entrypoints": {
     "main": [
       "io.homo.superresolution.fabric.SuperResolutionFabric"
     ],
     "client": [
-      "io.homo.superresolution.fabric.client.SuperResolutionFabricClient"
+      "io.homo.superresolution.fabric.SuperResolutionFabricClient"
     ],
     "modmenu": [
       "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
@@ -27,15 +28,12 @@
   "mixins": [
     "super_resolution.mixins.json",
     "super_resolution-fabric.mixins.json",
-    "super_resolution-fabric-compat.mixins.json",
-    "super_resolution-resolutioncontrol-common.mixins.json",
-    "super_resolution-resolutioncontrol-fabric.mixins.json",
-    "super_resolution-imgui-common.mixins.json"
+    "super_resolution-fabric-compat.mixins.json"
   ],
   "depends": {
     "fabricloader": "*",
-    "minecraft": "~1.20.1",
-    "java": ">=17",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
     "architectury": "*",
     "fabric-api": "*"
   },

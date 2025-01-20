@@ -2,19 +2,19 @@ pluginManagement {
     repositories {
 
         mavenLocal()
-        //maven {
-        //    url = 'http://127.0.0.1:8080/releases'
-        //}
-        //maven {
-        //    name = 'Fabric'
-        //    url = 'http://127.0.0.1:8080/releases'
-        //}
-        //maven {
-        //    name = 'Forge'
-        //    url = 'http://127.0.0.1:8080/releases'
-        //}
-        //maven { url 'https://maven.aliyun.com/repository/central' }
-        //maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven {
+            url = 'http://127.0.0.1:8080/releases'
+        }
+        maven {
+            name = 'Fabric'
+            url = 'http://127.0.0.1:8080/releases'
+        }
+        maven {
+            name = 'Forge'
+            url = 'http://127.0.0.1:8080/releases'
+        }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven {
             name 'ParchmentMC'
             url 'https://ldtteam.jfrog.io/artifactory/parchmentmc/'
@@ -26,7 +26,7 @@ pluginManagement {
         }
 
         maven {
-            url "https://maven.minecraftforge.net/"
+            url "https://maven.neoforged.net/releases"
         }
         maven {
             url "https://libraries.minecraft.net"
@@ -35,7 +35,7 @@ pluginManagement {
             url "https://maven.fabricmc.net/"
         }
 
-        //maven { url "https://crystal.app.lss233.com/repositories/minecraft/" }
+        maven { url "https://crystal.app.lss233.com/repositories/minecraft/" }
         gradlePluginPortal()
     }
 }
@@ -44,4 +44,5 @@ rootProject.name = 'super_resolution'
 
 include 'common'
 include 'fabric'
-include 'forge'
+include 'neoforge'
+

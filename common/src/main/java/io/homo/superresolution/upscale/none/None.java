@@ -1,32 +1,33 @@
 package io.homo.superresolution.upscale.none;
 
-import io.homo.superresolution.resolutioncontrol.ResolutionControl;
+import io.homo.superresolution.render.MinecraftRenderingStates;
+import io.homo.superresolution.render.gl.framebuffer.OnlyTextureIdFrameBuffer;
+import io.homo.superresolution.render.gl.texture.Texture;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
-import io.homo.superresolution.render.gl.utils.OnlyTexIdFrameBuffer;
 
-import static io.homo.superresolution.render.gl.GlConst.*;
+import static io.homo.superresolution.render.gl.GlConst.GL_NEAREST;
 
 public class None extends AbstractAlgorithm {
     public int upscaleId = GL_NEAREST;
 
-    @Override
-    public void init() {
-        input = ResolutionControl.getInstance().getFramebuffer();
-        output = new OnlyTexIdFrameBuffer(input.getColorTextureId());
+    public static None create() {
+        return new None();
     }
 
     @Override
-    public boolean run(float frameTimeDelta) {
+    public void init() {
+        input = MinecraftRenderingStates.getRenderTarget();
+        output = new OnlyTextureIdFrameBuffer(input.getColorTextureId());
+    }
+
+    @Override
+    public boolean dispatch(float frameTimeDelta) {
         return true;
     }
 
     @Override
     public void blitToScreen(int width, int height) {
-        this.input.blitToScreen(width,height,true);
-    }
-
-    public static None create() {
-        return new None();
+        Texture.blitToScreen(input.width,input.height,width,height,this.input.getColorTextureId());
     }
 
     public void resize(int width, int height) {}
