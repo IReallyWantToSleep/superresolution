@@ -112,5 +112,4 @@ public class GlConst {
     public static final int GL_COMPUTE_SHADER = 37305;
     public static final int GL_MAJOR_VERSION = 33307;
     public static final int GL_MINOR_VERSION = 33308;
-
 }

@@ -12,7 +12,6 @@ import java.util.List;
 @Mixin(DebugScreenOverlay.class)
 public class DebugMixin {
 
-    //emb用的redirect，难蚌
     @Inject(method = "getSystemInformation", at = @At(value = "RETURN"), cancellable = true)
     private void redirectRightTextEarly(CallbackInfoReturnable<List<String>> cir) {
         List<String> strings = cir.getReturnValue();

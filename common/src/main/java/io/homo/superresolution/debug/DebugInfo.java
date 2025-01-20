@@ -3,24 +3,17 @@ package io.homo.superresolution.debug;
 import net.minecraft.Util;
 
 public class DebugInfo {
-    private static float frameTimeDelta = 16.6f;
-    private static float frameTimeDelta_algo = 16.6f;
-
-    private static String text_frameTimeDelta = "";
-    private static String text_frameTimeDelta_algo = "";
-
     private static final int updateTime = 50;
+    private static float frameTimeDelta = 16.6f;
+    private static float frameTimeDeltaAlgo = 16.6f;
+    private static String textFrameTimeDelta = "";
+    private static String textFrameTimeDeltaAlgo = "";
     private static long lastUpdateTime = Util.getMillis();
-
     private static float _frameTimeDelta = 16.6f;
-    private static float _frameTimeDelta_algo = 16.6f;
+    private static float _frameTimeDeltaAlgo = 16.6f;
 
-    public static String getTextFrameTimeDelta() {
-        return text_frameTimeDelta;
-    }
-
-    public static String getTextFrameTimeDeltaAlgo() {
-        return text_frameTimeDelta_algo;
+    public static float getFrameTimeDelta() {
+        return frameTimeDelta;
     }
 
     public static void setFrameTimeDelta(float frameTimeDelta) {
@@ -28,17 +21,29 @@ public class DebugInfo {
         update();
     }
 
-    public static void setFrameTimeDelta_algo(float frameTimeDelta_fsr) {
-        _frameTimeDelta_algo = frameTimeDelta_fsr;
+    public static float getFrameTimeDeltaAlgo() {
+        return frameTimeDeltaAlgo;
+    }
+
+    public static void setFrameTimeDeltaAlgo(float frameTimeDelta_fsr) {
+        _frameTimeDeltaAlgo = frameTimeDelta_fsr;
         update();
+    }
+
+    public static String getTextFrameTimeDelta() {
+        return textFrameTimeDelta;
+    }
+
+    public static String getTextFrameTimeDeltaAlgo() {
+        return textFrameTimeDeltaAlgo;
     }
 
    private static void update(){
         if (Util.getMillis()-lastUpdateTime > updateTime){
             frameTimeDelta = _frameTimeDelta;
-            frameTimeDelta_algo = _frameTimeDelta_algo;
-            text_frameTimeDelta = "世界渲染用时 "+ frameTimeDelta+"ms "+Math.round(1000/frameTimeDelta)+"fps";
-            text_frameTimeDelta_algo = "升采样算法计算用时 "+ frameTimeDelta_algo +"ms "+Math.round(1000/ frameTimeDelta_algo)+"fps";
+            frameTimeDeltaAlgo = _frameTimeDeltaAlgo;
+            textFrameTimeDelta = "世界渲染用时 "+ frameTimeDelta+"ms "+Math.round(1000/frameTimeDelta)+"fps";
+            textFrameTimeDeltaAlgo = "超分辨率算法用时 "+ frameTimeDeltaAlgo +"ms "+Math.round(1000/ frameTimeDeltaAlgo)+"fps";
             lastUpdateTime = Util.getMillis();
         }
    }

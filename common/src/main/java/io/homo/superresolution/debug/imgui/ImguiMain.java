@@ -5,20 +5,25 @@ import imgui.ImGuiIO;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
-import io.homo.superresolution.impl.CanDestroy;
+import io.homo.superresolution.impl.Destroyable;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
-public class ImguiMain implements CanDestroy {
+public class ImguiMain implements Destroyable {
     public static final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
     public static final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
+    private static ImguiMain instance;
     public final ImGuiLayer imguiLayer = new ImGuiLayer();
     public boolean initDone = false;
-    private static ImguiMain instance;
-    public ImguiMain(){
+
+    public ImguiMain() {
         instance = this;
         initImGui();
         initDone = true;
+    }
+
+    public static ImguiMain getInstance() {
+        return instance;
     }
 
     private void initImGui() {
@@ -28,7 +33,6 @@ public class ImguiMain implements CanDestroy {
         io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
         imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), true);
         imGuiGl3.init();
-
     }
 
     public void destroy() {
@@ -38,12 +42,11 @@ public class ImguiMain implements CanDestroy {
         ImGui.destroyContext();
     }
 
-    public void render(){
+    public void render() {
         if (!initDone) return;
         imGuiGlfw.newFrame();
         imGuiGl3.newFrame();
         ImGui.newFrame();
-
         imguiLayer.imgui();
         ImGui.render();
         imGuiGl3.renderDrawData(ImGui.getDrawData());
@@ -53,8 +56,5 @@ public class ImguiMain implements CanDestroy {
             ImGui.renderPlatformWindowsDefault();
             GLFW.glfwMakeContextCurrent(backupWindowPtr);
         }
-    }
-    public static ImguiMain getInstance() {
-        return instance;
     }
 }

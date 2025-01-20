@@ -1,12 +1,27 @@
 #version 460 core
 
-in vec4 cur_Position;
-in vec4 last_Position;
+in vec3 in_position;
+uniform vec2 pixelSize;
+uniform float depth;
+uniform mat4 projectionInverse;
+uniform mat4 modelViewInverse;
+uniform mat4 lastModelView;
+uniform mat4 lastProjection;
+uniform mat4 ModelViewMat;
+uniform mat4 ProjMat;
+out vec2 FragColor;
 
-out vec4 FragColor;
+vec2 calcMotion(vec3 Position) {
+    vec4 cur_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    cur_Position /= cur_Position.w;
+    vec4 last_Position = lastProjection * lastModelView * vec4(Position, 1.0);
+    last_Position /= last_Position.w;
+    vec2 motion = (last_Position.xy - cur_Position.xy);
 
+    return motion;
+}
 
 void main() {
-    vec2 motion = ((last_Position.xy / last_Position.w) - (cur_Position.xy / cur_Position.w)) * 0.5;
-    FragColor = vec4(motion.xy,0.0,1.0);
+    // Call calcMotion with the input position to get the motion vector
+    FragColor = calcMotion(in_position);
 }
