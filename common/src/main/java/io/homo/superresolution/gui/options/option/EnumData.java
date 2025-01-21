@@ -1,6 +1,7 @@
 package io.homo.superresolution.gui.options.option;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 
 public class EnumData {
@@ -23,6 +24,20 @@ public class EnumData {
         } catch (IndexOutOfBoundsException e) {
             return null;
         }
+    }
+
+    public EnumInfo<?> getEnum(String key) {
+        for (EnumInfo<?> e : this.enums) {
+            if (Objects.equals(e.key, key)) return e;
+        }
+        return null;
+    }
+
+    public EnumInfo<?> getEnum(Object value) {
+        for (EnumInfo<?> e : this.enums) {
+            if (Objects.equals(e.value, value)) return e;
+        }
+        return null;
     }
 
     public int indexOf(EnumInfo<Object> e) {
