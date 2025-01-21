@@ -85,7 +85,7 @@ public class MinecraftRenderingStates {
     }
 
     public static float getCurrentScaleFactor() {
-        return shouldScale ? Config.getRenderScaleFactor() : 1;
+        return shouldScale && Config.enableUpscale ? Config.getRenderScaleFactor() : 1;
     }
 
     private static void initMinecraftRenderTarget() {

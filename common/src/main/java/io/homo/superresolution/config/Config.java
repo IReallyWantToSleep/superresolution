@@ -7,13 +7,14 @@ import net.minecraft.client.Minecraft;
 
 
 public class Config {
+    public static boolean enableUpscale = true;
     private static float upscaleRatio = 1.7f;
     private static AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
     private static float renderScaleFactor = 1 / upscaleRatio;
-    private static float FSR1_sharpness = 0.2f;
+    private static float sharpness = 0.2f;
 
     public static float getRenderScaleFactor() {
-        return renderScaleFactor;
+        return enableUpscale ? renderScaleFactor : 1;
     }
 
     public static float getUpscaleRatio() {
@@ -37,11 +38,11 @@ public class Config {
     }
 
     public static float getSharpness() {
-        return FSR1_sharpness;
+        return sharpness;
     }
 
-    public static void setSharpness(float FSR1_sharpness) {
-        Config.FSR1_sharpness = FSR1_sharpness;
+    public static void setSharpness(float sharpness) {
+        Config.sharpness = sharpness;
     }
 
     public static double getMinUpscaleRatio() {
@@ -49,5 +50,25 @@ public class Config {
         double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
         double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
         return Math.max(maxWidth, maxHeight);
+    }
+
+    public static ConfigData buildData() {
+        ConfigData data = new ConfigData();
+        data.sharpness = sharpness;
+        data.upscaleAlgo = ConfigData.algoEnumToString(getUpscaleAlgo());
+        data.upscaleRatio = upscaleRatio;
+        data.enableUpscale = enableUpscale;
+        return data;
+    }
+
+    public static void fromData(ConfigData data) {
+        sharpness = data.sharpness;
+        upscaleAlgo = ConfigData.stringToAlgoEnum(data.upscaleAlgo);
+        upscaleRatio = data.upscaleRatio;
+        enableUpscale = data.enableUpscale;
+    }
+
+    public static void setEnableUpscale(boolean enableUpscale) {
+        Config.enableUpscale = enableUpscale;
     }
 }

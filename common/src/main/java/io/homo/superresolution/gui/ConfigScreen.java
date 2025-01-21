@@ -2,6 +2,7 @@ package io.homo.superresolution.gui;
 
 import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.config.Config;
+import io.homo.superresolution.config.ConfigFile;
 import io.homo.superresolution.gui.options.OptionsList;
 import io.homo.superresolution.gui.options.option.BooleanOption;
 import io.homo.superresolution.gui.options.option.EnumData;
@@ -100,6 +101,7 @@ public class ConfigScreen extends Screen {
     }
 
     private void addTestOption() {
+        Config.fromData(ConfigFile.read());
         BooleanOption useUpscale = (BooleanOption) new BooleanOption()
                 .setLabel("启用超分辨率")
                 .setKey("useUpscale")
@@ -160,19 +162,16 @@ public class ConfigScreen extends Screen {
             );
         }
         this.optionsList.setSavingRunnable((data) -> {
-            if (useUpscale.getValue()) {
-                Config.setUpscaleRatio(upscaleRatio.getValue().floatValue());
-                Config.setUpscaleAlgo((AlgorithmType) algoType.getValue().value);
-                Config.setSharpness(sharpnessRatio.getValue().floatValue());
-            } else {
-                Config.setUpscaleRatio(1);
-                Config.setUpscaleAlgo(AlgorithmType.NONE);
-            }
+            Config.setEnableUpscale(useUpscale.getValue());
+            Config.setUpscaleRatio(upscaleRatio.getValue().floatValue());
+            Config.setUpscaleAlgo((AlgorithmType) algoType.getValue().value);
+            Config.setSharpness(sharpnessRatio.getValue().floatValue());
             MinecraftRenderingStates.onResolutionChanged();
             MinecraftRenderingStates.resizeMinecraftRenderTarget();
+            ConfigFile.write();
         });
-        useUpscale.setValue(true);
-        algoType.setValue(algoType.getEnumData().getEnum(1));
+        useUpscale.setValue(Config.enableUpscale);
+        algoType.setValue(algoType.getEnumData().getEnum(Config.getUpscaleAlgo()));
         upscaleRatio.setValue((double) Config.getUpscaleRatio());
         sharpnessRatio.setValue((double) Config.getSharpness());
         this.optionsList.addOption(useUpscale);
