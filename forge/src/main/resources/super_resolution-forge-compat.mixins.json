@@ -2,10 +2,10 @@
   "required": true,
   "package": "io.homo.superresolution.forge.mixin.compat",
   "plugin": "io.homo.superresolution.forge.mixin.compat.CompatMixinPlugin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
-    "sodium.SodiumOptionsGUIMixin"
+    "embeddium.EmbeddiumOptionMixin"
   ],
   "mixins": [
   ],

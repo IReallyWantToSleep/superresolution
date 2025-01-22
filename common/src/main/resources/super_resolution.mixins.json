@@ -2,7 +2,7 @@
   "required": true,
   "package": "io.homo.superresolution.mixin",
   "plugin": "io.homo.superresolution.mixin.MixinPlugin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
     "core.GameRendererMixin",
@@ -16,6 +16,7 @@
     "debug.ImguiMixin",
     "debug.KeyboardHandlerMixin",
     "debug.TestMixin",
+    "gui.AbstractWidgetAccessor",
     "gui.GameRendererAccessor"
   ],
   "mixins": [

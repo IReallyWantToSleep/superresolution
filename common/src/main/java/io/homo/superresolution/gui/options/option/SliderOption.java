@@ -1,6 +1,7 @@
 package io.homo.superresolution.gui.options.option;
 
 import io.homo.superresolution.gui.Rect;
+import io.homo.superresolution.mixin.gui.AbstractWidgetAccessor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -15,7 +16,6 @@ import java.math.RoundingMode;
 public class SliderOption extends AbstractOption<Double> {
     private final EditBox editBox;
     protected double value = 0.0;
-    protected Rect rect;
     protected double min;
     protected double max;
     protected double step;
@@ -52,7 +52,7 @@ public class SliderOption extends AbstractOption<Double> {
         this.drawString(graphics, this.label, rect.x + 4, rect.getCenterY() - 4, color);
         this.renderSlider(graphics, mouseX, mouseY, partialTick, rect);
         this.renderEditBox(graphics, mouseX, mouseY, partialTick, rect);
-        this.renderTooltip();
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override
@@ -124,9 +124,9 @@ public class SliderOption extends AbstractOption<Double> {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double d) {
         if (!isVisibleAndNotDisabled()) return false;
-        return this.editBox.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return this.editBox.mouseScrolled(mouseX, mouseY, d);
     }
 
     @Override
@@ -205,7 +205,8 @@ public class SliderOption extends AbstractOption<Double> {
 
     protected void renderEditBox(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, Rect rect) {
         editBox.setPosition((int) (rect.width - (rect.width * 0.1) - 6), rect.y + 2);
-        editBox.setSize((int) (rect.width * 0.1), rect.height - 4);
+        editBox.setWidth((int) (rect.width * 0.1));
+        ((AbstractWidgetAccessor) editBox).setHeight(rect.height - 4);
         editBox.render(graphics, mouseX, mouseY, partialTick);
     }
 

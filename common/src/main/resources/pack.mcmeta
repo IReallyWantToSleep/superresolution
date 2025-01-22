@@ -1,6 +1,6 @@
 {
-    "pack": {
-        "description": "superresolution",
-        "pack_format": 34
-    }
+  "pack": {
+    "description": "superresolution",
+    "pack_format": 15
+  }
 }

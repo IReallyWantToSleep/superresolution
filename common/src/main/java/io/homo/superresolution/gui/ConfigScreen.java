@@ -39,24 +39,14 @@ public class ConfigScreen extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(guiGraphics);
+        guiGraphics.fill(guiRect.x, guiRect.y, guiRect.width, guiRect.height, FastColor.ARGB32.color(100, 0, 0, 0));
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         this.optionsList.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.okButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.saveButton.render(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.drawCenteredString(this.font, "超分辨率配置", this.width / 2, 6, FastColor.ARGB32.color(255, 255, 255, 255));
-    }
-
-    @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        if (this.minecraft != null) {
-            if (this.minecraft.level == null) {
-                this.renderPanorama(guiGraphics, partialTick);
-                this.renderBlurredBackground(partialTick);
-                this.renderMenuBackground(guiGraphics);
-            }
-        }
-        guiGraphics.fill(guiRect.x, guiRect.y, guiRect.width, guiRect.height, FastColor.ARGB32.color(100, 0, 0, 0));
     }
 
     @Override
@@ -155,7 +145,7 @@ public class ConfigScreen extends Screen {
             Minecraft.getInstance().getToasts().addToast(
                     SystemToast.multiline(
                             Minecraft.getInstance(),
-                            SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                            SystemToast.SystemToastIds.PERIODIC_NOTIFICATION,
                             Component.literal("警告"),
                             Component.literal("你的显卡不支持使用GL_KHR_shader_subgroup扩展，将自动禁用FSR2相关功能。")
                     )

@@ -2,7 +2,6 @@ package io.homo.superresolution.render.gl.texture;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import io.homo.superresolution.impl.Destroyable;
@@ -11,8 +10,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
 
-import static io.homo.superresolution.render.gl.GlConst.*;
 import static io.homo.superresolution.render.gl.Gl.*;
+import static io.homo.superresolution.render.gl.GlConst.*;
 
 public class Texture implements Destroyable, Resizable {
     public int id;
@@ -28,7 +27,7 @@ public class Texture implements Destroyable, Resizable {
         initializeTexture();
     }
 
-    public static void blitToScreen(int srcWidth, int srcHeight,int viewWidth, int viewHeight, int id){
+    public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, int id) {
         RenderSystem.assertOnRenderThread();
         GlStateManager._colorMask(true, true, true, false);
         GlStateManager._disableDepthTest();
@@ -38,7 +37,7 @@ public class Texture implements Destroyable, Resizable {
         ShaderInstance shaderInstance = minecraft.gameRenderer.blitShader;
         if (shaderInstance == null) return;
         shaderInstance.setSampler("DiffuseSampler", id);
-        Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float)viewWidth, (float)viewHeight, 0.0F, 1000.0F, 3000.0F);
+        Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float) viewWidth, (float) viewHeight, 0.0F, 1000.0F, 3000.0F);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
         if (shaderInstance.MODEL_VIEW_MATRIX != null) {
             shaderInstance.MODEL_VIEW_MATRIX.set((new Matrix4f()).translation(0.0F, 0.0F, -2000.0F));
@@ -47,12 +46,14 @@ public class Texture implements Destroyable, Resizable {
             shaderInstance.PROJECTION_MATRIX.set(matrix4f);
         }
         shaderInstance.apply();
-        BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-        bufferBuilder.addVertex(0.0f, 0.0f, 0.0f);
-        bufferBuilder.addVertex((float) 1, 0.0f, 0.0f);
-        bufferBuilder.addVertex((float) 1, (float) 1, 0.0f);
-        bufferBuilder.addVertex(0.0f, (float) 1, 0.0f);
-        BufferUploader.draw(bufferBuilder.buildOrThrow());
+        Tesselator tesselator = RenderSystem.renderThreadTesselator();
+        BufferBuilder bufferBuilder = tesselator.getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        bufferBuilder.vertex(0.0, viewHeight, 0.0).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(viewWidth, viewHeight, 0.0).uv(1f, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(viewWidth, 0.0, 0.0).uv(1f, 1f).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, 1f).color(255, 255, 255, 255).endVertex();
+        BufferUploader.draw(bufferBuilder.end());
         shaderInstance.clear();
         GlStateManager._depthMask(true);
         GlStateManager._colorMask(true, true, true, true);

@@ -44,7 +44,7 @@ subprojects {
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
         mappings loom.layered() {
             officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:2024.07.28@zip")
+            parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:${rootProject.parchmentmc_time}@zip")
         }
         configurations.configureEach {
             resolutionStrategy {

@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 public class EnumOption extends AbstractOption<EnumData.EnumInfo<?>> {
     protected EnumData enumData;
-    protected Rect rect;
     protected int currentIndex = 0;
     private EnumData.EnumInfo<?> value;
 
@@ -34,7 +33,7 @@ public class EnumOption extends AbstractOption<EnumData.EnumInfo<?>> {
             String text = this.value.getDisplayName();
             this.drawString(graphics, text, rect.width - this.font.width(text) - 7, rect.getCenterY() - 4, color);
         }
-        this.renderTooltip();
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override

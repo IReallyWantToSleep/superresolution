@@ -2,39 +2,16 @@ package io.homo.superresolution.mixin.core;
 
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.SuperResolution;
-import io.homo.superresolution.upscale.AlgorithmManager;
-import io.homo.superresolution.upscale.AlgorithmType;
-import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import org.joml.Matrix4f;
-import org.lwjgl.system.NativeType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.gen.Accessor;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import javax.annotation.Nullable;
-import java.nio.IntBuffer;
-import java.util.Iterator;
 
 import static io.homo.superresolution.render.gl.Gl.*;
 import static io.homo.superresolution.render.gl.GlConst.*;
 
 @Mixin(value = MainTarget.class)
-public class MainTargetMixin extends RenderTarget{
+public class MainTargetMixin extends RenderTarget {
 
     public MainTargetMixin(boolean useDepth) {
         super(useDepth);
@@ -45,7 +22,7 @@ public class MainTargetMixin extends RenderTarget{
      * @reason 使用glTexStorage2D创建纹理
      */
     @Overwrite
-    private void createFrameBuffer(int width, int height){
+    private void createFrameBuffer(int width, int height) {
         RenderSystem.assertOnRenderThreadOrInit();
         int maxSupportedTextureSize = RenderSystem.maxSupportedTextureSize();
         if (width > 0 && width <= maxSupportedTextureSize && height > 0 && height <= maxSupportedTextureSize) {

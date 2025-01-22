@@ -1,9 +1,9 @@
 package io.homo.superresolution.mixin.core;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.render.MinecraftRenderingStates;
 import io.homo.superresolution.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
@@ -20,10 +20,10 @@ public class LevelRendererMixin {
     @Shadow
     private PostChain entityEffect;
 
-    @Inject(method = "renderLevel",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;constantAmbientLight()Z"))
-    private void captureMatrix4f(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci){
+    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;constantAmbientLight()Z"))
+    private void captureMatrix4f(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
         AlgorithmManager.setProjectionMatrix(projectionMatrix);
-        AlgorithmManager.setModelViewMatrix(frustumMatrix);
+        AlgorithmManager.setModelViewMatrix(new Matrix4f().identity());
     }
 
     @Inject(at = @At("RETURN"), method = "doEntityOutline")

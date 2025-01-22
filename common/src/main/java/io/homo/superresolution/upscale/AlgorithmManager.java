@@ -1,16 +1,15 @@
 package io.homo.superresolution.upscale;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.upscale.fsr1.FSR1;
 import io.homo.superresolution.upscale.fsr2.FSR2;
 import io.homo.superresolution.upscale.none.None;
 import io.homo.superresolution.upscale.utils.AlgorithmHelper;
 import org.joml.Matrix4f;
 
-public class AlgorithmManager{
+public class AlgorithmManager {
     public static AlgorithmHelper helper;
     public static AlgorithmParam param = new AlgorithmParam();
+
     static {
         helper = new AlgorithmHelper();
     }
@@ -23,14 +22,14 @@ public class AlgorithmManager{
         helper.resize(width, height);
     }
 
-    public static AbstractAlgorithm getAlgorithm(AlgorithmType type){
+    public static AbstractAlgorithm getAlgorithm(AlgorithmType type) {
         AbstractAlgorithm algo = null;
-        switch (type){
+        switch (type) {
             case FSR1 -> algo = FSR1.create();
             case FSR2 -> algo = FSR2.create();
             case NONE -> algo = None.create();
         }
-        if (algo != null){
+        if (algo != null) {
             algo.init();
         }
         return algo;
@@ -46,30 +45,34 @@ public class AlgorithmManager{
         return support;
     }
 
-    public static void setProjectionMatrix(Matrix4f cur){
+    public static void setProjectionMatrix(Matrix4f cur) {
         //SuperResolution.LOGGER.info(param.currentProjectionMatrix.toString());
-        if (param.lastProjectionMatrix == null){
+        if (param.lastProjectionMatrix == null) {
             param.lastProjectionMatrix = cur;
-        }else {
+        } else {
             param.lastProjectionMatrix = param.currentProjectionMatrix;
         }
         param.currentProjectionMatrix = cur;
     }
 
     public static void setModelViewMatrix(Matrix4f cur) {
-        if (param.lastModelViewMatrix == null){
+        if (param.lastModelViewMatrix == null) {
             param.lastModelViewMatrix = cur;
-        }else {
+        } else {
             param.lastModelViewMatrix = param.currentModelViewMatrix;
         }
         param.currentModelViewMatrix = cur;
     }
-    public static void setFov(double fov){param.fov = fov;}
-    public static class AlgorithmParam{
+
+    public static void setFov(double fov) {
+        param.fov = fov;
+    }
+
+    public static class AlgorithmParam {
         public Matrix4f lastProjectionMatrix;
         public Matrix4f currentProjectionMatrix;
         public Matrix4f currentModelViewMatrix;
         public Matrix4f lastModelViewMatrix;
-        public double fov;
+        public double fov = 11.4514f;
     }
 }
