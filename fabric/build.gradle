@@ -42,7 +42,6 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
     modImplementation fileTree(dir: 'libs', include: ['*.jar'])
-
     modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
