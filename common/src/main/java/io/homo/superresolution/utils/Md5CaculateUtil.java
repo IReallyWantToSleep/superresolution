@@ -42,6 +42,9 @@ public class Md5CaculateUtil {
                     libs.add(new NativeLib("libffx_fsr2_api_gl_x64","%s"));
                     libs.add(new NativeLib("libffx_fsr2_api_vk_x64","%s"));
                     libs.add(new NativeLib("libffx_fsr2_api_x64","%s"));
+                    libs.add(new NativeLib("libgcc_s_seh-1","%s"));
+                    libs.add(new NativeLib("libstdc++-6","%s"));
+                    libs.add(new NativeLib("libwinpthread-1","%s"));
                     libs.add(new NativeLib("libfsr2javalib","%s",1));
                 }
                 """
@@ -53,7 +56,11 @@ public class Md5CaculateUtil {
                         getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_gl_x64.dll")),
                         getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_vk_x64.dll")),
                         getMD5(new File("N:\\fsr2_opengl_java\\bin\\libffx_fsr2_api_x64.dll")),
-                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libfsr2javalib.dll"))
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libgcc_s_seh-1.dll")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libstdc++-6.dll")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libwinpthread-1.dll")),
+                        getMD5(new File("N:\\fsr2_opengl_java\\bin\\libfsr2javalib.dll")
+                        )
                 );
         System.out.println(s);
     }

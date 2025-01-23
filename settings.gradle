@@ -2,17 +2,6 @@ pluginManagement {
     repositories {
 
         mavenLocal()
-        maven {
-            url = 'http://127.0.0.1:8080/releases'
-        }
-        maven {
-            name = 'Fabric'
-            url = 'http://127.0.0.1:8080/releases'
-        }
-        maven {
-            name = 'Forge'
-            url = 'http://127.0.0.1:8080/releases'
-        }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven {
