@@ -41,9 +41,8 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
-    modImplementation files('libs/sodium-fabric-0.6.5+mc1.21.1.jar')
-    modImplementation files('libs/iris-fabric-1.8.1+mc1.21.1.jar')
-    modImplementation "curse.maven:iris+1.7.2-455508:5957825-sources-5957825-api-5957825"
+    modImplementation fileTree(dir: 'libs', include: ['*.jar'])
+
     modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
