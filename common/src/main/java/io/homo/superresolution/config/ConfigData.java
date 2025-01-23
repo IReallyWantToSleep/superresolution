@@ -27,7 +27,7 @@ public class ConfigData {
     }
 
     public void setUpscaleRatio(float upscaleRatio) {
-        this.upscaleRatio = (float) Math.clamp(upscaleRatio, Config.getMinUpscaleRatio(), 4.0);
+        this.upscaleRatio = (float) Math.min(Math.max(upscaleRatio, Config.getMinUpscaleRatio()), 4.0);
     }
 
     public void setUpscaleAlgo(String upscaleAlgo) {
@@ -35,7 +35,7 @@ public class ConfigData {
     }
 
     public void setSharpness(float sharpness) {
-        this.sharpness = (float) Math.clamp(sharpness, 0.0, 2.0);
+        this.sharpness = (float) Math.min(Math.max(sharpness, 0.0), 2.0);
     }
 
     public void setEnableUpscale(boolean enableUpscale) {

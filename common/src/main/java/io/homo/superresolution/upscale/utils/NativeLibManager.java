@@ -25,15 +25,18 @@ public class NativeLibManager {
     static {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")){
-            libs.add(new NativeLib("libffx_fsr2_api_gl_x64","27656ecba08aebf9147dc832daa651cb"));
-            libs.add(new NativeLib("libffx_fsr2_api_vk_x64","02aff2824af201ee6450db3017db453f"));
-            libs.add(new NativeLib("libffx_fsr2_api_x64","d7283d069bb6fc7790723a9abf111d09"));
-            libs.add(new NativeLib("libfsr2javalib","1b72a9e92586bd445b3d1e0a3a13abf3",1));
+            libs.add(new NativeLib("libffx_fsr2_api_gl_x64","adcb741d12279be5a7c7dcbe274ccab1"));
+            libs.add(new NativeLib("libffx_fsr2_api_vk_x64","77b3fc7b7ce5880d55279d3cf9784363"));
+            libs.add(new NativeLib("libffx_fsr2_api_x64","ec1baf03bf7ad3b696e411e9187e5d2d"));
+            libs.add(new NativeLib("libfsr2javalib","abd6d67844c0370d3792946e8b47b9f0",1));
         }else if (os.contains("windows")){
-            libs.add(new NativeLib("libffx_fsr2_api_gl_x64","496707a83bd3f79262f5fc50e17d2a05"));
-            libs.add(new NativeLib("libffx_fsr2_api_vk_x64","3eee59feeb79af575ad5b758e1d2e860"));
-            libs.add(new NativeLib("libffx_fsr2_api_x64","a2d724b8a93be89ecb9ca50c233831bc"));
-            libs.add(new NativeLib("libfsr2javalib","36225c55a45039a14508d9cd7a1d799c",1));
+            libs.add(new NativeLib("libffx_fsr2_api_gl_x64","4020c64716878e181ffa4125b8c16f65"));
+            libs.add(new NativeLib("libffx_fsr2_api_vk_x64","d21472d9390fb0bac6dc4c1b47f6b66a"));
+            libs.add(new NativeLib("libffx_fsr2_api_x64","8fabdd0b3455f34f3338ccf4be0d2102"));
+            libs.add(new NativeLib("libgcc_s_seh-1","97ba9d2d7090a7d265cefed7fa40b1bf"));
+            libs.add(new NativeLib("libstdc++-6","b1852a4962ea7185dc353fe6f0ab4553"));
+            libs.add(new NativeLib("libwinpthread-1","59a112452ceccba063cc85d0513fd0a7"));
+            libs.add(new NativeLib("libfsr2javalib","5c8d1a057783f0bc6f6c46d718b6d57b",1));
         }
     }
     public static void extract(String path) {
