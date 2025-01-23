@@ -30,12 +30,12 @@ public class NativeLibManager {
             libs.add(new NativeLib("libffx_fsr2_api_x64","ec1baf03bf7ad3b696e411e9187e5d2d"));
             libs.add(new NativeLib("libfsr2javalib","abd6d67844c0370d3792946e8b47b9f0",1));
         }else if (os.contains("windows")){
+            libs.add(new NativeLib("libwinpthread-1","59a112452ceccba063cc85d0513fd0a7"));
+            libs.add(new NativeLib("libgcc_s_seh-1","97ba9d2d7090a7d265cefed7fa40b1bf"));
+            libs.add(new NativeLib("libstdc++-6","b1852a4962ea7185dc353fe6f0ab4553"));
             libs.add(new NativeLib("libffx_fsr2_api_gl_x64","4020c64716878e181ffa4125b8c16f65"));
             libs.add(new NativeLib("libffx_fsr2_api_vk_x64","d21472d9390fb0bac6dc4c1b47f6b66a"));
             libs.add(new NativeLib("libffx_fsr2_api_x64","8fabdd0b3455f34f3338ccf4be0d2102"));
-            libs.add(new NativeLib("libgcc_s_seh-1","97ba9d2d7090a7d265cefed7fa40b1bf"));
-            libs.add(new NativeLib("libstdc++-6","b1852a4962ea7185dc353fe6f0ab4553"));
-            libs.add(new NativeLib("libwinpthread-1","59a112452ceccba063cc85d0513fd0a7"));
             libs.add(new NativeLib("libfsr2javalib","5c8d1a057783f0bc6f6c46d718b6d57b",1));
         }
     }
