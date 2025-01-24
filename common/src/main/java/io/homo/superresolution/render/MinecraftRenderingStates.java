@@ -18,8 +18,8 @@ import java.util.Set;
 更改游戏渲染世界的类
 */
 public class MinecraftRenderingStates {
-    private final static Minecraft minecraft;
-    private final static RenderTarget originRenderTarget;
+    private static Minecraft minecraft;
+    private static RenderTarget originRenderTarget;
     public static float frameTimeDelta = 16.6f;
     public static int currentWidth;
     public static int currentHeight;
@@ -27,9 +27,11 @@ public class MinecraftRenderingStates {
     private static boolean shouldScale = false;
     private static Set<RenderTarget> minecraftRenderTarget;
 
-    static {
+    public static void init() {
+        RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         originRenderTarget = minecraft.getMainRenderTarget();
+        /*
         RenderSystem.recordRenderCall(() -> {
             renderTarget = new FrameBuffer(true);
             renderTarget.resize(
@@ -37,10 +39,7 @@ public class MinecraftRenderingStates {
                     getRenderHeight(),
                     Minecraft.ON_OSX
             );
-        });
-    }
-
-    public static void init() {
+        });*/
         calculateSize();
         renderTarget = new StorageFrameBuffer(true);
         renderTarget.resize(
@@ -55,7 +54,7 @@ public class MinecraftRenderingStates {
     }
 
     public static RenderTarget getOriginRenderTarget() {
-        return renderTarget;
+        return originRenderTarget;
     }
 
     public static void setShouldScale(boolean scaling) {
