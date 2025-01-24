@@ -9,6 +9,7 @@ import io.homo.superresolution.debug.imgui.ImguiMain;
 import io.homo.superresolution.impl.Destroyable;
 import io.homo.superresolution.impl.Resizable;
 import io.homo.superresolution.render.GlVkInteropManager;
+import io.homo.superresolution.render.MinecraftRenderingStates;
 import io.homo.superresolution.render.gl.Gl;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
 import io.homo.superresolution.upscale.AlgorithmManager;
@@ -91,8 +92,13 @@ public final class SuperResolution implements Resizable, Destroyable {
         }
     }
 
-    public static void initAlgo() {
+    public static void initRendering() {
         if (!gameIsLoad) return;
+        RenderSystem.assertOnRenderThread();
+        MinecraftRenderingStates.init();
+    }
+
+    public static void createAlgo(){
         currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
         defaultAlgorithm.init();
     }

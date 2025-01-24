@@ -30,7 +30,7 @@ subprojects {
 
         maven {
             name 'ParchmentMC'
-            url 'https://ldtteam.jfrog.io/artifactory/parchmentmc/'
+            url 'https://maven.parchmentmc.org/'
         }
         maven {
             url "https://maven.neoforged.net/releases"
@@ -42,7 +42,7 @@ subprojects {
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
         mappings loom.layered() {
             officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:2024.07.28@zip")
+            parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:2024.11.17@zip")
         }
         configurations.configureEach {
             resolutionStrategy {
