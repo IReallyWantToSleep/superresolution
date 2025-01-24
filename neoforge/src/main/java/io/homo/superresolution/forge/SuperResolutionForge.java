@@ -16,6 +16,5 @@ public final class SuperResolutionForge {
         ModLoadingContext.get().registerExtensionPoint(IConfigScreenFactory.class, () -> (mc, screen) -> ConfigScreenBuilder.create().build(screen));
         mod = new SuperResolution();
         SuperResolution.preInit();
-
     }
 }
