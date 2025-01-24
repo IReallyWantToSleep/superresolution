@@ -38,5 +38,5 @@ jobs:
           name: superresolution-build
           path: |
             build/
-            neoforge/build/libs/
+            forge/build/libs/
             fabric/build/libs/
