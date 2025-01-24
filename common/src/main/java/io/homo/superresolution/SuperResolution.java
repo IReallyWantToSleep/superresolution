@@ -93,7 +93,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void initRendering() {
-        if (!gameIsLoad) return;
         RenderSystem.assertOnRenderThread();
         MinecraftRenderingStates.init();
     }
