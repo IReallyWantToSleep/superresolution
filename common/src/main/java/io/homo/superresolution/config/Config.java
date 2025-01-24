@@ -34,7 +34,7 @@ public class Config {
         Config.upscaleAlgo = upscaleAlgo;
         SuperResolution.algorithmType = Config.upscaleAlgo;
         if (SuperResolution.currentAlgorithm != null) SuperResolution.currentAlgorithm.destroy();
-        SuperResolution.initAlgo();
+        SuperResolution.createAlgo();
     }
 
     public static float getSharpness() {

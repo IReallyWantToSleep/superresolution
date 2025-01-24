@@ -119,7 +119,6 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
-        this.input.resize(width,height, Minecraft.ON_OSX);
         this.fsr1TempTexture.resize(width,height);
         this.output.resize(width,height);
     }

@@ -26,7 +26,7 @@ public class MinecraftMixin {
     @Inject(at=@At(value = "RETURN"),method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci){
         SuperResolution.gameIsLoad = true;
-        SuperResolution.initAlgo();
+        //SuperResolution.initAlgo();
     }
 
     @Inject(at=@At(value = "TAIL"),method = "<init>")

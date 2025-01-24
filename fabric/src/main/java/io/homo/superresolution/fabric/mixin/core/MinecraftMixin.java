@@ -1,5 +1,8 @@
 package io.homo.superresolution.fabric.mixin.core;
 
+import com.mojang.blaze3d.pipeline.MainTarget;
+import io.homo.superresolution.SuperResolution;
+import io.homo.superresolution.fabric.SuperResolutionFabricClient;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,5 +14,9 @@ public class MinecraftMixin {
 
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V"), method = "<init>")
     private void onStart(CallbackInfo ci) {
+        SuperResolution.mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
+        SuperResolution.initRendering();
+        SuperResolution.createAlgo();
+        SuperResolutionFabricClient.mod.init();
     }
 }

@@ -17,6 +17,5 @@ public final class SuperResolutionForge {
         ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
         mod = new SuperResolution();
         SuperResolution.preInit();
-
     }
 }

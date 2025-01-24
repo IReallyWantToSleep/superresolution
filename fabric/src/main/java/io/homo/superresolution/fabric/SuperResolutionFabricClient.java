@@ -12,9 +12,5 @@ public final class SuperResolutionFabricClient implements ClientModInitializer {
     public void onInitializeClient() {
         SuperResolution.preInit();
         mod = new SuperResolution();
-        RenderSystem.recordRenderCall(()->{
-            SuperResolution.mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
-            SuperResolutionFabricClient.mod.init();
-        });
     }
 }
