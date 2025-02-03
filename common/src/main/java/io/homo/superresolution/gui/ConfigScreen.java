@@ -135,6 +135,11 @@ public class ConfigScreen extends Screen {
                                 .setValue(AlgorithmType.FSR1)
                                 .setKey("fsr1") : null
                         )
+                        .addEnum(AlgorithmManager.isSupportAlgorithm(AlgorithmType.NIS) ? new EnumData.EnumInfo<>()
+                                .setDisplayName("NVIDIA Image Scaling")
+                                .setValue(AlgorithmType.NIS)
+                                .setKey("nis") : null
+                        )
                         .addEnum(AlgorithmManager.isSupportAlgorithm(AlgorithmType.FSR2) ? new EnumData.EnumInfo<>()
                                 .setDisplayName("FSR2 (正在开发) (不稳定)")
                                 .setValue(AlgorithmType.FSR2)

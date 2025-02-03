@@ -13,6 +13,7 @@ public class ConfigData {
         return switch (e) {
             case FSR1 -> "fsr1";
             case FSR2 -> "fsr2";
+            case NIS -> "nis";
             case NONE -> "none";
         };
     }
@@ -20,6 +21,7 @@ public class ConfigData {
     public static AlgorithmType stringToAlgoEnum(String e) {
         return switch (e) {
             case "fsr1" -> AlgorithmType.FSR1;
+            case "nis" -> AlgorithmType.NIS;
             case "fsr2" -> AlgorithmType.FSR2;
             case "none" -> AlgorithmType.NONE;
             default -> AlgorithmType.FSR1;

@@ -5,7 +5,6 @@ import io.homo.superresolution.render.gl.Gl;
 import io.homo.superresolution.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
 
-
 public class Config {
     public static boolean enableUpscale = true;
     private static float upscaleRatio = 1.7f;

@@ -10,8 +10,8 @@ import io.homo.superresolution.render.gl.framebuffer.MotionVectorsFrameBuffer;
 import io.homo.superresolution.render.gl.shader.GeneralShaderProgram;
 import io.homo.superresolution.render.gl.texture.Texture;
 import io.homo.superresolution.upscale.AlgorithmManager;
-import io.homo.superresolution.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.upscale.utils.NativeLibManager;
+import io.homo.superresolution.utils.FileReadHelper;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -33,8 +33,8 @@ public class FSR2Helper implements Resizable, Destroyable {
         motionVectorsFBO.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         motionVectorsTexture = new Texture((int) (SuperResolution.getMinecraftWidth() * Config.getRenderScaleFactor()), (int) (SuperResolution.getMinecraftHeight() * Config.getRenderScaleFactor()), GL_RG16F);
         motionVectorsShader = (GeneralShaderProgram) GeneralShaderProgram.create()
-                .addAllFragShaderTextList(AlgorithmHelper.readText("/shader/calc_motion_vector.fsh"))
-                .addAllVertShaderTextList(AlgorithmHelper.readText("/shader/calc_motion_vector.vsh"))
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/calc_motion_vector.fsh"))
+                .addAllVertShaderTextList(FileReadHelper.readText("/shader/calc_motion_vector.vsh"))
                 .setShaderName("motionVectorsShader")
                 .build()
                 .compileShader();

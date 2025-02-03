@@ -45,55 +45,42 @@ public class VkValidationLayers implements Destroyable {
         }
     }
 
-    private int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
-            String message = callbackData.pMessageString();
-
-            switch (messageSeverity) {
-                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-                    VkApplication.LOGGER.trace("Validation layer: {}", message);
-                    break;
-                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-                    VkApplication.LOGGER.info("Validation layer: {}", message);
-                    break;
-                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-                    VkApplication.LOGGER.warn("Validation layer: {}", message);
-                    break;
-                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-                    VkApplication.LOGGER.error("Validation layer: {}", message);
-                    break;
-                default:
-                    VkApplication.LOGGER.debug("Validation layer: {}", message);
-                    break;
-            }
+    public static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
+        VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
+        String message = callbackData.pMessageString();
+        switch (messageSeverity) {
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+                VkApplication.LOGGER.warn("Validation layer: {}", message);
+                break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+                VkApplication.LOGGER.error("Validation layer: {}", message);
+                break;
+            default:
+                VkApplication.LOGGER.info("Validation layer: {}", message);
+                break;
         }
         return VK_FALSE;
     }
 
     private int createDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT createInfo,
-                                                    VkAllocationCallbacks allocationCallbacks, LongBuffer pDebugMessenger) {
-
+                                             LongBuffer pDebugMessenger) {
         if (vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT") != NULL) {
-            return vkCreateDebugUtilsMessengerEXT(instance, createInfo, allocationCallbacks, pDebugMessenger);
+            return vkCreateDebugUtilsMessengerEXT(instance, createInfo, null, pDebugMessenger);
         }
-
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
-    private void destroyDebugUtilsMessengerEXT(VkInstance instance, long debugMessenger, VkAllocationCallbacks allocationCallbacks) {
-
+    private void destroyDebugUtilsMessengerEXT(VkInstance instance, long debugMessenger) {
         if (vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT") != NULL) {
-            vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, allocationCallbacks);
+            vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, null);
         }
-
     }
 
     public void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo) {
         debugCreateInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
         debugCreateInfo.messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
         debugCreateInfo.messageType(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
-        debugCreateInfo.pfnUserCallback(this::debugCallback);
+        debugCreateInfo.pfnUserCallback(VkValidationLayers::debugCallback);
     }
 
     public void setupDebugMessenger() {
@@ -101,7 +88,7 @@ public class VkValidationLayers implements Destroyable {
             VkDebugUtilsMessengerCreateInfoEXT createInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
             populateDebugMessengerCreateInfo(createInfo);
             LongBuffer pDebugMessenger = stack.longs(VK_NULL_HANDLE);
-            if(createDebugUtilsMessengerEXT(application.instance, createInfo, null, pDebugMessenger) != VK_SUCCESS) {
+            if(createDebugUtilsMessengerEXT(application.instance, createInfo, pDebugMessenger) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to set up debug messenger");
             }
             debugMessenger = pDebugMessenger.get(0);
@@ -125,6 +112,6 @@ public class VkValidationLayers implements Destroyable {
 
     @Override
     public void destroy() {
-        destroyDebugUtilsMessengerEXT(application.instance,debugMessenger,null);
+        destroyDebugUtilsMessengerEXT(application.instance,debugMessenger);
     }
 }

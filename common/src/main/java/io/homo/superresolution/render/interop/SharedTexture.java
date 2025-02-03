@@ -1,4 +1,253 @@
 package io.homo.superresolution.render.interop;
 
+import io.homo.superresolution.render.vulkan.TextureFormat;
+import io.homo.superresolution.render.vulkan.VkAllocatedImage;
+import io.homo.superresolution.render.vulkan.VkDeviceManager;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.*;
+
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+
+import static io.homo.superresolution.render.gl.Gl.*;
+import static io.homo.superresolution.render.gl.GlConst.*;
+import static io.homo.superresolution.render.vulkan.Utils.VK_CHECK;
+import static org.lwjgl.opengl.EXTMemoryObject.*;
+import static org.lwjgl.opengl.EXTMemoryObjectWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT;
+import static org.lwjgl.opengl.EXTMemoryObjectWin32.glImportMemoryWin32HandleEXT;
+import static org.lwjgl.opengl.GL11.GL_REPEAT;
+import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.vulkan.KHRExternalMemoryWin32.VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
+import static org.lwjgl.vulkan.KHRExternalMemoryWin32.vkGetMemoryWin32HandleKHR;
+import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.*;
+
 public class SharedTexture {
+    private final VkDeviceManager deviceManager;
+    public VkAllocatedImage vkImage = new VkAllocatedImage();
+    public long vkImageView;
+    public int glId = GL_NULL_HANDLE;
+    public TextureFormat format;
+    public int width;
+    public int height;
+    public SharedMemory memory = new SharedMemory();
+
+    public SharedTexture(int width, int height, TextureFormat format, VkDeviceManager deviceManager) {
+        this.deviceManager = deviceManager;
+        this.width = width;
+        this.height = height;
+        this.format = format;
+
+    }
+
+    private void VK_CreateImage() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkExternalMemoryImageCreateInfo imageCreatePNext = VkExternalMemoryImageCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
+                    .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+            VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)
+                    .pNext(imageCreatePNext)
+                    .flags(0)
+                    .imageType(VK_IMAGE_TYPE_2D)
+                    .format(TextureFormat.toVK(this.format))
+                    .extent(VkExtent3D.calloc(stack).set(width, height, 1))
+                    .mipLevels(1)
+                    .arrayLayers(1)
+                    .samples(VK_SAMPLE_COUNT_1_BIT)
+                    .tiling(VK_IMAGE_TILING_OPTIMAL)
+                    .usage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT)
+                    .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                    .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+
+            LongBuffer ptr = stack.callocLong(1);
+            VK_CHECK(vkCreateImage(deviceManager.device, imageInfo, null, ptr), "Failed to create Vulkan image");
+            vkImage.image = ptr.get(0);
+        }
+    }
+
+    private void VK_CreateImageMemory() {
+        if (vkImage.memory == VK_NULL_HANDLE) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
+                vkGetImageMemoryRequirements(deviceManager.device, vkImage.image, memReqs);
+                VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
+                        .image(vkImage.image);
+                VkExportMemoryAllocateInfo exportAllocInfo = VkExportMemoryAllocateInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO)
+                        .pNext(dedicatedAllocInfo.address())
+                        .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+                VkMemoryAllocateInfo memAllocInfo = VkMemoryAllocateInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
+                        .pNext(exportAllocInfo)
+                        .allocationSize(memReqs.size())
+                        .memoryTypeIndex(getMemoryTypeIndex(memReqs.memoryTypeBits(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+                LongBuffer ptr = stack.callocLong(1);
+                VK_CHECK(vkAllocateMemory(deviceManager.device, memAllocInfo, null, ptr), "Failed to allocate memory");
+                vkImage.memory = ptr.get(0);
+                vkImage.allocationSize = memReqs.size();
+                VK_CHECK(vkBindImageMemory(deviceManager.device, vkImage.image, vkImage.memory, 0), "Failed to bind memory");
+            }
+        }
+    }
+
+    private void VkGL_CreateSharedMemory(long memoryPtr, long size) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkMemoryGetWin32HandleInfoKHR memoryGetInfo = VkMemoryGetWin32HandleInfoKHR.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR)
+                    .memory(memoryPtr)
+                    .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+            PointerBuffer handlePtr = stack.callocPointer(1);
+            vkGetMemoryWin32HandleKHR(deviceManager.device, memoryGetInfo, handlePtr);
+            memory.vkHandle = handlePtr.get(0);
+
+            IntBuffer glMemory = stack.callocInt(1);
+            glCreateMemoryObjectsEXT(glMemory);
+            memory.glRef = glMemory.get(0);
+            glImportMemoryWin32HandleEXT(
+                    memory.glRef,
+                    size,
+                    GL_HANDLE_TYPE_OPAQUE_WIN32_EXT,
+                    memory.vkHandle
+            );
+        }
+    }
+
+    private int getMemoryTypeIndex(int typeBits, int properties) {
+        int memoryTypeCount = deviceManager.deviceMemoryProperties.memoryTypeCount();
+        for (int i = 0; i < memoryTypeCount; i++) {
+            if ((typeBits & 1) != 0 && (deviceManager.deviceMemoryProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
+                return i;
+            }
+            typeBits >>= 1;
+        }
+        return VK_MAX_MEMORY_TYPES;
+    }
+
+    private void VK_CreateSRV(long inputImage, int format) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkImageViewCreateInfo info = VkImageViewCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO)
+                    .image(inputImage)
+                    .viewType(VK_IMAGE_VIEW_TYPE_2D)
+                    .format(format)
+                    .subresourceRange(VkImageSubresourceRange.calloc(stack).aspectMask(VK_IMAGE_ASPECT_COLOR_BIT).layerCount(1).levelCount(1));
+
+            LongBuffer ptr = stack.callocLong(1);
+            VK_CHECK(vkCreateImageView(deviceManager.device, info, null, ptr), "Failed to create Vulkan image view");
+            vkImageView = ptr.get(0);
+        }
+    }
+
+    /*
+        private void VkGL_CreateSharedMemory(long memoryPtr, long size) {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkMemoryGetWin32HandleInfoKHR memoryGetInfo = VkMemoryGetWin32HandleInfoKHR.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR)
+                        .memory(memoryPtr)
+                        .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+                PointerBuffer handlePtr = stack.callocPointer(1);
+                vkGetMemoryWin32HandleKHR(deviceManager.device, memoryGetInfo, handlePtr);
+                memory.vkHandle = handlePtr.get(0);
+                IntBuffer glMemory = stack.callocInt(1);
+                glCreateMemoryObjectsEXT(glMemory);
+                memory.glRef = glMemory.get(0);
+                glImportMemoryWin32HandleEXT((int) memory.glRef, size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, memory.vkHandle);
+            }
+        }
+    */
+    private int GL_CreateGLTexture2D() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer texture = stack.callocInt(1);
+            glGenTextures(texture);
+            int textureId = texture.get(0);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textureId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            return textureId;
+        }
+    }
+
+    private void GL_CreateTextureStorage() {
+        if (memory.glRef != 0) {
+            glBindTexture(GL_TEXTURE_2D, glId);
+            glTextureStorageMem2DEXT(
+                    glId,
+                    1,
+                    TextureFormat.toGL(format),
+                    width,
+                    height,
+                    memory.glRef, // 直接使用 GLuint，无需强制转换
+                    0
+            );
+        } else {
+            throw new IllegalStateException("OpenGL memory object not initialized");
+        }
+    }
+
+    public void create() {
+        VK_CreateImage();
+        VK_CreateImageMemory();
+        VK_CreateSRV(vkImage.image, TextureFormat.toVK(format));
+        VkGL_CreateSharedMemory(vkImage.memory, vkImage.allocationSize);
+        glId = GL_CreateGLTexture2D();
+        GL_CreateTextureStorage();
+    }
+
+
+    public void clean() {
+        if (glId != GL_NULL_HANDLE) {
+            glDeleteTextures(glId);
+            glId = GL_NULL_HANDLE;
+        }
+        if (vkImageView != VK_NULL_HANDLE) {
+            vkDestroyImageView(deviceManager.device, vkImageView, null);
+            vkImageView = VK_NULL_HANDLE;
+        }
+        vkImage.destroy(deviceManager.device);
+    }
+
+    public void resize(int width, int height) {
+        // 显式解除纹理与内存的绑定
+        if (glId != GL_NULL_HANDLE) {
+            glDeleteTextures(glId);
+            glId = GL_NULL_HANDLE;
+        }
+        if (memory.glRef != 0) {
+            glDeleteMemoryObjectsEXT(new int[]{memory.glRef});
+            memory.glRef = 0;
+        }
+        // 清理 Vulkan 资源
+        clean();
+        // 更新尺寸并重新创建
+        this.width = width;
+        this.height = height;
+        create();
+    }
+
+    public void startWrite() {
+        glBindTexture(GL_TEXTURE_2D, glId);
+        //glTextureStorageMem2DEXT(glId, 1, TextureFormat.toGL(format), width, height, memory.glRef, 0);
+    }
+
+    public void endWrite() {
+    }
+
+    public void startRead() {
+
+    }
+
+    public void endRead() {
+        glBindTexture(GL_TEXTURE_2D, glId);
+        //glTextureStorageMem2DEXT(glId, 1, TextureFormat.toGL(format), width, height, memory.glRef, 0);
+    }
 }

@@ -18,78 +18,78 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: "dev.architectury.loom"
-    apply plugin: "architectury-plugin"
-    apply plugin: "maven-publish"
+    if (it.name != 'native-cpp') {
+        apply plugin: "dev.architectury.loom"
+        apply plugin: "architectury-plugin"
+        apply plugin: "maven-publish"
 
-    base {
-        archivesName = "$rootProject.archives_name-$project.name-$rootProject.minecraft_version"
-    }
-
-    repositories {
-        maven {
-            url = "http://127.0.0.1:8080/releases"
-        }
-        maven {
-            name 'ParchmentMC'
-            url 'https://ldtteam.jfrog.io/artifactory/parchmentmc/'
-        }
-        maven {
-            url "https://maven.neoforged.net/releases"
-        }
-
-    }
-
-    dependencies {
-        minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
-        mappings loom.layered() {
-            officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:${rootProject.parchmentmc_time}@zip")
-        }
-        configurations.configureEach {
-            resolutionStrategy {
-                force "org.lwjgl:lwjgl:$lwjglVersion"
-                force "org.lwjgl:lwjgl-glfw:$lwjglVersion"
-                force "org.lwjgl:lwjgl-opengl:$lwjglVersion"
-                force "org.lwjgl:lwjgl-openal:$lwjglVersion"
-                force "org.lwjgl:lwjgl-stb:$lwjglVersion"
-                force "org.lwjgl:lwjgl-jemalloc:$lwjglVersion"
-                force "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
-                force "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
-                force "org.lwjgl:lwjgl-freetype:$lwjglVersion"
-                force "org.lwjgl:lwjgl-shaderc:$lwjglVersion"
-            }
-        }
-        implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-        implementation("org.lwjgl:lwjgl-shaderc")
-        implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
-        implementation "org.lwjgl:lwjgl-glfw:$lwjglVersion"
-    }
-
-
-    java {
-        withSourcesJar()
-
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        it.options.release = 17
-    }
-
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-                artifactId = base.archivesName.get()
-                from components.java
-            }
+        base {
+            archivesName = "$rootProject.archives_name-$project.name-$rootProject.minecraft_version"
         }
 
         repositories {
+            maven {
+                name 'ParchmentMC'
+                url 'https://maven.parchmentmc.org/'
+            }
+            maven {
+                url "https://maven.neoforged.net/releases"
+            }
 
         }
+
+        dependencies {
+            minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
+            mappings loom.layered() {
+                officialMojangMappings()
+                parchment("org.parchmentmc.data:parchment-${rootProject.parchmentmc_minecraft_version}:${rootProject.parchmentmc_time}@zip")
+            }
+            configurations.configureEach {
+                resolutionStrategy {
+                    force "org.lwjgl:lwjgl:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-glfw:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-opengl:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-openal:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-stb:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-jemalloc:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-freetype:$lwjglVersion"
+                    force "org.lwjgl:lwjgl-shaderc:$lwjglVersion"
+                }
+            }
+            implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
+            implementation("org.lwjgl:lwjgl-shaderc")
+            implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
+            implementation "org.lwjgl:lwjgl-glfw:$lwjglVersion"
+        }
+
+
+        java {
+            withSourcesJar()
+
+            sourceCompatibility = JavaVersion.VERSION_17
+            targetCompatibility = JavaVersion.VERSION_17
+        }
+
+        tasks.withType(JavaCompile).configureEach {
+            it.options.release = 17
+        }
+
+        publishing {
+            publications {
+                mavenJava(MavenPublication) {
+                    artifactId = base.archivesName.get()
+                    from components.java
+                }
+            }
+
+            repositories {
+
+            }
+        }
     }
+
 }
 
 forgix {

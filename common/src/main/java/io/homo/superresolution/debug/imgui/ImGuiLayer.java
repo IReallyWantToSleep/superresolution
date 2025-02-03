@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 
 public class ImGuiLayer {
     public void imgui() {
-        if (!SuperResolution.gameIsLoad) return;
+        if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null) return;
         int width = 500;
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");

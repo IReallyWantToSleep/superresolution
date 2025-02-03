@@ -1,6 +1,7 @@
 package io.homo.superresolution.render.gl;
 
 public class GlConst {
+    public static final int GL_NULL_HANDLE = -1; //对标VK_NULL_HANDLE（
     public static final int GL_READ_FRAMEBUFFER = 36008;
     public static final int GL_DRAW_FRAMEBUFFER = 36009;
     public static final int GL_TRUE = 1;

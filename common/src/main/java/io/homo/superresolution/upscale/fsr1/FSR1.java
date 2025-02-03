@@ -7,18 +7,18 @@ import io.homo.superresolution.render.gl.texture.Texture;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
 import io.homo.superresolution.upscale.AlgorithmManager;
 import io.homo.superresolution.upscale.utils.AlgorithmHelper;
-import net.minecraft.client.Minecraft;
+import io.homo.superresolution.utils.FileReadHelper;
 
 import static io.homo.superresolution.render.gl.Gl.*;
 import static io.homo.superresolution.render.gl.GlConst.*;
 
 public class FSR1 extends AbstractAlgorithm {
-    private static ComputeShaderProgram fsr1EASUShader;
-    private static ComputeShaderProgram fsr1RCASShader;
+    private ComputeShaderProgram fsr1EASUShader;
+    private ComputeShaderProgram fsr1RCASShader;
     private Texture fsr1TempTexture;
     private Texture output;
 
-    public static int checkFP16Support(){
+    public static int checkFP16Support() {
         if (AlgorithmHelper.hasGLExtension("EXT_shader_16bit_storage") &&
                 AlgorithmHelper.hasGLExtension("EXT_shader_explicit_arithmetic_types")
         ) {
@@ -30,31 +30,31 @@ public class FSR1 extends AbstractAlgorithm {
         return 0;
     }
 
-    public static void initShader(){
+    public static FSR1 create() {
+        return new FSR1();
+    }
+
+    public void initShader() {
         fsr1EASUShader = (ComputeShaderProgram) ComputeShaderProgram.create()
                 .addDefineText("FP16_CRITERIA", String.valueOf(checkFP16Support()))
                 .setShaderName("FSR1_EASU")
-                .addAllFragShaderTextList(AlgorithmHelper.readText("/shader/fsr1_easu.fsh"))
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_easu.fsh"))
                 .build()
                 .compileShader();
         fsr1RCASShader = (ComputeShaderProgram) ComputeShaderProgram.create()
                 .addDefineText("FP16_CRITERIA", String.valueOf(checkFP16Support()))
                 .setShaderName("FSR1_RCAS")
-                .addAllFragShaderTextList(AlgorithmHelper.readText("/shader/fsr1_rcas.fsh"))
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_rcas.fsh"))
                 .build()
                 .compileShader();
-    }
-
-    public static FSR1 create() {
-        return new FSR1();
     }
 
     @Override
     public void init() {
         input = MinecraftRenderingStates.getRenderTarget();
         initShader();
-        fsr1TempTexture = new Texture(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(),GL_RGBA8);
-        output = new Texture(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight(),GL_RGBA8);
+        fsr1TempTexture = new Texture(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), GL_RGBA8);
+        output = new Texture(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight(), GL_RGBA8);
         this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
     }
 
@@ -65,17 +65,17 @@ public class FSR1 extends AbstractAlgorithm {
         return true;
     }
 
-    private void setFSR1ShaderUniform(ComputeShaderProgram shaderProgram){
-        shaderProgram.setVec2("renderViewportSize",AlgorithmManager.helper.getRenderWidth(),AlgorithmManager.helper.getRenderHeight());
-        shaderProgram.setVec2("containerTextureSize",AlgorithmManager.helper.getRenderWidth(),AlgorithmManager.helper.getRenderHeight());
-        shaderProgram.setVec2("upscaledViewportSize",AlgorithmManager.helper.getScreenWidth(),AlgorithmManager.helper.getScreenHeight());
+    private void setFSR1ShaderUniform(ComputeShaderProgram shaderProgram) {
+        shaderProgram.setVec2("renderViewportSize", AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
+        shaderProgram.setVec2("containerTextureSize", AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
+        shaderProgram.setVec2("upscaledViewportSize", AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
         shaderProgram.setFloat("sharpness", Config.getSharpness());
     }
 
-    private void callEASU(){
+    private void callEASU() {
         fsr1EASUShader.use();
         setFSR1ShaderUniform(fsr1EASUShader);
-        glBindTextureUnit(0,this.input.getColorTextureId());
+        glBindTextureUnit(0, this.input.getColorTextureId());
         glBindImageTexture(1, this.fsr1TempTexture.id, 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
         int workRegionDim = 16;
         int dispatchX = (AlgorithmManager.helper.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
@@ -89,7 +89,7 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1EASUShader.clear();
     }
 
-    private void callRCAS(){
+    private void callRCAS() {
         fsr1RCASShader.use();
         setFSR1ShaderUniform(fsr1RCASShader);
         glBindImageTexture(0, this.fsr1TempTexture.id, 0, false, 0, GL_READ_ONLY, GL_RGBA8);
@@ -108,7 +108,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        Texture.blitToScreen(output.width,output.height,width,height,this.output.id);
+        Texture.blitToScreen(output.width, output.height, width, height, this.output.id);
     }
 
     @Override
@@ -119,12 +119,12 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
-        this.fsr1TempTexture.resize(width,height);
-        this.output.resize(width,height);
+        this.fsr1TempTexture.resize(width, height);
+        this.output.resize(width, height);
     }
 
     @Override
-    public int getOutputTextureId(){
+    public int getOutputTextureId() {
         return output.id;
     }
 }

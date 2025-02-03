@@ -8,7 +8,6 @@ pluginManagement {
             name 'ParchmentMC'
             url 'https://ldtteam.jfrog.io/artifactory/parchmentmc/'
         }
-
         maven {
             // allowInsecureProtocol = true
             url "https://maven.architectury.dev/"
@@ -31,6 +30,7 @@ pluginManagement {
 
 rootProject.name = 'super_resolution'
 
+//include 'native-cpp'
 include 'common'
 include 'fabric'
 include 'forge'

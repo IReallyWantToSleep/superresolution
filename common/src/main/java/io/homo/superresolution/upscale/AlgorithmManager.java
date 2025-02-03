@@ -2,6 +2,7 @@ package io.homo.superresolution.upscale;
 
 import io.homo.superresolution.upscale.fsr1.FSR1;
 import io.homo.superresolution.upscale.fsr2.FSR2;
+import io.homo.superresolution.upscale.nis.NVIDIAImageScaling;
 import io.homo.superresolution.upscale.none.None;
 import io.homo.superresolution.upscale.utils.AlgorithmHelper;
 import org.joml.Matrix4f;
@@ -27,6 +28,7 @@ public class AlgorithmManager {
         switch (type) {
             case FSR1 -> algo = FSR1.create();
             case FSR2 -> algo = FSR2.create();
+            case NIS -> algo = NVIDIAImageScaling.create();
             case NONE -> algo = None.create();
         }
         if (algo != null) {
@@ -39,6 +41,7 @@ public class AlgorithmManager {
         boolean support = false;
         switch (type) {
             case FSR1 -> support = AlgorithmType.FSR1.getValue().check();
+            case NIS -> support = AlgorithmType.NIS.getValue().check();
             case FSR2 -> support = AlgorithmType.FSR2.getValue().check();
             case NONE -> support = AlgorithmType.NONE.getValue().check();
         }

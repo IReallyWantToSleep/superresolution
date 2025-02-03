@@ -99,9 +99,13 @@ public abstract class AbstractShaderProgram {
         glUniform3f(getUniformLocation(name), x, y,z);
     }
 
-    public void setFloat(String name, float x) {
-        glUniform1f(getUniformLocation(name), x);
+    public void setFloat(String name, float value) {
+        glUniform1f(getUniformLocation(name), value);
     }
+    public void setInt(String name, int value) {
+        glUniform1i(getUniformLocation(name), value);
+    }
+
 
     public void setMatrix4(String name, Matrix4f x) {
         float[] data = new float[16];

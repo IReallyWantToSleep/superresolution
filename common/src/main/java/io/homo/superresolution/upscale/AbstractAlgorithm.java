@@ -1,7 +1,5 @@
 package io.homo.superresolution.upscale;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.impl.Destroyable;
 import io.homo.superresolution.impl.Resizable;
 import io.homo.superresolution.render.gl.framebuffer.FrameBuffer;
@@ -57,8 +55,8 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
      * 将结果绘制到屏幕上。
      *
-     * @param width  绘制区域的宽度。
-     * @param height 绘制区域的高度。
+     * @param width  绘制区域的宽度(游戏屏幕宽度)。
+     * @param height 绘制区域的高度(游戏屏幕高度)。
      */
     public abstract void blitToScreen(int width, int height);
 
@@ -71,10 +69,10 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     }
 
     /**
-     * 调整输入和输出帧缓冲区的大小。
+     * 调整帧缓冲区的大小。
      *
-     * @param width  新的宽度。
-     * @param height 新的高度。
+     * @param width  新的宽度(游戏屏幕宽度)。
+     * @param height 新的高度(游戏屏幕高度)。
      */
     @Override
     public void resize(int width, int height) {

@@ -8,6 +8,11 @@ public enum AlgorithmType {
                         .majorVersion(4)
                         .minorVersion(3)
         ),
+        NIS(
+                Requirement.nothing()
+                        .majorVersion(4)
+                        .minorVersion(5)
+        ),
         FSR2(
                 Requirement.nothing()
                         .includeExtension("GL_KHR_shader_subgroup")

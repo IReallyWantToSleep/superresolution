@@ -28,7 +28,6 @@ public class Texture implements Destroyable, Resizable {
     }
 
     public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, int id) {
-        RenderSystem.assertOnRenderThread();
         GlStateManager._colorMask(true, true, true, false);
         GlStateManager._disableDepthTest();
         GlStateManager._depthMask(false);

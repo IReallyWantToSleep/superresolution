@@ -3,6 +3,7 @@ package io.homo.superresolution.render.gl;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.NativeType;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static io.homo.superresolution.render.gl.GlConst.*;
@@ -17,6 +18,10 @@ public class Gl {
     }
 
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, IntBuffer pixels) {
+        GL11C.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    }
+
+    public static void glTexImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, ByteBuffer pixels) {
         GL11C.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
     }
 
@@ -157,5 +162,16 @@ public class Gl {
 
     public static void glCopyImageSubData(int srcName, int srcTarget, int srcLevel,  int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
         GL43C.glCopyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+    }
+    public static void glUniform1i(int location, int x){
+        GL20.glUniform1i(location,x);
+    }
+
+    public static void glTexSubImage2D(int target,  int level, int xoffset, int yoffset, int width, int height,  int format, int type, ByteBuffer pixels) {
+        GL11C.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    }
+
+    public static void glPixelStorei(int pname, int param) {
+        GL11C.glPixelStorei(pname, param);
     }
 }

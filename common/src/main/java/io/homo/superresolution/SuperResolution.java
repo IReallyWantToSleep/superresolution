@@ -114,7 +114,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         instance = this;
         if (!ConfigFile.exists()) ConfigFile.write();
         interopManager = new GlVkInteropManager();
-        //initVulkan();
+        initVulkan();
         if (Platform.isDevelopmentEnvironment()) new ImguiMain();
         mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
         isInit = true;
