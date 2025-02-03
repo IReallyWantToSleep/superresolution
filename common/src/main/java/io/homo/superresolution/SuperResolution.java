@@ -18,6 +18,7 @@ import io.homo.superresolution.upscale.none.None;
 import io.homo.superresolution.upscale.utils.NativeLibManager;
 import io.homo.superresolution.upscale.utils.Requirement;
 import io.homo.superresolution.utils.MessageBox;
+import net.fabricmc.api.EnvType;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void preInit() {
-
+        if (Platform.getEnv() == EnvType.SERVER) throw new RuntimeException("SuperResolution不支持安装在服务器上！");
         if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
             NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
         }
@@ -97,7 +98,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         MinecraftRenderingStates.init();
     }
 
-    public static void createAlgo(){
+    public static void createAlgo() {
         currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
         defaultAlgorithm.init();
     }

@@ -23,12 +23,21 @@ public class MixinPlugin implements IMixinConfigPlugin {
 
     public boolean shouldApplyMixin(String tClass, String mClassPath) {
         String mixinClassify = getClassName(mClassPath).split("\\.")[0];
-        boolean debug = Platform.isDevelopmentEnvironment();
-        return switch (mixinClassify) {
-            case "core", "gui" -> true;
-            case "debug" -> debug;
-            default -> false;
-        };
+        String mixinName = getClassName(mClassPath).split("\\.")[1];
+        return shouldApplyMixinByName(mixinName) && (
+                switch (mixinClassify) {
+                    case "core", "gui" -> true;
+                    case "debug" -> Platform.isDevelopmentEnvironment();
+                    default -> false;
+                }
+        );
+    }
+
+    private boolean shouldApplyMixinByName(String name) {
+        if (name.contains("ForceOpenGLVersion_WindowMixin") && Platform.isModLoaded("threatengl")) {
+            return false;
+        }
+        return true;
     }
 
     public void acceptTargets(Set<String> set, Set<String> set1) {

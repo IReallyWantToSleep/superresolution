@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
-public class GameRendererMixin {
+public class OnRenderWorld_GameRendererMixin {
     @Unique
     public float super_resolution$frameTimeDelta_algo = 16.6f;
     @Unique
@@ -52,8 +52,8 @@ public class GameRendererMixin {
         }
     }
 
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;renderLevel(FJLcom/mojang/blaze3d/vertex/PoseStack;)V"), method = "render")
-    private void onRenderBegin(float partialTicks, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+    @Inject(at = @At(value = "HEAD"), method = "renderLevel")
+    private void onRenderBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
             MinecraftRenderingStates.setShouldScale(true);
         }

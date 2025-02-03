@@ -11,9 +11,9 @@ import static io.homo.superresolution.render.gl.Gl.*;
 import static io.homo.superresolution.render.gl.GlConst.*;
 
 @Mixin(value = MainTarget.class)
-public class MainTargetMixin extends RenderTarget {
+public class ImmutableTexture_MainTargetMixin extends RenderTarget {
 
-    public MainTargetMixin(boolean useDepth) {
+    public ImmutableTexture_MainTargetMixin(boolean useDepth) {
         super(useDepth);
     }
 
