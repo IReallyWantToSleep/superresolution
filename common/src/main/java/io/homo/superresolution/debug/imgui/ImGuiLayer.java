@@ -8,11 +8,18 @@ import io.homo.superresolution.upscale.fsr2.FSR2;
 import net.minecraft.client.Minecraft;
 
 public class ImGuiLayer {
+    public static boolean needCapture = false;
+
     public void imgui() {
-        if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null) return;
+
+        if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null)
+            return;
         int width = 500;
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");
+        if (ImGui.button("CaptureVulkan")) {
+            needCapture = true;
+        }
         if (AlgorithmManager.param.currentProjectionMatrix != null) {
             ImGui.text("%s %s %s %s".formatted(
                     String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m00()),

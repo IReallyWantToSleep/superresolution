@@ -11,6 +11,7 @@ import io.homo.superresolution.impl.Resizable;
 import io.homo.superresolution.render.GlVkInteropManager;
 import io.homo.superresolution.render.MinecraftRenderingStates;
 import io.homo.superresolution.render.gl.Gl;
+import io.homo.superresolution.render.renderdoc.RenderDoc;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
 import io.homo.superresolution.upscale.AlgorithmManager;
 import io.homo.superresolution.upscale.AlgorithmType;
@@ -36,9 +37,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static float frameTimeDelta = 16.6f;
     public static MainTarget mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
     public static boolean isRenderingWorld = false;
-    public static AlgorithmType algorithmType = Config.getUpscaleAlgo();
+    public static AlgorithmType algorithmType;
     public static GlVkInteropManager interopManager;
-
     private static SuperResolution instance;
 
     public SuperResolution() {
@@ -46,10 +46,13 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static void preInit() {
         if (Platform.getEnv() == EnvType.SERVER) throw new RuntimeException("SuperResolution不支持安装在服务器上！");
+        if (Platform.isDevelopmentEnvironment()) RenderDoc.init();
         if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
             NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
         }
         NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
+        interopManager = new GlVkInteropManager();
+        initVulkan();
     }
 
     public static int getMinecraftWidth() {
@@ -96,11 +99,14 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void initRendering() {
         RenderSystem.assertOnRenderThread();
         MinecraftRenderingStates.init();
+        Config.fromData(ConfigFile.read());
+        algorithmType = Config.getUpscaleAlgo();
     }
 
     public static void createAlgo() {
         currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
         defaultAlgorithm.init();
+        SuperResolution.LOGGER.info("初始化算法 {}", algorithmType.toString());
     }
 
     public static void initVulkan() {
@@ -111,11 +117,8 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (isInit)
             return;
         RenderSystem.assertOnRenderThread();
-        Config.fromData(ConfigFile.read());
         instance = this;
         if (!ConfigFile.exists()) ConfigFile.write();
-        interopManager = new GlVkInteropManager();
-        initVulkan();
         if (Platform.isDevelopmentEnvironment()) new ImguiMain();
         mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
         isInit = true;

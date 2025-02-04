@@ -3,7 +3,10 @@ package io.homo.superresolution.mixin.core;
 import io.homo.superresolution.SuperResolution;
 import io.homo.superresolution.config.Config;
 import io.homo.superresolution.debug.DebugInfo;
+import io.homo.superresolution.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.render.MinecraftRenderingStates;
+import io.homo.superresolution.render.renderdoc.RenderDoc;
+import io.homo.superresolution.render.renderdoc.RenderdocLibrary;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -65,7 +68,22 @@ public class OnRenderWorld_GameRendererMixin {
             SuperResolution.isRenderingWorld = false;
             super_resolution$lastRenderTime_algo = Util.getMillis();
             if (Config.enableUpscale) {
-                SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
+                if (ImGuiLayer.needCapture) {
+                    RenderDoc.renderdoc.TriggerCapture.call();
+                    //RenderDoc.renderdoc.StartFrameCapture.call(new Pointer(SuperResolution.interopManager.vulkanApp.instance.address()), null);
+                    SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
+                    //RenderDoc.renderdoc.EndFrameCapture.call(new Pointer(SuperResolution.interopManager.vulkanApp.instance.address()), null);
+                    int count = RenderDoc.getNumCaptures();
+                    RenderDoc.Capture capture = RenderDoc.getCapture(count - 1);
+                    if (capture != null) {
+                        RenderDoc.LOGGER.info("captureVulkan -> {}", capture.path());
+                    }
+                    RenderDoc.renderdoc.LaunchReplayUI.call(new RenderdocLibrary.uint32_t(1), null);
+                    RenderDoc.renderdoc.ShowReplayUI.call();
+                } else {
+                    SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
+                }
+                ImGuiLayer.needCapture = false;
             }
             super_resolution$frameTimeDelta_algo = Util.getMillis() - super_resolution$lastRenderTime_algo;
             DebugInfo.setFrameTimeDeltaAlgo(super_resolution$frameTimeDelta_algo);

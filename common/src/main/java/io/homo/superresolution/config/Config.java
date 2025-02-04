@@ -1,7 +1,6 @@
 package io.homo.superresolution.config;
 
 import io.homo.superresolution.SuperResolution;
-import io.homo.superresolution.render.gl.Gl;
 import io.homo.superresolution.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
 
@@ -45,7 +44,7 @@ public class Config {
     }
 
     public static double getMinUpscaleRatio() {
-        int maxSize = Gl.glGetMaxTextureSize();
+        int maxSize = 16384;
         double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
         double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
         return Math.max(maxWidth, maxHeight);

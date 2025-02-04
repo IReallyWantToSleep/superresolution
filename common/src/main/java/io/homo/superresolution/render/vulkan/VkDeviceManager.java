@@ -14,12 +14,9 @@ import java.util.stream.IntStream;
 import static io.homo.superresolution.render.vulkan.Utils.asPointerBuffer;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
-import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
 public class VkDeviceManager implements Destroyable {
-    private final VkApplication application;
+    public final VkApplication application;
     public VkPhysicalDevice physicalDevice;
     public VkDevice device;
     public VkQueue graphicsQueue;
@@ -110,7 +107,6 @@ public class VkDeviceManager implements Destroyable {
     }
 
     private void createLogicalDevice() {
-
         try (MemoryStack stack = stackPush()) {
             QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
             int[] uniqueQueueFamilies = indices.unique();
@@ -122,28 +118,27 @@ public class VkDeviceManager implements Destroyable {
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
 
-            VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
-                    .shaderFloat16(true);
-            VkPhysicalDeviceFeatures2 deviceFeatures = VkPhysicalDeviceFeatures2.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
-                    .pNext(deviceFeatures12.address());
-            vkGetPhysicalDeviceFeatures2(physicalDevice, deviceFeatures);
+            //VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
+            //        .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+            //        .shaderFloat16(true); // Enable shaderFloat16 feature
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            createInfo.pNext(deviceFeatures);
+            //createInfo.pNext(deviceFeatures12);
             createInfo.ppEnabledExtensionNames(asPointerBuffer(stack, getRequiredExtensions()));
             createInfo.ppEnabledLayerNames(application.validationLayers.validationLayersAsPointerBuffer(stack));
+
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
             if (vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
                 throw new VkException("Failed to create logical device");
             }
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
+
             physicalDeviceProperties = VkPhysicalDeviceProperties.calloc();
             deviceMemoryProperties = VkPhysicalDeviceMemoryProperties.calloc();
             vkGetPhysicalDeviceProperties(physicalDevice, physicalDeviceProperties);
             vkGetPhysicalDeviceMemoryProperties(physicalDevice, deviceMemoryProperties);
+
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
             vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);

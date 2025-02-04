@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 
-import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memUTF8;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
@@ -106,9 +105,9 @@ public class VkApplication implements Destroyable, Resizable {
 
     private PointerBuffer getInstanceRequiredExtensions(MemoryStack stack) {
         PointerBuffer extensions;
-        PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
-        extensions = stack.mallocPointer(glfwExtensions.capacity() + instanceRequiredExtensions.size());
-        extensions.put(glfwExtensions);
+        //PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
+        extensions = stack.mallocPointer(instanceRequiredExtensions.size());
+        //extensions.put(glfwExtensions);
         for (String name : instanceRequiredExtensions) {
             extensions.put(stack.UTF8(name));
         }

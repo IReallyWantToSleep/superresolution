@@ -84,7 +84,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     public void init() {
         config = new NISConfig();
         initShader();
-        var input = MinecraftRenderingStates.getRenderTarget();
+        input = MinecraftRenderingStates.getRenderTarget();
         output = MinecraftRenderingStates.getOriginRenderTarget();
         inputSharedTexture = new SharedTexture(input.width, input.height, TextureFormat.RGBA8, SuperResolution.interopManager.vulkanApp.deviceManager);
         inputSharedTexture.create();
@@ -111,7 +111,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             //INPUT
             VkDescriptorImageInfo.Buffer infoInWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
                     .imageView(inputSharedTexture.vkImageView)
-                    .imageLayout(VK_IMAGE_LAYOUT_GENERAL);
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             VkWriteDescriptorSet inWriteDescSet = VkWriteDescriptorSet.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
@@ -123,7 +123,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             //coef_scaler
             VkDescriptorImageInfo.Buffer infoCoefScalerWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
                     .imageView(inputSharedTexture.vkImageView)
-                    .imageLayout(VK_IMAGE_LAYOUT_GENERAL);
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             VkWriteDescriptorSet coefScalerWriteDescSet = VkWriteDescriptorSet.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
@@ -135,7 +135,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             //coef_usm
             VkDescriptorImageInfo.Buffer infoCoefUSMWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
                     .imageView(inputSharedTexture.vkImageView)
-                    .imageLayout(VK_IMAGE_LAYOUT_GENERAL);
+                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
             VkWriteDescriptorSet coefUSMWriteDescSet = VkWriteDescriptorSet.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
@@ -169,7 +169,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader.pipeline);
 
             LongBuffer descriptorSetPtr = stack.callocLong(1).put(shader.descriptorSet).flip();
-            IntBuffer offset = stack.ints(0);
+            IntBuffer offset = stack.ints(256);
             vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader.pipelineLayout, 0, descriptorSetPtr, offset);
 
             int gridX = (int) Math.ceil((double) output.width / 32);
@@ -198,7 +198,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     @Override
     public void resize(int width, int height) {
         inputSharedTexture.resize(MinecraftRenderingStates.getRenderWidth(), MinecraftRenderingStates.getRenderHeight());
-        outputSharedTexture.resize(width, height);
+        outputSharedTexture.resize(MinecraftRenderingStates.getScreenWidth(), MinecraftRenderingStates.getScreenHeight());
         NVIDIAImageScalingConfig.NVScalerUpdateConfig(config, 0.2f, 0, 0, input.width, input.height, input.width, input.height, 0, 0, width, height, width, height, NISHDRMode.None);
     }
 
@@ -242,5 +242,10 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     @Override
     public int getOutputTextureId() {
         return outputSharedTexture.glId;
+    }
+
+    @Override
+    public int getInputTextureId() {
+        return inputSharedTexture.glId;
     }
 }

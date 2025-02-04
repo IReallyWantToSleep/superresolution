@@ -68,6 +68,51 @@ public class SharedTexture {
         }
     }
 
+    private void VK_TransferImage(VkCommandBuffer cmdBuff, long image) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkImageMemoryBarrier.Buffer transferBarrier = VkImageMemoryBarrier.calloc(1, stack)
+                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                    .oldLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                    .newLayout(VK_IMAGE_LAYOUT_GENERAL)
+                    .srcAccessMask(0)
+                    .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .image(image)
+                    .subresourceRange(it -> it
+                            .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                            .baseMipLevel(0)
+                            .levelCount(1)
+                            .baseArrayLayer(0)
+                            .layerCount(1)
+                    );
+
+            vkCmdPipelineBarrier(cmdBuff,
+                    VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                    null, null, transferBarrier);
+            VkImageMemoryBarrier.Buffer useBarrier = VkImageMemoryBarrier.calloc(1, stack)
+                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                    .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+                    .newLayout(VK_IMAGE_LAYOUT_GENERAL)
+                    .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_SHADER_READ_BIT)
+                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .image(image)
+                    .subresourceRange(it -> it
+                            .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                            .baseMipLevel(0)
+                            .levelCount(1)
+                            .baseArrayLayer(0)
+                            .layerCount(1)
+                    );
+
+            vkCmdPipelineBarrier(cmdBuff,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                    null, null, useBarrier);
+        }
+    }
+
     private void VK_CreateImageMemory() {
         if (vkImage.memory == VK_NULL_HANDLE) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -164,22 +209,14 @@ public class SharedTexture {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer texture = stack.callocInt(1);
             glGenTextures(texture);
-            int textureId = texture.get(0);
 
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, textureId);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            return textureId;
+            return texture.get(0);
         }
     }
 
     private void GL_CreateTextureStorage() {
         if (memory.glRef != 0) {
-            glBindTexture(GL_TEXTURE_2D, glId);
             glTextureStorageMem2DEXT(
                     glId,
                     1,
@@ -189,18 +226,32 @@ public class SharedTexture {
                     memory.glRef, // 直接使用 GLuint，无需强制转换
                     0
             );
+            glBindTexture(GL_TEXTURE_2D, glId);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         } else {
             throw new IllegalStateException("OpenGL memory object not initialized");
         }
     }
 
+    public void updateTexture() {
+        if (glId != GL_NULL_HANDLE) glDeleteTextures(glId);
+        glId = GL_NULL_HANDLE;
+        glId = GL_CreateGLTexture2D();
+        GL_CreateTextureStorage();
+    }
+
     public void create() {
         VK_CreateImage();
         VK_CreateImageMemory();
+        VkCommandBuffer cmdBuf = deviceManager.application.beginOneTimeSubmitCmd();
+        VK_TransferImage(cmdBuf, vkImage.image);
+        deviceManager.application.endOneTimeSubmitCmd();
         VK_CreateSRV(vkImage.image, TextureFormat.toVK(format));
         VkGL_CreateSharedMemory(vkImage.memory, vkImage.allocationSize);
-        glId = GL_CreateGLTexture2D();
-        GL_CreateTextureStorage();
+        updateTexture();
     }
 
 
@@ -235,19 +286,16 @@ public class SharedTexture {
     }
 
     public void startWrite() {
-        glBindTexture(GL_TEXTURE_2D, glId);
-        //glTextureStorageMem2DEXT(glId, 1, TextureFormat.toGL(format), width, height, memory.glRef, 0);
     }
 
     public void endWrite() {
+        updateTexture();
     }
 
     public void startRead() {
-
+        updateTexture();
     }
 
     public void endRead() {
-        glBindTexture(GL_TEXTURE_2D, glId);
-        //glTextureStorageMem2DEXT(glId, 1, TextureFormat.toGL(format), width, height, memory.glRef, 0);
     }
 }
