@@ -73,16 +73,16 @@ public class SharedTexture {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
                 vkGetImageMemoryRequirements(deviceManager.device, vkImage.image, memReqs);
+                VkExportMemoryAllocateInfo exportAllocInfo = VkExportMemoryAllocateInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO)
+                        .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
                 VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
                         .image(vkImage.image);
-                VkExportMemoryAllocateInfo exportAllocInfo = VkExportMemoryAllocateInfo.calloc(stack)
-                        .sType(VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO)
-                        .pNext(dedicatedAllocInfo.address())
-                        .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+                exportAllocInfo.pNext(dedicatedAllocInfo.address());
                 VkMemoryAllocateInfo memAllocInfo = VkMemoryAllocateInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
-                        .pNext(exportAllocInfo)
+                        .pNext(exportAllocInfo.address())
                         .allocationSize(memReqs.size())
                         .memoryTypeIndex(getMemoryTypeIndex(memReqs.memoryTypeBits(), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
                 LongBuffer ptr = stack.callocLong(1);

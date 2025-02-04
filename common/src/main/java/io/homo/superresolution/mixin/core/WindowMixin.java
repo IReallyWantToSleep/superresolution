@@ -3,26 +3,15 @@ package io.homo.superresolution.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.render.MinecraftRenderingStates;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Window.class)
 public class WindowMixin {
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", remap = false))
-    private void forceOpenGLVersion(int hint, int value) {
-        if (hint == GLFW.GLFW_CONTEXT_VERSION_MAJOR) {
-            value = 4;
-        } else if (hint == GLFW.GLFW_CONTEXT_VERSION_MINOR) {
-            value = 6;
-        }
-        GLFW.glfwWindowHint(hint, value);
-    }
 
     @Inject(at = @At("RETURN"), method = "getWidth", cancellable = true)
     private void getFramebufferWidth(CallbackInfoReturnable<Integer> ci) {
