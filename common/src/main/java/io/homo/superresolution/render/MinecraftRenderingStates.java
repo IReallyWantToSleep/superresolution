@@ -11,21 +11,24 @@ import io.homo.superresolution.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /*
 更改游戏渲染世界的类
 */
 public class MinecraftRenderingStates {
-    private static Minecraft minecraft;
-    private static RenderTarget originRenderTarget;
     public static float frameTimeDelta = 16.6f;
     public static int currentWidth;
     public static int currentHeight;
+    public static Set<RenderTarget> minecraftRenderTarget;
+    public static Map<String, RenderTarget> minecraftRenderTargetMap = new HashMap<>();
+    private static Minecraft minecraft;
+    private static RenderTarget originRenderTarget;
     private static FrameBuffer renderTarget;
     private static boolean shouldScale = false;
-    private static Set<RenderTarget> minecraftRenderTarget;
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
@@ -54,7 +57,7 @@ public class MinecraftRenderingStates {
     }
 
     public static RenderTarget getOriginRenderTarget() {
-        return renderTarget;
+        return originRenderTarget;
     }
 
     public static void setShouldScale(boolean scaling) {
@@ -67,8 +70,8 @@ public class MinecraftRenderingStates {
             SuperResolution.currentAlgorithm.setInputFrameBuffer(renderTarget);
             renderTarget.bindWrite(true);
         } else {
-            setClientRenderTarget(SuperResolution.mainTarget);
-            SuperResolution.mainTarget.bindWrite(true);
+            setClientRenderTarget(originRenderTarget);
+            originRenderTarget.bindWrite(true);
         }
         minecraft.getProfiler().popPush("level");
     }
@@ -84,7 +87,7 @@ public class MinecraftRenderingStates {
     }
 
     public static float getCurrentScaleFactor() {
-        return shouldScale && Config.enableUpscale ? Config.getRenderScaleFactor() : 1;
+        return shouldScale && Config.isEnableUpscale() ? Config.getRenderScaleFactor() : 1;
     }
 
     private static void initMinecraftRenderTarget() {
@@ -94,16 +97,34 @@ public class MinecraftRenderingStates {
         } else {
             minecraftRenderTarget = new HashSet<>();
         }
+        if (minecraftRenderTargetMap != null) {
+            minecraftRenderTargetMap.clear();
+        } else {
+            minecraftRenderTargetMap = new HashMap<>();
+        }
         minecraftRenderTarget.add(minecraft.levelRenderer.entityTarget());
         minecraftRenderTarget.add(minecraft.levelRenderer.getTranslucentTarget());
         minecraftRenderTarget.add(minecraft.levelRenderer.getItemEntityTarget());
         minecraftRenderTarget.add(minecraft.levelRenderer.getParticlesTarget());
         minecraftRenderTarget.add(minecraft.levelRenderer.getWeatherTarget());
         minecraftRenderTarget.add(minecraft.levelRenderer.getCloudsTarget());
+
+        if (minecraft.levelRenderer.entityTarget() != null)
+            minecraftRenderTargetMap.put("entityTarget", minecraft.levelRenderer.entityTarget());
+        if (minecraft.levelRenderer.getTranslucentTarget() != null)
+            minecraftRenderTargetMap.put("translucentTarget", minecraft.levelRenderer.getTranslucentTarget());
+        if (minecraft.levelRenderer.getItemEntityTarget() != null)
+            minecraftRenderTargetMap.put("itemEntityTarget", minecraft.levelRenderer.getItemEntityTarget());
+        if (minecraft.levelRenderer.getParticlesTarget() != null)
+            minecraftRenderTargetMap.put("particlesTarget", minecraft.levelRenderer.getParticlesTarget());
+        if (minecraft.levelRenderer.getWeatherTarget() != null)
+            minecraftRenderTargetMap.put("weatherTarget", minecraft.levelRenderer.getWeatherTarget());
+        if (minecraft.levelRenderer.getCloudsTarget() != null)
+            minecraftRenderTargetMap.put("cloudsTarget", minecraft.levelRenderer.getCloudsTarget());
         minecraftRenderTarget.remove(null);
     }
 
-    private static void resize(@Nullable RenderTarget renderTarget) {
+    public static void resizeRenderTarget(@Nullable RenderTarget renderTarget) {
         if (minecraft.level == null) return;
         boolean prev = shouldScale;
         shouldScale = true;
@@ -121,7 +142,7 @@ public class MinecraftRenderingStates {
     public static void resizeMinecraftRenderTarget() {
         if (minecraft.level == null) return;
         initMinecraftRenderTarget();
-        minecraftRenderTarget.forEach(MinecraftRenderingStates::resize);
+        minecraftRenderTarget.forEach(MinecraftRenderingStates::resizeRenderTarget);
     }
 
     public static void onResolutionChanged() {
@@ -136,7 +157,7 @@ public class MinecraftRenderingStates {
                 getRenderHeight(),
                 Minecraft.ON_OSX
         );
-        resize(minecraft.levelRenderer.entityTarget());
+        resizeRenderTarget(minecraft.levelRenderer.entityTarget());
         calculateSize();
     }
 

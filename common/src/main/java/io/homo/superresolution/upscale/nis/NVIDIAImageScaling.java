@@ -10,6 +10,7 @@ import io.homo.superresolution.render.vulkan.VkComputeShader;
 import io.homo.superresolution.render.vulkan.VkShaderUniform;
 import io.homo.superresolution.render.vulkan.VkShaderUniformType;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
+import io.homo.superresolution.upscale.AlgorithmType;
 import io.homo.superresolution.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.upscale.nis.struct.NISConfig;
 import io.homo.superresolution.utils.FileReadHelper;
@@ -38,6 +39,11 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     public static NVIDIAImageScaling create() {
         return new NVIDIAImageScaling();
+    }
+
+    @Override
+    protected boolean isSupport() {
+        return AlgorithmType.NIS.getValue().check();
     }
 
     public void initShader() {

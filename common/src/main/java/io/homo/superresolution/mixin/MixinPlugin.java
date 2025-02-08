@@ -1,6 +1,6 @@
 package io.homo.superresolution.mixin;
 
-import dev.architectury.platform.Platform;
+import io.homo.superresolution.platform.Platform;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -27,14 +27,14 @@ public class MixinPlugin implements IMixinConfigPlugin {
         return shouldApplyMixinByName(mixinName) && (
                 switch (mixinClassify) {
                     case "core", "gui" -> true;
-                    case "debug" -> Platform.isDevelopmentEnvironment();
+                    case "debug" -> Platform.currentPlatform.isDevelopmentEnvironment();
                     default -> false;
                 }
         );
     }
 
     private boolean shouldApplyMixinByName(String name) {
-        if (name.contains("ForceOpenGLVersion_WindowMixin") && Platform.isModLoaded("threatengl")) {
+        if (name.contains("ForceOpenGLVersion_WindowMixin") && Platform.currentPlatform.isModLoaded("threatengl")) {
             return false;
         }
         return true;

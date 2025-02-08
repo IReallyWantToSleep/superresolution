@@ -18,7 +18,8 @@ import static io.homo.superresolution.render.gl.GlConst.*;
 
 @Mixin(value = RenderTarget.class)
 public abstract class RenderTargetMixin {
-    @Unique private float super_resolution$scaleMultiplier;
+    @Unique
+    private float super_resolution$scaleMultiplier;
 
     @Shadow
     public abstract int getDepthTextureId();
@@ -30,19 +31,19 @@ public abstract class RenderTargetMixin {
     }
 
     @Redirect(method = {"createBuffers", "setFilterMode*"}, at = @At(value = "INVOKE",
-            target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texParameter(III)V"),remap = false)
+            target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texParameter(III)V"), remap = false)
     private void onSetTexFilter(int target, int pname, int param) {
         if (AlgorithmType.NONE.equals(SuperResolution.algorithmType)) {
             if (pname == GL_TEXTURE_MIN_FILTER) {
                 GlStateManager._texParameter(target, pname, GL_LINEAR);
             } else if (pname == GL_TEXTURE_MAG_FILTER) {
-                GlStateManager._texParameter(target, pname, GL_NEAREST);
-            }else if (pname == GL_TEXTURE_WRAP_S || pname == GL_TEXTURE_WRAP_T) {
+                GlStateManager._texParameter(target, pname, GL_LINEAR);
+            } else if (pname == GL_TEXTURE_WRAP_S || pname == GL_TEXTURE_WRAP_T) {
                 GlStateManager._texParameter(target, pname, GL_CLAMP_TO_EDGE);
             } else {
                 GlStateManager._texParameter(target, pname, param);
             }
-        }else{
+        } else {
             GlStateManager._texParameter(target, pname, param);
         }
     }

@@ -2,6 +2,11 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/super_resolution.accesswidener")
+}
+
+
 architectury {
     platformSetupLoomIde()
     fabric()
@@ -35,6 +40,13 @@ repositories {
         name = "Terraformers"
         url = "https://maven.terraformersmc.com/"
     }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 dependencies {
@@ -42,6 +54,9 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
     modImplementation fileTree(dir: 'libs', include: ['*.jar'])
+    modImplementation("maven.modrinth:timeless-and-classics-zero:1.0.2-hotfix3-fabric,1.20.1")
+    modImplementation("maven.modrinth:forge-config-api-port:v8.0.1-1.20.1-Fabric-fabric,1.20.1")
+    modImplementation("maven.modrinth:spark:1.10.53-fabric-fabric,1.20.1")
     modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
@@ -52,11 +67,7 @@ dependencies {
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "io.github.douira:glsl-transformer:2.0.1"
     implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    implementation("org.lwjgl:lwjgl-shaderc")
-    implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
-    //include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    //include("org.lwjgl:lwjgl-shaderc")
-    //include("org.lwjgl:lwjgl-shaderc::natives-windows")
+    include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
 
 }
 

@@ -1,6 +1,7 @@
 package io.homo.superresolution.forge.mixin.compat;
 
-import net.minecraftforge.fml.loading.LoadingModList;
+import io.homo.superresolution.forge.platform.ForgePlatform;
+import io.homo.superresolution.platform.Platform;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -15,6 +16,7 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
     }
 
     public void onLoad(String s) {
+        Platform.currentPlatform = new ForgePlatform();
     }
 
     public String getRefMapperConfig() {
@@ -23,7 +25,7 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
 
     public boolean shouldApplyMixin(String s, String s1) {
         String modid = s1.replace(CLASS_START, "").split("\\.")[0];
-        return LoadingModList.get().getModFileById(modid) != null;
+        return Platform.currentPlatform.isModLoaded(modid);
     }
 
     public void acceptTargets(Set<String> set, Set<String> set1) {

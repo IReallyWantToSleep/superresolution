@@ -5,21 +5,22 @@ import io.homo.superresolution.upscale.utils.Requirement;
 public enum AlgorithmType {
     FSR1(
             Requirement.nothing()
-                    .majorVersion(4)
-                    .minorVersion(3),
+                    .glMajorVersion(4)
+                    .glMinorVersion(3),
             "FSR1"
     ),
     NIS(
             Requirement.nothing()
-                    .majorVersion(4)
-                    .minorVersion(5),
+                    .glMajorVersion(4)
+                    .glMinorVersion(5)
+                    .developmentEnvironment(true),
             "NVIDIA Image Scaling"
     ),
     FSR2(
             Requirement.nothing()
                     .includeExtension("GL_KHR_shader_subgroup")
-                    .majorVersion(4)
-                    .minorVersion(5),
+                    .glMajorVersion(4)
+                    .glMinorVersion(5),
             "FSR2"
     ),
     NONE(

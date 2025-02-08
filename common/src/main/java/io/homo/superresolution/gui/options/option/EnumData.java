@@ -1,5 +1,7 @@
 package io.homo.superresolution.gui.options.option;
 
+import net.minecraft.network.chat.Component;
+
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -65,6 +67,11 @@ public class EnumData {
 
         public EnumInfo<T> setDisplayName(String name) {
             this.displayName = name;
+            return this;
+        }
+
+        public EnumInfo<T> setDisplayName(Component name) {
+            this.displayName = name.getString();
             return this;
         }
     }

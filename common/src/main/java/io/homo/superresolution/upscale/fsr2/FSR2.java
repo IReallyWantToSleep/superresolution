@@ -8,7 +8,7 @@ import io.homo.superresolution.render.MinecraftRenderingStates;
 import io.homo.superresolution.render.gl.texture.Texture;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
 import io.homo.superresolution.upscale.AlgorithmManager;
-import io.homo.superresolution.upscale.utils.AlgorithmHelper;
+import io.homo.superresolution.upscale.AlgorithmType;
 import io.homo.superresolution.upscale.utils.NativeLibManager;
 import net.minecraft.client.Minecraft;
 import oiiaio.fsr.FfxError;
@@ -39,7 +39,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmHelper.hasGLExtension("GL_KHR_shader_subgroup");
+        return AlgorithmType.FSR2.getValue().check();
     }
 
     public void resize(int width, int height) {
@@ -65,7 +65,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        Texture.blitToScreen(output.width,output.height,width,height,this.output.id);
+        Texture.blitToScreen(output.width, output.height, width, height, this.output.id);
     }
 
     public void destroy() {
@@ -127,9 +127,9 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.depth = depthResource;
         dispatchDescription.motionVectors = motionVectorsResource;
         dispatchDescription.output = outputResource;
-        dispatchDescription.jitterOffset = FfxFloatCoords2D.create(0,0);
-        dispatchDescription.motionVectorScale = FfxFloatCoords2D.create(AlgorithmManager.helper.getRenderWidth(),AlgorithmManager.helper.getRenderHeight());
-        dispatchDescription.renderSize = FfxDimensions2D.create(AlgorithmManager.helper.getRenderWidth(),AlgorithmManager.helper.getRenderHeight());
+        dispatchDescription.jitterOffset = FfxFloatCoords2D.create(0, 0);
+        dispatchDescription.motionVectorScale = FfxFloatCoords2D.create(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
+        dispatchDescription.renderSize = FfxDimensions2D.create(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
         dispatchDescription.enableSharpening = false;
         dispatchDescription.sharpness = 1.0f;
         dispatchDescription.frameTimeDelta = frameTimeDelta;
@@ -140,11 +140,12 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.cameraFovAngleVertical = helper.getCameraFovAngleVertical();
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
-        return FfxError.isOK(nativeApi.ffxFsr2ContextDispatch(dispatchDescription,fsr2Context));
+        return FfxError.isOK(nativeApi.ffxFsr2ContextDispatch(dispatchDescription, fsr2Context));
     }
 
     @Override
     public int getOutputTextureId() {
         return output.id;
     }
+
 }

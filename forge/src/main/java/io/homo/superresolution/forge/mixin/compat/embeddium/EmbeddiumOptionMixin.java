@@ -19,7 +19,7 @@ public class EmbeddiumOptionMixin {
     private void addMyConfigScreen(Multimap<String, Tab<?>> tabs, CallbackInfo ci) {
         tabs.put(SuperResolution.MOD_ID,
                 Tab.createBuilder()
-                        .setTitle(Component.literal("超分辨率"))
+                        .setTitle(Component.translatable("superresolution.name"))
                         .setId(OptionIdentifier.create(SuperResolution.MOD_ID, "emb_configscreen"))
                         .setOnSelectFunction(() -> {
                             Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().build((EmbeddiumVideoOptionsScreen) (Object) this));

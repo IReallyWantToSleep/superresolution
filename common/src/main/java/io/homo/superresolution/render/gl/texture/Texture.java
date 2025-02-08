@@ -28,13 +28,13 @@ public class Texture implements Destroyable, Resizable {
     }
 
     public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, int id) {
+        /*
         GlStateManager._colorMask(true, true, true, false);
         GlStateManager._disableDepthTest();
         GlStateManager._depthMask(false);
         GlStateManager._viewport(0, 0, viewWidth, viewHeight);
         Minecraft minecraft = Minecraft.getInstance();
         ShaderInstance shaderInstance = minecraft.gameRenderer.blitShader;
-        if (shaderInstance == null) return;
         shaderInstance.setSampler("DiffuseSampler", id);
         Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float) viewWidth, (float) viewHeight, 0.0F, 1000.0F, 3000.0F);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
@@ -52,6 +52,36 @@ public class Texture implements Destroyable, Resizable {
         bufferBuilder.vertex(viewWidth, viewHeight, 0.0).uv(1f, 0.0F).color(255, 255, 255, 255).endVertex();
         bufferBuilder.vertex(viewWidth, 0.0, 0.0).uv(1f, 1f).color(255, 255, 255, 255).endVertex();
         bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, 1f).color(255, 255, 255, 255).endVertex();
+        BufferUploader.draw(bufferBuilder.end());
+        shaderInstance.clear();
+        GlStateManager._depthMask(true);
+        GlStateManager._colorMask(true, true, true, true);*/
+        RenderSystem.assertOnRenderThread();
+        GlStateManager._colorMask(true, true, true, false);
+        GlStateManager._disableDepthTest();
+        GlStateManager._depthMask(false);
+        GlStateManager._viewport(0, 0, viewWidth, viewHeight);
+        Minecraft minecraft = Minecraft.getInstance();
+        ShaderInstance shaderInstance = minecraft.gameRenderer.blitShader;
+        shaderInstance.setSampler("DiffuseSampler", id);
+        Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float) srcWidth, (float) srcHeight, 0.0F, 1000.0F, 3000.0F);
+        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
+        if (shaderInstance.MODEL_VIEW_MATRIX != null) {
+            shaderInstance.MODEL_VIEW_MATRIX.set((new Matrix4f()).translation(0.0F, 0.0F, -2000.0F));
+        }
+
+        if (shaderInstance.PROJECTION_MATRIX != null) {
+            shaderInstance.PROJECTION_MATRIX.set(matrix4f);
+        }
+
+        shaderInstance.apply();
+        Tesselator tesselator = RenderSystem.renderThreadTesselator();
+        BufferBuilder bufferBuilder = tesselator.getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        bufferBuilder.vertex(0.0, srcHeight, 0.0).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(srcWidth, srcHeight, 0.0).uv(1, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(srcWidth, 0.0, 0.0).uv(1, 1).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, 1).color(255, 255, 255, 255).endVertex();
         BufferUploader.draw(bufferBuilder.end());
         shaderInstance.clear();
         GlStateManager._depthMask(true);

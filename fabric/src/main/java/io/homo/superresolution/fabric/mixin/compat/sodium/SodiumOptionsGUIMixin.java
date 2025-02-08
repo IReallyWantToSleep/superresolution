@@ -33,7 +33,7 @@ public class SodiumOptionsGUIMixin extends Screen {
             at = {@At("RETURN")}
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
-        Component shaderPacksTranslated = Component.literal("超分辨率配置");
+        Component shaderPacksTranslated = Component.translatable("superresolution.screen.config.name");
         this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of());
         this.pages.add(this.page);
     }

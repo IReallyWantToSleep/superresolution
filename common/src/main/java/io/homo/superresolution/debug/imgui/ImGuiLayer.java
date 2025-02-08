@@ -1,15 +1,13 @@
 package io.homo.superresolution.debug.imgui;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import imgui.ImGui;
 import io.homo.superresolution.SuperResolution;
+import io.homo.superresolution.render.MinecraftRenderingStates;
 import io.homo.superresolution.upscale.AlgorithmManager;
-import io.homo.superresolution.upscale.AlgorithmType;
-import io.homo.superresolution.upscale.fsr2.FSR2;
 import net.minecraft.client.Minecraft;
 
 public class ImGuiLayer {
-    public static boolean needCapture = false;
-
     public void imgui() {
 
         if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null)
@@ -17,9 +15,6 @@ public class ImGuiLayer {
         int width = 500;
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");
-        if (ImGui.button("CaptureVulkan")) {
-            needCapture = true;
-        }
         if (AlgorithmManager.param.currentProjectionMatrix != null) {
             ImGui.text("%s %s %s %s".formatted(
                     String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m00()),
@@ -72,22 +67,11 @@ public class ImGuiLayer {
                     String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m33())
             ));
         }
-
-
-        if (SuperResolution.algorithmType == AlgorithmType.FSR2) {
-            ImGui.text("mvFramebuffer " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            ImGui.image(FSR2.helper.getMotionVectorsTex(),
-                    width,
-                    height,
-                    0, 1, 1, 0);
-        }
-
         ImGui.text("outFramebuffer " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
         ImGui.image(SuperResolution.currentAlgorithm.getOutputTextureId(),
                 width,
                 height,
                 0, 1, 1, 0);
-
 
         ImGui.text("inFramebuffer " + AlgorithmManager.helper.getRenderWidth() + " " + AlgorithmManager.helper.getRenderHeight());
         ImGui.image(SuperResolution.currentAlgorithm.getInputTextureId(),
@@ -105,46 +89,13 @@ public class ImGuiLayer {
                 width,
                 height,
                 0, 1, 1, 0);
-        if (Minecraft.getInstance().level != null) {
-            ImGui.text("entityTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            if (Minecraft.getInstance().levelRenderer.entityTarget() != null)
-                ImGui.image(Minecraft.getInstance().levelRenderer.entityTarget().getColorTextureId(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-
-            ImGui.text("ParticlesTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            if (Minecraft.getInstance().levelRenderer.getParticlesTarget() != null)
-                ImGui.image(Minecraft.getInstance().levelRenderer.getParticlesTarget().getColorTextureId(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-            ImGui.text("ItemEntityTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            if (Minecraft.getInstance().levelRenderer.getItemEntityTarget() != null)
-                ImGui.image(Minecraft.getInstance().levelRenderer.getItemEntityTarget().getColorTextureId(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-            ImGui.text("TranslucentTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            if (Minecraft.getInstance().levelRenderer.getTranslucentTarget() != null)
-                ImGui.image(Minecraft.getInstance().levelRenderer.getTranslucentTarget().getColorTextureId(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-            ImGui.text("CloudsTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            if (Minecraft.getInstance().levelRenderer.getCloudsTarget() != null)
-                ImGui.image(Minecraft.getInstance().levelRenderer.getCloudsTarget().getColorTextureId(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-            ImGui.text("WeatherTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-            if (Minecraft.getInstance().levelRenderer.getWeatherTarget() != null)
-                ImGui.image(Minecraft.getInstance().levelRenderer.getWeatherTarget().getColorTextureId(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-        }
-
+        MinecraftRenderingStates.minecraftRenderTargetMap.forEach((String key, RenderTarget renderTarget) -> {
+            ImGui.text(key + " " + renderTarget.width + " " + renderTarget.height);
+            ImGui.image(renderTarget.getColorTextureId(),
+                    width,
+                    height,
+                    0, 1, 1, 0);
+        });
         ImGui.end();
     }
 }

@@ -39,6 +39,13 @@ repositories {
         }
     }
     maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+    maven {
         name = 'NeoForged'
         url = 'https://maven.neoforged.net/releases'
     }
@@ -50,8 +57,9 @@ dependencies {
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle(project(path: ":common", configuration: "transformProductionForge"))
     modImplementation fileTree(dir: 'libs', include: ['*.jar'])
+    forgeRuntimeLibrary fileTree(dir: 'libs', include: ['commons-math3-3.6.1.jar', 'jcpp-1.4.14.jar', 'luaj-core-3.0.3.jar', 'luaj-jse-3.0.3.jar'])
+    modImplementation("maven.modrinth:timeless-and-classics-zero:1.1.4-hotfix-forge,1.20.1")
     modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
-
     implementation("io.github.spair:imgui-java-app:1.87.5")
     implementation("io.github.spair:imgui-java-binding:1.87.5")
     implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
@@ -61,12 +69,10 @@ dependencies {
     forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
 
     implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    implementation("org.lwjgl:lwjgl-shaderc")
-    implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
-
     forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc")
-    forgeRuntimeLibrary("org.lwjgl:lwjgl-shaderc::natives-windows")
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
+    implementation("io.github.llamalad7:mixinextras-forge:0.4.1")
+    include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
 }
 
 processResources {

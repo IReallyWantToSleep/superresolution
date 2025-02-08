@@ -1,13 +1,8 @@
 package io.homo.superresolution.mixin.core;
 
 import io.homo.superresolution.SuperResolution;
-import io.homo.superresolution.config.Config;
 import io.homo.superresolution.debug.DebugInfo;
-import io.homo.superresolution.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.render.MinecraftRenderingStates;
-import io.homo.superresolution.render.renderdoc.RenderDoc;
-import io.homo.superresolution.render.renderdoc.RenderdocLibrary;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -19,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
-public class OnRenderWorld_GameRendererMixin {
+public class GameRendererMixin {
     @Unique
     public float super_resolution$frameTimeDelta_algo = 16.6f;
     @Unique
@@ -40,54 +35,59 @@ public class OnRenderWorld_GameRendererMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "render")
     private void onRenderStart(float partialTicks, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+        SuperResolution.setFrameTimeDelta(partialTicks * 1000);
+        DebugInfo.setFrameTimeDelta(partialTicks * 1000);
         if (renderLevel && this.minecraft.level != null) {
-            SuperResolution.isRenderingWorld = true;
+            //SuperResolution.isRenderingWorld = true;
             if (super_resolution$shouldResize) {
                 super_resolution$shouldResize = false;
-                SuperResolution.getInstance().resize(
-                        SuperResolution.getMinecraftWidth(),
-                        SuperResolution.getMinecraftHeight()
-                );
-                MinecraftRenderingStates.onResolutionChanged();
+                Minecraft.getInstance().resizeDisplay();
             }
         } else {
             super_resolution$shouldResize = true;
         }
     }
 
+
+/*
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/vertex/PoseStack;FJZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V", shift = At.Shift.AFTER), method = "renderLevel")
+    private void onRenderHandItemStart(CallbackInfo ci) {
+        if (Config.enableUpscale) {
+            SuperResolution.isRenderingWorld = false;
+            glBindFramebuffer(36160, MinecraftRenderingStates.getOriginRenderTarget().frameBufferId);
+            GlStateManager._viewport(0, 0, MinecraftRenderingStates.getOriginRenderTarget().viewWidth, MinecraftRenderingStates.getOriginRenderTarget().viewHeight);
+        }
+    }
+
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V"), method = "renderLevel")
+    private void onRenderHandItemEnd(CallbackInfo ci) {
+        if (Config.enableUpscale) {
+            SuperResolution.isRenderingWorld = true;
+            glBindFramebuffer(36160, MinecraftRenderingStates.getRenderTarget().frameBufferId);
+            GlStateManager._viewport(0, 0, MinecraftRenderingStates.getRenderTarget().viewWidth, MinecraftRenderingStates.getRenderTarget().viewHeight);
+        }
+    }*/
+
+    /*
+
     @Inject(at = @At(value = "HEAD"), method = "renderLevel")
-    private void onRenderBegin(CallbackInfo ci) {
+    private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
             MinecraftRenderingStates.setShouldScale(true);
         }
     }
 
     @Inject(at = @At(value = "RETURN"), method = "renderLevel")
-    private void onRenderEnd(CallbackInfo ci) {
+    private void onRenderWorldEnd(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
             SuperResolution.isRenderingWorld = false;
+            MinecraftRenderingStates.setShouldScale(false);
             super_resolution$lastRenderTime_algo = Util.getMillis();
             if (Config.enableUpscale) {
-                if (ImGuiLayer.needCapture) {
-                    RenderDoc.renderdoc.TriggerCapture.call();
-                    //RenderDoc.renderdoc.StartFrameCapture.call(new Pointer(SuperResolution.interopManager.vulkanApp.instance.address()), null);
-                    SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
-                    //RenderDoc.renderdoc.EndFrameCapture.call(new Pointer(SuperResolution.interopManager.vulkanApp.instance.address()), null);
-                    int count = RenderDoc.getNumCaptures();
-                    RenderDoc.Capture capture = RenderDoc.getCapture(count - 1);
-                    if (capture != null) {
-                        RenderDoc.LOGGER.info("captureVulkan -> {}", capture.path());
-                    }
-                    RenderDoc.renderdoc.LaunchReplayUI.call(new RenderdocLibrary.uint32_t(1), null);
-                    RenderDoc.renderdoc.ShowReplayUI.call();
-                } else {
-                    SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
-                }
-                ImGuiLayer.needCapture = false;
+                SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
             }
             super_resolution$frameTimeDelta_algo = Util.getMillis() - super_resolution$lastRenderTime_algo;
             DebugInfo.setFrameTimeDeltaAlgo(super_resolution$frameTimeDelta_algo);
-            MinecraftRenderingStates.setShouldScale(false);
             if (Config.enableUpscale) {
                 SuperResolution.currentAlgorithm.blitToScreen(
                         minecraft.getWindow().getScreenWidth(),
@@ -99,12 +99,6 @@ public class OnRenderWorld_GameRendererMixin {
                         minecraft.getWindow().getScreenHeight()
                 );
             }
-
         }
-    }
-    //导致游戏崩溃暂时不用
-    //@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix(D)Lorg/joml/Matrix4f;"), method = "renderLevel")
-    //private void captureFov(float partialTicks, long finishTimeNano, PoseStack poseStack, CallbackInfo ci, @Local double d) {
-    //    AlgorithmManager.setFov(d);
-    //}
+    }*/
 }

@@ -6,6 +6,7 @@ import io.homo.superresolution.gui.widgets.AbstractWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
 
@@ -89,6 +90,11 @@ public abstract class AbstractOption<T> extends AbstractWidget {
 
     public AbstractOption<T> setLabel(String label) {
         this.label = label;
+        return this;
+    }
+
+    public AbstractOption<T> setLabel(Component label) {
+        this.label = label.getString();
         return this;
     }
 

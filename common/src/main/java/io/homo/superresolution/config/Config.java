@@ -5,14 +5,23 @@ import io.homo.superresolution.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
 
 public class Config {
-    public static boolean enableUpscale = true;
+    private static boolean enableUpscale = true;
+    private static boolean includeEffects = false;
     private static float upscaleRatio = 1.7f;
     private static AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
     private static float renderScaleFactor = 1 / upscaleRatio;
     private static float sharpness = 0.2f;
 
+    public static boolean isIncludeEffects() {
+        return true;
+    }
+
+    public static void setIncludeEffects(boolean includeEffects) {
+        Config.includeEffects = includeEffects;
+    }
+
     public static float getRenderScaleFactor() {
-        return enableUpscale ? renderScaleFactor : 1;
+        return isEnableUpscale() ? renderScaleFactor : 1;
     }
 
     public static float getUpscaleRatio() {
@@ -55,7 +64,8 @@ public class Config {
         data.sharpness = sharpness;
         data.upscaleAlgo = ConfigData.algoEnumToString(getUpscaleAlgo());
         data.upscaleRatio = upscaleRatio;
-        data.enableUpscale = enableUpscale;
+        data.enableUpscale = isEnableUpscale();
+        data.includeEffects = isIncludeEffects();
         return data;
     }
 
@@ -63,7 +73,12 @@ public class Config {
         sharpness = data.sharpness;
         upscaleAlgo = ConfigData.stringToAlgoEnum(data.upscaleAlgo);
         upscaleRatio = data.upscaleRatio;
-        enableUpscale = data.enableUpscale;
+        setEnableUpscale(data.enableUpscale);
+        setIncludeEffects(data.includeEffects);
+    }
+
+    public static boolean isEnableUpscale() {
+        return enableUpscale;
     }
 
     public static void setEnableUpscale(boolean enableUpscale) {

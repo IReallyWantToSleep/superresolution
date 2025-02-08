@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
   "client": [
-    "embeddium.EmbeddiumOptionMixin"
+    "embeddium.EmbeddiumOptionMixin",
+    "tacz.RenderHelperMixin"
   ],
   "mixins": [
   ],

@@ -27,9 +27,12 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        Texture.blitToScreen(input.width,input.height,width,height,this.input.getColorTextureId());
+        Texture.blitToScreen(input.width, input.height, width, height, this.input.getColorTextureId());
     }
 
-    public void resize(int width, int height) {}
-    public void destroy() {}
+    public void resize(int width, int height) {
+    }
+
+    public void destroy() {
+    }
 }

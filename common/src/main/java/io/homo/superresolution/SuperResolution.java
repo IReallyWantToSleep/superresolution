@@ -21,6 +21,7 @@ import io.homo.superresolution.upscale.utils.Requirement;
 import io.homo.superresolution.utils.MessageBox;
 import net.fabricmc.api.EnvType;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
     private static final Minecraft minecraft = Minecraft.getInstance();
-    private static final Requirement commonRequirement = Requirement.nothing().majorVersion(4).minorVersion(3);
+    private static final Requirement commonRequirement = Requirement.nothing().glMajorVersion(4).glMinorVersion(3);
     public static AbstractAlgorithm currentAlgorithm;
     public static None defaultAlgorithm = None.create();
     public static boolean isInit;
@@ -72,14 +73,15 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void check() {
-        if (!commonRequirement.checkVersion()) {
+        if (!commonRequirement.checkGlVersion()) {
             MessageBox.createError(
-                    "OpenGL版本不符合要求\n要求版本:%s.%s\n实际版本:%s.%s".formatted(
-                            commonRequirement.getMajorVersion(),
-                            commonRequirement.getMinorVersion(),
+                    Component.translatable("superresolution.common_requirement.not_support.version").getString().formatted(
+                            commonRequirement.getGlMajorVersion(),
+                            commonRequirement.getGlMinorVersion(),
                             Gl.getVersion()[0],
                             Gl.getVersion()[0]),
-                    "SuperResolution 错误");
+                    Component.translatable("superresolution.common_requirement.not_support.msg").getString()
+            );
             Minecraft.getInstance().destroy();
         }
 
@@ -88,9 +90,9 @@ public final class SuperResolution implements Resizable, Destroyable {
             for (String name : commonRequirement.getMissingExtension()) {
                 extensionStringBuilder.append(name).append("\n");
             }
-            MessageBox.createError("缺少必要的OpenGL扩展\n缺少的扩展:%s"
+            MessageBox.createError(Component.translatable("superresolution.common_requirement.not_support.extension").getString()
                             .formatted(extensionStringBuilder.toString()),
-                    "SuperResolution 错误"
+                    Component.translatable("superresolution.common_requirement.not_support.msg").getString()
             );
             Minecraft.getInstance().destroy();
         }

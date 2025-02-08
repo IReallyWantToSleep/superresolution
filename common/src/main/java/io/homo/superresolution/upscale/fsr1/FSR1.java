@@ -6,6 +6,7 @@ import io.homo.superresolution.render.gl.shader.ComputeShaderProgram;
 import io.homo.superresolution.render.gl.texture.Texture;
 import io.homo.superresolution.upscale.AbstractAlgorithm;
 import io.homo.superresolution.upscale.AlgorithmManager;
+import io.homo.superresolution.upscale.AlgorithmType;
 import io.homo.superresolution.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.utils.FileReadHelper;
 
@@ -126,5 +127,10 @@ public class FSR1 extends AbstractAlgorithm {
     @Override
     public int getOutputTextureId() {
         return output.id;
+    }
+
+    @Override
+    protected boolean isSupport() {
+        return AlgorithmType.FSR1.getValue().check();
     }
 }

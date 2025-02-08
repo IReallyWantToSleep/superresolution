@@ -1,11 +1,18 @@
 package io.homo.superresolution.upscale.utils;
 
+import io.homo.superresolution.platform.Arch;
+import io.homo.superresolution.platform.OS;
+import io.homo.superresolution.platform.OSType;
+import io.homo.superresolution.platform.Platform;
+
 import java.util.ArrayList;
 
 public class Requirement {
     private final ArrayList<String> includeExtension = new ArrayList<>();
-    private int major_version = -1;
-    private int minor_version = -1;
+    private int glMajorVersion = -1;
+    private int glMinorVersion = -1;
+    private boolean developmentEnvironment = false;
+    private ArrayList<OS> includeOS = new ArrayList<>();
 
     protected Requirement() {
     }
@@ -14,19 +21,32 @@ public class Requirement {
         return new Requirement();
     }
 
-    public Requirement version(int major_version, int minor_version) {
-        this.major_version = major_version;
-        this.minor_version = minor_version;
+    public ArrayList<OS> getIncludeOS() {
+        return includeOS;
+    }
+
+    public boolean isDevelopmentEnvironment() {
+        return developmentEnvironment;
+    }
+
+    public Requirement developmentEnvironment(boolean developmentEnvironment) {
+        this.developmentEnvironment = developmentEnvironment;
         return this;
     }
 
-    public Requirement majorVersion(int major_version) {
-        this.major_version = major_version;
+    public Requirement glVersion(int major_version, int minor_version) {
+        this.glMajorVersion = major_version;
+        this.glMinorVersion = minor_version;
         return this;
     }
 
-    public Requirement minorVersion(int minor_version) {
-        this.minor_version = minor_version;
+    public Requirement glMajorVersion(int major_version) {
+        this.glMajorVersion = major_version;
+        return this;
+    }
+
+    public Requirement glMinorVersion(int minor_version) {
+        this.glMinorVersion = minor_version;
         return this;
     }
 
@@ -36,17 +56,31 @@ public class Requirement {
     }
 
     public boolean check() {
-        return checkVersion() & checkExtension();
+        return checkGlVersion() & checkExtension() & checkEnv();
     }
 
-    public boolean checkVersion() {
+    public boolean checkGlVersion() {
         boolean version = true;
-        if (major_version != -1 && major_version > AlgorithmHelper.GLVersion[0]) version = false;
-        if (minor_version != -1 && minor_version > AlgorithmHelper.GLVersion[1]) version = false;
+        if (glMajorVersion != -1 && glMajorVersion > AlgorithmHelper.GLVersion[0]) version = false;
+        if (glMinorVersion != -1 && glMinorVersion > AlgorithmHelper.GLVersion[1]) version = false;
         return version;
     }
 
-    public boolean checkExtension(){
+    public boolean checkEnv() {
+        boolean env = true;
+        if (developmentEnvironment && !Platform.currentPlatform.isDevelopmentEnvironment()) env = false;
+        OS currentOS = Platform.currentPlatform.getOS();
+        boolean os = includeOS.isEmpty();
+        for (OS o : includeOS) {
+            if (o.arch.equals(currentOS.arch) && o.type.equals(currentOS.type)) {
+                os = true;
+                break;
+            }
+        }
+        return env && os;
+    }
+
+    public boolean checkExtension() {
         return getMissingExtension().isEmpty();
     }
 
@@ -54,20 +88,40 @@ public class Requirement {
         return includeExtension;
     }
 
-    public int getMajorVersion() {
-        return major_version;
+    public int getGlMajorVersion() {
+        return glMajorVersion;
     }
 
-    public int getMinorVersion() {
-        return minor_version;
+    public int getGlMinorVersion() {
+        return glMinorVersion;
     }
 
-    public ArrayList<String> getMissingExtension(){
-        ArrayList<String> missingExtension =  new ArrayList<>();
+    public ArrayList<String> getMissingExtension() {
+        ArrayList<String> missingExtension = new ArrayList<>();
         for (String name : includeExtension)
             if (!AlgorithmHelper.hasGLExtension(name)) {
                 missingExtension.add(name);
             }
         return missingExtension;
+    }
+
+    public Requirement addIncludeOS(Arch arch) {
+        includeOS.add(new OS(arch, OSType.ANY));
+        return this;
+    }
+
+    public Requirement addIncludeOS(OSType type) {
+        includeOS.add(new OS(Arch.ANY, type));
+        return this;
+    }
+
+    public Requirement addIncludeOS(Arch arch, OSType type) {
+        includeOS.add(new OS(arch, type));
+        return this;
+    }
+
+    public Requirement addIncludeOS(OS os) {
+        includeOS.add(os);
+        return this;
     }
 }

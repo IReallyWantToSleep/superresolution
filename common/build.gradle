@@ -2,6 +2,10 @@ architectury {
     common("fabric", "forge")
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/super_resolution.accesswidener")
+}
+
 dependencies {
     // We depend on Fabric Loader here to use the Fabric @Environment annotations,
     // which get remapped to the correct annotations on each platform.
@@ -19,14 +23,14 @@ dependencies {
     implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
 }
 
-tasks.register("genJNIHEAD"){
+tasks.register("genJNIHEAD") {
     def out = new ByteArrayOutputStream()
     doLast {
         exec {
             mkdir "$project.rootDir/native-cpp/include"
             mkdir "$project.buildDir"
             workingDir "$project.projectDir/src/main/java"
-            commandLine "javac", "-h", "$project.rootDir/native-cpp/include" , "$project.projectDir/src/main/java/oiiaio/fsr/NativeLib.java", "-d", "$project.buildDir/jni/"
+            commandLine "javac", "-h", "$project.rootDir/native-cpp/include", "$project.projectDir/src/main/java/oiiaio/fsr/NativeLib.java", "-d", "$project.buildDir/jni/"
             standardOutput = out
         }
         delete("$project.buildDir/jni/")
