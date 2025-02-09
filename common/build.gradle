@@ -30,7 +30,7 @@ tasks.register("genJNIHEAD") {
             mkdir "$project.rootDir/native-cpp/include"
             mkdir "$project.buildDir"
             workingDir "$project.projectDir/src/main/java"
-            commandLine "javac", "-h", "$project.rootDir/native-cpp/include", "$project.projectDir/src/main/java/oiiaio/fsr/NativeLib.java", "-d", "$project.buildDir/jni/"
+            commandLine "javac", "-h", "$project.rootDir", "$project.projectDir/src/main/java/oiiaio/fsr/NativeLib.java", "-d", "$project.buildDir/jni/"
             standardOutput = out
         }
         delete("$project.buildDir/jni/")

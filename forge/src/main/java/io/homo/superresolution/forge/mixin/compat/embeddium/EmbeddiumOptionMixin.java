@@ -1,8 +1,8 @@
 package io.homo.superresolution.forge.mixin.compat.embeddium;
 
 import com.google.common.collect.Multimap;
-import io.homo.superresolution.SuperResolution;
-import io.homo.superresolution.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.embeddedt.embeddium.client.gui.options.OptionIdentifier;

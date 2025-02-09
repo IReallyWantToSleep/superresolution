@@ -1,10 +1,9 @@
 package oiiaio.fsr;
 
-import io.homo.superresolution.SuperResolution;
+import io.homo.superresolution.common.SuperResolution;
 import org.lwjgl.glfw.GLFW;
 import static org.lwjgl.vulkan.VK10.vkGetDeviceProcAddr;
 
-import org.lwjgl.vulkan.VkDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

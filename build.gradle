@@ -93,4 +93,5 @@ forgix {
     group = "io.homo.superresolution"
     mergedJarName = "superresolution-${rootProject.mod_version}-${rootProject.minecraft_version}.jar"
     outputDir = "build/"
+    removeDuplicate "io.homo.superresolution.common"
 }

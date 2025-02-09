@@ -1,6 +1,6 @@
 package io.homo.superresolution.forge.platform;
 
-import io.homo.superresolution.platform.Platform;
+import io.homo.superresolution.common.platform.Platform;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.LoadingModList;
 

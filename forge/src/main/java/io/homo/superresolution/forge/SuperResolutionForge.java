@@ -1,7 +1,7 @@
 package io.homo.superresolution.forge;
 
-import io.homo.superresolution.SuperResolution;
-import io.homo.superresolution.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;

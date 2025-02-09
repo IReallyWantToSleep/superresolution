@@ -1,6 +1,6 @@
 package io.homo.superresolution.fabric.platform;
 
-import io.homo.superresolution.platform.Platform;
+import io.homo.superresolution.common.platform.Platform;
 import net.fabricmc.loader.api.FabricLoader;
 
 public class FabricPlatform extends Platform {

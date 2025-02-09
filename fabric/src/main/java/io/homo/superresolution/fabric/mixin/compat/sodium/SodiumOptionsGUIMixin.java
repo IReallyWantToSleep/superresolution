@@ -1,7 +1,7 @@
 package io.homo.superresolution.fabric.mixin.compat.sodium;
 
 import com.google.common.collect.ImmutableList;
-import io.homo.superresolution.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
 import net.minecraft.client.gui.screens.Screen;
