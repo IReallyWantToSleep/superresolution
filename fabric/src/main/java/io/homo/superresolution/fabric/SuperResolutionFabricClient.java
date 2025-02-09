@@ -1,6 +1,6 @@
 package io.homo.superresolution.fabric;
 
-import io.homo.superresolution.SuperResolution;
+import io.homo.superresolution.common.SuperResolution;
 import net.fabricmc.api.ClientModInitializer;
 
 public final class SuperResolutionFabricClient implements ClientModInitializer {

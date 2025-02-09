@@ -35,6 +35,13 @@ repositories {
         name = "Terraformers"
         url = "https://maven.terraformersmc.com/"
     }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 dependencies {
@@ -51,13 +58,9 @@ dependencies {
     implementation "org.anarres:jcpp:1.4.14"
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "io.github.douira:glsl-transformer:2.0.1"
-    implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    implementation("org.lwjgl:lwjgl-shaderc")
-    implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
-    //include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    //include("org.lwjgl:lwjgl-shaderc")
-    //include("org.lwjgl:lwjgl-shaderc::natives-windows")
 
+    implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
+    include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
 }
 
 processResources {
