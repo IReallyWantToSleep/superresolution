@@ -54,10 +54,11 @@ public class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "getMainRenderTarget", cancellable = true)
     private void replaceMainRenderTarget(CallbackInfoReturnable<RenderTarget> cir) {
-        if (SuperResolution.isRenderingWorld) {
+        if (Minecraft.getInstance().level == null) return;
+        if (MinecraftRenderingStates.shouldScale()) {
             cir.setReturnValue(MinecraftRenderingStates.getRenderTarget());
         } else {
-            cir.setReturnValue(this.mainRenderTarget);
+            cir.setReturnValue(MinecraftRenderingStates.getOriginRenderTarget());
         }
     }
 }

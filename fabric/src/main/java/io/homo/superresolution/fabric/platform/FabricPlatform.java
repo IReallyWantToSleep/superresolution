@@ -5,6 +5,11 @@ import net.fabricmc.loader.api.FabricLoader;
 
 public class FabricPlatform extends Platform {
     @Override
+    public void init() {
+        if (isInstallIris()) this.irisPlatform = new IrisFabricPlatform();
+    }
+
+    @Override
     public boolean isModLoaded(String modId) {
         return FabricLoader.getInstance().isModLoaded(modId);
     }

@@ -3,8 +3,8 @@ package io.homo.superresolution.common.render.gl.framebuffer;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import static io.homo.superresolution.common.render.gl.GlConst.*;
 import static io.homo.superresolution.common.render.gl.Gl.*;
+import static io.homo.superresolution.common.render.gl.GlConst.*;
 
 public class StorageFrameBuffer extends FrameBuffer {
     public StorageFrameBuffer(boolean useDepth) {
@@ -33,8 +33,10 @@ public class StorageFrameBuffer extends FrameBuffer {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, this.width, this.height); // 修复深度格式
+                glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, this.width, this.height);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
+
             }
 
             glBindTexture(GL_TEXTURE_2D, this.colorTextureId);

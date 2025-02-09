@@ -26,7 +26,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
         String mixinName = getClassName(mClassPath).split("\\.")[1];
         return shouldApplyMixinByName(mixinName) && (
                 switch (mixinClassify) {
-                    case "core", "gui" -> true;
+                    case "core", "gui", "compat" -> true;
                     case "debug" -> Platform.currentPlatform.isDevelopmentEnvironment();
                     default -> false;
                 }

@@ -83,7 +83,6 @@ public class ImGuiLayer {
                 width,
                 height,
                 0, 1, 1, 0);
-
         ImGui.text("MainRenderTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
         ImGui.image(Minecraft.getInstance().getMainRenderTarget().getColorTextureId(),
                 width,

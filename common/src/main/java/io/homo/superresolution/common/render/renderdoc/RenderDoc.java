@@ -5,7 +5,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
 import dev.architectury.platform.Platform;
-import net.minecraft.Util;
+import io.homo.superresolution.common.platform.OSType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +22,7 @@ public class RenderDoc {
     public static void init() {
         var apiPointer = new PointerByReference();
         RenderdocLibrary.RenderdocApi apiInstance = null;
-        if (Util.getPlatform() == Util.OS.WINDOWS) {
+        if (OSType.isCurrentOS(OSType.WINDOWS)) {
             try {
                 String projectDir = Platform.getGameFolder().getParent().getParent().toAbsolutePath().toString();
                 String libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();

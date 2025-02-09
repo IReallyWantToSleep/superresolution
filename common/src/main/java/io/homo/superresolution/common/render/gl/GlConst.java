@@ -74,11 +74,13 @@ public class GlConst {
     public static final int GL_MAX_TEXTURE_SIZE = 3379;
     public static final int GL_TEXTURE_2D = 3553;
     public static final int GL_DEPTH_COMPONENT = 6402;
+    public static final int GL_DEPTH32F_STENCIL8 = 36013;
     public static final int GL_DEPTH_COMPONENT32 = 33191;
     public static final int GL_FRAMEBUFFER = 36160;
     public static final int GL_RENDERBUFFER = 36161;
     public static final int GL_COLOR_ATTACHMENT0 = 36064;
     public static final int GL_DEPTH_ATTACHMENT = 36096;
+    public static final int GL_STENCIL_ATTACHMENT = 36128;
     public static final int GL_FRAMEBUFFER_COMPLETE = 36053;
     public static final int GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT = 36054;
     public static final int GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT = 36055;

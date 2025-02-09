@@ -76,6 +76,10 @@ public class MinecraftRenderingStates {
         minecraft.getProfiler().popPush("level");
     }
 
+    public static boolean shouldScale() {
+        return shouldScale;
+    }
+
     private static void calculateSize() {
         if (minecraft.level == null) return;
         currentWidth = AlgorithmManager.helper.getRenderWidth();
@@ -135,7 +139,6 @@ public class MinecraftRenderingStates {
                     Minecraft.ON_OSX
             );
         }
-
         shouldScale = prev;
     }
 
