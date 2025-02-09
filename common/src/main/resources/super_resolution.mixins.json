@@ -15,7 +15,6 @@
         "debug.DebugMixin",
         "debug.ImguiMixin",
         "debug.KeyboardHandlerMixin",
-        "debug.TestMixin",
         "gui.AbstractWidgetAccessor",
         "gui.GameRendererAccessor"
     ],
