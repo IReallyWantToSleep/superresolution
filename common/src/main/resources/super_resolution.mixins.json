@@ -1,13 +1,13 @@
 {
   "required": true,
-  "package": "io.homo.superresolution.mixin",
-  "plugin": "io.homo.superresolution.mixin.MixinPlugin",
+  "package": "io.homo.superresolution.common.mixin",
+  "plugin": "io.homo.superresolution.common.mixin.MixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
   "client": [
+    "core.ForceOpenGLVersion_WindowMixin",
     "core.GameRendererMixin",
     "core.LevelRendererMixin",
-    "core.MainTargetMixin",
     "core.MinecraftAccessor",
     "core.MinecraftMixin",
     "core.RenderTargetMixin",
@@ -15,7 +15,6 @@
     "debug.DebugMixin",
     "debug.ImguiMixin",
     "debug.KeyboardHandlerMixin",
-    "debug.TestMixin",
     "gui.GameRendererAccessor"
   ],
   "mixins": [

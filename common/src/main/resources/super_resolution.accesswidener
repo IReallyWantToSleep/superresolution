@@ -1,0 +1,4 @@
+accessWidener v2 named
+
+accessible field net/minecraft/client/renderer/PostChain screenTarget Lcom/mojang/blaze3d/pipeline/RenderTarget;
+mutable field net/minecraft/client/renderer/PostChain screenTarget Lcom/mojang/blaze3d/pipeline/RenderTarget;

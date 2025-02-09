@@ -12,7 +12,7 @@
     "issues": "https://github.com/187J3X1-114514/superresolution/issues"
   },
   "license": "MIT",
-  "icon": "icon.png",
+  "icon": "logo.png",
   "environment": "client",
   "entrypoints": {
     "main": [

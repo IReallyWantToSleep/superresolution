@@ -1,9 +1,7 @@
 package io.homo.superresolution.fabric.mixin.compat.sodium;
 
 import com.google.common.collect.ImmutableList;
-import java.util.List;
-
-import io.homo.superresolution.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.List;
+
 @Mixin(SodiumOptionsGUI.class)
 public class SodiumOptionsGUIMixin extends Screen {
     @Shadow(remap = false)
@@ -23,6 +23,7 @@ public class SodiumOptionsGUIMixin extends Screen {
     private List<OptionPage> pages;
     @Unique
     private OptionPage page;
+
     protected SodiumOptionsGUIMixin(Component title) {
         super(title);
     }
@@ -32,7 +33,7 @@ public class SodiumOptionsGUIMixin extends Screen {
             at = {@At("RETURN")}
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
-        Component shaderPacksTranslated = Component.literal("超分辨率配置");
+        Component shaderPacksTranslated = Component.translatable("superresolution.screen.config.name");
         this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of());
         this.pages.add(this.page);
     }

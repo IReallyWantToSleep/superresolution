@@ -55,12 +55,9 @@ subprojects {
                 force "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
                 force "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
                 force "org.lwjgl:lwjgl-freetype:$lwjglVersion"
-                force "org.lwjgl:lwjgl-shaderc:$lwjglVersion"
             }
         }
         implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-        implementation("org.lwjgl:lwjgl-shaderc")
-        implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
         implementation "org.lwjgl:lwjgl-glfw:$lwjglVersion"
     }
 

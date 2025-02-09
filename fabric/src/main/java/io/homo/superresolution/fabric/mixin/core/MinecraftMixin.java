@@ -1,7 +1,7 @@
 package io.homo.superresolution.fabric.mixin.core;
 
 import com.mojang.blaze3d.pipeline.MainTarget;
-import io.homo.superresolution.SuperResolution;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.fabric.SuperResolutionFabricClient;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
