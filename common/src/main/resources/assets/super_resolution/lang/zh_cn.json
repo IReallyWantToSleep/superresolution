@@ -14,7 +14,7 @@
     "superresolution.screen.config.options.label.enable_upscale": "启用超分辨率",
     "superresolution.screen.config.options.tooltip.enable_upscale": "开启后将使用所选算法对画面进行超分辨率",
     "superresolution.screen.config.options.label.upscale_ratio": "超分辨率比例",
-    "superresolution.screen.config.options.tooltip.upscale_ratio": "超分辨率比例\n值越高渲染世界时的分辨率越低，画面越模糊，可以降低性能消耗以及很模糊的画面\n值越高渲染世界时的分辨率越高，画面就越清晰，可以获取更好的画面但会增加性能消耗\n当前渲染分辨率：%sx%s\n当前渲染精度：%s\n建议值：1.4~1.8",
+    "superresolution.screen.config.options.tooltip.upscale_ratio": "超分辨率比例\n值越高渲染世界时的分辨率越低，画面越模糊，可以降低性能消耗以及很模糊的画面\n值越低渲染世界时的分辨率越高，画面就越清晰，可以获取更好的画面但会增加性能消耗\n当前渲染分辨率：%sx%s\n当前渲染精度：%s\n建议值：1.4~1.8",
     "superresolution.screen.config.options.label.sharpness": "锐度",
     "superresolution.screen.config.options.tooltip.sharpness": "值越低画面越物体边缘越明显\n值越高远处物体越模糊\n建议值：0.55左右",
     "superresolution.screen.config.options.label.algo_type": "超分辨率算法",

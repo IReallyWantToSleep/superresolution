@@ -126,7 +126,7 @@ public class VkDeviceManager implements Destroyable {
             createInfo.pQueueCreateInfos(queueCreateInfos);
             //createInfo.pNext(deviceFeatures12);
             createInfo.ppEnabledExtensionNames(asPointerBuffer(stack, getRequiredExtensions()));
-            createInfo.ppEnabledLayerNames(application.validationLayers.validationLayersAsPointerBuffer(stack));
+            if (VkApplication.ENABLE_VALIDATION)createInfo.ppEnabledLayerNames(application.validationLayers.validationLayersAsPointerBuffer(stack));
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
             if (vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {

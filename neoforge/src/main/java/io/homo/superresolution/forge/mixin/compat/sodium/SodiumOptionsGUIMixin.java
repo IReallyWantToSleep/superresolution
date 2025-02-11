@@ -3,7 +3,13 @@ package io.homo.superresolution.forge.mixin.compat.sodium;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
+import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
+import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
+import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
+import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Final;
@@ -34,7 +40,18 @@ public class SodiumOptionsGUIMixin extends Screen {
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
         Component shaderPacksTranslated = Component.translatable("superresolution.screen.config.name");
-        this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of());
+        this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of(
+                OptionGroup.createBuilder()
+                        .add(OptionImpl.createBuilder(Integer.class, new MinecraftOptionsStorage())
+                                .setBinding((Options o, Integer b)->{},(Options o)-> 1)
+                                .setControl((option)-> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1, (a)-> Component.literal("")))
+                                .setName(Component.literal(""))
+                                .setTooltip(Component.literal(""))
+                                .build()
+                        )
+                        .build()
+        )
+        );
         this.pages.add(this.page);
     }
 

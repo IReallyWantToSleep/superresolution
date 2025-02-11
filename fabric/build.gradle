@@ -50,6 +50,7 @@ dependencies {
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
     modImplementation fileTree(dir: 'libs', include: ['*.jar'])
     modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+    modImplementation("maven.modrinth:reeses-sodium-options:mc1.21.4-1.8.3+fabric-fabric,1.21.1")
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
     implementation "io.github.spair:imgui-java-app:1.87.5"

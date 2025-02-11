@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class CompatMixinPlugin implements IMixinConfigPlugin {
@@ -26,6 +27,9 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
 
     public boolean shouldApplyMixin(String s, String s1) {
         String modid = s1.replace(CLASS_START, "").split("\\.")[0];
+        if (Objects.equals(modid, "reesessodiumoptions")){
+            return Platform.currentPlatform.isModLoaded("reeses-sodium-options");
+        }
         return Platform.currentPlatform.isModLoaded(modid);
     }
 
