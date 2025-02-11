@@ -57,10 +57,19 @@ public class MinecraftRenderingStates {
         shouldScale = scaling;
         minecraft.getProfiler().popPush(scaling ? "startScaling" : "finishScaling");
         if (scaling) {
+            //renderTarget.clear(Minecraft.ON_OSX);
+            SuperResolution.LOGGER.info("0");
+            RenderSystem.disableBlend();
+            RenderSystem.disableDepthTest();
+            RenderSystem.resetTextureMatrix();
             setClientRenderTarget(renderTarget);
             SuperResolution.currentAlgorithm.setInputFrameBuffer(renderTarget);
             renderTarget.bindWrite(true);
         } else {
+            SuperResolution.LOGGER.info("1");
+            RenderSystem.disableBlend();
+            RenderSystem.disableDepthTest();
+            RenderSystem.resetTextureMatrix();
             setClientRenderTarget(originRenderTarget);
             originRenderTarget.bindWrite(true);
         }

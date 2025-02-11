@@ -34,13 +34,13 @@ public class GameRendererMixin {
     private void onRenderStart(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         SuperResolution.setFrameTimeDelta(16.6f);
         DebugInfo.setFrameTimeDelta(16.6f);
-        if (renderLevel && this.minecraft.level != null) {
-            if (super_resolution$shouldResize) {
-                super_resolution$shouldResize = false;
-                Minecraft.getInstance().resizeDisplay();
-            }
-        } else {
-            super_resolution$shouldResize = true;
-        }
+        //if (renderLevel && this.minecraft.level != null) {
+        //    if (super_resolution$shouldResize) {
+        //        super_resolution$shouldResize = false;
+        //        Minecraft.getInstance().resizeDisplay();
+        //    }
+        //} else {
+        //    super_resolution$shouldResize = true;
+        //}
     }
 }

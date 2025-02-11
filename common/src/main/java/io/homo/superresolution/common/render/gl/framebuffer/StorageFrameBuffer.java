@@ -10,7 +10,7 @@ public class StorageFrameBuffer extends FrameBuffer {
     public StorageFrameBuffer(boolean useDepth) {
         super(useDepth);
     }
-
+    /*
     @Override
     public void createBuffers(int width, int height, boolean clearError) {
         RenderSystem.assertOnRenderThreadOrInit();
@@ -53,5 +53,5 @@ public class StorageFrameBuffer extends FrameBuffer {
         } else {
             throw new IllegalArgumentException("Window " + width + "x" + height + " size out of bounds (max. size: " + maxSupportedTextureSize + ")");
         }
-    }
+    }*/
 }

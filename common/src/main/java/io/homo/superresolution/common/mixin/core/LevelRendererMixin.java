@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
@@ -33,6 +34,7 @@ public class LevelRendererMixin {
     @Final
     private Minecraft minecraft;
 
+
     @Unique
     private boolean super_resolution$needResize = true;
 
@@ -58,7 +60,7 @@ public class LevelRendererMixin {
     @Inject(at = @At("RETURN"), method = "doEntityOutline")
     private void onLoadEntityOutlineShader(CallbackInfo ci) {
         if (super_resolution$frameCount == 3) {
-            Minecraft.getInstance().resizeDisplay();
+            entityEffect.resize(MinecraftRenderingStates.getRenderWidth(),MinecraftRenderingStates.getRenderHeight());
         }
     }
 
@@ -96,25 +98,19 @@ public class LevelRendererMixin {
         }
         if (Minecraft.getInstance().level != null) {
             SuperResolution.isRenderingWorld = true;
-            MinecraftRenderingStates.setShouldScale(true);
+            if (Config.isEnableUpscale()) MinecraftRenderingStates.setShouldScale(true);
         }
     }
 
     @Inject(at = @At(value = "TAIL"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
-        GL11.glDisable(GL11.GL_STENCIL_TEST);
+        //GL11.glDisable(GL11.GL_STENCIL_TEST);
         if (Minecraft.getInstance().level != null) {
             SuperResolution.isRenderingWorld = false;
-            MinecraftRenderingStates.setShouldScale(false);
-
+            if (Config.isEnableUpscale()) MinecraftRenderingStates.setShouldScale(false);
             if (Config.isEnableUpscale()) {
                 SuperResolution.currentAlgorithm.dispatch(SuperResolution.frameTimeDelta);
                 SuperResolution.currentAlgorithm.blitToScreen(
-                        minecraft.getWindow().getScreenWidth(),
-                        minecraft.getWindow().getScreenHeight()
-                );
-            } else {
-                SuperResolution.defaultAlgorithm.blitToScreen(
                         minecraft.getWindow().getScreenWidth(),
                         minecraft.getWindow().getScreenHeight()
                 );
