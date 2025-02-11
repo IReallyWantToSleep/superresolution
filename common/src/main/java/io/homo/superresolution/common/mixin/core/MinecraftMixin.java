@@ -2,8 +2,10 @@ package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderingStates;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -30,10 +32,17 @@ public class MinecraftMixin {
     @Inject(at = @At(value = "HEAD"), method = "getMainRenderTarget", cancellable = true)
     private void replaceMainRenderTarget(CallbackInfoReturnable<RenderTarget> cir) {
         if (Minecraft.getInstance().level == null) return;
-        if (MinecraftRenderingStates.shouldScale()) {
+        if (SuperResolution.isRenderingWorld && Config.isEnableUpscale()) {
             cir.setReturnValue(MinecraftRenderingStates.getRenderTarget());
         } else {
             cir.setReturnValue(MinecraftRenderingStates.getOriginRenderTarget());
+        }
+    }
+
+    @Inject(at = @At(value = "HEAD"), method = "setScreen", cancellable = true)
+    private void onSetScreen(Screen guiScreen, CallbackInfo ci) {
+        if (Minecraft.getInstance().level != null) {
+
         }
     }
 }

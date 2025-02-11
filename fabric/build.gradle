@@ -51,6 +51,9 @@ dependencies {
     modImplementation fileTree(dir: 'libs', include: ['*.jar'])
     modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
     modImplementation("maven.modrinth:reeses-sodium-options:mc1.21.4-1.8.3+fabric-fabric,1.21.1")
+    modImplementation("maven.modrinth:xaeros-world-map:1.39.2_Fabric_1.21-fabric,1.21.1")
+    modImplementation("maven.modrinth:xaeros-minimap:25.0.0_Fabric_1.21-fabric,1.21.1")
+
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
     implementation "io.github.spair:imgui-java-app:1.87.5"

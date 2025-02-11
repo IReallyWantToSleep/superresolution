@@ -5,10 +5,11 @@
     "compatibilityLevel": "JAVA_21",
     "minVersion": "0.8",
     "client": [
-        "sodium.SodiumOptionsGUIMixin",
-        "reesessodiumoptions.TabFrameMixin"
+        "reesessodiumoptions.TabFrameMixin",
+        "sodium.SodiumOptionsGUIMixin"
     ],
     "mixins": [
+        "distanthorizons.MinecraftRenderWrapperMixin"
     ],
     "injectors": {
         "defaultRequire": 1
