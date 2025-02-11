@@ -50,6 +50,7 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
                     this.rect.getCenterY() - 4,
                     textColor
             );
+            this.renderTooltip();
             RenderSystem.disableBlend();
         }
     }

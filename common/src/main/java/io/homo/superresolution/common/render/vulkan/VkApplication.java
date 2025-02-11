@@ -2,6 +2,7 @@ package io.homo.superresolution.common.render.vulkan;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
+import io.homo.superresolution.common.platform.Platform;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -18,6 +19,7 @@ import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class VkApplication implements Destroyable, Resizable {
+    public static final boolean ENABLE_VALIDATION = Platform.currentPlatform.isDevelopmentEnvironment();
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
     public final VkValidationLayers validationLayers;
@@ -39,7 +41,7 @@ public class VkApplication implements Destroyable, Resizable {
 
     public static VkApplication create() {
         VkApplication app = new VkApplication();
-        if (!VkValidationLayers.checkValidationLayerSupport()) {
+        if ((!VkValidationLayers.checkValidationLayerSupport() && ENABLE_VALIDATION)) {
             throw new VkException("Validation is necessary but not supported");
         }
         return app;
@@ -81,13 +83,13 @@ public class VkApplication implements Destroyable, Resizable {
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
                     .pApplicationInfo(appInfo)
-                    .ppEnabledExtensionNames(getInstanceRequiredExtensions(stack))
-                    .ppEnabledLayerNames(validationLayers.validationLayersAsPointerBuffer(stack));
-
-            VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-            validationLayers.populateDebugMessengerCreateInfo(debugCreateInfo);
-            createInfo.pNext(debugCreateInfo.address());
-
+                    .ppEnabledExtensionNames(getInstanceRequiredExtensions(stack));
+            if (VkApplication.ENABLE_VALIDATION) {
+                createInfo.ppEnabledLayerNames(validationLayers.validationLayersAsPointerBuffer(stack));
+                VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
+                validationLayers.populateDebugMessengerCreateInfo(debugCreateInfo);
+                createInfo.pNext(debugCreateInfo.address());
+            }
             PointerBuffer instancePtr = stack.mallocPointer(1);
             if (vkCreateInstance(createInfo, null, instancePtr) != VK_SUCCESS) {
                 throw new VkException("Failed to create instance");
@@ -98,7 +100,7 @@ public class VkApplication implements Destroyable, Resizable {
 
     private void initVulkan() {
         createInstance();
-        validationLayers.setupDebugMessenger();
+        if (ENABLE_VALIDATION)validationLayers.setupDebugMessenger();
         deviceManager.init();
         createCommand();
     }

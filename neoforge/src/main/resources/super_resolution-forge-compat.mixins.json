@@ -1,15 +1,16 @@
 {
-  "required": true,
-  "package": "io.homo.superresolution.forge.mixin.compat",
-  "plugin": "io.homo.superresolution.forge.mixin.compat.CompatMixinPlugin",
-  "compatibilityLevel": "JAVA_21",
-  "minVersion": "0.8",
-  "client": [
-    "sodium.SodiumOptionsGUIMixin"
-  ],
-  "mixins": [
-  ],
-  "injectors": {
-    "defaultRequire": 1
+    "required": true,
+    "package": "io.homo.superresolution.forge.mixin.compat",
+    "plugin": "io.homo.superresolution.forge.mixin.compat.CompatMixinPlugin",
+    "compatibilityLevel": "JAVA_21",
+    "minVersion": "0.8",
+    "client": [
+        "sodium.SodiumOptionsGUIMixin",
+        "reesessodiumoptions.TabFrameMixin"
+    ],
+    "mixins": [
+    ],
+    "injectors": {
+        "defaultRequire": 1
   }
 }

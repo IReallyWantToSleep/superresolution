@@ -83,17 +83,17 @@ public class ConfigScreen extends Screen {
         this.okButton = (ButtonWidget) new ButtonWidget(this.width - 50 - 10, this.height - 20 - 10, 50, 20)
                 .setAction(this::onClickOK)
                 .setLabel(Component.translatable("superresolution.screen.button.label.done"))
-                .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.label.close")));
+                .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.tooltip.done")));
         this.addWidget(this.okButton);
         this.closeButton = (ButtonWidget) new ButtonWidget(this.width - 50 - 10 - 50 - 10, this.height - 20 - 10, 50, 20)
                 .setAction(this::onClickClose)
                 .setLabel(Component.translatable("superresolution.screen.button.label.close"))
-                .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.label.close")));
+                .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.tooltip.close")));
         this.addWidget(this.closeButton);
         this.saveButton = (ButtonWidget) new ButtonWidget(this.width - 50 - 10 - 50 - 10 - 50 - 10, this.height - 20 - 10, 50, 20)
                 .setAction(this::onClickSave)
                 .setLabel(Component.translatable("superresolution.screen.button.label.apply"))
-                .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.label.close")));
+                .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.tooltip.apply")));
         this.addWidget(this.saveButton);
         this.guiRect = new Rect(10, 18, this.width - 10, this.height - 40);
         this.optionsList.setPosition(this.guiRect.x, this.guiRect.y);
