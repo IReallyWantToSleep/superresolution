@@ -23,7 +23,7 @@ subprojects {
     apply plugin: "maven-publish"
 
     base {
-        archivesName = "$rootProject.archives_name-$project.name"
+        archivesName = "$rootProject.archives_name-$project.name-$rootProject.minecraft_version"
     }
 
     repositories {
