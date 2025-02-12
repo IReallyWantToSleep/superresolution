@@ -39,7 +39,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR2.getValue().check();
+        return AlgorithmType.FSR2.getValue().check().support();
     }
 
     public void resize(int width, int height) {

@@ -131,6 +131,6 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR1.getValue().check();
+        return AlgorithmType.FSR1.getValue().check().support();
     }
 }

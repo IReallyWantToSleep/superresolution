@@ -6,7 +6,11 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VK11;
 
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
@@ -14,8 +18,9 @@ import static io.homo.superresolution.common.render.gl.GlConst.GL_EXTENSIONS;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_NUM_EXTENSIONS;
 
 public class AlgorithmHelper implements Resizable, Destroyable {
-    private static final ArrayList<String> GLExtension = new ArrayList<>();
+    public static final ArrayList<String> GLExtension = new ArrayList<>();
     public static int[] GLVersion;
+    public static int[] VkVersion;
 
     static {
         GLVersion = getVersion();
@@ -23,6 +28,14 @@ public class AlgorithmHelper implements Resizable, Destroyable {
         for (int i = 0; i < l; ++i) {
             GLExtension.add(glGetStringi(GL_EXTENSIONS, i));
         }
+        IntBuffer vkVer = MemoryStack.stackCallocInt(1);
+        VK11.vkEnumerateInstanceVersion(vkVer);
+
+        VkVersion = new int[]{
+                VK10.VK_API_VERSION_MAJOR(vkVer.get(0)),
+                VK10.VK_API_VERSION_MINOR(vkVer.get(0)),
+                VK10.VK_API_VERSION_PATCH(vkVer.get(0)),
+        };
     }
 
     public AlgorithmHelper() {

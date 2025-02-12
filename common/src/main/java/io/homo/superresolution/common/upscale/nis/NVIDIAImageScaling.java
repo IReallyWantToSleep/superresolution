@@ -43,7 +43,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.NIS.getValue().check();
+        return AlgorithmType.NIS.getValue().check().support();
     }
 
     public void initShader() {

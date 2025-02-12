@@ -18,4 +18,11 @@ public class FabricPlatform extends Platform {
     public boolean isDevelopmentEnvironment() {
         return FabricLoader.getInstance().isDevelopmentEnvironment();
     }
+
+    @Override
+    public String getModVersionString(String modId) {
+        if (isModLoaded(modId))
+            return FabricLoader.getInstance().getModContainer(modId).orElseThrow().getMetadata().getVersion().getFriendlyString();
+        return null;
+    }
 }

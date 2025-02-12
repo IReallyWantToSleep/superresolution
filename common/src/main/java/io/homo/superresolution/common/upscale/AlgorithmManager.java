@@ -40,10 +40,10 @@ public class AlgorithmManager {
     public static boolean isSupportAlgorithm(AlgorithmType type) {
         boolean support = false;
         switch (type) {
-            case FSR1 -> support = AlgorithmType.FSR1.getValue().check();
-            case NIS -> support = AlgorithmType.NIS.getValue().check();
-            case FSR2 -> support = AlgorithmType.FSR2.getValue().check();
-            case NONE -> support = AlgorithmType.NONE.getValue().check();
+            case FSR1 -> support = AlgorithmType.FSR1.getValue().check().support();
+            case NIS -> support = AlgorithmType.NIS.getValue().check().support();
+            case FSR2 -> support = AlgorithmType.FSR2.getValue().check().support();
+            case NONE -> support = AlgorithmType.NONE.getValue().check().support();
         }
         return support;
     }

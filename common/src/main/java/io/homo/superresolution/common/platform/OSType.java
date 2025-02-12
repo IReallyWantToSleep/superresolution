@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.platform;
 
 import com.sun.jna.Platform;
+import net.minecraft.network.chat.Component;
 
 public enum OSType {
     ANDROID(Platform.ANDROID == Platform.getOSType()),
@@ -35,5 +36,15 @@ public enum OSType {
 
     public boolean equals(OSType type) {
         return type == ANY || OSType.get() == type;
+    }
+
+    public String getString(){
+        return switch (this){
+            case ANDROID -> "Android";
+            case LINUX -> "Linux";
+            case WINDOWS -> "Windows";
+            case MACOS -> "MacOS";
+            case ANY -> Component.translatable("superresolution.requirement.os.any").getString();
+        };
     }
 }
