@@ -1,6 +1,7 @@
 package io.homo.superresolution.forge.platform;
 
 import io.homo.superresolution.common.platform.Platform;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
 
@@ -12,11 +13,17 @@ public class ForgePlatform extends Platform {
 
     @Override
     public boolean isModLoaded(String modId) {
-        return LoadingModList.get().getModFileById(modId) != null;
+        return (LoadingModList.get().getModFileById(modId) != null) || ModList.get().getModContainerById(modId).isPresent();
     }
 
     @Override
     public boolean isDevelopmentEnvironment() {
         return !FMLLoader.isProduction();
+    }
+
+    @Override
+    public String getModVersionString(String modId) {
+        if (isModLoaded(modId)) return ModList.get().getModFileById(modId).versionString();
+        return null;
     }
 }

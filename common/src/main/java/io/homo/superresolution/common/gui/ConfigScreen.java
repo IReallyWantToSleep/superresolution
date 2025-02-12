@@ -27,6 +27,7 @@ public class ConfigScreen extends Screen {
     private ButtonWidget closeButton;
     private ButtonWidget okButton;
     private ButtonWidget saveButton;
+    private ButtonWidget infoButton;
     private Rect guiRect;
 
     protected ConfigScreen(Screen lastScreen) {
@@ -43,6 +44,7 @@ public class ConfigScreen extends Screen {
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.okButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.saveButton.render(guiGraphics, mouseX, mouseY, partialTick);
+        this.infoButton.render(guiGraphics, mouseX, mouseY, partialTick);
         guiGraphics.drawCenteredString(this.font, Component.translatable("superresolution.screen.config.name"), this.width / 2, 6, FastColor.ARGB32.color(255, 255, 255, 255));
     }
 
@@ -78,6 +80,12 @@ public class ConfigScreen extends Screen {
         this.optionsList.save();
     }
 
+    public void onClickInfo() {
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(new InfoScreen(this.lastScreen, true));
+        }
+    }
+
     @Override
     public void init() {
         this.okButton = (ButtonWidget) new ButtonWidget(this.width - 50 - 10, this.height - 20 - 10, 50, 20)
@@ -95,6 +103,10 @@ public class ConfigScreen extends Screen {
                 .setLabel(Component.translatable("superresolution.screen.button.label.apply"))
                 .setTooltip(Tooltip.create(Component.translatable("superresolution.screen.button.tooltip.apply")));
         this.addWidget(this.saveButton);
+        this.infoButton = new ButtonWidget(10, this.height - 20 - 10, 30, 20)
+                .setAction(this::onClickInfo)
+                .setLabel(Component.literal("信息"));
+        this.addWidget(this.infoButton);
         this.guiRect = new Rect(10, 18, this.width - 10, this.height - 40);
         this.optionsList.setPosition(this.guiRect.x, this.guiRect.y);
         this.optionsList.resize(this.guiRect.width, this.guiRect.height);

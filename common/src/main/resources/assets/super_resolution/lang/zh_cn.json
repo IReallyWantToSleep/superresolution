@@ -25,5 +25,8 @@
     "superresolution.algo.not_support.fsr1": "你的OpenGL版本低于4.3，将自动禁用FSR1相关功能",
     "superresolution.algo.not_support.none": "看到这条提示证明NT作者写的代码出bug了",
     "superresolution.algo.not_support.fsr2": "你的显卡缺少必要的OpenGL扩展，将自动禁用FSR2相关功能。",
-    "superresolution.algo.not_support.nis": "你的OpenGL版本低于4.5或缺少必要的OpenGL扩展或缺少必要的Vulkan扩展，将自动禁用NVIDIA Image Scaling相关功能"
+    "superresolution.algo.not_support.nis": "你的OpenGL版本低于4.5或缺少必要的OpenGL扩展或缺少必要的Vulkan扩展，将自动禁用NVIDIA Image Scaling相关功能",
+    "superresolution.requirement.os":"系统",
+    "superresolution.requirement.os.arch":"架构",
+    "superresolution.requirement.os.any": "任何"
 }

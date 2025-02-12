@@ -25,5 +25,8 @@
     "superresolution.algo.not_support.fsr1": "Your OpenGL version is below 4.3. FSR1-related features will be automatically disabled.",
     "superresolution.algo.not_support.none": "If you see this message, it means the idiot developer's code has a bug",
     "superresolution.algo.not_support.fsr2": "Your GPU lacks required OpenGL extensions. FSR2-related features will be automatically disabled.",
-    "superresolution.algo.not_support.nis": "Your OpenGL version is below 4.5, or you lack required OpenGL/Vulkan extensions. NVIDIA Image Scaling features will be automatically disabled."
+    "superresolution.algo.not_support.nis": "Your OpenGL version is below 4.5, or you lack required OpenGL/Vulkan extensions. NVIDIA Image Scaling features will be automatically disabled.",
+    "superresolution.requirement.os":"System",
+    "superresolution.requirement.os.arch":"Arch",
+    "superresolution.requirement.os.any": "Any"
 }

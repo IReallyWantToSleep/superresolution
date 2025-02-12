@@ -9,6 +9,8 @@ public abstract class Platform {
 
     public abstract boolean isDevelopmentEnvironment();
 
+    public abstract String getModVersionString(String modId);
+
     public OS getOS() {
         return new OS();
     }

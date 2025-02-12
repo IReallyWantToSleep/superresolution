@@ -55,8 +55,8 @@ public class Requirement {
         return this;
     }
 
-    public boolean check() {
-        return checkGlVersion() & checkExtension() & checkEnv();
+    public Result check() {
+        return new Result(checkOS(), checkGlVersion(), checkExtension(), checkEnv());
     }
 
     public boolean checkGlVersion() {
@@ -66,9 +66,7 @@ public class Requirement {
         return version;
     }
 
-    public boolean checkEnv() {
-        boolean env = true;
-        if (developmentEnvironment && !Platform.currentPlatform.isDevelopmentEnvironment()) env = false;
+    public boolean checkOS() {
         OS currentOS = Platform.currentPlatform.getOS();
         boolean os = includeOS.isEmpty();
         for (OS o : includeOS) {
@@ -77,7 +75,11 @@ public class Requirement {
                 break;
             }
         }
-        return env && os;
+        return os;
+    }
+
+    public boolean checkEnv() {
+        return !developmentEnvironment || Platform.currentPlatform.isDevelopmentEnvironment();
     }
 
     public boolean checkExtension() {
@@ -123,5 +125,11 @@ public class Requirement {
     public Requirement addIncludeOS(OS os) {
         includeOS.add(os);
         return this;
+    }
+
+    public record Result(boolean os, boolean glVersion, boolean glExtension, boolean env) {
+        public boolean support() {
+            return os && glVersion && glExtension && env;
+        }
     }
 }
