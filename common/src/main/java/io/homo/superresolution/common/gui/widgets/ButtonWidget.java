@@ -15,8 +15,8 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
     private Runnable action;
     private String label = "";
 
-    public ButtonWidget(int x,int y,int width,int height){
-        this.rect = new Rect(x,y,width,height);
+    public ButtonWidget(int x, int y, int width, int height) {
+        this.rect = new Rect(x, y, width, height);
     }
 
     @Override
@@ -35,13 +35,13 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
                     this.rect.getLimitY(),
                     backgroundColor
             );
-            if (hovered)this.drawRect(
+            if (hovered) this.drawRect(
                     graphics,
                     this.rect.x,
                     this.rect.getLimitY() - 1,
                     this.rect.getLimitX(),
                     this.rect.getLimitY(),
-                    FastColor.ARGB32.color(255, 148,228,211)
+                    FastColor.ARGB32.color(255, 148, 228, 211)
             );
             this.drawString(
                     graphics,
@@ -50,10 +50,11 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
                     this.rect.getCenterY() - 4,
                     textColor
             );
-            this.renderTooltip();
+            this.renderTooltip(graphics, mouseX, mouseY);
             RenderSystem.disableBlend();
         }
     }
+
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (this.enabled && this.visible) {
             if (button == 0 && this.rect.in(mouseX, mouseY)) {
@@ -77,8 +78,9 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
         this.visible = visible;
         return this;
     }
-    private void click(){
-        if (this.action != null){
+
+    private void click() {
+        if (this.action != null) {
             this.action.run();
         }
     }
@@ -103,21 +105,23 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
         return this;
     }
 
-    public static class ButtonStyle{
+    public static class ButtonStyle {
         public int bgHovered;
         public int bgDefault;
         public int bgDisabled;
         public int textDefault;
         public int textDisabled;
 
-        public ButtonStyle() {}
+        public ButtonStyle() {
+        }
+
         public static ButtonStyle defaults() {
             ButtonStyle style = new ButtonStyle();
-            style.bgHovered = FastColor.ARGB32.color(120,0,0,0);
-            style.bgDefault = FastColor.ARGB32.color(60,0,0,0);
-            style.bgDisabled = FastColor.ARGB32.color(40,0,0,0);
-            style.textDefault = FastColor.ARGB32.color(255,255,255,255);
-            style.textDisabled = FastColor.ARGB32.color(100,255,255,255);
+            style.bgHovered = FastColor.ARGB32.color(120, 0, 0, 0);
+            style.bgDefault = FastColor.ARGB32.color(60, 0, 0, 0);
+            style.bgDisabled = FastColor.ARGB32.color(40, 0, 0, 0);
+            style.textDefault = FastColor.ARGB32.color(255, 255, 255, 255);
+            style.textDisabled = FastColor.ARGB32.color(100, 255, 255, 255);
             return style;
         }
     }

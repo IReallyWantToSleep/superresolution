@@ -13,13 +13,11 @@ import io.homo.superresolution.common.upscale.utils.Requirement;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class InfoScreen extends Screen {
+public class InfoScreen extends BaseScreen {
     private final Screen lastScreen;
     private final boolean openConfigScreen;
     private ButtonWidget closeButton;
@@ -284,8 +282,7 @@ public class InfoScreen extends Screen {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+    public void renderMain(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (showInfo == 0) {
             this.extButton.setLabel("OpenGL扩展信息");
         } else {
@@ -297,14 +294,7 @@ public class InfoScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        if (this.minecraft != null) {
-            if (this.minecraft.level == null) {
-                this.renderPanorama(guiGraphics, partialTick);
-                this.renderBlurredBackground(partialTick);
-                this.renderMenuBackground(guiGraphics);
-            }
-        }
-        guiGraphics.fill(infoTextRect.x, infoTextRect.y, infoTextRect.width, infoTextRect.height, FastColor.ARGB32.color(100, 0, 0, 0));
+    protected Rect getGuiRect() {
+        return infoTextRect;
     }
 }

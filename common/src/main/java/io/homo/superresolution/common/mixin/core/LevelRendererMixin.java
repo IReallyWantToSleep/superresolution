@@ -1,7 +1,6 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
@@ -9,14 +8,12 @@ import io.homo.superresolution.common.render.MinecraftRenderingStates;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.PostChain;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,25 +24,32 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
-public class LevelRendererMixin {
+public abstract class LevelRendererMixin {
     @Shadow
     private PostChain entityEffect;
     @Shadow
     @Final
     private Minecraft minecraft;
-
-
     @Unique
     private boolean super_resolution$needResize = true;
-
     @Unique
     private int super_resolution$frameCount = 0;
 
+    @Shadow
+    public abstract void resize(int width, int height);
+
     @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/DimensionSpecialEffects;constantAmbientLight()Z"))
+    #if MC_VER > MC_1_20_1
     private void captureMatrix4f(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
         AlgorithmManager.setProjectionMatrix(projectionMatrix);
         AlgorithmManager.setModelViewMatrix(new Matrix4f().identity());
     }
+    #else
+    private void captureMatrix4f(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
+        AlgorithmManager.setProjectionMatrix(projectionMatrix);
+        AlgorithmManager.setModelViewMatrix(new Matrix4f().identity());
+    }
+    #endif
 
     @Inject(at = @At(value = "HEAD"), method = "initOutline")
     private void onInitOutline(CallbackInfo ci) {
@@ -59,8 +63,9 @@ public class LevelRendererMixin {
 
     @Inject(at = @At("RETURN"), method = "doEntityOutline")
     private void onLoadEntityOutlineShader(CallbackInfo ci) {
+        if (entityEffect == null) return;
         if (super_resolution$frameCount == 3) {
-            entityEffect.resize(MinecraftRenderingStates.getRenderWidth(),MinecraftRenderingStates.getRenderHeight());
+            entityEffect.resize(MinecraftRenderingStates.getRenderWidth(), MinecraftRenderingStates.getRenderHeight());
         }
     }
 
@@ -79,8 +84,8 @@ public class LevelRendererMixin {
     @Inject(at = @At("RETURN"), method = "resize")
     private void onResized(CallbackInfo ci) {
         if (minecraft.level == null) return;
-        if (entityEffect == null) return;
         MinecraftRenderingStates.resizeMinecraftRenderTarget();
+        entityEffect.resize(MinecraftRenderingStates.getRenderWidth(), MinecraftRenderingStates.getRenderHeight());
     }
 
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
@@ -91,6 +96,8 @@ public class LevelRendererMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "renderLevel")
     private void onRenderWorldBegin(CallbackInfo ci) {
+        if (Config.isEnableUpscale())
+            ((PostChainAccessor) entityEffect).setScreenTarget(MinecraftRenderingStates.getRenderTarget());
         super_resolution$frameCount++;
         if (super_resolution$needResize) {
             entityEffect.resize(MinecraftRenderingStates.getRenderWidth(), MinecraftRenderingStates.getRenderHeight());
@@ -104,7 +111,6 @@ public class LevelRendererMixin {
 
     @Inject(at = @At(value = "TAIL"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
-        //GL11.glDisable(GL11.GL_STENCIL_TEST);
         if (Minecraft.getInstance().level != null) {
             SuperResolution.isRenderingWorld = false;
             if (Config.isEnableUpscale()) MinecraftRenderingStates.setShouldScale(false);
@@ -115,6 +121,13 @@ public class LevelRendererMixin {
                         minecraft.getWindow().getScreenHeight()
                 );
             }
+        }
+    }
+
+    @Inject(at = @At(value = "TAIL"), method = "allChanged")
+    private void onReloadDone(CallbackInfo ci) {
+        if (Minecraft.getInstance().level != null) {
+            MinecraftRenderingStates.resizeMinecraftRenderTarget();
         }
     }
 }

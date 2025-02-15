@@ -10,7 +10,7 @@ public class StorageFrameBuffer extends FrameBuffer {
     public StorageFrameBuffer(boolean useDepth) {
         super(useDepth);
     }
-    /*
+
     @Override
     public void createBuffers(int width, int height, boolean clearError) {
         RenderSystem.assertOnRenderThreadOrInit();
@@ -36,7 +36,6 @@ public class StorageFrameBuffer extends FrameBuffer {
                 glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, this.width, this.height);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
-
             }
 
             glBindTexture(GL_TEXTURE_2D, this.colorTextureId);
@@ -53,5 +52,5 @@ public class StorageFrameBuffer extends FrameBuffer {
         } else {
             throw new IllegalArgumentException("Window " + width + "x" + height + " size out of bounds (max. size: " + maxSupportedTextureSize + ")");
         }
-    }*/
+    }
 }

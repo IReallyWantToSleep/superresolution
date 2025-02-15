@@ -16,11 +16,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
-import org.jetbrains.annotations.NotNull;
 
 
-public class ConfigScreen extends Screen {
+public class ConfigScreen extends BaseScreen {
     private final OptionsList optionsList;
     private final Screen lastScreen;
     private ButtonWidget closeButton;
@@ -37,26 +35,17 @@ public class ConfigScreen extends Screen {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+    public void renderMain(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         this.optionsList.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.okButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.saveButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.infoButton.render(guiGraphics, mouseX, mouseY, partialTick);
-        guiGraphics.drawCenteredString(this.font, Component.translatable("superresolution.screen.config.name"), this.width / 2, 6, FastColor.ARGB32.color(255, 255, 255, 255));
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        if (this.minecraft != null) {
-            if (this.minecraft.level == null) {
-                this.renderPanorama(guiGraphics, partialTick);
-                this.renderBlurredBackground(partialTick);
-                this.renderMenuBackground(guiGraphics);
-            }
-        }
-        guiGraphics.fill(guiRect.x, guiRect.y, guiRect.width, guiRect.height, FastColor.ARGB32.color(100, 0, 0, 0));
+    protected Rect getGuiRect() {
+        return guiRect;
     }
 
     @Override

@@ -1,44 +1,44 @@
 {
-  "schemaVersion": 1,
-  "id": "super_resolution",
-  "version": "${version}",
-  "name": "Super Resolution",
-  "description": "喵",
-  "authors": [
-    "187J3X1"
-  ],
-  "contact": {
-    "homepage": "https://github.com/187J3X1-114514/superresolution",
-    "issues": "https://github.com/187J3X1-114514/superresolution/issues"
-  },
-  "license": "MIT",
-  "icon": "logo.png",
-  "environment": "client",
-  "entrypoints": {
-    "main": [
-      "io.homo.superresolution.fabric.SuperResolutionFabric"
+    "schemaVersion": 1,
+    "id": "super_resolution",
+    "version": "${version}",
+    "name": "Super Resolution",
+    "description": "喵",
+    "authors": [
+        "187J3X1"
     ],
-    "client": [
-      "io.homo.superresolution.fabric.SuperResolutionFabricClient"
+    "contact": {
+        "homepage": "https://github.com/187J3X1-114514/superresolution",
+        "issues": "https://github.com/187J3X1-114514/superresolution/issues"
+    },
+    "license": "MIT",
+    "icon": "logo.png",
+    "environment": "client",
+    "entrypoints": {
+        "main": [
+            "io.homo.superresolution.fabric.SuperResolutionFabric"
+        ],
+        "client": [
+            "io.homo.superresolution.fabric.SuperResolutionFabricClient"
+        ],
+        "modmenu": [
+            "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
+        ]
+    },
+    "mixins": [
+        "super_resolution.mixins.json",
+        "super_resolution-fabric.mixins.json",
+        "super_resolution-fabric-compat.mixins.json"
     ],
-    "modmenu": [
-      "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
-    ]
-  },
-  "mixins": [
-    "super_resolution.mixins.json",
-    "super_resolution-fabric.mixins.json",
-    "super_resolution-fabric-compat.mixins.json"
-  ],
-  "depends": {
-    "fabricloader": "*",
-    "minecraft": ["~1.21.1","~1.21"],
-    "java": ">=21",
-    "architectury": "*",
-    "fabric-api": "*"
-  },
-  "suggests": {
-    "another-mod": "*"
-  },
-  "accessWidener": "super_resolution.accesswidener"
+    "depends": {
+        "fabricloader": "*",
+        "minecraft": ${versionRange},
+        "java": ">=${javaVersion}",
+        "architectury": "*",
+        "fabric-api": "*"
+    },
+    "suggests": {
+        "another-mod": "*"
+    },
+    "accessWidener": "super_resolution.accesswidener"
 }

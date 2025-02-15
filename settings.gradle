@@ -9,7 +9,6 @@ pluginManagement {
         }
 
         maven {
-            // allowInsecureProtocol = true
             url "https://maven.architectury.dev/"
         }
 
@@ -28,9 +27,20 @@ pluginManagement {
     }
 }
 
+def loadProperties() {
+    def props = new Properties()
+    props.load(new FileInputStream(new File("$rootDir/versionConfigs/" + "$minecraft_version" + ".properties")))
+    props.each { prop ->
+        gradle.ext.set(prop.key, prop.value)
+    }
+}
+
+loadProperties()
 rootProject.name = 'super_resolution'
 
 include 'common'
-include 'fabric'
-include 'neoforge'
-
+for (loader in ((String) gradle.platforms).split(",")) {
+    def loaderName = loader.strip()
+    println "添加加载器 " + loaderName
+    include(loaderName)
+}

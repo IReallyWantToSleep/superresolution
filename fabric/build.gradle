@@ -1,5 +1,19 @@
+import java.nio.file.Paths
+
 plugins {
     id 'com.github.johnrengelman.shadow'
+}
+loom {
+    runs {
+        client {
+            client()
+            runDir("../run")
+        }
+        server {
+            server()
+            runDir("../run")
+        }
+    }
 }
 
 architectury {
@@ -22,6 +36,7 @@ configurations {
         canBeResolved = true
         canBeConsumed = false
     }
+
 }
 
 repositories {
@@ -44,16 +59,28 @@ repositories {
     }
 }
 
+def addModrinthMod(id, ver) {
+    dependencies { modImplementation("maven.modrinth:${id}:${ver}-fabric,${rootProject.minecraft_version}") }
+}
+
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
     modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
-    modImplementation fileTree(dir: 'libs', include: ['*.jar'])
     modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
-    modImplementation("maven.modrinth:reeses-sodium-options:mc1.21.4-1.8.3+fabric-fabric,1.21.1")
-    modImplementation("maven.modrinth:xaeros-world-map:1.39.2_Fabric_1.21-fabric,1.21.1")
-    modImplementation("maven.modrinth:xaeros-minimap:25.0.0_Fabric_1.21-fabric,1.21.1")
-
+    if (rootProject.properties.get("fabric_use_modrinth_mods") != null) {
+        String modStr = rootProject.properties.get("fabric_use_modrinth_mods")
+        String[] mods = modStr.split(",")
+        for (def modID : mods) {
+            String modVer = rootProject.properties.get("fabric_use_modrinth_mod_ver_" + modID)
+            if (modVer != null) {
+                addModrinthMod(
+                        modID,
+                        modVer
+                )
+            }
+        }
+    }
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
     implementation "io.github.spair:imgui-java-app:1.87.5"
@@ -63,15 +90,33 @@ dependencies {
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "io.github.douira:glsl-transformer:2.0.1"
 
-    implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
+    include("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
 }
 
 processResources {
     inputs.property 'version', project.version
+    String[] srcVersionRange = (rootProject.fabriclike_mod_minecraft_version_range as String).split(",")
+
+    StringBuilder stringBuilder = new StringBuilder()
+    if (srcVersionRange.size() > 1) {
+        stringBuilder.append("[")
+        srcVersionRange.each {
+            srcVersionRange[new ArrayList<String>(srcVersionRange as Collection<? extends String>).indexOf(it)] = '"%s"'.formatted(it)
+        }
+        stringBuilder.append("]")
+    } else {
+        stringBuilder.append('"%s"'.formatted(srcVersionRange[0]))
+    }
+
+    String versionRange = stringBuilder.toString()
 
     filesMatching('fabric.mod.json') {
-        expand version: project.version
+        expand(
+                version: project.version,
+                javaVersion: rootProject.java_version,
+                versionRange: versionRange
+        )
     }
 }
 

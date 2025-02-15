@@ -4,6 +4,18 @@ plugins {
 
 loom {
     neoForge {}
+
+    runs {
+        client {
+            client()
+            runDir("../run")
+        }
+        server {
+            server()
+            runDir("../run")
+        }
+    }
+
 }
 
 architectury {
@@ -38,27 +50,39 @@ repositories {
     }
 }
 
+def addModrinthMod(id, ver) {
+    dependencies { modImplementation("maven.modrinth:${id}:${ver}-neoforge,${rootProject.minecraft_version}") }
+}
+
 dependencies {
     neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
-
+    if (rootProject.properties.get("neoforge_use_modrinth_mods") != null) {
+        String modStr = rootProject.properties.get("neoforge_use_modrinth_mods")
+        String[] mods = modStr.split(",")
+        for (def modID : mods) {
+            String modVer = rootProject.properties.get("neoforge_use_modrinth_mod_ver_" + modID)
+            if (modVer != null) {
+                addModrinthMod(
+                        modID,
+                        modVer
+                )
+            }
+        }
+    }
     modImplementation "dev.architectury:architectury-neoforge:$rootProject.architectury_api_version"
     modImplementation fileTree(dir: 'libs', include: ['*.jar'])
     modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
-    modImplementation("maven.modrinth:spark:1.10.109-neoforge-neoforge,1.21.1")
-    modImplementation("maven.modrinth:reeses-sodium-options:mc1.21.4-1.8.3+neoforge-neoforge,1.21.1")
     implementation("io.github.spair:imgui-java-app:1.87.5")
     implementation("io.github.spair:imgui-java-binding:1.87.5")
     implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
-
     forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
     forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
     forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
-
-    implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
-    include("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
+    forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
+    include("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
 }
 
 processResources {
@@ -66,6 +90,7 @@ processResources {
 
     filesMatching('META-INF/neoforge.mods.toml') {
         expand version: project.version
+        expand versionRange: rootProject.forgelike_mod_minecraft_version_range
     }
 }
 

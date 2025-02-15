@@ -144,9 +144,17 @@ public class OptionsList implements Renderable, GuiEventListener, NarratableEntr
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    #if MC_VER > MC_1_20_1
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
+    #else
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta)
+    #endif {
         for (AbstractOption<?> option : options) {
+            #if MC_VER > MC_1_20_1
             option.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+            #else
+            option.mouseScrolled(mouseX, mouseY, delta);
+            #endif
         }
         return true;
     }

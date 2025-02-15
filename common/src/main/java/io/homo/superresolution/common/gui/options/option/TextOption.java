@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.gui.options.option;
 
 import io.homo.superresolution.common.gui.Rect;
+import io.homo.superresolution.common.mixin.gui.AbstractWidgetAccessor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -35,9 +36,14 @@ public class TextOption extends AbstractOption<String> {
         int color = disabled ? this.style.textDisabledColor : this.style.textColor;
         this.drawString(graphics, this.label, rect.x + 4, rect.getCenterY() - 4, color);
         editBox.setPosition((int) (rect.width - (rect.width * 0.5) - 6), rect.y + 2);
+        #if MC_VER > MC_1_20_1
         editBox.setSize((int) (rect.width * 0.5), rect.height - 4);
+        #else
+        editBox.setWidth((int) (rect.width * 0.5));
+        ((AbstractWidgetAccessor) editBox).setHeight(rect.height - 4);
+        #endif
         editBox.render(graphics, mouseX, mouseY, partialTick);
-        this.renderTooltip();
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override
@@ -77,9 +83,17 @@ public class TextOption extends AbstractOption<String> {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    #if MC_VER > MC_1_20_1
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
+    #else
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta)
+    #endif {
         if (!isVisibleAndNotDisabled()) return false;
+        #if MC_VER > MC_1_20_1
         return this.editBox.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        #else
+        return this.editBox.mouseScrolled(mouseX, mouseY, delta);
+        #endif
     }
 
     @Override

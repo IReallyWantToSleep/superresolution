@@ -45,14 +45,24 @@ public class Texture implements Destroyable, Resizable {
         if (shaderInstance.PROJECTION_MATRIX != null) {
             shaderInstance.PROJECTION_MATRIX.set(matrix4f);
         }
-
         shaderInstance.apply();
+        #if MC_VER > MC_1_20_1
         BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
         bufferBuilder.addVertex(0.0f, 0.0f, 0.0f);
         bufferBuilder.addVertex((float) 1, 0.0f, 0.0f);
         bufferBuilder.addVertex((float) 1, (float) 1, 0.0f);
         bufferBuilder.addVertex(0.0f, (float) 1, 0.0f);
         BufferUploader.draw(bufferBuilder.buildOrThrow());
+        #else
+        Tesselator tesselator = RenderSystem.renderThreadTesselator();
+        BufferBuilder bufferBuilder = tesselator.getBuilder();
+        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        bufferBuilder.vertex(0.0, srcHeight, 0.0).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(srcWidth, srcHeight, 0.0).uv(1, 0.0F).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(srcWidth, 0.0, 0.0).uv(1, 1).color(255, 255, 255, 255).endVertex();
+        bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, 1).color(255, 255, 255, 255).endVertex();
+        BufferUploader.draw(bufferBuilder.end());
+        #endif
         shaderInstance.clear();
         GlStateManager._depthMask(true);
         GlStateManager._colorMask(true, true, true, true);
