@@ -2,10 +2,7 @@ package io.homo.superresolution.common.render;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.render.gl.texture.NativeImageTexture;
-import io.homo.superresolution.common.render.vulkan.VkApplication;
-import io.homo.superresolution.common.render.vulkan.VkComputeShader;
-import io.homo.superresolution.common.render.vulkan.VkShaderUniform;
-import io.homo.superresolution.common.render.vulkan.VkShaderUniformType;
+import io.homo.superresolution.common.render.vulkan.*;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
 import static io.homo.superresolution.common.render.gl.GlConst.GL_RGBA8;
@@ -23,6 +20,7 @@ import static org.lwjgl.vulkan.VK10.vkDeviceWaitIdle;
 
 public class GlVkInteropManager implements Destroyable {
     public VkApplication vulkanApp;
+    public boolean supportVulkan = false;
 
     public static void main(String[] args) {
         glfwInit();
@@ -78,8 +76,17 @@ public class GlVkInteropManager implements Destroyable {
                 .addDeviceRequiredExtensions(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
                 .addDeviceRequiredExtensions(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                 .addDeviceRequiredExtensions(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)
-                .addDeviceRequiredExtensions(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME)
-                .init();
+                .addDeviceRequiredExtensions(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
+        try {
+            vulkanApp.init();
+            supportVulkan = true;
+            return;
+        } catch (VkException vkException) {
+            VkApplication.LOGGER.warn("Vulkan初始化失败，已禁用Vulkan，错误 {}", vkException.getMessage());
+        } catch (Exception e) {
+            VkApplication.LOGGER.warn("Vulkan初始化失败，发生未知错误，已禁用Vulkan，错误 {}", e.getMessage());
+        }
+        supportVulkan = false;
     }
 
     @Override

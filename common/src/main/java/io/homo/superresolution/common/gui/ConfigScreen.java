@@ -14,7 +14,6 @@ import io.homo.superresolution.common.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FastColor;
@@ -165,48 +164,6 @@ public class ConfigScreen extends Screen {
                                 .setKey("fsr2") : null
                         )
         ).setKey("algoType").setLabel(Component.translatable("superresolution.screen.config.options.label.algo_type"));
-
-        if (!AlgorithmManager.isSupportAlgorithm(AlgorithmType.FSR2)) {
-            Minecraft.getInstance().getToasts().addToast(
-                    SystemToast.multiline(
-                            Minecraft.getInstance(),
-                            SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                            Component.translatable("superresolution.screen.warn"),
-                            Component.translatable("superresolution.algo.not_support.fsr2")
-                    )
-            );
-        }
-        if (!AlgorithmManager.isSupportAlgorithm(AlgorithmType.FSR1)) {
-            Minecraft.getInstance().getToasts().addToast(
-                    SystemToast.multiline(
-                            Minecraft.getInstance(),
-                            SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                            Component.translatable("superresolution.screen.warn"),
-                            Component.translatable("superresolution.algo.not_support.fsr1")
-                    )
-            );
-        }
-        if (!AlgorithmManager.isSupportAlgorithm(AlgorithmType.NIS)) {
-            Minecraft.getInstance().getToasts().addToast(
-                    SystemToast.multiline(
-                            Minecraft.getInstance(),
-                            SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                            Component.translatable("superresolution.screen.warn"),
-                            Component.translatable("superresolution.algo.not_support.nis")
-                    )
-            );
-        }
-        if (!AlgorithmManager.isSupportAlgorithm(AlgorithmType.NONE)) {
-            Minecraft.getInstance().getToasts().addToast(
-                    SystemToast.multiline(
-                            Minecraft.getInstance(),
-                            SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                            Component.translatable("superresolution.screen.warn"),
-                            Component.translatable("superresolution.algo.not_support.none")
-                    )
-            );
-        }
-
         this.optionsList.setSavingRunnable((data) -> {
             Config.setEnableUpscale(useUpscale.getValue());
             Config.setUpscaleRatio(upscaleRatio.getValue().floatValue());
