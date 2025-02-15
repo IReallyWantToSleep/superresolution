@@ -16,9 +16,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/*
-更改游戏渲染世界的类
-*/
 public class MinecraftRenderingStates {
     public static float frameTimeDelta = 16.6f;
     public static int currentWidth;
@@ -57,19 +54,10 @@ public class MinecraftRenderingStates {
         shouldScale = scaling;
         minecraft.getProfiler().popPush(scaling ? "startScaling" : "finishScaling");
         if (scaling) {
-            //renderTarget.clear(Minecraft.ON_OSX);
-            SuperResolution.LOGGER.info("0");
-            RenderSystem.disableBlend();
-            RenderSystem.disableDepthTest();
-            RenderSystem.resetTextureMatrix();
             setClientRenderTarget(renderTarget);
             SuperResolution.currentAlgorithm.setInputFrameBuffer(renderTarget);
             renderTarget.bindWrite(true);
         } else {
-            SuperResolution.LOGGER.info("1");
-            RenderSystem.disableBlend();
-            RenderSystem.disableDepthTest();
-            RenderSystem.resetTextureMatrix();
             setClientRenderTarget(originRenderTarget);
             originRenderTarget.bindWrite(true);
         }

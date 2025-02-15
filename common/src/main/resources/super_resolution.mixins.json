@@ -1,25 +1,28 @@
 {
-  "required": true,
-  "package": "io.homo.superresolution.common.mixin",
-  "plugin": "io.homo.superresolution.common.mixin.MixinPlugin",
-  "compatibilityLevel": "JAVA_21",
-  "minVersion": "0.8",
-  "client": [
-    "core.ForceOpenGLVersion_WindowMixin",
-    "core.GameRendererMixin",
-    "core.LevelRendererMixin",
-    "core.MinecraftAccessor",
-    "core.MinecraftMixin",
-    "core.RenderTargetMixin",
-    "core.WindowMixin",
-    "debug.DebugMixin",
-    "debug.ImguiMixin",
-    "debug.KeyboardHandlerMixin",
-    "gui.GameRendererAccessor"
-  ],
-  "mixins": [
-  ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+    "required": true,
+    "package": "io.homo.superresolution.common.mixin",
+    "plugin": "io.homo.superresolution.common.mixin.MixinPlugin",
+    "compatibilityLevel": "JAVA_8",
+    "minVersion": "0.8",
+    "client": [
+        "core.ForceOpenGLVersion_WindowMixin",
+        "core.GameRendererMixin",
+        "core.LevelRendererMixin",
+        "core.MinecraftAccessor",
+        "core.MinecraftMixin",
+        "core.OptionsMixin",
+        "core.PostChainAccessor",
+        "core.RenderTargetMixin",
+        "core.WindowMixin",
+        "debug.DebugMixin",
+        "debug.ImguiMixin",
+        "debug.KeyboardHandlerMixin",
+        "gui.GameRendererAccessor"
+    ],
+    "mixins": [
+        "gui.AbstractWidgetAccessor"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
 }

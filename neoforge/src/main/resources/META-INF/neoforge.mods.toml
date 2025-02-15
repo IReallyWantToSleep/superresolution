@@ -16,7 +16,7 @@ logoFile = "logo.png"
 [[dependencies.super_resolution]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.21,1.21.1,)"
+versionRange = "${versionRange}"
 ordering = "NONE"
 side = "BOTH"
 

@@ -2,16 +2,17 @@
     "required": true,
     "package": "io.homo.superresolution.fabric.mixin.compat",
     "plugin": "io.homo.superresolution.fabric.mixin.compat.CompatMixinPlugin",
-    "compatibilityLevel": "JAVA_21",
+    "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
         "reesessodiumoptions.TabFrameMixin",
         "sodium.SodiumOptionsGUIMixin"
     ],
     "mixins": [
-        "distanthorizons.MinecraftRenderWrapperMixin"
+        "distanthorizons.MinecraftRenderWrapperMixin",
+        "sodium.GraphicsAdapterProbeMixin"
     ],
     "injectors": {
         "defaultRequire": 1
-  }
+    }
 }

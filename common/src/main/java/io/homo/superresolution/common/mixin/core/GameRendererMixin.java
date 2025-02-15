@@ -3,7 +3,6 @@ package io.homo.superresolution.common.mixin.core;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.DebugInfo;
 import io.homo.superresolution.common.render.MinecraftRenderingStates;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -31,16 +30,12 @@ public class GameRendererMixin {
     }
 
     @Inject(at = @At(value = "HEAD"), method = "render")
-    private void onRenderStart(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+    #if MC_VER > MC_1_20_1
+    private void onRenderStart(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci)
+    #else
+    private void onRenderStart(float partialTicks, long nanoTime, boolean renderLevel, CallbackInfo ci)
+    #endif {
         SuperResolution.setFrameTimeDelta(16.6f);
         DebugInfo.setFrameTimeDelta(16.6f);
-        //if (renderLevel && this.minecraft.level != null) {
-        //    if (super_resolution$shouldResize) {
-        //        super_resolution$shouldResize = false;
-        //        Minecraft.getInstance().resizeDisplay();
-        //    }
-        //} else {
-        //    super_resolution$shouldResize = true;
-        //}
     }
 }

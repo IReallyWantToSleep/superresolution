@@ -34,7 +34,7 @@ public class EnumOption extends AbstractOption<EnumData.EnumInfo<?>> {
             String text = this.value.getDisplayName();
             this.drawString(graphics, text, rect.width - this.font.width(text) - 7, rect.getCenterY() - 4, color);
         }
-        this.renderTooltip();
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override

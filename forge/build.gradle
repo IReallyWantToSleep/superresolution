@@ -1,0 +1,125 @@
+import java.nio.file.Paths
+
+plugins {
+    id 'com.github.johnrengelman.shadow'
+}
+
+loom {
+    forge {
+        mixinConfig "super_resolution.mixins.json"
+        mixinConfig "super_resolution-forge.mixins.json"
+        mixinConfig "super_resolution-forge-compat.mixins.json"
+    }
+}
+
+architectury {
+    platformSetupLoomIde()
+    forge()
+}
+configurations {
+    common {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentForge.extendsFrom common
+
+    // Files in this configuration will be bundled into your mod using the Shadow plugin.
+    // Don't use the `shadow` configuration from the plugin itself as it's meant for excluding files.
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+repositories {
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+    maven {
+        name = 'NeoForged'
+        url = 'https://maven.neoforged.net/releases'
+    }
+}
+
+def addModrinthMod(id, ver) {
+    dependencies { modImplementation("maven.modrinth:${id}:${ver}-forge,${rootProject.minecraft_version}") }
+}
+
+def addNoModLib(name) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+    dependencies {
+        implementation(forgeRuntimeLibrary(files(file.toAbsolutePath().asWritable().toString())))
+    }
+}
+
+dependencies {
+    forge "net.minecraftforge:forge:${rootProject.minecraft_version}-$rootProject.forge_version"
+    modImplementation "dev.architectury:architectury-forge:$rootProject.architectury_api_version"
+    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
+    shadowBundle(project(path: ":common", configuration: "transformProductionForge"))
+    if (rootProject.properties.get("forge_use_modrinth_mods") != null) {
+        String modStr = rootProject.properties.get("forge_use_modrinth_mods")
+        String[] mods = modStr.split(",")
+        for (def modID : mods) {
+            String modVer = rootProject.properties.get("forge_use_modrinth_mod_ver_" + modID)
+            if (modVer != null) {
+                addModrinthMod(
+                        modID,
+                        modVer
+                )
+            }
+        }
+    }
+    if (rootProject.properties.get("forge_use_nomod_lib") != null) {
+        String libStr = rootProject.properties.get("forge_use_nomod_lib")
+        String[] libs = libStr.split(",")
+        for (def lib : libs) {
+            addNoModLib(lib)
+        }
+    }
+    modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
+    implementation("io.github.spair:imgui-java-app:1.87.5")
+    implementation("io.github.spair:imgui-java-binding:1.87.5")
+    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
+    forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
+    forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
+    forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
+    implementation("org.lwjgl:lwjgl-vulkan:$lwjgl_version")
+    forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjgl_version")
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
+    implementation("io.github.llamalad7:mixinextras-forge:0.4.1")
+    include("org.lwjgl:lwjgl-vulkan:$lwjgl_version")
+    implementation(forgeRuntimeLibrary('org.apache.commons:commons-math3:3.6.1'))
+    implementation(forgeRuntimeLibrary('org.apache.bcel:bcel:6.6.1')) {
+        exclude group: 'org.apache.commons', module: 'commons-lang3'
+    }
+}
+
+processResources {
+    inputs.property 'version', project.version
+
+    filesMatching('META-INF/mods.toml') {
+        expand version: project.version
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = 'dev-shadow'
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+}

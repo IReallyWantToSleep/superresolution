@@ -36,6 +36,7 @@ public class TextWidget extends AbstractWidget {
         }
     }
 
+    @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (rect.in(mouseX, mouseY)) {
             if (canScrollX()) this.offsetX -= dragX * 1.7;
@@ -45,7 +46,12 @@ public class TextWidget extends AbstractWidget {
         return true;
     }
 
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    @Override
+    #if MC_VER > MC_1_20_1
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY)
+    #else
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY)
+    #endif {
         if (rect.in(mouseX, mouseY)) {
             if (canScrollY()) {
                 this.offsetY -= scrollY * 30;

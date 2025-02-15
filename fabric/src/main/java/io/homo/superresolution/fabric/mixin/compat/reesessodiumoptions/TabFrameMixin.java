@@ -10,13 +10,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.Optional;
-
-@Mixin(value = TabFrame.class,remap = false)
+@Mixin(value = TabFrame.class, remap = false)
 public class TabFrameMixin {
-    @Inject(method = "setTab",at=@At(value = "HEAD"), cancellable = true)
-    private void onSetTab(Optional<Tab<?>> tab, CallbackInfo ci){
-        if (tab.orElseThrow().getTitle().getString().equals(Component.translatable("superresolution.screen.config.name").getString())){
+    @Inject(method = "setTab", at = @At(value = "HEAD"), cancellable = true)
+    #if MC_VER > MC_1_20_1
+    private void onSetTab(Optional<Tab<?>> tab, CallbackInfo ci)
+    #else
+    private void onSetTab(Tab<?> tab, CallbackInfo ci)
+    #endif {
+        if (tab.getTitle().getString().equals(Component.translatable("superresolution.screen.config.name").getString())) {
             Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().build(Minecraft.getInstance().screen));
             ci.cancel();
         }

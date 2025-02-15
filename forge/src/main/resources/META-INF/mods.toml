@@ -1,0 +1,38 @@
+modLoader = "javafml"
+loaderVersion = "*"
+issueTrackerURL = "https://github.com/187J3X1-114514/superresolution/issues"
+license = "MIT"
+
+[[mods]]
+modId = "super_resolution"
+version = "${version}"
+displayName = "Super Resolution"
+authors = "187J3X1"
+description = '''
+喵
+'''
+logoFile = "logo.png"
+
+[[dependencies.super_resolution]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "architectury"
+mandatory = true
+versionRange = "[*,)"
+ordering = "NONE"
+side = "BOTH"
+
+[mods."sodium:options"]
+"mixin.features.render.gui.debug" = false
+
+[[mixins]]
+config = "super_resolution.mixins.json"
+[[mixins]]
+config = "super_resolution-forge.mixins.json"
+[[mixins]]
+config = "super_resolution-forge-compat.mixins.json"

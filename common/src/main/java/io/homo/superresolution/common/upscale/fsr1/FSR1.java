@@ -130,6 +130,11 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
+    public int getInputTextureId() {
+        return input.getColorTextureId();
+    }
+
+    @Override
     protected boolean isSupport() {
         return AlgorithmType.FSR1.getValue().check().support();
     }

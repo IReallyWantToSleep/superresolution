@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.gui.widgets;
 
+import io.homo.superresolution.common.gui.Rect;
 import net.minecraft.client.InputType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
@@ -7,7 +8,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.WidgetTooltipHolder;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarratedElementType;
@@ -20,16 +20,23 @@ import net.minecraft.sounds.SoundEvents;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Duration;
-
 public abstract class AbstractWidget implements Renderable, GuiEventListener, NarratableEntry {
     protected final Font font;
+    #if MC_VER > MC_1_20_1
     private final WidgetTooltipHolder tooltip = new WidgetTooltipHolder();
+    #else
+    private final WidgetTooltip tooltip = new WidgetTooltip(this);
+    #endif
     protected boolean focused;
     protected boolean hovered;
+    protected Rect rect;
 
     protected AbstractWidget() {
         this.font = Minecraft.getInstance().font;
+    }
+
+    public void setRect(Rect rect) {
+        this.rect = rect;
     }
 
     public boolean isHovered() {
@@ -88,20 +95,25 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
         graphics.fill(x, y, width, height, color);
     }
 
-    protected void renderTooltip() {
+    protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        #if MC_VER > MC_1_20_1
         this.tooltip.refreshTooltipForNextRenderPass(this.isHovered(), this.isFocused(), this.getRectangle());
-    }
-
-    public Tooltip getTooltip() {
-        return this.tooltip.get();
+        #else
+        if ((hovered || focused) && this.tooltip.getTooltip() != null) {
+            graphics.renderTooltip(this.font,
+                    this.tooltip.getTooltip().toCharSequence(Minecraft.getInstance()),
+                    mouseX, mouseY
+            );
+        }
+        #endif
     }
 
     public AbstractWidget setTooltip(Tooltip tooltip) {
+        #if MC_VER > MC_1_20_1
         this.tooltip.set(tooltip);
+        #else
+        this.tooltip.setTooltip(tooltip);
+        #endif
         return this;
-    }
-
-    public void setTooltipDelay(int tooltipDelay) {
-        this.tooltip.setDelay(Duration.ofMillis(tooltipDelay));
     }
 }

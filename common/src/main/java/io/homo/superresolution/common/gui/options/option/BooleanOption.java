@@ -38,7 +38,7 @@ public class BooleanOption extends AbstractOption<Boolean> {
         } else {
             this.drawRect(graphics, x1 + 3, y1 - 8, x2 - 15, 6, disabled ? this.style.bgDisabledColor : this.style.bgColor);
         }
-        this.renderTooltip();
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override

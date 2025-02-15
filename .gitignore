@@ -126,3 +126,4 @@ run/
 /fsr2_win64/.vscode/
 /fsr2_win64/x64/
 /fsr2_win64/fsr2_win64/
+build.properties

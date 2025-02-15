@@ -25,7 +25,7 @@ public class SelectOption extends AbstractOption<Boolean> {
         int color = disabled ? this.style.textDisabledColor : this.style.textColor;
         this.drawString(graphics, this.label, rect.x + 4, rect.getCenterY() - 4, color);
         this.renderBox(graphics);
-        this.renderTooltip();
+        this.renderTooltip(graphics, mouseX, mouseY);
     }
 
     @Override
