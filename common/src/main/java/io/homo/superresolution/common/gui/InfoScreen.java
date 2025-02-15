@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.widgets.ButtonWidget;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.gui.widgets.TextWidget;
@@ -143,6 +144,11 @@ public class InfoScreen extends Screen {
         );
         this.infoText.addLine(
                 new Line()
+                        .text("Vulkan是否可用: %s".formatted(SuperResolution.interopManager.supportVulkan ? "是" : "否"))
+                        .color(255, 255, 255, 255)
+        );
+        this.infoText.addLine(
+                new Line()
                         .text("Vulkan版本: %s.%s.%s".formatted(AlgorithmHelper.VkVersion[0], AlgorithmHelper.VkVersion[1], AlgorithmHelper.VkVersion[2]))
                         .color(255, 255, 255, 255)
         );
@@ -230,6 +236,11 @@ public class InfoScreen extends Screen {
         );
         this.infoText.addLine(
                 new Line()
+                        .text("需要Vulkan才能使用? %s".formatted(req.isRequireVulkan() ? "是" : "否"))
+                        .color(255, 255, 255, 255)
+        );
+        this.infoText.addLine(
+                new Line()
                         .text("当前是否支持 %s".formatted(result.support() ? "是" : "否"))
                         .color(255, 255, 255, 255)
         );
@@ -255,6 +266,12 @@ public class InfoScreen extends Screen {
         this.infoText.addLine(
                 new Line()
                         .text("OpenGL版本 %s".formatted(result.glVersion() ? "是" : "否"))
+                        .left(0.02f)
+                        .color(255, 255, 255, 255)
+        );
+        this.infoText.addLine(
+                new Line()
+                        .text("Vulkan %s".formatted(result.vulkan() ? "是" : "否"))
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );

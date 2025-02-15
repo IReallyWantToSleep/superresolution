@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale.utils;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
@@ -12,13 +13,17 @@ public class Requirement {
     private int glMajorVersion = -1;
     private int glMinorVersion = -1;
     private boolean developmentEnvironment = false;
+    private boolean requireVulkan = false;
     private ArrayList<OS> includeOS = new ArrayList<>();
-
     protected Requirement() {
     }
 
     public static Requirement nothing() {
         return new Requirement();
+    }
+
+    public boolean isRequireVulkan() {
+        return requireVulkan;
     }
 
     public ArrayList<OS> getIncludeOS() {
@@ -31,6 +36,11 @@ public class Requirement {
 
     public Requirement developmentEnvironment(boolean developmentEnvironment) {
         this.developmentEnvironment = developmentEnvironment;
+        return this;
+    }
+
+    public Requirement requireVulkan(boolean requireVulkan) {
+        this.requireVulkan = requireVulkan;
         return this;
     }
 
@@ -56,7 +66,7 @@ public class Requirement {
     }
 
     public Result check() {
-        return new Result(checkOS(), checkGlVersion(), checkExtension(), checkEnv());
+        return new Result(checkOS(), checkGlVersion(), checkExtension(), checkEnv(), checkVulkan());
     }
 
     public boolean checkGlVersion() {
@@ -64,6 +74,11 @@ public class Requirement {
         if (glMajorVersion != -1 && glMajorVersion > AlgorithmHelper.GLVersion[0]) version = false;
         if (glMinorVersion != -1 && glMinorVersion > AlgorithmHelper.GLVersion[1]) version = false;
         return version;
+    }
+
+    public boolean checkVulkan() {
+        if (requireVulkan) return SuperResolution.interopManager.supportVulkan;
+        return true;
     }
 
     public boolean checkOS() {
@@ -127,9 +142,9 @@ public class Requirement {
         return this;
     }
 
-    public record Result(boolean os, boolean glVersion, boolean glExtension, boolean env) {
+    public record Result(boolean os, boolean glVersion, boolean glExtension, boolean env, boolean vulkan) {
         public boolean support() {
-            return os && glVersion && glExtension && env;
+            return os && glVersion && glExtension && env && vulkan;
         }
     }
 }
