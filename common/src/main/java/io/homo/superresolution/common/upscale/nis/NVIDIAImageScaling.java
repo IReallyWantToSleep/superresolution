@@ -5,10 +5,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderingStates;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.render.interop.SharedTexture;
-import io.homo.superresolution.common.render.vulkan.TextureFormat;
-import io.homo.superresolution.common.render.vulkan.VkComputeShader;
-import io.homo.superresolution.common.render.vulkan.VkShaderUniform;
-import io.homo.superresolution.common.render.vulkan.VkShaderUniformType;
+import io.homo.superresolution.common.render.vulkan.*;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmType;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
@@ -92,10 +89,16 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         initShader();
         input = MinecraftRenderingStates.getRenderTarget();
         output = MinecraftRenderingStates.getOriginRenderTarget();
-        inputSharedTexture = new SharedTexture(input.width, input.height, TextureFormat.RGBA8, SuperResolution.interopManager.vulkanApp.deviceManager);
-        inputSharedTexture.create();
-        outputSharedTexture = new SharedTexture(output.width, output.height, TextureFormat.RGBA8, SuperResolution.interopManager.vulkanApp.deviceManager);
-        outputSharedTexture.create();
+        inputSharedTexture = new SharedTexture(input.width, input.height, SuperResolution.interopManager.vulkanApp.deviceManager);
+        inputSharedTexture
+                .setFormat(TextureFormat.RGBA8)
+                .setUsage(TextureUsage.storageImage)
+                .create();
+        outputSharedTexture = new SharedTexture(output.width, output.height, SuperResolution.interopManager.vulkanApp.deviceManager);
+        outputSharedTexture
+                .setFormat(TextureFormat.RGBA8)
+                .setUsage(TextureUsage.sampledImage)
+                .create();
     }
 
     private void copyTexture() {
@@ -117,38 +120,38 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             //INPUT
             VkDescriptorImageInfo.Buffer infoInWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
                     .imageView(inputSharedTexture.vkImageView)
-                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    .imageLayout(VK_IMAGE_LAYOUT_GENERAL);
 
             VkWriteDescriptorSet inWriteDescSet = VkWriteDescriptorSet.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
                     .dstSet(shader.descriptorSet)
                     .dstBinding(IN_TEX_BINDING)
                     .descriptorCount(1)
-                    .descriptorType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+                    .descriptorType(VkShaderUniformType.storageImage.getValue())
                     .pImageInfo(infoInWriteDescSet);
             //coef_scaler
             VkDescriptorImageInfo.Buffer infoCoefScalerWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
-                    .imageView(inputSharedTexture.vkImageView)
-                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    .imageView(outputSharedTexture.vkImageView)
+                    .imageLayout(VK_IMAGE_LAYOUT_GENERAL);
 
             VkWriteDescriptorSet coefScalerWriteDescSet = VkWriteDescriptorSet.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
                     .dstSet(shader.descriptorSet)
                     .dstBinding(COEF_SCALAR_BINDING)
                     .descriptorCount(1)
-                    .descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+                    .descriptorType(VkShaderUniformType.sampledImage.getValue())
                     .pImageInfo(infoCoefScalerWriteDescSet);
             //coef_usm
             VkDescriptorImageInfo.Buffer infoCoefUSMWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
-                    .imageView(inputSharedTexture.vkImageView)
-                    .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                    .imageView(outputSharedTexture.vkImageView)
+                    .imageLayout(VK_IMAGE_LAYOUT_GENERAL);
 
             VkWriteDescriptorSet coefUSMWriteDescSet = VkWriteDescriptorSet.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
                     .dstSet(shader.descriptorSet)
                     .dstBinding(COEF_USM_BINDING)
                     .descriptorCount(1)
-                    .descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+                    .descriptorType(VkShaderUniformType.sampledImage.getValue())
                     .pImageInfo(infoCoefUSMWriteDescSet);
             //OUTPUT
             VkDescriptorImageInfo.Buffer infoOutWriteDescSet = VkDescriptorImageInfo.calloc(1, stack)
@@ -160,7 +163,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                     .dstSet(shader.descriptorSet)
                     .dstBinding(OUT_TEX_BINDING)
                     .descriptorCount(1)
-                    .descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+                    .descriptorType(VkShaderUniformType.sampledImage.getValue())
                     .pImageInfo(infoOutWriteDescSet);
 
             VkWriteDescriptorSet.Buffer writeDescSets = VkWriteDescriptorSet.calloc(4, stack)
@@ -175,7 +178,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader.pipeline);
 
             LongBuffer descriptorSetPtr = stack.callocLong(1).put(shader.descriptorSet).flip();
-            IntBuffer offset = stack.ints(256);
+            IntBuffer offset = stack.ints(0);
             vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader.pipelineLayout, 0, descriptorSetPtr, offset);
 
             int gridX = (int) Math.ceil((double) output.width / 32);
@@ -190,9 +193,9 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        outputSharedTexture.startRead();
-        Texture.blitToScreen(outputSharedTexture.width, outputSharedTexture.height, width, height, outputSharedTexture.glId);
-        outputSharedTexture.endRead();
+        //outputSharedTexture.startRead();
+        Texture.blitToScreen(inputSharedTexture.width, inputSharedTexture.height, width, height, inputSharedTexture.glId);
+        //outputSharedTexture.endRead();
     }
 
     @Override
@@ -247,7 +250,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        return outputSharedTexture.glId;
+        return inputSharedTexture.glId;
     }
 
     @Override

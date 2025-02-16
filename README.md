@@ -56,14 +56,14 @@
 # 构建
 
 首先编译[c++依赖库](https://github.com/187J3X1-114514/fsr2_opengl_java)，然后把生成的文件复制到common/src/main/resources/lib
+_(非必要)_
 
-打开你的终端，运行
+打开你的终端，运行，然后build_jars就是模组文件
 
 ```shell
 git clone https://github.com/187J3X1-114514/superresolution
 cd superresolution
-./gradlew
-./gradlew build
+python script/buildAll.py
 ```
 
 # 可能会有的功能

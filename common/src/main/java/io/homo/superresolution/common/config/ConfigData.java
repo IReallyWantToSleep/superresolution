@@ -8,7 +8,6 @@ public class ConfigData {
     public String upscaleAlgo = algoEnumToString(AlgorithmType.FSR1);
     public float sharpness = 0.55f;
     public boolean enableUpscale = true;
-    public boolean includeEffects = false;
 
     public static String algoEnumToString(AlgorithmType e) {
         return switch (e) {
@@ -27,10 +26,6 @@ public class ConfigData {
             case "none" -> AlgorithmType.NONE;
             default -> AlgorithmType.FSR1;
         };
-    }
-
-    public void setIncludeEffects(boolean includeEffects) {
-        this.includeEffects = includeEffects;
     }
 
     public void setUpscaleRatio(float upscaleRatio) {

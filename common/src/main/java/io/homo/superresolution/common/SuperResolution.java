@@ -34,6 +34,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static AbstractAlgorithm currentAlgorithm;
     public static None defaultAlgorithm = None.create();
     public static boolean isInit;
+    public static boolean isPreInit;
     public static boolean gameIsLoad = false;
     public static float frameTimeDelta = 16.6f;
     public static MainTarget mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
@@ -54,6 +55,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
         interopManager = new GlVkInteropManager();
         initVulkan();
+        isPreInit = true;
     }
 
     public static int getMinecraftWidth() {
@@ -99,6 +101,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void initRendering() {
+        if (!isPreInit) return;
         RenderSystem.assertOnRenderThread();
         MinecraftRenderingStates.init();
         Config.fromData(ConfigFile.read());
@@ -106,6 +109,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void createAlgo() {
+        if (!isPreInit) return;
         currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
         defaultAlgorithm.init();
         SuperResolution.LOGGER.info("初始化算法 {}", algorithmType.toString());

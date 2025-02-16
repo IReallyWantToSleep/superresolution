@@ -10,6 +10,16 @@ loom {
         mixinConfig "super_resolution-forge.mixins.json"
         mixinConfig "super_resolution-forge-compat.mixins.json"
     }
+    runs {
+        client {
+            client()
+            runDir("../run")
+        }
+        server {
+            server()
+            runDir("../run")
+        }
+    }
 }
 
 architectury {
@@ -64,6 +74,14 @@ def addNoModLib(name) {
     }
 }
 
+def addModLib(name) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+    dependencies {
+        modImplementation(files(file.toAbsolutePath().asWritable().toString()))
+    }
+}
+
+
 dependencies {
     forge "net.minecraftforge:forge:${rootProject.minecraft_version}-$rootProject.forge_version"
     modImplementation "dev.architectury:architectury-forge:$rootProject.architectury_api_version"
@@ -89,6 +107,13 @@ dependencies {
             addNoModLib(lib)
         }
     }
+    if (rootProject.properties.get("forge_use_mod_lib") != null) {
+        String libStr = rootProject.properties.get("forge_use_mod_lib")
+        String[] libs = libStr.split(",")
+        for (def lib : libs) {
+            addModLib(lib)
+        }
+    }
     modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
     implementation("io.github.spair:imgui-java-app:1.87.5")
     implementation("io.github.spair:imgui-java-binding:1.87.5")
@@ -104,6 +129,9 @@ dependencies {
     implementation(forgeRuntimeLibrary('org.apache.commons:commons-math3:3.6.1'))
     implementation(forgeRuntimeLibrary('org.apache.bcel:bcel:6.6.1')) {
         exclude group: 'org.apache.commons', module: 'commons-lang3'
+    }
+    implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
+        transitive = false
     }
 }
 

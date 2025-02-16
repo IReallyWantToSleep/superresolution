@@ -42,7 +42,6 @@ public class ConfigFile {
             data.setUpscaleRatio(getJsonElementFloat(jsonObject, "upscaleRatio", ConfigData.defaultConfig.upscaleRatio));
             data.setUpscaleAlgo(getJsonElementString(jsonObject, "upscaleAlgo", ConfigData.defaultConfig.upscaleAlgo));
             data.setEnableUpscale(getJsonElementBoolean(jsonObject, "enableUpscale", ConfigData.defaultConfig.enableUpscale));
-            data.setIncludeEffects(getJsonElementBoolean(jsonObject, "includeEffects", ConfigData.defaultConfig.includeEffects));
         } else {
             SuperResolution.LOGGER.error("配置读取失败");
         }
@@ -75,7 +74,6 @@ public class ConfigFile {
         config.put("upscaleRatio", data.upscaleRatio);
         config.put("upscaleAlgo", data.upscaleAlgo);
         config.put("enableUpscale", data.enableUpscale);
-        config.put("includeEffects", data.includeEffects);
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.setPrettyPrinting();
         gsonBuilder.disableHtmlEscaping();

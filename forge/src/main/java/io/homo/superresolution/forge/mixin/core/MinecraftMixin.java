@@ -13,12 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MinecraftMixin {
     @Inject(at = @At(value = "RETURN"), method = "<init>")
     private void onInitDone(CallbackInfo ci) {
+        if (!SuperResolution.isPreInit) return;
         SuperResolution.initRendering();
         SuperResolution.mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
     }
 
     @Inject(at = @At(value = "TAIL"), method = "onGameLoadFinished")
     private void onLoadFinished(CallbackInfo ci) {
+        if (!SuperResolution.isPreInit) return;
         SuperResolution.createAlgo();
         SuperResolutionForge.mod.init();
     }

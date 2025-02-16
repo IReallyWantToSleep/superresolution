@@ -1,7 +1,11 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+#if MC_VER > MC_1_20_1
+import net.minecraft.client.DeltaTracker;
+#else
 import com.mojang.blaze3d.vertex.PoseStack;
+#endif
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderingStates;
@@ -127,7 +131,7 @@ public abstract class LevelRendererMixin {
     @Inject(at = @At(value = "TAIL"), method = "allChanged")
     private void onReloadDone(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            MinecraftRenderingStates.resizeMinecraftRenderTarget();
+            Minecraft.getInstance().resizeDisplay();
         }
     }
 }

@@ -32,13 +32,15 @@
     ],
     "depends": {
         "fabricloader": "*",
-        "minecraft": ${versionRange},
+        "minecraft": "{versionRange}",
         "java": ">=${javaVersion}",
         "architectury": "*",
         "fabric-api": "*"
     },
     "suggests": {
-        "another-mod": "*"
+    },
+    "breaks": {
+        "resolutioncontrol": "*"
     },
     "accessWidener": "super_resolution.accesswidener"
 }

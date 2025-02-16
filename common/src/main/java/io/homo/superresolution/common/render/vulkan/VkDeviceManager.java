@@ -121,12 +121,14 @@ public class VkDeviceManager implements Destroyable {
             //VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
             //        .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
             //        .shaderFloat16(true); // Enable shaderFloat16 feature
+
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack);
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
             createInfo.pQueueCreateInfos(queueCreateInfos);
-            //createInfo.pNext(deviceFeatures12);
+            createInfo.pEnabledFeatures(VkPhysicalDeviceFeatures.calloc(stack).shaderStorageImageWriteWithoutFormat(true));
             createInfo.ppEnabledExtensionNames(asPointerBuffer(stack, getRequiredExtensions()));
-            if (VkApplication.ENABLE_VALIDATION)createInfo.ppEnabledLayerNames(application.validationLayers.validationLayersAsPointerBuffer(stack));
+            if (VkApplication.ENABLE_VALIDATION)
+                createInfo.ppEnabledLayerNames(application.validationLayers.validationLayersAsPointerBuffer(stack));
 
             PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
             if (vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
