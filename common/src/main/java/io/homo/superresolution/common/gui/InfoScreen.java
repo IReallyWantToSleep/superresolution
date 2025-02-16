@@ -63,7 +63,7 @@ public class InfoScreen extends BaseScreen {
         this.addWidget(this.closeButton);
         this.extButton = new ButtonWidget(10, this.height - 20 - 10, 60, 20)
                 .setAction(this::onClickInfo)
-                .setLabel(Component.literal("OpenGL扩展信息"));
+                .setLabel(Component.translatable("superresolution.screen.info.button.label.opengl_ext_info"));
         this.addWidget(this.extButton);
         this.infoTextRect = new Rect(10, 18, this.width - 10, this.height - 40);
         this.infoText = new TextWidget(infoTextRect.x, infoTextRect.y, infoTextRect.width, infoTextRect.height);
@@ -80,7 +80,9 @@ public class InfoScreen extends BaseScreen {
     public void addGlExt() {
         this.infoText.addLine(
                 new Line()
-                        .text("共有 %s 个扩展".formatted(AlgorithmHelper.GLExtension.size()))
+                        .text(Component.translatable("superresolution.screen.info.text.opengl_ext_count").getString()
+                                .formatted(AlgorithmHelper.GLExtension.size())
+                        )
                         .center(true)
                         .color(255, 255, 255, 255)
         );
@@ -97,7 +99,7 @@ public class InfoScreen extends BaseScreen {
         addEnvInfo();
         this.infoText.addLine(
                 new Line()
-                        .text("各算法支持情况")
+                        .text(Component.translatable("superresolution.screen.info.text.algo_support_status"))
                         .center(true)
                         .scale(1.15f)
                         .color(255, 255, 255, 255)
@@ -115,7 +117,7 @@ public class InfoScreen extends BaseScreen {
     public void addEnvInfo() {
         this.infoText.addLine(
                 new Line()
-                        .text("环境信息")
+                        .text(Component.translatable("superresolution.screen.info.title.env_info"))
                         .center(true)
                         .scale(1.15f)
                         .color(255, 255, 255, 255)
@@ -127,37 +129,74 @@ public class InfoScreen extends BaseScreen {
         );
         this.infoText.addLine(
                 new Line()
-                        .text("模组版本: %s".formatted(Platform.currentPlatform.getModVersionString("super_resolution")))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.mod_version").getString()
+                                        .formatted(Platform.currentPlatform.getModVersionString("super_resolution"))
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("依赖库版本: %s".formatted(NativeLibManager.nativeApi.getVersionInfo()))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.native_lib_version").getString()
+                                        .formatted(NativeLibManager.nativeApi.getVersionInfo())
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("OpenGL版本: %s.%s".formatted(AlgorithmHelper.GLVersion[0], AlgorithmHelper.GLVersion[1]))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.opengl_version").getString()
+                                        .formatted(
+                                                AlgorithmHelper.GLVersion[0],
+                                                AlgorithmHelper.GLVersion[1]
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("Vulkan是否可用: %s".formatted(SuperResolution.interopManager.supportVulkan ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.vulkan_available").getString()
+                                        .formatted(
+                                                SuperResolution.interopManager.supportVulkan ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("Vulkan版本: %s.%s.%s".formatted(AlgorithmHelper.VkVersion[0], AlgorithmHelper.VkVersion[1], AlgorithmHelper.VkVersion[2]))
+                        .text(
+                                Component.translatable(
+                                                "superresolution.screen.info.text.vulkan_version").getString()
+                                        .formatted(
+                                                AlgorithmHelper.VkVersion[0],
+                                                AlgorithmHelper.VkVersion[1],
+                                                AlgorithmHelper.VkVersion[2]
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("系统: %s".formatted(Platform.currentPlatform.getOS().type.getString()))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.os_name").getString()
+                                        .formatted(
+                                                Platform.currentPlatform.getOS().type.getString()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("系统架构: %s".formatted(Platform.currentPlatform.getOS().arch.getString()))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.os_arch").getString()
+                                        .formatted(
+                                                Platform.currentPlatform.getOS().arch.getString()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
     }
@@ -175,21 +214,24 @@ public class InfoScreen extends BaseScreen {
         ArrayList<String> missingGlExtension = req.getMissingExtension();
         this.infoText.addLine(
                 new Line()
-                        .text("最低OpenGL版本: %s.%s".formatted(
-                                req.getGlMajorVersion() == -1 ? "*" : req.getGlMajorVersion(),
-                                req.getGlMinorVersion() == -1 ? "*" : req.getGlMinorVersion()
-                        ))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.mix_opengl_version").getString()
+                                        .formatted(
+                                                req.getGlMajorVersion() == -1 ? "*" : req.getGlMajorVersion(),
+                                                req.getGlMinorVersion() == -1 ? "*" : req.getGlMinorVersion()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("需要的OpenGL扩展")
+                        .text(Component.translatable("superresolution.screen.info.text_need_opengl_ext"))
                         .color(255, 255, 255, 255)
         );
         if (req.getIncludeExtension().isEmpty())
             this.infoText.addLine(
                     new Line()
-                            .text("无")
+                            .text(Component.translatable("superresolution.screen.text.none"))
                             .left(0.02f)
                             .color(255, 255, 255, 255)
             );
@@ -198,7 +240,9 @@ public class InfoScreen extends BaseScreen {
                     new Line()
                             .text("%s (%s)".formatted(
                                     glExt,
-                                    !missingGlExtension.contains(glExt) ? "存在" : "缺少"
+                                    !missingGlExtension.contains(glExt) ?
+                                            Component.translatable("superresolution.screen.text.exist").getString() :
+                                            Component.translatable("superresolution.screen.text.missing").getString()
                             ))
                             .left(0.02f)
                             .color(255, 255, 255, 255)
@@ -206,13 +250,13 @@ public class InfoScreen extends BaseScreen {
         }
         this.infoText.addLine(
                 new Line()
-                        .text("要求的系统与架构")
+                        .text(Component.translatable("superresolution.screen.info.text.req_os_name_and_os_arch"))
                         .color(255, 255, 255, 255)
         );
         if (req.getIncludeOS().isEmpty())
             this.infoText.addLine(
                     new Line()
-                            .text("任意")
+                            .text(Component.translatable("superresolution.screen.text.any"))
                             .left(0.02f)
                             .color(255, 255, 255, 255)
             );
@@ -229,47 +273,103 @@ public class InfoScreen extends BaseScreen {
         }
         this.infoText.addLine(
                 new Line()
-                        .text("仅在开发环境中可用? %s".formatted(req.isDevelopmentEnvironment() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.only_in_dev_env").getString()
+                                        .formatted(
+                                                req.isDevelopmentEnvironment() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("需要Vulkan才能使用? %s".formatted(req.isRequireVulkan() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.need_vulkan").getString()
+                                        .formatted(
+                                                req.isRequireVulkan() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("当前是否支持 %s".formatted(result.support() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.is_available").getString()
+                                        .formatted(
+                                                result.support() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .color(255, 255, 255, 255)
         );
 
         this.infoText.addLine(
                 new Line()
-                        .text("系统 %s".formatted(result.os() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.requirement.os").getString()
+                                        .formatted(
+                                                result.os() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("环境 %s".formatted(result.env() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.requirement.env").getString()
+                                        .formatted(
+                                                result.env() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("OpenGL扩展 %s".formatted(result.glExtension() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.requirement.opengl_ext").getString()
+                                        .formatted(
+                                                result.glExtension() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("OpenGL版本 %s".formatted(result.glVersion() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.requirement.opengl_version").getString()
+                                        .formatted(
+                                                result.glVersion() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );
         this.infoText.addLine(
                 new Line()
-                        .text("Vulkan %s".formatted(result.vulkan() ? "是" : "否"))
+                        .text(
+                                Component.translatable("superresolution.screen.info.text.requirement.vulkan").getString()
+                                        .formatted(
+                                                result.vulkan() ?
+                                                        Component.translatable("superresolution.screen.text.yes").getString() :
+                                                        Component.translatable("superresolution.screen.text.no").getString()
+                                        )
+                        )
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );
@@ -284,10 +384,11 @@ public class InfoScreen extends BaseScreen {
     @Override
     public void renderMain(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (showInfo == 0) {
-            this.extButton.setLabel("OpenGL扩展信息");
+            this.extButton.setLabel(Component.translatable("superresolution.screen.info.button.label.opengl_ext_info"));
         } else {
-            this.extButton.setLabel("关闭");
+            this.extButton.setLabel(Component.translatable("superresolution.screen.button.label.return"));
         }
+        this.extButton.getRect().width = this.font.width(this.extButton.getLabel()) + 20;
         this.infoText.render(guiGraphics, mouseX, mouseY, partialTick);
         this.extButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);

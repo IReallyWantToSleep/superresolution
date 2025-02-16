@@ -6,19 +6,10 @@ import net.minecraft.client.Minecraft;
 
 public class Config {
     private static boolean enableUpscale = true;
-    private static boolean includeEffects = false;
     private static float upscaleRatio = 1.7f;
     private static AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
     private static float renderScaleFactor = 1 / upscaleRatio;
     private static float sharpness = 0.2f;
-
-    public static boolean isIncludeEffects() {
-        return true;
-    }
-
-    public static void setIncludeEffects(boolean includeEffects) {
-        Config.includeEffects = includeEffects;
-    }
 
     public static float getRenderScaleFactor() {
         return isEnableUpscale() ? renderScaleFactor : 1;
@@ -65,7 +56,6 @@ public class Config {
         data.upscaleAlgo = ConfigData.algoEnumToString(getUpscaleAlgo());
         data.upscaleRatio = upscaleRatio;
         data.enableUpscale = isEnableUpscale();
-        data.includeEffects = isIncludeEffects();
         return data;
     }
 
@@ -74,7 +64,6 @@ public class Config {
         upscaleAlgo = ConfigData.stringToAlgoEnum(data.upscaleAlgo);
         upscaleRatio = data.upscaleRatio;
         setEnableUpscale(data.enableUpscale);
-        setIncludeEffects(data.includeEffects);
     }
 
     public static boolean isEnableUpscale() {

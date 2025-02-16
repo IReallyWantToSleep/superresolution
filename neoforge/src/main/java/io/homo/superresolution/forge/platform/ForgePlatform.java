@@ -13,7 +13,7 @@ public class ForgePlatform extends Platform {
 
     @Override
     public boolean isModLoaded(String modId) {
-        return (LoadingModList.get().getModFileById(modId) != null) || ModList.get().getModContainerById(modId).isPresent();
+        return LoadingModList.get().getModFileById(modId) != null;
     }
 
     @Override

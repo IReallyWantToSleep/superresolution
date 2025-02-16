@@ -75,6 +75,7 @@ public class MinecraftRenderingStates {
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {
+        if (renderTarget == null) return;
         ((MinecraftAccessor) Minecraft.getInstance()).setRenderTarget(renderTarget);
     }
 

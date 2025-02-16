@@ -1,8 +1,6 @@
 package io.homo.superresolution.common.render.interop;
 
-import io.homo.superresolution.common.render.vulkan.TextureFormat;
-import io.homo.superresolution.common.render.vulkan.VkAllocatedImage;
-import io.homo.superresolution.common.render.vulkan.VkDeviceManager;
+import io.homo.superresolution.common.render.vulkan.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -28,17 +26,27 @@ public class SharedTexture {
     public VkAllocatedImage vkImage = new VkAllocatedImage();
     public long vkImageView;
     public int glId = GL_NULL_HANDLE;
-    public TextureFormat format;
     public int width;
     public int height;
     public SharedMemory memory = new SharedMemory();
+    protected TextureFormat format;
+    protected TextureUsage usage;
+    private int currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    public SharedTexture(int width, int height, TextureFormat format, VkDeviceManager deviceManager) {
+    public SharedTexture(int width, int height, VkDeviceManager deviceManager) {
         this.deviceManager = deviceManager;
         this.width = width;
         this.height = height;
-        this.format = format;
+    }
 
+    public SharedTexture setFormat(TextureFormat format) {
+        this.format = format;
+        return this;
+    }
+
+    public SharedTexture setUsage(TextureUsage usage) {
+        this.usage = usage;
+        return this;
     }
 
     private void VK_CreateImage() {
@@ -58,7 +66,12 @@ public class SharedTexture {
                     .arrayLayers(1)
                     .samples(VK_SAMPLE_COUNT_1_BIT)
                     .tiling(VK_IMAGE_TILING_OPTIMAL)
-                    .usage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT)
+                    .usage(
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                    usage.getValue()
+                    )
                     .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
                     .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
 
@@ -69,48 +82,23 @@ public class SharedTexture {
     }
 
     private void VK_TransferImage(VkCommandBuffer cmdBuff, long image) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkImageMemoryBarrier.Buffer transferBarrier = VkImageMemoryBarrier.calloc(1, stack)
-                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                    .oldLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                    .newLayout(VK_IMAGE_LAYOUT_GENERAL)
-                    .srcAccessMask(0)
-                    .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .image(image)
-                    .subresourceRange(it -> it
-                            .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                            .baseMipLevel(0)
-                            .levelCount(1)
-                            .baseArrayLayer(0)
-                            .layerCount(1)
-                    );
-
-            vkCmdPipelineBarrier(cmdBuff,
-                    VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                    null, null, transferBarrier);
-            VkImageMemoryBarrier.Buffer useBarrier = VkImageMemoryBarrier.calloc(1, stack)
-                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                    .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-                    .newLayout(VK_IMAGE_LAYOUT_GENERAL)
-                    .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                    .dstAccessMask(VK_ACCESS_SHADER_READ_BIT)
-                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .image(image)
-                    .subresourceRange(it -> it
-                            .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                            .baseMipLevel(0)
-                            .levelCount(1)
-                            .baseArrayLayer(0)
-                            .layerCount(1)
-                    );
-
-            vkCmdPipelineBarrier(cmdBuff,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-                    null, null, useBarrier);
-        }
+        Utils.transitionImageLayout(
+                cmdBuff,
+                image,
+                TextureFormat.toVK(format),
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                false
+        );
+        int finalLayout = usage == TextureUsage.sampledImage ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+        Utils.transitionImageLayout(
+                cmdBuff,
+                image,
+                TextureFormat.toVK(format),
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                finalLayout,
+                false
+        );
     }
 
     private void VK_CreateImageMemory() {
@@ -188,49 +176,31 @@ public class SharedTexture {
         }
     }
 
-    /*
-        private void VkGL_CreateSharedMemory(long memoryPtr, long size) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkMemoryGetWin32HandleInfoKHR memoryGetInfo = VkMemoryGetWin32HandleInfoKHR.calloc(stack)
-                        .sType(VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR)
-                        .memory(memoryPtr)
-                        .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
-                PointerBuffer handlePtr = stack.callocPointer(1);
-                vkGetMemoryWin32HandleKHR(deviceManager.device, memoryGetInfo, handlePtr);
-                memory.vkHandle = handlePtr.get(0);
-                IntBuffer glMemory = stack.callocInt(1);
-                glCreateMemoryObjectsEXT(glMemory);
-                memory.glRef = glMemory.get(0);
-                glImportMemoryWin32HandleEXT((int) memory.glRef, size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, memory.vkHandle);
-            }
-        }
-    */
     private int GL_CreateGLTexture2D() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer texture = stack.callocInt(1);
             glGenTextures(texture);
-
-
             return texture.get(0);
         }
     }
 
     private void GL_CreateTextureStorage() {
         if (memory.glRef != 0) {
+            glBindTexture(GL_TEXTURE_2D, glId);
             glTextureStorageMem2DEXT(
                     glId,
                     1,
                     TextureFormat.toGL(format),
                     width,
                     height,
-                    memory.glRef, // 直接使用 GLuint，无需强制转换
+                    memory.glRef,
                     0
             );
-            glBindTexture(GL_TEXTURE_2D, glId);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
         } else {
             throw new IllegalStateException("OpenGL memory object not initialized");
         }
@@ -254,7 +224,6 @@ public class SharedTexture {
         updateTexture();
     }
 
-
     public void clean() {
         if (glId != GL_NULL_HANDLE) {
             glDeleteTextures(glId);
@@ -268,18 +237,7 @@ public class SharedTexture {
     }
 
     public void resize(int width, int height) {
-        // 显式解除纹理与内存的绑定
-        if (glId != GL_NULL_HANDLE) {
-            glDeleteTextures(glId);
-            glId = GL_NULL_HANDLE;
-        }
-        if (memory.glRef != 0) {
-            glDeleteMemoryObjectsEXT(new int[]{memory.glRef});
-            memory.glRef = 0;
-        }
-        // 清理 Vulkan 资源
         clean();
-        // 更新尺寸并重新创建
         this.width = width;
         this.height = height;
         create();

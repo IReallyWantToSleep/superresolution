@@ -36,6 +36,7 @@ public class ConfigScreen extends BaseScreen {
 
     @Override
     public void renderMain(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.infoButton.getRect().width = this.font.width(this.infoButton.getLabel()) + 20;
         this.optionsList.render(guiGraphics, mouseX, mouseY, partialTick);
         this.closeButton.render(guiGraphics, mouseX, mouseY, partialTick);
         this.okButton.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -93,7 +94,7 @@ public class ConfigScreen extends BaseScreen {
         this.addWidget(this.saveButton);
         this.infoButton = new ButtonWidget(10, this.height - 20 - 10, 30, 20)
                 .setAction(this::onClickInfo)
-                .setLabel(Component.literal("信息"));
+                .setLabel(Component.translatable("superresolution.screen.config.button.label.info"));
         this.addWidget(this.infoButton);
         this.guiRect = new Rect(10, 18, this.width - 10, this.height - 40);
         this.optionsList.setPosition(this.guiRect.x, this.guiRect.y);

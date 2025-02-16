@@ -24,7 +24,7 @@ public class RenderDoc {
         RenderdocLibrary.RenderdocApi apiInstance = null;
         if (OSType.isCurrentOS(OSType.WINDOWS)) {
             try {
-                String projectDir = Platform.getGameFolder().getParent().getParent().toAbsolutePath().toString();
+                String projectDir = Platform.getGameFolder().getParent().toAbsolutePath().toString();
                 String libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
                 LOGGER.info("RenderDoc库路径 {}", libPath);
                 System.load(libPath);

@@ -94,6 +94,11 @@ public abstract class AbstractOption<T> extends AbstractWidget {
         return this;
     }
 
+    public AbstractOption<T> setLabel(Component label) {
+        this.label = label.getString();
+        return this;
+    }
+
     public void renderHovered(GuiGraphics graphics, Rect rect) {
         if (!this.disabled) graphics.fill(
                 rect.x,
@@ -102,11 +107,6 @@ public abstract class AbstractOption<T> extends AbstractWidget {
                 rect.y + rect.height,
                 this.style.hoveredColor
         );
-    }
-
-    public AbstractOption<T> setLabel(Component label) {
-        this.label = label.getString();
-        return this;
     }
 
     public boolean isVisibleAndNotDisabled() {

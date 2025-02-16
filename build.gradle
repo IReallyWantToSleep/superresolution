@@ -1,5 +1,5 @@
 plugins {
-    id "dev.architectury.loom" version "1.7-SNAPSHOT" apply false
+    id "dev.architectury.loom" version "1.9-SNAPSHOT" apply false
     id "architectury-plugin" version "3.4-SNAPSHOT"
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
@@ -22,6 +22,7 @@ def writeDefine() {
         println("%s -> %s".formatted(ver, verCode))
     }
     sb.append("MC_VER=" + toVerCode(rootProject.minecraft_version) + "\n")
+    println("MC_VER=%s -> %s".formatted(rootProject.minecraft_version, toVerCode(rootProject.minecraft_version)))
     new File(projectDir.asWritable().absolutePath, "build.properties").text = sb.toString()
 }
 
@@ -101,12 +102,12 @@ subprojects {
     java {
         withSourcesJar()
 
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(rootProject.java_version)
+        targetCompatibility = JavaVersion.toVersion(rootProject.java_version)
     }
 
     tasks.withType(JavaCompile).configureEach {
-        it.options.release = 21
+        it.options.release = Integer.parseInt(rootProject.java_version)
     }
 
     publishing {

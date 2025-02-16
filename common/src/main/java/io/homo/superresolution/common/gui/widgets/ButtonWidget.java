@@ -8,15 +8,33 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FastColor;
 
 public class ButtonWidget extends AbstractWidget implements Renderable {
+    private final Rect rect;
     private boolean enabled = true;
     private boolean visible = true;
-    private Rect rect;
     private ButtonStyle style = ButtonStyle.defaults();
     private Runnable action;
     private String label = "";
 
     public ButtonWidget(int x, int y, int width, int height) {
         this.rect = new Rect(x, y, width, height);
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public ButtonWidget setLabel(String label) {
+        this.label = label;
+        return this;
+    }
+
+    public ButtonWidget setLabel(Component label) {
+        this.label = label.getString();
+        return this;
+    }
+
+    public Rect getRect() {
+        return rect;
     }
 
     @Override
@@ -92,16 +110,6 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
 
     public ButtonWidget setStyle(ButtonStyle style) {
         this.style = style;
-        return this;
-    }
-
-    public ButtonWidget setLabel(String label) {
-        this.label = label;
-        return this;
-    }
-
-    public ButtonWidget setLabel(Component label) {
-        this.label = label.getString();
         return this;
     }
 

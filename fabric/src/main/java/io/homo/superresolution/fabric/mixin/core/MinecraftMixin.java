@@ -14,6 +14,7 @@ public class MinecraftMixin {
 
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V"), method = "<init>")
     private void onStart(CallbackInfo ci) {
+        if (!SuperResolution.isPreInit) return;
         SuperResolution.mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
         SuperResolution.initRendering();
         SuperResolution.createAlgo();

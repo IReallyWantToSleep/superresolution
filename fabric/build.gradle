@@ -1,3 +1,5 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
 import java.nio.file.Paths
 
 plugins {
@@ -63,6 +65,21 @@ def addModrinthMod(id, ver) {
     dependencies { modImplementation("maven.modrinth:${id}:${ver}-fabric,${rootProject.minecraft_version}") }
 }
 
+def addNoModLib(name) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+    dependencies {
+        implementation(files(file.toAbsolutePath().asWritable().toString()))
+    }
+}
+
+def addModLib(name) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+    dependencies {
+        modImplementation(files(file.toAbsolutePath().asWritable().toString()))
+    }
+}
+
+
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
     modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
@@ -79,6 +96,20 @@ dependencies {
                         modVer
                 )
             }
+        }
+    }
+    if (rootProject.properties.get("fabric_use_nomod_lib") != null) {
+        String libStr = rootProject.properties.get("fabric_use_nomod_lib")
+        String[] libs = libStr.split(",")
+        for (def lib : libs) {
+            addNoModLib(lib)
+        }
+    }
+    if (rootProject.properties.get("fabric_use_mod_lib") != null) {
+        String libStr = rootProject.properties.get("fabric_use_mod_lib")
+        String[] libs = libStr.split(",")
+        for (def lib : libs) {
+            addModLib(lib)
         }
     }
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
@@ -104,6 +135,7 @@ processResources {
         srcVersionRange.each {
             srcVersionRange[new ArrayList<String>(srcVersionRange as Collection<? extends String>).indexOf(it)] = '"%s"'.formatted(it)
         }
+        stringBuilder.append(srcVersionRange.join(","))
         stringBuilder.append("]")
     } else {
         stringBuilder.append('"%s"'.formatted(srcVersionRange[0]))
@@ -114,9 +146,12 @@ processResources {
     filesMatching('fabric.mod.json') {
         expand(
                 version: project.version,
-                javaVersion: rootProject.java_version,
-                versionRange: versionRange
+                javaVersion: rootProject.java_version
         )
+        //println(it.file.absolutePath)
+        filter { String line ->
+            return line.replace('"{versionRange}"', versionRange)
+        }
     }
 }
 
