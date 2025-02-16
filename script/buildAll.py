@@ -1,4 +1,4 @@
-#虽然我可以直接写一个gradle任务，但是我闲，所以我拿python写😋😋😋
+#虽然我可以直接写一个gradle任务，但是我闲，所以我拿python写
 ###############################设置###############################
 ENABLE_GRADLE_OUTPUT = True #是否显示gradle的输出
 ENABLE_GRADLE_OUTPUT_INFO = False #是否在gradle的命令行加入--info <-显示致死量日志
@@ -113,7 +113,7 @@ for version in versions:
 def check_java_version():
     for version in version_configs.keys():
         if (eval(version_configs[version]['java_version']) > java_version):
-            print(f'Java版本过低 {version}需要Java版本{version_configs[version]["java_version"]} 憋憋憋😋')
+            print(f'Java版本过低 {version}需要Java版本{version_configs[version]["java_version"]} 憋憋憋')
             print(f'可使用 `{os.path.abspath(__file__)} Java可执行程序位置/Java目录` 来指定要使用的java')
             exit(1)
 
@@ -168,4 +168,4 @@ for version in versions:
         copy_build_libs(platform)
 endTime = time.time()
 
-print('已为这些游戏版本构建模组',", ".join(versions),"用时",str(round(endTime-startTime,2))+"s 😋😋😋😋😋😋")
+print('已为这些游戏版本构建模组',", ".join(versions),"用时",str(round(endTime-startTime,2))+"s")
