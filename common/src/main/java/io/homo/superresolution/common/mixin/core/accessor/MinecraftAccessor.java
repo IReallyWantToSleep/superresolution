@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.mixin.core;
+package io.homo.superresolution.common.mixin.core.accessor;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.Minecraft;

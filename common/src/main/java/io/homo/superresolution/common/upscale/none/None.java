@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.upscale.none;
 
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.framebuffer.OnlyTextureIdFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
@@ -16,7 +16,7 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        input = MinecraftRenderingStates.getRenderTarget();
+        input = MinecraftRenderHandle.getRenderTarget();
         output = new OnlyTextureIdFrameBuffer(input.getColorTextureId());
     }
 

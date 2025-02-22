@@ -7,12 +7,14 @@ VERSIOM_CONFIGS_DIR = "versionConfigs" #版本配置文件目录
 #################################################################
 import os
 import re
-import math 
+import math
 import sys
 import shutil
 import time
 import subprocess
+import io
 from pathlib import Path
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 cur_path = Path(os.path.abspath('.'))
 version_configs_path = cur_path / VERSIOM_CONFIGS_DIR
 version_files = os.listdir(version_configs_path)

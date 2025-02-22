@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.render.vulkan;
+package io.homo.superresolution.common.render.vulkan.texture;
 
 import static org.lwjgl.vulkan.VK10.*;
 

@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.Window;
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,22 +25,22 @@ public class WindowMixin {
 
     @Unique
     private int super_resolution$scale(int value) {
-        double scaleFactor = MinecraftRenderingStates.getCurrentScaleFactor();
+        double scaleFactor = MinecraftRenderHandle.getCurrentScaleFactor();
         return Math.max(Mth.ceil((double) value * scaleFactor), 1);
     }
 
     @Inject(at = @At("RETURN"), method = "getGuiScale", cancellable = true)
     private void getScaleFactor(CallbackInfoReturnable<Double> ci) {
-        ci.setReturnValue(ci.getReturnValueD() * MinecraftRenderingStates.getCurrentScaleFactor());
+        ci.setReturnValue(ci.getReturnValueD() * MinecraftRenderHandle.getCurrentScaleFactor());
     }
 
     @Inject(at = @At("RETURN"), method = "onResize")
     private void onFramebufferSizeChanged(CallbackInfo ci) {
-        MinecraftRenderingStates.onResolutionChanged();
+        MinecraftRenderHandle.resize();
     }
 
     @Inject(at = @At("RETURN"), method = "onFramebufferResize")
     private void onUpdateFramebufferSize(CallbackInfo ci) {
-        MinecraftRenderingStates.onResolutionChanged();
+        MinecraftRenderHandle.resize();
     }
 }

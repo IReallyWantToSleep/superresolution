@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.render.vulkan;
+package io.homo.superresolution.common.render.vulkan.texture;
 
 import static io.homo.superresolution.common.render.gl.GlConst.GL_RG16F;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_RGBA8;

@@ -1,6 +1,9 @@
 package io.homo.superresolution.common.render.interop;
 
 import io.homo.superresolution.common.render.vulkan.*;
+import io.homo.superresolution.common.render.vulkan.texture.TextureFormat;
+import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
+import io.homo.superresolution.common.render.vulkan.texture.VkAllocatedImage;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;

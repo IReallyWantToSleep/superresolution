@@ -1,5 +1,6 @@
-package io.homo.superresolution.common.render.vulkan;
+package io.homo.superresolution.common.render.vulkan.shader;
 
+import io.homo.superresolution.common.render.vulkan.VkDeviceManager;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkDescriptorBufferInfo;

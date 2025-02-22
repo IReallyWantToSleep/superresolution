@@ -9,7 +9,7 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.render.GlVkInteropManager;
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.Gl;
 import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
@@ -25,6 +25,8 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
+
 public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
@@ -38,7 +40,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static boolean gameIsLoad = false;
     public static float frameTimeDelta = 16.6f;
     public static MainTarget mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
-    public static boolean isRenderingWorld = false;
     public static AlgorithmType algorithmType;
     public static GlVkInteropManager interopManager;
     private static SuperResolution instance;
@@ -48,6 +49,7 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static void preInit() {
         if (Platform.getEnv() == EnvType.SERVER) throw new RuntimeException("SuperResolution不支持安装在服务器上！");
+        Config.fromData(ConfigFile.read());
         if (Platform.isDevelopmentEnvironment()) RenderDoc.init();
         if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
             NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
@@ -103,8 +105,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void initRendering() {
         if (!isPreInit) return;
         RenderSystem.assertOnRenderThread();
-        MinecraftRenderingStates.init();
-        Config.fromData(ConfigFile.read());
+        MinecraftRenderHandle.init();
         algorithmType = Config.getUpscaleAlgo();
     }
 
@@ -119,12 +120,24 @@ public final class SuperResolution implements Resizable, Destroyable {
         interopManager.init();
     }
 
+    public static void callAlgo(Consumer<AbstractAlgorithm> fn) {
+        if (currentAlgorithm != null) {
+            fn.accept(currentAlgorithm);
+        }
+    }
+
+    public static AbstractAlgorithm getCurrentAlgorithm() {
+        if (Config.isEnableUpscale() && currentAlgorithm != null) {
+            return currentAlgorithm;
+        }
+        return defaultAlgorithm;
+    }
+
     public void init() {
         if (isInit)
             return;
         RenderSystem.assertOnRenderThread();
         instance = this;
-        if (!ConfigFile.exists()) ConfigFile.write();
         if (Platform.isDevelopmentEnvironment()) new ImguiMain();
         mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
         isInit = true;
@@ -133,6 +146,7 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
+        MinecraftRenderHandle.resize();
         if (currentAlgorithm != null)
             currentAlgorithm.resize(width, height);
         AlgorithmManager.resize(width, height);
@@ -140,7 +154,7 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public void destroy() {
         RenderSystem.assertOnRenderThread();
-        //interopManager.destroy();
+        interopManager.destroy();
         if (currentAlgorithm != null)
             currentAlgorithm.destroy();
         AlgorithmManager.destroy();

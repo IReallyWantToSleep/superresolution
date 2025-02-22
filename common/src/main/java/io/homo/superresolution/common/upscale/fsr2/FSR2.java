@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -52,7 +52,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        input = MinecraftRenderingStates.getRenderTarget();
+        input = MinecraftRenderHandle.getRenderTarget();
         output = new Texture(window.getScreenWidth(), window.getScreenHeight(), GL_RGBA8);
         this.resize(window.getScreenWidth(), window.getScreenHeight());
     }

@@ -1,5 +1,7 @@
-package io.homo.superresolution.common.render.vulkan;
+package io.homo.superresolution.common.render.vulkan.shader;
 
+import io.homo.superresolution.common.render.vulkan.VkDeviceManager;
+import io.homo.superresolution.common.render.vulkan.VkException;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
