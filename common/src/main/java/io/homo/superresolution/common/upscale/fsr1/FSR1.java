@@ -1,8 +1,9 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.shader.ComputeShaderProgram;
+import io.homo.superresolution.common.render.gl.shader.GeneralShaderProgram;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -20,12 +21,12 @@ public class FSR1 extends AbstractAlgorithm {
     private Texture output;
 
     public static int checkFP16Support() {
-        if (AlgorithmHelper.hasGLExtension("EXT_shader_16bit_storage") &&
-                AlgorithmHelper.hasGLExtension("EXT_shader_explicit_arithmetic_types")
+        if (AlgorithmHelper.hasGLExtension("GL_EXT_shader_16bit_storage") &&
+                AlgorithmHelper.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")
         ) {
             return 1;
         }
-        if (AlgorithmHelper.hasGLExtension("NV_gpu_shader5")) {
+        if (AlgorithmHelper.hasGLExtension("GL_NV_gpu_shader5")) {
             return 2;
         }
         return 0;
@@ -36,23 +37,58 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     public void initShader() {
+        int fp16 = checkFP16Support();
+        GeneralShaderProgram.ShaderInclude fsrEasuInclude = GeneralShaderProgram.ShaderInclude.create(
+                FileReadHelper.readText("/shader/fsr1_easu.comp.glsl"),
+                "fsr1_easu.comp.glsl"
+        );
+        GeneralShaderProgram.ShaderInclude fsrEasuFp16Include = GeneralShaderProgram.ShaderInclude.create(
+                FileReadHelper.readText("/shader/fsr1_easu_fp16.comp.glsl"),
+                "fsr1_easu_fp16.comp.glsl"
+        );
+        GeneralShaderProgram.ShaderInclude fsrRcasInclude = GeneralShaderProgram.ShaderInclude.create(
+                FileReadHelper.readText("/shader/fsr1_rcas.comp.glsl"),
+                "fsr1_rcas.comp.glsl"
+        );
+        GeneralShaderProgram.ShaderInclude fsrRcasFp16Include = GeneralShaderProgram.ShaderInclude.create(
+                FileReadHelper.readText("/shader/fsr1_rcas_fp16.comp.glsl"),
+                "fsr1_rcas_fp16.comp.glsl"
+        );
+        GeneralShaderProgram.ShaderInclude fsrCommonInclude = GeneralShaderProgram.ShaderInclude.create(
+                FileReadHelper.readText("/shader/fsr1_common.glsl"),
+                "fsr1_common.glsl"
+        );
         fsr1EASUShader = (ComputeShaderProgram) ComputeShaderProgram.create()
-                .addDefineText("FP16_CRITERIA", String.valueOf(checkFP16Support()))
+                .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
+                .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
+                .addDefineText("FSR_EASU", String.valueOf(1))
                 .setShaderName("FSR1_EASU")
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_easu.fsh"))
+                .addShaderInclude(fsrEasuInclude)
+                .addShaderInclude(fsrEasuFp16Include)
+                .addShaderInclude(fsrRcasInclude)
+                .addShaderInclude(fsrRcasFp16Include)
+                .addShaderInclude(fsrCommonInclude)
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_main.glsl"))
                 .build()
                 .compileShader();
         fsr1RCASShader = (ComputeShaderProgram) ComputeShaderProgram.create()
-                .addDefineText("FP16_CRITERIA", String.valueOf(checkFP16Support()))
+                .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
+                .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
+                .addDefineText("FSR_RCAS", String.valueOf(1))
                 .setShaderName("FSR1_RCAS")
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_rcas.fsh"))
+                .addShaderInclude(fsrEasuInclude)
+                .addShaderInclude(fsrEasuFp16Include)
+                .addShaderInclude(fsrRcasInclude)
+                .addShaderInclude(fsrRcasFp16Include)
+                .addShaderInclude(fsrCommonInclude)
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_main.glsl"))
                 .build()
                 .compileShader();
     }
 
     @Override
     public void init() {
-        input = MinecraftRenderingStates.getRenderTarget();
+        input = MinecraftRenderHandle.getRenderTarget();
         initShader();
         fsr1TempTexture = new Texture(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), GL_RGBA8);
         output = new Texture(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight(), GL_RGBA8);

@@ -2,10 +2,14 @@ package io.homo.superresolution.common.upscale.nis;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.render.interop.SharedTexture;
-import io.homo.superresolution.common.render.vulkan.*;
+import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
+import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
+import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
+import io.homo.superresolution.common.render.vulkan.texture.TextureFormat;
+import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmType;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
@@ -87,8 +91,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     public void init() {
         config = new NISConfig();
         initShader();
-        input = MinecraftRenderingStates.getRenderTarget();
-        output = MinecraftRenderingStates.getOriginRenderTarget();
+        input = MinecraftRenderHandle.getRenderTarget();
+        output = MinecraftRenderHandle.getOriginRenderTarget();
         inputSharedTexture = new SharedTexture(input.width, input.height, SuperResolution.interopManager.vulkanApp.deviceManager);
         inputSharedTexture
                 .setFormat(TextureFormat.RGBA8)
@@ -206,8 +210,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
-        inputSharedTexture.resize(MinecraftRenderingStates.getRenderWidth(), MinecraftRenderingStates.getRenderHeight());
-        outputSharedTexture.resize(MinecraftRenderingStates.getScreenWidth(), MinecraftRenderingStates.getScreenHeight());
+        inputSharedTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        outputSharedTexture.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         NVIDIAImageScalingConfig.NVScalerUpdateConfig(config, 0.2f, 0, 0, input.width, input.height, input.width, input.height, 0, 0, width, height, width, height, NISHDRMode.None);
     }
 

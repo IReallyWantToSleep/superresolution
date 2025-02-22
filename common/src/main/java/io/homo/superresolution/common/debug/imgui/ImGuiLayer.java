@@ -4,7 +4,6 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import imgui.ImGui;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.MinecraftRenderingStates;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 
@@ -14,8 +13,8 @@ public class ImGuiLayer {
         int width = 500;
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");
-        if (ImGui.button("iris")){
-            System.out.println(Platform.currentPlatform.iris().isShaderPackInUse()?"true":"false");
+        if (ImGui.button("iris")) {
+            System.out.println(Platform.currentPlatform.iris().isShaderPackInUse() ? "true" : "false");
         }
 
         if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null) {
@@ -96,13 +95,6 @@ public class ImGuiLayer {
                 width,
                 height,
                 0, 1, 1, 0);
-        MinecraftRenderingStates.minecraftRenderTargetMap.forEach((String key, RenderTarget renderTarget) -> {
-            ImGui.text(key + " " + renderTarget.width + " " + renderTarget.height);
-            ImGui.image(renderTarget.getColorTextureId(),
-                    width,
-                    height,
-                    0, 1, 1, 0);
-        });
         ImGui.end();
     }
 }

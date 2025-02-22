@@ -10,6 +10,15 @@ public class Config {
     private static AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
     private static float renderScaleFactor = 1 / upscaleRatio;
     private static float sharpness = 0.2f;
+    private static CaptureMode captureMode = CaptureMode.A;
+
+    public static CaptureMode getCaptureMode() {
+        return captureMode;
+    }
+
+    public static void setCaptureMode(CaptureMode captureMode) {
+        Config.captureMode = captureMode;
+    }
 
     public static float getRenderScaleFactor() {
         return isEnableUpscale() ? renderScaleFactor : 1;
@@ -29,6 +38,7 @@ public class Config {
     }
 
     public static void setUpscaleAlgo(AlgorithmType upscaleAlgo) {
+        if (Config.upscaleAlgo == upscaleAlgo) return;
         Config.upscaleAlgo = upscaleAlgo;
         SuperResolution.algorithmType = Config.upscaleAlgo;
         if (SuperResolution.currentAlgorithm != null) SuperResolution.currentAlgorithm.destroy();
@@ -45,6 +55,7 @@ public class Config {
 
     public static double getMinUpscaleRatio() {
         int maxSize = 16384;
+        if (Minecraft.getInstance().getWindow() == null) return 0.1;
         double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
         double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
         return Math.max(maxWidth, maxHeight);
@@ -56,14 +67,17 @@ public class Config {
         data.upscaleAlgo = ConfigData.algoEnumToString(getUpscaleAlgo());
         data.upscaleRatio = upscaleRatio;
         data.enableUpscale = isEnableUpscale();
+        data.captureMode = getCaptureMode();
+
         return data;
     }
 
     public static void fromData(ConfigData data) {
         sharpness = data.sharpness;
         upscaleAlgo = ConfigData.stringToAlgoEnum(data.upscaleAlgo);
-        upscaleRatio = data.upscaleRatio;
+        setUpscaleRatio(data.upscaleRatio);
         setEnableUpscale(data.enableUpscale);
+        setCaptureMode(data.captureMode);
     }
 
     public static boolean isEnableUpscale() {

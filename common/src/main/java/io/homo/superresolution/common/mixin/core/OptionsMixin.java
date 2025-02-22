@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.mixin.core.accessor.OptionInstanceAccessor;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
@@ -18,8 +19,8 @@ public class OptionsMixin {
     private OptionInstance<GraphicsStatus> graphicsMode;
 
     @Inject(method = "graphicsMode", at = @At("TAIL"))
-    private void overwrite(CallbackInfoReturnable<OptionInstance<GraphicsStatus>> cir) {
-        if (cir.getReturnValue().get().getId() == 2 && Config.isEnableUpscale()) {
+    private void overwriteGraphicsMode(CallbackInfoReturnable<OptionInstance<GraphicsStatus>> cir) {
+        if (((GraphicsStatus) (((OptionInstanceAccessor) (Object) cir.getReturnValue()).getValue())).getId() == 2 && Config.isEnableUpscale()) {
             graphicsMode.set(GraphicsStatus.FANCY);
         }
     }

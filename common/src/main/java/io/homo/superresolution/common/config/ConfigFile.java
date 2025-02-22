@@ -42,6 +42,7 @@ public class ConfigFile {
             data.setUpscaleRatio(getJsonElementFloat(jsonObject, "upscaleRatio", ConfigData.defaultConfig.upscaleRatio));
             data.setUpscaleAlgo(getJsonElementString(jsonObject, "upscaleAlgo", ConfigData.defaultConfig.upscaleAlgo));
             data.setEnableUpscale(getJsonElementBoolean(jsonObject, "enableUpscale", ConfigData.defaultConfig.enableUpscale));
+            data.setCaptureMode(CaptureMode.getMode(getJsonElementInt(jsonObject, "captureMode", CaptureMode.getId(ConfigData.defaultConfig.captureMode))));
         } else {
             SuperResolution.LOGGER.error("配置读取失败");
         }
@@ -54,6 +55,10 @@ public class ConfigFile {
 
     private static float getJsonElementFloat(JsonObject jsonObject, String name, float d) {
         return jsonObject.get(name) != null ? jsonObject.get(name).getAsFloat() : d;
+    }
+
+    private static int getJsonElementInt(JsonObject jsonObject, String name, int d) {
+        return jsonObject.get(name) != null ? jsonObject.get(name).getAsInt() : d;
     }
 
     private static String getJsonElementString(JsonObject jsonObject, String name, String d) {
@@ -74,6 +79,7 @@ public class ConfigFile {
         config.put("upscaleRatio", data.upscaleRatio);
         config.put("upscaleAlgo", data.upscaleAlgo);
         config.put("enableUpscale", data.enableUpscale);
+        config.put("captureMode", CaptureMode.getId(data.captureMode));
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.setPrettyPrinting();
         gsonBuilder.disableHtmlEscaping();

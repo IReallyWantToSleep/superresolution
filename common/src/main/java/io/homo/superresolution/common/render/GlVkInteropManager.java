@@ -3,6 +3,9 @@ package io.homo.superresolution.common.render;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.render.gl.texture.NativeImageTexture;
 import io.homo.superresolution.common.render.vulkan.*;
+import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
+import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
+import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
 import static io.homo.superresolution.common.render.gl.GlConst.GL_RGBA8;
