@@ -1,15 +1,23 @@
 package io.homo.superresolution.common.mixin.core;
 
 #if MC_VER > MC_1_20_1
+import net.minecraft.client.DeltaTracker;
 #else
+
 import com.mojang.blaze3d.vertex.PoseStack;
 #endif
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.render.CallType;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.PostChain;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -37,61 +45,29 @@ public abstract class LevelRendererMixin {
     private void onResizePostChain(PostChain instance, int w, int h) {
         instance.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
     }
-    /*
+
+    @Inject(at = @At(value = "HEAD"), method = "renderLevel")
+    #if MC_VER > MC_1_20_1
+    private void renderLevel(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
+        AlgorithmManager.setMatrix(Minecraft.getInstance().gameRenderer.getProjectionMatrix(AlgorithmManager.getDispatchResource().verticalFov()), projectionMatrix);
+    }
+    #else
+    private void renderLevel(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
+        AlgorithmManager.setMatrix(projectionMatrix, poseStack.last().pose());
+    }
+    #endif
+
     @Inject(at = @At(value = "HEAD"), method = "renderLevel")
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            MinecraftRenderHandle.onRenderWorldBegin();
+            MinecraftRenderHandle.onRenderWorldBegin(CallType.LEVEL_RENDERER);
         }
     }
 
     @Inject(at = @At(value = "RETURN"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            MinecraftRenderHandle.onRenderWorldEnd();
-        }
-    }*/
-
-    /*
-    @Shadow
-    private PostChain entityEffect;
-    @Shadow
-    @Final
-    private Minecraft minecraft;
-
-    @Shadow
-    public abstract void resize(int width, int height);
-
-    @Inject(at = @At(value = "HEAD"), method = "initOutline")
-    private void onInitOutline(CallbackInfo ci) {
-        MinecraftRenderingStates.setClientRenderTarget(MinecraftRenderingStates.getRenderTarget());
-    }
-
-
-    @Inject(at = @At("RETURN"), method = "resize")
-    private void onResized(CallbackInfo ci) {
-        if (minecraft.level == null) return;
-        MinecraftRenderingStates.resizeMinecraftRenderTarget();
-        //entityEffect.resize(MinecraftRenderingStates.getRenderWidth(), MinecraftRenderingStates.getRenderHeight());
-    }
-    @Inject(at = @At(value = "HEAD"), method = "renderLevel")
-    private void onRenderWorldBegin(CallbackInfo ci) {
-        if (Minecraft.getInstance().level != null) {
-            MinecraftRenderHandle.onRenderWorldBegin();
+            MinecraftRenderHandle.onRenderWorldEnd(CallType.LEVEL_RENDERER);
         }
     }
-
-    @Inject(at = @At(value = "TAIL"), method = "renderLevel")
-    private void onRenderWorldEnd(CallbackInfo ci) {
-        if (Minecraft.getInstance().level != null) {
-            MinecraftRenderHandle.onRenderWorldEnd();
-        }
-    }*/
-
-    //@Inject(at = @At(value = "TAIL"), method = "allChanged")
-    //private void onReloadDone(CallbackInfo ci) {
-    //    if (Minecraft.getInstance().level != null) {
-    //        Minecraft.getInstance().resizeDisplay();
-    //    }
-    //}*/
 }

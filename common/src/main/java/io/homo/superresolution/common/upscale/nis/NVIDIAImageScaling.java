@@ -12,6 +12,7 @@ import io.homo.superresolution.common.render.vulkan.texture.TextureFormat;
 import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.upscale.nis.struct.NISConfig;
 import io.homo.superresolution.common.utils.FileReadHelper;
@@ -82,7 +83,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 .name("coef_usm")
         );
 
-        shader.setShaderBin(FileReadHelper.readSpvFile("/shader/nis_scaler_glsl.spv"));
+        shader.setShaderBin(FileReadHelper.readSpvFile("/shader/nis/nis_scaler_glsl.spv"));
         shader.build();
         shader.getShaderBin().clear();
     }
@@ -113,7 +114,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     }
 
     @Override
-    public boolean dispatch(float frameTimeDelta) {
+    public boolean dispatch(DispatchResource dispatchResource) {
         updateBuffer();
         inputSharedTexture.startWrite();
         copyTexture();

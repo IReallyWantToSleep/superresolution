@@ -11,7 +11,7 @@ pluginManagement {
         maven {
             url "https://maven.architectury.dev/"
         }
-
+        maven { url "https://maven.shedaniel.me/" }
         maven {
             url "https://maven.neoforged.net/releases"
         }

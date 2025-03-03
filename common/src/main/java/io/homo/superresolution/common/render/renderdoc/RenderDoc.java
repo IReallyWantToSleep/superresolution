@@ -39,7 +39,7 @@ public class RenderDoc {
                     var minor = new IntByReference();
                     var patch = new IntByReference();
                     apiInstance.GetAPIVersion.call(major, minor, patch);
-                    LOGGER.error("RenderDoc版本 {}.{}.{}", major.getValue(), minor.getValue(), patch.getValue());
+                    LOGGER.info("RenderDoc版本 {}.{}.{}", major.getValue(), minor.getValue(), patch.getValue());
                 }
             } catch (UnsatisfiedLinkError ignored) {
                 LOGGER.error("无法加载RenderDoc库");

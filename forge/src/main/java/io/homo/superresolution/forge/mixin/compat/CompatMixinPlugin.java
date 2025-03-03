@@ -1,6 +1,8 @@
 package io.homo.superresolution.forge.mixin.compat;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.forge.platform.ForgePlatform;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -19,6 +21,8 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
 
         Platform.currentPlatform = new ForgePlatform();
         Platform.currentPlatform.init();
+        if (dev.architectury.platform.Platform.isDevelopmentEnvironment()) RenderDoc.init();
+
     }
 
     public String getRefMapperConfig() {

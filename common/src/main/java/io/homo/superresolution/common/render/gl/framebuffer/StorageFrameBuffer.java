@@ -2,12 +2,15 @@ package io.homo.superresolution.common.render.gl.framebuffer;
 
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
 import static org.lwjgl.opengl.GL30.GL_DEPTH24_STENCIL8;
 
 public class StorageFrameBuffer extends FrameBuffer {
+    private boolean stencilEnabled = false;
+
     public StorageFrameBuffer(boolean useDepth) {
         super(useDepth);
     }
@@ -34,9 +37,14 @@ public class StorageFrameBuffer extends FrameBuffer {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, this.width, this.height);
+                //不用GL_DEPTH24_STENCIL8用GL_DEPTH_COMPONENT24的话dh兼容好了但tacz兼容又去世了
+                if (stencilEnabled) {
+                    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, this.width, this.height);
+                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
+                } else {
+                    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, this.width, this.height);
+                }
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, this.depthBufferId, 0);
             }
 
             glBindTexture(GL_TEXTURE_2D, this.colorTextureId);
@@ -53,5 +61,16 @@ public class StorageFrameBuffer extends FrameBuffer {
         } else {
             throw new IllegalArgumentException("Window " + width + "x" + height + " size out of bounds (max. size: " + maxSupportedTextureSize + ")");
         }
+    }
+
+    public void enableStencil() {
+        if (!this.stencilEnabled) {
+            this.stencilEnabled = true;
+            this.resize(this.viewWidth, this.viewHeight, Minecraft.ON_OSX);
+        }
+    }
+
+    public boolean isStencilEnabled() {
+        return this.stencilEnabled;
     }
 }

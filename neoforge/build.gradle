@@ -101,6 +101,7 @@ dependencies {
             addModLib(lib)
         }
     }
+    modImplementation("me.shedaniel.cloth:cloth-config-neoforge:$rootProject.cloth_config_version")
     modImplementation "dev.architectury:architectury-neoforge:$rootProject.architectury_api_version"
     modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
     implementation("io.github.spair:imgui-java-app:1.87.5")

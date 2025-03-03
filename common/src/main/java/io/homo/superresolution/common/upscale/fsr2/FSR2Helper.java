@@ -103,18 +103,6 @@ public class FSR2Helper implements Resizable, Destroyable {
         this.motionVectorsTexture.destroy();
     }
 
-    public float getCameraNear() {
-        return 0.1f;
-    }
-
-    public float getCameraFar() {
-        return 100f;
-    }
-
-    public float getCameraFovAngleVertical() {
-        return (float) AlgorithmManager.param.fov * 0.0174532925199433f;
-    }
-
     private Matrix4f createTranslationMatrix(Vector3f translation) {
         Matrix4f matrix = new Matrix4f();
         matrix.setTranslation(translation);

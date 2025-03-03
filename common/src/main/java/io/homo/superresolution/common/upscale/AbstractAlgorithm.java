@@ -47,10 +47,10 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
      * 运行算法。
      *
-     * @param frameTimeDelta 每帧的时间增量(ms)。
+     * @param dispatchResource 运行算法所需资源。
      * @return 如果运行成功返回true，否则返回false。
      */
-    public abstract boolean dispatch(float frameTimeDelta);
+    public abstract boolean dispatch(DispatchResource dispatchResource);
 
     /**
      * 将结果绘制到屏幕上。

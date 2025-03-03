@@ -11,32 +11,38 @@ import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_COMPILE_STATUS;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_COMPUTE_SHADER;
 
-public  class ComputeShaderProgram extends AbstractShaderProgram {
-    public ComputeShaderProgram(){super();}
+public class ComputeShaderProgram extends AbstractShaderProgram {
+    public ComputeShaderProgram() {
+        super();
+    }
+
     public static ComputeShaderProgramBuilder create() {
         return new ComputeShaderProgramBuilder();
     }
+
     public ComputeShaderProgram compileShader() {
         RenderSystem.assertOnRenderThread();
-        int FRAGMENT_SHADER = glCreateShader(GL_COMPUTE_SHADER);
-        glShaderSource(FRAGMENT_SHADER, this.getFragShaderText());
-        glCompileShader(FRAGMENT_SHADER);
-        if (glGetShaderi(FRAGMENT_SHADER, GL_COMPILE_STATUS) == 0) {
+        int COMPUTE_SHADER = glCreateShader(GL_COMPUTE_SHADER);
+        String shaderCode = this.getFragShaderText();
+        glShaderSource(COMPUTE_SHADER, shaderCode);
+        glCompileShader(COMPUTE_SHADER);
+        if (glGetShaderi(COMPUTE_SHADER, GL_COMPILE_STATUS) == 0) {
             try (PrintWriter out = new PrintWriter(new FileOutputStream("ERROR_FRAGMENT_SHADER_SRC.glsl"))) {
                 out.println(this.getFragShaderText());
             } catch (IOException e) {
                 SuperResolution.LOGGER.error(e.toString());
             }
-            throw new RuntimeException("FRAGMENT_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(FRAGMENT_SHADER, 32768));
+            throw new RuntimeException("FRAGMENT_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(COMPUTE_SHADER, 32768));
         }
 
         this.shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, FRAGMENT_SHADER);
+        glAttachShader(shaderProgram, COMPUTE_SHADER);
         glLinkProgram(shaderProgram);
-        glDeleteShader(FRAGMENT_SHADER);
+        glDeleteShader(COMPUTE_SHADER);
         return this;
     }
-    public static class ComputeShaderProgramBuilder extends AbstractShaderProgramBuilder{
+
+    public static class ComputeShaderProgramBuilder extends AbstractShaderProgramBuilder {
         @Override
         public ComputeShaderProgram build() {
             return (ComputeShaderProgram) setShaderText(new ComputeShaderProgram());

@@ -13,6 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MinecraftRenderWrapperMixin {
     @Inject(method = "getRenderTarget", at = @At(value = "HEAD"), cancellable = true)
     private void getRenderTarget(CallbackInfoReturnable<RenderTarget> cir) {
-        //if (Config.isEnableUpscale()) cir.setReturnValue(MinecraftRenderHandle.getRenderTarget());
+        if (Config.isEnableUpscale()) cir.setReturnValue(MinecraftRenderHandle.getRenderTarget());
     }
 }

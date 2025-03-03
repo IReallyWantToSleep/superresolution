@@ -8,6 +8,7 @@ import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
@@ -37,25 +38,25 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     public void initShader() {
-        int fp16 = checkFP16Support();
+        int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
         GeneralShaderProgram.ShaderInclude fsrEasuInclude = GeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1_easu.comp.glsl"),
+                FileReadHelper.readText("/shader/fsr1/fsr1_easu.comp.glsl"),
                 "fsr1_easu.comp.glsl"
         );
         GeneralShaderProgram.ShaderInclude fsrEasuFp16Include = GeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1_easu_fp16.comp.glsl"),
+                FileReadHelper.readText("/shader/fsr1/fsr1_easu_fp16.comp.glsl"),
                 "fsr1_easu_fp16.comp.glsl"
         );
         GeneralShaderProgram.ShaderInclude fsrRcasInclude = GeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1_rcas.comp.glsl"),
+                FileReadHelper.readText("/shader/fsr1/fsr1_rcas.comp.glsl"),
                 "fsr1_rcas.comp.glsl"
         );
         GeneralShaderProgram.ShaderInclude fsrRcasFp16Include = GeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1_rcas_fp16.comp.glsl"),
+                FileReadHelper.readText("/shader/fsr1/fsr1_rcas_fp16.comp.glsl"),
                 "fsr1_rcas_fp16.comp.glsl"
         );
         GeneralShaderProgram.ShaderInclude fsrCommonInclude = GeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1_common.glsl"),
+                FileReadHelper.readText("/shader/fsr1/fsr1_common.glsl"),
                 "fsr1_common.glsl"
         );
         fsr1EASUShader = (ComputeShaderProgram) ComputeShaderProgram.create()
@@ -68,7 +69,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .addShaderInclude(fsrRcasInclude)
                 .addShaderInclude(fsrRcasFp16Include)
                 .addShaderInclude(fsrCommonInclude)
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_main.glsl"))
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1/fsr1_main.comp.glsl"))
                 .build()
                 .compileShader();
         fsr1RCASShader = (ComputeShaderProgram) ComputeShaderProgram.create()
@@ -81,7 +82,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .addShaderInclude(fsrRcasInclude)
                 .addShaderInclude(fsrRcasFp16Include)
                 .addShaderInclude(fsrCommonInclude)
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1_main.glsl"))
+                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1/fsr1_main.comp.glsl"))
                 .build()
                 .compileShader();
     }
@@ -96,7 +97,7 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
-    public boolean dispatch(float frameTimeDelta) {
+    public boolean dispatch(DispatchResource dispatchResource) {
         callEASU();
         callRCAS();
         return true;

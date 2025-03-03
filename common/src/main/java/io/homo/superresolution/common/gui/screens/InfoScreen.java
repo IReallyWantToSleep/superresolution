@@ -1,6 +1,9 @@
-package io.homo.superresolution.common.gui;
+package io.homo.superresolution.common.gui.screens;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.gui.BaseScreen;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.gui.Rect;
 import io.homo.superresolution.common.gui.widgets.ButtonWidget;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.gui.widgets.TextWidget;
@@ -26,7 +29,7 @@ public class InfoScreen extends BaseScreen {
     private int showInfo = 0;
     private ButtonWidget extButton;
 
-    protected InfoScreen(Screen lastScreen, boolean openConfigScreen) {
+    public InfoScreen(Screen lastScreen, boolean openConfigScreen) {
         super(Component.literal(""));
         this.lastScreen = lastScreen;
         this.openConfigScreen = openConfigScreen;

@@ -29,6 +29,12 @@ public enum AlgorithmType {
                     .addIncludeOS(new OS(Arch.X86_64, OSType.LINUX)),
             "FSR2"
     ),
+    SGSR(
+            Requirement.nothing()
+                    .glMajorVersion(4)
+                    .glMinorVersion(5),
+            "Snapdragon™ GSR"
+    ),
     NONE(
             Requirement.nothing(),
             "None"
@@ -51,11 +57,16 @@ public enum AlgorithmType {
     }
 
     public String getString() {
+        return getComponent().getString();
+    }
+
+    public Component getComponent() {
         return switch (this) {
-            case FSR1 -> Component.translatable("superresolution.algo.display_name.fsr1").getString();
-            case NIS -> Component.translatable("superresolution.algo.display_name.nis").getString();
-            case FSR2 -> Component.translatable("superresolution.algo.display_name.fsr2").getString();
-            case NONE -> Component.translatable("superresolution.algo.display_name.none").getString();
+            case FSR1 -> Component.translatable("superresolution.algo.display_name.fsr1");
+            case NIS -> Component.translatable("superresolution.algo.display_name.nis");
+            case FSR2 -> Component.translatable("superresolution.algo.display_name.fsr2");
+            case SGSR -> Component.translatable("superresolution.algo.display_name.sgsr");
+            case NONE -> Component.translatable("superresolution.algo.display_name.none");
         };
     }
 }

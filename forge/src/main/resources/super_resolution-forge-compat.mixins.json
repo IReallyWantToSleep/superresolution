@@ -9,6 +9,7 @@
         "tacz.RenderHelperMixin"
     ],
     "mixins": [
+        "oculus.HandRendererMixin"
     ],
     "injectors": {
         "defaultRequire": 1

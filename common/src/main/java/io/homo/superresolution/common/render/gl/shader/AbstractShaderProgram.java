@@ -2,8 +2,14 @@ package io.homo.superresolution.common.render.gl.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.render.gl.buffer.UniformBufferObject;
+import io.homo.superresolution.common.render.gl.buffer.UniformStruct;
 import org.joml.Matrix4f;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -67,11 +73,27 @@ public abstract class AbstractShaderProgram {
     }
 
     public String getFragShaderText() {
-        return String.join("\n", getFragShaderTextList());
+        String code = String.join("\n", getFragShaderTextList());
+        if (Config.getInstance().isDebugDumpShader()) {
+            try (PrintWriter out = new PrintWriter(new FileOutputStream("%s+FragShader.frag.glsl".formatted(shaderName)))) {
+                out.println(code);
+            } catch (IOException e) {
+                SuperResolution.LOGGER.error(e.toString());
+            }
+        }
+        return code;
     }
 
     public String getVertShaderText() {
-        return String.join("\n", getVertShaderTextList());
+        String code = String.join("\n", getVertShaderTextList());
+        if (Config.getInstance().isDebugDumpShader()) {
+            try (PrintWriter out = new PrintWriter(new FileOutputStream("%s+VertShader.vert.glsl".formatted(shaderName)))) {
+                out.println(code);
+            } catch (IOException e) {
+                SuperResolution.LOGGER.error(e.toString());
+            }
+        }
+        return code;
     }
 
     public ArrayList<String> getFragShaderTextList() {
@@ -112,6 +134,10 @@ public abstract class AbstractShaderProgram {
 
     public void setInt(String name, int value) {
         glUniform1i(getUniformLocation(name), value);
+    }
+
+    public void setStruct(String name, UniformBufferObject value, int bindingPoint) {
+        value.bind(bindingPoint);
     }
 
 
