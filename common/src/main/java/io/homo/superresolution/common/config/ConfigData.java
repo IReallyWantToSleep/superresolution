@@ -1,51 +1,82 @@
 package io.homo.superresolution.common.config;
 
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.upscale.AlgorithmType;
 
 public class ConfigData {
-    public static final ConfigData defaultConfig = new ConfigData();
-    public float upscaleRatio = 1.7f;
-    public String upscaleAlgo = algoEnumToString(AlgorithmType.FSR1);
-    public float sharpness = 0.55f;
-    public boolean enableUpscale = true;
-    public CaptureMode captureMode = CaptureMode.A;
+    private SpecialConfigs special = new SpecialConfigs();
+    private boolean enableUpscale = true;
+    private float upscaleRatio = 1.7f;
+    private AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
+    private float sharpness = 0.55f;
+    private CaptureMode captureMode = CaptureMode.A;
+    private transient float renderScaleFactor = 1 / upscaleRatio;
+    private boolean debugDumpShader = false;
 
-    public static String algoEnumToString(AlgorithmType e) {
-        return switch (e) {
-            case FSR1 -> "fsr1";
-            case FSR2 -> "fsr2";
-            case NIS -> "nis";
-            case NONE -> "none";
-        };
+    public boolean isDebugDumpShader() {
+        return debugDumpShader;
     }
 
-    public static AlgorithmType stringToAlgoEnum(String e) {
-        return switch (e) {
-            case "fsr1" -> AlgorithmType.FSR1;
-            case "nis" -> AlgorithmType.NIS;
-            case "fsr2" -> AlgorithmType.FSR2;
-            case "none" -> AlgorithmType.NONE;
-            default -> AlgorithmType.FSR1;
-        };
+    public ConfigData setDebugDumpShader(boolean debugDumpShader) {
+        this.debugDumpShader = debugDumpShader;
+        return this;
+    }
+
+    public CaptureMode getCaptureMode() {
+        return this.captureMode;
     }
 
     public void setCaptureMode(CaptureMode captureMode) {
         this.captureMode = captureMode;
     }
 
-    public void setUpscaleRatio(float upscaleRatio) {
-        this.upscaleRatio = (float) Math.min(Math.max(upscaleRatio, Config.getMinUpscaleRatio()), 4.0);
+    public float getRenderScaleFactor() {
+        return isEnableUpscale() ? this.renderScaleFactor : 1;
     }
 
-    public void setUpscaleAlgo(String upscaleAlgo) {
-        this.upscaleAlgo = algoEnumToString(stringToAlgoEnum(upscaleAlgo));
+    public float getUpscaleRatio() {
+        return this.upscaleRatio;
+    }
+
+    public void setUpscaleRatio(float value) {
+        this.upscaleRatio = value;
+        this.renderScaleFactor = 1 / this.upscaleRatio;
+    }
+
+    public AlgorithmType getUpscaleAlgo() {
+        return this.upscaleAlgo;
+    }
+
+    public void setUpscaleAlgo(AlgorithmType upscaleAlgo) {
+        if (this.upscaleAlgo == upscaleAlgo) return;
+        this.upscaleAlgo = upscaleAlgo;
+        SuperResolution.algorithmType = this.upscaleAlgo;
+        if (SuperResolution.currentAlgorithm != null) SuperResolution.currentAlgorithm.destroy();
+        SuperResolution.createAlgo();
+    }
+
+    public float getSharpness() {
+        return this.sharpness;
     }
 
     public void setSharpness(float sharpness) {
-        this.sharpness = (float) Math.min(Math.max(sharpness, 0.0), 2.0);
+        this.sharpness = sharpness;
+    }
+
+    public boolean isEnableUpscale() {
+        return this.enableUpscale;
     }
 
     public void setEnableUpscale(boolean enableUpscale) {
         this.enableUpscale = enableUpscale;
+    }
+
+    public SpecialConfigs getSpecial() {
+        return special;
+    }
+
+    public void setSpecial(SpecialConfigs special) {
+        this.special = special;
     }
 }

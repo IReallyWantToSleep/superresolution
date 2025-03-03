@@ -1,18 +1,14 @@
-package io.homo.superresolution.common.config;
+package io.homo.superresolution.common.config.enums;
 
 import net.minecraft.network.chat.Component;
 
 import java.util.Arrays;
 
 public enum CaptureMode {
-    /**
-     * 兼容性好，但是会导致手部渲染效果一坨答辩
-     */
-    A(Component.literal("")),
-    /**
-     * 兼容性差（与DH和YSM工作时有问题），但是不会影响手部渲染（但只有不开光影生效 <-- 笑死）
-     */
-    B(Component.literal(""));
+    A(Component.literal("A")), //gameRenderer + noHand
+    B(Component.literal("B")), //levelRenderer + noHand
+    C(Component.literal("C")); //gameRenderer + hand
+    
     private final Component tooltip;
 
     CaptureMode(Component tooltip) {

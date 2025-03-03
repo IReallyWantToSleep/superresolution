@@ -17,7 +17,6 @@
         "core.accessor.MinecraftAccessor",
         "core.accessor.OptionInstanceAccessor",
         "core.accessor.PostChainAccessor",
-        "debug.DebugMixin",
         "debug.ImguiMixin",
         "debug.KeyboardHandlerMixin",
         "gui.GameRendererAccessor"

@@ -1,14 +1,17 @@
-package io.homo.superresolution.common.gui;
+package io.homo.superresolution.common.gui.screens;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.ConfigFile;
+import io.homo.superresolution.common.gui.BaseScreen;
+import io.homo.superresolution.common.gui.Rect;
 import io.homo.superresolution.common.gui.options.OptionsList;
 import io.homo.superresolution.common.gui.options.option.BooleanOption;
 import io.homo.superresolution.common.gui.options.option.EnumData;
 import io.homo.superresolution.common.gui.options.option.EnumOption;
 import io.homo.superresolution.common.gui.options.option.SliderOption;
 import io.homo.superresolution.common.gui.widgets.ButtonWidget;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
@@ -27,7 +30,7 @@ public class ConfigScreen extends BaseScreen {
     private ButtonWidget infoButton;
     private Rect guiRect;
 
-    protected ConfigScreen(Screen lastScreen) {
+    public ConfigScreen(Screen lastScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
         this.lastScreen = lastScreen;
         this.optionsList = new OptionsList(0, 0, 100, 100);
@@ -104,7 +107,7 @@ public class ConfigScreen extends BaseScreen {
     }
 
     private void addOptions() {
-        Config.fromData(ConfigFile.read());
+        ConfigFile.read();
         BooleanOption useUpscale = (BooleanOption) new BooleanOption()
                 .setLabel(Component.translatable("superresolution.screen.config.options.label.enable_upscale"))
                 .setKey("useUpscale")
@@ -159,7 +162,6 @@ public class ConfigScreen extends BaseScreen {
             Config.setUpscaleRatio(upscaleRatio.getValue().floatValue());
             Config.setUpscaleAlgo((AlgorithmType) algoType.getValue().value);
             Config.setSharpness(sharpnessRatio.getValue().floatValue());
-            Minecraft.getInstance().resizeDisplay();
             ConfigFile.write();
         });
         useUpscale.setValue(Config.isEnableUpscale());

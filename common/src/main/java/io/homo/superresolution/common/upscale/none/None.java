@@ -4,6 +4,7 @@ import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.framebuffer.OnlyTextureIdFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.Texture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
+import io.homo.superresolution.common.upscale.DispatchResource;
 
 import static io.homo.superresolution.common.render.gl.GlConst.GL_NEAREST;
 
@@ -21,7 +22,7 @@ public class None extends AbstractAlgorithm {
     }
 
     @Override
-    public boolean dispatch(float frameTimeDelta) {
+    public boolean dispatch(DispatchResource dispatchResource) {
         return true;
     }
 

@@ -11,7 +11,8 @@ public enum RenderTargetType {
     ITEM_ENTITY(LevelRenderer::getItemEntityTarget),
     PARTICLES(LevelRenderer::getParticlesTarget),
     WEATHER(LevelRenderer::getWeatherTarget),
-    CLOUDS(LevelRenderer::getCloudsTarget);
+    CLOUDS(LevelRenderer::getCloudsTarget),
+    HAND((levelRenderer) -> HandRenderTarget.getHandRenderTarget());
 
     private final Function<LevelRenderer, RenderTarget> callback;
 

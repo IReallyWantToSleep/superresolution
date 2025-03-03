@@ -1,6 +1,5 @@
 package io.homo.superresolution.common.debug.imgui;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import imgui.ImGui;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
@@ -48,30 +47,30 @@ public class ImGuiLayer {
                     String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m33())
             ));
         }
-        if (AlgorithmManager.param.currentModelViewMatrix != null) {
+        if (AlgorithmManager.param.currentModelViewProjectionMatrix != null) {
             ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m00()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m01()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m02()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m03())
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m00()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m01()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m02()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m03())
             ));
             ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m10()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m11()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m12()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m13())
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m10()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m11()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m12()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m13())
             ));
             ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m20()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m21()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m22()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m23())
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m20()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m21()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m22()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m23())
             ));
             ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m30()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m31()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m32()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewMatrix.m33())
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m30()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m31()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m32()),
+                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m33())
             ));
         }
         ImGui.text("outFramebuffer " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());

@@ -1,10 +1,13 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
 import io.homo.superresolution.common.upscale.none.None;
+import io.homo.superresolution.common.upscale.sgsr.Sgsr;
 import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
+import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 
 public class AlgorithmManager {
@@ -29,6 +32,7 @@ public class AlgorithmManager {
             case FSR1 -> algo = FSR1.create();
             case FSR2 -> algo = FSR2.create();
             case NIS -> algo = NVIDIAImageScaling.create();
+            case SGSR -> algo = Sgsr.create();
             case NONE -> algo = None.create();
         }
         if (algo != null) {
@@ -38,18 +42,23 @@ public class AlgorithmManager {
     }
 
     public static boolean isSupportAlgorithm(AlgorithmType type) {
-        boolean support = false;
-        switch (type) {
-            case FSR1 -> support = AlgorithmType.FSR1.getValue().check().support();
-            case NIS -> support = AlgorithmType.NIS.getValue().check().support();
-            case FSR2 -> support = AlgorithmType.FSR2.getValue().check().support();
-            case NONE -> support = AlgorithmType.NONE.getValue().check().support();
-        }
-        return support;
+        return type.getValue().check().support();
     }
 
-    public static void setProjectionMatrix(Matrix4f cur) {
-        //SuperResolution.LOGGER.info(param.currentProjectionMatrix.toString());
+    public static void setMatrix(Matrix4f proj, Matrix4f view) {
+        setViewMatrix(view);
+        setProjectionMatrix(proj);
+        Matrix4f curViewProjectionMatrix = new Matrix4f(proj);
+        curViewProjectionMatrix.mul(view);
+        if (param.lastModelViewProjectionMatrix == null) {
+            param.lastModelViewProjectionMatrix = curViewProjectionMatrix;
+        } else {
+            param.lastModelViewProjectionMatrix = param.currentModelViewProjectionMatrix;
+        }
+        param.currentModelViewProjectionMatrix = curViewProjectionMatrix;
+    }
+
+    private static void setProjectionMatrix(Matrix4f cur) {
         if (param.lastProjectionMatrix == null) {
             param.lastProjectionMatrix = cur;
         } else {
@@ -58,7 +67,7 @@ public class AlgorithmManager {
         param.currentProjectionMatrix = cur;
     }
 
-    public static void setModelViewMatrix(Matrix4f cur) {
+    private static void setViewMatrix(Matrix4f cur) {
         if (param.lastModelViewMatrix == null) {
             param.lastModelViewMatrix = cur;
         } else {
@@ -67,8 +76,24 @@ public class AlgorithmManager {
         param.currentModelViewMatrix = cur;
     }
 
-    public static void setFov(double fov) {
-        param.fov = fov;
+    public static DispatchResource getDispatchResource() {
+        return new DispatchResource(
+                MinecraftRenderHandle.getRenderWidth(),
+                MinecraftRenderHandle.getRenderHeight(),
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight(),
+                MinecraftRenderHandle.frameTime,
+                (float) param.verticalFov,
+                (float) Math.tan(param.verticalFov / 2.0) * MinecraftRenderHandle.getRenderWidth() / MinecraftRenderHandle.getRenderHeight(),
+                0.05F,
+                Minecraft.getInstance().gameRenderer.getDepthFar(),
+                param.currentModelViewMatrix,
+                param.currentProjectionMatrix,
+                param.currentModelViewProjectionMatrix,
+                param.lastModelViewMatrix,
+                param.lastProjectionMatrix,
+                param.lastModelViewProjectionMatrix
+        );
     }
 
     public static class AlgorithmParam {
@@ -76,6 +101,8 @@ public class AlgorithmManager {
         public Matrix4f currentProjectionMatrix;
         public Matrix4f currentModelViewMatrix;
         public Matrix4f lastModelViewMatrix;
-        public double fov = 11.4514f;
+        public Matrix4f currentModelViewProjectionMatrix;
+        public Matrix4f lastModelViewProjectionMatrix;
+        public double verticalFov = 11.4514f;
     }
 }

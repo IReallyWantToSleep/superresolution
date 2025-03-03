@@ -63,7 +63,10 @@ public class KeyboardHandlerMixin {
     private void debugScreenshot(CallbackInfo ci) {
         Screenshot.grab(Minecraft.getInstance().gameDirectory, "world.png", MinecraftRenderHandle.getRenderTarget(), (a) -> {
         });
-        Screenshot.grab(Minecraft.getInstance().gameDirectory, "entityTarget.png", Minecraft.getInstance().levelRenderer.entityTarget(), (a) -> {
-        });
+        MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> {
+            Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget, (a) -> {
+            });
+        }));
+
     }
 }

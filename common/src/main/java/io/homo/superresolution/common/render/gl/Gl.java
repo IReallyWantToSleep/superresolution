@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.render.gl;
 
 import org.lwjgl.opengl.*;
+import org.lwjgl.system.NativeType;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -14,6 +15,10 @@ public class Gl {
 
     public static void glTexParameteri(int target, int pname, int param) {
         GL11C.glTexParameteri(target, pname, param);
+    }
+
+    public static void glViewport(int x, int y, int w, int h) {
+        GL11C.glViewport(x, y, w, h);
     }
 
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, IntBuffer pixels) {
@@ -140,18 +145,21 @@ public class Gl {
         return GL20C.glGetShaderInfoLog(shader, maxLength);
     }
 
-    public static void glClearColor(float r,float g,float b,float alpha){
-        GL20C.glClearColor(r,g,b,alpha);
+    public static void glClearColor(float r, float g, float b, float alpha) {
+        GL20C.glClearColor(r, g, b, alpha);
     }
 
-    public static void glUniform3f(int location, float v0, float v1,float v2){
-        GL20C.glUniform3f(location,v0,v1,v2);
-    };
+    public static void glUniform3f(int location, float v0, float v1, float v2) {
+        GL20C.glUniform3f(location, v0, v1, v2);
+    }
 
-    public static int glGetMaxTextureSize(){
+    ;
+
+    public static int glGetMaxTextureSize() {
         return glGetInteger(GL_MAX_TEXTURE_SIZE);
     }
-    public static int glGenFramebuffers(){
+
+    public static int glGenFramebuffers() {
         return GL30C.glGenFramebuffers();
     }
 
@@ -159,14 +167,15 @@ public class Gl {
         GL30C.glDeleteFramebuffers(framebuffer);
     }
 
-    public static void glCopyImageSubData(int srcName, int srcTarget, int srcLevel,  int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
+    public static void glCopyImageSubData(int srcName, int srcTarget, int srcLevel, int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
         GL43C.glCopyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
     }
-    public static void glUniform1i(int location, int x){
-        GL20.glUniform1i(location,x);
+
+    public static void glUniform1i(int location, int x) {
+        GL20.glUniform1i(location, x);
     }
 
-    public static void glTexSubImage2D(int target,  int level, int xoffset, int yoffset, int width, int height,  int format, int type, ByteBuffer pixels) {
+    public static void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, ByteBuffer pixels) {
         GL11C.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
     }
 

@@ -35,7 +35,8 @@
         "minecraft": "{versionRange}",
         "java": ">=${javaVersion}",
         "architectury": "*",
-        "fabric-api": "*"
+        "fabric-api": "*",
+        "cloth-config": "*"
     },
     "suggests": {
     },

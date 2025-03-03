@@ -1,5 +1,7 @@
 package io.homo.superresolution.common.render.gl;
 
+import org.lwjgl.opengl.GL30;
+
 public class GlConst {
     public static final int GL_NULL_HANDLE = -1; //对标VK_NULL_HANDLE（
     public static final int GL_READ_FRAMEBUFFER = 36008;
@@ -109,10 +111,11 @@ public class GlConst {
     public static final int GL_TEXTURE_MAX_LEVEL = 33085;
     public static final int GL_SHADER_IMAGE_ACCESS_BARRIER_BIT = 32;
     public static final int GL_READ_ONLY = 35000;
-    public static final int GL_DRAW_FRAMEBUFFER_BINDING = 36006;
     public static final int GL_EXTENSIONS = 7939;
     public static final int GL_NUM_EXTENSIONS = 33309;
     public static final int GL_COMPUTE_SHADER = 37305;
     public static final int GL_MAJOR_VERSION = 33307;
     public static final int GL_MINOR_VERSION = 33308;
+    public static final int GL_DRAW_FRAMEBUFFER_BINDING = 36006;
+    public static final int GL_READ_FRAMEBUFFER_BINDING = 36010;
 }
