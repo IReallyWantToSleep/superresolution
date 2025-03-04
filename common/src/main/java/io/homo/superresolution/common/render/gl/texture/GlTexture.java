@@ -13,13 +13,13 @@ import org.joml.Matrix4f;
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
 
-public class Texture implements Destroyable, Resizable {
+public class GlTexture implements Destroyable, Resizable {
     public int id;
     public int format;
     public int width;
     public int height;
 
-    public Texture(int width, int height, int format) {
+    public GlTexture(int width, int height, int format) {
         this.id = TextureUtil.generateTextureId();
         this.format = format;
         this.width = width;

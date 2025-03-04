@@ -105,6 +105,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (!isPreInit) return;
         RenderSystem.assertOnRenderThread();
         MinecraftRenderHandle.init();
+        AlgorithmManager.init();
         algorithmType = Config.getUpscaleAlgo();
     }
 

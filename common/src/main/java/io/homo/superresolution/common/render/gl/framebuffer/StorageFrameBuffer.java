@@ -8,7 +8,7 @@ import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
 import static org.lwjgl.opengl.GL30.GL_DEPTH24_STENCIL8;
 
-public class StorageFrameBuffer extends FrameBuffer {
+public class StorageFrameBuffer extends GlFrameBuffer {
     private boolean stencilEnabled = false;
 
     public StorageFrameBuffer(boolean useDepth) {

@@ -7,8 +7,8 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.render.gl.framebuffer.MotionVectorsFrameBuffer;
-import io.homo.superresolution.common.render.gl.shader.GeneralShaderProgram;
-import io.homo.superresolution.common.render.gl.texture.Texture;
+import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
+import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.utils.NativeLibManager;
 import io.homo.superresolution.common.utils.FileReadHelper;
@@ -21,9 +21,9 @@ import static io.homo.superresolution.common.render.gl.GlConst.GL_FRAMEBUFFER;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_RG16F;
 
 public class FSR2Helper implements Resizable, Destroyable {
-    private final Texture motionVectorsTexture;
+    private final GlTexture motionVectorsTexture;
     private final MotionVectorsFrameBuffer motionVectorsFBO;
-    private final GeneralShaderProgram motionVectorsShader;
+    private final GlGeneralShaderProgram motionVectorsShader;
     public int frameIndex = 0;
     public Jitter jitter;
 
@@ -31,8 +31,8 @@ public class FSR2Helper implements Resizable, Destroyable {
         RenderSystem.assertOnRenderThread();
         motionVectorsFBO = new MotionVectorsFrameBuffer(false);
         motionVectorsFBO.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        motionVectorsTexture = new Texture((int) (SuperResolution.getMinecraftWidth() * Config.getRenderScaleFactor()), (int) (SuperResolution.getMinecraftHeight() * Config.getRenderScaleFactor()), GL_RG16F);
-        motionVectorsShader = (GeneralShaderProgram) GeneralShaderProgram.create()
+        motionVectorsTexture = new GlTexture((int) (SuperResolution.getMinecraftWidth() * Config.getRenderScaleFactor()), (int) (SuperResolution.getMinecraftHeight() * Config.getRenderScaleFactor()), GL_RG16F);
+        motionVectorsShader = (GlGeneralShaderProgram) GlGeneralShaderProgram.create()
                 .addAllFragShaderTextList(FileReadHelper.readText("/shader/calc_motion_vector.fsh"))
                 .addAllVertShaderTextList(FileReadHelper.readText("/shader/calc_motion_vector.vsh"))
                 .setShaderName("motionVectorsShader")

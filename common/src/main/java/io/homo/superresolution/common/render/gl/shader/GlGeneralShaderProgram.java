@@ -14,13 +14,15 @@ import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_FRAGMENT_SHADER;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_VERTEX_SHADER;
 
-public class GeneralShaderProgram extends AbstractShaderProgram{
-    private GeneralShaderProgram() {}
+public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
+    private GlGeneralShaderProgram() {
+    }
+
     public static GeneralShaderProgramBuilder create() {
         return new GeneralShaderProgramBuilder();
     }
 
-    public GeneralShaderProgram compileShader() {
+    public GlGeneralShaderProgram compileShader() {
         RenderSystem.assertOnRenderThread();
         int FRAGMENT_SHADER = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(FRAGMENT_SHADER, getFragShaderText());
@@ -80,10 +82,10 @@ public class GeneralShaderProgram extends AbstractShaderProgram{
         }
     }
 
-    public static class GeneralShaderProgramBuilder extends AbstractShaderProgramBuilder{
+    public static class GeneralShaderProgramBuilder extends AbstractShaderProgramBuilder {
         @Override
-        public GeneralShaderProgram build() {
-            return (GeneralShaderProgram) setShaderText(new GeneralShaderProgram());
+        public GlGeneralShaderProgram build() {
+            return (GlGeneralShaderProgram) setShaderText(new GlGeneralShaderProgram());
         }
     }
 }

@@ -13,6 +13,14 @@ public class Gl {
         return new int[]{glGetInteger(GL_MAJOR_VERSION), glGetInteger(GL_MINOR_VERSION)};
     }
 
+    public static void glSamplerParameteri(int sampler, int pname, int param) {
+        GL33C.glSamplerParameteri(sampler, pname, param);
+    }
+
+    public static int glGenSamplers() {
+        return GL33C.glGenSamplers();
+    }
+
     public static void glTexParameteri(int target, int pname, int param) {
         GL11C.glTexParameteri(target, pname, param);
     }
@@ -83,6 +91,10 @@ public class Gl {
 
     public static void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z) {
         GL43C.glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
+    }
+
+    public static void glDeleteProgram(int program) {
+        GL20C.glDeleteProgram(program);
     }
 
     public static void glMemoryBarrier(int barriers) {

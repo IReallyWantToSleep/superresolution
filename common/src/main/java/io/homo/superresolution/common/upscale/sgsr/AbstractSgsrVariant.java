@@ -6,7 +6,13 @@ import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
 public abstract class AbstractSgsrVariant implements Resizable, Destroyable {
-    public abstract void dispatch(RenderTarget input, DispatchResource resource);
+    protected RenderTarget output;
 
-    public abstract int getOutputTexture();
+    public void setOutput(RenderTarget output) {
+        this.output = output;
+    }
+
+    public abstract void dispatch(DispatchResource resource, Sgsr sgsr);
+
+    public abstract void init(Sgsr sgsr);
 }
