@@ -2,7 +2,7 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.render.gl.framebuffer.FrameBuffer;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Minecraft;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
@@ -14,12 +14,12 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
      * 输入帧缓冲区
      */
-    protected FrameBuffer input;
+    protected GlFrameBuffer input;
 
     /**
      * 输出帧缓冲区
      */
-    protected FrameBuffer output;
+    protected GlFrameBuffer output;
 
     /**
      * 创建一个算法实例
@@ -85,7 +85,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @return 输入帧缓冲区。
      */
-    public FrameBuffer getInputFrameBuffer() {
+    public GlFrameBuffer getInputFrameBuffer() {
         return input;
     }
 
@@ -94,7 +94,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @param input 输入帧缓冲区。
      */
-    public void setInputFrameBuffer(FrameBuffer input) {
+    public void setInputFrameBuffer(GlFrameBuffer input) {
         this.input = input;
     }
 
@@ -103,7 +103,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @return 输出帧缓冲区。
      */
-    public FrameBuffer getOutputFrameBuffer() {
+    public GlFrameBuffer getOutputFrameBuffer() {
         return output;
     }
 
@@ -112,7 +112,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @param output 输出帧缓冲区。
      */
-    public void setOutputFrameBuffer(FrameBuffer output) {
+    public void setOutputFrameBuffer(GlFrameBuffer output) {
         this.output = output;
     }
 

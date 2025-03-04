@@ -3,7 +3,7 @@ package io.homo.superresolution.common.upscale.nis;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.texture.Texture;
+import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.interop.SharedTexture;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
@@ -199,7 +199,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     @Override
     public void blitToScreen(int width, int height) {
         //outputSharedTexture.startRead();
-        Texture.blitToScreen(inputSharedTexture.width, inputSharedTexture.height, width, height, inputSharedTexture.glId);
+        GlTexture.blitToScreen(inputSharedTexture.width, inputSharedTexture.height, width, height, inputSharedTexture.glId);
         //outputSharedTexture.endRead();
     }
 

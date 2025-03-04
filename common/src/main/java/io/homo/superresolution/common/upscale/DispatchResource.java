@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.common.render.gl.framebuffer.MotionVectorsFrameBuffer;
 import org.joml.Matrix4f;
 
 public record DispatchResource(
@@ -18,6 +19,7 @@ public record DispatchResource(
         Matrix4f modelViewProjectionMatrix,
         Matrix4f lastModelViewMatrix,
         Matrix4f lastProjectionMatrix,
-        Matrix4f lastModelViewProjectionMatrix
+        Matrix4f lastModelViewProjectionMatrix,
+        MotionVectorsFrameBuffer motionVectors
 ) {
 }

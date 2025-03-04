@@ -2,9 +2,9 @@ package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.shader.ComputeShaderProgram;
-import io.homo.superresolution.common.render.gl.shader.GeneralShaderProgram;
-import io.homo.superresolution.common.render.gl.texture.Texture;
+import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
+import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
+import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
@@ -16,10 +16,10 @@ import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
 
 public class FSR1 extends AbstractAlgorithm {
-    private ComputeShaderProgram fsr1EASUShader;
-    private ComputeShaderProgram fsr1RCASShader;
-    private Texture fsr1TempTexture;
-    private Texture output;
+    private GlComputeShaderProgram fsr1EASUShader;
+    private GlComputeShaderProgram fsr1RCASShader;
+    private GlTexture fsr1TempTexture;
+    private GlTexture output;
 
     public static int checkFP16Support() {
         if (AlgorithmHelper.hasGLExtension("GL_EXT_shader_16bit_storage") &&
@@ -39,27 +39,27 @@ public class FSR1 extends AbstractAlgorithm {
 
     public void initShader() {
         int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
-        GeneralShaderProgram.ShaderInclude fsrEasuInclude = GeneralShaderProgram.ShaderInclude.create(
+        GlGeneralShaderProgram.ShaderInclude fsrEasuInclude = GlGeneralShaderProgram.ShaderInclude.create(
                 FileReadHelper.readText("/shader/fsr1/fsr1_easu.comp.glsl"),
                 "fsr1_easu.comp.glsl"
         );
-        GeneralShaderProgram.ShaderInclude fsrEasuFp16Include = GeneralShaderProgram.ShaderInclude.create(
+        GlGeneralShaderProgram.ShaderInclude fsrEasuFp16Include = GlGeneralShaderProgram.ShaderInclude.create(
                 FileReadHelper.readText("/shader/fsr1/fsr1_easu_fp16.comp.glsl"),
                 "fsr1_easu_fp16.comp.glsl"
         );
-        GeneralShaderProgram.ShaderInclude fsrRcasInclude = GeneralShaderProgram.ShaderInclude.create(
+        GlGeneralShaderProgram.ShaderInclude fsrRcasInclude = GlGeneralShaderProgram.ShaderInclude.create(
                 FileReadHelper.readText("/shader/fsr1/fsr1_rcas.comp.glsl"),
                 "fsr1_rcas.comp.glsl"
         );
-        GeneralShaderProgram.ShaderInclude fsrRcasFp16Include = GeneralShaderProgram.ShaderInclude.create(
+        GlGeneralShaderProgram.ShaderInclude fsrRcasFp16Include = GlGeneralShaderProgram.ShaderInclude.create(
                 FileReadHelper.readText("/shader/fsr1/fsr1_rcas_fp16.comp.glsl"),
                 "fsr1_rcas_fp16.comp.glsl"
         );
-        GeneralShaderProgram.ShaderInclude fsrCommonInclude = GeneralShaderProgram.ShaderInclude.create(
+        GlGeneralShaderProgram.ShaderInclude fsrCommonInclude = GlGeneralShaderProgram.ShaderInclude.create(
                 FileReadHelper.readText("/shader/fsr1/fsr1_common.glsl"),
                 "fsr1_common.glsl"
         );
-        fsr1EASUShader = (ComputeShaderProgram) ComputeShaderProgram.create()
+        fsr1EASUShader = (GlComputeShaderProgram) GlComputeShaderProgram.create()
                 .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
                 .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                 .addDefineText("FSR_EASU", String.valueOf(1))
@@ -72,7 +72,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1/fsr1_main.comp.glsl"))
                 .build()
                 .compileShader();
-        fsr1RCASShader = (ComputeShaderProgram) ComputeShaderProgram.create()
+        fsr1RCASShader = (GlComputeShaderProgram) GlComputeShaderProgram.create()
                 .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
                 .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                 .addDefineText("FSR_RCAS", String.valueOf(1))
@@ -91,8 +91,8 @@ public class FSR1 extends AbstractAlgorithm {
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
         initShader();
-        fsr1TempTexture = new Texture(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), GL_RGBA8);
-        output = new Texture(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight(), GL_RGBA8);
+        fsr1TempTexture = new GlTexture(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), GL_RGBA8);
+        output = new GlTexture(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight(), GL_RGBA8);
         this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
     }
 
@@ -103,7 +103,7 @@ public class FSR1 extends AbstractAlgorithm {
         return true;
     }
 
-    private void setFSR1ShaderUniform(ComputeShaderProgram shaderProgram) {
+    private void setFSR1ShaderUniform(GlComputeShaderProgram shaderProgram) {
         shaderProgram.setVec2("renderViewportSize", AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
         shaderProgram.setVec2("containerTextureSize", AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
         shaderProgram.setVec2("upscaledViewportSize", AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
@@ -146,13 +146,15 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        Texture.blitToScreen(output.width, output.height, width, height, this.output.id);
+        GlTexture.blitToScreen(output.width, output.height, width, height, this.output.id);
     }
 
     @Override
     public void destroy() {
         this.output.destroy();
         this.fsr1TempTexture.destroy();
+        this.fsr1EASUShader.destroy();
+        this.fsr1RCASShader.destroy();
     }
 
     @Override

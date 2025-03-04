@@ -13,9 +13,9 @@ import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.gl.Gl;
 import io.homo.superresolution.common.render.gl.GlConst;
 import io.homo.superresolution.common.render.gl.GlState;
-import io.homo.superresolution.common.render.gl.framebuffer.FrameBuffer;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.common.render.gl.framebuffer.StorageFrameBuffer;
-import io.homo.superresolution.common.render.gl.texture.Texture;
+import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -33,7 +33,7 @@ public class MinecraftRenderHandle {
     private static int frameCount = 0;
     private static Minecraft minecraft;
     private static MainTarget originRenderTarget;
-    private static FrameBuffer renderTarget;
+    private static GlFrameBuffer renderTarget;
     private static PostChain entityEffect;
     private static RenderTarget entityTarget;
     private static float frameStartTime;
@@ -43,7 +43,7 @@ public class MinecraftRenderHandle {
         return originRenderTarget;
     }
 
-    public static FrameBuffer getRenderTarget() {
+    public static GlFrameBuffer getRenderTarget() {
         return renderTarget;
     }
 
@@ -149,6 +149,7 @@ public class MinecraftRenderHandle {
         frameCount++;
         setClientRenderTarget(getOriginRenderTarget());
         getOriginRenderTarget().bindWrite(true);
+        AlgorithmManager.update();
         SuperResolution.getCurrentAlgorithm().dispatch(AlgorithmManager.getDispatchResource());
         SuperResolution.getCurrentAlgorithm().blitToScreen(
                 MinecraftRenderHandle.getScreenWidth(),
@@ -180,11 +181,11 @@ public class MinecraftRenderHandle {
     }
 
     public static int getScreenHeight() {
-        return SuperResolution.getMinecraftHeight();
+        return Math.max(SuperResolution.getMinecraftHeight(), 1);
     }
 
     public static int getScreenWidth() {
-        return SuperResolution.getMinecraftWidth();
+        return Math.max(SuperResolution.getMinecraftWidth(), 1);
     }
 
     public static void callOnRenderTargets(Consumer<RenderTarget> callback) {
@@ -216,7 +217,7 @@ public class MinecraftRenderHandle {
 
     public static void onBlitEntityEffect() {
         if (getRenderTarget(RenderTargetType.ENTITY) == null) return;
-        Texture.blitToScreen(
+        GlTexture.blitToScreen(
                 getRenderWidth(),
                 getRenderHeight(),
                 getScreenWidth(),
@@ -273,7 +274,7 @@ public class MinecraftRenderHandle {
 
     public static void blitHandRenderTarget() {
         RenderSystem.enableBlend();
-        callOnRenderTarget(RenderTargetType.HAND, (renderTarget -> Texture.blitToScreen(
+        callOnRenderTarget(RenderTargetType.HAND, (renderTarget -> GlTexture.blitToScreen(
                 renderTarget.width,
                 renderTarget.height,
                 getScreenWidth(),

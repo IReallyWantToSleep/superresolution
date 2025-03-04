@@ -11,8 +11,8 @@ import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_COMPILE_STATUS;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_COMPUTE_SHADER;
 
-public class ComputeShaderProgram extends AbstractShaderProgram {
-    public ComputeShaderProgram() {
+public class GlComputeShaderProgram extends AbstractGlShaderProgram {
+    public GlComputeShaderProgram() {
         super();
     }
 
@@ -20,7 +20,7 @@ public class ComputeShaderProgram extends AbstractShaderProgram {
         return new ComputeShaderProgramBuilder();
     }
 
-    public ComputeShaderProgram compileShader() {
+    public GlComputeShaderProgram compileShader() {
         RenderSystem.assertOnRenderThread();
         int COMPUTE_SHADER = glCreateShader(GL_COMPUTE_SHADER);
         String shaderCode = this.getFragShaderText();
@@ -44,8 +44,8 @@ public class ComputeShaderProgram extends AbstractShaderProgram {
 
     public static class ComputeShaderProgramBuilder extends AbstractShaderProgramBuilder {
         @Override
-        public ComputeShaderProgram build() {
-            return (ComputeShaderProgram) setShaderText(new ComputeShaderProgram());
+        public GlComputeShaderProgram build() {
+            return (GlComputeShaderProgram) setShaderText(new GlComputeShaderProgram());
         }
     }
 }

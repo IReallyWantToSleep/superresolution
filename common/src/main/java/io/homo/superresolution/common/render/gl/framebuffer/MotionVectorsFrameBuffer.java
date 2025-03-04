@@ -7,7 +7,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
 
-public class MotionVectorsFrameBuffer extends FrameBuffer {
+public class MotionVectorsFrameBuffer extends GlFrameBuffer {
 
     public MotionVectorsFrameBuffer(boolean useDepth) {
         super(useDepth);

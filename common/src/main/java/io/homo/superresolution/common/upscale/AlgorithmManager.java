@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.gl.framebuffer.MotionVectorsFrameBuffer;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
@@ -13,6 +14,7 @@ import org.joml.Matrix4f;
 public class AlgorithmManager {
     public static AlgorithmHelper helper;
     public static AlgorithmParam param = new AlgorithmParam();
+    private static MotionVectorsFrameBuffer motionVectorsFrameBuffer;
 
     static {
         helper = new AlgorithmHelper();
@@ -92,8 +94,18 @@ public class AlgorithmManager {
                 param.currentModelViewProjectionMatrix,
                 param.lastModelViewMatrix,
                 param.lastProjectionMatrix,
-                param.lastModelViewProjectionMatrix
+                param.lastModelViewProjectionMatrix,
+                motionVectorsFrameBuffer
         );
+    }
+
+    public static void init() {
+        motionVectorsFrameBuffer = new MotionVectorsFrameBuffer(false);
+        motionVectorsFrameBuffer.setClearColor(0, 0, 0, 1);
+    }
+
+    public static void update() {
+        MotionVectorsGenerator.update(getDispatchResource(), motionVectorsFrameBuffer);
     }
 
     public static class AlgorithmParam {

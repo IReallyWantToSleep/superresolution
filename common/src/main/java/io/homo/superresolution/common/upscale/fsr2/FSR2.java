@@ -5,9 +5,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.texture.Texture;
+import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.utils.NativeLibManager;
@@ -26,7 +25,7 @@ public class FSR2 extends AbstractAlgorithm {
     private static Window window = Minecraft.getInstance().getWindow();
     private final FfxFSR2 nativeApi;
     private FfxFsr2Context fsr2Context;
-    private Texture output;
+    private GlTexture output;
 
     private FSR2() {
         RenderSystem.assertOnRenderThread();
@@ -55,7 +54,7 @@ public class FSR2 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = new Texture(window.getScreenWidth(), window.getScreenHeight(), GL_RGBA8);
+        output = new GlTexture(window.getScreenWidth(), window.getScreenHeight(), GL_RGBA8);
         this.resize(window.getScreenWidth(), window.getScreenHeight());
     }
 
@@ -67,7 +66,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        Texture.blitToScreen(output.width, output.height, width, height, this.output.id);
+        GlTexture.blitToScreen(output.width, output.height, width, height, this.output.id);
     }
 
     public void destroy() {

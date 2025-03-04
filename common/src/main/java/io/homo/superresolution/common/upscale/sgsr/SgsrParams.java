@@ -1,12 +1,18 @@
 package io.homo.superresolution.common.upscale.sgsr;
 
+import io.homo.superresolution.common.render.gl.buffer.IUniformStruct;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.Struct;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class SgsrParams extends Struct {
+import static org.lwjgl.system.MemoryUtil.nmemAllocChecked;
+import static org.lwjgl.system.MemoryUtil.nmemCallocChecked;
+
+public class SgsrParams extends Struct implements IUniformStruct {
 
     public static final int SIZEOF;
     public static final int ALIGNOF;
@@ -91,6 +97,15 @@ public class SgsrParams extends Struct {
 
     private static native void nreset(long struct, int value);
 
+    public static SgsrParams malloc() {
+        return new SgsrParams(nmemAllocChecked(SIZEOF), null);
+    }
+
+    public static SgsrParams calloc() {
+        ByteBuffer buffer = MemoryStack.stackCalloc(SIZEOF);
+        return new SgsrParams(MemoryUtil.memAddress(buffer), buffer);
+    }
+
     public void renderSize(int x, int y) {
         nrenderSize(address(), x, y);
     }
@@ -145,6 +160,11 @@ public class SgsrParams extends Struct {
 
     protected SgsrParams create(long address, @Nullable ByteBuffer container) {
         return new SgsrParams(address, container);
+    }
+
+    @Override
+    public ByteBuffer container() {
+        return container;
     }
 
     @Override

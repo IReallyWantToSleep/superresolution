@@ -3,8 +3,8 @@ package io.homo.superresolution.common.render.gl.shader;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.render.gl.buffer.UniformBufferObject;
-import io.homo.superresolution.common.render.gl.buffer.UniformStruct;
+import io.homo.superresolution.common.impl.Destroyable;
+import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
 import org.joml.Matrix4f;
 
 import java.io.FileOutputStream;
@@ -15,16 +15,25 @@ import java.util.Map;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 
-public abstract class AbstractShaderProgram {
+public abstract class AbstractGlShaderProgram implements Destroyable {
 
     public String shaderName;
     public int shaderProgram;
     protected ArrayList<String> fragShaderTextList;
     protected ArrayList<String> vertShaderTextList;
-    protected Map<String, GeneralShaderProgram.ShaderInclude> shaderIncludeList;
+    protected Map<String, GlGeneralShaderProgram.ShaderInclude> shaderIncludeList;
     protected ArrayList<String> shaderDefineList;
 
-    protected AbstractShaderProgram() {
+    protected AbstractGlShaderProgram() {
+    }
+
+    @Override
+    public void destroy() {
+        glDeleteProgram(shaderProgram);
+        fragShaderTextList.clear();
+        vertShaderTextList.clear();
+        shaderIncludeList.clear();
+        shaderDefineList.clear();
     }
 
     protected ArrayList<String> processShaderText() {
@@ -104,7 +113,7 @@ public abstract class AbstractShaderProgram {
         return this.vertShaderTextList;
     }
 
-    public abstract AbstractShaderProgram compileShader();
+    public abstract AbstractGlShaderProgram compileShader();
 
     public void use() {
         RenderSystem.assertOnRenderThread();
@@ -136,7 +145,7 @@ public abstract class AbstractShaderProgram {
         glUniform1i(getUniformLocation(name), value);
     }
 
-    public void setStruct(String name, UniformBufferObject value, int bindingPoint) {
+    public void setStruct(String name, GlUniformBuffer value, int bindingPoint) {
         value.bind(bindingPoint);
     }
 

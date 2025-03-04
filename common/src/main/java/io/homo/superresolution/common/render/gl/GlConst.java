@@ -24,6 +24,10 @@ public class GlConst {
     public static final int GL_TEXTURE_MIN_FILTER = 10241;
     public static final int GL_TEXTURE_WRAP_S = 10242;
     public static final int GL_TEXTURE_WRAP_T = 10243;
+    public static final int GL_TEXTURE_WRAP_R = 32882;
+    public static final int GL_LINEAR_MIPMAP_NEAREST = 9985;
+    public static final int GL_REPEAT = 10497;
+    public static final int GL_NEAREST_MIPMAP_NEAREST = 9984;
     public static final int GL_NEAREST = 9728;
     public static final int GL_LINEAR = 9729;
     public static final int GL_NEAREST_MIPMAP_LINEAR = 9986;
