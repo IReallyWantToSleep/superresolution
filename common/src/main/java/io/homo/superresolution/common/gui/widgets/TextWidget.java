@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.gui.widgets;
 
 import io.homo.superresolution.common.gui.Rect;
-import io.homo.superresolution.common.gui.Vec2;
+import io.homo.superresolution.common.impl.Vec2;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import org.jetbrains.annotations.NotNull;

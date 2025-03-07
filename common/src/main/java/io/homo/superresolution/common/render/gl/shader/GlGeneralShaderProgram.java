@@ -1,8 +1,10 @@
 package io.homo.superresolution.common.render.gl.shader;
 
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,11 +13,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
-import static io.homo.superresolution.common.render.gl.GlConst.GL_FRAGMENT_SHADER;
-import static io.homo.superresolution.common.render.gl.GlConst.GL_VERTEX_SHADER;
+import static io.homo.superresolution.common.render.gl.GlConst.*;
 
 public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
-    private GlGeneralShaderProgram() {
+    protected GlGeneralShaderProgram() {
     }
 
     public static GeneralShaderProgramBuilder create() {
@@ -66,6 +67,12 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
         glUseProgram(0);
     }
 
+    public void setTexture(String name, int textureId, int texture) {
+        glActiveTexture(GL_TEXTURE0 + texture);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        glUniform1i(getUniformLocation(name), texture);
+    }
+
     public static class ShaderInclude {
         public String name;
         public ArrayList<String> textList;
@@ -88,4 +95,5 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
             return (GlGeneralShaderProgram) setShaderText(new GlGeneralShaderProgram());
         }
     }
+
 }

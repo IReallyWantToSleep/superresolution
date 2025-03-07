@@ -25,6 +25,7 @@ public class AlgorithmManager {
     }
 
     public static void resize(int width, int height) {
+        motionVectorsFrameBuffer.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), Minecraft.ON_OSX);
         helper.resize(width, height);
     }
 

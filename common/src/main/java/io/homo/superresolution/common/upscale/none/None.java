@@ -1,7 +1,6 @@
 package io.homo.superresolution.common.upscale.none;
 
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.framebuffer.OnlyTextureIdFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -18,7 +17,7 @@ public class None extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = new OnlyTextureIdFrameBuffer(input.getColorTextureId());
+        output = MinecraftRenderHandle.getRenderTarget();
     }
 
     @Override
@@ -28,7 +27,7 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        GlTexture.blitToScreen(input.width, input.height, width, height, this.input.getColorTextureId());
+        GlTexture.blitToScreen(output.width, output.height, width, height, this.output.getColorTextureId());
     }
 
     public void resize(int width, int height) {

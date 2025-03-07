@@ -9,7 +9,9 @@
         "tacz.RenderHelperMixin"
     ],
     "mixins": [
-        "oculus.HandRendererMixin"
+        "oculus.GlFramebufferMixin",
+        "oculus.HandRendererMixin",
+        "oculus.IrisRenderingPipelineMixin"
     ],
     "injectors": {
         "defaultRequire": 1

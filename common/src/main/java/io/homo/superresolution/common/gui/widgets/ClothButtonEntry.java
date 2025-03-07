@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.gui.widgets;
 
-import io.homo.superresolution.common.gui.Vec2;
+import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.mixin.gui.AbstractWidgetAccessor;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import net.minecraft.client.gui.GuiGraphics;
