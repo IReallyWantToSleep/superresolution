@@ -138,7 +138,6 @@ public class MinecraftRenderHandle {
         updateRenderTarget();
         updateRenderTargetSize();
         setClientRenderTarget(getRenderTarget());
-        getRenderTarget(RenderTargetType.HAND).clear(Minecraft.ON_OSX);
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         getRenderTarget().bindWrite(true);
     }
@@ -155,8 +154,7 @@ public class MinecraftRenderHandle {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        if (Config.getCaptureMode() == CaptureMode.C &&
-                Platform.currentPlatform.iris().isShaderPackInUse())
+        if (Config.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
             blitHandRenderTarget();
         frameEndTime = (float) (Util.getNanos() / 1000000);
         frameTime = frameEndTime - frameStartTime;
@@ -168,16 +166,20 @@ public class MinecraftRenderHandle {
     }
 
     public static float getCurrentScaleFactor() {
-        return isRenderingWorld && Config.isEnableUpscale() ? Config.getRenderScaleFactor() : 1;
+        return isRenderingWorld ? getScaleFactor() : 1;
+    }
+
+    public static float getScaleFactor() {
+        return Config.isEnableUpscale() ? Config.getRenderScaleFactor() : 1;
     }
 
 
     public static int getRenderHeight() {
-        return (int) Math.max(getScreenHeight() * getCurrentScaleFactor(), 1);
+        return (int) Math.max(getScreenHeight() * getScaleFactor(), 1);
     }
 
     public static int getRenderWidth() {
-        return (int) Math.max(getScreenWidth() * getCurrentScaleFactor(), 1);
+        return (int) Math.max(getScreenWidth() * getScaleFactor(), 1);
     }
 
     public static int getScreenHeight() {
@@ -256,9 +258,11 @@ public class MinecraftRenderHandle {
         if (!checkRenderHandCallPos()) return;
         GlState.save("hand");
         setClientRenderTarget(getRenderTarget(RenderTargetType.HAND));
+
         callOnRenderTarget(
                 RenderTargetType.HAND,
                 (renderTarget -> {
+                    renderTarget.clear(Minecraft.ON_OSX);
                     Gl.glBindFramebuffer(
                             GlConst.GL_DRAW_FRAMEBUFFER,
                             renderTarget.frameBufferId
@@ -275,8 +279,8 @@ public class MinecraftRenderHandle {
     public static void blitHandRenderTarget() {
         RenderSystem.enableBlend();
         callOnRenderTarget(RenderTargetType.HAND, (renderTarget -> GlTexture.blitToScreen(
-                renderTarget.width,
-                renderTarget.height,
+                getScreenWidth(),
+                getScreenHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
                 renderTarget.getColorTextureId()
@@ -289,12 +293,13 @@ public class MinecraftRenderHandle {
         setClientRenderTarget(getRenderTarget(RenderTargetType.HAND));
         Gl.glBindFramebuffer(GlConst.GL_DRAW_FRAMEBUFFER, GlState.get("hand").writeFBO());
         Gl.glBindFramebuffer(GlConst.GL_READ_FRAMEBUFFER, GlState.get("hand").readFBO());
+        //if (Config.getCaptureMode() == CaptureMode.C) blitHandRenderTarget();
         Gl.glViewport(
                 0, 0,
                 getRenderWidth(),
                 getRenderHeight()
         );
         GlState.pop("hand");
-        if (Config.getCaptureMode() != CaptureMode.C) blitHandRenderTarget();
+
     }
 }

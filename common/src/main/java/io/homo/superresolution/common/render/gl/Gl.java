@@ -4,6 +4,7 @@ import org.lwjgl.opengl.*;
 import org.lwjgl.system.NativeType;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import static io.homo.superresolution.common.render.gl.GlConst.*;
@@ -11,6 +12,35 @@ import static io.homo.superresolution.common.render.gl.GlConst.*;
 public class Gl {
     public static int[] getVersion() {
         return new int[]{glGetInteger(GL_MAJOR_VERSION), glGetInteger(GL_MINOR_VERSION)};
+    }
+
+    public static void glBindVertexArray(int array) {
+        GL30C.glBindVertexArray(array);
+    }
+
+    public static void glDeleteVertexArrays(int array) {
+        GL30C.glDeleteVertexArrays(array);
+    }
+
+    public static int glGenVertexArrays() {
+        return GL30C.glGenVertexArrays();
+    }
+
+    public static int glGenBuffers() {
+        return GL15C.glGenBuffers();
+    }
+
+    public static void glDeleteBuffers(int buffer) {
+        GL15C.glDeleteBuffers(buffer);
+    }
+
+    public static void glBufferData(int target, FloatBuffer data, int usage) {
+        GL15C.glBufferData(target, data, usage);
+    }
+
+
+    public static void glBindBuffer(int target, int buffer) {
+        GL15C.glBindBuffer(target, buffer);
     }
 
     public static void glSamplerParameteri(int sampler, int pname, int param) {
@@ -72,6 +102,19 @@ public class Gl {
     public static int glGetUniformLocation(int program, CharSequence name) {
         return GL20C.glGetUniformLocation(program, name);
     }
+
+    public static void glEnableVertexAttribArray(int index) {
+        GL20C.glEnableVertexAttribArray(index);
+    }
+
+    public static void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer) {
+        GL20C.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+    }
+
+    public static void glDrawArrays(int mode, int first, int count) {
+        GL11C.glDrawArrays(mode, first, count);
+    }
+
 
     public static void glUniform1f(int location, float v0) {
         GL20C.glUniform1f(location, v0);

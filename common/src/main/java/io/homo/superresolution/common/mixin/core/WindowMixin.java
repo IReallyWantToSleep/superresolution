@@ -43,4 +43,5 @@ public class WindowMixin {
     private void onUpdateFramebufferSize(CallbackInfo ci) {
         MinecraftRenderHandle.resize();
     }
+
 }

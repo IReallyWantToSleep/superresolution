@@ -5,6 +5,6 @@ import net.minecraft.client.Minecraft;
 
 public class MotionVectorsGenerator {
     public static void update(DispatchResource dispatchResource, RenderTarget target) {
-        target.clear(Minecraft.ON_OSX);
+        //target.clear(Minecraft.ON_OSX);
     }
 }

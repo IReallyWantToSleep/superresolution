@@ -11,16 +11,14 @@ public class ConfigData {
     private AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
     private float sharpness = 0.55f;
     private CaptureMode captureMode = CaptureMode.A;
-    private transient float renderScaleFactor = 1 / upscaleRatio;
     private boolean debugDumpShader = false;
 
     public boolean isDebugDumpShader() {
         return debugDumpShader;
     }
 
-    public ConfigData setDebugDumpShader(boolean debugDumpShader) {
+    public void setDebugDumpShader(boolean debugDumpShader) {
         this.debugDumpShader = debugDumpShader;
-        return this;
     }
 
     public CaptureMode getCaptureMode() {
@@ -32,7 +30,7 @@ public class ConfigData {
     }
 
     public float getRenderScaleFactor() {
-        return isEnableUpscale() ? this.renderScaleFactor : 1;
+        return isEnableUpscale() ? 1 / getUpscaleRatio() : 1;
     }
 
     public float getUpscaleRatio() {
@@ -41,7 +39,6 @@ public class ConfigData {
 
     public void setUpscaleRatio(float value) {
         this.upscaleRatio = value;
-        this.renderScaleFactor = 1 / this.upscaleRatio;
     }
 
     public AlgorithmType getUpscaleAlgo() {

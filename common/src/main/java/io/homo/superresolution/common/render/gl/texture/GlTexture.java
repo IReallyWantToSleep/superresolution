@@ -6,6 +6,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
+#if MC_VER > MC_1_20_1
+import io.homo.superresolution.common.render.gl.buffer.VertexBuffer;
+import io.homo.superresolution.common.render.gl.shader.BlitShader;
+import io.homo.superresolution.common.render.gl.vertex.VertexArray;
+#endif
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
@@ -47,12 +52,23 @@ public class GlTexture implements Destroyable, Resizable {
         }
         shaderInstance.apply();
         #if MC_VER > MC_1_20_1
-        BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-        bufferBuilder.addVertex(0.0f, 0.0f, 0.0f);
-        bufferBuilder.addVertex((float) 1, 0.0f, 0.0f);
-        bufferBuilder.addVertex((float) 1, (float) 1, 0.0f);
-        bufferBuilder.addVertex(0.0f, (float) 1, 0.0f);
-        BufferUploader.draw(bufferBuilder.buildOrThrow());
+        try (VertexArray vao = new VertexArray();
+             VertexBuffer vbo = new VertexBuffer()) {
+            float[] vertices = {
+                    0, 0, 0,
+                    1, 0, 0,
+                    1, 1, 0,
+                    0, 1, 0,
+            };
+            vao.bind();
+            vbo.bind(GL_ARRAY_BUFFER);
+            vbo.uploadData(vertices, GL_STATIC_DRAW);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 2, GL_FLOAT, false, 3 * Float.BYTES, 0);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, false, 3 * Float.BYTES, 2 * Float.BYTES);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
         #else
         Tesselator tesselator = RenderSystem.renderThreadTesselator();
         BufferBuilder bufferBuilder = tesselator.getBuilder();

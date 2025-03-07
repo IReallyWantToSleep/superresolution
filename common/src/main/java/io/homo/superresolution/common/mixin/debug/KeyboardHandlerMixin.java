@@ -2,7 +2,9 @@ package io.homo.superresolution.common.mixin.debug;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.RenderTargetType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyboardHandler;
@@ -63,10 +65,11 @@ public class KeyboardHandlerMixin {
     private void debugScreenshot(CallbackInfo ci) {
         Screenshot.grab(Minecraft.getInstance().gameDirectory, "world.png", MinecraftRenderHandle.getRenderTarget(), (a) -> {
         });
-        MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> {
-            Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget, (a) -> {
-            });
-        }));
+        MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget, (a) -> {
+        })));
+        Screenshot.grab(Minecraft.getInstance().gameDirectory, "hand.png", MinecraftRenderHandle.getRenderTarget(RenderTargetType.HAND), (a) -> {
+        });
+
 
     }
 }

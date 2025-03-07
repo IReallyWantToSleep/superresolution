@@ -11,6 +11,7 @@
         "core.MinecraftMixin",
         "core.OptionsMixin",
         "core.RenderTargetMixin",
+        "core.VirtualScreenMixin",
         "core.WindowMixin",
         "core.accessor.GameRendererAccessor",
         "core.accessor.LevelRendererAccessor",

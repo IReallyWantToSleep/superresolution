@@ -9,7 +9,7 @@ import io.homo.superresolution.common.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
 
 public class Config {
-    private static ConfigData instance = new ConfigData();
+    private static ConfigData instance;
     private static Runnable resolutionChangeCallback;
 
     static {

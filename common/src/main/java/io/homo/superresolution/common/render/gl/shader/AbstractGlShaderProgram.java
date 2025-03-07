@@ -11,12 +11,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 
 public abstract class AbstractGlShaderProgram implements Destroyable {
 
+    private final Map<String, Integer> uniformLocationCache = new HashMap<>();
     public String shaderName;
     public int shaderProgram;
     protected ArrayList<String> fragShaderTextList;
@@ -126,7 +128,10 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
     }
 
     public int getUniformLocation(String name) {
-        return glGetUniformLocation(this.shaderProgram, name);
+        if (uniformLocationCache.containsKey(name)) return uniformLocationCache.get(name);
+        int i = glGetUniformLocation(this.shaderProgram, name);
+        uniformLocationCache.put(name, i);
+        return i;
     }
 
     public void setVec2(String name, float x, float y) {
@@ -145,7 +150,7 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
         glUniform1i(getUniformLocation(name), value);
     }
 
-    public void setStruct(String name, GlUniformBuffer value, int bindingPoint) {
+    public void setStruct(String name, GlUniformBuffer<?> value, int bindingPoint) {
         value.bind(bindingPoint);
     }
 
