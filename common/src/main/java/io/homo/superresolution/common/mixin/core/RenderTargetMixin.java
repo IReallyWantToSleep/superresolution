@@ -26,7 +26,11 @@ public abstract class RenderTargetMixin {
 
 
     @Inject(method = "createBuffers", at = @At("HEAD"))
-    private void onInitFbo(int width, int height, boolean getError, CallbackInfo ci) {
+    #if MC_VER > MC_1_21_1
+    private void onInitFbo(int width, int height, CallbackInfo ci)
+    #else
+    private void onInitFbo(int width, int height, boolean getError, CallbackInfo ci)
+    #endif {
         super_resolution$scaleMultiplier = (float) width / Minecraft.getInstance().getWindow().getWidth();
     }
 
@@ -48,8 +52,13 @@ public abstract class RenderTargetMixin {
         }
     }
 
+    #if MC_VER > MC_1_21_1
+    @Inject(method = {"blitAndBlendToScreen", "blitToScreen"}, at = @At("HEAD"))
+    private void onDraw(int width, int height, CallbackInfo ci)
+    #else
     @Inject(method = "blitToScreen(IIZ)V", at = @At("HEAD"))
-    private void onDraw(int width, int height, boolean bl, CallbackInfo ci) {
+    private void onDraw(int width, int height, boolean bl, CallbackInfo ci)
+    #endif {
         if (super_resolution$scaleMultiplier > 2.0f) {
             GlStateManager._bindTexture(this.getDepthTextureId());
             glGenerateMipmap(GL_TEXTURE_2D);

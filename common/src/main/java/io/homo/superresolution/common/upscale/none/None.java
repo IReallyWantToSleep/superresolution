@@ -27,7 +27,7 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        GlTexture.blitToScreen(output.width, output.height, width, height, this.output.getColorTextureId());
+        GlTexture.blitToScreen(output.getWidth(), output.getHeight(), width, height, this.output.getColorTextureId());
     }
 
     public void resize(int width, int height) {

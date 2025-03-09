@@ -41,42 +41,9 @@ public class FSR2Helper implements Resizable, Destroyable {
         this.resize(SuperResolution.getMinecraftWidth(), SuperResolution.getMinecraftHeight());
     }
 
-    private void setMotionVectorsShaderUniform() {
-        motionVectorsShader.setMatrix4("ProjMat", AlgorithmManager.param.currentProjectionMatrix);
-        motionVectorsShader.setMatrix4("ModelViewMat", AlgorithmManager.param.currentModelViewMatrix);
-        motionVectorsShader.setMatrix4("projectionInverse", AlgorithmManager.param.currentProjectionMatrix.invert());
-        motionVectorsShader.setMatrix4("modelViewInverse", AlgorithmManager.param.currentModelViewMatrix.invert());
-        motionVectorsShader.setMatrix4("lastProjection", AlgorithmManager.param.lastProjectionMatrix);
-        motionVectorsShader.setMatrix4("lastModelView", AlgorithmManager.param.lastModelViewMatrix);
-        motionVectorsShader.setVec2("pixelSize", (float) 1 / AlgorithmManager.helper.getRenderWidth(), (float) 1 / AlgorithmManager.helper.getRenderHeight());
-        motionVectorsShader.setFloat("depth", 0.5f);
-    }
-
     public void update() {
         RenderSystem.assertOnRenderThread();
         this.frameIndex++;
-        motionVectorsFBO.clear(Minecraft.ON_OSX);
-        glBindFramebuffer(GL_FRAMEBUFFER, motionVectorsFBO.frameBufferId);
-        motionVectorsShader.use();
-        setMotionVectorsShaderUniform();
-        #if MC_VER > MC_1_20_1
-        BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-        bufferBuilder.addVertex(0.0F, 0.0F, 0.0F);
-        bufferBuilder.addVertex(1.0F, 0.0F, 0.0F);
-        bufferBuilder.addVertex(1.0F, 1.0F, 0.0F);
-        bufferBuilder.addVertex(0.0F, 1.0F, 0.0F);
-        BufferUploader.draw(bufferBuilder.buildOrThrow());
-        #else
-        Tesselator tesselator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder = tesselator.getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bufferBuilder.vertex(0.0, AlgorithmManager.helper.getRenderHeight(), 0.0).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), 0.0).uv(1f, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(AlgorithmManager.helper.getRenderWidth(), 0.0, 0.0).uv(1f, 1f).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, 1f).color(255, 255, 255, 255).endVertex();
-        BufferUploader.draw(bufferBuilder.end());
-        #endif
-
     }
 
     public void updateJitter() {
@@ -95,7 +62,7 @@ public class FSR2Helper implements Resizable, Destroyable {
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
         this.motionVectorsTexture.resize(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
-        this.motionVectorsFBO.resize(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), Minecraft.ON_OSX);
+        this.motionVectorsFBO.resize(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
     }
 
     public void destroy() {

@@ -17,7 +17,7 @@ public class OS {
         this.arch = arch;
     }
 
-    public String getString(){
+    public String getString() {
         if (any.equals(this)) return Component.translatable("superresolution.requirement.os.any").getString();
         return "%s %s:%s".formatted(
                 type.getString(),

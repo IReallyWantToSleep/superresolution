@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
 
+@SuppressWarnings("unchecked")
 public class SpecialConfigDescription<T> {
     protected String key;
     protected ConfigType type;
@@ -15,6 +16,7 @@ public class SpecialConfigDescription<T> {
     protected Class<? extends Enum<?>> clazz = null;
     protected Pair<Float, Float> valueRange = null;
     protected Consumer<T> saveConsumer;
+
 
     public Consumer<Object> getSaveConsumer() {
         return (Consumer<Object>) saveConsumer;

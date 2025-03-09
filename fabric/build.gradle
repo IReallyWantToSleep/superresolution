@@ -59,6 +59,9 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+    maven {
+        url "https://maven.nucleoid.xyz/"
+    }
 }
 
 def addModrinthMod(id, ver) {

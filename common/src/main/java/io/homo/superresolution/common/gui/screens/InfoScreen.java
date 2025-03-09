@@ -3,7 +3,7 @@ package io.homo.superresolution.common.gui.screens;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.BaseScreen;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-import io.homo.superresolution.common.gui.Rect;
+import io.homo.superresolution.common.gui.Rectangle;
 import io.homo.superresolution.common.gui.widgets.ButtonWidget;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.gui.widgets.TextWidget;
@@ -24,7 +24,7 @@ public class InfoScreen extends BaseScreen {
     private final Screen lastScreen;
     private final boolean openConfigScreen;
     private ButtonWidget closeButton;
-    private Rect infoTextRect;
+    private Rectangle infoTextRect;
     private TextWidget infoText;
     private int showInfo = 0;
     private ButtonWidget extButton;
@@ -68,7 +68,7 @@ public class InfoScreen extends BaseScreen {
                 .setAction(this::onClickInfo)
                 .setLabel(Component.translatable("superresolution.screen.info.button.label.opengl_ext_info"));
         this.addWidget(this.extButton);
-        this.infoTextRect = new Rect(10, 18, this.width - 10, this.height - 40);
+        this.infoTextRect = new Rectangle(10, 18, this.width - 10, this.height - 40);
         this.infoText = new TextWidget(infoTextRect.x, infoTextRect.y, infoTextRect.width, infoTextRect.height);
         this.addWidget(this.infoText);
         this.infoText.border.x = 3;
@@ -398,7 +398,7 @@ public class InfoScreen extends BaseScreen {
     }
 
     @Override
-    protected Rect getGuiRect() {
+    protected Rectangle getGuiRect() {
         return infoTextRect;
     }
 }

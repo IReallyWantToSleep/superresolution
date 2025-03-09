@@ -1,5 +1,10 @@
 package io.homo.superresolution.common.platform;
 
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.SharedConstants;
+
+import java.nio.file.Path;
+
 public abstract class Platform {
     public static Platform currentPlatform = null;
     private static Boolean isInstallIris = null;
@@ -15,6 +20,10 @@ public abstract class Platform {
         return new OS();
     }
 
+    public abstract EnvType getEnv();
+
+    public abstract Path getGameFolder();
+
     public IrisPlatform iris() {
         return irisPlatform;
     }
@@ -23,7 +32,12 @@ public abstract class Platform {
 
     public boolean isInstallIris() {
         if (isInstallIris == null)
+
             isInstallIris = currentPlatform.isModLoaded("iris") || currentPlatform.isModLoaded("oculus");
         return isInstallIris;
+    }
+
+    public String getMinecraftVersion() {
+        return SharedConstants.VERSION_STRING;
     }
 }

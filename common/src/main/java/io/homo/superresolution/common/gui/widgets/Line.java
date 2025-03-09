@@ -1,8 +1,8 @@
 package io.homo.superresolution.common.gui.widgets;
 
+import io.homo.superresolution.common.utils.ColorUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
 import org.joml.Vector2f;
 
 public class Line {
@@ -22,7 +22,7 @@ public class Line {
     }
 
     public Line color(int r, int g, int b, int a) {
-        color = FastColor.ARGB32.color(a, r, g, b);
+        color = ColorUtil.color(a, r, g, b);
         return this;
     }
 

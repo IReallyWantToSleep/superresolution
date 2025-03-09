@@ -78,7 +78,7 @@ public class Sgsr extends AbstractAlgorithm {
     @Override
     public void resize(int width, int height) {
         safeVariantInstance((sgsrVariant -> sgsrVariant.resize(width, height)));
-        this.output.resize(width, height, Minecraft.ON_OSX);
+        this.output.resize(width, height);
     }
 
     private void safeVariantInstance(Consumer<AbstractSgsrVariant> callback) {

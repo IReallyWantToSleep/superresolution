@@ -22,7 +22,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
     private boolean listSmoothScroll = true;
     private boolean doesConfirmSave = true;
     private boolean transparentBackground = true;
-    #if MC_VER > MC_1_20_1
+    #if MC_VER > MC_1_20_4
     private ResourceLocation defaultBackground = ResourceLocation.withDefaultNamespace("textures/block/dirt.png");
     #else
     private ResourceLocation defaultBackground = Screen.BACKGROUND_LOCATION;
@@ -65,7 +65,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
     }
 
     public ConfigBuilder setFallbackCategory(ConfigCategory fallbackCategory) {
-        this.fallbackCategory = ((ConfigCategory) Objects.requireNonNull(fallbackCategory)).getCategoryKey().getString();
+        this.fallbackCategory = Objects.requireNonNull(fallbackCategory).getCategoryKey().getString();
         return this;
     }
 

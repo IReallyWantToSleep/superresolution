@@ -1,17 +1,17 @@
 package io.homo.superresolution.forge.mixin.compat.embeddium;
 
-import com.google.common.collect.Multimap;
-import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import org.embeddedt.embeddium.client.gui.options.OptionIdentifier;
-import org.embeddedt.embeddium.gui.EmbeddiumVideoOptionsScreen;
-import org.embeddedt.embeddium.gui.frame.tab.Tab;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.embeddedt.embeddium.client.gui.options.OptionIdentifier;
+import org.embeddedt.embeddium.gui.EmbeddiumVideoOptionsScreen;
+import org.embeddedt.embeddium.gui.frame.tab.Tab;
+import net.minecraft.network.chat.Component;
+import com.google.common.collect.Multimap;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 
 @Mixin(EmbeddiumVideoOptionsScreen.class)
 public class EmbeddiumOptionMixin {

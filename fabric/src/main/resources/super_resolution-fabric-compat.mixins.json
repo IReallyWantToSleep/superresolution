@@ -6,11 +6,10 @@
     "minVersion": "0.8",
     "client": [
         "reesessodiumoptions.TabFrameMixin",
-        "sodium.SodiumOptionsGUIMixin"
+        "sodium.SodiumOptionsGUIMixin",
+        "sodium.GraphicsAdapterProbeMixin"
     ],
     "mixins": [
-        "distanthorizons.MinecraftRenderWrapperMixin",
-        "sodium.GraphicsAdapterProbeMixin"
     ],
     "injectors": {
         "defaultRequire": 1

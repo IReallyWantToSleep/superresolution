@@ -4,8 +4,8 @@ import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
-import dev.architectury.platform.Platform;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.platform.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ public class RenderDoc {
         RenderdocLibrary.RenderdocApi apiInstance = null;
         if (OSType.isCurrentOS(OSType.WINDOWS)) {
             try {
-                String projectDir = Platform.getGameFolder().getParent().toAbsolutePath().toString();
+                String projectDir = Platform.currentPlatform.getGameFolder().getParent().toAbsolutePath().toString();
                 String libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
                 LOGGER.info("RenderDoc库路径 {}", libPath);
                 System.load(libPath);

@@ -21,7 +21,7 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
 
         Platform.currentPlatform = new ForgePlatform();
         Platform.currentPlatform.init();
-        if (dev.architectury.platform.Platform.isDevelopmentEnvironment()) RenderDoc.init();
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) RenderDoc.init();
 
     }
 

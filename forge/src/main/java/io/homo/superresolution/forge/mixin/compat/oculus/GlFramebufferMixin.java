@@ -1,18 +1,8 @@
 package io.homo.superresolution.forge.mixin.compat.oculus;
 
-import net.irisshaders.iris.gl.GlResource;
-import net.irisshaders.iris.gl.IrisRenderSystem;
-import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
-import net.irisshaders.iris.gl.texture.DepthBufferFormat;
-import net.irisshaders.iris.texture.TextureInfoCache;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static io.homo.superresolution.common.render.gl.GlConst.*;
 
 /**
  * 修复跟沉浸工程的兼容性问题？或者更多？
@@ -25,6 +15,19 @@ import static io.homo.superresolution.common.render.gl.GlConst.*;
  * iris甚至没有检测fbo状态（）
  * 修复方法：直接移除上次附加的深度纹理
  */
+#if MC_VER >= MC_1_20_1
+import net.irisshaders.iris.gl.GlResource;
+import net.irisshaders.iris.gl.IrisRenderSystem;
+import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
+import net.irisshaders.iris.gl.texture.DepthBufferFormat;
+import net.irisshaders.iris.texture.TextureInfoCache;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static io.homo.superresolution.common.render.gl.GlConst.*;
 @Mixin(value = GlFramebuffer.class, remap = false)
 public abstract class GlFramebufferMixin extends GlResource {
     @Unique
@@ -66,3 +69,9 @@ public abstract class GlFramebufferMixin extends GlResource {
         return DepthBufferFormat.fromGlEnumOrDefault(format).isCombinedStencil() ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT;
     }
 }
+
+#else
+@Mixin(Minecraft.class)
+public class GlFramebufferMixin {
+}
+#endif
