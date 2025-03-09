@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.gui.widgets;
 
-import io.homo.superresolution.common.gui.Rect;
+import io.homo.superresolution.common.gui.Rectangle;
 import net.minecraft.client.InputType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
@@ -8,7 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.Tooltip;
-#if MC_VER > MC_1_20_1
+#if MC_VER > MC_1_20_4
 import net.minecraft.client.gui.components.WidgetTooltipHolder;
 #endif
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -18,27 +18,26 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractWidget implements Renderable, GuiEventListener, NarratableEntry {
     protected final Font font;
-    #if MC_VER > MC_1_20_1
+    #if MC_VER > MC_1_20_4
     private final WidgetTooltipHolder tooltip = new WidgetTooltipHolder();
     #else
     private final WidgetTooltip tooltip = new WidgetTooltip(this);
     #endif
     protected boolean focused;
     protected boolean hovered;
-    protected Rect rect;
+    protected Rectangle rect;
 
     protected AbstractWidget() {
         this.font = Minecraft.getInstance().font;
     }
 
-    public void setRect(Rect rect) {
+    public void setRect(Rectangle rect) {
         this.rect = rect;
     }
 
@@ -47,7 +46,7 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
     }
 
     protected void playClickSound() {
-        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI((SoundEvent) SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
+        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
     }
 
     public NarratableEntry.@NotNull NarrationPriority narrationPriority() {
@@ -99,7 +98,7 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
     }
 
     protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        #if MC_VER > MC_1_20_1
+        #if MC_VER > MC_1_20_4
         this.tooltip.refreshTooltipForNextRenderPass(this.isHovered(), this.isFocused(), this.getRectangle());
         #else
         if ((hovered || focused) && this.tooltip.getTooltip() != null) {
@@ -112,7 +111,7 @@ public abstract class AbstractWidget implements Renderable, GuiEventListener, Na
     }
 
     public AbstractWidget setTooltip(Tooltip tooltip) {
-        #if MC_VER > MC_1_20_1
+        #if MC_VER > MC_1_20_4
         this.tooltip.set(tooltip);
         #else
         this.tooltip.setTooltip(tooltip);

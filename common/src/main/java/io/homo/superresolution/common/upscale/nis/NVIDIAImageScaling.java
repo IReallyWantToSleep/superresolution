@@ -3,6 +3,7 @@ package io.homo.superresolution.common.upscale.nis;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.interop.SharedTexture;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
@@ -37,7 +38,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     private SharedTexture inputSharedTexture;
     private SharedTexture outputSharedTexture;
     private NISConfig config;
-    private RenderTarget output;
+    private IFrameBuffer output;
 
     public static NVIDIAImageScaling create() {
         return new NVIDIAImageScaling();
@@ -94,12 +95,12 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         initShader();
         input = MinecraftRenderHandle.getRenderTarget();
         output = MinecraftRenderHandle.getOriginRenderTarget();
-        inputSharedTexture = new SharedTexture(input.width, input.height, SuperResolution.interopManager.vulkanApp.deviceManager);
+        inputSharedTexture = new SharedTexture(input.getWidth(), input.getHeight(), SuperResolution.interopManager.vulkanApp.deviceManager);
         inputSharedTexture
                 .setFormat(TextureFormat.RGBA8)
                 .setUsage(TextureUsage.storageImage)
                 .create();
-        outputSharedTexture = new SharedTexture(output.width, output.height, SuperResolution.interopManager.vulkanApp.deviceManager);
+        outputSharedTexture = new SharedTexture(output.getWidth(), output.getHeight(), SuperResolution.interopManager.vulkanApp.deviceManager);
         outputSharedTexture
                 .setFormat(TextureFormat.RGBA8)
                 .setUsage(TextureUsage.sampledImage)
@@ -107,9 +108,9 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     }
 
     private void copyTexture() {
-        glBindFramebuffer(GL_FRAMEBUFFER, input.frameBufferId);
+        glBindFramebuffer(GL_FRAMEBUFFER, input.getFrameBufferId());
         glBindTexture(GL_TEXTURE_2D, inputSharedTexture.glId);
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, input.width, input.height);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, input.getWidth(), input.getHeight());
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
@@ -186,8 +187,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             IntBuffer offset = stack.ints(0);
             vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, shader.pipelineLayout, 0, descriptorSetPtr, offset);
 
-            int gridX = (int) Math.ceil((double) output.width / 32);
-            int gridY = (int) Math.ceil((double) output.height / 24);
+            int gridX = (int) Math.ceil((double) output.getWidth() / 32);
+            int gridY = (int) Math.ceil((double) output.getHeight() / 24);
             vkCmdDispatch(cmdBuffer, gridX, gridY, 1);
 
             SuperResolution.interopManager.vulkanApp.endOneTimeSubmitCmd();
@@ -213,7 +214,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     public void resize(int width, int height) {
         inputSharedTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         outputSharedTexture.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
-        NVIDIAImageScalingConfig.NVScalerUpdateConfig(config, 0.2f, 0, 0, input.width, input.height, input.width, input.height, 0, 0, width, height, width, height, NISHDRMode.None);
+        NVIDIAImageScalingConfig.NVScalerUpdateConfig(config, 0.2f, 0, 0, input.getWidth(), input.getHeight(), input.getWidth(), input.getHeight(), 0, 0, width, height, width, height, NISHDRMode.None);
     }
 
     private void updateBuffer() {

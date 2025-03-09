@@ -14,7 +14,11 @@ public class MotionVectorsFrameBuffer extends GlFrameBuffer {
     }
 
     @Override
-    public void createBuffers(int width, int height, boolean clearError) {
+    #if MC_VER > MC_1_21_1
+    public void createBuffers(int width, int height)
+    #else
+    public void createBuffers(int width, int height, boolean clearError)
+    #endif {
         RenderSystem.assertOnRenderThreadOrInit();
         this.viewWidth = width;
         this.viewHeight = height;
@@ -30,7 +34,11 @@ public class MotionVectorsFrameBuffer extends GlFrameBuffer {
         glBindFramebuffer(GL_FRAMEBUFFER, this.frameBufferId);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.colorTextureId, 0);
         this.checkStatus();
+        #if MC_VER > MC_1_21_1
+        this.clear();
+        #else
         this.clear(clearError);
+        #endif
         this.unbindRead();
     }
 }

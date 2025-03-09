@@ -38,8 +38,8 @@ public enum OSType {
         return type == ANY || OSType.get() == type;
     }
 
-    public String getString(){
-        return switch (this){
+    public String getString() {
+        return switch (this) {
             case ANDROID -> "Android";
             case LINUX -> "Linux";
             case WINDOWS -> "Windows";

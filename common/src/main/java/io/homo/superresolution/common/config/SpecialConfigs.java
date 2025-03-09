@@ -1,8 +1,8 @@
 package io.homo.superresolution.common.config;
 
 import io.homo.superresolution.common.config.special.*;
+import io.homo.superresolution.common.impl.Pair;
 import io.homo.superresolution.common.upscale.AlgorithmType;
-import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.network.chat.Component;
 
 import java.util.HashMap;

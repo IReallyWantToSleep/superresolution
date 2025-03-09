@@ -1,26 +1,30 @@
 package io.homo.superresolution.common.render;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
 import net.minecraft.client.renderer.LevelRenderer;
 
 import java.util.function.Function;
 
 public enum RenderTargetType {
-    ENTITY(LevelRenderer::entityTarget),
-    TRANSLUCENT(LevelRenderer::getTranslucentTarget),
-    ITEM_ENTITY(LevelRenderer::getItemEntityTarget),
-    PARTICLES(LevelRenderer::getParticlesTarget),
-    WEATHER(LevelRenderer::getWeatherTarget),
-    CLOUDS(LevelRenderer::getCloudsTarget),
+    #if MC_VER > MC_1_21_1
+    ENTITY((levelRenderer -> new McRenderTargetWrapper(((LevelRendererAccessor) levelRenderer).getEntityRenderTarget()))),
+    #else
+    ENTITY((levelRenderer -> new McRenderTargetWrapper(levelRenderer.entityTarget()))),
+    #endif
+    TRANSLUCENT((levelRenderer -> new McRenderTargetWrapper(levelRenderer.getTranslucentTarget()))),
+    ITEM_ENTITY((levelRenderer -> new McRenderTargetWrapper(levelRenderer.getItemEntityTarget()))),
+    PARTICLES((levelRenderer -> new McRenderTargetWrapper(levelRenderer.getParticlesTarget()))),
+    WEATHER((levelRenderer -> new McRenderTargetWrapper(levelRenderer.getWeatherTarget()))),
+    CLOUDS((levelRenderer -> new McRenderTargetWrapper(levelRenderer.getCloudsTarget()))),
     HAND((levelRenderer) -> HandRenderTarget.getHandRenderTarget());
 
-    private final Function<LevelRenderer, RenderTarget> callback;
+    private final Function<LevelRenderer, McRenderTargetWrapper> callback;
 
-    RenderTargetType(Function<LevelRenderer, RenderTarget> callback) {
+    RenderTargetType(Function<LevelRenderer, McRenderTargetWrapper> callback) {
         this.callback = callback;
     }
 
-    public RenderTarget get(LevelRenderer levelRenderer) {
+    public McRenderTargetWrapper get(LevelRenderer levelRenderer) {
         return callback.apply(levelRenderer);
     }
 }

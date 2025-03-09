@@ -1,14 +1,12 @@
 package io.homo.superresolution.common.render;
 
 import io.homo.superresolution.common.impl.Destroyable;
-import io.homo.superresolution.common.render.gl.texture.NativeImageTexture;
 import io.homo.superresolution.common.render.vulkan.*;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
-import static io.homo.superresolution.common.render.gl.GlConst.GL_RGBA8;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRDedicatedAllocation.VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME;
@@ -60,7 +58,6 @@ public class GlVkInteropManager implements Destroyable {
         );
         s.setShaderBin(FileReadHelper.readSpvFile("/shader/nis_scaler_glsl.spv"));
         s.build();
-        NativeImageTexture testTex = new NativeImageTexture(278, 180, GL_RGBA8, FileReadHelper.readTexture("logo.png"));
         while (!glfwWindowShouldClose(window)) {
             vkDeviceWaitIdle(a.vulkanApp.deviceManager.device);
             glfwPollEvents();

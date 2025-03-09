@@ -1,67 +1,66 @@
 package io.homo.superresolution.common.render;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.CaptureMode;
-import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
+import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
-import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.gl.Gl;
 import io.homo.superresolution.common.render.gl.GlConst;
 import io.homo.superresolution.common.render.gl.GlState;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.framebuffer.StorageFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
-
+#if MC_VER < MC_1_21_4
+import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
+import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
+#endif
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class MinecraftRenderHandle {
-    private static final Map<RenderTargetType, RenderTarget> renderTargets = new HashMap<>();
+    private static final Map<RenderTargetType, IFrameBuffer> renderTargets = new HashMap<>();
     public static boolean isRenderingWorld = false;
     public static float frameTime;
     private static int frameCount = 0;
     private static Minecraft minecraft;
-    private static MainTarget originRenderTarget;
-    private static GlFrameBuffer renderTarget;
+    private static IFrameBuffer originRenderTarget;
+    private static IFrameBuffer renderTarget;
     private static PostChain entityEffect;
-    private static RenderTarget entityTarget;
-    private static float frameStartTime;
-    private static float frameEndTime;
+    private static IFrameBuffer entityTarget;
 
-    public static MainTarget getOriginRenderTarget() {
+    public static IFrameBuffer getOriginRenderTarget() {
         return originRenderTarget;
     }
 
-    public static GlFrameBuffer getRenderTarget() {
+    public static IFrameBuffer getRenderTarget() {
         return renderTarget;
     }
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
-        originRenderTarget = (MainTarget) minecraft.getMainRenderTarget();
-        renderTarget = new StorageFrameBuffer(true);
+        originRenderTarget = new McRenderTargetWrapper(minecraft.getMainRenderTarget());
+        renderTarget = new McRenderTargetWrapper(new StorageFrameBuffer(true));
         renderTarget.resize(
                 getRenderWidth(),
-                getRenderHeight(),
-                Minecraft.ON_OSX
+                getRenderHeight()
         );
     }
 
+    //bugjump在1.21.1后的版本重写了一堆代码，成功使发光效果不用我强行兼容力，感谢bugjump
     public static void updateEntityOutline() {
+        entityTarget = RenderTargetType.ENTITY.get(Minecraft.getInstance().levelRenderer);
+        #if MC_VER < MC_1_21_4
         entityEffect = ((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).getEntityEffect();
-        entityTarget = Minecraft.getInstance().levelRenderer.entityTarget();
         int renderWidth = getRenderWidth();
         int renderHeight = getRenderHeight();
         for (RenderTarget renderTarget : ((PostChainAccessor) entityEffect).getFullSizedTargets()) {
@@ -69,17 +68,20 @@ public class MinecraftRenderHandle {
                     renderTarget.height != renderHeight ||
                     ((PostChainAccessor) entityEffect).getScreenWidth() != renderWidth ||
                     ((PostChainAccessor) entityEffect).getScreenHeight() != renderHeight) {
+
                 entityEffect.resize(renderWidth, renderHeight);
+
                 break;
             }
         }
+        #endif
     }
 
     public static void updateRenderTarget() {
         renderTargets.clear();
         for (RenderTargetType renderTargetType : RenderTargetType.values()) {
-            RenderTarget renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
-            if (renderTarget != null) {
+            McRenderTargetWrapper renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
+            if (renderTarget.asMcRenderTarget() != null) {
                 renderTargets.put(
                         renderTargetType,
                         renderTarget
@@ -88,16 +90,16 @@ public class MinecraftRenderHandle {
         }
     }
 
-    public static RenderTarget getRenderTarget(RenderTargetType type) {
+    public static IFrameBuffer getRenderTarget(RenderTargetType type) {
         return renderTargets.get(type);
     }
 
     public static void onInitEntityEffectBegin() {
-        setClientRenderTarget(getRenderTarget());
+        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
     }
 
     public static void onInitEntityEffectEnd() {
-        setClientRenderTarget(getOriginRenderTarget());
+        setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
     }
 
     public static void resize() {
@@ -108,12 +110,8 @@ public class MinecraftRenderHandle {
         callOnRenderTargets((renderTarget) -> resizeRenderTarget(renderTarget, renderWidth, renderHeight), false);
     }
 
-    private static void resizeRenderTarget(RenderTarget renderTarget, int width, int height) {
-        renderTarget.resize(width, height, Minecraft.ON_OSX);
-    }
-
-    public static PostChain getEntityEffect() {
-        return ((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).getEntityEffect();
+    private static void resizeRenderTarget(IFrameBuffer renderTarget, int width, int height) {
+        renderTarget.resize(width, height);
     }
 
     private static boolean checkRenderWorldCallPos(CallType type) {
@@ -133,31 +131,33 @@ public class MinecraftRenderHandle {
     public static void onRenderWorldBegin(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = true;
-        frameStartTime = (float) (Util.getNanos() / 1000000);
+        PerformanceInfo.begin("world");
         updateEntityOutline();
         updateRenderTarget();
         updateRenderTargetSize();
-        setClientRenderTarget(getRenderTarget());
+        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
-        getRenderTarget().bindWrite(true);
+        getRenderTarget().bind(RenderTargetBindPoint.WRITE);
     }
 
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
         frameCount++;
-        setClientRenderTarget(getOriginRenderTarget());
-        getOriginRenderTarget().bindWrite(true);
+        setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
+        getOriginRenderTarget().bind(RenderTargetBindPoint.WRITE);
+        PerformanceInfo.begin("upscale");
         AlgorithmManager.update();
         SuperResolution.getCurrentAlgorithm().dispatch(AlgorithmManager.getDispatchResource());
         SuperResolution.getCurrentAlgorithm().blitToScreen(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
+        PerformanceInfo.end("upscale");
         if (Config.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
             blitHandRenderTarget();
-        frameEndTime = (float) (Util.getNanos() / 1000000);
-        frameTime = frameEndTime - frameStartTime;
+        PerformanceInfo.end("world");
+        frameTime = PerformanceInfo.getAsMillis("world");
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {
@@ -190,35 +190,35 @@ public class MinecraftRenderHandle {
         return Math.max(SuperResolution.getMinecraftWidth(), 1);
     }
 
-    public static void callOnRenderTargets(Consumer<RenderTarget> callback) {
+    public static void callOnRenderTargets(Consumer<IFrameBuffer> callback) {
         renderTargets.forEach(((renderTargetType, renderTarget) -> {
-            if (renderTarget != null && renderTargetType != RenderTargetType.HAND) {
+            if (renderTarget.asMcRenderTarget() != null && renderTargetType != RenderTargetType.HAND) {
                 callback.accept(renderTarget);
             }
         }));
     }
 
-    public static void callOnRenderTargets(BiConsumer<RenderTarget, RenderTargetType> callback) {
+    public static void callOnRenderTargets(BiConsumer<IFrameBuffer, RenderTargetType> callback) {
         renderTargets.forEach(((renderTargetType, renderTarget) -> {
-            if (renderTarget != null) {
+            if (renderTarget.asMcRenderTarget() != null) {
                 callback.accept(renderTarget, renderTargetType);
             }
         }));
     }
 
-    public static void callOnRenderTarget(RenderTargetType type, Consumer<RenderTarget> callback) {
-        if (getRenderTarget(type) != null) {
+    public static void callOnRenderTarget(RenderTargetType type, Consumer<IFrameBuffer> callback) {
+        if (getRenderTarget(type).asMcRenderTarget() != null) {
             callback.accept(getRenderTarget(type));
         }
     }
 
-    public static void callOnRenderTargets(Consumer<RenderTarget> callback, boolean includeMainRenderTarget) {
+    public static void callOnRenderTargets(Consumer<IFrameBuffer> callback, boolean includeMainRenderTarget) {
         callOnRenderTargets(callback);
         if (includeMainRenderTarget) callback.accept(getRenderTarget());
     }
 
     public static void onBlitEntityEffect() {
-        if (getRenderTarget(RenderTargetType.ENTITY) == null) return;
+        if (getRenderTarget(RenderTargetType.ENTITY).asMcRenderTarget() == null) return;
         GlTexture.blitToScreen(
                 getRenderWidth(),
                 getRenderHeight(),
@@ -235,21 +235,19 @@ public class MinecraftRenderHandle {
         int screenHeight = getScreenHeight();
         callOnRenderTargets(
                 (renderTarget) -> {
-                    if (renderTarget.width != renderWidth || renderTarget.height != renderHeight) {
+                    if (renderTarget.getWidth() != renderWidth || renderTarget.getHeight() != renderHeight) {
                         renderTarget.resize(
                                 renderWidth,
-                                renderHeight,
-                                Minecraft.ON_OSX
+                                renderHeight
                         );
                     }
                 }, true
         );
-        RenderTarget handRenderTarget = getRenderTarget(RenderTargetType.HAND);
-        if (handRenderTarget.width != screenWidth || handRenderTarget.height != screenHeight) {
+        IFrameBuffer handRenderTarget = getRenderTarget(RenderTargetType.HAND);
+        if (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight) {
             handRenderTarget.resize(
                     screenWidth,
-                    screenHeight,
-                    Minecraft.ON_OSX
+                    screenHeight
             );
         }
     }
@@ -257,15 +255,15 @@ public class MinecraftRenderHandle {
     public static void onRenderHandBegin() {
         if (!checkRenderHandCallPos()) return;
         GlState.save("hand");
-        setClientRenderTarget(getRenderTarget(RenderTargetType.HAND));
+        setClientRenderTarget(getRenderTarget(RenderTargetType.HAND).asMcRenderTarget());
 
         callOnRenderTarget(
                 RenderTargetType.HAND,
                 (renderTarget -> {
-                    renderTarget.clear(Minecraft.ON_OSX);
+                    renderTarget.clear();
                     Gl.glBindFramebuffer(
                             GlConst.GL_DRAW_FRAMEBUFFER,
-                            renderTarget.frameBufferId
+                            renderTarget.getFrameBufferId()
                     );
                     Gl.glViewport(
                             0, 0,
@@ -290,10 +288,9 @@ public class MinecraftRenderHandle {
 
     public static void onRenderHandEnd() {
         if (!checkRenderHandCallPos()) return;
-        setClientRenderTarget(getRenderTarget(RenderTargetType.HAND));
+        setClientRenderTarget(getRenderTarget(RenderTargetType.HAND).asMcRenderTarget());
         Gl.glBindFramebuffer(GlConst.GL_DRAW_FRAMEBUFFER, GlState.get("hand").writeFBO());
         Gl.glBindFramebuffer(GlConst.GL_READ_FRAMEBUFFER, GlState.get("hand").readFBO());
-        //if (Config.getCaptureMode() == CaptureMode.C) blitHandRenderTarget();
         Gl.glViewport(
                 0, 0,
                 getRenderWidth(),

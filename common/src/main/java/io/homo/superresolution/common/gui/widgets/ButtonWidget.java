@@ -1,14 +1,14 @@
 package io.homo.superresolution.common.gui.widgets;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.gui.Rect;
+import io.homo.superresolution.common.gui.Rectangle;
+import io.homo.superresolution.common.utils.ColorUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
 
 public class ButtonWidget extends AbstractWidget implements Renderable {
-    private final Rect rect;
+    private final Rectangle rect;
     private boolean enabled = true;
     private boolean visible = true;
     private ButtonStyle style = ButtonStyle.defaults();
@@ -16,7 +16,7 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
     private String label = "";
 
     public ButtonWidget(int x, int y, int width, int height) {
-        this.rect = new Rect(x, y, width, height);
+        this.rect = new Rectangle(x, y, width, height);
     }
 
     public String getLabel() {
@@ -33,7 +33,7 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
         return this;
     }
 
-    public Rect getRect() {
+    public Rectangle getRect() {
         return rect;
     }
 
@@ -59,7 +59,7 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
                     this.rect.getLimitY() - 1,
                     this.rect.getLimitX(),
                     this.rect.getLimitY(),
-                    FastColor.ARGB32.color(255, 148, 228, 211)
+                    ColorUtil.color(255, 148, 228, 211)
             );
             this.drawString(
                     graphics,
@@ -78,13 +78,9 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
             if (button == 0 && this.rect.in(mouseX, mouseY)) {
                 this.click();
                 this.playClickSound();
-                return true;
-            } else {
-                return false;
             }
-        } else {
-            return false;
         }
+        return true;
     }
 
     public ButtonWidget setEnabled(boolean enabled) {
@@ -113,6 +109,10 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
         return this;
     }
 
+    public boolean isMouseOver(double x, double y) {
+        return this.rect.in(x, y);
+    }
+
     public static class ButtonStyle {
         public int bgHovered;
         public int bgDefault;
@@ -125,12 +125,13 @@ public class ButtonWidget extends AbstractWidget implements Renderable {
 
         public static ButtonStyle defaults() {
             ButtonStyle style = new ButtonStyle();
-            style.bgHovered = FastColor.ARGB32.color(120, 0, 0, 0);
-            style.bgDefault = FastColor.ARGB32.color(60, 0, 0, 0);
-            style.bgDisabled = FastColor.ARGB32.color(40, 0, 0, 0);
-            style.textDefault = FastColor.ARGB32.color(255, 255, 255, 255);
-            style.textDisabled = FastColor.ARGB32.color(100, 255, 255, 255);
+            style.bgHovered = ColorUtil.color(120, 0, 0, 0);
+            style.bgDefault = ColorUtil.color(60, 0, 0, 0);
+            style.bgDisabled = ColorUtil.color(40, 0, 0, 0);
+            style.textDefault = ColorUtil.color(255, 255, 255, 255);
+            style.textDisabled = ColorUtil.color(100, 255, 255, 255);
             return style;
         }
     }
+
 }

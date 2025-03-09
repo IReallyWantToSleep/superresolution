@@ -17,14 +17,14 @@ import java.util.Optional;
 @Mixin(value = TabFrame.class, remap = false)
 public class TabFrameMixin {
     @Inject(method = "setTab", at = @At(value = "HEAD"), cancellable = true)
-    #if MC_VER > MC_1_20_1
+    #if MC_VER > MC_1_20_4
     private void onSetTab(Optional<Tab<?>> tab, CallbackInfo ci)
     #else
     private void onSetTab(Tab<?> tab, CallbackInfo ci)
     #endif {
         if (
                 tab
-                        #if MC_VER > MC_1_20_1
+                        #if MC_VER > MC_1_20_4
                         .orElseThrow()
                         #endif
                         .getTitle()

@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.gui.widgets;
 
-import io.homo.superresolution.common.gui.Rect;
+import io.homo.superresolution.common.gui.Rectangle;
 import io.homo.superresolution.common.impl.Vec2;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 public class TextWidget extends AbstractWidget {
     public final ArrayList<Line> lines = new ArrayList<>();
-    public Rect rect;
+    public Rectangle rect;
     public Vec2 border = new Vec2(0, 0);
     public double offsetX = 0.0;
     public double offsetY = 0.0;
@@ -18,12 +18,12 @@ public class TextWidget extends AbstractWidget {
     public int maxHeight = 0;
 
     public TextWidget(int x, int y, int width, int height, ArrayList<Line> lines) {
-        this.rect = new Rect(x, y, width, height);
+        this.rect = new Rectangle(x, y, width, height);
         this.lines.addAll(lines);
     }
 
     public TextWidget(int x, int y, int width, int height) {
-        this.rect = new Rect(x, y, width, height);
+        this.rect = new Rectangle(x, y, width, height);
     }
 
     private void recalculateDimensions() {

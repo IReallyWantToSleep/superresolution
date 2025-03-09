@@ -3,6 +3,7 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
 import net.minecraft.client.Minecraft;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
@@ -14,12 +15,12 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
      * 输入帧缓冲区
      */
-    protected GlFrameBuffer input;
+    protected IFrameBuffer input;
 
     /**
      * 输出帧缓冲区
      */
-    protected GlFrameBuffer output;
+    protected IFrameBuffer output;
 
     /**
      * 创建一个算法实例
@@ -76,8 +77,8 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      */
     @Override
     public void resize(int width, int height) {
-        this.input.resize(width, height, Minecraft.ON_OSX);
-        this.output.resize(width, height, Minecraft.ON_OSX);
+        this.input.resize(width, height);
+        this.output.resize(width, height);
     }
 
     /**
@@ -85,7 +86,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @return 输入帧缓冲区。
      */
-    public GlFrameBuffer getInputFrameBuffer() {
+    public IFrameBuffer getInputFrameBuffer() {
         return input;
     }
 
@@ -94,7 +95,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @param input 输入帧缓冲区。
      */
-    public void setInputFrameBuffer(GlFrameBuffer input) {
+    public void setInputFrameBuffer(IFrameBuffer input) {
         this.input = input;
     }
 
@@ -103,7 +104,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @return 输出帧缓冲区。
      */
-    public GlFrameBuffer getOutputFrameBuffer() {
+    public IFrameBuffer getOutputFrameBuffer() {
         return output;
     }
 
@@ -112,7 +113,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      *
      * @param output 输出帧缓冲区。
      */
-    public void setOutputFrameBuffer(GlFrameBuffer output) {
+    public void setOutputFrameBuffer(IFrameBuffer output) {
         this.output = output;
     }
 

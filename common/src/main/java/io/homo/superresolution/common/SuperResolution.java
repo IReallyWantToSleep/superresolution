@@ -1,17 +1,18 @@
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.pipeline.MainTarget;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import dev.architectury.platform.Platform;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
+import io.homo.superresolution.common.platform.EnvType;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.GlVkInteropManager;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.Gl;
-import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
@@ -19,7 +20,6 @@ import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.utils.NativeLibManager;
 import io.homo.superresolution.common.upscale.utils.Requirement;
 import io.homo.superresolution.common.utils.MessageBox;
-import net.fabricmc.api.EnvType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static boolean isPreInit;
     public static boolean gameIsLoad = false;
     public static float frameTimeDelta = 16.6f;
-    public static MainTarget mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
+    public static RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
     public static AlgorithmType algorithmType;
     public static GlVkInteropManager interopManager;
     private static SuperResolution instance;
@@ -48,7 +48,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void preInit() {
-        if (Platform.getEnv() == EnvType.SERVER) throw new RuntimeException("SuperResolution不支持安装在服务器上！");
+        if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
+            throw new RuntimeException("SuperResolution不支持安装在服务器上！");
         ConfigFile.read();
         if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
             NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
@@ -138,8 +139,8 @@ public final class SuperResolution implements Resizable, Destroyable {
             return;
         RenderSystem.assertOnRenderThread();
         instance = this;
-        if (Platform.isDevelopmentEnvironment()) new ImguiMain();
-        mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) new ImguiMain();
+        mainTarget = Minecraft.getInstance().getMainRenderTarget();
         isInit = true;
         this.resize(SuperResolution.getMinecraftWidth(), SuperResolution.getMinecraftHeight());
     }

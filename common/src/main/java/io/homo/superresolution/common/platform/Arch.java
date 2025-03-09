@@ -30,8 +30,8 @@ public enum Arch {
         return arch == ANY || Arch.get() == arch;
     }
 
-    public String getString(){
-        return switch (this){
+    public String getString() {
+        return switch (this) {
             case AARCH64 -> "aarch64";
             case ARM32 -> "arm32";
             case X86_64 -> "x64";

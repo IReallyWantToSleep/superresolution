@@ -1,6 +1,5 @@
 package io.homo.superresolution.forge.mixin.core;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.forge.SuperResolutionForge;
 import net.minecraft.client.Minecraft;
@@ -15,12 +14,7 @@ public class MinecraftMixin {
     private void onInitDone(CallbackInfo ci) {
         if (!SuperResolution.isPreInit) return;
         SuperResolution.initRendering();
-        SuperResolution.mainTarget = (MainTarget) Minecraft.getInstance().getMainRenderTarget();
-    }
-
-    @Inject(at = @At(value = "TAIL"), method = "onGameLoadFinished")
-    private void onLoadFinished(CallbackInfo ci) {
-        if (!SuperResolution.isPreInit) return;
+        SuperResolution.mainTarget = Minecraft.getInstance().getMainRenderTarget();
         SuperResolution.createAlgo();
         SuperResolutionForge.mod.init();
     }

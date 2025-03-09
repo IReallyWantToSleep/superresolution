@@ -2,8 +2,7 @@ package io.homo.superresolution.fabric.mixin.compat.sodium;
 
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-
-#if MC_VER > MC_1_20_1
+#if MC_VER > MC_1_20_4
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
@@ -18,7 +17,6 @@ import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
 import me.jellysquid.mods.sodium.client.gui.options.control.SliderControl;
 import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 #endif
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.screens.Screen;
@@ -50,13 +48,16 @@ public class SodiumOptionsGUIMixin extends Screen {
             at = {@At("RETURN")}
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
-        Component shaderPacksTranslated = Component.translatable("superresolution.screen.config.name");
-        this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of(
+
+        this.page = new OptionPage(
+                Component.translatable("superresolution.screen.config.name"), ImmutableList.of(
                 OptionGroup.createBuilder()
                         .add(OptionImpl.createBuilder(Integer.class, new MinecraftOptionsStorage())
                                 .setBinding((Options o, Integer b) -> {
                                 }, (Options o) -> 1)
-                                .setControl((option) -> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1, (a) -> Component.literal("")))
+                                .setControl((option) -> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1,
+                                        (a) -> Component.literal("")
+                                ))
                                 .setName(Component.literal(""))
                                 .setTooltip(Component.literal(""))
                                 .build()

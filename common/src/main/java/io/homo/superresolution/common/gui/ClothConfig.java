@@ -5,25 +5,24 @@ import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
-import io.homo.superresolution.common.gui.impl.ClothConfigBuilder;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.gui.screens.ConfigScreen;
+import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.gui.screens.InfoScreen;
 import io.homo.superresolution.common.gui.widgets.ClothButtonEntry;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.gui.widgets.ClothTextListEntry;
+import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmType;
-import it.unimi.dsi.fastutil.Pair;
-import me.shedaniel.clothconfig2.api.ConfigBuilder;
-import me.shedaniel.clothconfig2.api.ConfigCategory;
-import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.api.Requirement;
+import io.homo.superresolution.common.utils.ColorUtil;
+import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.ConfigEntryBuilderImpl;
 import me.shedaniel.clothconfig2.impl.builders.AbstractFieldBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -92,6 +91,27 @@ public class ClothConfig {
                 .setDefaultValue(false)
                 .setSaveConsumer(Config.getInstance()::setDebugDumpShader)
                 .build());
+        ClothTextListEntry debugInfo =
+                new ClothTextListEntry(
+                        Component.literal("debugInfo"),
+                        () -> Component.literal(
+                                """
+                                        世界渲染用时 %sms
+                                        升采样算法用时 %sms"""
+                                        .formatted(
+                                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
+                                                        .setScale(3, RoundingMode.HALF_UP)
+                                                        .toString(),
+                                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                                        .setScale(3, RoundingMode.HALF_UP)
+                                                        .toString()
+                                        )
+                        ),
+                        ColorUtil.color(255, 255, 255, 255),
+                        null
+                );
+        debugInfo.setDisplayRequirement(Requirement.isTrue(() -> Minecraft.getInstance().level != null));
+        debugCategory.addEntry(debugInfo);
     }
 
     public static void add(ConfigBuilder builder) {
@@ -155,14 +175,14 @@ public class ClothConfig {
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
                                 Component.literal("警告：当前所选算法不稳定")
-                        ).setColor(FastColor.ARGB32.color(255, 255, 128, 0))
+                        ).setColor(ColorUtil.color(255, 255, 128, 0))
                         .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR))
                         .build()
         );
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
                                 Component.literal("警告：当前所选算法未完成，无法正常使用")
-                        ).setColor(FastColor.ARGB32.color(255, 255, 0, 0))
+                        ).setColor(ColorUtil.color(255, 255, 0, 0))
                         .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR))
                         .build()
         );
@@ -172,17 +192,19 @@ public class ClothConfig {
                         Config.getCaptureMode()
                 )
                 .setDefaultValue(CaptureMode.A)
+                .setErrorSupplier((captureMode -> {
+                    if (Platform.currentPlatform.getMinecraftVersion().equals("1.21.4") && captureMode == CaptureMode.B) {
+                        return Optional.of(Component.literal("当前的捕获方式在 %s 无法使用".formatted(Platform.currentPlatform.getMinecraftVersion())));
+                    } else {
+                        return Optional.empty();
+                    }
+                }))
                 .setTooltipSupplier((captureMode) -> Optional.of(new Component[]{captureMode.get()}))
                 .setSaveConsumer(Config::setCaptureMode).build();
         commonCategory.addEntry(captureModeEnumSelector);
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
                 (button) -> Minecraft.getInstance().setScreen(new InfoScreen(Minecraft.getInstance().screen, false)),
-                true
-        ));
-        commonCategory.addEntry(new ClothButtonEntry(
-                Component.literal("打开老版配置屏幕"),
-                (button) -> Minecraft.getInstance().setScreen(new ConfigScreen(builder.getParentScreen())),
                 true
         ));
         for (String key : Config.getInstance().getSpecial().description.keySet()) {

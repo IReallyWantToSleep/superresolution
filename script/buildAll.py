@@ -129,7 +129,6 @@ def call_gradle_task_with_log(log:str,task:str,arg:str):
     print(log+'...')
     if (not call_gradle_task(task,arg)):
         print(log+"失败")
-        exit(1)
 def should_copy(name:str):
     if name.endswith("dev-shadow.jar"):
         return False

@@ -63,11 +63,11 @@ public class KeyboardHandlerMixin {
 
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Screenshot;grab(Ljava/io/File;Lcom/mojang/blaze3d/pipeline/RenderTarget;Ljava/util/function/Consumer;)V"), method = "keyPress")
     private void debugScreenshot(CallbackInfo ci) {
-        Screenshot.grab(Minecraft.getInstance().gameDirectory, "world.png", MinecraftRenderHandle.getRenderTarget(), (a) -> {
+        Screenshot.grab(Minecraft.getInstance().gameDirectory, "world.png", MinecraftRenderHandle.getRenderTarget().asMcRenderTarget(), (a) -> {
         });
-        MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget, (a) -> {
+        MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget.asMcRenderTarget(), (a) -> {
         })));
-        Screenshot.grab(Minecraft.getInstance().gameDirectory, "hand.png", MinecraftRenderHandle.getRenderTarget(RenderTargetType.HAND), (a) -> {
+        Screenshot.grab(Minecraft.getInstance().gameDirectory, "hand.png", MinecraftRenderHandle.getRenderTarget(RenderTargetType.HAND).asMcRenderTarget(), (a) -> {
         });
 
 

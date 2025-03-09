@@ -2,13 +2,16 @@ package io.homo.superresolution.common.gui.screens;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.gui.Rectangle;
+import io.homo.superresolution.common.gui.ScissorsHandler;
 import io.homo.superresolution.common.gui.widgets.ClothListWidget;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.ClothConfigScreen;
 import me.shedaniel.clothconfig2.gui.entries.EmptyEntry;
 import me.shedaniel.clothconfig2.gui.widget.SearchFieldEntry;
-import me.shedaniel.math.Rectangle;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ComponentPath;
@@ -31,9 +34,10 @@ import java.util.function.Supplier;
 
 public class ClothStyleConfigScreen extends AbstractConfigScreen {
     private final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
-    public ClothConfigScreen.ListWidget<AbstractConfigEntry<AbstractConfigEntry<?>>> listWidget;
+    public ClothListWidget listWidget;
     private AbstractWidget cancelButton, exitButton, saveButton;
     private SearchFieldEntry searchFieldEntry;
+    private double lastScroll = -1145.1145;
 
     @SuppressWarnings("all")
     public ClothStyleConfigScreen(Screen parent, Component title, Map<String, ConfigCategory> categoryMap, ResourceLocation backgroundLocation) {
@@ -80,7 +84,12 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 isEdited() ? Component.translatable("text.cloth-config.cancel_discard") : Component.translatable("gui.cancel"),
                 widget -> quit()
         ).bounds(0, height - 26, buttonWidths, 20).build());
-        addRenderableWidget(exitButton = new Button(0, height - 26, buttonWidths, 20, Component.empty(), button -> saveAll(true), Supplier::get) {
+        addRenderableWidget(exitButton = new Button(
+                0, height - 26, buttonWidths, 20,
+                Component.empty(),
+                button -> saveAll(true),
+                Supplier::get
+        ) {
             @Override
             public void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float delta) {
                 boolean hasErrors = false;
@@ -98,10 +107,32 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 super.renderWidget(graphics, mouseX, mouseY, delta);
             }
         });
-        addRenderableWidget(saveButton = new Button(0, height - 26, buttonWidths, 20, Component.translatable("superresolution.screen.button.label.apply"), button -> saveAll(false), Supplier::get) {
+        addRenderableWidget(saveButton = new Button(
+                0, height - 26, buttonWidths, 20,
+                Component.translatable("superresolution.screen.button.label.apply"),
+                button -> {
+                    saveAll(false);
+                    double scroll = listWidget.getScroll();
+                    Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().build(parent));
+                    if (Minecraft.getInstance().screen instanceof ClothStyleConfigScreen) {
+                        ((ClothStyleConfigScreen) Minecraft.getInstance().screen).lastScroll = scroll;
+                    }
+                }, Supplier::get
+        ) {
             @Override
             public void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-                active = isEdited();
+                boolean hasErrors = false;
+                label:
+                for (List<AbstractConfigEntry<?>> entries : categorizedEntries.values()) {
+                    for (AbstractConfigEntry<?> entry : entries) {
+                        if (entry.getConfigError().isPresent()) {
+                            hasErrors = true;
+                            break label;
+                        }
+                    }
+                }
+                active = isEdited() && !hasErrors;
+                setMessage(hasErrors ? Component.translatable("text.cloth-config.error_cannot_save") : Component.translatable("superresolution.screen.button.label.apply"));
                 super.renderWidget(graphics, mouseX, mouseY, delta);
             }
         });
@@ -115,15 +146,19 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        #if MC_VER > MC_1_20_1
+        if (lastScroll != -1145.1145) {
+            listWidget.scrollTo(lastScroll, false);
+            lastScroll = -1145.1145;
+        }
+        #if MC_VER > MC_1_20_4
         super.render(graphics, mouseX, mouseY, delta);
         #endif
         listWidget.width = width;
         listWidget.render(graphics, mouseX, mouseY, delta);
-        ScissorsHandler.INSTANCE.scissor(new Rectangle(listWidget.left, listWidget.top, listWidget.width, listWidget.bottom - listWidget.top));
+        ScissorsHandler.scissor(new Rectangle(listWidget.left, listWidget.top, listWidget.width, listWidget.bottom - listWidget.top));
         for (AbstractConfigEntry<?> child : listWidget.children())
             child.lateRender(graphics, mouseX, mouseY, delta);
-        ScissorsHandler.INSTANCE.removeLastScissor();
+        ScissorsHandler.removeLastScissor();
         graphics.drawString(font, title.getVisualOrderText(), (int) ((width) / 2f - font.width(title) / 2f), 12, -1);
         saveButton.setX((width / 2) - (saveButton.getWidth() / 2));
         cancelButton.setX(saveButton.getX() - 3 - saveButton.getWidth());
@@ -133,23 +168,24 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
         #endif
     }
 
-    #if MC_VER > MC_1_20_1
     @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics, int i, int j, float partialTick) {
+    #if MC_VER > MC_1_20_1
+    public void renderBackground(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick)
+    #else
+    public void renderBackground(@NotNull GuiGraphics guiGraphics)
+    #endif {
+        #if MC_VER > MC_1_20_4
         if (this.minecraft != null && this.minecraft.level == null) {
             this.renderPanorama(guiGraphics, partialTick);
-            this.renderBlurredBackground(partialTick);
+            #if MC_VER > MC_1_20_4
+            super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
+            #else
+            super.renderBackground(guiGraphics);
+            #endif
             this.renderMenuBackground(guiGraphics);
         }
+        #endif
     }
-    #else
-    @Override
-    public void renderBackground(@NotNull GuiGraphics guiGraphics) {
-        if (this.minecraft != null && this.minecraft.level == null) {
-            this.renderDirtBackground(guiGraphics);
-        }
-    }
-    #endif
 
 
     private static class CategoryTextEntry extends AbstractConfigListEntry<Object> {

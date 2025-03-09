@@ -3,17 +3,12 @@ package io.homo.superresolution.common.render.gl.texture;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-#if MC_VER > MC_1_20_1
 import io.homo.superresolution.common.render.gl.buffer.VertexBuffer;
 import io.homo.superresolution.common.render.gl.shader.BlitShader;
 import io.homo.superresolution.common.render.gl.vertex.VertexArray;
-#endif
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
-import org.joml.Matrix4f;
+
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
@@ -38,48 +33,33 @@ public class GlTexture implements Destroyable, Resizable {
         GlStateManager._disableDepthTest();
         GlStateManager._depthMask(false);
         GlStateManager._viewport(0, 0, viewWidth, viewHeight);
-        Minecraft minecraft = Minecraft.getInstance();
-        ShaderInstance shaderInstance = minecraft.gameRenderer.blitShader;
-        shaderInstance.setSampler("DiffuseSampler", id);
-        Matrix4f matrix4f = (new Matrix4f()).setOrtho(0.0F, (float) srcWidth, (float) srcHeight, 0.0F, 1000.0F, 3000.0F);
-        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
-        if (shaderInstance.MODEL_VIEW_MATRIX != null) {
-            shaderInstance.MODEL_VIEW_MATRIX.set((new Matrix4f()).translation(0.0F, 0.0F, -2000.0F));
-        }
-
-        if (shaderInstance.PROJECTION_MATRIX != null) {
-            shaderInstance.PROJECTION_MATRIX.set(matrix4f);
-        }
-        shaderInstance.apply();
-        #if MC_VER > MC_1_20_1
+        BlitShader blitShader = BlitShader.getShader();
+        blitShader.use();
+        blitShader.bindTexture(id);
         try (VertexArray vao = new VertexArray();
              VertexBuffer vbo = new VertexBuffer()) {
+            // 修正顶点数据结构，包含位置(x,y)和纹理坐标(s,t)
             float[] vertices = {
-                    0, 0, 0,
-                    1, 0, 0,
-                    1, 1, 0,
-                    0, 1, 0,
+                    -1f, -1f, 0f, 0f,
+
+                    1f, -1f, 1f, 0f,
+
+                    1f, 1f, 1f, 1f,
+
+                    -1f, 1f, 0f, 1f
             };
             vao.bind();
             vbo.bind(GL_ARRAY_BUFFER);
             vbo.uploadData(vertices, GL_STATIC_DRAW);
+            // 设置顶点属性指针，每个顶点4个浮点数
+            int stride = 4 * Float.BYTES;
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 2, GL_FLOAT, false, 3 * Float.BYTES, 0);
+            glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0); // 位置属性
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 2, GL_FLOAT, false, 3 * Float.BYTES, 2 * Float.BYTES);
+            glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES); // 纹理坐标属性
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
-        #else
-        Tesselator tesselator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder = tesselator.getBuilder();
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bufferBuilder.vertex(0.0, srcHeight, 0.0).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(srcWidth, srcHeight, 0.0).uv(1, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(srcWidth, 0.0, 0.0).uv(1, 1).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(0.0, 0.0, 0.0).uv(0.0F, 1).color(255, 255, 255, 255).endVertex();
-        BufferUploader.draw(bufferBuilder.end());
-        #endif
-        shaderInstance.clear();
+        blitShader.clear();
         GlStateManager._depthMask(true);
         GlStateManager._colorMask(true, true, true, true);
     }

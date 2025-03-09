@@ -1,9 +1,12 @@
 package io.homo.superresolution.forge.platform;
 
+import io.homo.superresolution.common.platform.EnvType;
 import io.homo.superresolution.common.platform.Platform;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
+
+import java.nio.file.Path;
 
 public class ForgePlatform extends Platform {
     @Override
@@ -25,5 +28,15 @@ public class ForgePlatform extends Platform {
     public String getModVersionString(String modId) {
         if (isModLoaded(modId)) return ModList.get().getModFileById(modId).versionString();
         return null;
+    }
+
+    @Override
+    public EnvType getEnv() {
+        return FMLLoader.getDist().isClient() ? EnvType.CLIENT : EnvType.SERVER;
+    }
+
+    @Override
+    public Path getGameFolder() {
+        return FMLLoader.getGamePath();
     }
 }

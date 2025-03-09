@@ -2,16 +2,13 @@
     "required": true,
     "package": "io.homo.superresolution.forge.mixin.compat",
     "plugin": "io.homo.superresolution.forge.mixin.compat.CompatMixinPlugin",
-    "compatibilityLevel": "JAVA_17",
+    "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
         "embeddium.EmbeddiumOptionMixin",
-        "tacz.RenderHelperMixin"
+        "oculus.GlFramebufferMixin"
     ],
     "mixins": [
-        "oculus.GlFramebufferMixin",
-        "oculus.HandRendererMixin",
-        "oculus.IrisRenderingPipelineMixin"
     ],
     "injectors": {
         "defaultRequire": 1

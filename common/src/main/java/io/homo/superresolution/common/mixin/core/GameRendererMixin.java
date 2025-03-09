@@ -9,9 +9,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-#if MC_VER > MC_1_20_1
-import net.minecraft.client.DeltaTracker;
-#endif
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,8 +18,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
     @Shadow
+    #if MC_VER < MC_1_21_4
     protected abstract double getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
+    #else
+    protected abstract float getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
 
+    #endif
     @Inject(method = "resize", at = @At(value = "HEAD"))
     private void onResize(int i, int j, CallbackInfo ci) {
         if (SuperResolution.isInit && SuperResolution.gameIsLoad) {
@@ -58,9 +59,19 @@ public abstract class GameRendererMixin {
         }
     }
 
+
+    #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getFov(Lnet/minecraft/client/Camera;FZ)D"), method = "renderLevel")
     private double onGetFov(GameRenderer instance, Camera d0, float fogtype, boolean b) {
         AlgorithmManager.param.verticalFov = getFov(d0, fogtype, b);
         return AlgorithmManager.param.verticalFov;
     }
+    #else
+    @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getFov(Lnet/minecraft/client/Camera;FZ)F"), method = "renderLevel")
+    private float onGetFov(GameRenderer instance, Camera d0, float fogtype, boolean b) {
+        AlgorithmManager.param.verticalFov = getFov(d0, fogtype, b);
+        return (float) AlgorithmManager.param.verticalFov;
+    }
+    #endif
+
 }

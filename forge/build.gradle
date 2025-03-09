@@ -84,7 +84,11 @@ def addModLib(name) {
 
 dependencies {
     forge "net.minecraftforge:forge:${rootProject.minecraft_version}-$rootProject.forge_version"
-    modImplementation "dev.architectury:architectury-forge:$rootProject.architectury_api_version"
+    if (((String) (rootProject.architectury_api_version)).startsWith("1.")) {
+        modImplementation "me.shedaniel:architectury-forge:$rootProject.architectury_api_version"
+    } else {
+        modImplementation "dev.architectury:architectury-forge:$rootProject.architectury_api_version"
+    }
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle(project(path: ":common", configuration: "transformProductionForge"))
     if (rootProject.properties.get("forge_use_modrinth_mods") != null) {
@@ -114,7 +118,11 @@ dependencies {
             addModLib(lib)
         }
     }
-    modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
+    if (((String) (rootProject.architectury_api_version)).startsWith("1.")) {
+        modImplementation "me.shedaniel:architectury:$rootProject.architectury_api_version"
+    } else {
+        modImplementation "dev.architectury:architectury:$rootProject.architectury_api_version"
+    }
     implementation("io.github.spair:imgui-java-app:1.87.5")
     implementation("io.github.spair:imgui-java-binding:1.87.5")
     implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
@@ -124,8 +132,11 @@ dependencies {
     forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
     implementation("org.lwjgl:lwjgl-vulkan:$lwjgl_version")
     forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$lwjgl_version")
-    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
-    implementation("io.github.llamalad7:mixinextras-forge:0.4.1")
+    if (rootProject.minecraft_version != "1.16.5") {
+        compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
+        implementation("io.github.llamalad7:mixinextras-forge:0.4.1")
+    }
+
     include("org.lwjgl:lwjgl-vulkan:$lwjgl_version")
     implementation(forgeRuntimeLibrary('org.apache.commons:commons-math3:3.6.1'))
     implementation(forgeRuntimeLibrary('org.apache.bcel:bcel:6.6.1')) {

@@ -16,7 +16,11 @@ public class StorageFrameBuffer extends GlFrameBuffer {
     }
 
     @Override
-    public void createBuffers(int width, int height, boolean clearError) {
+    #if MC_VER > MC_1_21_1
+    public void createBuffers(int width, int height)
+    #else
+    public void createBuffers(int width, int height, boolean clearError)
+    #endif {
         RenderSystem.assertOnRenderThreadOrInit();
         int maxSupportedTextureSize = RenderSystem.maxSupportedTextureSize();
         if (width > 0 && width <= maxSupportedTextureSize && height > 0 && height <= maxSupportedTextureSize) {
@@ -56,7 +60,11 @@ public class StorageFrameBuffer extends GlFrameBuffer {
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.colorTextureId, 0);
 
             this.checkStatus();
+            #if MC_VER > MC_1_21_1
+            this.clear();
+            #else
             this.clear(clearError);
+            #endif
             this.unbindRead();
         } else {
             throw new IllegalArgumentException("Window " + width + "x" + height + " size out of bounds (max. size: " + maxSupportedTextureSize + ")");
@@ -66,7 +74,11 @@ public class StorageFrameBuffer extends GlFrameBuffer {
     public void enableStencil() {
         if (!this.stencilEnabled) {
             this.stencilEnabled = true;
+            #if MC_VER > MC_1_21_1
+            this.resize(this.viewWidth, this.viewHeight);
+            #else
             this.resize(this.viewWidth, this.viewHeight, Minecraft.ON_OSX);
+            #endif
         }
     }
 
