@@ -12,7 +12,6 @@ import me.shedaniel.math.impl.PointHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 
 public class ClothListWidget extends ClothConfigScreen.ListWidget<AbstractConfigEntry<AbstractConfigEntry<?>>> {
