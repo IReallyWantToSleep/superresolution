@@ -6,10 +6,11 @@
     "minVersion": "0.8",
     "client": [
         "reesessodiumoptions.TabFrameMixin",
-        "sodium.SodiumOptionsGUIMixin",
-        "sodium.GraphicsAdapterProbeMixin"
+        "sodium.GraphicsAdapterProbeMixin",
+        "sodium.SodiumOptionsGUIMixin"
     ],
     "mixins": [
+        "iris.GlFramebufferMixin"
     ],
     "injectors": {
         "defaultRequire": 1

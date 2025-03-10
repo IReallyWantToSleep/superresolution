@@ -44,6 +44,7 @@ rootProject.name = 'super_resolution'
 include 'common'
 for (loader in ((String) gradle.platforms).split(",")) {
     def loaderName = loader.strip()
+    if (loaderName.isEmpty() || loaderName.isBlank()) continue
     println "添加加载器 " + loaderName
     include(loaderName)
 }

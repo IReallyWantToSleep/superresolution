@@ -1,25 +1,11 @@
-package io.homo.superresolution.forge.mixin.compat.oculus;
+package io.homo.superresolution.forge.mixin.compat.iris;
 
-import net.minecraft.client.Minecraft;
-import org.spongepowered.asm.mixin.Mixin;
-
-
-/**
- * 修复跟沉浸工程的兼容性问题？或者更多？
- * bug原因：
- * 添加深度模板/深度纹理没有清理fbo已附加的纹理
- * iris源代码看起来是iris假定addDepthAttachment方法只会在一个fbo上调用一次
- * 而且附件类型不是GL_DEPTH_STENCIL_ATTACHMENT就是GL_DEPTH_ATTACHMENT
- * 导致切换纹理类型后同时附加GL_DEPTH_ATTACHMENT和GL_DEPTH_STENCIL_ATTACHMENT
- * 然后fbo就4了
- * iris甚至没有检测fbo状态（）
- * 修复方法：直接移除上次附加的深度纹理
- */
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.texture.DepthBufferFormat;
-import net.irisshaders.iris.texture.TextureInfoCache;
+import net.irisshaders.iris.pbr.TextureInfoCache;
+import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;

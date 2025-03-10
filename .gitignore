@@ -138,3 +138,8 @@ build_jars
 /script/glsl_preprocessor.py
 /script/remove_unused_functions.py
 /script/test.ipynb
+/fabric/bin
+/forge/bin
+/neoforge/bin
+/common/bin
+
