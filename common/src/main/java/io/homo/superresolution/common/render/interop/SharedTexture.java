@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.render.interop;
 
 import io.homo.superresolution.common.render.vulkan.*;
-import io.homo.superresolution.common.render.vulkan.texture.TextureFormat;
+import io.homo.superresolution.common.render.impl.TextureFormat;
 import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
 import io.homo.superresolution.common.render.vulkan.texture.VkAllocatedImage;
 import org.lwjgl.PointerBuffer;
@@ -26,6 +26,7 @@ import static org.lwjgl.vulkan.VK11.*;
 
 public class SharedTexture {
     private final VkDeviceManager deviceManager;
+    private final int currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     public VkAllocatedImage vkImage = new VkAllocatedImage();
     public long vkImageView;
     public int glId = GL_NULL_HANDLE;
@@ -34,7 +35,6 @@ public class SharedTexture {
     public SharedMemory memory = new SharedMemory();
     protected TextureFormat format;
     protected TextureUsage usage;
-    private int currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     public SharedTexture(int width, int height, VkDeviceManager deviceManager) {
         this.deviceManager = deviceManager;
@@ -63,7 +63,7 @@ public class SharedTexture {
                     .pNext(imageCreatePNext)
                     .flags(0)
                     .imageType(VK_IMAGE_TYPE_2D)
-                    .format(TextureFormat.toVK(this.format))
+                    .format(this.format.vk())
                     .extent(VkExtent3D.calloc(stack).set(width, height, 1))
                     .mipLevels(1)
                     .arrayLayers(1)
@@ -88,7 +88,7 @@ public class SharedTexture {
         Utils.transitionImageLayout(
                 cmdBuff,
                 image,
-                TextureFormat.toVK(format),
+                format.vk(),
                 VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 false
@@ -97,7 +97,7 @@ public class SharedTexture {
         Utils.transitionImageLayout(
                 cmdBuff,
                 image,
-                TextureFormat.toVK(format),
+                format.vk(),
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 finalLayout,
                 false
@@ -193,7 +193,7 @@ public class SharedTexture {
             glTextureStorageMem2DEXT(
                     glId,
                     1,
-                    TextureFormat.toGL(format),
+                    format.gl(),
                     width,
                     height,
                     memory.glRef,
@@ -222,7 +222,7 @@ public class SharedTexture {
         VkCommandBuffer cmdBuf = deviceManager.application.beginOneTimeSubmitCmd();
         VK_TransferImage(cmdBuf, vkImage.image);
         deviceManager.application.endOneTimeSubmitCmd();
-        VK_CreateSRV(vkImage.image, TextureFormat.toVK(format));
+        VK_CreateSRV(vkImage.image, format.vk());
         VkGL_CreateSharedMemory(vkImage.memory, vkImage.allocationSize);
         updateTexture();
     }

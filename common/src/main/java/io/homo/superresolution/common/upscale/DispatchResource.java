@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.upscale;
 
-import io.homo.superresolution.common.render.gl.framebuffer.MotionVectorsFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.MotionVectorsFrameBuffer;
 import org.joml.Matrix4f;
 
 public record DispatchResource(

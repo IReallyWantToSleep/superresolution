@@ -1,15 +1,14 @@
 package io.homo.superresolution.common.upscale.nis;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.interop.SharedTexture;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
-import io.homo.superresolution.common.render.vulkan.texture.TextureFormat;
+import io.homo.superresolution.common.render.impl.TextureFormat;
 import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmType;

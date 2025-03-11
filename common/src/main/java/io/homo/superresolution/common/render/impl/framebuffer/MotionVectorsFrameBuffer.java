@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.render.gl.framebuffer;
+package io.homo.superresolution.common.render.impl.framebuffer;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
@@ -7,7 +7,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
 
-public class MotionVectorsFrameBuffer extends GlFrameBuffer {
+public class MotionVectorsFrameBuffer extends MinecraftRenderTarget {
 
     public MotionVectorsFrameBuffer(boolean useDepth) {
         super(useDepth);

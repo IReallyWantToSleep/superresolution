@@ -1,23 +1,19 @@
 package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.render.gl.framebuffer.MotionVectorsFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.MotionVectorsFrameBuffer;
 import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.utils.NativeLibManager;
 import io.homo.superresolution.common.utils.FileReadHelper;
-import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import static io.homo.superresolution.common.render.gl.Gl.glBindFramebuffer;
-import static io.homo.superresolution.common.render.gl.GlConst.GL_FRAMEBUFFER;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_RG16F;
 
 public class FSR2Helper implements Resizable, Destroyable {

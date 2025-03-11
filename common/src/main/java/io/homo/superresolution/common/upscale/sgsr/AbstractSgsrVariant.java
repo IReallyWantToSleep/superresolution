@@ -2,7 +2,7 @@ package io.homo.superresolution.common.upscale.sgsr;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
 public abstract class AbstractSgsrVariant implements Resizable, Destroyable {

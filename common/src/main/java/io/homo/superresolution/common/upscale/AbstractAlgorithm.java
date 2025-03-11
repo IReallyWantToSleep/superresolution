@@ -2,9 +2,7 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
-import net.minecraft.client.Minecraft;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
@@ -66,7 +64,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      */
     @Override
     public void destroy() {
-        this.output.destroyBuffers();
+        this.output.destroy();
     }
 
     /**
