@@ -51,6 +51,9 @@ public class ConfigFile {
                 .disableHtmlEscaping();
         Config.registerTypeAdapter(gsonBuilder);
         Gson gson = gsonBuilder.create();
+        if (Config.getInstance() == null) {
+            return gson.toJson(new ConfigData());
+        }
         return gson.toJson(Config.getInstance());
     }
 
