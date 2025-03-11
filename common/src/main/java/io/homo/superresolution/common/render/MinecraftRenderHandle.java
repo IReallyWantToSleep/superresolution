@@ -11,9 +11,9 @@ import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.gl.Gl;
 import io.homo.superresolution.common.render.gl.GlConst;
 import io.homo.superresolution.common.render.gl.GlState;
-import io.homo.superresolution.common.render.gl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.gl.framebuffer.StorageFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.framebuffer.MinecraftRenderTarget;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
@@ -48,8 +48,8 @@ public class MinecraftRenderHandle {
     public static void init() {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
-        originRenderTarget = new McRenderTargetWrapper(minecraft.getMainRenderTarget());
-        renderTarget = new McRenderTargetWrapper(new StorageFrameBuffer(true));
+        originRenderTarget = (MinecraftRenderTarget) (minecraft.getMainRenderTarget());
+        renderTarget = new MinecraftRenderTarget(true);
         renderTarget.resize(
                 getRenderWidth(),
                 getRenderHeight()
@@ -80,7 +80,7 @@ public class MinecraftRenderHandle {
     public static void updateRenderTarget() {
         renderTargets.clear();
         for (RenderTargetType renderTargetType : RenderTargetType.values()) {
-            McRenderTargetWrapper renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
+            MinecraftRenderTarget renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
             if (renderTarget.asMcRenderTarget() != null) {
                 renderTargets.put(
                         renderTargetType,

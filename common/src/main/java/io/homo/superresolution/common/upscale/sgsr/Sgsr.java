@@ -4,7 +4,7 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.StorageFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -12,7 +12,6 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr3PassCompute;
-import net.minecraft.client.Minecraft;
 
 import java.util.function.Consumer;
 
@@ -51,7 +50,7 @@ public class Sgsr extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = new GlFrameBuffer(false);
+        output = new StorageFrameBuffer(false);
         this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
         params = new GlUniformBuffer<>(SgsrParams.calloc());
     }

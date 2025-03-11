@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.upscale.sgsr;
 
-import io.homo.superresolution.common.render.gl.buffer.IUniformStruct;
+import io.homo.superresolution.common.render.impl.IUniformStruct;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -10,7 +10,6 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 import static org.lwjgl.system.MemoryUtil.nmemAllocChecked;
-import static org.lwjgl.system.MemoryUtil.nmemCallocChecked;
 
 public class SgsrParams extends Struct implements IUniformStruct {
 

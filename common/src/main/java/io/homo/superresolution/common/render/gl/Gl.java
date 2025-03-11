@@ -59,6 +59,11 @@ public class Gl {
         GL11C.glViewport(x, y, w, h);
     }
 
+    public static int glCheckFramebufferStatus(int target) {
+        return GL30C.glCheckFramebufferStatus(target);
+    }
+
+
     public static void glTexImage2D(int target, int level, int internalformat, int width, int height, int border, int format, int type, IntBuffer pixels) {
         GL11C.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
     }
@@ -207,8 +212,6 @@ public class Gl {
     public static void glUniform3f(int location, float v0, float v1, float v2) {
         GL20C.glUniform3f(location, v0, v1, v2);
     }
-
-    ;
 
     public static int glGetMaxTextureSize() {
         return glGetInteger(GL_MAX_TEXTURE_SIZE);

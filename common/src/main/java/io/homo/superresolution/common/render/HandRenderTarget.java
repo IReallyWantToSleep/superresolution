@@ -1,13 +1,13 @@
 package io.homo.superresolution.common.render;
 
-import io.homo.superresolution.common.render.gl.framebuffer.StorageFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.MinecraftRenderTarget;
 
 public class HandRenderTarget {
-    public static McRenderTargetWrapper handRenderTarget;
+    public static MinecraftRenderTarget handRenderTarget;
 
-    public static McRenderTargetWrapper getHandRenderTarget() {
+    public static MinecraftRenderTarget getHandRenderTarget() {
         if (handRenderTarget == null) {
-            handRenderTarget = new McRenderTargetWrapper(new StorageFrameBuffer(true));
+            handRenderTarget = new MinecraftRenderTarget(true);
             handRenderTarget.setClearColor(0, 0, 0, 0);
             handRenderTarget.resize(
                     MinecraftRenderHandle.getScreenWidth(),

@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.render.gl.pipeline;
 
-import io.homo.superresolution.common.render.gl.texture.ITextureWrapper;
+import io.homo.superresolution.common.render.impl.ITexture;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +33,7 @@ public class PipelineResourceDescriptions {
     public record PipelineResourceDescription(
             PipelineResourceType type,
             String name,
-            ITextureWrapper src,
+            ITexture src,
             PipelineResourceAccess access
     ) {
 

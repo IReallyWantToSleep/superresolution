@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.render.gl.buffer;
 
+import io.homo.superresolution.common.render.impl.IUniformStruct;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
