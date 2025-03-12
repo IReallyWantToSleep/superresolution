@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.render.gl.pipeline;
 
-import io.homo.superresolution.common.render.impl.ITexture;
+import io.homo.superresolution.common.render.impl.texture.ITexture;
 
 import java.util.HashMap;
 import java.util.Map;

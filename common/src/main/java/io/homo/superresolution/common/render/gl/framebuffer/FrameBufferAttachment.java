@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.render.gl.framebuffer;
 
 import io.homo.superresolution.common.render.gl.GlConst;
-import io.homo.superresolution.common.render.impl.ITexture;
+import io.homo.superresolution.common.render.impl.texture.ITexture;
 
 public class FrameBufferAttachment {
     public FrameBufferAttachmentType type;

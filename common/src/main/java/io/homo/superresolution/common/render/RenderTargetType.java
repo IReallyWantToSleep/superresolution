@@ -1,27 +1,27 @@
 package io.homo.superresolution.common.render;
 
 import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
-import io.homo.superresolution.common.render.impl.framebuffer.MinecraftRenderTarget;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import net.minecraft.client.renderer.LevelRenderer;
 
 import java.util.function.Function;
 
 public enum RenderTargetType {
-    ENTITY((levelRenderer -> (MinecraftRenderTarget) (((LevelRendererAccessor) levelRenderer).getEntityRenderTarget()))),
-    TRANSLUCENT((levelRenderer -> (MinecraftRenderTarget) levelRenderer.getTranslucentTarget())),
-    ITEM_ENTITY((levelRenderer -> (MinecraftRenderTarget) levelRenderer.getItemEntityTarget())),
-    PARTICLES((levelRenderer -> (MinecraftRenderTarget) levelRenderer.getParticlesTarget())),
-    WEATHER((levelRenderer -> (MinecraftRenderTarget) levelRenderer.getWeatherTarget())),
-    CLOUDS((levelRenderer -> (MinecraftRenderTarget) levelRenderer.getCloudsTarget())),
+    ENTITY((levelRenderer -> MinecraftRenderTargetWrapper.of(((LevelRendererAccessor) levelRenderer).getEntityRenderTarget()))),
+    TRANSLUCENT((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getTranslucentTarget()))),
+    ITEM_ENTITY((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getItemEntityTarget()))),
+    PARTICLES((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getParticlesTarget()))),
+    WEATHER((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getWeatherTarget()))),
+    CLOUDS((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getCloudsTarget()))),
     HAND((levelRenderer) -> HandRenderTarget.getHandRenderTarget());
 
-    private final Function<LevelRenderer, MinecraftRenderTarget> callback;
+    private final Function<LevelRenderer, IFrameBuffer> callback;
 
-    RenderTargetType(Function<LevelRenderer, MinecraftRenderTarget> callback) {
+    RenderTargetType(Function<LevelRenderer, IFrameBuffer> callback) {
         this.callback = callback;
     }
 
-    public MinecraftRenderTarget get(LevelRenderer levelRenderer) {
+    public IFrameBuffer get(LevelRenderer levelRenderer) {
         return callback.apply(levelRenderer);
     }
 }

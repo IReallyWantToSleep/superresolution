@@ -3,13 +3,11 @@ package io.homo.superresolution.common.render.gl.texture;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.impl.Destroyable;
-import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.render.gl.buffer.VertexBuffer;
 import io.homo.superresolution.common.render.gl.shader.BlitShader;
 import io.homo.superresolution.common.render.gl.vertex.VertexArray;
-import io.homo.superresolution.common.render.impl.ITexture;
-import io.homo.superresolution.common.render.impl.TextureFormat;
+import io.homo.superresolution.common.render.impl.texture.ITexture;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
 
 import static io.homo.superresolution.common.render.gl.Gl.*;

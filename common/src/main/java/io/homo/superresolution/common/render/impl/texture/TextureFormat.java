@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.render.impl;
+package io.homo.superresolution.common.render.impl.texture;
 
 import org.jetbrains.annotations.NotNull;
 

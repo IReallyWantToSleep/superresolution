@@ -48,7 +48,7 @@ public class MinecraftRenderHandle {
     public static void init() {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
-        originRenderTarget = (MinecraftRenderTarget) (minecraft.getMainRenderTarget());
+        originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
         renderTarget = new MinecraftRenderTarget(true);
         renderTarget.resize(
                 getRenderWidth(),
@@ -80,7 +80,7 @@ public class MinecraftRenderHandle {
     public static void updateRenderTarget() {
         renderTargets.clear();
         for (RenderTargetType renderTargetType : RenderTargetType.values()) {
-            MinecraftRenderTarget renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
+            IFrameBuffer renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
             if (renderTarget.asMcRenderTarget() != null) {
                 renderTargets.put(
                         renderTargetType,

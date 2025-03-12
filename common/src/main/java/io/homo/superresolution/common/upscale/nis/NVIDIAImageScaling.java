@@ -8,7 +8,7 @@ import io.homo.superresolution.common.render.interop.SharedTexture;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
-import io.homo.superresolution.common.render.impl.TextureFormat;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmType;

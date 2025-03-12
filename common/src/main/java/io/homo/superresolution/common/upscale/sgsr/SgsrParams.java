@@ -68,8 +68,7 @@ public class SgsrParams extends Struct implements IUniformStruct {
     protected SgsrParams(long address, @Nullable ByteBuffer container) {
         super(address, __checkContainer(container, SIZEOF));
     }
-
-    // Native methods to set the values
+    
     private static native void nrenderSize(long struct, int x, int y);
 
     private static native void ndisplaySize(long struct, int x, int y);
