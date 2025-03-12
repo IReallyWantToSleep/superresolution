@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.render.impl;
+package io.homo.superresolution.common.render.impl.texture;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
