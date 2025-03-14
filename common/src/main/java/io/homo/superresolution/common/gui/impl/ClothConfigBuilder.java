@@ -22,6 +22,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
     private boolean listSmoothScroll = true;
     private boolean doesConfirmSave = true;
     private boolean transparentBackground = true;
+    private boolean enableSearch = true;
     #if MC_VER > MC_1_20_4
     private ResourceLocation defaultBackground = ResourceLocation.withDefaultNamespace("textures/block/dirt.png");
     #else
@@ -32,6 +33,11 @@ public class ClothConfigBuilder implements ConfigBuilder {
     private String fallbackCategory = null;
     private boolean alwaysShowTabs = false;
 
+    public ClothConfigBuilder setEnableSearch(boolean enableSearch) {
+        this.enableSearch = enableSearch;
+        return this;
+    }
+
     public void setGlobalizedExpanded(boolean globalizedExpanded) {
 
     }
@@ -40,12 +46,12 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.alwaysShowTabs;
     }
 
-    public ConfigBuilder setAlwaysShowTabs(boolean alwaysShowTabs) {
+    public ClothConfigBuilder setAlwaysShowTabs(boolean alwaysShowTabs) {
         this.alwaysShowTabs = alwaysShowTabs;
         return this;
     }
 
-    public ConfigBuilder setTransparentBackground(boolean transparentBackground) {
+    public ClothConfigBuilder setTransparentBackground(boolean transparentBackground) {
         this.transparentBackground = transparentBackground;
         return this;
     }
@@ -54,17 +60,12 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.transparentBackground;
     }
 
-    public ConfigBuilder setAfterInitConsumer(Consumer<Screen> afterInitConsumer) {
-        this.afterInitConsumer = afterInitConsumer;
-        return this;
-    }
-
     @Override
     public void setGlobalized(boolean b) {
 
     }
 
-    public ConfigBuilder setFallbackCategory(ConfigCategory fallbackCategory) {
+    public ClothConfigBuilder setFallbackCategory(ConfigCategory fallbackCategory) {
         this.fallbackCategory = Objects.requireNonNull(fallbackCategory).getCategoryKey().getString();
         return this;
     }
@@ -73,7 +74,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.parent;
     }
 
-    public ConfigBuilder setParentScreen(Screen parent) {
+    public ClothConfigBuilder setParentScreen(Screen parent) {
         this.parent = parent;
         return this;
     }
@@ -82,7 +83,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.title;
     }
 
-    public ConfigBuilder setTitle(Component title) {
+    public ClothConfigBuilder setTitle(Component title) {
         this.title = title;
         return this;
     }
@@ -91,7 +92,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.editable;
     }
 
-    public ConfigBuilder setEditable(boolean editable) {
+    public ClothConfigBuilder setEditable(boolean editable) {
         this.editable = editable;
         return this;
     }
@@ -108,7 +109,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         }
     }
 
-    public ConfigBuilder removeCategory(Component category) {
+    public ClothConfigBuilder removeCategory(Component category) {
         if (this.categoryMap.containsKey(category.getString()) && Objects.equals(this.fallbackCategory, category.getString())) {
             this.fallbackCategory = null;
         }
@@ -121,7 +122,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         }
     }
 
-    public ConfigBuilder removeCategoryIfExists(Component category) {
+    public ClothConfigBuilder removeCategoryIfExists(Component category) {
         if (this.categoryMap.containsKey(category.getString()) && Objects.equals(this.fallbackCategory, category.getString())) {
             this.fallbackCategory = null;
         }
@@ -134,7 +135,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.categoryMap.containsKey(category.getString());
     }
 
-    public ConfigBuilder setShouldTabsSmoothScroll(boolean shouldTabsSmoothScroll) {
+    public ClothConfigBuilder setShouldTabsSmoothScroll(boolean shouldTabsSmoothScroll) {
         this.tabsSmoothScroll = shouldTabsSmoothScroll;
         return this;
     }
@@ -143,7 +144,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.tabsSmoothScroll;
     }
 
-    public ConfigBuilder setShouldListSmoothScroll(boolean shouldListSmoothScroll) {
+    public ClothConfigBuilder setShouldListSmoothScroll(boolean shouldListSmoothScroll) {
         this.listSmoothScroll = shouldListSmoothScroll;
         return this;
     }
@@ -152,7 +153,7 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.listSmoothScroll;
     }
 
-    public ConfigBuilder setDoesConfirmSave(boolean confirmSave) {
+    public ClothConfigBuilder setDoesConfirmSave(boolean confirmSave) {
         this.doesConfirmSave = confirmSave;
         return this;
     }
@@ -165,18 +166,18 @@ public class ClothConfigBuilder implements ConfigBuilder {
         return this.defaultBackground;
     }
 
-    public ConfigBuilder setDefaultBackgroundTexture(ResourceLocation texture) {
+    public ClothConfigBuilder setDefaultBackgroundTexture(ResourceLocation texture) {
         this.defaultBackground = texture;
-        return this;
-    }
-
-    public ConfigBuilder setSavingRunnable(Runnable runnable) {
-        this.savingRunnable = runnable;
         return this;
     }
 
     public Consumer<Screen> getAfterInitConsumer() {
         return this.afterInitConsumer;
+    }
+
+    public ClothConfigBuilder setAfterInitConsumer(Consumer<Screen> afterInitConsumer) {
+        this.afterInitConsumer = afterInitConsumer;
+        return this;
     }
 
     public Screen build() {
@@ -188,8 +189,8 @@ public class ClothConfigBuilder implements ConfigBuilder {
             screen.setTransparentBackground(this.transparentBackground);
             screen.setAlwaysShowTabs(this.alwaysShowTabs);
             screen.setConfirmSave(this.doesConfirmSave);
+            screen.setEnableSearch(enableSearch);
             screen.setAfterInitConsumer(this.afterInitConsumer);
-
             return screen;
         } else {
             throw new NullPointerException("There cannot be no categories or fallback category!");
@@ -198,5 +199,10 @@ public class ClothConfigBuilder implements ConfigBuilder {
 
     public Runnable getSavingRunnable() {
         return this.savingRunnable;
+    }
+
+    public ClothConfigBuilder setSavingRunnable(Runnable runnable) {
+        this.savingRunnable = runnable;
+        return this;
     }
 }

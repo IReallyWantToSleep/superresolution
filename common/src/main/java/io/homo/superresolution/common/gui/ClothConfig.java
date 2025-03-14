@@ -7,9 +7,11 @@ import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
+import io.homo.superresolution.common.gui.entries.TextListEntry;
 import io.homo.superresolution.common.gui.screens.InfoScreen;
-import io.homo.superresolution.common.gui.widgets.ClothButtonEntry;
-import io.homo.superresolution.common.gui.widgets.ClothTextListEntry;
+import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
+import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.impl.Pair;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmType;
@@ -110,8 +112,16 @@ public class ClothConfig {
                         ColorUtil.color(255, 255, 255, 255),
                         null
                 );
+
         debugInfo.setDisplayRequirement(Requirement.isTrue(() -> Minecraft.getInstance().level != null));
         debugCategory.addEntry(debugInfo);
+        ClothTextListListEntry textListEntry = new ClothTextListListEntry(
+                Component.literal("4"),
+                null
+        );
+        InfoBuilder.addTo(textListEntry, InfoBuilder::addAllInfo);
+        debugCategory.addEntry(textListEntry);
+
     }
 
     public static void add(ConfigBuilder builder) {

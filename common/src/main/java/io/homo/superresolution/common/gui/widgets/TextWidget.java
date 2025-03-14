@@ -133,31 +133,16 @@ public class TextWidget extends AbstractWidget {
             int lineWidth = line.width(font);
             if (lineWidth > maxWidth) maxWidth = lineWidth;
             guiGraphics.pose().pushPose();
-            if (line.type == Line.LineType.Text) {
-                guiGraphics.pose().translate(
-                        baseX + (rect.width * line.left) + (line.center ? ((double) (rect.width - (border.x * 2)) / 2) - ((double) lineWidth * 0.5) : 0),
-                        baseY + lineHeight,
-                        0.0f
-                );
-                guiGraphics.pose().scale(line.scale.x, line.scale.y, 1.0f);
-                guiGraphics.drawString(this.font, line.text, 0, 0, line.color);
-                lineHeight += line.height(this.font);
-            } else {
-                dividerCount++;
-                guiGraphics.pose().translate(
-                        baseX + (rect.width * line.left),
-                        baseY + lineHeight,
-                        0.0f
-                );
-                guiGraphics.fill(
-                        0,
-                        1,
-                        (int) (rect.width - (border.x * 2)),
-                        2,
-                        line.color
-                );
-                lineHeight += 3;
-            }
+
+            guiGraphics.pose().translate(
+                    baseX + (rect.width * line.left) + (line.center ? ((double) (rect.width - (border.x * 2)) / 2) - ((double) lineWidth * 0.5) : 0),
+                    baseY + lineHeight,
+                    0.0f
+            );
+            guiGraphics.pose().scale(line.scale.x, line.scale.y, 1.0f);
+            guiGraphics.drawString(this.font, line.text, 0, 0, line.color);
+            lineHeight += line.height(this.font);
+
             guiGraphics.pose().popPose();
         }
         guiGraphics.disableScissor();

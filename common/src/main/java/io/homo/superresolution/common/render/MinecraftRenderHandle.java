@@ -81,7 +81,7 @@ public class MinecraftRenderHandle {
         renderTargets.clear();
         for (RenderTargetType renderTargetType : RenderTargetType.values()) {
             IFrameBuffer renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
-            if (renderTarget.asMcRenderTarget() != null) {
+            if (renderTarget != null) {
                 renderTargets.put(
                         renderTargetType,
                         renderTarget
@@ -192,7 +192,7 @@ public class MinecraftRenderHandle {
 
     public static void callOnRenderTargets(Consumer<IFrameBuffer> callback) {
         renderTargets.forEach(((renderTargetType, renderTarget) -> {
-            if (renderTarget.asMcRenderTarget() != null && renderTargetType != RenderTargetType.HAND) {
+            if (renderTarget != null && renderTargetType != RenderTargetType.HAND) {
                 callback.accept(renderTarget);
             }
         }));
@@ -200,14 +200,14 @@ public class MinecraftRenderHandle {
 
     public static void callOnRenderTargets(BiConsumer<IFrameBuffer, RenderTargetType> callback) {
         renderTargets.forEach(((renderTargetType, renderTarget) -> {
-            if (renderTarget.asMcRenderTarget() != null) {
+            if (renderTarget != null) {
                 callback.accept(renderTarget, renderTargetType);
             }
         }));
     }
 
     public static void callOnRenderTarget(RenderTargetType type, Consumer<IFrameBuffer> callback) {
-        if (getRenderTarget(type).asMcRenderTarget() != null) {
+        if (getRenderTarget(type) != null) {
             callback.accept(getRenderTarget(type));
         }
     }
@@ -218,7 +218,7 @@ public class MinecraftRenderHandle {
     }
 
     public static void onBlitEntityEffect() {
-        if (getRenderTarget(RenderTargetType.ENTITY).asMcRenderTarget() == null) return;
+        if (getRenderTarget(RenderTargetType.ENTITY) == null) return;
         GlTexture.blitToScreen(
                 getRenderWidth(),
                 getRenderHeight(),

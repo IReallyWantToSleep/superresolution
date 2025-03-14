@@ -3,13 +3,14 @@ package io.homo.superresolution.common.gui.widgets;
 import io.homo.superresolution.common.utils.ColorUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
 import org.joml.Vector2f;
 
 public class Line {
-    public LineType type = LineType.Text;
     public float left;
     public int color;
-    public String text;
+    public FormattedCharSequence text;
     public Vector2f scale = new Vector2f(1.0f, 1.0f);
     public boolean center = false;
 
@@ -27,9 +28,19 @@ public class Line {
     }
 
     public Line text(String text) {
+        return text(FormattedCharSequence.forward(text, Style.EMPTY));
+    }
+
+    public Line text(FormattedCharSequence text) {
         this.text = text;
         return this;
     }
+
+    public Line text(Component text) {
+        this.text = text.getVisualOrderText();
+        return this;
+    }
+
 
     public Line scaleX(float x) {
         this.scale.x = x;
@@ -59,22 +70,10 @@ public class Line {
         return this;
     }
 
-    public Line text(Component text) {
-        this.text = text.getString();
-        return this;
-    }
 
     public Line center(boolean center) {
         this.center = center;
         return this;
     }
 
-    public Line type(LineType type) {
-        this.type = type;
-        return this;
-    }
-
-    public enum LineType {
-        Divider, Text
-    }
 }
