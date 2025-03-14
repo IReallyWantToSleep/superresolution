@@ -33,13 +33,14 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class ClothStyleConfigScreen extends AbstractConfigScreen {
-    private final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
+    protected final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
     public ClothListWidget listWidget;
-    private AbstractWidget cancelButton, exitButton, saveButton;
-    private SearchFieldEntry searchFieldEntry;
-    private double lastScroll = -1145.1145;
+    protected AbstractWidget cancelButton, exitButton, saveButton;
+    protected SearchFieldEntry searchFieldEntry;
+    protected boolean enableSearch;
+    protected double lastScroll = -1145.1145;
 
-    @SuppressWarnings("all")
+    @SuppressWarnings({"deprecation"})
     public ClothStyleConfigScreen(Screen parent, Component title, Map<String, ConfigCategory> categoryMap, ResourceLocation backgroundLocation) {
         super(parent, title, backgroundLocation);
         categoryMap.forEach((categoryName, category) -> {
@@ -58,6 +59,10 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
         });
     }
 
+    public void setEnableSearch(boolean enableSearch) {
+        this.enableSearch = enableSearch;
+    }
+
     @Override
     public Map<Component, List<AbstractConfigEntry<?>>> getCategorizedEntries() {
         return this.categorizedEntries;
@@ -68,9 +73,11 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     protected void init() {
         super.init();
         this.addWidget(listWidget = new ClothListWidget(this, minecraft, width, height, 30, height - 32, getBackgroundLocation()));
-        this.listWidget.children().add((AbstractConfigEntry) new EmptyEntry(5));
-        this.listWidget.children().add((AbstractConfigEntry) (searchFieldEntry = new SearchFieldEntry(this, listWidget)));
-        this.listWidget.children().add((AbstractConfigEntry) new EmptyEntry(5));
+        if (enableSearch) {
+            this.listWidget.children().add((AbstractConfigEntry) new EmptyEntry(5));
+            this.listWidget.children().add((AbstractConfigEntry) (searchFieldEntry = new SearchFieldEntry(this, listWidget)));
+            this.listWidget.children().add((AbstractConfigEntry) new EmptyEntry(5));
+        }
         this.categorizedEntries.forEach((category, entries) -> {
             if (!listWidget.children().isEmpty())
                 this.listWidget.children().add((AbstractConfigEntry) new EmptyEntry(5));
@@ -141,6 +148,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
 
     @Override
     public boolean matchesSearch(Iterator<String> tags) {
+        if (searchFieldEntry == null) return true;
         return searchFieldEntry.matchesSearch(tags);
     }
 
@@ -188,7 +196,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     }
 
 
-    private static class CategoryTextEntry extends AbstractConfigListEntry<Object> {
+    protected static class CategoryTextEntry extends AbstractConfigListEntry<Object> {
         private final Component category;
         private final Component text;
 

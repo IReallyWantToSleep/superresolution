@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.gui.widgets;
+package io.homo.superresolution.common.gui.entries;
 
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.entries.TooltipListEntry;
@@ -29,13 +29,13 @@ public class ClothTextListEntry extends TooltipListEntry<Object> {
         DISABLED_COLOR = Objects.requireNonNull(ChatFormatting.DARK_GRAY.getColor());
     }
 
-    private final Font textRenderer;
-    private final int color;
-    private final Supplier<Component> textSupplier;
-    private int savedWidth;
-    private int savedX;
-    private int savedY;
-    private List<FormattedCharSequence> wrappedLines;
+    protected final Font textRenderer;
+    protected final int color;
+    protected final Supplier<Component> textSupplier;
+    protected int savedWidth;
+    protected int savedX;
+    protected int savedY;
+    protected List<FormattedCharSequence> wrappedLines;
 
     public ClothTextListEntry(Component fieldName, Supplier<Component> textSupplier, int color, Supplier<Optional<Component[]>> tooltipSupplier) {
         super(fieldName, tooltipSupplier);
@@ -85,7 +85,7 @@ public class ClothTextListEntry extends TooltipListEntry<Object> {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    private @Nullable Style getTextAt(double x, double y) {
+    protected @Nullable Style getTextAt(double x, double y) {
         int lineCount = this.wrappedLines.size();
         if (lineCount > 0) {
             int textX = Mth.floor(x - (double) this.savedX);

@@ -12,6 +12,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     }
 
     public static MinecraftRenderTargetWrapper of(RenderTarget renderTarget) {
+        if (renderTarget == null) return null;
         return new MinecraftRenderTargetWrapper(renderTarget);
     }
 

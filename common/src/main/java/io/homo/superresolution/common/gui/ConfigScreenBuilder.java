@@ -10,11 +10,11 @@ public class ConfigScreenBuilder {
     }
 
     public Screen build(Screen parentScreen) {
-
         ClothConfigBuilder clothConfigBuilder = new ClothConfigBuilder();
         clothConfigBuilder.setGlobalized(true);
         clothConfigBuilder.setGlobalizedExpanded(true);
         clothConfigBuilder.setParentScreen(parentScreen);
+        clothConfigBuilder.setEnableSearch(false);
         ClothConfig.add(clothConfigBuilder);
         return clothConfigBuilder.build();
     }
