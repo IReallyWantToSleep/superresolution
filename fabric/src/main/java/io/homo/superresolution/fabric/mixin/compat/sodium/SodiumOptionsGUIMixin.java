@@ -76,7 +76,7 @@ public class SodiumOptionsGUIMixin extends Screen {
     )
     private void onSetPage(OptionPage page, CallbackInfo ci) {
         if (page == this.page) {
-            this.minecraft.setScreen(ConfigScreenBuilder.create().build(this));
+            this.minecraft.setScreen(ConfigScreenBuilder.create().buildConfigScreen(this));
             ci.cancel();
         }
     }

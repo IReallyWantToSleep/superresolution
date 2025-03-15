@@ -8,6 +8,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -181,8 +183,20 @@ public class ClothConfigBuilder implements ConfigBuilder {
     }
 
     public Screen build() {
+        throw new RuntimeException();
+    }
+
+    @SuppressWarnings("unchecked")
+    public Screen build(Class<? extends ClothStyleConfigScreen> clazz) {
         if (!this.categoryMap.isEmpty() && this.fallbackCategory != null) {
-            ClothStyleConfigScreen screen = new ClothStyleConfigScreen(this.parent, this.title, this.categoryMap, this.defaultBackground);
+            ClothStyleConfigScreen screen;
+            try {
+                Constructor<ClothStyleConfigScreen> constructor = (Constructor<ClothStyleConfigScreen>) clazz.getDeclaredConstructor(Screen.class, Component.class, Map.class, ResourceLocation.class);
+                screen = constructor.newInstance(this.parent, this.title, this.categoryMap, this.defaultBackground);
+            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                     IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
             screen.setSavingRunnable(this.savingRunnable);
             screen.setEditable(this.editable);
             screen.setFallbackCategory(this.fallbackCategory == null ? null : Component.literal(this.fallbackCategory));

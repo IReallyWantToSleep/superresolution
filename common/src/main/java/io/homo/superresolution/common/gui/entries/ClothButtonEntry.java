@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.gui.entries;
 
 import io.homo.superresolution.common.impl.Vec2;
+import io.homo.superresolution.common.mixin.gui.AbstractWidgetAccessor;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -62,7 +63,7 @@ public class ClothButtonEntry extends AbstractConfigListEntry<Boolean> {
         #if MC_VER > MC_1_20_1
         button.setHeight(entryHeight);
         #else
-        ((AbstractWidgetAccessor) button).setHeight(entryHeight);
+        ((AbstractWidgetAccessor) button).setHeight_(entryHeight);
         #endif
         button.setX(x + ((entryWidth - button.getWidth()) / 2));
         button.setY(y);

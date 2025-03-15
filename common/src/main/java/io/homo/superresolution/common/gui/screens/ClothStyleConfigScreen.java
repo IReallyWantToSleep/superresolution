@@ -6,10 +6,8 @@ import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.gui.Rectangle;
 import io.homo.superresolution.common.gui.ScissorsHandler;
 import io.homo.superresolution.common.gui.widgets.ClothListWidget;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
-import me.shedaniel.clothconfig2.gui.ClothConfigScreen;
 import me.shedaniel.clothconfig2.gui.entries.EmptyEntry;
 import me.shedaniel.clothconfig2.gui.widget.SearchFieldEntry;
 import net.minecraft.ChatFormatting;
@@ -35,7 +33,7 @@ import java.util.function.Supplier;
 public class ClothStyleConfigScreen extends AbstractConfigScreen {
     protected final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
     public ClothListWidget listWidget;
-    protected AbstractWidget cancelButton, exitButton, saveButton;
+    protected Button cancelButton, exitButton, saveButton;
     protected SearchFieldEntry searchFieldEntry;
     protected boolean enableSearch;
     protected double lastScroll = -1145.1145;
@@ -120,7 +118,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 button -> {
                     saveAll(false);
                     double scroll = listWidget.getScroll();
-                    Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().build(parent));
+                    Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(parent));
                     if (Minecraft.getInstance().screen instanceof ClothStyleConfigScreen) {
                         ((ClothStyleConfigScreen) Minecraft.getInstance().screen).lastScroll = scroll;
                     }
@@ -143,6 +141,9 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 super.renderWidget(graphics, mouseX, mouseY, delta);
             }
         });
+        saveButton.setX((width / 2) - (saveButton.getWidth() / 2));
+        cancelButton.setX(saveButton.getX() - 3 - saveButton.getWidth());
+        exitButton.setX(saveButton.getX() + 3 + saveButton.getWidth());
         Optional.ofNullable(this.afterInitConsumer).ifPresent(consumer -> consumer.accept(this));
     }
 
@@ -168,9 +169,6 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
             child.lateRender(graphics, mouseX, mouseY, delta);
         ScissorsHandler.removeLastScissor();
         graphics.drawString(font, title.getVisualOrderText(), (int) ((width) / 2f - font.width(title) / 2f), 12, -1);
-        saveButton.setX((width / 2) - (saveButton.getWidth() / 2));
-        cancelButton.setX(saveButton.getX() - 3 - saveButton.getWidth());
-        exitButton.setX(saveButton.getX() + 3 + saveButton.getWidth());
         #if MC_VER < MC_1_21_1
         super.render(graphics, mouseX, mouseY, delta);
         #endif

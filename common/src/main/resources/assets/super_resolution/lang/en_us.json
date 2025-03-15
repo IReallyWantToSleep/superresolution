@@ -1,5 +1,6 @@
 {
     "superresolution.screen.config.name": "Super Resolution Configuration",
+    "superresolution.screen.info.name": "Information",
     "superresolution.name": "Super Resolution",
     "superresolution.screen.warn": "Warning",
     "superresolution.common_requirement.not_support.msg": "Error-SuperResolution",

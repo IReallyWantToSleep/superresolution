@@ -29,7 +29,11 @@ import java.util.function.Supplier;
 
 public class ClothTextListListEntry extends TooltipListEntry<Object> implements InfoBuilder.LineContainer {
     public static final int DISABLED_COLOR;
+    #if MC_VER > MC_1_20_4
     protected static final ResourceLocation CONFIG_TEX = ResourceLocation.fromNamespaceAndPath("cloth-config2", "textures/gui/cloth_config.png");
+    #else
+    protected static final ResourceLocation CONFIG_TEX = new ResourceLocation("cloth-config2", "textures/gui/cloth_config.png");
+    #endif
 
 
     static {
@@ -39,13 +43,18 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
     protected final Font textRenderer;
     private final ValueAnimator<Double> expandAnimator = ValueAnimator.ofDouble(0.0);
     private final ValueAnimator<Double> rotatingAnimator = ValueAnimator.ofDouble(0.0);
+    private final ValueAnimator<Double> backgroundAnimator = ValueAnimator.ofDouble(0.0);
+
     private final Rectangle mainRectangle = new Rectangle();
     private final List<LineRenderer> lineRenderers = new ArrayList<>();
     private final boolean canExpand;
     protected int savedWidth;
     protected int savedX;
     protected int savedY;
+    private int top = 0;
+    private int bottom = 0;
     private boolean expanded = false;
+    private boolean showExpandButton = true;
 
     public ClothTextListListEntry(Component fieldName, Supplier<Optional<Component[]>> tooltipSupplier) {
         this(fieldName, tooltipSupplier, true);
@@ -55,7 +64,26 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         super(fieldName, tooltipSupplier);
         this.textRenderer = Minecraft.getInstance().font;
         this.canExpand = canExpand;
-        if (!this.canExpand) setExpanded(true);
+        if (!this.canExpand) {
+            this.expanded = true;
+            expandAnimator.setAs(1.0);
+            rotatingAnimator.setAs(1.0);
+        }
+    }
+
+    public ClothTextListListEntry setTop(int top) {
+        this.top = top;
+        return this;
+    }
+
+    public ClothTextListListEntry setBottom(int bottom) {
+        this.bottom = bottom;
+        return this;
+    }
+
+    public ClothTextListListEntry setShowExpandButton(boolean showExpandButton) {
+        this.showExpandButton = showExpandButton;
+        return this;
     }
 
     public void addLine(Line line) {
@@ -67,42 +95,53 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
     }
 
     public void setExpanded(boolean expanded) {
+        if (!canExpand) return;
         this.expanded = expanded;
         if (this.expanded) {
-            expandAnimator.setTo(1.0, 2500);
-            rotatingAnimator.setTo(1.0, 500);
+            expandAnimator.setTo(1.0, 1800);
+            rotatingAnimator.setTo(1.0, 400);
         } else {
-            expandAnimator.setTo(0.0, 2500);
-            rotatingAnimator.setTo(0.0, 500);
+            expandAnimator.setTo(0.0, 1800);
+            rotatingAnimator.setTo(0.0, 400);
         }
     }
 
     public void render(GuiGraphics graphics, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean isHovered, float delta) {
-        super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
+        if (isHovered) {
+            backgroundAnimator.setTo(1.0, 300);
+        } else {
+            backgroundAnimator.setTo(0.0, 300);
+        }
+
         expandAnimator.update(delta);
         rotatingAnimator.update(delta);
+        backgroundAnimator.update(delta);
         mainRectangle.setBounds(x, y, entryWidth, entryHeight);
         this.savedWidth = entryWidth;
         this.savedX = x;
         this.savedY = y;
         int sideWidth = 2;
-        if (canExpand) {
+        int backgroundAlpha = (int) (30 * backgroundAnimator.value()) + 20;
+        graphics.fillGradient(x, y, x + entryWidth - 1, y + entryHeight, ColorUtil.color(backgroundAlpha, 255, 255, 255), ColorUtil.color(backgroundAlpha, 255, 255, 255));
+
+        super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
+
+        if (canExpand && showExpandButton) {
             RenderSystem.setShaderTexture(0, CONFIG_TEX);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             graphics.pose().pushPose();
             float center = 4.5f;
-            graphics.pose().translate(x - 7 + center + entryWidth, y + 5 + center, 0);
-            graphics.pose().mulPose(Axis.ZP.rotationDegrees(90 + (float) (90 * rotatingAnimator.value())));
+            graphics.pose().translate(x - 8 + center + entryWidth - 7, y + 5 + center, 0);
+            graphics.pose().mulPose(Axis.ZP.rotationDegrees(90 + (float) (180 * rotatingAnimator.value())));
             graphics.blit(CONFIG_TEX, (int) -center, (int) -center, 33, isHovered ? 18 : 0, 9, 9);
             graphics.pose().popPose();
         }
-
         graphics.fillGradient(x, y, x + sideWidth, y + entryHeight, ColorUtil.color(255, 255, 255, 255), ColorUtil.color(255, 255, 255, 255));
 
 
         if (expandAnimator.value() != 0.0) {
             ScissorsHandler.scissor(new io.homo.superresolution.common.gui.Rectangle(x, y, entryWidth, (int) ((getItemHeight()) * expandAnimator.value())));
-            int yy = y;
+            int yy = y + top;
             for (LineRenderer line : this.lineRenderers) {
                 line.render(graphics, -1, yy, x + sideWidth + 5, entryWidth - (sideWidth + 5), entryHeight, mouseX, mouseY, isHovered, delta, textRenderer);
                 Objects.requireNonNull(Minecraft.getInstance().font);
@@ -115,6 +154,9 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                 graphics.renderComponentHoverEffect(Minecraft.getInstance().font, style, mouseX, mouseY);
             }
         }
+        if (expandAnimator.value() < 0.1) {
+            graphics.drawCenteredString(textRenderer, getFieldName(), (int) (x + (entryWidth * 0.5)), y + 6, ColorUtil.color((int) (255 - (255 * (expandAnimator.value() * 10))), 255, 255, 255));
+        }
     }
 
     public int getItemHeight() {
@@ -122,7 +164,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         for (LineRenderer lineRenderer : this.lineRenderers) {
             height += lineRenderer.line.height(textRenderer) + 1;
         }
-        return (int) (height * expandAnimator.value()) + (isExpanded() ? 3 : 24);
+        return Math.min(Math.max((int) (height * expandAnimator.value()) + (expandAnimator.value() == 1.0 ? 3 + bottom : 24), 24), height + 3 + bottom);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -155,6 +197,11 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         }
 
         return null;
+    }
+
+    @Override
+    public boolean isMouseInside(int mouseX, int mouseY, int x, int y, int entryWidth, int entryHeight) {
+        return false;
     }
 
     public Object getValue() {
@@ -197,9 +244,29 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                 float delta,
                 Font font
         ) {
-            graphics.drawString(font, line.text, (int) (x + (entryWidth * line.left)), y, line.color);
-            graphics.fillGradient((int) (x + (entryWidth * line.left)), y, x + entryWidth, y + line.height(font), ColorUtil.color(255, (int) (Math.random() * 255), 255, 255), ColorUtil.color(255, 0, 255, 255));
+            graphics.pose().pushPose();
+            graphics.pose().translate(x + (line.center ? -7 : 0), y, 0);
+            graphics.pose().scale(line.scale.x, line.scale.y, 1.0f);
+            if (line.center) {
+                graphics.drawCenteredString(
+                        font,
+                        line.text,
+                        (int) ((entryWidth + 7) * 0.5 / line.scale.x),
+                        0,
+                        line.color
+                );
+            } else {
+                graphics.drawString(
+                        font,
+                        line.text,
+                        (int) (entryWidth * line.left),
+                        0,
+                        line.color, false
+                );
+            }
+
+            graphics.pose().popPose();
+            //graphics.fillGradient((int) (x + (entryWidth * line.left)), y, x + entryWidth, y + line.height(font), ColorUtil.color(255, (int) (Math.random() * 255), 255, 255), ColorUtil.color(255, 0, 255, 255));
         }
     }
-
 }

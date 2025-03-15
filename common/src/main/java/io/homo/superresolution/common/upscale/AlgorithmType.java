@@ -11,14 +11,8 @@ public enum AlgorithmType {
             Requirement.nothing()
                     .glMajorVersion(4)
                     .glMinorVersion(3),
-            "FSR1"
-    ),
-    NIS(
-            Requirement.nothing()
-                    .glMajorVersion(4)
-                    .glMinorVersion(5)
-                    .developmentEnvironment(true),
-            "NVIDIA Image Scaling"
+            "FSR1",
+            "AMD FidelityFX Super Resolution 1"
     ),
     FSR2(
             Requirement.nothing()
@@ -27,24 +21,41 @@ public enum AlgorithmType {
                     .glMinorVersion(5)
                     .addIncludeOS(new OS(Arch.X86_64, OSType.WINDOWS))
                     .addIncludeOS(new OS(Arch.X86_64, OSType.LINUX)),
-            "FSR2"
+            "FSR2",
+            "AMD FidelityFX Super Resolution 2"
+    ),
+    NIS(
+            Requirement.nothing()
+                    .glMajorVersion(4)
+                    .glMinorVersion(5)
+                    .developmentEnvironment(true),
+            "NVIDIA Image Scaling",
+            "NVIDIA Image Scaling"
     ),
     SGSR(
             Requirement.nothing()
                     .glMajorVersion(4)
                     .glMinorVersion(5),
-            "Snapdragon™ GSR"
+            "Snapdragon™ GSR",
+            "Snapdragon™ Game Super Resolution"
     ),
     NONE(
             Requirement.nothing(),
+            "None",
             "None"
     );
     private final Requirement value;
     private final String name;
+    private final String fullName;
 
-    AlgorithmType(Requirement value, String name) {
+    AlgorithmType(Requirement value, String name, String fullName) {
         this.value = value;
         this.name = name;
+        this.fullName = fullName;
+    }
+
+    public Component getFullName() {
+        return Component.literal(fullName);
     }
 
     public Requirement getValue() {

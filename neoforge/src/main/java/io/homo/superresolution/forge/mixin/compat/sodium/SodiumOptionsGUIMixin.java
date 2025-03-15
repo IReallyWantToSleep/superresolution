@@ -43,8 +43,9 @@ public class SodiumOptionsGUIMixin extends Screen {
         this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of(
                 OptionGroup.createBuilder()
                         .add(OptionImpl.createBuilder(Integer.class, new MinecraftOptionsStorage())
-                                .setBinding((Options o, Integer b)->{},(Options o)-> 1)
-                                .setControl((option)-> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1, (a)-> Component.literal("")))
+                                .setBinding((Options o, Integer b) -> {
+                                }, (Options o) -> 1)
+                                .setControl((option) -> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1, (a) -> Component.literal("")))
                                 .setName(Component.literal(""))
                                 .setTooltip(Component.literal(""))
                                 .build()
@@ -63,7 +64,7 @@ public class SodiumOptionsGUIMixin extends Screen {
     )
     private void onSetPage(OptionPage page, CallbackInfo ci) {
         if (page == this.page) {
-            this.minecraft.setScreen(ConfigScreenBuilder.create().build(this));
+            this.minecraft.setScreen(ConfigScreenBuilder.create().buildConfigScreen(this));
             ci.cancel();
         }
     }

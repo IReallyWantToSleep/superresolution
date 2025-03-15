@@ -61,16 +61,21 @@ public class GlVkInteropManager implements Destroyable {
         while (!glfwWindowShouldClose(window)) {
             vkDeviceWaitIdle(a.vulkanApp.deviceManager.device);
             glfwPollEvents();
-
         }
     }
 
     public void init() {
+        try {
+            System.loadLibrary("vulkan-1");
+        } catch (UnsatisfiedLinkError e) {
+            supportVulkan = false;
+            VkApplication.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
+            return;
+        }
         vulkanApp = VkApplication.create()
                 .addInstanceRequiredExtensions(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME)
                 .addInstanceRequiredExtensions(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME)
                 .addInstanceRequiredExtensions(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
-                //.addDeviceRequiredExtensions(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME)
                 .addDeviceRequiredExtensions(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME)
                 .addDeviceRequiredExtensions(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
                 .addDeviceRequiredExtensions(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
@@ -81,9 +86,9 @@ public class GlVkInteropManager implements Destroyable {
             supportVulkan = true;
             return;
         } catch (VkException vkException) {
-            VkApplication.LOGGER.warn("Vulkan初始化失败，已禁用Vulkan，错误 {}", vkException.getMessage());
+            VkApplication.LOGGER.error("Vulkan初始化失败，已禁用Vulkan，错误 {}", vkException.getMessage());
         } catch (Exception e) {
-            VkApplication.LOGGER.warn("Vulkan初始化失败，发生未知错误，已禁用Vulkan，错误 {}", e.getMessage());
+            VkApplication.LOGGER.error("Vulkan初始化失败，发生未知错误，已禁用Vulkan，错误 {}", e.getMessage());
         }
         supportVulkan = false;
     }

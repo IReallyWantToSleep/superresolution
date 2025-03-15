@@ -9,6 +9,7 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.platform.EnvType;
+import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.GlVkInteropManager;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
@@ -51,10 +52,14 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
         ConfigFile.read();
-        if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
-            NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
+        if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+            LOGGER.warn("检测到在移动设备上运行，已跳过加载依赖库");
+        } else {
+            if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
+                NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
+            }
+            NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
         }
-        NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
         interopManager = new GlVkInteropManager();
         initVulkan();
         isPreInit = true;
@@ -132,6 +137,10 @@ public final class SuperResolution implements Resizable, Destroyable {
             return currentAlgorithm;
         }
         return defaultAlgorithm;
+    }
+
+    public static boolean isPojavLauncher() {
+        return System.getenv("POJAV_RENDERER") != null;
     }
 
     public void init() {
