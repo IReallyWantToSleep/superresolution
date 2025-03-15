@@ -7,6 +7,6 @@ import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 public class ModMenu implements ModMenuApi {
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
-        return ConfigScreenBuilder.create()::build;
+        return ConfigScreenBuilder.create()::buildConfigScreen;
     }
 }

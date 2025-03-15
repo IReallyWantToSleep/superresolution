@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.platform;
 
 import com.sun.jna.Platform;
+import io.homo.superresolution.common.SuperResolution;
 import net.minecraft.network.chat.Component;
 
 public enum OSType {
@@ -17,7 +18,7 @@ public enum OSType {
     }
 
     public static OSType get() {
-        if (ANDROID.isCurrentOS) {
+        if (ANDROID.isCurrentOS || SuperResolution.isPojavLauncher()) {
             return ANDROID;
         } else if (LINUX.isCurrentOS) {
             return LINUX;

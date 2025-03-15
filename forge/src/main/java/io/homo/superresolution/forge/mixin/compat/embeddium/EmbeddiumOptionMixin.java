@@ -22,7 +22,7 @@ public class EmbeddiumOptionMixin {
                         .setTitle(Component.translatable("superresolution.name"))
                         .setId(OptionIdentifier.create(SuperResolution.MOD_ID, "emb_configscreen"))
                         .setOnSelectFunction(() -> {
-                            Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().build((EmbeddiumVideoOptionsScreen) (Object) this));
+                            Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen((EmbeddiumVideoOptionsScreen) (Object) this));
                             return false;
                         }).build()
         );

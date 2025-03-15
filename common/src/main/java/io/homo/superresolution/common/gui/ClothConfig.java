@@ -8,13 +8,14 @@ import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
-import io.homo.superresolution.common.gui.entries.TextListEntry;
-import io.homo.superresolution.common.gui.screens.InfoScreen;
 import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.common.utils.ColorUtil;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
@@ -22,12 +23,12 @@ import me.shedaniel.clothconfig2.impl.ConfigEntryBuilderImpl;
 import me.shedaniel.clothconfig2.impl.builders.AbstractFieldBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class ClothConfig {
@@ -115,18 +116,14 @@ public class ClothConfig {
 
         debugInfo.setDisplayRequirement(Requirement.isTrue(() -> Minecraft.getInstance().level != null));
         debugCategory.addEntry(debugInfo);
-        ClothTextListListEntry textListEntry = new ClothTextListListEntry(
-                Component.literal("4"),
-                null
-        );
-        InfoBuilder.addTo(textListEntry, InfoBuilder::addAllInfo);
-        debugCategory.addEntry(textListEntry);
-
     }
 
     public static void add(ConfigBuilder builder) {
         ConfigCategory commonCategory = builder.getOrCreateCategory(Component.literal("通用"));
         ConfigEntryBuilder entryBuilder = ConfigEntryBuilderImpl.create();
+        if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+            commonCategory.addEntry(entryBuilder.startTextDescription(Component.literal("警告：正在移动设备上运行，本模组对移动设备的支持不稳定，可能出现无法预料的错误")).setColor(ColorUtil.color(255, 255, 0, 0)).build());
+        }
         commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), Config.isEnableUpscale())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                 .setDefaultValue(true)
@@ -168,6 +165,17 @@ public class ClothConfig {
                 )
                 .setDefaultValue(AlgorithmType.FSR1)
                 .setEnumNameProvider(((anEnum) -> Component.literal(((AlgorithmType) anEnum).getString())))
+                .setErrorSupplier((algorithmType -> {
+                    if (Platform.currentPlatform.isDevelopmentEnvironment() || Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID).contains("dev")) {
+                        return Optional.empty();
+                    }
+                    if (List.of(AlgorithmType.NIS, AlgorithmType.FSR2, AlgorithmType.SGSR).contains(algorithmType)) {
+                        return Optional.of(Component.literal("当前环境不支持该算法"));
+                    } else if (Objects.equals(AlgorithmType.FSR2, algorithmType) && Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+                        return Optional.of(Component.literal("当前环境不支持该算法"));
+                    }
+                    return Optional.empty();
+                }))
                 .setSaveConsumer(Config::setUpscaleAlgo).build();
         commonCategory.addEntry(algorithmTypeEnumSelector);
         commonCategory.addEntry(
@@ -214,7 +222,7 @@ public class ClothConfig {
         commonCategory.addEntry(captureModeEnumSelector);
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
-                (button) -> Minecraft.getInstance().setScreen(new InfoScreen(Minecraft.getInstance().screen, false)),
+                (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),
                 true
         ));
         for (String key : Config.getInstance().getSpecial().description.keySet()) {
@@ -223,5 +231,42 @@ public class ClothConfig {
         addDebug(builder, entryBuilder);
 
         builder.setSavingRunnable(ConfigFile::write);
+    }
+
+    public static void addInfos(ConfigBuilder builder) {
+        ConfigCategory envInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.title.env_info"));
+        ClothTextListListEntry envInfoEntry = new ClothTextListListEntry(
+                Component.empty(),
+                null,
+                false
+        ).setTop(4).setBottom(7);
+        InfoBuilder.of(envInfoEntry).addEnvInfo();
+        ClothTextListListEntry glExtInfoEntry = new ClothTextListListEntry(
+                Component.translatable("superresolution.screen.info.button.label.opengl_ext_info").append(" ").append(
+                        Component.translatable("superresolution.screen.info.text.opengl_ext_count").getString()
+                                .formatted(AlgorithmHelper.GLExtension.size())
+                ),
+                null,
+                true
+        ).setTop(4).setBottom(7);
+        InfoBuilder.of(glExtInfoEntry).addGlExt();
+        envInfoCategory.addEntry(envInfoEntry);
+        envInfoCategory.addEntry(glExtInfoEntry);
+        ConfigCategory algoInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.text.algo_support_status"));
+        for (AlgorithmType algorithmType : Arrays.stream(AlgorithmType.values()).toList()) {
+            if (algorithmType == AlgorithmType.NONE) continue;
+            ClothTextListListEntry algoInfoEntry = new ClothTextListListEntry(
+                    MutableComponent.create(algorithmType.getFullName().getContents()).withStyle(Style.EMPTY.withColor(
+                            AlgorithmManager.isSupportAlgorithm(algorithmType) ?
+                                    ColorUtil.color(255, 255, 255, 255) :
+                                    ColorUtil.color(255, 255, 0, 0)
+                    )),
+                    null,
+                    true
+            ).setTop(4).setBottom(7);
+            InfoBuilder.of(algoInfoEntry).addAlgoInfo(algorithmType);
+            algoInfoCategory.addEntry(algoInfoEntry);
+        }
+
     }
 }

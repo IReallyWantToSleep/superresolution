@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 public class InfoBuilder {
     private final LineContainer lineContainer;
@@ -21,13 +20,12 @@ public class InfoBuilder {
         this.lineContainer = lineContainer;
     }
 
-    public static void addTo(LineContainer lineContainer, Consumer<InfoBuilder> addConsumer) {
-        InfoBuilder infoBuilder = new InfoBuilder(lineContainer);
-        addConsumer.accept(infoBuilder);
+    public static InfoBuilder of(LineContainer lineContainer) {
+        return new InfoBuilder(lineContainer);
     }
 
 
-    public void addGlExt() {
+    public InfoBuilder addGlExt() {
         this.lineContainer.addLine(
                 new Line()
                         .text(Component.translatable("superresolution.screen.info.text.opengl_ext_count").getString()
@@ -43,30 +41,10 @@ public class InfoBuilder {
                             .color(255, 255, 255, 255)
             );
         }
+        return this;
     }
 
-    public void addAllInfo() {
-        addEnvInfo();
-        this.lineContainer.addLine(
-                new Line()
-                        .text(Component.translatable("superresolution.screen.info.text.algo_support_status"))
-                        .center(true)
-                        .scale(1.15f)
-                        .color(255, 255, 255, 255)
-        );
-        for (AlgorithmType algorithmType : Arrays.stream(AlgorithmType.values()).toList()) {
-            addAlgoInfo(algorithmType);
-        }
-    }
-
-    public void addEnvInfo() {
-        this.lineContainer.addLine(
-                new Line()
-                        .text(Component.translatable("superresolution.screen.info.title.env_info"))
-                        .center(true)
-                        .scale(1.15f)
-                        .color(255, 255, 255, 255)
-        );
+    public InfoBuilder addEnvInfo() {
         this.lineContainer.addLine(
                 new Line()
                         .text(
@@ -139,11 +117,13 @@ public class InfoBuilder {
                         )
                         .color(255, 255, 255, 255)
         );
+        return this;
+
     }
 
-    public void addAlgoInfo(AlgorithmType algo) {
-        if (algo == AlgorithmType.NONE) return;
-        this.lineContainer.addLine(new Line().text(algo.getString()).center(true).color(255, 255, 255, 255));
+    public InfoBuilder addAlgoInfo(AlgorithmType algo) {
+        if (algo == AlgorithmType.NONE) return this;
+        this.lineContainer.addLine(new Line().text(algo.getFullName()).center(true).color(255, 255, 255, 255));
         Requirement req = algo.getValue();
         Requirement.Result result = req.check();
         ArrayList<String> missingGlExtension = req.getMissingExtension();
@@ -308,7 +288,7 @@ public class InfoBuilder {
                         .left(0.02f)
                         .color(255, 255, 255, 255)
         );
-
+        return this;
     }
 
     public interface LineContainer {

@@ -29,7 +29,7 @@ public class TabFrameMixin {
                         #endif
                         .getTitle()
                         .getString().equals(Component.translatable("superresolution.screen.config.name").getString())) {
-            Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().build(Minecraft.getInstance().screen));
+            Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(Minecraft.getInstance().screen));
             ci.cancel();
         }
     }

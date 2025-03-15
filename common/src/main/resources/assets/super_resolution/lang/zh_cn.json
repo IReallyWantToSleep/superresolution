@@ -1,5 +1,6 @@
 {
     "superresolution.screen.config.name": "超分辨率配置",
+    "superresolution.screen.info.name": "信息",
     "superresolution.name": "超分辨率",
     "superresolution.screen.warn": "警告",
     "superresolution.common_requirement.not_support.msg": "SuperResolution 错误",
