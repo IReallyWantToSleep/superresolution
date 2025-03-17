@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.render.RenderTargetBindPoint;
 import io.homo.superresolution.common.render.gl.GlConst;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
 import java.util.ArrayList;
 
@@ -90,7 +91,7 @@ public class GlFrameBuffer implements IFrameBuffer {
     }
 
     @Override
-    public void clear() {
+    public void clearFrameBuffer() {
         bind(RenderTargetBindPoint.ALL);
         glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
     }
@@ -121,12 +122,22 @@ public class GlFrameBuffer implements IFrameBuffer {
     }
 
     @Override
+    public TextureFormat getColorTextureFormat() {
+        return colorAttachment.texture.getTextureFormat();
+    }
+
+    @Override
+    public TextureFormat getDepthTextureFormat() {
+        return depthAttachment.texture.getTextureFormat();
+    }
+
+    @Override
     public RenderTarget asMcRenderTarget() {
         return null;
     }
 
     @Override
-    public void resize(int width, int height) {
+    public void resizeFrameBuffer(int width, int height) {
         this.width = width;
         this.height = height;
     }

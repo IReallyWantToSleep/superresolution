@@ -16,28 +16,28 @@ vec2 decodeVelocityFromTexture(vec2 ev) {
     return dv;
 }
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(binding = 1) uniform highp sampler2D InputColor;
-layout(binding = 2) uniform highp sampler2D InputDepth;
-layout(binding = 3) uniform highp sampler2D InputVelocity;
-layout(binding = 0, rgba16f) uniform writeonly mediump image2D MotionDepthClipAlphaBuffer;
-layout(binding = 1, r32ui) uniform writeonly highp uimage2D YCoCgColor;
+layout (binding = 1) uniform highp sampler2D InputColor;
+layout (binding = 2) uniform highp sampler2D InputDepth;
+layout (binding = 3) uniform highp sampler2D InputVelocity;
+layout (binding = 0, rgba16f) uniform writeonly mediump image2D MotionDepthClipAlphaBuffer;
+layout (binding = 1, r32ui) uniform writeonly highp uimage2D YCoCgColor;
 
-layout(binding = 0) uniform readonly Params
+layout (binding = 0) uniform Params
 {
-    uvec2                renderSize;
-    uvec2                displaySize;
-    vec2                 ViewportSizeInverse;
-    vec2                 displaySizeRcp;
-    vec2                 jitterOffset;
-    vec4                 clipToPrevClip[4];
-    float                preExposure;
-    float                cameraFovAngleHor;
-    float                cameraNear;
-    float                MinLerpContribution;
-    uint                 bSameCamera;
-    uint                 reset;
+    uvec2 renderSize;
+    uvec2 displaySize;
+    vec2 ViewportSizeInverse;
+    vec2 displaySizeRcp;
+    vec2 jitterOffset;
+    vec4 clipToPrevClip[4];
+    float preExposure;
+    float cameraFovAngleHor;
+    float cameraNear;
+    float MinLerpContribution;
+    uint bSameCamera;
+    uint reset;
 } params;
 
 
@@ -54,22 +54,22 @@ void main()
     //FindNearestDepth
 
     vec4 topleft = textureGather(InputDepth, gatherCoord, 0);
-    vec2 v10 = vec2(ViewportSizeInverse.x*2.0, 0.0);
-    vec4 topRight = textureGather(InputDepth,(gatherCoord+v10), 0);
-    vec2 v12 = vec2(0.0, ViewportSizeInverse.y*2.0);
-	vec4 bottomLeft = textureGather(InputDepth,(gatherCoord+v12), 0);
-	vec2 v14 = vec2(ViewportSizeInverse.x*2.0, ViewportSizeInverse.y*2.0);
-	vec4 bottomRight = textureGather(InputDepth,(gatherCoord+v14), 0);
-	float maxC = min(min(min(topleft.y,topRight.x),bottomLeft.z),bottomRight.w);
-	float topleft4 = min(min(min(topleft.y,topleft.x),topleft.z),topleft.w);
-	float topLeftMax9 = min(bottomLeft.w,min(min(maxC,topleft4),topRight.w));
+    vec2 v10 = vec2(ViewportSizeInverse.x * 2.0, 0.0);
+    vec4 topRight = textureGather(InputDepth, (gatherCoord + v10), 0);
+    vec2 v12 = vec2(0.0, ViewportSizeInverse.y * 2.0);
+    vec4 bottomLeft = textureGather(InputDepth, (gatherCoord + v12), 0);
+    vec2 v14 = vec2(ViewportSizeInverse.x * 2.0, ViewportSizeInverse.y * 2.0);
+    vec4 bottomRight = textureGather(InputDepth, (gatherCoord + v14), 0);
+    float maxC = min(min(min(topleft.y, topRight.x), bottomLeft.z), bottomRight.w);
+    float topleft4 = min(min(min(topleft.y, topleft.x), topleft.z), topleft.w);
+    float topLeftMax9 = min(bottomLeft.w, min(min(maxC, topleft4), topRight.w));
 
     float depthclip = 0.0;
     if (maxC < 1.0 - 1.0e-05f)
     {
-        float topRight4 = min(min(min(topRight.y,topRight.x),topRight.z),topRight.w);
-        float bottomLeft4 = min(min(min(bottomLeft.y,bottomLeft.x),bottomLeft.z),bottomLeft.w);
-        float bottomRight4 = min(min(min(bottomRight.y,bottomRight.x),bottomRight.z),bottomRight.w);
+        float topRight4 = min(min(min(topRight.y, topRight.x), topRight.z), topRight.w);
+        float bottomLeft4 = min(min(min(bottomLeft.y, bottomLeft.x), bottomLeft.z), bottomLeft.w);
+        float bottomRight4 = min(min(min(bottomRight.y, bottomRight.x), bottomRight.z), bottomRight.w);
 
         float Wdepth = 0.0;
         float Ksep = 1.37e-05f;
@@ -77,13 +77,13 @@ void main()
         float diagonal_length = length(vec2(params.renderSize));
         float Ksep_Kfov_diagonal = Ksep * Kfov * diagonal_length;
 
-		float Depthsep = Ksep_Kfov_diagonal * (1.0 - maxC);
-		float EPSILON = 1.19e-07f;
-		Wdepth += clamp((Depthsep / (abs(maxC - topleft4) + EPSILON)), 0.0, 1.0);
-		Wdepth += clamp((Depthsep / (abs(maxC - topRight4) + EPSILON)), 0.0, 1.0);
-		Wdepth += clamp((Depthsep / (abs(maxC - bottomLeft4) + EPSILON)), 0.0, 1.0);
-		Wdepth += clamp((Depthsep / (abs(maxC - bottomRight4) + EPSILON)), 0.0, 1.0);
-        depthclip = clamp(1.0f - Wdepth*0.25, 0.0, 1.0);
+        float Depthsep = Ksep_Kfov_diagonal * (1.0 - maxC);
+        float EPSILON = 1.19e-07f;
+        Wdepth += clamp((Depthsep / (abs(maxC - topleft4) + EPSILON)), 0.0, 1.0);
+        Wdepth += clamp((Depthsep / (abs(maxC - topRight4) + EPSILON)), 0.0, 1.0);
+        Wdepth += clamp((Depthsep / (abs(maxC - bottomLeft4) + EPSILON)), 0.0, 1.0);
+        Wdepth += clamp((Depthsep / (abs(maxC - bottomRight4) + EPSILON)), 0.0, 1.0);
+        depthclip = clamp(1.0f - Wdepth * 0.25, 0.0, 1.0);
     }
 
     //refer to ue/fsr2 PostProcessFFX_FSR2ConvertVelocity.usf, and using nearest depth for dilated motion
@@ -97,11 +97,11 @@ void main()
     }
     else
     {
-#ifdef REQUEST_NDC_Y_UP
+        #ifdef REQUEST_NDC_Y_UP
         vec2 ScreenPos = vec2(2.0f * ViewportUV.x - 1.0f, 1.0f - 2.0f * ViewportUV.y);
-#else
+        #else
          vec2 ScreenPos = vec2(2.0f * ViewportUV - 1.0f);
-#endif
+        #endif
         vec3 Position = vec3(ScreenPos, topLeftMax9);    //this_clip
         vec4 PreClip = params.clipToPrevClip[3] + ((params.clipToPrevClip[2] * Position.z) + ((params.clipToPrevClip[1] * ScreenPos.y) + (params.clipToPrevClip[0] * ScreenPos.x)));
         vec2 PreScreen = PreClip.xy / PreClip.w;

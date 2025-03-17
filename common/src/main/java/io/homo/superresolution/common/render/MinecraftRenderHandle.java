@@ -37,6 +37,10 @@ public class MinecraftRenderHandle {
     private static PostChain entityEffect;
     private static IFrameBuffer entityTarget;
 
+    public static int getFrameCount() {
+        return frameCount;
+    }
+
     public static IFrameBuffer getOriginRenderTarget() {
         return originRenderTarget;
     }
@@ -50,7 +54,7 @@ public class MinecraftRenderHandle {
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
         renderTarget = new MinecraftRenderTarget(true);
-        renderTarget.resize(
+        renderTarget.resizeFrameBuffer(
                 getRenderWidth(),
                 getRenderHeight()
         );
@@ -111,7 +115,7 @@ public class MinecraftRenderHandle {
     }
 
     private static void resizeRenderTarget(IFrameBuffer renderTarget, int width, int height) {
-        renderTarget.resize(width, height);
+        renderTarget.resizeFrameBuffer(width, height);
     }
 
     private static boolean checkRenderWorldCallPos(CallType type) {
@@ -145,7 +149,7 @@ public class MinecraftRenderHandle {
         isRenderingWorld = false;
         frameCount++;
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
-        getOriginRenderTarget().bind(RenderTargetBindPoint.WRITE);
+        getOriginRenderTarget().bind(RenderTargetBindPoint.ALL);
         PerformanceInfo.begin("upscale");
         AlgorithmManager.update();
         SuperResolution.getCurrentAlgorithm().dispatch(AlgorithmManager.getDispatchResource());
@@ -212,6 +216,12 @@ public class MinecraftRenderHandle {
         }
     }
 
+    public static void callOnRenderTarget(Consumer<IFrameBuffer> callback) {
+        if (getRenderTarget() != null) {
+            callback.accept(getRenderTarget());
+        }
+    }
+
     public static void callOnRenderTargets(Consumer<IFrameBuffer> callback, boolean includeMainRenderTarget) {
         callOnRenderTargets(callback);
         if (includeMainRenderTarget) callback.accept(getRenderTarget());
@@ -236,7 +246,7 @@ public class MinecraftRenderHandle {
         callOnRenderTargets(
                 (renderTarget) -> {
                     if (renderTarget.getWidth() != renderWidth || renderTarget.getHeight() != renderHeight) {
-                        renderTarget.resize(
+                        renderTarget.resizeFrameBuffer(
                                 renderWidth,
                                 renderHeight
                         );
@@ -245,7 +255,7 @@ public class MinecraftRenderHandle {
         );
         IFrameBuffer handRenderTarget = getRenderTarget(RenderTargetType.HAND);
         if (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight) {
-            handRenderTarget.resize(
+            handRenderTarget.resizeFrameBuffer(
                     screenWidth,
                     screenHeight
             );
@@ -260,7 +270,7 @@ public class MinecraftRenderHandle {
         callOnRenderTarget(
                 RenderTargetType.HAND,
                 (renderTarget -> {
-                    renderTarget.clear();
+                    renderTarget.clearFrameBuffer();
                     Gl.glBindFramebuffer(
                             GlConst.GL_DRAW_FRAMEBUFFER,
                             renderTarget.getFrameBufferId()

@@ -4,14 +4,17 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.StorageFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr3PassCompute;
+import org.joml.Matrix4f;
 
 import java.util.function.Consumer;
 
@@ -52,24 +55,28 @@ public class Sgsr extends AbstractAlgorithm {
         input = MinecraftRenderHandle.getRenderTarget();
         output = new StorageFrameBuffer(false);
         this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
-        params = new GlUniformBuffer<>(SgsrParams.calloc());
+        params = new GlUniformBuffer<>(new SgsrParams());
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
         initVariant();
         variantInstance.setOutput(output);
+        params.struct().updateData(dispatchResource);
+        params.update();
+        //new Matrix4f().lookAt()
         variantInstance.dispatch(dispatchResource, this);
         return false;
     }
+
 
     @Override
     public void blitToScreen(int width, int height) {
         GlTexture.blitToScreen(
                 width,
                 height,
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
+                width,
+                height,
                 output.getColorTextureId()
         );
     }
@@ -77,7 +84,7 @@ public class Sgsr extends AbstractAlgorithm {
     @Override
     public void resize(int width, int height) {
         safeVariantInstance((sgsrVariant -> sgsrVariant.resize(width, height)));
-        this.output.resize(width, height);
+        this.output.resizeFrameBuffer(width, height);
     }
 
     private void safeVariantInstance(Consumer<AbstractSgsrVariant> callback) {

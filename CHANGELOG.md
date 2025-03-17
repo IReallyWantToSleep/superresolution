@@ -1,3 +1,16 @@
+# 0.0.5a1
+
+警告：该版本国际化尚不完善 Warning: The internationalization of this version is not yet complete
+
+* 优化了空值处理
+* 实验性的SGSR
+* 实验性的移动设备支持
+* 美化信息界面 ~~_(指打断动画)_~~
+* 在信息界面添加了更多内容
+* 改进Vulkan兼容性检测
+* 修复issues/22
+* 修复issues/24
+
 # 0.0.4a3
 
 * 修复配置文件不存在时游戏崩溃的bug

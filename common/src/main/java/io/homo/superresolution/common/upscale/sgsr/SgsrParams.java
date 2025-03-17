@@ -1,163 +1,121 @@
 package io.homo.superresolution.common.upscale.sgsr;
 
+import io.homo.superresolution.common.impl.Vec2;
+import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
+
 import io.homo.superresolution.common.render.impl.IUniformStruct;
-import org.jetbrains.annotations.Nullable;
+import io.homo.superresolution.common.upscale.DispatchResource;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.Struct;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 
-import static org.lwjgl.system.MemoryUtil.nmemAllocChecked;
+public class SgsrParams implements IUniformStruct {
+    private final ByteBuffer container;
+    private final int sameFrameNum = 0;
 
-public class SgsrParams extends Struct implements IUniformStruct {
+    public SgsrParams() {
+        this.container = MemoryStack.stackCalloc(sizeof());
+    }
 
-    public static final int SIZEOF;
-    public static final int ALIGNOF;
-    public static final int
-            RENDERSIZE,
-            DISPLAYSIZE,
-            INVIEWPORTSIZEINVERSE,
-            DISPLAYSIZERCPS,
-            JITTEROFFSET,
-            PADDING1,
-            CLIPTOPREVCLIP,
-            PREEXPOSURE,
-            CAMERAFOVANGLEHOR,
-            CAMERANEAR,
-            MINLERPCONTRIBUTION,
-            BSAMECAMERA,
-            RESET;
+    private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
+        float diff = 0;
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < 4; c++) {
+                diff += Math.abs(currentMVP.get(r, c) - prevMVP.get(r, c));
+            }
+        }
+        return diff < threshold;
+    }
 
-    static {
-        Layout layout = __struct(
-                __member(8), // uvec2 renderSize
-                __member(8), // uvec2 displaySize
-                __member(8), // vec2 InViewportSizeInverse
-                __member(8), // vec2 displaySizeRcp
-                __member(8), // vec2 jitterOffset
-                __member(8), // vec2 padding1
-                __array(16, 4), // vec4 clipToPrevClip[4]
-                __member(4), // float preExposure
-                __member(4), // float cameraFovAngleHor
-                __member(4), // float cameraNear
-                __member(4), // float MinLerpContribution
-                __member(4), // uint bSameCamera
-                __member(4)  // uint reset
+    public void setRenderSize(Vec2 renderSize) {
+        container.putInt(0, (int) renderSize.x);
+        container.putInt(4, (int) renderSize.y);
+    }
+
+    public void setDisplaySize(Vec2 displaySize) {
+        container.putInt(8, (int) displaySize.x);
+        container.putInt(12, (int) displaySize.y);
+    }
+
+    public void setRenderSizeRcp(Vec2 renderSizeRcp) {
+        container.putFloat(16, renderSizeRcp.x);
+        container.putFloat(20, renderSizeRcp.y);
+
+    }
+
+    public void setDisplaySizeRcp(Vec2 displaySizeRcp) {
+        container.putFloat(24, displaySizeRcp.x);
+        container.putFloat(28, displaySizeRcp.y);
+    }
+
+    public void setJitterOffset(Vec2 jitterOffset) {
+        container.putFloat(32, jitterOffset.x);
+        container.putFloat(36, jitterOffset.y);
+    }
+
+    public void setClipToPrevClip(Matrix4f clipToPrevClip) {
+        clipToPrevClip.get(48, container);
+    }
+
+    public void setPreExposure(float preExposure) {
+        container.putFloat(112, preExposure);
+    }
+
+    public void setCameraFovAngleHor(float cameraFovAngleHor) {
+        container.putFloat(116, cameraFovAngleHor);
+    }
+
+    public void setCameraNear(float cameraNear) {
+        container.putFloat(120, cameraNear);
+    }
+
+    public void setMinLerpContribution(float minLerpContribution) {
+        container.putFloat(124, minLerpContribution);
+    }
+
+    public void setbSameCamera(boolean bSameCamera) {
+        container.putInt(128, bSameCamera ? 1 : 0);
+    }
+
+    public void setReset(boolean reset) {
+        container.putInt(132, reset ? 1 : 0);
+    }
+
+    public void fillZero(int start, int end) {
+        for (int i = start; i < end; i++) {
+            container.put(i, (byte) 0);
+        }
+    }
+
+    public void updateData(DispatchResource dispatchResource) {
+        container.clear();
+        setRenderSize(dispatchResource.renderSize());
+        setDisplaySize(dispatchResource.screenSize());
+        setRenderSizeRcp(dispatchResource.renderSize().divideInto(1.0f));
+        setDisplaySizeRcp(dispatchResource.screenSize().divideInto(1.0f));
+        setJitterOffset(new Vec2(0.0f));
+        fillZero(40, 48);
+        //const auto curr_view_proj_matrix        = m_cameraProjection * m_cameraView;
+        //const auto inv_current_view_proj_matrix = glm::inverse( m_cameraView ) * glm::inverse( m_cameraProjection );
+        //const auto mt                           = m_prevViewProjection * inv_current_view_proj_matrix;
+        Matrix4f curr_view_proj_matrix = new Matrix4f(dispatchResource.projectionMatrix()).mul(dispatchResource.viewMatrix());
+        Matrix4f inv_current_view_proj_matrix = new Matrix4f(dispatchResource.viewMatrix()).invert().mul(new Matrix4f(dispatchResource.projectionMatrix()).invert());
+        Matrix4f clipToPrevClipMat = new Matrix4f(dispatchResource.lastViewMatrix()).mul(inv_current_view_proj_matrix);
+        setClipToPrevClip(clipToPrevClipMat);
+        setPreExposure(1.0f);
+        setCameraFovAngleHor(dispatchResource.horizontalFov());
+        setCameraNear(dispatchResource.cameraNear());
+        setMinLerpContribution(0.5f);
+        boolean isCameraStill = isCameraStill(
+                curr_view_proj_matrix,
+                dispatchResource.lastProjectionMatrix(),
+                1e-5f
         );
-
-        SIZEOF = layout.getSize();
-        ALIGNOF = layout.getAlignment();
-
-        RENDERSIZE = layout.offsetof(0);
-        DISPLAYSIZE = layout.offsetof(1);
-        INVIEWPORTSIZEINVERSE = layout.offsetof(2);
-        DISPLAYSIZERCPS = layout.offsetof(3);
-        JITTEROFFSET = layout.offsetof(4);
-        PADDING1 = layout.offsetof(5);
-        CLIPTOPREVCLIP = layout.offsetof(6);
-        PREEXPOSURE = layout.offsetof(7);
-        CAMERAFOVANGLEHOR = layout.offsetof(8);
-        CAMERANEAR = layout.offsetof(9);
-        MINLERPCONTRIBUTION = layout.offsetof(10);
-        BSAMECAMERA = layout.offsetof(11);
-        RESET = layout.offsetof(12);
-    }
-
-    protected SgsrParams(long address, @Nullable ByteBuffer container) {
-        super(address, __checkContainer(container, SIZEOF));
-    }
-    
-    private static native void nrenderSize(long struct, int x, int y);
-
-    private static native void ndisplaySize(long struct, int x, int y);
-
-    private static native void nInViewportSizeInverse(long struct, float x, float y);
-
-    private static native void ndisplaySizeRcp(long struct, float x, float y);
-
-    private static native void njitterOffset(long struct, float x, float y);
-
-    private static native void npadding1(long struct, float x, float y);
-
-    private static native void nclipToPrevClip(long struct, FloatBuffer value);
-
-    private static native void npreExposure(long struct, float value);
-
-    private static native void ncameraFovAngleHor(long struct, float value);
-
-    private static native void ncameraNear(long struct, float value);
-
-    private static native void nMinLerpContribution(long struct, float value);
-
-    private static native void nbSameCamera(long struct, int value);
-
-    private static native void nreset(long struct, int value);
-
-    public static SgsrParams malloc() {
-        return new SgsrParams(nmemAllocChecked(SIZEOF), null);
-    }
-
-    public static SgsrParams calloc() {
-        ByteBuffer buffer = MemoryStack.stackCalloc(SIZEOF);
-        return new SgsrParams(MemoryUtil.memAddress(buffer), buffer);
-    }
-
-    public void renderSize(int x, int y) {
-        nrenderSize(address(), x, y);
-    }
-
-    public void displaySize(int x, int y) {
-        ndisplaySize(address(), x, y);
-    }
-
-    public void InViewportSizeInverse(float x, float y) {
-        nInViewportSizeInverse(address(), x, y);
-    }
-
-    public void displaySizeRcp(float x, float y) {
-        ndisplaySizeRcp(address(), x, y);
-    }
-
-    public void jitterOffset(float x, float y) {
-        njitterOffset(address(), x, y);
-    }
-
-    public void padding1(float x, float y) {
-        npadding1(address(), x, y);
-    }
-
-    public void clipToPrevClip(FloatBuffer value) {
-        nclipToPrevClip(address(), value);
-    }
-
-    public void preExposure(float value) {
-        npreExposure(address(), value);
-    }
-
-    public void cameraFovAngleHor(float value) {
-        ncameraFovAngleHor(address(), value);
-    }
-
-    public void cameraNear(float value) {
-        ncameraNear(address(), value);
-    }
-
-    public void MinLerpContribution(float value) {
-        nMinLerpContribution(address(), value);
-    }
-
-    public void bSameCamera(int value) {
-        nbSameCamera(address(), value);
-    }
-
-    public void reset(int value) {
-        nreset(address(), value);
-    }
-
-    protected SgsrParams create(long address, @Nullable ByteBuffer container) {
-        return new SgsrParams(address, container);
+        setbSameCamera(isCameraStill);
+        fillZero(136, 144);
+        container.position(144);
+        container.flip();
     }
 
     @Override
@@ -167,6 +125,6 @@ public class SgsrParams extends Struct implements IUniformStruct {
 
     @Override
     public int sizeof() {
-        return SIZEOF;
+        return 144;
     }
 }

@@ -1,9 +1,9 @@
 package io.homo.superresolution.common.impl;
 
 public class Vec3 {
-    public float x = 0;
-    public float y = 0;
-    public float z = 0;
+    public float x;
+    public float y;
+    public float z;
 
     public Vec3(float v) {
         this.x = v;
@@ -40,6 +40,47 @@ public class Vec3 {
 
     public void setY(float y) {
         this.y = y;
+    }
+
+
+    public Vec3 add(Vec3 other) {
+        return new Vec3(x + other.x, y + other.y, z + other.z);
+    }
+
+    public Vec3 add(float scalar) {
+        return new Vec3(x + scalar, y + scalar, z + scalar);
+    }
+
+    public Vec3 subtract(Vec3 other) {
+        return new Vec3(x - other.x, y - other.y, z - other.z);
+    }
+
+    public Vec3 subtract(float scalar) {
+        return new Vec3(x - scalar, y - scalar, z - scalar);
+    }
+
+    public Vec3 subtractFrom(float scalar) {
+        return new Vec3(scalar - x, scalar - y, scalar - z);
+    }
+
+    public Vec3 multiply(Vec3 other) {
+        return new Vec3(x * other.x, y * other.y, z * other.z);
+    }
+
+    public Vec3 multiply(float scalar) {
+        return new Vec3(x * scalar, y * scalar, z * scalar);
+    }
+
+    public Vec3 divide(Vec3 other) {
+        return new Vec3(x / other.x, y / other.y, z / other.z);
+    }
+
+    public Vec3 divide(float scalar) {
+        return new Vec3(x / scalar, y / scalar, z / scalar);
+    }
+
+    public Vec3 divideInto(float scalar) {
+        return new Vec3(scalar / x, scalar / y, scalar / z);
     }
 
 }

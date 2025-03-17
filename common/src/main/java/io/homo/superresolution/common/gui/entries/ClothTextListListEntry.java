@@ -133,21 +133,33 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             float center = 4.5f;
             graphics.pose().translate(x - 8 + center + entryWidth - 7, y + 5 + center, 0);
             graphics.pose().mulPose(Axis.ZP.rotationDegrees(90 + (float) (180 * rotatingAnimator.value())));
+            #if MC_VER > MC_1_21_1
+            graphics.blit(net.minecraft.client.renderer.RenderType::guiTextured, CONFIG_TEX, (int) -center, (int) -center, 33f, isHovered ? 18f : 0f, 9, 9, 256, 256);
+            #else
             graphics.blit(CONFIG_TEX, (int) -center, (int) -center, 33, isHovered ? 18 : 0, 9, 9);
+            #endif
             graphics.pose().popPose();
         }
         graphics.fillGradient(x, y, x + sideWidth, y + entryHeight, ColorUtil.color(255, 255, 255, 255), ColorUtil.color(255, 255, 255, 255));
 
 
         if (expandAnimator.value() != 0.0) {
+            #if MC_VER < MC_1_21_4
             ScissorsHandler.scissor(new io.homo.superresolution.common.gui.Rectangle(x, y, entryWidth, (int) ((getItemHeight()) * expandAnimator.value())));
+            #else
+            graphics.enableScissor(x, y, entryWidth + x, (int) ((getItemHeight()) * expandAnimator.value()) + y);
+            #endif
             int yy = y + top;
             for (LineRenderer line : this.lineRenderers) {
                 line.render(graphics, -1, yy, x + sideWidth + 5, entryWidth - (sideWidth + 5), entryHeight, mouseX, mouseY, isHovered, delta, textRenderer);
                 Objects.requireNonNull(Minecraft.getInstance().font);
                 yy += line.line.height(textRenderer) + 1;
             }
+            #if MC_VER < MC_1_21_4
             ScissorsHandler.removeLastScissor();
+            #else
+            graphics.disableScissor();
+            #endif
             Style style = this.getTextAt(mouseX, mouseY);
             AbstractConfigScreen configScreen = this.getConfigScreen();
             if (style != null && configScreen != null) {
@@ -169,13 +181,13 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            if (mainRectangle.contains(mouseX, mouseY) && this.canExpand) {
-                this.setExpanded(!isExpanded());
-            }
             Style style = this.getTextAt(mouseX, mouseY);
             AbstractConfigScreen configScreen = this.getConfigScreen();
             if (configScreen != null && configScreen.handleComponentClicked(style)) {
                 return true;
+            }
+            if (mainRectangle.contains(mouseX, mouseY) && this.canExpand) {
+                this.setExpanded(!isExpanded());
             }
         }
 
@@ -183,12 +195,13 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
     }
 
     protected @Nullable Style getTextAt(double x, double y) {
+        //一般行高是9，但用缩放就出bug力，挖坑
         int lineCount = this.lineRenderers.size();
         if (lineCount > 0) {
             int textX = Mth.floor(x - (double) this.savedX);
             int textY = Mth.floor(y - (double) 7.0F - (double) this.savedY);
-            if (textX >= 0 && textY >= 0 && textX <= this.savedWidth && textY < 12 * lineCount + lineCount) {
-                int line = textY / 12;
+            if (textX >= 0 && textY >= 0 && textX <= this.savedWidth && textY < 9 * lineCount + lineCount) {
+                int line = textY / 9;
                 if (line < this.lineRenderers.size()) {
                     FormattedCharSequence orderedText = this.lineRenderers.get(line).line.text;
                     return orderedText == null ? Style.EMPTY : this.textRenderer.getSplitter().componentStyleAtWidth(orderedText, textX);

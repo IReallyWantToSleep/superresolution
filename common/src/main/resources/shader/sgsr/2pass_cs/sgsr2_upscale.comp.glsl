@@ -10,46 +10,46 @@
 
 float FastLanczos(float base)
 {
-	float y = base - 1.0f;
-	float y2 = y * y;
-	float y_temp = 0.75f * y + y2;
-	return y_temp * y2;
+    float y = base - 1.0f;
+    float y2 = y * y;
+    float y_temp = 0.75f * y + y2;
+    return y_temp * y2;
 }
 
 vec3 DecodeColor(uint sample32)
 {
-	uint x11 = sample32 >> 21u;
-	uint y11 = sample32 & (2047u << 10u);
-	uint z10 = sample32 & 1023u;
-	vec3 samplecolor;
-	samplecolor.x = (float(x11) * (1.0 / 2047.5));
-	samplecolor.y = (float(y11) * (4.76953602e-7)) - 0.5;
-	samplecolor.z = (float(z10) * (1.0 / 1023.5)) - 0.5;
+    uint x11 = sample32 >> 21u;
+    uint y11 = sample32 & (2047u << 10u);
+    uint z10 = sample32 & 1023u;
+    vec3 samplecolor;
+    samplecolor.x = (float(x11) * (1.0 / 2047.5));
+    samplecolor.y = (float(y11) * (4.76953602e-7)) - 0.5;
+    samplecolor.z = (float(z10) * (1.0 / 1023.5)) - 0.5;
 
-	return samplecolor;
+    return samplecolor;
 }
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-layout(binding = 7) uniform highp sampler2D PrevHistoryOutput;
-layout(binding = 8) uniform highp sampler2D MotionDepthClipAlphaBuffer;
-layout(binding = 9) uniform highp usampler2D YCoCgColor;
-layout(binding = 0, rgba16f) uniform writeonly mediump image2D SceneColorOutput;
-layout(binding = 1, rgba16f) uniform writeonly mediump image2D HistoryOutput;
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (binding = 7) uniform highp sampler2D PrevHistoryOutput;
+layout (binding = 8) uniform highp sampler2D MotionDepthClipAlphaBuffer;
+layout (binding = 9) uniform highp usampler2D YCoCgColor;
+layout (binding = 0, rgba16f) uniform writeonly mediump image2D SceneColorOutput;
+layout (binding = 1, rgba16f) uniform writeonly mediump image2D HistoryOutput;
 
-layout(binding = 0) uniform readonly Params
+layout (binding = 0) uniform Params
 {
-    uvec2                renderSize;
-    uvec2                displaySize;
-    vec2                 renderSizeRcp;
-    vec2                 displaySizeRcp;
-    vec2                 jitterOffset;
-    vec4                 clipToPrevClip[4];
-    float                preExposure;
-    float                cameraFovAngleHor;
-    float                cameraNear;
-    float                MinLerpContribution;
-    uint                 sameCameraFrmNum;
-    uint                 reset;
+    uvec2 renderSize;
+    uvec2 displaySize;
+    vec2 renderSizeRcp;
+    vec2 displaySizeRcp;
+    vec2 jitterOffset;
+    vec4 clipToPrevClip[4];
+    float preExposure;
+    float cameraFovAngleHor;
+    float cameraNear;
+    float MinLerpContribution;
+    uint sameCameraFrmNum;
+    uint reset;
 } params;
 
 void main()
@@ -73,11 +73,11 @@ void main()
     ///ScreenPosToViewportScale&Bias
     vec2 PrevUV;
     PrevUV.x = clamp(-0.5 * Motion.x + Hruv.x, 0.0, 1.0);
-#ifdef REQUEST_NDC_Y_UP
+    #ifdef REQUEST_NDC_Y_UP
     PrevUV.y = clamp(0.5 * Motion.y + Hruv.y, 0.0, 1.0);
-#else
+    #else
     PrevUV.y = clamp(-0.5 * Motion.y + Hruv.y, 0.0, 1.0);
-#endif
+    #endif
 
     float depthfactor = mda.z;
     float ColorMax = mda.w;
@@ -116,17 +116,17 @@ void main()
 
     uint sameCameraFrmNum = params.sameCameraFrmNum;
 
-	if (sameCameraFrmNum!=0u)
-	{
-		topRight = textureGather(YCoCgColor, gatherCoord + vec2(params.renderSizeRcp.x, 0.0)).yz;
-		bottomLeft = textureGather(YCoCgColor, gatherCoord + vec2(0.0, params.renderSizeRcp.y)).xy;
-	}
-	else
-	{
-		uvec2 btmRight = textureGather(YCoCgColor, gatherCoord + vec2(params.renderSizeRcp.x, params.renderSizeRcp.y)).xz;
-		bottomLeft.y = btmRight.x;
-		topRight.x = btmRight.y;
-	}
+    if (sameCameraFrmNum != 0u)
+    {
+        topRight = textureGather(YCoCgColor, gatherCoord + vec2(params.renderSizeRcp.x, 0.0)).yz;
+        bottomLeft = textureGather(YCoCgColor, gatherCoord + vec2(0.0, params.renderSizeRcp.y)).xy;
+    }
+    else
+    {
+        uvec2 btmRight = textureGather(YCoCgColor, gatherCoord + vec2(params.renderSizeRcp.x, params.renderSizeRcp.y)).xz;
+        bottomLeft.y = btmRight.x;
+        topRight.x = btmRight.y;
+    }
 
     vec3 rectboxmin;
     vec3 rectboxmax;
@@ -206,7 +206,7 @@ void main()
         rectboxweight += boxweight;
     }
 
-    if (sameCameraFrmNum!=0u)
+    if (sameCameraFrmNum != 0u)
     {
         {
             vec3 samplecolor = DecodeColor(btmRight);
@@ -276,14 +276,14 @@ void main()
     rectboxvar *= rectboxweight;
     rectboxvar = sqrt(abs(rectboxvar - rectboxcenter * rectboxcenter));
 
-    Upsampledcw.xyz =  clamp(Upsampledcw.xyz / Upsampledcw.w, rectboxmin-vec3(0.05), rectboxmax+vec3(0.05));
-    Upsampledcw.w = Upsampledcw.w * (1.0f / 3.0f) ;
+    Upsampledcw.xyz = clamp(Upsampledcw.xyz / Upsampledcw.w, rectboxmin - vec3(0.05), rectboxmax + vec3(0.05));
+    Upsampledcw.w = Upsampledcw.w * (1.0f / 3.0f);
 
-	float OneMinusWfactor = 1.0f - Wfactor;
+    float OneMinusWfactor = 1.0f - Wfactor;
 
     float baseupdate = OneMinusWfactor - OneMinusWfactor * depthfactor;
-    baseupdate = min(baseupdate, mix(baseupdate, Upsampledcw.w *10.0f, clamp(10.0f* motion_viewport_len, 0.0, 1.0)));
-    baseupdate = min(baseupdate, mix(baseupdate, Upsampledcw.w, clamp(motion_viewport_len *0.05f, 0.0, 1.0)));
+    baseupdate = min(baseupdate, mix(baseupdate, Upsampledcw.w * 10.0f, clamp(10.0f * motion_viewport_len, 0.0, 1.0)));
+    baseupdate = min(baseupdate, mix(baseupdate, Upsampledcw.w, clamp(motion_viewport_len * 0.05f, 0.0, 1.0)));
     float basealpha = baseupdate;
 
     const float EPSILON = 1.192e-07f;
@@ -298,9 +298,9 @@ void main()
     vec3 clampedcolor = clamp(HistoryColor, rectboxmin, rectboxmax);
     float startLerpValue = params.MinLerpContribution; //params.MinLerpContribution; //MinLerpContribution;
     if ((abs(mda.x) + abs(mda.y)) > 0.000001) startLerpValue = 0.0;
-	float lerpcontribution = (any(greaterThan(rectboxmin, HistoryColor)) || any(greaterThan(HistoryColor, rectboxmax))) ? startLerpValue : 1.0f;
+    float lerpcontribution = (any(greaterThan(rectboxmin, HistoryColor)) || any(greaterThan(HistoryColor, rectboxmax))) ? startLerpValue : 1.0f;
 
-	HistoryColor = mix(clampedcolor, HistoryColor, clamp(lerpcontribution, 0.0, 1.0));
+    HistoryColor = mix(clampedcolor, HistoryColor, clamp(lerpcontribution, 0.0, 1.0));
     float basemin = min(basealpha, 0.1f);
     basealpha = mix(basemin, basealpha, clamp(lerpcontribution, 0.0, 1.0));
 
@@ -308,19 +308,19 @@ void main()
     float alphasum = max(EPSILON, basealpha + Upsampledcw.w);
     float alpha = clamp(Upsampledcw.w / alphasum + float(params.reset), 0.0, 1.0);
     Upsampledcw.xyz = mix(HistoryColor, Upsampledcw.xyz, alpha);
-    
+
     imageStore(HistoryOutput, ivec2(gl_GlobalInvocationID.xy), vec4(Upsampledcw.xyz, Wfactor));
 
     ////ycocg to rgb
     float x_z = Upsampledcw.x - Upsampledcw.z;
     Upsampledcw.xyz = vec3(
-        clamp(x_z + Upsampledcw.y, 0.0, 1.0),
-        clamp(Upsampledcw.x + Upsampledcw.z, 0.0, 1.0),
-        clamp(x_z - Upsampledcw.y, 0.0, 1.0));
+    clamp(x_z + Upsampledcw.y, 0.0, 1.0),
+    clamp(Upsampledcw.x + Upsampledcw.z, 0.0, 1.0),
+    clamp(x_z - Upsampledcw.y, 0.0, 1.0));
 
     float compMax = max(Upsampledcw.x, Upsampledcw.y);
     compMax = clamp(max(compMax, Upsampledcw.z), 0.0f, 1.0f);
-    float scale = params.preExposure /  ((1.0f + 600.0f / 65504.0f) - compMax);
+    float scale = params.preExposure / ((1.0f + 600.0f / 65504.0f) - compMax);
 
     if (ColorMax > 4000.0f) scale = ColorMax;
     Upsampledcw.xyz = Upsampledcw.xyz * scale;

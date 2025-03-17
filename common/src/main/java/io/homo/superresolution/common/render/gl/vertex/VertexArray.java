@@ -7,11 +7,14 @@ public class VertexArray implements AutoCloseable {
 
     public VertexArray() {
         id = glGenVertexArrays();
-        bind();
     }
 
     public void bind() {
         glBindVertexArray(id);
+    }
+
+    public void unbind() {
+        glBindVertexArray(0);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.render.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import net.minecraft.client.Minecraft;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
@@ -106,13 +107,23 @@ public class StorageFrameBuffer extends RenderTarget implements IFrameBuffer {
 
     #if MC_VER < MC_1_21_4
     @Override
-    public void clear() {
+    public void clearFrameBuffer() {
         this.clear(Minecraft.ON_OSX);
     }
 
     @Override
-    public void resize(int width, int height) {
+    public void resizeFrameBuffer(int width, int height) {
         this.resize(width, height, Minecraft.ON_OSX);
+    }
+    #else
+    @Override
+    public void clearFrameBuffer() {
+        this.clear();
+    }
+
+    @Override
+    public void resizeFrameBuffer(int width, int height) {
+        this.resize(width, height);
     }
     #endif
 
@@ -142,6 +153,16 @@ public class StorageFrameBuffer extends RenderTarget implements IFrameBuffer {
     @Override
     public int getFrameBufferId() {
         return this.frameBufferId;
+    }
+
+    @Override
+    public TextureFormat getColorTextureFormat() {
+        return TextureFormat.RGBA8;
+    }
+
+    @Override
+    public TextureFormat getDepthTextureFormat() {
+        return stencilEnabled ? TextureFormat.DEPTH24_STENCIL8 : TextureFormat.DEPTH24;
     }
 
     @Override

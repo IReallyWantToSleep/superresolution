@@ -7,7 +7,7 @@ public class MinecraftRenderTarget extends StorageFrameBuffer {
         super(useDepth);
     }
 
-    public void clear() {
+    public void clearFrameBuffer() {
         #if MC_VER  < MC_1_21_4
         this.clear(Minecraft.ON_OSX);
         #else
@@ -15,7 +15,7 @@ public class MinecraftRenderTarget extends StorageFrameBuffer {
         #endif
     }
 
-    public void resize(int width, int height) {
+    public void resizeFrameBuffer(int width, int height) {
         #if MC_VER  < MC_1_21_4
         this.resize(width, height, Minecraft.ON_OSX);
         #else

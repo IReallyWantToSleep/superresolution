@@ -3,6 +3,7 @@ package io.homo.superresolution.common.render.impl.framebuffer;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
@@ -35,10 +36,15 @@ public class MotionVectorsFrameBuffer extends MinecraftRenderTarget {
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.colorTextureId, 0);
         this.checkStatus();
         #if MC_VER > MC_1_21_1
-        this.clear();
+        this.clearFrameBuffer();
         #else
         this.clear(clearError);
         #endif
         this.unbindRead();
+    }
+
+    @Override
+    public TextureFormat getColorTextureFormat() {
+        return TextureFormat.RG16F;
     }
 }

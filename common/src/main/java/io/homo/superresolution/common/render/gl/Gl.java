@@ -14,6 +14,22 @@ public class Gl {
         return new int[]{glGetInteger(GL_MAJOR_VERSION), glGetInteger(GL_MINOR_VERSION)};
     }
 
+    public static void glBindSampler(int unit, int sampler) {
+        GL33C.glBindSampler(unit, sampler);
+    }
+
+    public static void glUniform4fv(int location, FloatBuffer value) {
+        GL20C.glUniform4fv(location, value);
+    }
+
+    public static void glUniform3ui(int location, int v0, int v1, int v2) {
+        GL30C.glUniform3ui(location, v0, v1, v2);
+    }
+
+    public static void glUniform2ui(int location, int v0, int v1) {
+        GL30C.glUniform2ui(location, v0, v1);
+    }
+
     public static void glBindVertexArray(int array) {
         GL30C.glBindVertexArray(array);
     }
@@ -38,6 +54,9 @@ public class Gl {
         GL15C.glBufferData(target, data, usage);
     }
 
+    public static void glBufferData(int target, IntBuffer data, int usage) {
+        GL15C.glBufferData(target, data, usage);
+    }
 
     public static void glBindBuffer(int target, int buffer) {
         GL15C.glBindBuffer(target, buffer);

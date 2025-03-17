@@ -6,15 +6,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.homo.superresolution.common.render.gl.GlConst.GL_RG16F;
-import static io.homo.superresolution.common.render.gl.GlConst.GL_RGBA8;
+import static io.homo.superresolution.common.render.gl.GlConst.*;
+import static org.lwjgl.opengl.GL30.GL_R32UI;
+import static org.lwjgl.opengl.GL30.GL_RGBA16F;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum TextureFormat {
     RGBA8(GL_RGBA8, VK_FORMAT_R8G8B8A8_UNORM),
-    RG16F(GL_RG16F, VK_FORMAT_R16G16_UNORM);
+    RGBA16F(GL_RGBA16F, VK_FORMAT_R16G16B16A16_SFLOAT),
+    RGB8(GL_RGB8, VK_FORMAT_R8G8B8_UNORM),
+    RG16F(GL_RG16F, VK_FORMAT_R16G16_SFLOAT),
+    R32F(GL_R32F, VK_FORMAT_R32_SFLOAT),
+    R32UI(GL_R32UI, VK_FORMAT_R32_UINT),
+    DEPTH32F(GL_DEPTH_COMPONENT32F, VK_FORMAT_D32_SFLOAT),
+    DEPTH24_STENCIL8(GL_DEPTH24_STENCIL8, VK_FORMAT_D24_UNORM_S8_UINT),
+    DEPTH24(GL_DEPTH_COMPONENT24, VK_FORMAT_X8_D24_UNORM_PACK32);
 
-    // 格式映射表
+
     private static final Map<Integer, TextureFormat> GL_TO_FORMAT;
     private static final Map<Integer, TextureFormat> VK_TO_FORMAT;
 
@@ -57,7 +65,6 @@ public enum TextureFormat {
         return result;
     }
 
-    // 直接访问字段提升性能
     public int gl() {
         return glFormat;
     }
