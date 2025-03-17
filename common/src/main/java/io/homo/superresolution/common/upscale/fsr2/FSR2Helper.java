@@ -58,7 +58,7 @@ public class FSR2Helper implements Resizable, Destroyable {
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
         this.motionVectorsTexture.resize(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
-        this.motionVectorsFBO.resize(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
+        this.motionVectorsFBO.resizeFrameBuffer(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
     }
 
     public void destroy() {

@@ -8,16 +8,14 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_NEAREST;
 
 public class None extends AbstractAlgorithm {
-    public int upscaleId = GL_NEAREST;
-
     public static None create() {
         return new None();
     }
 
     @Override
     public void init() {
-        input = MinecraftRenderHandle.getRenderTarget();
-        output = MinecraftRenderHandle.getRenderTarget();
+        input = null;
+        output = null;
     }
 
     @Override
@@ -27,7 +25,15 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        GlTexture.blitToScreen(output.getWidth(), output.getHeight(), width, height, this.output.getColorTextureId());
+        MinecraftRenderHandle.callOnRenderTarget(frameBuffer -> {
+            GlTexture.blitToScreen(
+                    frameBuffer.getWidth(),
+                    frameBuffer.getHeight(),
+                    width,
+                    height,
+                    frameBuffer.getColorTextureId()
+            );
+        });
     }
 
     public void resize(int width, int height) {

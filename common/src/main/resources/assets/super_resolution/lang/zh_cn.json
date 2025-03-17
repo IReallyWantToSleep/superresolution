@@ -61,5 +61,9 @@
     "superresolution.screen.text.no": "否",
     "superresolution.screen.button.label.return": "返回",
     "superresolution.screen.config.button.label.info": "信息",
+    "superresolution.screen.info.title.project_info": "项目信息",
+    "superresolution.screen.info.text.contributors": "开发贡献者",
+    "superresolution.screen.info.text.open_source": "使用的开源库",
+    "superresolution.screen.info.text.website_links": "相关链接",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

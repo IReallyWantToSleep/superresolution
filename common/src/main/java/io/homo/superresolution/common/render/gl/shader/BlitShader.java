@@ -13,6 +13,7 @@ public class BlitShader extends GlGeneralShaderProgram {
     public static BlitShader getShader() {
         if (shaderCache == null) {
             shaderCache = ((BlitShader) (new BlitShaderProgramBuilder()
+                    .setShaderName("blit")
                     .addAllFragShaderTextList(FileReadHelper.readText("/shader/blit.frag.glsl"))
                     .addAllVertShaderTextList(FileReadHelper.readText("/shader/blit.vert.glsl"))
                     .build()))

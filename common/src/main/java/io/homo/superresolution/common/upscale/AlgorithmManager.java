@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.impl.framebuffer.MotionVectorsFrameBuffer;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
@@ -8,6 +9,7 @@ import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.sgsr.Sgsr;
 import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 
@@ -25,7 +27,7 @@ public class AlgorithmManager {
     }
 
     public static void resize(int width, int height) {
-        motionVectorsFrameBuffer.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        motionVectorsFrameBuffer.resizeFrameBuffer(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         helper.resize(width, height);
     }
 
@@ -45,7 +47,7 @@ public class AlgorithmManager {
     }
 
     public static boolean isSupportAlgorithm(AlgorithmType type) {
-        return type.getValue().check().support();
+        return type.getRequirement().check().support();
     }
 
     public static void setMatrix(Matrix4f proj, Matrix4f view) {
@@ -59,6 +61,23 @@ public class AlgorithmManager {
             param.lastModelViewProjectionMatrix = param.currentModelViewProjectionMatrix;
         }
         param.currentModelViewProjectionMatrix = curViewProjectionMatrix;
+
+        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Matrix4f viewMatrix = new Matrix4f()
+                .lookAt(
+                        (float) camera.getPosition().x, (float) camera.getPosition().y, (float) camera.getPosition().z, // 相机位置
+                        (float) (camera.getPosition().x + camera.getLookVector().x),                        // 目标点（前向方向）
+                        (float) (camera.getPosition().y + camera.getLookVector().y),
+                        (float) (camera.getPosition().z + camera.getLookVector().z),
+                        camera.getUpVector().x, camera.getUpVector().y, camera.getUpVector().z                                         // 上向量
+                );
+        if (param.lastViewMatrix == null) {
+            param.lastViewMatrix = viewMatrix;
+        } else {
+            param.lastViewMatrix = param.currentViewMatrix;
+        }
+        param.currentViewMatrix = viewMatrix;
+
     }
 
     private static void setProjectionMatrix(Matrix4f cur) {
@@ -85,6 +104,7 @@ public class AlgorithmManager {
                 MinecraftRenderHandle.getRenderHeight(),
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
+                MinecraftRenderHandle.getFrameCount(),
                 MinecraftRenderHandle.frameTime,
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * MinecraftRenderHandle.getRenderWidth() / MinecraftRenderHandle.getRenderHeight(),
@@ -93,10 +113,14 @@ public class AlgorithmManager {
                 param.currentModelViewMatrix,
                 param.currentProjectionMatrix,
                 param.currentModelViewProjectionMatrix,
+                param.currentViewMatrix,
                 param.lastModelViewMatrix,
                 param.lastProjectionMatrix,
                 param.lastModelViewProjectionMatrix,
-                motionVectorsFrameBuffer
+                param.lastViewMatrix,
+                motionVectorsFrameBuffer,
+                new Vec2(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                new Vec2(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
         );
     }
 
@@ -116,6 +140,9 @@ public class AlgorithmManager {
         public Matrix4f lastModelViewMatrix;
         public Matrix4f currentModelViewProjectionMatrix;
         public Matrix4f lastModelViewProjectionMatrix;
+        public Matrix4f currentViewMatrix;
+        public Matrix4f lastViewMatrix;
+
         public double verticalFov = 11.4514f;
     }
 }

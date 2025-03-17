@@ -2,6 +2,7 @@ package io.homo.superresolution.common.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import net.minecraft.client.Minecraft;
 
 public class MinecraftRenderTargetWrapper implements IFrameBuffer {
@@ -16,7 +17,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         return new MinecraftRenderTargetWrapper(renderTarget);
     }
 
-    public void clear() {
+    public void clearFrameBuffer() {
         #if MC_VER  < MC_1_21_4
         this.renderTarget.clear(Minecraft.ON_OSX);
         #else
@@ -24,8 +25,8 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         #endif
     }
 
-    public void resize(int width, int height) {
-        #if MC_VER  < MC_1_21_4
+    public void resizeFrameBuffer(int width, int height) {
+        #if MC_VER < MC_1_21_4
         this.renderTarget.resize(width, height, Minecraft.ON_OSX);
         #else
         this.renderTarget.resize(width, height);
@@ -89,6 +90,17 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public void setClearColor(float red, float green, float blue, float alpha) {
         renderTarget.setClearColor(red, green, blue, alpha);
     }
+
+    @Override
+    public TextureFormat getColorTextureFormat() {
+        return TextureFormat.RGBA8;
+    }
+
+    @Override
+    public TextureFormat getDepthTextureFormat() {
+        return TextureFormat.DEPTH24;
+    }
+
 
     @Override
     public RenderTarget asMcRenderTarget() {

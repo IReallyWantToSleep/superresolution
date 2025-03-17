@@ -9,11 +9,11 @@ public class HandRenderTarget {
         if (handRenderTarget == null) {
             handRenderTarget = new MinecraftRenderTarget(true);
             handRenderTarget.setClearColor(0, 0, 0, 0);
-            handRenderTarget.resize(
+            handRenderTarget.resizeFrameBuffer(
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()
             );
-            handRenderTarget.clear();
+            handRenderTarget.clearFrameBuffer();
         }
         return handRenderTarget;
     }

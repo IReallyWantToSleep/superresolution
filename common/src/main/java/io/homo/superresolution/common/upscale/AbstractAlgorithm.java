@@ -75,8 +75,8 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      */
     @Override
     public void resize(int width, int height) {
-        this.input.resize(width, height);
-        this.output.resize(width, height);
+        this.input.resizeFrameBuffer(width, height);
+        this.output.resizeFrameBuffer(width, height);
     }
 
     /**

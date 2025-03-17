@@ -11,7 +11,6 @@ import io.homo.superresolution.common.upscale.utils.Requirement;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class InfoBuilder {
     private final LineContainer lineContainer;
@@ -124,7 +123,7 @@ public class InfoBuilder {
     public InfoBuilder addAlgoInfo(AlgorithmType algo) {
         if (algo == AlgorithmType.NONE) return this;
         this.lineContainer.addLine(new Line().text(algo.getFullName()).center(true).color(255, 255, 255, 255));
-        Requirement req = algo.getValue();
+        Requirement req = algo.getRequirement();
         Requirement.Result result = req.check();
         ArrayList<String> missingGlExtension = req.getMissingExtension();
         this.lineContainer.addLine(

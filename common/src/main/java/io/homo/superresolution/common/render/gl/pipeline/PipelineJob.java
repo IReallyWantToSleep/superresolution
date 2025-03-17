@@ -1,21 +1,54 @@
 package io.homo.superresolution.common.render.gl.pipeline;
 
+import io.homo.superresolution.common.render.gl.vertex.VertexBuffer;
 import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
+import io.homo.superresolution.common.render.gl.vertex.VertexArray;
+
+import static io.homo.superresolution.common.render.gl.Gl.*;
+import static io.homo.superresolution.common.render.gl.GlConst.*;
+
 
 public class PipelineJob {
     protected PipelineResourceDescriptions resourcesMap;
     protected AbstractGlShaderProgram program;
     protected PipelineJobType type;
+    protected GlPipeline pipeline;
 
-    public PipelineJobBuilder create() {
+    public static PipelineJobBuilder create() {
         return new PipelineJobBuilder();
     }
 
-    protected void setupImage2DResource(PipelineResourceDescriptions.PipelineResourceDescription description) {
-
+    public void bindPipeline(GlPipeline pipeline) {
+        this.pipeline = pipeline;
     }
 
-    protected void setupSampler2DResource(PipelineResourceDescriptions.PipelineResourceDescription description) {
+    protected void setupImage2DResource(PipelineResourceDescription description) {
+        if (description.src() != null) {
+            int access = switch (description.access()) {
+                case READ -> GL_READ_ONLY;
+                case WRITE -> GL_WRITE_ONLY;
+                case BOTH -> GL_READ_WRITE;
+            };
+            glBindImageTexture(
+                    description.unit(),
+                    description.src().getTextureId(),
+                    0,
+                    false,
+                    0,
+                    access,
+                    description.src().getTextureFormat().gl()
+            );
+        }
+    }
+
+    protected void setupSampler2DResource(PipelineResourceDescription description) {
+        if (description.src() != null) {
+            int unit = description.unit();
+            glBindTextureUnit(unit, description.src().getTextureId());
+            if (description.sampler() != null) {
+                glBindSampler(unit, description.sampler().id);
+            }
+        }
     }
 
     protected void setupResource() {
@@ -27,40 +60,64 @@ public class PipelineJob {
         });
     }
 
-    public void scheduleGraphics() {
-
-    }
-
-    public void executeGraphics() {
-    }
-
-    public void scheduleCompute() {
-
-    }
-
-    public void executeCompute() {
-    }
-
-    public void schedule() {
-        program.use();
-        if (type == PipelineJobType.Graphics) {
-            scheduleGraphics();
-        } else {
-            scheduleCompute();
+    public void scheduleGraphics(PipelineJobDispatchResource dispatchResource) {
+        setupResource();
+        try (VertexArray vao = new VertexArray();
+             VertexBuffer vbo = new VertexBuffer()) {
+            float[] vertices = {
+                    -1f, -1f, 0f, 0f,
+                    1f, -1f, 1f, 0f,
+                    1f, 1f, 1f, 1f,
+                    -1f, 1f, 0f, 1f
+            };
+            vao.bind();
+            vbo.bind(GL_ARRAY_BUFFER);
+            vbo.uploadData(vertices, GL_STATIC_DRAW);
+            int stride = 4 * Float.BYTES;
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES);
         }
     }
 
-    public void execute() {
+    public void executeGraphics(PipelineJobDispatchResource dispatchResource) {
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    }
+
+    public void scheduleCompute(PipelineJobDispatchResource dispatchResource) {
+        setupResource();
+    }
+
+    public void executeCompute(PipelineJobDispatchResource dispatchResource) {
+        glDispatchCompute(
+                (int) dispatchResource.dimensions().x,
+                (int) dispatchResource.dimensions().y,
+                (int) dispatchResource.dimensions().z
+        );
+    }
+
+    public void schedule(PipelineJobDispatchResource dispatchResource) {
         program.use();
         if (type == PipelineJobType.Graphics) {
-            executeGraphics();
+            scheduleGraphics(dispatchResource);
         } else {
-            executeCompute();
+            scheduleCompute(dispatchResource);
         }
+    }
+
+    public void execute(PipelineJobDispatchResource dispatchResource) {
+        program.use();
+        if (type == PipelineJobType.Graphics) {
+            executeGraphics(dispatchResource);
+        } else {
+            executeCompute(dispatchResource);
+        }
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
 
     public static class PipelineJobBuilder {
-        protected PipelineResourceDescriptions resourcesMap;
+        protected PipelineResourceDescriptions resourcesMap = new PipelineResourceDescriptions();
         protected AbstractGlShaderProgram program;
         protected PipelineJobType type;
 
@@ -79,12 +136,15 @@ public class PipelineJob {
             return this;
         }
 
-        public PipelineJobBuilder addResource(PipelineResourceDescriptions.PipelineResourceDescription description) {
+        public PipelineJobBuilder addResource(PipelineResourceDescription description) {
             resourcesMap.addResource(description);
             return this;
         }
 
         public PipelineJob build() {
+            if (program == null) {
+                throw new IllegalStateException("必须指定着色器程序");
+            }
             PipelineJob pipelineJob = new PipelineJob();
             pipelineJob.program = program;
             pipelineJob.resourcesMap = resourcesMap.clone();

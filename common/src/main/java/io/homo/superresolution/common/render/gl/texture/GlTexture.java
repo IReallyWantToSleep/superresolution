@@ -1,14 +1,10 @@
 package io.homo.superresolution.common.render.gl.texture;
 
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.render.gl.buffer.VertexBuffer;
-import io.homo.superresolution.common.render.gl.shader.BlitShader;
-import io.homo.superresolution.common.render.gl.vertex.VertexArray;
+import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
@@ -33,34 +29,7 @@ public class GlTexture implements ITexture {
 
     public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, int id) {
         RenderSystem.assertOnRenderThread();
-        GlStateManager._colorMask(true, true, true, false);
-        GlStateManager._disableDepthTest();
-        GlStateManager._depthMask(false);
-        GlStateManager._viewport(0, 0, viewWidth, viewHeight);
-        BlitShader blitShader = BlitShader.getShader();
-        blitShader.use();
-        blitShader.bindTexture(id);
-        try (VertexArray vao = new VertexArray();
-             VertexBuffer vbo = new VertexBuffer()) {
-            float[] vertices = {
-                    -1f, -1f, 0f, 0f,
-                    1f, -1f, 1f, 0f,
-                    1f, 1f, 1f, 1f,
-                    -1f, 1f, 0f, 1f
-            };
-            vao.bind();
-            vbo.bind(GL_ARRAY_BUFFER);
-            vbo.uploadData(vertices, GL_STATIC_DRAW);
-            int stride = 4 * Float.BYTES;
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0); // 位置属性
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES); // 纹理坐标属性
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
-        blitShader.clear();
-        GlStateManager._depthMask(true);
-        GlStateManager._colorMask(true, true, true, true);
+        BlitRenderer.blitToScreen(id, viewWidth, viewHeight);
     }
 
     private void initializeTexture() {

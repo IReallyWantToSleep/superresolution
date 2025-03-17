@@ -4,6 +4,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
 import io.homo.superresolution.common.render.interop.SharedTexture;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
@@ -45,7 +46,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.NIS.getValue().check().support();
+        return AlgorithmType.NIS.getRequirement().check().support();
     }
 
     public void initShader() {
@@ -252,6 +253,12 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         buffer.flip();
         bufferDataPointer.flip();
     }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return output;
+    }
+
 
     @Override
     public int getOutputTextureId() {

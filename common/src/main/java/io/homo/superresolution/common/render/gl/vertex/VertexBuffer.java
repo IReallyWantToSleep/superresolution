@@ -1,27 +1,34 @@
-package io.homo.superresolution.common.render.gl.buffer;
+package io.homo.superresolution.common.render.gl.vertex;
 
 import org.lwjgl.BufferUtils;
 
-import java.nio.FloatBuffer;
+import java.nio.*;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
-import static io.homo.superresolution.common.render.gl.GlConst.*;
 
 public class VertexBuffer implements AutoCloseable {
     private final int id;
+    private int target;
 
     public VertexBuffer() {
         id = glGenBuffers();
     }
 
     public void bind(int target) {
+        this.target = target;
         glBindBuffer(target, id);
     }
 
     public void uploadData(float[] data, int usage) {
         FloatBuffer buffer = BufferUtils.createFloatBuffer(data.length);
         buffer.put(data).flip();
-        glBufferData(GL_ARRAY_BUFFER, buffer, usage);
+        glBufferData(target, buffer, usage);
+    }
+
+    public void uploadData(int[] data, int usage) {
+        IntBuffer buffer = BufferUtils.createIntBuffer(data.length);
+        buffer.put(data).flip();
+        glBufferData(target, buffer, usage);
     }
 
     @Override

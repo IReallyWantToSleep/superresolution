@@ -164,10 +164,19 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
         #endif
         listWidget.width = width;
         listWidget.render(graphics, mouseX, mouseY, delta);
+        #if MC_VER < MC_1_21_4
         ScissorsHandler.scissor(new Rectangle(listWidget.left, listWidget.top, listWidget.width, listWidget.bottom - listWidget.top));
+        #else
+        graphics.enableScissor(listWidget.left, listWidget.top, listWidget.width + listWidget.left, listWidget.bottom);
+        #endif
         for (AbstractConfigEntry<?> child : listWidget.children())
             child.lateRender(graphics, mouseX, mouseY, delta);
+        #if MC_VER < MC_1_21_4
         ScissorsHandler.removeLastScissor();
+        #else
+        graphics.disableScissor();
+        #endif
+
         graphics.drawString(font, title.getVisualOrderText(), (int) ((width) / 2f - font.width(title) / 2f), 12, -1);
         #if MC_VER < MC_1_21_1
         super.render(graphics, mouseX, mouseY, delta);

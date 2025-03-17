@@ -1,10 +1,16 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.impl.Vec3;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.gl.pipeline.*;
 import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferWrapper;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
+import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
@@ -12,12 +18,10 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
-import static io.homo.superresolution.common.render.gl.Gl.*;
-import static io.homo.superresolution.common.render.gl.GlConst.*;
-
 public class FSR1 extends AbstractAlgorithm {
     private GlComputeShaderProgram fsr1EASUShader;
     private GlComputeShaderProgram fsr1RCASShader;
+    private GlPipeline fsrUpscalePipeline;
     private GlTexture fsr1TempTexture;
     private GlTexture output;
 
@@ -91,15 +95,80 @@ public class FSR1 extends AbstractAlgorithm {
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
         initShader();
-        fsr1TempTexture = new GlTexture(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight(), GL_RGBA8);
-        output = new GlTexture(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight(), GL_RGBA8);
+        fsrUpscalePipeline = new GlPipeline();
+        fsr1TempTexture = GlTexture.create(
+                AlgorithmManager.helper.getRenderWidth(),
+                AlgorithmManager.helper.getRenderHeight(),
+                TextureFormat.RGBA8
+        );
+        output = GlTexture.create(
+                AlgorithmManager.helper.getScreenWidth(),
+                AlgorithmManager.helper.getScreenHeight(),
+                TextureFormat.RGBA8
+        );
+        fsrUpscalePipeline.addJob("fsr1_easu", PipelineJob.create()
+                .setType(PipelineJobType.Compute)
+                .setProgram(fsr1EASUShader)
+                .addResource(new PipelineResourceDescription(
+                        PipelineResourceType.Image2D,
+                        "temp",
+                        fsr1TempTexture,
+                        PipelineResourceAccess.WRITE,
+                        null,
+                        1
+                ))
+                .addResource(new PipelineResourceDescription(
+                        PipelineResourceType.Sampler2D,
+                        "input",
+                        FrameBufferWrapper.ofColor(input),
+                        PipelineResourceAccess.READ,
+                        null,
+                        0
+                ))
+                .build()
+        );
+        fsrUpscalePipeline.addJob("fsr1_rcas", PipelineJob.create()
+                .setType(PipelineJobType.Compute)
+                .setProgram(fsr1RCASShader)
+                .addResource(new PipelineResourceDescription(
+                        PipelineResourceType.Image2D,
+                        "temp",
+                        fsr1TempTexture,
+                        PipelineResourceAccess.READ,
+                        null,
+                        0
+                ))
+                .addResource(new PipelineResourceDescription(
+                        PipelineResourceType.Image2D,
+                        "output",
+                        output,
+                        PipelineResourceAccess.WRITE,
+                        null,
+                        1
+                ))
+                .build()
+        );
         this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        callEASU();
-        callRCAS();
+        int workRegionDim = 16;
+        int dispatchX = (AlgorithmManager.helper.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
+        int dispatchY = (AlgorithmManager.helper.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
+        PipelineJobDispatchResource pipelineDispatchResource = new PipelineJobDispatchResource(
+                new Vec3(
+                        dispatchX,
+                        dispatchY,
+                        1
+                )
+        );
+        fsrUpscalePipeline.scheduleJob("fsr1_easu", pipelineDispatchResource);
+        setFSR1ShaderUniform(fsr1EASUShader);
+        fsrUpscalePipeline.executeJob("fsr1_easu", pipelineDispatchResource);
+        fsrUpscalePipeline.scheduleJob("fsr1_rcas", pipelineDispatchResource);
+        setFSR1ShaderUniform(fsr1RCASShader);
+        fsrUpscalePipeline.executeJob("fsr1_rcas", pipelineDispatchResource);
         return true;
     }
 
@@ -110,40 +179,6 @@ public class FSR1 extends AbstractAlgorithm {
         shaderProgram.setFloat("sharpness", Config.getSharpness());
     }
 
-    private void callEASU() {
-        fsr1EASUShader.use();
-        setFSR1ShaderUniform(fsr1EASUShader);
-        glBindTextureUnit(0, this.input.getColorTextureId());
-        glBindImageTexture(1, this.fsr1TempTexture.id, 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
-        int workRegionDim = 16;
-        int dispatchX = (AlgorithmManager.helper.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
-        int dispatchY = (AlgorithmManager.helper.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
-        glDispatchCompute(
-                dispatchX,
-                dispatchY,
-                1
-        );
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        fsr1EASUShader.clear();
-    }
-
-    private void callRCAS() {
-        fsr1RCASShader.use();
-        setFSR1ShaderUniform(fsr1RCASShader);
-        glBindImageTexture(0, this.fsr1TempTexture.id, 0, false, 0, GL_READ_ONLY, GL_RGBA8);
-        glBindImageTexture(1, this.output.id, 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
-        int workRegionDim = 16;
-        int dispatchX = (AlgorithmManager.helper.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
-        int dispatchY = (AlgorithmManager.helper.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
-        glDispatchCompute(
-                dispatchX,
-                dispatchY,
-                1
-        );
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        fsr1RCASShader.clear();
-    }
-
     @Override
     public void blitToScreen(int width, int height) {
         GlTexture.blitToScreen(output.width, output.height, width, height, this.output.id);
@@ -151,16 +186,16 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
-        this.output.destroy();
-        this.fsr1TempTexture.destroy();
-        this.fsr1EASUShader.destroy();
-        this.fsr1RCASShader.destroy();
+        output.destroy();
+        fsr1TempTexture.destroy();
+        fsr1EASUShader.destroy();
+        fsr1RCASShader.destroy();
     }
 
     @Override
     public void resize(int width, int height) {
-        this.fsr1TempTexture.resize(width, height);
-        this.output.resize(width, height);
+        fsr1TempTexture.resize(width, height);
+        output.resize(width, height);
     }
 
     @Override
@@ -174,7 +209,12 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return TextureWrapper.of(output);
+    }
+
+    @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR1.getValue().check().support();
+        return AlgorithmType.FSR1.getRequirement().check().support();
     }
 }

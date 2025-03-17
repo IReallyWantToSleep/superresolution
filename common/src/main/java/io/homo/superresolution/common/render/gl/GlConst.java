@@ -9,10 +9,19 @@ public class GlConst {
     public static final int GL_TRUE = 1;
     public static final int GL_FALSE = 0;
     public static final int GL_NONE = 0;
+    public static final int GL_DEPTH24_STENCIL8 = 0x88F0;
+    public static final int GL_DEPTH_COMPONENT32F = 0x8CAC;
+    public static final int GL_R32F = 0x822E;
+    public static final int GL_RGB8 = 0x8051;
+    public static final int GL_R32UI = 0x8236;
+
     public static final int GL_LINES = 1;
     public static final int GL_LINE_STRIP = 3;
+    public static final int GL_READ_WRITE = 0x88BA;
     public static final int GL_TRIANGLE_STRIP = 5;
     public static final int GL_TRIANGLE_FAN = 6;
+    public static final int GL_ALL_BARRIER_BITS = 0xFFFFFFFF;
+
     public static final int GL_TRIANGLES = 4;
     public static final int GL_WRITE_ONLY = 35001;
     public static final int GL_EQUAL = 514;

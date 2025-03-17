@@ -10,6 +10,7 @@ import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
 import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
+import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
@@ -22,6 +23,7 @@ import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.impl.ConfigEntryBuilderImpl;
 import me.shedaniel.clothconfig2.impl.builders.AbstractFieldBuilder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -169,7 +171,7 @@ public class ClothConfig {
                     if (Platform.currentPlatform.isDevelopmentEnvironment() || Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID).contains("dev")) {
                         return Optional.empty();
                     }
-                    if (List.of(AlgorithmType.NIS, AlgorithmType.FSR2, AlgorithmType.SGSR).contains(algorithmType)) {
+                    if (List.of(AlgorithmType.NIS, AlgorithmType.FSR2).contains(algorithmType)) {
                         return Optional.of(Component.literal("当前环境不支持该算法"));
                     } else if (Objects.equals(AlgorithmType.FSR2, algorithmType) && Platform.currentPlatform.getOS().type == OSType.ANDROID) {
                         return Optional.of(Component.literal("当前环境不支持该算法"));
@@ -267,6 +269,106 @@ public class ClothConfig {
             InfoBuilder.of(algoInfoEntry).addAlgoInfo(algorithmType);
             algoInfoCategory.addEntry(algoInfoEntry);
         }
+        ConfigCategory projectInfoCategory = builder.getOrCreateCategory(
+                Component.translatable("superresolution.screen.info.title.project_info")
+        );
+        ClothTextListListEntry contributorsEntry = new ClothTextListListEntry(
+                Component.translatable("superresolution.screen.info.text.contributors"),
+                null,
+                true
+        ).setTop(4).setBottom(7);
+        String[] contributors = {
+                "187J3X1 - 核心开发",
+                "异世界美西螈 - 测试反馈+吉祥物+大饼规划者",
+        };
+        Map<String, String> libraries = new LinkedHashMap<>() {{
+            put("Cloth Config", "https://github.com/shedaniel/cloth-config");
+            put("Architectury API", "https://github.com/architectury/architectury-api");
+            put("SpongePowered Mixin", "https://github.com/SpongePowered/Mixin");
+            put("Dear ImGui", "https://github.com/ocornut/imgui");
+            put("Snapdragon™ Game Super Resolution 2", "https://github.com/SnapdragonStudios/snapdragon-gsr");
+            put("FidelityFX Super Resolution 1.0", "https://github.com/GPUOpen-Effects/FidelityFX-FSR");
+            put("FidelityFX Super Resolution 2.2", "https://github.com/GPUOpen-Effects/FidelityFX-FSR2");
+            put("NVIDIA Image Scaling SDK v1.0.3", "https://github.com/NVIDIAGameWorks/NVIDIAImageScaling");
+            put("Java OpenGL Math Library(JOML)", "https://github.com/JOML-CI/JOML");
+            put("Lightweight Java Game Library 3(LWJGL3)", "https://github.com/LWJGL/lwjgl3");
+        }};
+        Map<String, String> officialLinks = new LinkedHashMap<>() {{
+            put("GitHub仓库", "https://github.com/187J3X1-114514/superresolution");
+            put("问题追踪", "https://github.com/187J3X1-114514/superresolution/issues");
+            put("MC百科主页", "https://www.mcmod.cn/class/17888.html");
+        }};
+        ClothTextListListEntry webLinksEntry = new ClothTextListListEntry(
+                Component.translatable("superresolution.screen.info.text.website_links"),
+                null,
+                true
+        ).setTop(4).setBottom(7);
 
+        webLinksEntry.addLine(new Line()
+                .text(Component.translatable("superresolution.screen.info.text.official_resources"))
+                .color(0, 122, 204, 255)
+                .center(true)
+        );
+
+        officialLinks.forEach((title, url) -> {
+            webLinksEntry.addLine(new Line()
+                    .text(Component.literal(title)
+                            .withStyle(Style.EMPTY
+                                    .withColor(0xFF42A5F5)
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                            )
+                            .append(Component.literal(" - "))
+                            .append(
+                                    Component.literal(url)
+                                            .withStyle(Style.EMPTY
+                                                    .withColor(ColorUtil.color(255, 150, 150, 150))
+                                                    .withUnderlined(true)
+                                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                                            )
+                            )
+                    ));
+        });
+        contributorsEntry.addLine(new Line()
+                .text(Component.translatable("superresolution.screen.info.text.contributors"))
+                .color(255, 200, 100, 255)
+                .center(true)
+        );
+        for (String contributor : contributors) {
+            contributorsEntry.addLine(new Line()
+                    .text("• " + contributor)
+                    .color(200, 200, 200, 255)
+            );
+        }
+        ClothTextListListEntry librariesEntry = new ClothTextListListEntry(
+                Component.translatable("superresolution.screen.info.text.open_source"),
+                null,
+                true
+        ).setTop(4).setBottom(7);
+        librariesEntry.addLine(new Line()
+                .text(Component.translatable("superresolution.screen.info.text.open_source"))
+                .color(100, 200, 255, 255)
+                .center(true)
+        );
+        libraries.forEach((name, url) -> {
+            librariesEntry.addLine(new Line()
+                    .text(Component.literal(name)
+                            .withStyle(Style.EMPTY
+                                    .withUnderlined(true)
+                                    .withColor(0xFF00FF00)
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                            )
+                    )
+            );
+            librariesEntry.addLine(new Line()
+                    .text(Component.literal(url)
+                            .withStyle(Style.EMPTY
+                                    .withColor(ColorUtil.color(255, 150, 150, 150))
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                            ))
+            );
+        });
+        projectInfoCategory.addEntry(webLinksEntry);
+        projectInfoCategory.addEntry(contributorsEntry);
+        projectInfoCategory.addEntry(librariesEntry);
     }
 }

@@ -1,10 +1,9 @@
 package io.homo.superresolution.common.upscale;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import net.minecraft.client.Minecraft;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 
 public class MotionVectorsGenerator {
-    public static void update(DispatchResource dispatchResource, RenderTarget target) {
-        //target.clear(Minecraft.ON_OSX);
+    public static void update(DispatchResource dispatchResource, IFrameBuffer target) {
+        //target.clearFrameBuffer();
     }
 }

@@ -61,5 +61,9 @@
     "superresolution.screen.text.yes": "Yes",
     "superresolution.screen.text.no": "No",
     "superresolution.screen.button.label.return": "Return",
+    "superresolution.screen.info.title.project_info": "Project Info",
+    "superresolution.screen.info.text.contributors": "Contributors",
+    "superresolution.screen.info.text.open_source": "Open Source Libraries",
+    "superresolution.screen.info.text.website_links": "Related Websites",
     "superresolution.translate.PoweredByDeepSeek": "丢给deepseek翻译的，（这条不用翻译）"
 }

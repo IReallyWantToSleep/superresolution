@@ -44,12 +44,12 @@ public enum AlgorithmType {
             "None",
             "None"
     );
-    private final Requirement value;
+    private final Requirement requirement;
     private final String name;
     private final String fullName;
 
-    AlgorithmType(Requirement value, String name, String fullName) {
-        this.value = value;
+    AlgorithmType(Requirement requirement, String name, String fullName) {
+        this.requirement = requirement;
         this.name = name;
         this.fullName = fullName;
     }
@@ -58,8 +58,8 @@ public enum AlgorithmType {
         return Component.literal(fullName);
     }
 
-    public Requirement getValue() {
-        return value;
+    public Requirement getRequirement() {
+        return requirement;
     }
 
     @Override

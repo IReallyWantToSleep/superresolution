@@ -33,7 +33,7 @@ public class GlSampler {
         }
     }
 
-    public GlSampler create(SamplerType type) {
+    public static GlSampler create(SamplerType type) {
         return new GlSampler(type);
     }
 

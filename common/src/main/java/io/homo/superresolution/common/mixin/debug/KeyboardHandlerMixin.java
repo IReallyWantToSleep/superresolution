@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.RenderTargetType;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyboardHandler;
@@ -19,6 +20,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import static org.apache.commons.io.FileUtils.getFile;
@@ -62,14 +65,22 @@ public class KeyboardHandlerMixin {
     }
 
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Screenshot;grab(Ljava/io/File;Lcom/mojang/blaze3d/pipeline/RenderTarget;Ljava/util/function/Consumer;)V"), method = "keyPress")
-    private void debugScreenshot(CallbackInfo ci) {
+    private void debugScreenshot(CallbackInfo ci) throws IOException {
         Screenshot.grab(Minecraft.getInstance().gameDirectory, "world.png", MinecraftRenderHandle.getRenderTarget().asMcRenderTarget(), (a) -> {
         });
         MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget.asMcRenderTarget(), (a) -> {
         })));
         Screenshot.grab(Minecraft.getInstance().gameDirectory, "hand.png", MinecraftRenderHandle.getRenderTarget(RenderTargetType.HAND).asMcRenderTarget(), (a) -> {
         });
-
-
+        NativeImage nativeImage = new NativeImage(
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight(),
+                false
+        );
+        IFrameBuffer frameBuffer = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+        RenderSystem.bindTexture(frameBuffer.getColorTextureId());
+        nativeImage.downloadTexture(0, true);
+        nativeImage.flipY();
+        nativeImage.writeToFile(Path.of(Minecraft.getInstance().gameDirectory.getAbsoluteFile().getAbsolutePath(), "out.png"));
     }
 }

@@ -6,6 +6,8 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmType;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -40,7 +42,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR2.getValue().check().support();
+        return AlgorithmType.FSR2.getRequirement().check().support();
     }
 
     public void resize(int width, int height) {
@@ -153,6 +155,12 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.deviceDepthNegativeOneToOne = false;
         return FfxError.isOK(nativeApi.ffxFsr2ContextDispatch(dispatchDescription, fsr2Context));
     }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return TextureWrapper.of(output);
+    }
+
 
     @Override
     public int getOutputTextureId() {
