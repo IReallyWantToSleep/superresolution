@@ -305,7 +305,7 @@ public class ClothConfig {
         ).setTop(4).setBottom(7);
 
         webLinksEntry.addLine(new Line()
-                .text(Component.translatable("superresolution.screen.info.text.official_resources"))
+                .text(Component.translatable("superresolution.screen.info.text.website_links"))
                 .color(0, 122, 204, 255)
                 .center(true)
         );
