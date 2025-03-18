@@ -51,13 +51,8 @@ public class TextureWrapper implements IFrameBuffer {
     }
 
     @Override
-    public int getColorTextureId() {
-        return texture.getTextureId();
-    }
-
-    @Override
-    public int getDepthTextureId() {
-        return 0;
+    public int getTextureId(FrameBufferAttachmentType attachmentType) {
+        return attachmentType == FrameBufferAttachmentType.COLOR ? texture.getTextureId() : -1;
     }
 
     @Override

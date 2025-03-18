@@ -77,7 +77,7 @@ public class Sgsr extends AbstractAlgorithm {
                 height,
                 width,
                 height,
-                output.getColorTextureId()
+                output.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
         );
     }
 

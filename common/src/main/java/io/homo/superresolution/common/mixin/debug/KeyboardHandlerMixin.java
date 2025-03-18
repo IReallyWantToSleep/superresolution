@@ -78,7 +78,7 @@ public class KeyboardHandlerMixin {
                 false
         );
         IFrameBuffer frameBuffer = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        RenderSystem.bindTexture(frameBuffer.getColorTextureId());
+        RenderSystem.bindTexture(frameBuffer.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR));
         nativeImage.downloadTexture(0, true);
         nativeImage.flipY();
         nativeImage.writeToFile(Path.of(Minecraft.getInstance().gameDirectory.getAbsoluteFile().getAbsolutePath(), "out.png"));

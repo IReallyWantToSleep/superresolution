@@ -234,7 +234,7 @@ public class MinecraftRenderHandle {
                 getRenderHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                getRenderTarget(RenderTargetType.ENTITY).getColorTextureId()
+                getRenderTarget(RenderTargetType.ENTITY).getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
         );
     }
 
@@ -291,7 +291,7 @@ public class MinecraftRenderHandle {
                 getScreenHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                renderTarget.getColorTextureId()
+                renderTarget.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
         )));
         RenderSystem.disableBlend();
     }
