@@ -1,6 +1,5 @@
 package io.homo.superresolution.common;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.config.Config;
@@ -8,7 +7,7 @@ import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.mixin.core.accessor.WindowAccessor;
+import io.homo.superresolution.common.mixin.core.WindowMixin;
 import io.homo.superresolution.common.platform.EnvType;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
@@ -44,6 +43,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
     public static AlgorithmType algorithmType;
     public static GlVkInteropManager interopManager;
+    public static int framebufferWidth = 0;
+    public static int framebufferHeight = 0;
     private static SuperResolution instance;
 
     public SuperResolution() {
@@ -67,11 +68,17 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static int getMinecraftWidth() {
-        return ((WindowAccessor) (Object) minecraft.getWindow()).getFramebufferWidth_();
+        if (framebufferWidth == 0) {
+            framebufferWidth = Math.max(Minecraft.getInstance().getWindow().getScreenWidth(), 1);
+        }
+        return framebufferWidth;
     }
 
     public static int getMinecraftHeight() {
-        return ((WindowAccessor) (Object) minecraft.getWindow()).getFramebufferHeight_();
+        if (framebufferHeight == 0) {
+            framebufferHeight = Math.max(Minecraft.getInstance().getWindow().getScreenHeight(), 1);
+        }
+        return framebufferHeight;
     }
 
     public static SuperResolution getInstance() {

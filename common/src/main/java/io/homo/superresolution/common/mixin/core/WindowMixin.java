@@ -1,9 +1,12 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.Window;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,6 +15,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Window.class)
 public class WindowMixin {
+    @Shadow
+    private int framebufferWidth;
+    @Shadow
+    private int framebufferHeight;
 
     @Inject(at = @At("RETURN"), method = "getWidth", cancellable = true)
     private void getFramebufferWidth(CallbackInfoReturnable<Integer> ci) {
@@ -36,12 +43,15 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "onResize")
     private void onFramebufferSizeChanged(CallbackInfo ci) {
+        SuperResolution.framebufferWidth = framebufferWidth;
+        SuperResolution.framebufferHeight = framebufferHeight;
         MinecraftRenderHandle.resize();
     }
 
     @Inject(at = @At("RETURN"), method = "onFramebufferResize")
     private void onUpdateFramebufferSize(CallbackInfo ci) {
+        SuperResolution.framebufferWidth = framebufferWidth;
+        SuperResolution.framebufferHeight = framebufferHeight;
         MinecraftRenderHandle.resize();
     }
-
 }
