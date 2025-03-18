@@ -72,13 +72,11 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     }
 
     @Override
-    public int getColorTextureId() {
-        return renderTarget.getColorTextureId();
-    }
-
-    @Override
-    public int getDepthTextureId() {
-        return renderTarget.getDepthTextureId();
+    public int getTextureId(FrameBufferAttachmentType attachmentType) {
+        return switch (attachmentType) {
+            case COLOR -> renderTarget.getColorTextureId();
+            case DEPTH, DEPTH_STENCIL -> renderTarget.getDepthTextureId();
+        };
     }
 
     @Override

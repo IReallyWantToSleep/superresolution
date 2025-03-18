@@ -205,7 +205,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public int getInputTextureId() {
-        return input.getColorTextureId();
+        return super.getInputTextureId();
     }
 
     @Override

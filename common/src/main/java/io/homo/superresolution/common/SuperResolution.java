@@ -8,6 +8,7 @@ import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
+import io.homo.superresolution.common.mixin.core.accessor.WindowAccessor;
 import io.homo.superresolution.common.platform.EnvType;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
@@ -66,11 +67,11 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static int getMinecraftWidth() {
-        return minecraft.getWindow().getScreenWidth();
+        return ((WindowAccessor) (Object) minecraft.getWindow()).getFramebufferWidth_();
     }
 
     public static int getMinecraftHeight() {
-        return minecraft.getWindow().getScreenHeight();
+        return ((WindowAccessor) (Object) minecraft.getWindow()).getFramebufferHeight_();
     }
 
     public static SuperResolution getInstance() {

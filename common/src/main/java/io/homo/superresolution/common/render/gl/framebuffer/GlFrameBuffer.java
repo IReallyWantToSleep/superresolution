@@ -17,6 +17,8 @@ public class GlFrameBuffer implements IFrameBuffer {
     private final ArrayList<FrameBufferAttachment> attachments = new ArrayList<>();
     private FrameBufferAttachment colorAttachment;
     private FrameBufferAttachment depthAttachment;
+    private FrameBufferAttachment depthStencilAttachment;
+
     private int frameBufferId = glGenFramebuffers();
     private int width;
     private int height;
@@ -25,8 +27,10 @@ public class GlFrameBuffer implements IFrameBuffer {
         bind(RenderTargetBindPoint.ALL);
         if (attachment.type == FrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
             colorAttachment = attachment;
-        } else {
+        } else if (attachment.type == FrameBufferAttachment.FrameBufferAttachmentType.DEPTH) {
             depthAttachment = attachment;
+        } else {
+            depthStencilAttachment = attachment;
         }
         glFramebufferTexture2D(
                 GL_FRAMEBUFFER,
@@ -55,10 +59,19 @@ public class GlFrameBuffer implements IFrameBuffer {
         glBindFramebuffer(resolveBindTarget(bindPoint), 0);
     }
 
+    @Override
+    public int getTextureId(FrameBufferAttachmentType attachmentType) {
+        return switch (attachmentType) {
+            case COLOR -> colorAttachment.texture.getTextureId();
+            case DEPTH -> depthAttachment.texture.getTextureId();
+            case DEPTH_STENCIL -> depthStencilAttachment.texture.getTextureId();
+        };
+    }
+
     private int resolveBindTarget(RenderTargetBindPoint point) {
         return switch (point) {
-            case READ -> GlConst.GL_READ_FRAMEBUFFER;
-            case WRITE -> GlConst.GL_DRAW_FRAMEBUFFER;
+            case READ -> GL_READ_FRAMEBUFFER;
+            case WRITE -> GL_DRAW_FRAMEBUFFER;
             case ALL -> GL_FRAMEBUFFER;
         };
     }
@@ -94,18 +107,6 @@ public class GlFrameBuffer implements IFrameBuffer {
     public void clearFrameBuffer() {
         bind(RenderTargetBindPoint.ALL);
         glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
-    }
-
-    @Override
-    public int getColorTextureId() {
-        if (colorAttachment == null) throw new RuntimeException();
-        return colorAttachment.texture.getTextureId();
-    }
-
-    @Override
-    public int getDepthTextureId() {
-        if (depthAttachment == null) throw new RuntimeException();
-        return depthAttachment.texture.getTextureId();
     }
 
     @Override

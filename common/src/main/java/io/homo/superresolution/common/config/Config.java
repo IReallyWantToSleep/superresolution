@@ -85,8 +85,9 @@ public class Config {
     }
 
     public static void setUpscaleRatio(float value) {
+        boolean resolutionChanged = getUpscaleRatio() != value;
         instance.setUpscaleRatio(value);
-        if (getUpscaleRatio() != value) runResolutionChangeCallback();
+        if (resolutionChanged) runResolutionChangeCallback();
     }
 
     public static AlgorithmType getUpscaleAlgo() {

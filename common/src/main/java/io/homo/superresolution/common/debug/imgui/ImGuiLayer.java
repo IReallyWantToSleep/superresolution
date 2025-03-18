@@ -3,6 +3,7 @@ package io.homo.superresolution.common.debug.imgui;
 import imgui.ImGui;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 
@@ -85,7 +86,7 @@ public class ImGuiLayer {
                 height,
                 0, 1, 1, 0);
         ImGui.text("inFramebufferD " + AlgorithmManager.helper.getRenderWidth() + " " + AlgorithmManager.helper.getRenderHeight());
-        ImGui.image(SuperResolution.currentAlgorithm.getInputFrameBuffer().getDepthTextureId(),
+        ImGui.image(SuperResolution.currentAlgorithm.getInputFrameBuffer().getTextureId(IFrameBuffer.FrameBufferAttachmentType.DEPTH),
                 width,
                 height,
                 0, 1, 1, 0);

@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 
 public class SgsrParams implements IUniformStruct {
     private final ByteBuffer container;
-    private final int sameFrameNum = 0;
+    private int sameFrameNum = 0;
 
     public SgsrParams() {
         this.container = MemoryStack.stackCalloc(sizeof());
@@ -106,12 +106,25 @@ public class SgsrParams implements IUniformStruct {
         setPreExposure(1.0f);
         setCameraFovAngleHor(dispatchResource.horizontalFov());
         setCameraNear(dispatchResource.cameraNear());
-        setMinLerpContribution(0.5f);
+
         boolean isCameraStill = isCameraStill(
                 curr_view_proj_matrix,
                 dispatchResource.lastProjectionMatrix(),
                 1e-5f
         );
+        double MinLerpContribution = 0.0;
+        if (isCameraStill) {
+            sameFrameNum += 1;
+            if (sameFrameNum > 5) {
+                MinLerpContribution = 0.3;
+            }
+            if (sameFrameNum == 0xFFFF) {
+                sameFrameNum = 1;
+            }
+        } else {
+            sameFrameNum = 0;
+        }
+        setMinLerpContribution((float) MinLerpContribution);
         setbSameCamera(isCameraStill);
         fillZero(136, 144);
         container.position(144);

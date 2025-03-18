@@ -151,6 +151,15 @@ public class StorageFrameBuffer extends RenderTarget implements IFrameBuffer {
     }
 
     @Override
+    public int getTextureId(FrameBufferAttachmentType attachmentType) {
+        return switch (attachmentType) {
+            case COLOR -> this.colorTextureId;
+            case DEPTH -> this.depthBufferId;
+            case DEPTH_STENCIL -> stencilEnabled ? this.depthBufferId : -1;
+        };
+    }
+
+    @Override
     public int getFrameBufferId() {
         return this.frameBufferId;
     }
