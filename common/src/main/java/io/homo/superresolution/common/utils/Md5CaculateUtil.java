@@ -5,6 +5,7 @@ import org.apache.commons.codec.binary.Hex;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 public class Md5CaculateUtil {
@@ -28,6 +29,17 @@ public class Md5CaculateUtil {
                 }
             } catch (IOException ignored) {
             }
+        }
+    }
+
+    public static String getMD5(String string) {
+        try {
+            MessageDigest MD5 = MessageDigest.getInstance("MD5");
+            byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+            MD5.update(bytes);
+            return new String(Hex.encodeHex(MD5.digest()));
+        } catch (Exception e) {
+            return null;
         }
     }
 

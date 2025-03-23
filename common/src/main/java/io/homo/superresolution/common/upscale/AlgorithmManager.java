@@ -82,20 +82,20 @@ public class AlgorithmManager {
 
     private static void setProjectionMatrix(Matrix4f cur) {
         if (param.lastProjectionMatrix == null) {
-            param.lastProjectionMatrix = cur;
+            param.lastProjectionMatrix = new Matrix4f(cur);
         } else {
             param.lastProjectionMatrix = param.currentProjectionMatrix;
         }
-        param.currentProjectionMatrix = cur;
+        param.currentProjectionMatrix = new Matrix4f(cur);
     }
 
     private static void setViewMatrix(Matrix4f cur) {
         if (param.lastModelViewMatrix == null) {
-            param.lastModelViewMatrix = cur;
+            param.lastModelViewMatrix = new Matrix4f(cur);
         } else {
             param.lastModelViewMatrix = param.currentModelViewMatrix;
         }
-        param.currentModelViewMatrix = cur;
+        param.currentModelViewMatrix = new Matrix4f(cur);
     }
 
     public static DispatchResource getDispatchResource() {

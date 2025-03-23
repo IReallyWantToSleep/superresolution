@@ -1,10 +1,8 @@
 package io.homo.superresolution.common.render.gl.shader;
 
-
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.common.utils.ShaderCache;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -24,6 +22,7 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
     }
 
     public GlGeneralShaderProgram compileShader() {
+        if (compiled) return this;
         RenderSystem.assertOnRenderThread();
         int FRAGMENT_SHADER = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(FRAGMENT_SHADER, getFragShaderText());
@@ -54,6 +53,12 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
         glAttachShader(shaderProgram, VERTEX_SHADER);
         glLinkProgram(shaderProgram);
         glDeleteShader(FRAGMENT_SHADER);
+        glDeleteShader(VERTEX_SHADER);
+        if (enableCache) {
+            ShaderCache.saveProgramBinary(this);
+        }
+        compiled = true;
+
         return this;
     }
 
@@ -89,10 +94,10 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
         }
     }
 
-    public static class GeneralShaderProgramBuilder extends AbstractShaderProgramBuilder {
+    public static class GeneralShaderProgramBuilder extends AbstractShaderProgramBuilder<GlGeneralShaderProgram> {
         @Override
         public GlGeneralShaderProgram build() {
-            return (GlGeneralShaderProgram) setShaderText(new GlGeneralShaderProgram());
+            return checkShaderCache() ? updateShader(new GlGeneralShaderProgram().fromBin(getShaderCache())) : updateShader(new GlGeneralShaderProgram());
         }
     }
 

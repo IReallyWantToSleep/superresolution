@@ -14,6 +14,7 @@ import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.GlVkInteropManager;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.Gl;
+import io.homo.superresolution.common.render.impl.framebuffer.MinecraftRenderTarget;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.AlgorithmType;
@@ -54,8 +55,12 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
         ConfigFile.read();
-        if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+        if (Config.isSkipLoadNativeLib()) {
+            LOGGER.warn("配置已禁用加载依赖库，将不再加载本地依赖库");
+        } else if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
             LOGGER.warn("检测到在移动设备上运行，已跳过加载依赖库");
+        } else if (Platform.currentPlatform.getOS().type == OSType.MACOS) {
+            LOGGER.warn("检测到在MacOS上运行，已跳过加载依赖库");
         } else {
             if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
                 NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
@@ -164,9 +169,10 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
+        ((MinecraftRenderTarget) MinecraftRenderHandle.getRenderTarget()).enableStencil();
         if (currentAlgorithm != null)
-            currentAlgorithm.resize(width, height);
-        AlgorithmManager.resize(width, height);
+            currentAlgorithm.resize(getMinecraftWidth(), getMinecraftHeight());
+        AlgorithmManager.resize(getMinecraftWidth(), getMinecraftHeight());
     }
 
     public void destroy() {

@@ -139,4 +139,22 @@ public class Config {
             resolutionChangeCallback.run();
         }
     }
+
+    public static boolean isSkipLoadNativeLib() {
+        return instance.isSkipLoadNativeLib();
+    }
+
+    public static void setSkipLoadNativeLib(boolean skipLoadNativeLib) {
+        instance.setSkipLoadNativeLib(skipLoadNativeLib);
+    }
+
+    public static boolean isSkipInitVulkan() {
+        return instance.isSkipInitVulkan();
+
+    }
+
+    public static void setSkipInitVulkan(boolean skipInitVulkan) {
+        instance.setSkipLoadNativeLib(skipInitVulkan);
+
+    }
 }

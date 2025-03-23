@@ -3,9 +3,11 @@ package io.homo.superresolution.common.gui.widgets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.Tesselator;
 import io.homo.superresolution.common.utils.ColorUtil;
+import me.shedaniel.clothconfig2.ClothConfigInitializer;
 import me.shedaniel.clothconfig2.api.AbstractConfigEntry;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.ClothConfigScreen;
+import me.shedaniel.clothconfig2.gui.widget.DynamicEntryListWidget;
 import me.shedaniel.math.Color;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.math.impl.PointHelper;
@@ -45,4 +47,36 @@ public class ClothListWidget extends ClothConfigScreen.ListWidget<AbstractConfig
             graphics.fill(scrollbarPositionMinX, minY, scrollbarPositionMaxX, minY + height, Color.ofRGB(bottomc, bottomc, bottomc).getColor());
         }
     }
+
+    @Override
+    public void scrollTo(double value, boolean animated, long duration) {
+        if (animated) {
+            this.scrollAnimator.setTo(value, 200);
+        } else {
+            this.scrollAnimator.setAs(value);
+        }
+    }
+
+    @Override
+    #if MC_VER > MC_1_20_1
+    public boolean mouseScrolled(double mouseX, double mouseY, double x, double y) {
+        for (DynamicEntryListWidget.Entry<?> entry : this.visibleChildren()) {
+            if (entry.mouseScrolled(mouseX, mouseY, x, y)) {
+                return true;
+            }
+        }
+        this.offset(32 * -y, true);
+        return true;
+    }
+    #else
+    public boolean mouseScrolled(double mouseX, double mouseY, double x) {
+        for (DynamicEntryListWidget.Entry<?> entry : this.visibleChildren()) {
+            if (entry.mouseScrolled(mouseX, mouseY, x)) {
+                return true;
+            }
+        }
+        this.offset(32 * -x, true);
+        return true;
+    }
+    #endif
 }

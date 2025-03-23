@@ -104,7 +104,7 @@ public class FSR2 extends AbstractAlgorithm {
         Matrix4f projectionMatrix = dispatchResource.projectionMatrix();
         float m11 = projectionMatrix.m11();
         float verticalFovRadians = 2.0f * (float) Math.atan(1.0f / m11);
-        float cameraFovAngleVertical = (float) Math.toDegrees(verticalFovRadians);
+        float cameraFovAngleVertical = dispatchResource.verticalFov();
         FfxResource colorResource = nativeApi.ffxGetTextureResourceGL(
                 this.input.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR),
                 dispatchResource.renderWidth(),

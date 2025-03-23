@@ -1,4 +1,4 @@
-<img src="common/src/main/resources/logo.png" width="128">
+<img src="common/src/main/resources/assets/super_resolution/logo.png" width="128">
 
 # Super Resolution
 

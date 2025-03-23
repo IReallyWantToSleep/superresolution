@@ -1,11 +1,13 @@
 package io.homo.superresolution.common.render;
 
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.render.vulkan.*;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
 import io.homo.superresolution.common.utils.FileReadHelper;
+import org.lwjgl.vulkan.VK;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
@@ -65,12 +67,15 @@ public class GlVkInteropManager implements Destroyable {
     }
 
     public void init() {
+        if (Config.isSkipInitVulkan()) return;
         try {
-            System.loadLibrary("vulkan-1");
-        } catch (UnsatisfiedLinkError e) {
-            supportVulkan = false;
-            VkApplication.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
-            return;
+            VK.create();
+        } catch (Exception | Error e) {
+            if (!e.getMessage().contains("Vulkan has already been created")){
+                supportVulkan = false;
+                VkApplication.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
+                return;
+            }
         }
         vulkanApp = VkApplication.create()
                 .addInstanceRequiredExtensions(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME)

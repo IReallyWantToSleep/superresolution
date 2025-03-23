@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale.sgsr;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
 
@@ -13,6 +14,8 @@ import java.nio.ByteBuffer;
 public class SgsrParams implements IUniformStruct {
     private final ByteBuffer container;
     private int sameFrameNum = 0;
+    // 新增字段 prev_view_proj_matrix 用于保存上一帧的视图投影矩阵
+    private Matrix4f prev_view_proj_matrix;
 
     public SgsrParams() {
         this.container = MemoryStack.stackCalloc(sizeof());
@@ -103,15 +106,19 @@ public class SgsrParams implements IUniformStruct {
         Matrix4f inv_current_view_proj_matrix = new Matrix4f(dispatchResource.viewMatrix()).invert().mul(new Matrix4f(dispatchResource.projectionMatrix()).invert());
         Matrix4f clipToPrevClipMat = new Matrix4f(dispatchResource.lastViewMatrix()).mul(inv_current_view_proj_matrix);
         setClipToPrevClip(clipToPrevClipMat);
-        setPreExposure(1.0f);
+        setPreExposure(1.2f);
         setCameraFovAngleHor(dispatchResource.horizontalFov());
         setCameraNear(dispatchResource.cameraNear());
 
+        // 将 dispatchResource.lastProjectionMatrix() 改为使用 prev_view_proj_matrix
         boolean isCameraStill = isCameraStill(
                 curr_view_proj_matrix,
-                dispatchResource.lastProjectionMatrix(),
+                (prev_view_proj_matrix == null ? curr_view_proj_matrix : prev_view_proj_matrix),
                 1e-5f
         );
+        // 新增调试日志：记录是否静止
+        SuperResolution.LOGGER.info("SgsrParams updateData: isCameraStill = " + isCameraStill);
+
         double MinLerpContribution = 0.0;
         if (isCameraStill) {
             sameFrameNum += 1;
@@ -124,11 +131,17 @@ public class SgsrParams implements IUniformStruct {
         } else {
             sameFrameNum = 0;
         }
+        // 新增调试日志：记录 sameFrameNum 与 MinLerpContribution
+        SuperResolution.LOGGER.info("SgsrParams updateData: sameFrameNum = " + sameFrameNum + ", MinLerpContribution = " + MinLerpContribution);
+
         setMinLerpContribution((float) MinLerpContribution);
         setbSameCamera(isCameraStill);
         fillZero(136, 144);
         container.position(144);
         container.flip();
+
+        // 更新 prev_view_proj_matrix 为当前帧的视图投影矩阵
+        prev_view_proj_matrix = new Matrix4f(curr_view_proj_matrix);
     }
 
     @Override

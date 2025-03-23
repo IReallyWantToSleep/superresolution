@@ -5,11 +5,16 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.common.utils.ShaderCache;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL41;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,12 +26,44 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
     private final Map<String, Integer> uniformLocationCache = new HashMap<>();
     public String shaderName;
     public int shaderProgram;
+    public boolean compiled;
     protected ArrayList<String> fragShaderTextList;
     protected ArrayList<String> vertShaderTextList;
     protected Map<String, GlGeneralShaderProgram.ShaderInclude> shaderIncludeList;
     protected ArrayList<String> shaderDefineList;
+    protected boolean enableCache = false;
 
     protected AbstractGlShaderProgram() {
+    }
+
+    public ArrayList<String> getShaderDefineList() {
+        return shaderDefineList;
+    }
+
+    public Map<String, GlGeneralShaderProgram.ShaderInclude> getShaderIncludeList() {
+        return shaderIncludeList;
+    }
+
+    protected AbstractGlShaderProgram fromBin(ShaderCache.ShaderBinary shaderBin) {
+        if (compiled) return this;
+        int program = GL20.glCreateProgram();
+        GL41.glProgramBinary(program, shaderBin.format(), shaderBin.binary());
+
+        GL20.glValidateProgram(program);
+        if (GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL20.GL_FALSE) {
+            String log = GL20.glGetProgramInfoLog(program);
+            GL20.glDeleteProgram(program);
+            throw new RuntimeException("Program validation failed:\n" + log);
+        }
+
+        if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL20.GL_FALSE) {
+            String log = GL20.glGetProgramInfoLog(program);
+            GL20.glDeleteProgram(program);
+            throw new RuntimeException("Program link status invalid:\n" + log);
+        }
+        this.shaderProgram = program;
+        this.compiled = true;
+        return this;
     }
 
     @Override
@@ -38,8 +75,8 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
         shaderDefineList.clear();
     }
 
-    protected ArrayList<String> processShaderText() {
-        ArrayList<String> srcTextList = new ArrayList<>(this.fragShaderTextList);
+    protected ArrayList<String> processShaderText(ArrayList<String> src) {
+        ArrayList<String> srcTextList = new ArrayList<>(src);
         ArrayList<String> processTextList = new ArrayList<>();
         int index = 0;
         while (true) {
@@ -86,7 +123,12 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
     public String getFragShaderText() {
         String code = String.join("\n", getFragShaderTextList());
         if (Config.getInstance().isDebugDumpShader()) {
-            try (PrintWriter out = new PrintWriter(new FileOutputStream("%s+FragShader.frag.glsl".formatted(shaderName)))) {
+            try (PrintWriter out = new PrintWriter(new FileOutputStream(
+                    Path.of(
+                            ShaderCache.CACHE_DIR.toString(),
+                            "%s+FragShader.frag.glsl".formatted(shaderName)
+                    ).toString()
+            ))) {
                 out.println(code);
             } catch (IOException e) {
                 SuperResolution.LOGGER.error(e.toString());
@@ -98,7 +140,12 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
     public String getVertShaderText() {
         String code = String.join("\n", getVertShaderTextList());
         if (Config.getInstance().isDebugDumpShader()) {
-            try (PrintWriter out = new PrintWriter(new FileOutputStream("%s+VertShader.vert.glsl".formatted(shaderName)))) {
+            try (PrintWriter out = new PrintWriter(new FileOutputStream(
+                    Path.of(
+                            ShaderCache.CACHE_DIR.toString(),
+                            "%s+VertShader.vert.glsl".formatted(shaderName)
+                    ).toString()
+            ))) {
                 out.println(code);
             } catch (IOException e) {
                 SuperResolution.LOGGER.error(e.toString());
@@ -108,11 +155,11 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
     }
 
     public ArrayList<String> getFragShaderTextList() {
-        return processShaderText();
+        return processShaderText(this.fragShaderTextList);
     }
 
     public ArrayList<String> getVertShaderTextList() {
-        return this.vertShaderTextList;
+        return processShaderText(this.vertShaderTextList);
     }
 
     public abstract AbstractGlShaderProgram compileShader();
