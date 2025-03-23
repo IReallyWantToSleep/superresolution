@@ -31,7 +31,7 @@ public class Config {
     }
 
     public static void setInstance(ConfigData instance) {
-        Config.instance = instance;
+        if (instance != null) Config.instance = instance;
     }
 
     public static void registerTypeAdapter(GsonBuilder gsonBuilder) {
