@@ -154,7 +154,7 @@ public class Config {
     }
 
     public static void setSkipInitVulkan(boolean skipInitVulkan) {
-        instance.setSkipLoadNativeLib(skipInitVulkan);
+        instance.setSkipInitVulkan(skipInitVulkan);
 
     }
 }

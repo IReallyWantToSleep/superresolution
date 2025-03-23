@@ -174,7 +174,7 @@ if __name__ == "__main__":
         if not call_gradle_task("clean"):
             print(f"清理环境失败，跳过清理")
         
-        build_args = f"-Pminecraft_version={config["common"]['minecraft_version']}"
+        build_args = f"-Pminecraft_version={config['common']['minecraft_version']}"
         if not call_gradle_task("build", build_args):
             print(f"构建 {version} 失败")
             continue

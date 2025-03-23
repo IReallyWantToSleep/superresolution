@@ -32,7 +32,7 @@ public class FSR2 extends AbstractAlgorithm {
     private FSR2() {
         RenderSystem.assertOnRenderThread();
         this.isSupport = isSupport();
-        nativeApi = NativeLibManager.nativeApi;
+        nativeApi = NativeLibManager.getNativeApi();
         window = Minecraft.getInstance().getWindow();
     }
 
@@ -42,7 +42,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR2.getRequirement().check().support();
+        return AlgorithmType.FSR2.getRequirement().check().support() && NativeLibManager.getNativeApi() != null;
     }
 
     public void resize(int width, int height) {

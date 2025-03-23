@@ -28,7 +28,7 @@ public class FSR2Helper implements Resizable, Destroyable {
         motionVectorsFBO = new MotionVectorsFrameBuffer(false);
         motionVectorsFBO.setClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         motionVectorsTexture = new GlTexture((int) (SuperResolution.getMinecraftWidth() * Config.getRenderScaleFactor()), (int) (SuperResolution.getMinecraftHeight() * Config.getRenderScaleFactor()), GL_RG16F);
-        motionVectorsShader = (GlGeneralShaderProgram) GlGeneralShaderProgram.create()
+        motionVectorsShader = GlGeneralShaderProgram.create()
                 .addAllFragShaderTextList(FileReadHelper.readText("/shader/calc_motion_vector.fsh"))
                 .addAllVertShaderTextList(FileReadHelper.readText("/shader/calc_motion_vector.vsh"))
                 .setShaderName("motionVectorsShader")
@@ -73,8 +73,8 @@ public class FSR2Helper implements Resizable, Destroyable {
     }
 
     public float[] getJitter() {
-        int jitterPhaseCount = NativeLibManager.nativeApi.ffxFsr2GetJitterPhaseCount(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getScreenWidth());
-        float[] jitterOffset = NativeLibManager.nativeApi.ffxFsr2GetJitterOffset(frameIndex, jitterPhaseCount);
+        int jitterPhaseCount = NativeLibManager.getNativeApi().ffxFsr2GetJitterPhaseCount(AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getScreenWidth());
+        float[] jitterOffset = NativeLibManager.getNativeApi().ffxFsr2GetJitterOffset(frameIndex, jitterPhaseCount);
         float jitterX = 2.0f * jitterOffset[0] / (float) AlgorithmManager.helper.getRenderWidth();
         float jitterY = -2.0f * jitterOffset[1] / (float) AlgorithmManager.helper.getRenderHeight();
         return new float[]{jitterX, jitterY};

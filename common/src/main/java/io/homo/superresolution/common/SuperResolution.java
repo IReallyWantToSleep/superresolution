@@ -128,11 +128,17 @@ public final class SuperResolution implements Resizable, Destroyable {
         algorithmType = Config.getUpscaleAlgo();
     }
 
-    public static void createAlgo() {
-        if (!isPreInit) return;
-        currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
+    public static boolean createAlgo() {
+        if (!isPreInit) return false;
         defaultAlgorithm.init();
-        SuperResolution.LOGGER.info("初始化算法 {}", algorithmType.toString());
+        try {
+            currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
+            SuperResolution.LOGGER.info("初始化算法 {}", algorithmType.toString());
+            return true;
+        } catch (Exception e) {
+            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误 {}", algorithmType.toString(), e.getMessage());
+        }
+        return false;
     }
 
     public static void initVulkan() {
