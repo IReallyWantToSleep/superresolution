@@ -149,7 +149,7 @@ if __name__ == "__main__":
         try:
             config = VersionParser.parse(config_file)
             version_configs[version_name] = config
-            print(f"已加载配置: {config_file} -> {config["common"]['minecraft_version']}")
+            print(f"已加载配置: {config_file} -> {config['common']['minecraft_version']}")
         except Exception as e:
             print(f"加载配置失败 {config_file.name}: {e}")
             sys.exit(1)
