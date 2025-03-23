@@ -1,3 +1,17 @@
+# 0.5.0-alpha.2
+
+警告：该版本国际化尚不完善 Warning: The internationalization of this version is not yet complete
+
+* 更换图标 (感谢[yu](https://center.mcmod.cn/773788/)为本模组绘制的图标)
+* 添加着色器缓存 _(但默认不启用因为用了更卡)_
+* 添加跳过初始化Vulkan与跳过加载依赖库选项
+* 修改配置界面滚动速度
+* 修改modelview捕获方式
+* 修改版本号格式 _(0.0.5a1等于0.5.0-alpha.1)_
+* 优化检测Vulkan支持的逻辑
+* 修复issues/30
+* 修复issues/29
+
 # 0.0.5a1
 
 警告：该版本国际化尚不完善 Warning: The internationalization of this version is not yet complete
