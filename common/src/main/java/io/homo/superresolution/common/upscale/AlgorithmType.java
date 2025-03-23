@@ -28,6 +28,7 @@ public enum AlgorithmType {
             Requirement.nothing()
                     .glMajorVersion(4)
                     .glMinorVersion(5)
+                    .requireVulkan(true)
                     .developmentEnvironment(true),
             "NVIDIA Image Scaling",
             "NVIDIA Image Scaling"

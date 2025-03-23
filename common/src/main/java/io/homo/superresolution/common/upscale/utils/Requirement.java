@@ -10,11 +10,12 @@ import java.util.ArrayList;
 
 public class Requirement {
     private final ArrayList<String> includeExtension = new ArrayList<>();
+    private final ArrayList<OS> includeOS = new ArrayList<>();
     private int glMajorVersion = -1;
     private int glMinorVersion = -1;
     private boolean developmentEnvironment = false;
     private boolean requireVulkan = false;
-    private ArrayList<OS> includeOS = new ArrayList<>();
+
     protected Requirement() {
     }
 
@@ -70,14 +71,14 @@ public class Requirement {
     }
 
     public boolean checkGlVersion() {
-        boolean version = true;
-        if (glMajorVersion != -1 && glMajorVersion > AlgorithmHelper.GLVersion[0]) version = false;
+        boolean version = glMajorVersion == -1 || glMajorVersion <= AlgorithmHelper.GLVersion[0];
         if (glMinorVersion != -1 && glMinorVersion > AlgorithmHelper.GLVersion[1]) version = false;
         return version;
     }
 
     public boolean checkVulkan() {
-        if (requireVulkan) return SuperResolution.interopManager.supportVulkan;
+        if (requireVulkan)
+            return SuperResolution.interopManager.supportVulkan && SuperResolution.interopManager.vulkanApp != null;
         return true;
     }
 

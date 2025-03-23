@@ -28,14 +28,17 @@ public class AlgorithmHelper implements Resizable, Destroyable {
         for (int i = 0; i < l; ++i) {
             GLExtension.add(glGetStringi(GL_EXTENSIONS, i));
         }
-        IntBuffer vkVer = MemoryStack.stackCallocInt(1);
-        VK11.vkEnumerateInstanceVersion(vkVer);
-
-        VkVersion = new int[]{
-                VK10.VK_API_VERSION_MAJOR(vkVer.get(0)),
-                VK10.VK_API_VERSION_MINOR(vkVer.get(0)),
-                VK10.VK_API_VERSION_PATCH(vkVer.get(0)),
-        };
+        if (SuperResolution.interopManager.supportVulkan) {
+            IntBuffer vkVer = MemoryStack.stackCallocInt(1);
+            VK11.vkEnumerateInstanceVersion(vkVer);
+            VkVersion = new int[]{
+                    VK10.VK_API_VERSION_MAJOR(vkVer.get(0)),
+                    VK10.VK_API_VERSION_MINOR(vkVer.get(0)),
+                    VK10.VK_API_VERSION_PATCH(vkVer.get(0)),
+            };
+        } else {
+            VkVersion = new int[]{0, 0, 0};
+        }
     }
 
     public AlgorithmHelper() {

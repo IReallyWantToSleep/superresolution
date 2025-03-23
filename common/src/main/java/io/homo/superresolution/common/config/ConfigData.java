@@ -65,10 +65,23 @@ public class ConfigData {
 
     public void setUpscaleAlgo(AlgorithmType upscaleAlgo) {
         if (this.upscaleAlgo == upscaleAlgo) return;
+        AlgorithmType lastUpscaleAlgo = this.upscaleAlgo;
         this.upscaleAlgo = upscaleAlgo;
         SuperResolution.algorithmType = this.upscaleAlgo;
-        if (SuperResolution.currentAlgorithm != null) SuperResolution.currentAlgorithm.destroy();
-        SuperResolution.createAlgo();
+        if (SuperResolution.currentAlgorithm != null) {
+            SuperResolution.currentAlgorithm.destroy();
+        }
+        if (!SuperResolution.createAlgo()) {
+            this.upscaleAlgo = lastUpscaleAlgo;
+            SuperResolution.algorithmType = this.upscaleAlgo;
+            if (!SuperResolution.createAlgo()) {
+                SuperResolution.LOGGER.error("在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常", upscaleAlgo.toString(), lastUpscaleAlgo.toString());
+                throw new RuntimeException();
+            } else {
+                SuperResolution.LOGGER.error("初始化算法 {} 失败，已回退到算法 {}", upscaleAlgo.toString(), lastUpscaleAlgo.toString());
+            }
+        }
+
     }
 
     public float getSharpness() {

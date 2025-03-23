@@ -48,7 +48,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.NIS.getRequirement().check().support();
+        return AlgorithmType.NIS.getRequirement().check().support() && SuperResolution.interopManager.vulkanApp != null;
     }
 
     public void initShader() {

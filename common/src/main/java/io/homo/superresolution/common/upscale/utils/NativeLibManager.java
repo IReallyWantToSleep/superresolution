@@ -1,9 +1,6 @@
 package io.homo.superresolution.common.upscale.utils;
 
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.utils.Md5CaculateUtil;
-import io.netty.util.internal.UnstableApi;
 import net.minecraft.SharedConstants;
 import oiiaio.fsr.fsr2.FfxFSR2;
 import org.slf4j.Logger;
@@ -17,14 +14,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 
 public class NativeLibManager {
     public static final String BASE_PATH = "lib";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-NativeLib");
     private final static ArrayList<NativeLib> libs = new ArrayList<>();
-    @UnstableApi
-    public static FfxFSR2 nativeApi;
+    private static FfxFSR2 nativeApi;
 
     static {
         String os = System.getProperty("os.name").toLowerCase();
@@ -42,6 +39,20 @@ public class NativeLibManager {
             libs.add(new NativeLib("libffx_fsr2_api_x64", "8fabdd0b3455f34f3338ccf4be0d2102"));
             libs.add(new NativeLib("libfsr2javalib", "5c8d1a057783f0bc6f6c46d718b6d57b", 1));
         }
+    }
+
+    public static void safeNativeApi(Consumer<FfxFSR2> consumer) {
+        if (nativeApi != null) {
+            consumer.accept(nativeApi);
+        }
+    }
+
+    public static FfxFSR2 getNativeApi() {
+        return nativeApi;
+    }
+
+    public static boolean nativeApiAvailable() {
+        return nativeApi != null;
     }
 
     public static void extract(String path) {

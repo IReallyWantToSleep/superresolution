@@ -56,7 +56,7 @@ public class InfoBuilder {
                 new Line()
                         .text(
                                 Component.translatable("superresolution.screen.info.text.native_lib_version").getString()
-                                        .formatted(NativeLibManager.nativeApi.getVersionInfo())
+                                        .formatted(NativeLibManager.nativeApiAvailable() ? NativeLibManager.getNativeApi().getVersionInfo() : "???")
                         )
                         .color(255, 255, 255, 255)
         );
