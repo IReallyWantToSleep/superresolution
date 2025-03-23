@@ -135,6 +135,9 @@ public class MinecraftRenderHandle {
     public static void onRenderWorldBegin(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = true;
+        if (SuperResolution.cachedWidth != getScreenWidth() || SuperResolution.cachedHeight != getScreenHeight()) {
+            SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
+        }
         PerformanceInfo.begin("world");
         updateEntityOutline();
         updateRenderTarget();

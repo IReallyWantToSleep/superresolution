@@ -347,7 +347,7 @@ public class ClothConfig {
         for (String contributor : contributors) {
             contributorsEntry.addLine(new Line()
                     .text("• " + contributor)
-                    .color(200, 200, 200, 255)
+                    .color(255, 255, 255, 255)
             );
         }
         ClothTextListListEntry librariesEntry = new ClothTextListListEntry(

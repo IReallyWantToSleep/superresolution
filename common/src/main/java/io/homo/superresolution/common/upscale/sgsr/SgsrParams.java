@@ -109,16 +109,11 @@ public class SgsrParams implements IUniformStruct {
         setPreExposure(1.2f);
         setCameraFovAngleHor(dispatchResource.horizontalFov());
         setCameraNear(dispatchResource.cameraNear());
-
-        // 将 dispatchResource.lastProjectionMatrix() 改为使用 prev_view_proj_matrix
         boolean isCameraStill = isCameraStill(
                 curr_view_proj_matrix,
                 (prev_view_proj_matrix == null ? curr_view_proj_matrix : prev_view_proj_matrix),
                 1e-5f
         );
-        // 新增调试日志：记录是否静止
-        SuperResolution.LOGGER.info("SgsrParams updateData: isCameraStill = " + isCameraStill);
-
         double MinLerpContribution = 0.0;
         if (isCameraStill) {
             sameFrameNum += 1;
@@ -131,16 +126,11 @@ public class SgsrParams implements IUniformStruct {
         } else {
             sameFrameNum = 0;
         }
-        // 新增调试日志：记录 sameFrameNum 与 MinLerpContribution
-        SuperResolution.LOGGER.info("SgsrParams updateData: sameFrameNum = " + sameFrameNum + ", MinLerpContribution = " + MinLerpContribution);
-
         setMinLerpContribution((float) MinLerpContribution);
         setbSameCamera(isCameraStill);
         fillZero(136, 144);
         container.position(144);
         container.flip();
-
-        // 更新 prev_view_proj_matrix 为当前帧的视图投影矩阵
         prev_view_proj_matrix = new Matrix4f(curr_view_proj_matrix);
     }
 

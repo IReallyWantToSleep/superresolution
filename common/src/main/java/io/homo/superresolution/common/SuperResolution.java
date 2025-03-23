@@ -46,6 +46,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static GlVkInteropManager interopManager;
     public static int framebufferWidth = 0;
     public static int framebufferHeight = 0;
+    public static int cachedWidth;
+    public static int cachedHeight;
     private static SuperResolution instance;
 
     public SuperResolution() {
@@ -73,17 +75,11 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static int getMinecraftWidth() {
-        if (framebufferWidth == 0) {
-            framebufferWidth = Math.max(Minecraft.getInstance().getWindow().getScreenWidth(), 1);
-        }
-        return framebufferWidth;
+        return Math.max(Minecraft.getInstance().getWindow().getScreenWidth(), 1);
     }
 
     public static int getMinecraftHeight() {
-        if (framebufferHeight == 0) {
-            framebufferHeight = Math.max(Minecraft.getInstance().getWindow().getScreenHeight(), 1);
-        }
-        return framebufferHeight;
+        return Math.max(Minecraft.getInstance().getWindow().getScreenHeight(), 1);
     }
 
     public static SuperResolution getInstance() {
@@ -175,6 +171,8 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
+        cachedWidth = getMinecraftWidth();
+        cachedHeight = getMinecraftHeight();
         ((MinecraftRenderTarget) MinecraftRenderHandle.getRenderTarget()).enableStencil();
         if (currentAlgorithm != null)
             currentAlgorithm.resize(getMinecraftWidth(), getMinecraftHeight());
