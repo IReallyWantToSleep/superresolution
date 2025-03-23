@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 pluginManagement {
     repositories {
         mavenLocal()
@@ -30,19 +32,15 @@ pluginManagement {
     }
 }
 
-def loadProperties() {
-    def props = new Properties()
-    props.load(new FileInputStream(new File("$rootDir/versionConfigs/" + "$minecraft_version" + ".properties")))
-    props.each { prop ->
-        gradle.ext.set(prop.key, prop.value)
-    }
+def loadConfig() {
+    gradle.ext.set("versionConfigSrc", new JsonSlurper().parse(new File("$rootDir/versionConfigs/" + "$minecraft_version" + ".json")))
 }
 
-loadProperties()
+loadConfig()
 rootProject.name = 'super_resolution'
 
 include 'common'
-for (loader in ((String) gradle.platforms).split(",")) {
+for (loader in gradle.ext.versionConfigSrc.common.platforms) {
     def loaderName = loader.strip()
     if (loaderName.isEmpty() || loaderName.isBlank()) continue
     println "添加加载器 " + loaderName

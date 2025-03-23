@@ -1,9 +1,15 @@
+import superresolution.VersionConfig
+
 plugins {
     id "dev.architectury.loom" version "1.9-SNAPSHOT" apply false
     id "architectury-plugin" version "3.4-SNAPSHOT"
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
     id "io.github.pacifistmc.forgix" version "1.2.9"
+}
+
+ext {
+    versionConfig = VersionConfig.loadFromFile(new File("$rootDir/versionConfigs/${minecraft_version}.json"))
 }
 
 static int toVerCode(String verStr) {
@@ -14,26 +20,24 @@ static int toVerCode(String verStr) {
 }
 
 def writeDefine() {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder()
     new File(rootProject.projectDir, "versionConfigs").eachFile { file ->
-        def ver = file.name.replace(".properties", "")
-        def verCode = toVerCode(ver)
-        sb.append("MC_" + ver.replace(".", "_") + "=" + toVerCode(ver) + "\n")
-        println("%s -> %s".formatted(ver, verCode))
+        if (file.name.endsWith(".json")) {
+            def ver = file.name.replace(".json", "")
+            def verCode = toVerCode(ver)
+            sb.append("MC_" + ver.replace(".", "_") + "=" + toVerCode(ver) + "\n")
+            println("%s -> %s".formatted(ver, verCode))
+        }
     }
-    sb.append("MC_VER=" + toVerCode(rootProject.minecraft_version) + "\n")
-    println("MC_VER=%s -> %s".formatted(rootProject.minecraft_version, toVerCode(rootProject.minecraft_version)))
+    sb.append("MC_VER=" + toVerCode(versionConfig.common.minecraftVersion) + "\n")
+    println("MC_VER=%s -> %s".formatted(versionConfig.common.minecraftVersion, toVerCode(versionConfig.common.minecraftVersion)))
     new File(projectDir.asWritable().absolutePath, "build.properties").text = sb.toString()
 }
 
-project.gradle.ext.getProperties().each { prop ->
-    rootProject.ext.set(prop.key, prop.value)
-    println "[key:" + prop.key + ", value:" + prop.value + "]"
-}
 writeDefine()
 
 architectury {
-    minecraft = project.minecraft_version
+    minecraft = versionConfig.common.minecraftVersion
 }
 
 
@@ -42,7 +46,7 @@ allprojects {
     group = rootProject.maven_group
     version = rootProject.mod_version
     tasks.withType(JavaCompile) {
-        options.release = rootProject.java_version as Integer
+        options.release = versionConfig.common.javaVersion as Integer
         options.compilerArgs += ["-Xplugin:Manifold"]
         options.encoding = "UTF-8"
     }
@@ -59,7 +63,7 @@ subprojects {
     }
 
     base {
-        archivesName = "$rootProject.archives_name-$project.name-$rootProject.minecraft_version"
+        archivesName = "$rootProject.archives_name-$project.name-$versionConfig.common.minecraftVersion"
     }
 
     repositories {
@@ -75,39 +79,39 @@ subprojects {
     }
 
     dependencies {
-        minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
+        minecraft "net.minecraft:minecraft:$versionConfig.common.minecraftVersion"
         mappings loom.layered() {
             officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${rootProject.parchment_version}@zip")
+            parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
         }
         annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.manifold_version}")
         configurations.configureEach {
             resolutionStrategy {
-                force "org.lwjgl:lwjgl:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-glfw:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-opengl:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-openal:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-stb:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-jemalloc:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-tinyfd:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version"
-                force "org.lwjgl:lwjgl-freetype:$rootProject.lwjgl_version"
+                force "org.lwjgl:lwjgl:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-glfw:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-opengl:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-openal:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-stb:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-jemalloc:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-tinyfd:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-freetype:$versionConfig.common.lwjglVersion"
             }
         }
-        implementation("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
-        implementation "org.lwjgl:lwjgl-glfw:$rootProject.lwjgl_version"
+        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+        implementation "org.lwjgl:lwjgl-glfw:$versionConfig.common.lwjglVersion"
     }
 
 
     java {
         withSourcesJar()
 
-        sourceCompatibility = JavaVersion.toVersion(rootProject.java_version)
-        targetCompatibility = JavaVersion.toVersion(rootProject.java_version)
+        sourceCompatibility = JavaVersion.toVersion(versionConfig.common.javaVersion)
+        targetCompatibility = JavaVersion.toVersion(versionConfig.common.javaVersion)
     }
 
     tasks.withType(JavaCompile).configureEach {
-        it.options.release = Integer.parseInt(rootProject.java_version)
+        it.options.release = versionConfig.common.javaVersion
     }
 
     publishing {
@@ -126,6 +130,6 @@ subprojects {
 
 forgix {
     group = "io.homo.superresolution"
-    mergedJarName = "superresolution-${rootProject.mod_version}-${rootProject.minecraft_version}.jar"
+    mergedJarName = "superresolution-${rootProject.mod_version}-${versionConfig.common.minecraftVersion}.jar"
     outputDir = "build/"
 }
