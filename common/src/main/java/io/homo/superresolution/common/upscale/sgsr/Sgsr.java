@@ -64,7 +64,6 @@ public class Sgsr extends AbstractAlgorithm {
         variantInstance.setOutput(output);
         params.struct().updateData(dispatchResource);
         params.update();
-        //new Matrix4f().lookAt()
         variantInstance.dispatch(dispatchResource, this);
         return false;
     }
