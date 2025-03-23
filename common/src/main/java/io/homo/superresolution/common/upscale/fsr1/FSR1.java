@@ -63,7 +63,7 @@ public class FSR1 extends AbstractAlgorithm {
                 FileReadHelper.readText("/shader/fsr1/fsr1_common.glsl"),
                 "fsr1_common.glsl"
         );
-        fsr1EASUShader = (GlComputeShaderProgram) GlComputeShaderProgram.create()
+        fsr1EASUShader = GlComputeShaderProgram.create()
                 .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
                 .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                 .addDefineText("FSR_EASU", String.valueOf(1))
@@ -76,7 +76,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1/fsr1_main.comp.glsl"))
                 .build()
                 .compileShader();
-        fsr1RCASShader = (GlComputeShaderProgram) GlComputeShaderProgram.create()
+        fsr1RCASShader = GlComputeShaderProgram.create()
                 .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
                 .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                 .addDefineText("FSR_RCAS", String.valueOf(1))

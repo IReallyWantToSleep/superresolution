@@ -55,6 +55,8 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
     private int bottom = 0;
     private boolean expanded = false;
     private boolean showExpandButton = true;
+    private boolean hoverdText = false;
+
 
     public ClothTextListListEntry(Component fieldName, Supplier<Optional<Component[]>> tooltipSupplier) {
         this(fieldName, tooltipSupplier, true);
@@ -122,6 +124,9 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         this.savedY = y;
         int sideWidth = 2;
         int backgroundAlpha = (int) (30 * backgroundAnimator.value()) + 20;
+        Style style = this.getTextAt(mouseX, mouseY);
+        hoverdText = style != null;
+
         graphics.fillGradient(x, y, x + entryWidth - 1, y + entryHeight, ColorUtil.color(backgroundAlpha, 255, 255, 255), ColorUtil.color(backgroundAlpha, 255, 255, 255));
 
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
@@ -160,7 +165,6 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             #else
             graphics.disableScissor();
             #endif
-            Style style = this.getTextAt(mouseX, mouseY);
             AbstractConfigScreen configScreen = this.getConfigScreen();
             if (style != null && configScreen != null) {
                 graphics.renderComponentHoverEffect(Minecraft.getInstance().font, style, mouseX, mouseY);
@@ -186,7 +190,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             if (configScreen != null && configScreen.handleComponentClicked(style)) {
                 return true;
             }
-            if (mainRectangle.contains(mouseX, mouseY) && this.canExpand) {
+            if (mainRectangle.contains(mouseX, mouseY) && this.canExpand && !hoverdText) {
                 this.setExpanded(!isExpanded());
             }
         }
@@ -195,20 +199,51 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
     }
 
     protected @Nullable Style getTextAt(double x, double y) {
-        //一般行高是9，但用缩放就出bug力，挖坑
-        int lineCount = this.lineRenderers.size();
-        if (lineCount > 0) {
-            int textX = Mth.floor(x - (double) this.savedX);
-            int textY = Mth.floor(y - (double) 7.0F - (double) this.savedY);
-            if (textX >= 0 && textY >= 0 && textX <= this.savedWidth && textY < 9 * lineCount + lineCount) {
-                int line = textY / 9;
-                if (line < this.lineRenderers.size()) {
-                    FormattedCharSequence orderedText = this.lineRenderers.get(line).line.text;
-                    return orderedText == null ? Style.EMPTY : this.textRenderer.getSplitter().componentStyleAtWidth(orderedText, textX);
+        if (mainRectangle.contains(x, y) && isExpanded()) {
+            List<LineRenderer> lines = this.lineRenderers;
+            int size = lines.size();
+            if (size == 0) {
+                return null;
+            }
+
+            int low = 0;
+            int high = size - 1;
+            int candidate = -1;
+
+            // 二分查找找到y坐标可能所在的行
+            while (low <= high) {
+                int mid = (low + high) >>> 1;
+                LineRenderer line = lines.get(mid);
+                Rectangle rect = line.saveRectangle;
+                if (rect == null) {
+                    // 处理saveRectangle为null的情况，例如跳过该行
+                    // 根据实际情况调整搜索边界，此处假设后续处理
+                    break;
+                }
+                double lineY = rect.y;
+                if (lineY <= y) {
+                    candidate = mid;
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
                 }
             }
-        }
 
+            // 检查候选行是否包含目标点
+            if (candidate != -1) {
+                LineRenderer line = lines.get(candidate);
+                Rectangle rect = line.saveRectangle;
+                if (rect != null && rect.contains(x, y)) {
+                    FormattedCharSequence text = line.line.text;
+                    return text != null ?
+                            this.textRenderer.getSplitter().componentStyleAtWidth(text, rect.x) :
+                            Style.EMPTY;
+                }
+            }
+
+            // 若候选行不包含，则无匹配项
+            return null;
+        }
         return null;
     }
 
@@ -235,6 +270,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
 
     public static class LineRenderer {
         public Line line;
+        public Rectangle saveRectangle;
 
         LineRenderer(Line line) {
             this.line = line;
@@ -257,6 +293,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                 float delta,
                 Font font
         ) {
+            saveRectangle = new Rectangle(x, y, line.width(font), line.height(font));
             graphics.pose().pushPose();
             graphics.pose().translate(x + (line.center ? -7 : 0), y, 0);
             graphics.pose().scale(line.scale.x, line.scale.y, 1.0f);

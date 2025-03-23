@@ -12,11 +12,11 @@ public class BlitShader extends GlGeneralShaderProgram {
 
     public static BlitShader getShader() {
         if (shaderCache == null) {
-            shaderCache = ((BlitShader) (new BlitShaderProgramBuilder()
+            shaderCache = new BlitShaderProgramBuilder()
                     .setShaderName("blit")
                     .addAllFragShaderTextList(FileReadHelper.readText("/shader/blit.frag.glsl"))
                     .addAllVertShaderTextList(FileReadHelper.readText("/shader/blit.vert.glsl"))
-                    .build()))
+                    .build()
                     .compileShader();
         }
         return shaderCache;
@@ -32,11 +32,10 @@ public class BlitShader extends GlGeneralShaderProgram {
         this.setTexture("uTexture", textureId, 0);
     }
 
-    private static class BlitShaderProgramBuilder extends GeneralShaderProgramBuilder {
+    private static class BlitShaderProgramBuilder extends AbstractShaderProgramBuilder<BlitShader> {
         @Override
         public BlitShader build() {
-            return (BlitShader) setShaderText(new BlitShader());
+            return checkShaderCache() ? updateShader(new BlitShader().fromBin(getShaderCache())) : updateShader(new BlitShader());
         }
     }
-
 }

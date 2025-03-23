@@ -21,11 +21,12 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     private GlComputeShaderProgram convertShader;
     private GlComputeShaderProgram upscaleShader;
     private GlPipeline sgsrPipeline;
-    private ITexture YCoCgColor;
+    private ITexture PrevLumaHistory;
+    private ITexture LumaHistory;
+
     private ITexture MotionDepthClipAlphaBuffer;
     private ITexture PrevHistoryOutput;
     private ITexture HistoryOutput;
-
 
     @Override
     public void dispatch(DispatchResource resource, Sgsr sgsr) {
@@ -35,10 +36,9 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 new Vec3(
                         dispatchX,
                         dispatchY,
-                        1
-                )
-        );
+                        1));
         swapHistoryOutput();
+        //swapLumaHistory();
         sgsrPipeline.scheduleJob("convert", pipelineDispatchResource);
         sgsr.getParams().bind(0);
         sgsrPipeline.executeJob("convert", pipelineDispatchResource);
@@ -49,37 +49,39 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
 
     @Override
     public void init(Sgsr sgsr) {
-        convertShader = (GlComputeShaderProgram) GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl"))
+        convertShader = GlComputeShaderProgram.create()
+                .addAllFragShaderTextList(FileReadHelper
+                        .readText("/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl"))
                 .setShaderName("SGSR_2PCS_A")
                 .build()
                 .compileShader();
-        upscaleShader = (GlComputeShaderProgram) GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl"))
+        upscaleShader = GlComputeShaderProgram.create()
+                .addAllFragShaderTextList(FileReadHelper
+                        .readText("/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl"))
                 .setShaderName("SGSR_2PCS_B")
                 .build()
                 .compileShader();
         sgsrPipeline = new GlPipeline();
-        YCoCgColor = GlTexture.create(
+        PrevLumaHistory = GlTexture.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.R32UI
-        );
+                TextureFormat.R32UI);
+        LumaHistory = GlTexture.create(
+                MinecraftRenderHandle.getRenderWidth(),
+                MinecraftRenderHandle.getRenderHeight(),
+                TextureFormat.R32UI);
         MotionDepthClipAlphaBuffer = GlTexture.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.RGBA16F
-        );
+                TextureFormat.RGBA16F);
         PrevHistoryOutput = GlTexture.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA16F
-        );
+                TextureFormat.RGBA16F);
         HistoryOutput = GlTexture.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA16F
-        );
+                TextureFormat.RGBA16F);
         sgsrPipeline.addJob("convert", PipelineJob.create()
                 .setProgram(convertShader)
                 .setType(PipelineJobType.Compute)
@@ -89,42 +91,37 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                         FrameBufferWrapper.ofColor(sgsr.getInputFrameBuffer()),
                         PipelineResourceAccess.READ,
                         null,
-                        1
-                ))
+                        1))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "InputDepth",
                         FrameBufferWrapper.ofDepth(sgsr.getInputFrameBuffer()),
                         PipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.NearestClamp),
-                        2
-                ))
+                        2))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "InputVelocity",
-                        FrameBufferWrapper.ofColor(AlgorithmManager.getDispatchResource().motionVectors()),
+                        FrameBufferWrapper.ofColor(
+                                AlgorithmManager.getDispatchResource().motionVectors()),
                         PipelineResourceAccess.READ,
                         null,
-                        3
-                ))
+                        3))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Image2D,
                         "MotionDepthClipAlphaBuffer",
                         MotionDepthClipAlphaBuffer,
                         PipelineResourceAccess.WRITE,
                         null,
-                        0
-                ))
+                        0))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Image2D,
                         "YCoCgColor",
-                        YCoCgColor,
+                        LumaHistory,
                         PipelineResourceAccess.WRITE,
                         null,
-                        1
-                ))
-                .build()
-        );
+                        1))
+                .build());
 
         sgsrPipeline.addJob("upscale", PipelineJob.create()
                 .setProgram(upscaleShader)
@@ -135,48 +132,48 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                         TextureSupplier.of(() -> PrevHistoryOutput),
                         PipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.LinearClamp),
-                        7
-                ))
+                        7))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "MotionDepthClipAlphaBuffer",
                         MotionDepthClipAlphaBuffer,
                         PipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.LinearClamp),
-                        8
-                ))
+                        8))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "YCoCgColor",
-                        YCoCgColor,
+                        TextureSupplier.of(() -> LumaHistory),
                         PipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.NearestClamp),
-                        9
-                ))
+                        9))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Image2D,
                         "SceneColorOutput",
                         FrameBufferWrapper.ofColor(sgsr.getOutputFrameBuffer()),
                         PipelineResourceAccess.WRITE,
                         null,
-                        0
-                ))
+                        0))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Image2D,
                         "HistoryOutput",
                         TextureSupplier.of(() -> HistoryOutput),
                         PipelineResourceAccess.WRITE,
                         null,
-                        1
-                ))
-                .build()
-        );
+                        1))
+                .build());
     }
 
     private void swapHistoryOutput() {
         ITexture tempA = PrevHistoryOutput;
         PrevHistoryOutput = HistoryOutput;
         HistoryOutput = tempA;
+    }
+
+    private void swapLumaHistory() {
+        ITexture tempA = PrevLumaHistory;
+        PrevLumaHistory = LumaHistory;
+        LumaHistory = tempA;
     }
 
     @Override
@@ -186,7 +183,9 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         convertShader.destroy();
         upscaleShader.destroy();
         MotionDepthClipAlphaBuffer.destroy();
-        YCoCgColor.destroy();
+        PrevLumaHistory.destroy();
+        LumaHistory.destroy();
+
     }
 
     @Override
@@ -195,11 +194,12 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         PrevHistoryOutput.resize(width, height);
         MotionDepthClipAlphaBuffer.resize(
                 MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
-        YCoCgColor.resize(
+                MinecraftRenderHandle.getRenderHeight());
+        PrevLumaHistory.resize(
                 MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
+                MinecraftRenderHandle.getRenderHeight());
+        LumaHistory.resize(
+                MinecraftRenderHandle.getRenderWidth(),
+                MinecraftRenderHandle.getRenderHeight());
     }
 }

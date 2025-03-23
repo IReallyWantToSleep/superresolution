@@ -92,7 +92,7 @@ public class ClothConfig {
 
     public static void addDebug(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
         ConfigCategory debugCategory = builder.getOrCreateCategory(Component.literal("DEBUG"));
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("转储着色器"), Config.getInstance().isDebugDumpShader())
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("转储着色器代码"), Config.getInstance().isDebugDumpShader())
                 .setDefaultValue(false)
                 .setSaveConsumer(Config.getInstance()::setDebugDumpShader)
                 .build());
@@ -222,6 +222,14 @@ public class ClothConfig {
                 .setTooltipSupplier((captureMode) -> Optional.of(new Component[]{captureMode.get()}))
                 .setSaveConsumer(Config::setCaptureMode).build();
         commonCategory.addEntry(captureModeEnumSelector);
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("跳过加载本地依赖库"), Config.isSkipLoadNativeLib())
+                .setDefaultValue(false)
+                .setSaveConsumer(Config::setSkipLoadNativeLib)
+                .build());
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("跳过初始化Vulkan"), Config.isSkipInitVulkan())
+                .setDefaultValue(false)
+                .setSaveConsumer(Config::setSkipInitVulkan)
+                .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),

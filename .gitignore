@@ -143,3 +143,4 @@ build_jars
 /neoforge/bin
 /common/bin
 
+.vscode

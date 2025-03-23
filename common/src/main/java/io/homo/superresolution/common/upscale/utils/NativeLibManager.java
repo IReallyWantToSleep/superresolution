@@ -3,6 +3,7 @@ package io.homo.superresolution.common.upscale.utils;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.utils.Md5CaculateUtil;
+import io.netty.util.internal.UnstableApi;
 import net.minecraft.SharedConstants;
 import oiiaio.fsr.fsr2.FfxFSR2;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public class NativeLibManager {
     public static final String BASE_PATH = "lib";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-NativeLib");
     private final static ArrayList<NativeLib> libs = new ArrayList<>();
+    @UnstableApi
     public static FfxFSR2 nativeApi;
 
     static {

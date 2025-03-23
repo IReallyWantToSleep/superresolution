@@ -58,11 +58,11 @@ public abstract class LevelRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel")
     #if MC_VER == MC_1_21_1
     private void renderLevel(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
-        AlgorithmManager.setMatrix(Minecraft.getInstance().gameRenderer.getProjectionMatrix(AlgorithmManager.getDispatchResource().verticalFov()), projectionMatrix);
+        AlgorithmManager.setMatrix(projectionMatrix, frustumMatrix);
     }
     #elif MC_VER == MC_1_21_4
     private void renderLevel(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
-        AlgorithmManager.setMatrix(Minecraft.getInstance().gameRenderer.getProjectionMatrix(AlgorithmManager.getDispatchResource().verticalFov()), projectionMatrix);
+        AlgorithmManager.setMatrix(projectionMatrix,frustumMatrix );
     }
     #elif MC_VER == MC_1_20_1
     private void renderLevel(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {

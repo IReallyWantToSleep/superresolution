@@ -298,7 +298,8 @@ public class MinecraftRenderHandle {
 
     public static void onRenderHandEnd() {
         if (!checkRenderHandCallPos()) return;
-        setClientRenderTarget(getRenderTarget(RenderTargetType.HAND).asMcRenderTarget());
+
+        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
         Gl.glBindFramebuffer(GlConst.GL_DRAW_FRAMEBUFFER, GlState.get("hand").writeFBO());
         Gl.glBindFramebuffer(GlConst.GL_READ_FRAMEBUFFER, GlState.get("hand").readFBO());
         Gl.glViewport(

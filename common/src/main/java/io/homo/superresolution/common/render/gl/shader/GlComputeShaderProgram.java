@@ -2,6 +2,7 @@ package io.homo.superresolution.common.render.gl.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.utils.ShaderCache;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class GlComputeShaderProgram extends AbstractGlShaderProgram {
     }
 
     public GlComputeShaderProgram compileShader() {
+        if (compiled) return this;
         RenderSystem.assertOnRenderThread();
         int COMPUTE_SHADER = glCreateShader(GL_COMPUTE_SHADER);
         String shaderCode = this.getFragShaderText();
@@ -34,18 +36,22 @@ public class GlComputeShaderProgram extends AbstractGlShaderProgram {
             }
             throw new RuntimeException("FRAGMENT_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(COMPUTE_SHADER, 32768));
         }
-
         this.shaderProgram = glCreateProgram();
         glAttachShader(shaderProgram, COMPUTE_SHADER);
         glLinkProgram(shaderProgram);
         glDeleteShader(COMPUTE_SHADER);
+        if (enableCache) {
+            ShaderCache.saveProgramBinary(this);
+        }
+        compiled = true;
         return this;
     }
 
-    public static class ComputeShaderProgramBuilder extends AbstractShaderProgramBuilder {
+    public static class ComputeShaderProgramBuilder extends AbstractShaderProgramBuilder<GlComputeShaderProgram> {
         @Override
         public GlComputeShaderProgram build() {
-            return (GlComputeShaderProgram) setShaderText(new GlComputeShaderProgram());
+            return checkShaderCache() ? updateShader(new GlComputeShaderProgram().fromBin(getShaderCache())) : updateShader(new GlComputeShaderProgram());
+
         }
     }
 }

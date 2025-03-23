@@ -12,6 +12,24 @@ public class ConfigData {
     private float sharpness = 0.55f;
     private CaptureMode captureMode = CaptureMode.A;
     private boolean debugDumpShader = false;
+    private boolean skipLoadNativeLib = false;
+    private boolean skipInitVulkan = false;
+
+    public boolean isSkipLoadNativeLib() {
+        return skipLoadNativeLib;
+    }
+
+    public void setSkipLoadNativeLib(boolean skipLoadNativeLib) {
+        this.skipLoadNativeLib = skipLoadNativeLib;
+    }
+
+    public boolean isSkipInitVulkan() {
+        return skipInitVulkan;
+    }
+
+    public void setSkipInitVulkan(boolean skipInitVulkan) {
+        this.skipInitVulkan = skipInitVulkan;
+    }
 
     public boolean isDebugDumpShader() {
         return debugDumpShader;
