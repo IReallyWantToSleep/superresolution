@@ -84,38 +84,22 @@ def addModLib(name) {
 
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:$rootProject.fabric_api_version"
-    modImplementation "dev.architectury:architectury-fabric:$rootProject.architectury_api_version"
-    modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
-    modImplementation("me.shedaniel.cloth:cloth-config-fabric:$rootProject.cloth_config_version")
-    if (rootProject.properties.get("fabric_use_modrinth_mods") != null) {
-        String modStr = rootProject.properties.get("fabric_use_modrinth_mods")
-        String[] mods = modStr.split(",")
-        for (def modID : mods) {
-            String modVer = rootProject.properties.get("fabric_use_modrinth_mod_ver_" + modID)
-            if (modVer != null) {
-                addModrinthMod(
-                        modID,
-                        modVer
-                )
-            }
+    modImplementation "net.fabricmc:fabric-loader:$versionConfig.fabric.loaderVersion"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:$versionConfig.fabric.apiVersion"
+    modImplementation "dev.architectury:architectury-fabric:$versionConfig.common.architecturyApiVersion"
+    modImplementation("com.terraformersmc:modmenu:$versionConfig.fabric.modmenuVersion")
+    modImplementation("me.shedaniel.cloth:cloth-config-fabric:$versionConfig.common.clothConfigVersion")
+    for (lib in versionConfig.fabric.dependencies.modrinth) {
+        addModrinthMod(lib.name, lib.version)
+    }
+    for (lib in versionConfig.fabric.dependencies.local) {
+        if (lib.isMod) {
+            addModLib(lib.name)
+        } else {
+            addNoModLib(lib.name)
         }
     }
-    if (rootProject.properties.get("fabric_use_nomod_lib") != null) {
-        String libStr = rootProject.properties.get("fabric_use_nomod_lib")
-        String[] libs = libStr.split(",")
-        for (def lib : libs) {
-            addNoModLib(lib)
-        }
-    }
-    if (rootProject.properties.get("fabric_use_mod_lib") != null) {
-        String libStr = rootProject.properties.get("fabric_use_mod_lib")
-        String[] libs = libStr.split(",")
-        for (def lib : libs) {
-            addModLib(lib)
-        }
-    }
+
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
     implementation "io.github.spair:imgui-java-app:1.87.5"
@@ -125,36 +109,22 @@ dependencies {
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "io.github.douira:glsl-transformer:2.0.1"
 
-    implementation("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
-    include("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
+    implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
 }
 
 processResources {
     inputs.property 'version', project.version
-    String[] srcVersionRange = (rootProject.fabriclike_mod_minecraft_version_range as String).split(",")
-
-    StringBuilder stringBuilder = new StringBuilder()
-    if (srcVersionRange.size() > 1) {
-        stringBuilder.append("[")
-        srcVersionRange.each {
-            srcVersionRange[new ArrayList<String>(srcVersionRange as Collection<? extends String>).indexOf(it)] = '"%s"'.formatted(it)
-        }
-        stringBuilder.append(srcVersionRange.join(","))
-        stringBuilder.append("]")
-    } else {
-        stringBuilder.append('"%s"'.formatted(srcVersionRange[0]))
-    }
-
-    String versionRange = stringBuilder.toString()
-
     filesMatching('fabric.mod.json') {
         expand(
                 version: project.version,
-                javaVersion: rootProject.java_version
+                javaVersion: versionConfig.common.javaVersion
         )
-        //println(it.file.absolutePath)
         filter { String line ->
-            return line.replace('"{versionRange}"', versionRange)
+            return line.replace('"{versionRange}"', versionConfig.common.fabricVersionRange.size() == 1 ?
+                    '"' + versionConfig.common.fabricVersionRange.get(0) + '"' :
+                    "[" + versionConfig.common.fabricVersionRange.join(",") + "]"
+            )
         }
     }
 }

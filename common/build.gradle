@@ -1,21 +1,16 @@
 architectury {
-    common((rootProject.platforms as String).split(","))
+    common(versionConfig.common.platforms)
 }
 
 dependencies {
-    // We depend on Fabric Loader here to use the Fabric @Environment annotations,
-    // which get remapped to the correct annotations on each platform.
-    // Do NOT use other classes from Fabric Loader.
-    modImplementation "net.fabricmc:fabric-loader:$rootProject.fabric_loader_version"
-    //modImplementation "me.shedaniel.cloth:cloth-config:${project.cloth_config_version}"
-    //modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}+${project.minecraft_version}-fabric"
-    modCompileOnly "dev.architectury:architectury:$rootProject.architectury_api_version"
-    modCompileOnly("me.shedaniel.cloth:cloth-config:$rootProject.cloth_config_version")
+    modImplementation "net.fabricmc:fabric-loader:$versionConfig.fabric.loaderVersion"
+    modCompileOnly "dev.architectury:architectury:$versionConfig.common.architecturyApiVersion"
+    modCompileOnly("me.shedaniel.cloth:cloth-config:$versionConfig.common.clothConfigVersion")
     implementation("io.github.spair:imgui-java-app:1.87.5")
     implementation("io.github.spair:imgui-java-binding:1.87.5")
     implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
     implementation "org.anarres:jcpp:1.4.14"
-    implementation("org.lwjgl:lwjgl-vulkan:$rootProject.lwjgl_version")
+    implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     implementation("org.lwjgl:lwjgl-shaderc")
     implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
 }

@@ -1,0 +1,98 @@
+{
+    "common": {
+        "java_version": 21,
+        "minecraft_version": "1.21.4",
+        "parchment_version": "1.21.4:2025.02.16",
+        "platforms": [
+            "fabric",
+            "neoforge"
+        ],
+        "lwjgl_version": "3.3.3",
+        "architectury_api_version": "15.0.3",
+        "neoforge": {
+            "minecraft_version_range": "[1.21.4,)"
+        },
+        "fabric": {
+            "minecraft_version_range": [
+                "~1.21.4"
+            ]
+        },
+        "cloth_config_version": "17.0.144",
+        "mod_artifact_minecraft_ver": "1.21.4"
+    },
+    "fabric": {
+        "loader_version": "0.16.10",
+        "api_version": "0.118.0+1.21.4",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.4-1.8.3+fabric"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.8.8+1.21.4-fabric"
+                },
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.4-0.6.10-fabric"
+                }
+            ],
+            "local": []
+        },
+        "modmenu_version": "11.0.1"
+    },
+    "neoforge": {
+        "loader_version": "21.4.109-beta",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.4-1.8.3+neoforge"
+                },
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.4-0.6.10-neoforge"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.8.8+1.21.4-neoforge"
+                }
+            ],
+            "local": [
+                {
+                    "name": "fabric-api-base-0.4.42+d1308ded19",
+                    "isMod": true
+                },
+                {
+                    "name": "fabric-block-view-api-v2-1.0.10+9afaaf8c19",
+                    "isMod": true
+                },
+                {
+                    "name": "fabric-renderer-api-v1-5.0.0+babc52e504",
+                    "isMod": true
+                },
+                {
+                    "name": "fabric-rendering-data-attachment-v1-0.3.48+73761d2e19",
+                    "isMod": true
+                },
+                {
+                    "name": "net.caffeinemc.sodium-neoforge-0.6.10+mc1.21.4-service",
+                    "isMod": true
+                },
+                {
+                    "name": "jcpp-1.4.14",
+                    "isMod": false
+                },
+                {
+                    "name": "glsl-transformer-2.0.1",
+                    "isMod": false
+                },
+                {
+                    "name": "antlr4-runtime-4.13.1",
+                    "isMod": false
+                }
+            ]
+        }
+    }
+}
