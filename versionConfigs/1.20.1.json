@@ -75,23 +75,19 @@
                     "version": "1.20.1-1.8.0"
                 },
                 {
-                    "name": "simple-clouds",
-                    "version": "0.6.3+1.20.1-forge"
-                },
-                {
                     "name": "embeddium",
                     "version": "0.3.31+mc1.20.1"
                 },
                 {
                     "name": "timeless-and-classics-zero",
                     "version": "1.1.4-hotfix"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.2.1-a-1.20.1"
                 }
             ],
             "local": [
-                {
-                    "name": "crackerslib-forge-1.20.1-0.4.4",
-                    "isMod": true
-                },
                 {
                     "name": "luaj-jse-3.0.8-figura",
                     "isMod": false

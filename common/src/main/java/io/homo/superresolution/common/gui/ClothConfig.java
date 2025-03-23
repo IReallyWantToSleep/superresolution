@@ -286,8 +286,9 @@ public class ClothConfig {
                 true
         ).setTop(4).setBottom(7);
         String[] contributors = {
-                "187J3X1 - 核心开发",
+                "187J3X1 - 核心开发+造饼大王",
                 "异世界美西螈 - 测试反馈+吉祥物+大饼规划者",
+                "yu - 绘制图标"
         };
         Map<String, String> libraries = new LinkedHashMap<>() {{
             put("Cloth Config", "https://github.com/shedaniel/cloth-config");
@@ -299,9 +300,11 @@ public class ClothConfig {
             put("FidelityFX Super Resolution 2.2", "https://github.com/GPUOpen-Effects/FidelityFX-FSR2");
             put("NVIDIA Image Scaling SDK v1.0.3", "https://github.com/NVIDIAGameWorks/NVIDIAImageScaling");
             put("Java OpenGL Math Library(JOML)", "https://github.com/JOML-CI/JOML");
+            put("RenderDoc", "https://github.com/baldurk/renderdoc");
             put("Lightweight Java Game Library 3(LWJGL3)", "https://github.com/LWJGL/lwjgl3");
         }};
         Map<String, String> officialLinks = new LinkedHashMap<>() {{
+            put("官方网站", "https://minecraft-superresolution.netlify.app/");
             put("GitHub仓库", "https://github.com/187J3X1-114514/superresolution");
             put("问题追踪", "https://github.com/187J3X1-114514/superresolution/issues");
             put("MC百科主页", "https://www.mcmod.cn/class/17888.html");

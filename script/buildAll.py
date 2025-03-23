@@ -7,6 +7,7 @@ VERSION_CONFIGS_DIR = "versionConfigs"  # 版本配置目录
 #################################################################
 import os
 import re
+import json
 import sys
 import shutil
 import time
@@ -57,29 +58,10 @@ class JavaFinder:
 
 class VersionParser:
     @staticmethod
-    def parse(file_path: Path) -> Dict[str, list]:
+    def parse(file_path: Path) -> dict:
         config = {}
         with open(file_path, 'r', encoding='utf-8') as f:
-            for line_num, line in enumerate(f, 1):
-                clean_line = re.sub(r'#.*', '', line).strip()
-                if not clean_line:
-                    continue
-                
-                if '=' not in clean_line:
-                    print(f'警告: 无效配置行 {file_path.name}:{line_num}')
-                    continue
-                
-                key, value = map(str.strip, clean_line.split('=', 1))
-                
-                if ',' in value:
-                    config[key] = [v.strip() for v in value.split(',')]
-                else:
-                    config[key] = value
-                
-                if key == "minecraft_version":
-                    if not re.match(r'^\d+\.\d+\.\d+$', config[key]):
-                        print(f'错误: 非法版本号格式 {config[key]}')
-                        sys.exit(1)
+            config = json.loads(f.read())
         return config
 
 def get_java_version(java_exe: Path) -> int:
@@ -162,18 +144,18 @@ if __name__ == "__main__":
     print(f"当前Java版本: {java_version}, 路径: {java.java_exe}")
 
     version_configs = {}
-    for config_file in version_configs_path.glob("*.properties"):
+    for config_file in version_configs_path.glob("*.json"):
         version_name = config_file.stem
         try:
             config = VersionParser.parse(config_file)
             version_configs[version_name] = config
-            print(f"已加载配置: {config_file} -> {config['minecraft_version']}")
+            print(f"已加载配置: {config_file} -> {config["common"]['minecraft_version']}")
         except Exception as e:
             print(f"加载配置失败 {config_file.name}: {e}")
             sys.exit(1)
     
     for ver, config in version_configs.items():
-        required_ver = int(config.get('java_version', 17))
+        required_ver = int(config["common"].get('java_version', 17))
         if required_ver > java_version:
             print(f"错误: {ver} 需要Java {required_ver}+ (当前 {java_version})")
             sys.exit(1)
@@ -187,18 +169,18 @@ if __name__ == "__main__":
     
     for version, config in version_configs.items():
         print(f"\n=== 正在构建 {version} ===")
-        print("目标加载器:", ", ".join(config["platforms"]))
+        print("目标加载器:", ", ".join(config["common"]["platforms"]))
         
         if not call_gradle_task("clean"):
             print(f"清理环境失败，跳过清理")
         
-        build_args = f"-Pminecraft_version={config['minecraft_version']}"
+        build_args = f"-Pminecraft_version={config["common"]['minecraft_version']}"
         if not call_gradle_task("build", build_args):
             print(f"构建 {version} 失败")
             continue
         
         print("\n复制构建产物:")
-        for platform in config["platforms"]:
+        for platform in config["common"]["platforms"]:
             copy_build_libs(platform.strip())
     
     total_time = time.time() - start_time
