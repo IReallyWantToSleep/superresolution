@@ -18,9 +18,10 @@ public class GlPipeline {
         return globalResources;
     }
 
-    public void addJob(String jobName, PipelineJob job) {
+    public GlPipeline addJob(String jobName, PipelineJob job) {
         jobs.put(jobName, job);
         job.bindPipeline(this);
+        return this;
     }
 
     public GlPipeline addResource(PipelineResourceDescriptions descriptions) {

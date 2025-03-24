@@ -1,8 +1,6 @@
-package io.homo.superresolution.common.upscale.sgsr;
+package io.homo.superresolution.common.upscale.sgsr.v2;
 
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.impl.Vec2;
-import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
 
 import io.homo.superresolution.common.render.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;

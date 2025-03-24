@@ -196,14 +196,14 @@ public class ClothConfig {
                 entryBuilder.startTextDescription(
                                 Component.literal("警告：当前所选算法不稳定")
                         ).setColor(ColorUtil.color(255, 255, 128, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR))
+                        .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR2))
                         .build()
         );
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
                                 Component.literal("警告：当前所选算法未完成，无法正常使用")
                         ).setColor(ColorUtil.color(255, 255, 0, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR))
+                        .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR2))
                         .build()
         );
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(

@@ -33,12 +33,19 @@ public enum AlgorithmType {
             "NVIDIA Image Scaling",
             "NVIDIA Image Scaling"
     ),
-    SGSR(
+    SGSR2(
             Requirement.nothing()
                     .glMajorVersion(4)
                     .glMinorVersion(5),
-            "Snapdragon™ GSR",
-            "Snapdragon™ Game Super Resolution"
+            "Snapdragon™ GSR 2",
+            "Snapdragon™ Game Super Resolution 2"
+    ),
+    SGSR1(
+            Requirement.nothing()
+                    .glMajorVersion(4)
+                    .glMinorVersion(2),
+            "Snapdragon™ GSR 1",
+            "Snapdragon™ Game Super Resolution 1"
     ),
     NONE(
             Requirement.nothing(),
@@ -77,7 +84,8 @@ public enum AlgorithmType {
             case FSR1 -> Component.translatable("superresolution.algo.display_name.fsr1");
             case NIS -> Component.translatable("superresolution.algo.display_name.nis");
             case FSR2 -> Component.translatable("superresolution.algo.display_name.fsr2");
-            case SGSR -> Component.translatable("superresolution.algo.display_name.sgsr");
+            case SGSR2 -> Component.translatable("superresolution.algo.display_name.sgsr2");
+            case SGSR1 -> Component.translatable("superresolution.algo.display_name.sgsr1");
             case NONE -> Component.translatable("superresolution.algo.display_name.none");
         };
     }

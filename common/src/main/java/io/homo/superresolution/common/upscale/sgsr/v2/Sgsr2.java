@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.upscale.sgsr;
+package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
@@ -7,24 +7,22 @@ import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.StorageFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
 import io.homo.superresolution.common.upscale.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr2PassCompute;
-import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr2PassFragment;
-import io.homo.superresolution.common.upscale.sgsr.variants.Sgsr3PassCompute;
-import org.joml.Matrix4f;
+import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
+import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
+import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
 
 import java.util.function.Consumer;
 
-public class Sgsr extends AbstractAlgorithm {
+public class Sgsr2 extends AbstractAlgorithm {
     private AbstractSgsrVariant variantInstance;
     private SgsrVariant currentVariant;
     private GlUniformBuffer<SgsrParams> params;
 
-    public static Sgsr create() {
-        return new Sgsr();
+    public static Sgsr2 create() {
+        return new Sgsr2();
     }
 
     private void initVariant() {
@@ -32,7 +30,7 @@ public class Sgsr extends AbstractAlgorithm {
             if (variantInstance != null) {
                 variantInstance.destroy();
             }
-            variantInstance = switch (Config.getSpecial().sgsr.variant) {
+            variantInstance = switch (Config.getSpecial().sgsr2.variant) {
                 case CS_2 -> new Sgsr2PassCompute();
                 case CS_3 -> new Sgsr3PassCompute();
                 case FS_2 -> new Sgsr2PassFragment();
@@ -43,8 +41,8 @@ public class Sgsr extends AbstractAlgorithm {
 
     private boolean checkVariant() {
         if (variantInstance == null) return true;
-        if (Config.getSpecial().sgsr.variant != currentVariant) {
-            currentVariant = Config.getSpecial().sgsr.variant;
+        if (Config.getSpecial().sgsr2.variant != currentVariant) {
+            currentVariant = Config.getSpecial().sgsr2.variant;
             return true;
         }
         return false;
