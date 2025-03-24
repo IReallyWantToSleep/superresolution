@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.upscale.sgsr.variants;
+package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
 import io.homo.superresolution.common.impl.Vec3;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
@@ -12,9 +12,9 @@ import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.impl.texture.TextureSupplier;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.sgsr.AbstractSgsrVariant;
-import io.homo.superresolution.common.upscale.sgsr.Sgsr;
-import io.homo.superresolution.common.upscale.sgsr.SgsrUtils;
+import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
+import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
+import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
 public class Sgsr2PassCompute extends AbstractSgsrVariant {
@@ -29,7 +29,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     private ITexture HistoryOutput;
 
     @Override
-    public void dispatch(DispatchResource resource, Sgsr sgsr) {
+    public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         int dispatchX = SgsrUtils.divideRoundUp(resource.screenWidth(), 8);
         int dispatchY = SgsrUtils.divideRoundUp(resource.screenHeight(), 8);
         PipelineJobDispatchResource pipelineDispatchResource = new PipelineJobDispatchResource(
@@ -48,7 +48,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     }
 
     @Override
-    public void init(Sgsr sgsr) {
+    public void init(Sgsr2 sgsr) {
         convertShader = GlComputeShaderProgram.create()
                 .addAllFragShaderTextList(FileReadHelper
                         .readText("/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl"))

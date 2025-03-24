@@ -5,7 +5,7 @@ import net.minecraft.network.chat.Component;
 
 import java.util.Map;
 
-public class SGSRSpecialConfig extends SpecialConfig {
+public class SGSR2SpecialConfig extends SpecialConfig {
     public SgsrVariant variant = SgsrVariant.CS_2;
 
     @Override
@@ -13,7 +13,7 @@ public class SGSRSpecialConfig extends SpecialConfig {
         map.put(
                 "variant",
                 new SpecialConfigDescription<>()
-                        .setValue(getSpecialConfigs().sgsr.variant)
+                        .setValue(getSpecialConfigs().sgsr2.variant)
                         .setDefaultValue(SgsrVariant.CS_2)
                         .setName(Component.literal("变体"))
                         .setTooltip(Component.literal("""
@@ -21,7 +21,7 @@ public class SGSRSpecialConfig extends SpecialConfig {
                                 CS_3 计算着色器/3通道 性能较差 效果最好
                                 FS_2 普通着色器/2通道 性能最好 效果较差"""))
                         .setKey("variant")
-                        .setSaveConsumer((v) -> getSpecialConfigs().sgsr.variant = (SgsrVariant) v)
+                        .setSaveConsumer((v) -> getSpecialConfigs().sgsr2.variant = (SgsrVariant) v)
                         .setType(SpecialConfigDescription.ConfigType.ENUM)
                         .setClazz(SgsrVariant.class)
         );

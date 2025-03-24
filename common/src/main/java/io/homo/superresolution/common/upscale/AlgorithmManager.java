@@ -7,7 +7,8 @@ import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
 import io.homo.superresolution.common.upscale.none.None;
-import io.homo.superresolution.common.upscale.sgsr.Sgsr;
+import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;
+import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -37,7 +38,8 @@ public class AlgorithmManager {
             case FSR1 -> algo = FSR1.create();
             case FSR2 -> algo = FSR2.create();
             case NIS -> algo = NVIDIAImageScaling.create();
-            case SGSR -> algo = Sgsr.create();
+            case SGSR2 -> algo = Sgsr2.create();
+            case SGSR1 -> algo = Sgsr1.create();
             case NONE -> algo = None.create();
         }
         if (algo != null) {

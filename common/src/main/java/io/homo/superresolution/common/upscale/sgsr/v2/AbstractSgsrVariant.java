@@ -1,4 +1,4 @@
-package io.homo.superresolution.common.upscale.sgsr;
+package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
@@ -12,7 +12,7 @@ public abstract class AbstractSgsrVariant implements Resizable, Destroyable {
         this.output = output;
     }
 
-    public abstract void dispatch(DispatchResource resource, Sgsr sgsr);
+    public abstract void dispatch(DispatchResource resource, Sgsr2 sgsr);
 
-    public abstract void init(Sgsr sgsr);
+    public abstract void init(Sgsr2 sgsr);
 }

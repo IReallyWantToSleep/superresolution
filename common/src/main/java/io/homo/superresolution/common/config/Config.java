@@ -41,7 +41,7 @@ public class Config {
                         .addMapping("fsr1", AlgorithmType.FSR1)
                         .addMapping("nis", AlgorithmType.NIS)
                         .addMapping("fsr2", AlgorithmType.FSR2)
-                        .addMapping("sgsr", AlgorithmType.SGSR)
+                        .addMapping("sgsr", AlgorithmType.SGSR2)
                         .addMapping("none", AlgorithmType.NONE)
                         .setDefault(AlgorithmType.FSR1)
                         .build()
