@@ -66,6 +66,20 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
         return this;
     }
 
+    protected void checkProgram() {
+        if (GL20.glGetProgrami(shaderProgram, GL20.GL_VALIDATE_STATUS) == GL20.GL_FALSE) {
+            String log = GL20.glGetProgramInfoLog(shaderProgram);
+            GL20.glDeleteProgram(shaderProgram);
+            throw new RuntimeException("Program validation failed:\n" + log);
+        }
+
+        if (GL20.glGetProgrami(shaderProgram, GL20.GL_LINK_STATUS) == GL20.GL_FALSE) {
+            String log = GL20.glGetProgramInfoLog(shaderProgram);
+            GL20.glDeleteProgram(shaderProgram);
+            throw new RuntimeException("Program link status invalid:\n" + log);
+        }
+    }
+
     @Override
     public void destroy() {
         glDeleteProgram(shaderProgram);

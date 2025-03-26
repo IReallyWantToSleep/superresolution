@@ -52,6 +52,7 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
         glAttachShader(shaderProgram, FRAGMENT_SHADER);
         glAttachShader(shaderProgram, VERTEX_SHADER);
         glLinkProgram(shaderProgram);
+        this.checkProgram();
         glDeleteShader(FRAGMENT_SHADER);
         glDeleteShader(VERTEX_SHADER);
         if (enableCache) {

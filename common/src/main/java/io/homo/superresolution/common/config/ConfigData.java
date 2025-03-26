@@ -14,6 +14,24 @@ public class ConfigData {
     private boolean debugDumpShader = false;
     private boolean skipLoadNativeLib = false;
     private boolean skipInitVulkan = false;
+    private boolean enableRenderDoc = true;
+    private boolean enableImgui = true;
+
+    public boolean isEnableRenderDoc() {
+        return enableRenderDoc;
+    }
+
+    public void setEnableRenderDoc(boolean enableRenderDoc) {
+        this.enableRenderDoc = enableRenderDoc;
+    }
+
+    public boolean isEnableImgui() {
+        return enableImgui;
+    }
+
+    public void setEnableImgui(boolean enableImgui) {
+        this.enableImgui = enableImgui;
+    }
 
     public boolean isSkipLoadNativeLib() {
         return skipLoadNativeLib;

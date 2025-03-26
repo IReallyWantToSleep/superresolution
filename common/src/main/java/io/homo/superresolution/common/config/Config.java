@@ -26,6 +26,23 @@ public class Config {
         });
     }
 
+
+    public static boolean isEnableRenderDoc() {
+        return instance.isEnableRenderDoc();
+    }
+
+    public static void setEnableRenderDoc(boolean enableRenderDoc) {
+        instance.setEnableRenderDoc(enableRenderDoc);
+    }
+
+    public static boolean isEnableImgui() {
+        return instance.isEnableImgui();
+    }
+
+    public static void setEnableImgui(boolean enableImgui) {
+        instance.setEnableImgui(enableImgui);
+    }
+
     public static ConfigData getInstance() {
         return instance;
     }
