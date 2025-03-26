@@ -2,6 +2,8 @@ package io.homo.superresolution.fabric;
 
 import dev.architectury.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -11,7 +13,8 @@ public final class SuperResolutionFabricClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        if (Platform.isDevelopmentEnvironment()) RenderDoc.init();
+        ConfigFile.read();
+        if (Platform.isDevelopmentEnvironment() && Config.isEnableRenderDoc()) RenderDoc.init();
         SuperResolution.preInit();
         mod = new SuperResolution();
     }

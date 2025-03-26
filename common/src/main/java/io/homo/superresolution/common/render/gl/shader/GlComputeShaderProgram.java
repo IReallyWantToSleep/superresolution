@@ -39,6 +39,7 @@ public class GlComputeShaderProgram extends AbstractGlShaderProgram {
         this.shaderProgram = glCreateProgram();
         glAttachShader(shaderProgram, COMPUTE_SHADER);
         glLinkProgram(shaderProgram);
+        this.checkProgram();
         glDeleteShader(COMPUTE_SHADER);
         if (enableCache) {
             ShaderCache.saveProgramBinary(this);

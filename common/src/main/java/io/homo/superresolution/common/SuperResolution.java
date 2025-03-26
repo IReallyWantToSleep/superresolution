@@ -56,7 +56,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void preInit() {
         if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
-        ConfigFile.read();
         if (Config.isSkipLoadNativeLib()) {
             LOGGER.warn("配置已禁用加载依赖库，将不再加载本地依赖库");
         } else if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
@@ -163,7 +162,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             return;
         RenderSystem.assertOnRenderThread();
         instance = this;
-        if (Platform.currentPlatform.isDevelopmentEnvironment()) new ImguiMain();
+        if (Platform.currentPlatform.isDevelopmentEnvironment() && Config.isEnableImgui()) new ImguiMain();
         mainTarget = Minecraft.getInstance().getMainRenderTarget();
         isInit = true;
         this.resize(SuperResolution.getMinecraftWidth(), SuperResolution.getMinecraftHeight());

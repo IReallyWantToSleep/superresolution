@@ -1,3 +1,8 @@
+# 0.6.0-alpha.1
+
+* 添加SGSR1
+* 添加启用RenderDoc以及Imgui的调试选项 (仅开发环境可用)
+
 # 0.5.0-alpha.2
 
 警告：该版本国际化尚不完善 Warning: The internationalization of this version is not yet complete

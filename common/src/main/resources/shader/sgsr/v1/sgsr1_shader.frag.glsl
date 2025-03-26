@@ -13,11 +13,10 @@ uniform highp vec2 renderSize;
 uniform highp vec2 renderSizeRcp;
 uniform mediump float EdgeThreshold;
 uniform mediump float EdgeSharpness;
+uniform sampler2D ps0;
 
-layout(binding = 0) uniform sampler2D ps0;
-
-in highp vec4 in_TEXCOORD0;
-out vec4 out_Target0;
+in mediump vec2 in_TEXCOORD0;
+out mediump vec4 out_Target0;
 
 float fastLanczos2(float x)
 {
@@ -65,76 +64,68 @@ vec2 edgeDirection(vec4 left, vec4 right)
 void main()
 {
     vec4 color;
-    if (1 == 1)
-        color.xyz = textureLod(ps0, in_TEXCOORD0.xy, 0.0).xyz;
-    else
-        color.xyzw = textureLod(ps0, in_TEXCOORD0.xy, 0.0).xyzw;
-
+    color.xyz = textureLod(ps0, in_TEXCOORD0.xy, 0.0).xyz;
     highp float xCenter;
     xCenter = abs(in_TEXCOORD0.x + -0.5);
     highp float yCenter;
     yCenter = abs(in_TEXCOORD0.y + -0.5);
+    highp vec2 imgCoord = ((in_TEXCOORD0.xy * renderSize) + vec2(-0.5, 0.5));
+    highp vec2 imgCoordPixel = floor(imgCoord);
+    highp vec2 coord = (imgCoordPixel * renderSizeRcp);
+    vec2 pl = (imgCoord - imgCoordPixel);
+    vec4 left = textureGather(ps0, coord, 1);
 
-    if (1 != 4)
+    float edgeVote = abs(left.z - left.y) + abs(color[1] - left.y) + abs(color[1] - left.z);
+    if (edgeVote > EdgeThreshold)
     {
-        highp vec2 imgCoord = ((in_TEXCOORD0.xy * renderSize) + vec2(-0.5, 0.5));
-        highp vec2 imgCoordPixel = floor(imgCoord);
-        highp vec2 coord = (imgCoordPixel * renderSizeRcp);
-        vec2 pl = (imgCoord - imgCoordPixel);
-        vec4 left = textureGather(ps0, coord, 1);
+        coord.x += renderSizeRcp.x;
+        highp vec2 offset = vec2(renderSizeRcp.x, 0.0);
+        vec4 right = textureGather(ps0, coord + offset, 1);
+        vec4 upDown;
+        highp vec2 offset1 = vec2(0.0, -renderSizeRcp.y);
+        upDown.xy = textureGather(ps0, coord + offset1, 1).wz;
+        highp vec2 offset2 = vec2(0.0, renderSizeRcp.y);
+        upDown.zw = textureGather(ps0, coord + offset2, 1).yx;
 
-        float edgeVote = abs(left.z - left.y) + abs(color[1] - left.y) + abs(color[1] - left.z);
-        if (edgeVote > EdgeThreshold)
-        {
-            coord.x += renderSizeRcp.x;
-            highp vec2 offset = vec2(renderSizeRcp.x, 0.0);
-            vec4 right = textureGather(ps0, coord + offset, 1);
-            vec4 upDown;
-            highp vec2 offset1 = vec2(0.0, -renderSizeRcp.y);
-            upDown.xy = textureGather(ps0, coord + offset1, 1).wz;
-            highp vec2 offset2 = vec2(0.0, renderSizeRcp.y);
-            upDown.zw = textureGather(ps0, coord + offset2, 1).yx;
+        float mean = (left.y + left.z + right.x + right.w) * 0.25;
+        left = left - vec4(mean);
+        right = right - vec4(mean);
+        upDown = upDown - vec4(mean);
+        color.w = color[1] - mean;
 
-            float mean = (left.y + left.z + right.x + right.w) * 0.25;
-            left = left - vec4(mean);
-            right = right - vec4(mean);
-            upDown = upDown - vec4(mean);
-            color.w = color[1] - mean;
+        float sum = (((((abs(left.x) + abs(left.y)) + abs(left.z)) + abs(left.w)) + (((abs(right.x) + abs(right.y)) + abs(right.z)) + abs(right.w))) + (((abs(upDown.x) + abs(upDown.y)) + abs(upDown.z)) + abs(upDown.w)));
+        float sumMean = 1.014185e+01 / sum;
+        float std = (sumMean * sumMean);
 
-            float sum = (((((abs(left.x) + abs(left.y)) + abs(left.z)) + abs(left.w)) + (((abs(right.x) + abs(right.y)) + abs(right.z)) + abs(right.w))) + (((abs(upDown.x) + abs(upDown.y)) + abs(upDown.z)) + abs(upDown.w)));
-            float sumMean = 1.014185e+01 / sum;
-            float std = (sumMean * sumMean);
+        #if defined(UseEdgeDirection)
+        vec3 data = vec3(std, edgeDirection(left, right));
+        #else
+        float data = std;
+        #endif
 
-            #if defined(UseEdgeDirection)
-            vec3 data = vec3(std, edgeDirection(left, right));
-            #else
-            float data = std;
-            #endif
+        vec2 aWY = weightY(pl.x, pl.y + 1.0, upDown.x, data);
+        aWY += weightY(pl.x - 1.0, pl.y + 1.0, upDown.y, data);
+        aWY += weightY(pl.x - 1.0, pl.y - 2.0, upDown.z, data);
+        aWY += weightY(pl.x, pl.y - 2.0, upDown.w, data);
+        aWY += weightY(pl.x + 1.0, pl.y - 1.0, left.x, data);
+        aWY += weightY(pl.x, pl.y - 1.0, left.y, data);
+        aWY += weightY(pl.x, pl.y, left.z, data);
+        aWY += weightY(pl.x + 1.0, pl.y, left.w, data);
+        aWY += weightY(pl.x - 1.0, pl.y - 1.0, right.x, data);
+        aWY += weightY(pl.x - 2.0, pl.y - 1.0, right.y, data);
+        aWY += weightY(pl.x - 2.0, pl.y, right.z, data);
+        aWY += weightY(pl.x - 1.0, pl.y, right.w, data);
 
-            vec2 aWY = weightY(pl.x, pl.y + 1.0, upDown.x, data);
-            aWY += weightY(pl.x - 1.0, pl.y + 1.0, upDown.y, data);
-            aWY += weightY(pl.x - 1.0, pl.y - 2.0, upDown.z, data);
-            aWY += weightY(pl.x, pl.y - 2.0, upDown.w, data);
-            aWY += weightY(pl.x + 1.0, pl.y - 1.0, left.x, data);
-            aWY += weightY(pl.x, pl.y - 1.0, left.y, data);
-            aWY += weightY(pl.x, pl.y, left.z, data);
-            aWY += weightY(pl.x + 1.0, pl.y, left.w, data);
-            aWY += weightY(pl.x - 1.0, pl.y - 1.0, right.x, data);
-            aWY += weightY(pl.x - 2.0, pl.y - 1.0, right.y, data);
-            aWY += weightY(pl.x - 2.0, pl.y, right.z, data);
-            aWY += weightY(pl.x - 1.0, pl.y, right.w, data);
+        float finalY = aWY.y / aWY.x;
+        float maxY = max(max(left.y, left.z), max(right.x, right.w));
+        float minY = min(min(left.y, left.z), min(right.x, right.w));
+        float deltaY = clamp(EdgeSharpness * finalY, minY, maxY) - color.w;
 
-            float finalY = aWY.y / aWY.x;
-            float maxY = max(max(left.y, left.z), max(right.x, right.w));
-            float minY = min(min(left.y, left.z), min(right.x, right.w));
-            float deltaY = clamp(EdgeSharpness * finalY, minY, maxY) - color.w;
+        deltaY = clamp(deltaY, -23.0 / 255.0, 23.0 / 255.0);
 
-            deltaY = clamp(deltaY, -23.0 / 255.0, 23.0 / 255.0);
-
-            color.x = clamp((color.x + deltaY), 0.0, 1.0);
-            color.y = clamp((color.y + deltaY), 0.0, 1.0);
-            color.z = clamp((color.z + deltaY), 0.0, 1.0);
-        }
+        color.x = clamp((color.x + deltaY), 0.0, 1.0);
+        color.y = clamp((color.y + deltaY), 0.0, 1.0);
+        color.z = clamp((color.z + deltaY), 0.0, 1.0);
     }
 
     color.w = 1.0;

@@ -96,6 +96,14 @@ public class ClothConfig {
                 .setDefaultValue(false)
                 .setSaveConsumer(Config.getInstance()::setDebugDumpShader)
                 .build());
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("启用RenderDoc (仅开发环境有效)"), Config.getInstance().isEnableRenderDoc())
+                .setDefaultValue(true)
+                .setSaveConsumer(Config.getInstance()::setEnableRenderDoc)
+                .build());
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("启用Imgui (仅开发环境有效)"), Config.getInstance().isEnableImgui())
+                .setDefaultValue(true)
+                .setSaveConsumer(Config.getInstance()::setEnableImgui)
+                .build());
         ClothTextListEntry debugInfo =
                 new ClothTextListEntry(
                         Component.literal("debugInfo"),

@@ -6,6 +6,13 @@ import io.homo.superresolution.common.render.gl.vertex.VertexArray;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
+import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.GL_TRIANGLE_FAN;
+import static org.lwjgl.opengl.GL11.glDrawArrays;
+import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 
 
 public class PipelineJob {
@@ -62,6 +69,10 @@ public class PipelineJob {
 
     public void scheduleGraphics(PipelineJobDispatchResource dispatchResource) {
         setupResource();
+    }
+
+    public void executeGraphics(PipelineJobDispatchResource dispatchResource) {
+        program.use();
         try (VertexArray vao = new VertexArray();
              VertexBuffer vbo = new VertexBuffer()) {
             float[] vertices = {
@@ -78,11 +89,8 @@ public class PipelineJob {
             glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
-    }
-
-    public void executeGraphics(PipelineJobDispatchResource dispatchResource) {
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
     public void scheduleCompute(PipelineJobDispatchResource dispatchResource) {
