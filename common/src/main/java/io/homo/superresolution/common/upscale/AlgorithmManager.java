@@ -1,54 +1,30 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.impl.framebuffer.MotionVectorsFrameBuffer;
-import io.homo.superresolution.common.upscale.fsr1.FSR1;
-import io.homo.superresolution.common.upscale.fsr2.FSR2;
-import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
-import io.homo.superresolution.common.upscale.none.None;
-import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;
-import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
-import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
+import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 
 public class AlgorithmManager {
-    public static AlgorithmHelper helper;
     public static AlgorithmParam param = new AlgorithmParam();
-    private static MotionVectorsFrameBuffer motionVectorsFrameBuffer;
+    private static GlFrameBuffer motionVectorsFrameBuffer;
 
-    static {
-        helper = new AlgorithmHelper();
-    }
 
     public static void destroy() {
-        helper.destroy();
+
     }
 
     public static void resize(int width, int height) {
         motionVectorsFrameBuffer.resizeFrameBuffer(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        helper.resize(width, height);
     }
 
-    public static AbstractAlgorithm getAlgorithm(AlgorithmType type) {
-        AbstractAlgorithm algo = null;
-        switch (type) {
-            case FSR1 -> algo = FSR1.create();
-            case FSR2 -> algo = FSR2.create();
-            case NIS -> algo = NVIDIAImageScaling.create();
-            case SGSR2 -> algo = Sgsr2.create();
-            case SGSR1 -> algo = Sgsr1.create();
-            case NONE -> algo = None.create();
-        }
-        if (algo != null) {
-            algo.init();
-        }
-        return algo;
-    }
-
-    public static boolean isSupportAlgorithm(AlgorithmType type) {
+    public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
         return type.getRequirement().check().support();
     }
 
@@ -127,12 +103,20 @@ public class AlgorithmManager {
     }
 
     public static void init() {
-        motionVectorsFrameBuffer = new MotionVectorsFrameBuffer(false);
+        motionVectorsFrameBuffer = new GlFrameBuffer();
+        motionVectorsFrameBuffer.addAttachment(new FrameBufferAttachment(
+                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+                GlTexture.create(
+                        MinecraftRenderHandle.getRenderWidth(),
+                        MinecraftRenderHandle.getRenderHeight(),
+                        TextureFormat.RG16F
+                )
+        ));
         motionVectorsFrameBuffer.setClearColor(0, 0, 0, 1);
     }
 
     public static void update() {
-        MotionVectorsGenerator.update(getDispatchResource(), motionVectorsFrameBuffer);
+        //MotionVectorsGenerator.update(getDispatchResource(), motionVectorsFrameBuffer);
     }
 
     public static class AlgorithmParam {

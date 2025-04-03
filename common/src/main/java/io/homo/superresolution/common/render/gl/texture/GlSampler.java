@@ -37,6 +37,13 @@ public class GlSampler {
         return new GlSampler(type);
     }
 
+    @Override
+    public String toString() {
+        return "GlSampler{" +
+                "id=" + id +
+                '}';
+    }
+
     public enum SamplerType {
         NearestClamp, LinearRepeat, LinearClamp
     }

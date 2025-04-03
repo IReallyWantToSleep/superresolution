@@ -3,7 +3,9 @@ package io.homo.superresolution.common.debug.imgui;
 import imgui.ImGui;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 
@@ -13,8 +15,16 @@ public class ImGuiLayer {
         int width = 500;
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");
-        if (ImGui.button("iris")) {
-            System.out.println(Platform.currentPlatform.iris().isShaderPackInUse() ? "true" : "false");
+        if (ImGui.button("Capture")) {
+            MinecraftRenderHandle.needCapture();
+        }
+        if (ImGui.button("CaptureUpscale")) {
+            MinecraftRenderHandle.needCaptureUpscale();
+        }
+        if (ImGui.button("TriggerCapture")) {
+            if (RenderDoc.renderdoc != null) {
+                RenderDoc.renderdoc.TriggerCapture.call();
+            }
         }
 
         if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null) {
@@ -74,24 +84,27 @@ public class ImGuiLayer {
                     String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m33())
             ));
         }
-        ImGui.text("outFramebuffer " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
+        ImGui.text("outFramebuffer " + MinecraftRenderHandle.getScreenWidth() + " " + MinecraftRenderHandle.getScreenHeight());
         ImGui.image(SuperResolution.currentAlgorithm.getOutputTextureId(),
                 width,
                 height,
                 0, 1, 1, 0);
 
-        ImGui.text("inFramebuffer " + AlgorithmManager.helper.getRenderWidth() + " " + AlgorithmManager.helper.getRenderHeight());
-        ImGui.image(SuperResolution.currentAlgorithm.getInputTextureId(),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("inFramebufferD " + AlgorithmManager.helper.getRenderWidth() + " " + AlgorithmManager.helper.getRenderHeight());
-        ImGui.image(SuperResolution.currentAlgorithm.getInputFrameBuffer().getTextureId(IFrameBuffer.FrameBufferAttachmentType.DEPTH),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("MainRenderTarget " + AlgorithmManager.helper.getScreenWidth() + " " + AlgorithmManager.helper.getScreenHeight());
-        ImGui.image(Minecraft.getInstance().getMainRenderTarget().getColorTextureId(),
+
+        if (SuperResolution.currentAlgorithm.getInputFrameBuffer() != null) {
+            ImGui.text("inFramebuffer " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+            ImGui.image(SuperResolution.currentAlgorithm.getInputTextureId(),
+                    width,
+                    height,
+                    0, 1, 1, 0);
+            ImGui.text("inFramebufferD " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+            ImGui.image(SuperResolution.currentAlgorithm.getInputFrameBuffer().getTextureId(FrameBufferAttachmentType.DEPTH),
+                    width,
+                    height,
+                    0, 1, 1, 0);
+        }
+        ImGui.text("MainRenderTarget " + MinecraftRenderHandle.getScreenWidth() + " " + MinecraftRenderHandle.getScreenHeight());
+        ImGui.image(MinecraftRenderHandle.getOriginRenderTarget().getFrameBufferId(),
                 width,
                 height,
                 0, 1, 1, 0);

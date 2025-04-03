@@ -1,19 +1,19 @@
 package io.homo.superresolution.common.upscale.nis;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
-import io.homo.superresolution.common.render.interop.SharedTexture;
+import io.homo.superresolution.common.render.interop.texture.SharedTexture;
 import io.homo.superresolution.common.render.vulkan.shader.VkComputeShader;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniform;
 import io.homo.superresolution.common.render.vulkan.shader.VkShaderUniformType;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.vulkan.texture.TextureUsage;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.upscale.nis.struct.NISConfig;
@@ -42,13 +42,9 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     private NISConfig config;
     private IFrameBuffer output;
 
-    public static NVIDIAImageScaling create() {
-        return new NVIDIAImageScaling();
-    }
-
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.NIS.getRequirement().check().support() && SuperResolution.interopManager.vulkanApp != null;
+        return AlgorithmDescriptions.NIS.getRequirement().check().support() && SuperResolution.interopManager.vulkanApp != null;
     }
 
     public void initShader() {

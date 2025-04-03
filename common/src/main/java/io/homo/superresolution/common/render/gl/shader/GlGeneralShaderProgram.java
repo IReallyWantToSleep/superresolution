@@ -59,7 +59,7 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
             ShaderCache.saveProgramBinary(this);
         }
         compiled = true;
-
+        updateDebugLabel(getDebugLabel());
         return this;
     }
 

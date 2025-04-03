@@ -1,13 +1,14 @@
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.upscale.AlgorithmType;
-import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
-import io.homo.superresolution.common.upscale.utils.NativeLibManager;
-import io.homo.superresolution.common.upscale.utils.Requirement;
+import io.homo.superresolution.common.render.GraphicsCapabilities;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import oiiaio.fsr.NativeLibManager;
+import io.homo.superresolution.api.utils.Requirement;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -28,12 +29,12 @@ public class InfoBuilder {
         this.lineContainer.addLine(
                 new Line()
                         .text(Component.translatable("superresolution.screen.info.text.opengl_ext_count").getString()
-                                .formatted(AlgorithmHelper.GLExtension.size())
+                                .formatted(GraphicsCapabilities.getGLExtensions().size())
                         )
                         .center(true)
                         .color(255, 255, 255, 255)
         );
-        for (String ext : AlgorithmHelper.GLExtension) {
+        for (String ext : GraphicsCapabilities.getGLExtensions()) {
             this.lineContainer.addLine(
                     new Line()
                             .text(ext)
@@ -65,8 +66,8 @@ public class InfoBuilder {
                         .text(
                                 Component.translatable("superresolution.screen.info.text.opengl_version").getString()
                                         .formatted(
-                                                AlgorithmHelper.GLVersion[0],
-                                                AlgorithmHelper.GLVersion[1]
+                                                GraphicsCapabilities.getGLVersion()[0],
+                                                GraphicsCapabilities.getGLVersion()[1]
                                         )
                         )
                         .color(255, 255, 255, 255)
@@ -89,9 +90,9 @@ public class InfoBuilder {
                                 Component.translatable(
                                                 "superresolution.screen.info.text.vulkan_version").getString()
                                         .formatted(
-                                                AlgorithmHelper.VkVersion[0],
-                                                AlgorithmHelper.VkVersion[1],
-                                                AlgorithmHelper.VkVersion[2]
+                                                GraphicsCapabilities.getVulkanVersion()[0],
+                                                GraphicsCapabilities.getVulkanVersion()[1],
+                                                GraphicsCapabilities.getVulkanVersion()[2]
                                         )
                         )
                         .color(255, 255, 255, 255)
@@ -120,9 +121,9 @@ public class InfoBuilder {
 
     }
 
-    public InfoBuilder addAlgoInfo(AlgorithmType algo) {
-        if (algo == AlgorithmType.NONE) return this;
-        this.lineContainer.addLine(new Line().text(algo.getFullName()).center(true).color(255, 255, 255, 255));
+    public InfoBuilder addAlgoInfo(AlgorithmDescription<?> algo) {
+        if (algo.equals(AlgorithmDescriptions.NONE)) return this;
+        this.lineContainer.addLine(new Line().text(algo.getDisplayName()).center(true).color(255, 255, 255, 255));
         Requirement req = algo.getRequirement();
         Requirement.Result result = req.check();
         ArrayList<String> missingGlExtension = req.getMissingExtension();

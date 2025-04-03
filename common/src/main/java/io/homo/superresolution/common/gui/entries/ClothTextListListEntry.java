@@ -132,7 +132,6 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
 
         if (canExpand && showExpandButton) {
-            RenderSystem.setShaderTexture(0, CONFIG_TEX);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             graphics.pose().pushPose();
             float center = 4.5f;

@@ -68,15 +68,16 @@ def addModrinthMod(id, ver) {
     dependencies { modImplementation("maven.modrinth:${id}:${ver}-fabric,${rootProject.minecraft_version}") }
 }
 
-def addNoModLib(name) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+def addNoModLib(name_) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
     dependencies {
         implementation(files(file.toAbsolutePath().asWritable().toString()))
     }
 }
 
-def addModLib(name) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+def addModLib(name_) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
+
     dependencies {
         modImplementation(files(file.toAbsolutePath().asWritable().toString()))
     }

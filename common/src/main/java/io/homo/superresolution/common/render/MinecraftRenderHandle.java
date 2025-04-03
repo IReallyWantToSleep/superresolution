@@ -2,19 +2,28 @@ package io.homo.superresolution.common.render;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.gl.Gl;
-import io.homo.superresolution.common.render.gl.GlConst;
 import io.homo.superresolution.common.render.gl.GlState;
+import io.homo.superresolution.common.render.gl.GlStates;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.MinecraftRenderTarget;
+import io.homo.superresolution.common.render.impl.framebuffer.LegacyStorageFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
+import io.homo.superresolution.common.render.renderdoc.RenderDoc;
+import io.homo.superresolution.common.render.utils.CallType;
+import io.homo.superresolution.common.render.utils.MinecraftRenderTargetWrapper;
+import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.utils.RenderTargetType;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 #if MC_VER < MC_1_21_4
@@ -26,8 +35,11 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static org.lwjgl.opengl.GL11.*;
+
 public class MinecraftRenderHandle {
     private static final Map<RenderTargetType, IFrameBuffer> renderTargets = new HashMap<>();
+    private static final Map<IFrameBuffer, RenderTarget> renderTargetMap = new HashMap<>();
     public static boolean isRenderingWorld = false;
     public static float frameTime;
     private static int frameCount = 0;
@@ -36,6 +48,17 @@ public class MinecraftRenderHandle {
     private static IFrameBuffer renderTarget;
     private static PostChain entityEffect;
     private static IFrameBuffer entityTarget;
+    private static boolean needCapture = false;
+    private static boolean needCaptureUpscale = false;
+
+
+    public static void needCapture() {
+        needCapture = true;
+    }
+
+    public static void needCaptureUpscale() {
+        needCaptureUpscale = true;
+    }
 
     public static int getFrameCount() {
         return frameCount;
@@ -53,7 +76,17 @@ public class MinecraftRenderHandle {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
-        renderTarget = new MinecraftRenderTarget(true);
+        #if MC_VER > MC_1_21_4
+        renderTarget = GlFrameBuffer.create(
+                TextureFormat.RGBA8,
+                TextureFormat.DEPTH24_STENCIL8,
+                getRenderWidth(),
+                getRenderHeight()
+        );
+        #else
+        renderTarget = new LegacyStorageFrameBuffer(true);
+        #endif
+        renderTarget.setClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         renderTarget.resizeFrameBuffer(
                 getRenderWidth(),
                 getRenderHeight()
@@ -142,33 +175,81 @@ public class MinecraftRenderHandle {
         updateEntityOutline();
         updateRenderTarget();
         updateRenderTargetSize();
-        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
+        #if MC_VER > MC_1_21_4
+        getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
+        #else
+        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
         getRenderTarget().bind(RenderTargetBindPoint.WRITE);
+        SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
+        #endif
+        if (needCapture) {
+            if (RenderDoc.renderdoc != null) {
+                RenderDoc.renderdoc.StartFrameCapture.call(null, null);
+            }
+        }
     }
 
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
         frameCount++;
-        setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
-        getOriginRenderTarget().bind(RenderTargetBindPoint.ALL);
-        PerformanceInfo.begin("upscale");
-        AlgorithmManager.update();
-        SuperResolution.getCurrentAlgorithm().dispatch(AlgorithmManager.getDispatchResource());
-        SuperResolution.getCurrentAlgorithm().blitToScreen(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+
+        #if MC_VER > MC_1_21_4
+        ((GlTexture) getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR)).copyFromTex(
+                ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
         );
-        PerformanceInfo.end("upscale");
-        if (Config.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
-            blitHandRenderTarget();
+        getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());
+        #else
+        setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
+        #endif
+        getOriginRenderTarget().bind(RenderTargetBindPoint.WRITE);
+        try (GlState ignored = new GlState()) {
+            PerformanceInfo.begin("upscale");
+            if (needCaptureUpscale) {
+                if (RenderDoc.renderdoc != null) {
+                    RenderDoc.renderdoc.StartFrameCapture.call(null, null);
+                }
+            }
+            AlgorithmManager.update();
+            try (GlState ignored_ = new GlState()) {
+                DispatchResource dispatchResource = AlgorithmManager.getDispatchResource();
+                if (SuperResolution.currentAlgorithm != null) {
+                    AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmRegister(
+                            SuperResolution.currentAlgorithm,
+                            dispatchResource
+                    );
+                }
+                SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+            }
+            SuperResolution.getCurrentAlgorithm().blitToScreen(
+                    MinecraftRenderHandle.getScreenWidth(),
+                    MinecraftRenderHandle.getScreenHeight()
+            );
+            if (needCaptureUpscale) {
+                if (RenderDoc.renderdoc != null) {
+                    needCaptureUpscale = false;
+                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+                }
+            }
+            PerformanceInfo.end("upscale");
+            if (Config.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
+                blitHandRenderTarget();
+        }
         PerformanceInfo.end("world");
         frameTime = PerformanceInfo.getAsMillis("world");
+        if (needCapture) {
+            if (RenderDoc.renderdoc != null) {
+                needCapture = false;
+                RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+            }
+        }
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {
-        if (renderTarget == null) return;
+        if (renderTarget == null) {
+            throw new RuntimeException();
+        }
         ((MinecraftAccessor) Minecraft.getInstance()).setRenderTarget(renderTarget);
     }
 
@@ -237,7 +318,7 @@ public class MinecraftRenderHandle {
                 getRenderHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                getRenderTarget(RenderTargetType.ENTITY).getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
+                getRenderTarget(RenderTargetType.ENTITY).getTextureId(FrameBufferAttachmentType.COLOR)
         );
     }
 
@@ -267,50 +348,32 @@ public class MinecraftRenderHandle {
 
     public static void onRenderHandBegin() {
         if (!checkRenderHandCallPos()) return;
-        GlState.save("hand");
+        GlStates.save("hand");
         setClientRenderTarget(getRenderTarget(RenderTargetType.HAND).asMcRenderTarget());
-
         callOnRenderTarget(
                 RenderTargetType.HAND,
                 (renderTarget -> {
                     renderTarget.clearFrameBuffer();
-                    Gl.glBindFramebuffer(
-                            GlConst.GL_DRAW_FRAMEBUFFER,
-                            renderTarget.getFrameBufferId()
-                    );
-                    Gl.glViewport(
-                            0, 0,
-                            getScreenWidth(),
-                            getScreenHeight()
-                    );
+                    renderTarget.bind(RenderTargetBindPoint.ALL);
                 })
         );
     }
 
     public static void blitHandRenderTarget() {
-        RenderSystem.enableBlend();
+        glEnable(GL_BLEND);
         callOnRenderTarget(RenderTargetType.HAND, (renderTarget -> GlTexture.blitToScreen(
                 getScreenWidth(),
                 getScreenHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                renderTarget.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
+                renderTarget.getTextureId(FrameBufferAttachmentType.COLOR)
         )));
-        RenderSystem.disableBlend();
+        glDisable(GL_BLEND);
     }
 
     public static void onRenderHandEnd() {
         if (!checkRenderHandCallPos()) return;
-
         setClientRenderTarget(getRenderTarget().asMcRenderTarget());
-        Gl.glBindFramebuffer(GlConst.GL_DRAW_FRAMEBUFFER, GlState.get("hand").writeFBO());
-        Gl.glBindFramebuffer(GlConst.GL_READ_FRAMEBUFFER, GlState.get("hand").readFBO());
-        Gl.glViewport(
-                0, 0,
-                getRenderWidth(),
-                getRenderHeight()
-        );
-        GlState.pop("hand");
-
+        GlStates.pop("hand").restore();
     }
 }

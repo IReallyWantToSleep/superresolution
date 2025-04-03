@@ -12,7 +12,7 @@ import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 #endif
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.render.CallType;
+import io.homo.superresolution.common.render.utils.CallType;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
@@ -63,6 +63,10 @@ public abstract class LevelRendererMixin {
     #elif MC_VER == MC_1_21_4
     private void renderLevel(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
         AlgorithmManager.setMatrix(projectionMatrix,frustumMatrix );
+    }
+    #elif MC_VER == MC_1_21_5
+    private void renderLevel(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
+        AlgorithmManager.setMatrix(projectionMatrix, frustumMatrix);
     }
     #elif MC_VER == MC_1_20_1
     private void renderLevel(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {

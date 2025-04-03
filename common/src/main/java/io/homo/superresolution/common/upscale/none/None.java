@@ -2,17 +2,11 @@ package io.homo.superresolution.common.upscale.none;
 
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
-import static io.homo.superresolution.common.render.gl.GlConst.GL_NEAREST;
-
 public class None extends AbstractAlgorithm {
-    public static None create() {
-        return new None();
-    }
-
     @Override
     public void init() {
         input = null;
@@ -31,7 +25,7 @@ public class None extends AbstractAlgorithm {
                 frameBuffer.getHeight(),
                 width,
                 height,
-                frameBuffer.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
+                frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR)
         ));
     }
 
@@ -42,10 +36,10 @@ public class None extends AbstractAlgorithm {
     }
 
     public int getInputTextureId() {
-        return MinecraftRenderHandle.getRenderTarget().getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR);
+        return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.COLOR);
     }
 
     public int getOutputTextureId() {
-        return MinecraftRenderHandle.getRenderTarget().getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR);
+        return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.COLOR);
     }
 }

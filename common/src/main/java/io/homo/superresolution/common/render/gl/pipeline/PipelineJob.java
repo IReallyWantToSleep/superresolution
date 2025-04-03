@@ -31,20 +31,26 @@ public class PipelineJob {
 
     protected void setupImage2DResource(PipelineResourceDescription description) {
         if (description.src() != null) {
-            int access = switch (description.access()) {
-                case READ -> GL_READ_ONLY;
-                case WRITE -> GL_WRITE_ONLY;
-                case BOTH -> GL_READ_WRITE;
-            };
-            glBindImageTexture(
-                    description.unit(),
-                    description.src().getTextureId(),
-                    0,
-                    false,
-                    0,
-                    access,
-                    description.src().getTextureFormat().gl()
-            );
+            if (description.src().getTextureFormat() != null) {
+                int access = switch (description.access()) {
+                    case READ -> GL_READ_ONLY;
+                    case WRITE -> GL_WRITE_ONLY;
+                    case BOTH -> GL_READ_WRITE;
+                };
+                glBindImageTexture(
+                        description.unit(),
+                        description.src().getTextureId(),
+                        0,
+                        false,
+                        0,
+                        access,
+                        description.src().getTextureFormat().gl()
+                );
+            } else {
+                throw new NullPointerException("资源描述的纹理不为空值但纹理格式为空值" + description);
+            }
+        } else {
+            throw new NullPointerException("资源描述的纹理为空值 " + description);
         }
     }
 

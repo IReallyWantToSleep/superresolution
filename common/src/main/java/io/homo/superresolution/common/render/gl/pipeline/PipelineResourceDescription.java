@@ -19,4 +19,16 @@ public record PipelineResourceDescription(
             throw new IllegalArgumentException("类型和访问模式必须指定");
         }
     }
+
+    @Override
+    public String toString() {
+        return "PipelineResourceDescription{" +
+                "type=" + type +
+                ", name='" + name + '\'' +
+                ", src=" + src.string() +
+                ", access=" + access +
+                ", sampler=" + sampler +
+                ", unit=" + unit +
+                '}';
+    }
 }

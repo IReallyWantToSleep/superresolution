@@ -1,7 +1,19 @@
 # 0.6.0-alpha.1
 
+警告：该版本国际化尚不完善 Warning: The internationalization of this version is not yet complete
+
+* 新的开发人员API
+* 添加对1.21.5的支持
 * 添加SGSR1
 * 添加启用RenderDoc以及Imgui的调试选项 (仅开发环境可用)
+* 添加用于调试的GL对象标签
+* 添加SGSR2的计算着色器3通道版本
+* 切换帧缓冲区实现
+* 与Sodium Options API模组更好的兼容性
+* 优化OpenGL状态保存
+* 优化Vulkan与OpenGL信息获取方式
+* 优化配置界面某些文本
+* 删除了一些冗余代码
 
 # 0.5.0-alpha.2
 

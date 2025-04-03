@@ -1,8 +1,8 @@
 package io.homo.superresolution.common.utils;
 
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.render.GraphicsCapabilities;
 import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
-import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.system.MemoryStack;
@@ -15,7 +15,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 
 public class ShaderCache {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-ShaderCache");
@@ -29,14 +28,13 @@ public class ShaderCache {
     }
 
     private static String getShaderProgramMd5(AbstractGlShaderProgram shaderProgram) {
-        // 修正包含列表处理
         String identityString = shaderProgram.shaderName +
                 shaderProgram.getFragShaderText() +
                 shaderProgram.getVertShaderText() +
-                AlgorithmHelper.GLVersion[0] +
-                AlgorithmHelper.GLVersion[1] +
-                GL11.glGetString(GL11.GL_VENDOR) + // 添加GPU厂商信息
-                GL11.glGetString(GL11.GL_RENDERER) + // 添加GPU型号信息
+                GraphicsCapabilities.getGLVersion()[0] +
+                GraphicsCapabilities.getGLVersion()[1] +
+                GL11.glGetString(GL11.GL_VENDOR) +
+                GL11.glGetString(GL11.GL_RENDERER) +
                 String.join("|", shaderProgram.getShaderDefineList());
 
         return Md5CaculateUtil.getMD5(identityString);

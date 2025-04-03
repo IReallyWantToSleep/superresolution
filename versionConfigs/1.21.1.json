@@ -48,11 +48,15 @@
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.2.1-a-1.21.1"
+                    "version": "2.3.0-b-1.21.1"
                 },
                 {
                     "name": "spark",
                     "version": "1.10.109-fabric"
+                },
+                {
+                    "name": "sodium-options-api",
+                    "version": "fabric-1.21.1-1.0.10"
                 }
             ],
             "local": [
@@ -89,11 +93,15 @@
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.2.1-a-1.21.1"
+                    "version": "2.3.0-b-1.21.1"
                 },
                 {
                     "name": "iris",
                     "version": "1.8.1+1.21.1-neoforge"
+                },
+                {
+                    "name": "sodium-options-api",
+                    "version": "neoforge-1.21.1-1.0.10"
                 }
             ],
             "local": [
@@ -116,6 +124,26 @@
                 {
                     "name": "net.caffeinemc.sodium-neoforge-0.6.5+mc1.21.1-service",
                     "isMod": true
+                },
+                {
+                    "name": "jcpp-1.4.14",
+                    "isMod": false
+                },
+                {
+                    "name": "glsl-transformer-2.0.1",
+                    "isMod": false
+                },
+                {
+                    "name": "antlr4-runtime-4.13.1",
+                    "isMod": false
+                },
+                {
+                    "name": "mixinsquared-neoforge-0.2.0",
+                    "isMod": false
+                },
+                {
+                    "name": "MixinSquared-0.2.0-beta.6",
+                    "isMod": false
                 }
             ]
         }

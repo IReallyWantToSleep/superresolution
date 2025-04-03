@@ -2,25 +2,23 @@ package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.api.event.AlgorithmResizeEvent;
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.mixin.core.WindowMixin;
-import io.homo.superresolution.common.platform.EnvType;
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.GlVkInteropManager;
+import io.homo.superresolution.common.platform.*;
+import io.homo.superresolution.common.render.interop.GlVkInteropManager;
+import io.homo.superresolution.common.render.GraphicsCapabilities;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.Gl;
-import io.homo.superresolution.common.render.impl.framebuffer.MinecraftRenderTarget;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
+import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.AlgorithmType;
 import io.homo.superresolution.common.upscale.none.None;
-import io.homo.superresolution.common.upscale.utils.NativeLibManager;
-import io.homo.superresolution.common.upscale.utils.Requirement;
+import oiiaio.fsr.NativeLibManager;
+import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.utils.MessageBox;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -36,13 +34,13 @@ public final class SuperResolution implements Resizable, Destroyable {
     private static final Minecraft minecraft = Minecraft.getInstance();
     private static final Requirement commonRequirement = Requirement.nothing().glMajorVersion(4).glMinorVersion(3);
     public static AbstractAlgorithm currentAlgorithm;
-    public static None defaultAlgorithm = None.create();
+    public static None defaultAlgorithm = new None();
     public static boolean isInit;
     public static boolean isPreInit;
     public static boolean gameIsLoad = false;
     public static float frameTimeDelta = 16.6f;
     public static RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
-    public static AlgorithmType algorithmType;
+    public static AlgorithmDescription<?> algorithmDescription;
     public static GlVkInteropManager interopManager;
     public static int framebufferWidth = 0;
     public static int framebufferHeight = 0;
@@ -95,8 +93,8 @@ public final class SuperResolution implements Resizable, Destroyable {
                     Component.translatable("superresolution.common_requirement.not_support.version").getString().formatted(
                             commonRequirement.getGlMajorVersion(),
                             commonRequirement.getGlMinorVersion(),
-                            Gl.getVersion()[0],
-                            Gl.getVersion()[0]),
+                            GraphicsCapabilities.getGLVersion()[0],
+                            GraphicsCapabilities.getGLVersion()[1]),
                     Component.translatable("superresolution.common_requirement.not_support.msg").getString()
             );
             Minecraft.getInstance().destroy();
@@ -118,20 +116,22 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void initRendering() {
         if (!isPreInit) return;
         RenderSystem.assertOnRenderThread();
+        GraphicsCapabilities.init();
         MinecraftRenderHandle.init();
         AlgorithmManager.init();
-        algorithmType = Config.getUpscaleAlgo();
+        algorithmDescription = Config.getUpscaleAlgo();
     }
 
     public static boolean createAlgo() {
         if (!isPreInit) return false;
         defaultAlgorithm.init();
+        algorithmDescription = Config.getUpscaleAlgo();
         try {
-            currentAlgorithm = AlgorithmManager.getAlgorithm(algorithmType);
-            SuperResolution.LOGGER.info("初始化算法 {}", algorithmType.toString());
+            currentAlgorithm = algorithmDescription.createNewInstance();
+            SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.toString());
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误 {}", algorithmType.toString(), e.getMessage());
+            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误 {}", algorithmDescription.toString(), e.getMessage());
         }
         return false;
     }
@@ -172,9 +172,16 @@ public final class SuperResolution implements Resizable, Destroyable {
         RenderSystem.assertOnRenderThread();
         cachedWidth = getMinecraftWidth();
         cachedHeight = getMinecraftHeight();
-        ((MinecraftRenderTarget) MinecraftRenderHandle.getRenderTarget()).enableStencil();
-        if (currentAlgorithm != null)
+        if (currentAlgorithm != null) {
+            AlgorithmResizeEvent.EVENT.invoker().onAlgorithmRegister(
+                    currentAlgorithm,
+                    MinecraftRenderHandle.getScreenWidth(),
+                    MinecraftRenderHandle.getScreenHeight(),
+                    MinecraftRenderHandle.getRenderWidth(),
+                    MinecraftRenderHandle.getRenderHeight()
+            );
             currentAlgorithm.resize(getMinecraftWidth(), getMinecraftHeight());
+        }
         AlgorithmManager.resize(getMinecraftWidth(), getMinecraftHeight());
     }
 

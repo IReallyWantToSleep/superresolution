@@ -6,7 +6,7 @@ import io.homo.superresolution.common.render.gl.pipeline.*;
 import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.common.render.gl.texture.GlSampler;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferWrapper;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.impl.texture.TextureSupplier;
@@ -22,7 +22,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     private GlComputeShaderProgram upscaleShader;
     private GlPipeline sgsrPipeline;
     private ITexture PrevLumaHistory;
-    private ITexture LumaHistory;
+    private ITexture YCoCgColor;
 
     private ITexture MotionDepthClipAlphaBuffer;
     private ITexture PrevHistoryOutput;
@@ -66,7 +66,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32UI);
-        LumaHistory = GlTexture.create(
+        YCoCgColor = GlTexture.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32UI);
@@ -88,21 +88,21 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "InputColor",
-                        FrameBufferWrapper.ofColor(sgsr.getInputFrameBuffer()),
+                        FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer()),
                         PipelineResourceAccess.READ,
                         null,
                         1))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "InputDepth",
-                        FrameBufferWrapper.ofDepth(sgsr.getInputFrameBuffer()),
+                        FrameBufferTextureAdapter.ofDepth(sgsr.getInputFrameBuffer()),
                         PipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.NearestClamp),
                         2))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "InputVelocity",
-                        FrameBufferWrapper.ofColor(
+                        FrameBufferTextureAdapter.ofColor(
                                 AlgorithmManager.getDispatchResource().motionVectors()),
                         PipelineResourceAccess.READ,
                         null,
@@ -117,7 +117,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Image2D,
                         "YCoCgColor",
-                        LumaHistory,
+                        YCoCgColor,
                         PipelineResourceAccess.WRITE,
                         null,
                         1))
@@ -143,14 +143,14 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "YCoCgColor",
-                        TextureSupplier.of(() -> LumaHistory),
+                        YCoCgColor,
                         PipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.NearestClamp),
                         9))
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Image2D,
                         "SceneColorOutput",
-                        FrameBufferWrapper.ofColor(sgsr.getOutputFrameBuffer()),
+                        FrameBufferTextureAdapter.ofColor(sgsr.getOutputFrameBuffer()),
                         PipelineResourceAccess.WRITE,
                         null,
                         0))
@@ -170,12 +170,6 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         HistoryOutput = tempA;
     }
 
-    private void swapLumaHistory() {
-        ITexture tempA = PrevLumaHistory;
-        PrevLumaHistory = LumaHistory;
-        LumaHistory = tempA;
-    }
-
     @Override
     public void destroy() {
         HistoryOutput.destroy();
@@ -183,8 +177,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         convertShader.destroy();
         upscaleShader.destroy();
         MotionDepthClipAlphaBuffer.destroy();
-        PrevLumaHistory.destroy();
-        LumaHistory.destroy();
+        YCoCgColor.destroy();
 
     }
 
@@ -195,10 +188,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         MotionDepthClipAlphaBuffer.resize(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight());
-        PrevLumaHistory.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight());
-        LumaHistory.resize(
+        YCoCgColor.resize(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight());
     }

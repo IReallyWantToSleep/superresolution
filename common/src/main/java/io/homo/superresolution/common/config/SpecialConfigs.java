@@ -2,8 +2,7 @@ package io.homo.superresolution.common.config;
 
 import io.homo.superresolution.common.config.special.*;
 import io.homo.superresolution.common.impl.Pair;
-import io.homo.superresolution.common.upscale.AlgorithmType;
-import net.minecraft.network.chat.Component;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,13 +14,13 @@ public class SpecialConfigs {
     public SGSR2SpecialConfig sgsr2 = new SGSR2SpecialConfig();
     public SGSR1SpecialConfig sgsr1 = new SGSR1SpecialConfig();
 
-    public transient Map<String, Pair<SpecialConfig, Component>> description = new HashMap<>();
+    public transient Map<String, Pair<SpecialConfig, String>> description = new HashMap<>();
 
     public SpecialConfigs() {
-        description.put("fsr1", Pair.of(fsr1, AlgorithmType.FSR1.getComponent()));
-        description.put("fsr2", Pair.of(fsr2, AlgorithmType.FSR2.getComponent()));
-        description.put("nis", Pair.of(nis, AlgorithmType.NIS.getComponent()));
-        description.put("sgsr2", Pair.of(sgsr2, AlgorithmType.SGSR2.getComponent()));
-        description.put("sgsr1", Pair.of(sgsr1, AlgorithmType.SGSR1.getComponent()));
+        description.put("fsr1", Pair.of(fsr1, AlgorithmDescriptions.FSR1.getDisplayName()));
+        description.put("fsr2", Pair.of(fsr2, AlgorithmDescriptions.FSR2.getDisplayName()));
+        description.put("nis", Pair.of(nis, AlgorithmDescriptions.NIS.getDisplayName()));
+        description.put("sgsr2", Pair.of(sgsr2, AlgorithmDescriptions.SGSR2.getDisplayName()));
+        description.put("sgsr1", Pair.of(sgsr1, AlgorithmDescriptions.SGSR1.getDisplayName()));
     }
 }

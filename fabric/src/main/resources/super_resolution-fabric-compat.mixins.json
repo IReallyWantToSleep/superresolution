@@ -10,7 +10,7 @@
         "sodium.SodiumOptionsGUIMixin"
     ],
     "mixins": [
-        "iris.GlFramebufferMixin"
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "injectors": {
         "defaultRequire": 1

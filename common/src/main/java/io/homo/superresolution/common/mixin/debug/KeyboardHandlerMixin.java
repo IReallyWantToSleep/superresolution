@@ -1,86 +1,10 @@
 package io.homo.superresolution.common.mixin.debug;
 
-import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.RenderTargetType;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.client.KeyboardHandler;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.function.Consumer;
 
 import static org.apache.commons.io.FileUtils.getFile;
 
 @Mixin(KeyboardHandler.class)
 public class KeyboardHandlerMixin {
-
-    private static NativeImage super_resolution$takeScreenshot(int id, int i, int j) {
-        NativeImage nativeImage = new NativeImage(i, j, false);
-        RenderSystem.bindTexture(id);
-        nativeImage.downloadTexture(0, true);
-        nativeImage.flipY();
-        return nativeImage;
-    }
-
-    private static void grab(File gameDirectory, @Nullable String screenshotName, Consumer<Component> messageConsumer, int id, int i, int j) {
-        NativeImage nativeImage = super_resolution$takeScreenshot(id, i, j);
-        File file = new File(gameDirectory, "screenshots");
-        file.mkdir();
-        File file2;
-        if (screenshotName == null) {
-            file2 = getFile(file);
-        } else {
-            file2 = new File(file, screenshotName);
-        }
-
-        Util.ioPool().execute(() -> {
-            try {
-                nativeImage.writeToFile(file2);
-                Component component = Component.literal(file2.getName()).withStyle(ChatFormatting.UNDERLINE).withStyle((style) -> {
-                    return style.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file2.getAbsolutePath()));
-                });
-                messageConsumer.accept(Component.translatable("screenshot.success", component));
-            } catch (Exception var7) {
-                messageConsumer.accept(Component.translatable("screenshot.failure", var7.getMessage()));
-            } finally {
-                nativeImage.close();
-            }
-
-        });
-    }
-
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Screenshot;grab(Ljava/io/File;Lcom/mojang/blaze3d/pipeline/RenderTarget;Ljava/util/function/Consumer;)V"), method = "keyPress")
-    private void debugScreenshot(CallbackInfo ci) throws IOException {
-        Screenshot.grab(Minecraft.getInstance().gameDirectory, "world.png", MinecraftRenderHandle.getRenderTarget().asMcRenderTarget(), (a) -> {
-        });
-        MinecraftRenderHandle.callOnRenderTargets(((renderTarget, type) -> Screenshot.grab(Minecraft.getInstance().gameDirectory, type.toString() + ".png", renderTarget.asMcRenderTarget(), (a) -> {
-        })));
-        Screenshot.grab(Minecraft.getInstance().gameDirectory, "hand.png", MinecraftRenderHandle.getRenderTarget(RenderTargetType.HAND).asMcRenderTarget(), (a) -> {
-        });
-        NativeImage nativeImage = new NativeImage(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                false
-        );
-        IFrameBuffer frameBuffer = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        RenderSystem.bindTexture(frameBuffer.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR));
-        nativeImage.downloadTexture(0, true);
-        nativeImage.flipY();
-        nativeImage.writeToFile(Path.of(Minecraft.getInstance().gameDirectory.getAbsoluteFile().getAbsolutePath(), "out.png"));
-    }
 }

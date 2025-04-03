@@ -1,21 +1,33 @@
 package io.homo.superresolution.common.config;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
-import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
 public class ConfigData {
     private SpecialConfigs special = new SpecialConfigs();
     private boolean enableUpscale = true;
     private float upscaleRatio = 1.7f;
-    private AlgorithmType upscaleAlgo = AlgorithmType.FSR1;
+    private AlgorithmDescription<?> upscaleAlgo = AlgorithmDescriptions.FSR1;
     private float sharpness = 0.55f;
     private CaptureMode captureMode = CaptureMode.A;
     private boolean debugDumpShader = false;
-    private boolean skipLoadNativeLib = false;
-    private boolean skipInitVulkan = false;
-    private boolean enableRenderDoc = true;
-    private boolean enableImgui = true;
+    private boolean skipLoadNativeLib;
+    private boolean skipInitVulkan;
+    private boolean enableRenderDoc;
+    private boolean enableImgui;
+
+    public ConfigData() {
+        boolean compatMode = Platform.currentPlatform.getOS().type == OSType.MACOS || Platform.currentPlatform.getOS().type == OSType.ANDROID;
+        skipLoadNativeLib = compatMode;
+        skipInitVulkan = compatMode;
+        enableRenderDoc = !compatMode;
+        enableImgui = !compatMode;
+
+    }
 
     public boolean isEnableRenderDoc() {
         return enableRenderDoc;
@@ -77,21 +89,21 @@ public class ConfigData {
         this.upscaleRatio = value;
     }
 
-    public AlgorithmType getUpscaleAlgo() {
+    public AlgorithmDescription<?> getUpscaleAlgo() {
         return this.upscaleAlgo;
     }
 
-    public void setUpscaleAlgo(AlgorithmType upscaleAlgo) {
+    public void setUpscaleAlgo(AlgorithmDescription<?> upscaleAlgo) {
         if (this.upscaleAlgo == upscaleAlgo) return;
-        AlgorithmType lastUpscaleAlgo = this.upscaleAlgo;
+        AlgorithmDescription<?> lastUpscaleAlgo = this.upscaleAlgo;
         this.upscaleAlgo = upscaleAlgo;
-        SuperResolution.algorithmType = this.upscaleAlgo;
+        SuperResolution.algorithmDescription = this.upscaleAlgo;
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolution.currentAlgorithm.destroy();
         }
         if (!SuperResolution.createAlgo()) {
             this.upscaleAlgo = lastUpscaleAlgo;
-            SuperResolution.algorithmType = this.upscaleAlgo;
+            SuperResolution.algorithmDescription = this.upscaleAlgo;
             if (!SuperResolution.createAlgo()) {
                 SuperResolution.LOGGER.error("在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常", upscaleAlgo.toString(), lastUpscaleAlgo.toString());
                 throw new RuntimeException();

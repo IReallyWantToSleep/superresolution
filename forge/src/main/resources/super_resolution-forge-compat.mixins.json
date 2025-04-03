@@ -9,6 +9,7 @@
         "oculus.GlFramebufferMixin"
     ],
     "mixins": [
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "injectors": {
         "defaultRequire": 1
