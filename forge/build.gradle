@@ -67,20 +67,21 @@ def addModrinthMod(id, ver) {
     dependencies { modImplementation("maven.modrinth:${id}:${ver}-forge,${rootProject.minecraft_version}") }
 }
 
-def addNoModLib(name) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
-    dependencies {
-        implementation(forgeRuntimeLibrary(files(file.toAbsolutePath().asWritable().toString())))
-    }
-}
-
-def addModLib(name) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
+def addModLib(name_) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
     dependencies {
         modImplementation(files(file.toAbsolutePath().asWritable().toString()))
     }
 }
 
+def addNoModLib(name_) {
+    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
+    dependencies {
+        implementation(forgeRuntimeLibrary(files(file.toAbsolutePath().asWritable().toString()))) {
+            transitive = false
+        }
+    }
+}
 
 dependencies {
     forge "net.minecraftforge:forge:$versionConfig.common.minecraftVersion-$versionConfig.forge.loaderVersion"
@@ -128,6 +129,11 @@ dependencies {
     implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
         transitive = false
     }
+    implementation(
+            forgeRuntimeLibrary(
+                    files("../libs/fabric-api-base-0.4.42+d1308ded19.jar")
+            )
+    )
 }
 
 processResources {

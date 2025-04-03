@@ -1,0 +1,18 @@
+{
+    "required": true,
+    "package": "io.homo.superresolution.neoforge.mixin.compat",
+    "plugin": "io.homo.superresolution.neoforge.mixin.compat.CompatMixinPlugin",
+    "compatibilityLevel": "JAVA_21",
+    "minVersion": "0.8",
+    "client": [
+        "iris.GlFramebufferMixin",
+        "reesessodiumoptions.TabFrameMixin",
+        "sodium.SodiumOptionsGUIMixin",
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
+    ],
+    "mixins": [
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

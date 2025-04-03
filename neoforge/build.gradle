@@ -52,36 +52,26 @@ repositories {
     }
 }
 
-def addModrinthMod(id, ver) {
-    dependencies { modImplementation("maven.modrinth:${id}:${ver}-neoforge,${rootProject.minecraft_version}") }
-}
-
-def addModLib(name) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
-    dependencies {
-        modImplementation(files(file.toAbsolutePath().asWritable().toString()))
-    }
-}
-
-def addNoModLib(name) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name + ".jar")
-    dependencies {
-        implementation(forgeRuntimeLibrary(files(file.toAbsolutePath().asWritable().toString())))
-    }
-}
 
 dependencies {
     neoForge "net.neoforged:neoforge:${versionConfig.neoforge.loaderVersion}"
     common(project(path: ':common', configuration: 'namedElements')) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
-        addModrinthMod(lib.name, lib.version)
+        modImplementation("maven.modrinth:${lib.name}:${lib.version}-neoforge,${rootProject.minecraft_version}")
     }
     for (lib in versionConfig.neoforge.dependencies.local) {
+        def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", lib.name + ".jar")
         if (lib.isMod) {
-            addModLib(lib.name)
+            modImplementation(
+                    files(file.toAbsolutePath().asWritable().toString())
+            )
         } else {
-            addNoModLib(lib.name)
+            implementation(
+                    forgeRuntimeLibrary(
+                            files(file.toAbsolutePath().asWritable().toString())
+                    )
+            )
         }
     }
     modImplementation("me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion")
@@ -96,6 +86,14 @@ dependencies {
     implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
+        transitive = false
+    }
+    implementation(
+            forgeRuntimeLibrary(
+                    files("../libs/MixinSquared-0.2.0-beta.6.jar")
+            )
+    )
 }
 
 processResources {

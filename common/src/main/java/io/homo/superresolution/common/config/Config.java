@@ -1,11 +1,11 @@
 package io.homo.superresolution.common.config;
 
 import com.google.gson.GsonBuilder;
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.upscale.AlgorithmType;
 import net.minecraft.client.Minecraft;
 
 public class Config {
@@ -53,17 +53,9 @@ public class Config {
 
     public static void registerTypeAdapter(GsonBuilder gsonBuilder) {
         gsonBuilder.registerTypeAdapter(
-                AlgorithmType.class,
-                new EnumSerializer.Builder<AlgorithmType>()
-                        .addMapping("fsr1", AlgorithmType.FSR1)
-                        .addMapping("nis", AlgorithmType.NIS)
-                        .addMapping("fsr2", AlgorithmType.FSR2)
-                        .addMapping("sgsr", AlgorithmType.SGSR2)
-                        .addMapping("none", AlgorithmType.NONE)
-                        .setDefault(AlgorithmType.FSR1)
-                        .build()
+                AlgorithmDescription.class,
+                new AlgorithmDescriptionSerializer()
         );
-
         gsonBuilder.registerTypeAdapter(
                 CaptureMode.class,
                 new EnumSerializer.Builder<CaptureMode>()
@@ -107,11 +99,11 @@ public class Config {
         if (resolutionChanged) runResolutionChangeCallback();
     }
 
-    public static AlgorithmType getUpscaleAlgo() {
+    public static AlgorithmDescription<?> getUpscaleAlgo() {
         return instance.getUpscaleAlgo();
     }
 
-    public static void setUpscaleAlgo(AlgorithmType upscaleAlgo) {
+    public static void setUpscaleAlgo(AlgorithmDescription<?> upscaleAlgo) {
         instance.setUpscaleAlgo(upscaleAlgo);
     }
 

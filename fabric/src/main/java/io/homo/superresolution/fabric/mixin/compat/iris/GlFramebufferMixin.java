@@ -9,6 +9,9 @@ import net.irisshaders.iris.pbr.TextureInfoCache;
 #else
 import net.irisshaders.iris.texture.TextureInfoCache;
 #endif
+#if MC_VER > MC_1_21_4
+import com.mojang.blaze3d.textures.GpuTexture;
+#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -31,7 +34,11 @@ public abstract class GlFramebufferMixin extends GlResource {
     public abstract int getStatus();
 
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
+    #if MC_VER < MC_1_21_5
     private void checkFboCompleteness(int texture, CallbackInfo ci) {
+    #else
+    private void checkFboCompleteness(GpuTexture texture, CallbackInfo ci) {
+    #endif
         int status = getStatus();
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             throw new RuntimeException(String.valueOf(status));
@@ -39,7 +46,11 @@ public abstract class GlFramebufferMixin extends GlResource {
     }
 
     @Inject(method = "addDepthAttachment", at = @At("HEAD"))
-    public void addDepthAttachment(int texture, CallbackInfo ci) {
+    #if MC_VER < MC_1_21_5
+    public void addDepthAttachment(int texture, CallbackInfo ci)
+    #else
+    public void addDepthAttachment(GpuTexture texture, CallbackInfo ci)
+    #endif {
         if (super_resolution$currentDepthAttachmentType != 0) {
             IrisRenderSystem.framebufferTexture2D(
                     getGlId(),
@@ -50,8 +61,13 @@ public abstract class GlFramebufferMixin extends GlResource {
                     0
             );
         }
-
+        #if MC_VER < MC_1_21_5
         super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(texture).getInternalFormat());
+
+        #else
+        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(texture.getGlId()).getInternalFormat());
+
+        #endif
     }
 
     @Unique

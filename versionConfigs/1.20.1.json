@@ -39,7 +39,7 @@
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.2.1-a-1.20.1"
+                    "version": "2.3.0-b-1.20.1"
                 },
                 {
                     "name": "iris",
@@ -52,9 +52,18 @@
                 {
                     "name": "indium",
                     "version": "1.0.34+mc1.20.1"
+                },
+                {
+                    "name": "sodium-options-api",
+                    "version": "fabric-1.20.1-1.0.10"
                 }
             ],
-            "local": []
+            "local": [
+                {
+                    "name": "fabric-api-base-0.4.42+d1308ded19",
+                    "isMod": false
+                }
+            ]
         },
         "modmenu_version": "7.2.2"
     },
@@ -84,7 +93,11 @@
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.2.1-a-1.20.1"
+                    "version": "2.3.0-b-1.20.1"
+                },
+                {
+                    "name": "sodium-options-api",
+                    "version": "forge-1.20.1-1.0.10"
                 }
             ],
             "local": [

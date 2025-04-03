@@ -65,6 +65,10 @@ public enum TextureFormat {
         return result;
     }
 
+    public boolean isStencil() {
+        return this == DEPTH24_STENCIL8;
+    }
+
     public int gl() {
         return glFormat;
     }

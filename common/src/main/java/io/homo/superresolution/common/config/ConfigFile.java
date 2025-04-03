@@ -34,8 +34,13 @@ public class ConfigFile {
                 .disableHtmlEscaping();
         Config.registerTypeAdapter(gsonBuilder);
         Gson gson = gsonBuilder.create();
-        ConfigData config = gson.fromJson(text, ConfigData.class);
-        Config.setInstance(config);
+        try {
+            ConfigData config = gson.fromJson(text, ConfigData.class);
+            Config.setInstance(config);
+        } catch (Exception e) {
+            SuperResolution.LOGGER.info("读取配置发生错误: {}", e.toString());
+            Config.setInstance(new ConfigData());
+        }
     }
 
     public static boolean exists() {

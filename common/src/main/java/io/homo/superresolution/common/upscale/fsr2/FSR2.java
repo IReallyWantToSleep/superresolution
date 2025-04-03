@@ -6,12 +6,13 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.common.render.impl.texture.TextureFrameBufferAdapter;
+import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.utils.NativeLibManager;
+import oiiaio.fsr.NativeLibManager;
 import net.minecraft.client.Minecraft;
 import oiiaio.fsr.FfxError;
 import oiiaio.fsr.fsr2.FfxFSR2;
@@ -23,32 +24,26 @@ import static io.homo.superresolution.common.render.gl.GlConst.*;
 import static oiiaio.fsr.fsr2.enums.FfxFsr2InitializationFlagBits.*;
 
 public class FSR2 extends AbstractAlgorithm {
-    public static FSR2Helper helper = new FSR2Helper();
     private static Window window = Minecraft.getInstance().getWindow();
     private final FfxFSR2 nativeApi;
     private FfxFsr2Context fsr2Context;
     private GlTexture output;
 
-    private FSR2() {
+    public FSR2() {
+        super();
         RenderSystem.assertOnRenderThread();
         this.isSupport = isSupport();
         nativeApi = NativeLibManager.getNativeApi();
         window = Minecraft.getInstance().getWindow();
     }
 
-    public static FSR2 create() {
-        return new FSR2();
-    }
-
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR2.getRequirement().check().support() && NativeLibManager.getNativeApi() != null;
+        return AlgorithmDescriptions.FSR2.getRequirement().check().support() && NativeLibManager.getNativeApi() != null;
     }
 
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
-        helper = new FSR2Helper();
-        helper.resize(width, height);
         this.output.resize(width, height);
         updateFSR2(width, height);
     }
@@ -62,7 +57,6 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        helper.update();
         return dispatchFSR2(dispatchResource);
     }
 
@@ -73,7 +67,6 @@ public class FSR2 extends AbstractAlgorithm {
 
     public void destroy() {
         this.output.destroy();
-        helper.destroy();
         nativeApi.ffxFsr2ContextDestroy(fsr2Context);
     }
 
@@ -106,19 +99,19 @@ public class FSR2 extends AbstractAlgorithm {
         float verticalFovRadians = 2.0f * (float) Math.atan(1.0f / m11);
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         FfxResource colorResource = nativeApi.ffxGetTextureResourceGL(
-                this.input.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR),
+                this.input.getTextureId(FrameBufferAttachmentType.COLOR),
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight(),
                 GL_RGBA8
         );
         FfxResource depthResource = nativeApi.ffxGetTextureResourceGL(
-                this.input.getTextureId(IFrameBuffer.FrameBufferAttachmentType.DEPTH),
+                this.input.getTextureId(FrameBufferAttachmentType.DEPTH),
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight(),
                 GL_DEPTH_COMPONENT24
         );
         FfxResource motionVectorsResource = nativeApi.ffxGetTextureResourceGL(
-                helper.getMotionVectorsTex(),
+                dispatchResource.motionVectors().getTextureId(FrameBufferAttachmentType.COLOR),
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight(),
                 GL_RG16F
@@ -158,7 +151,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        return TextureWrapper.of(output);
+        return TextureFrameBufferAdapter.of(output);
     }
 
 

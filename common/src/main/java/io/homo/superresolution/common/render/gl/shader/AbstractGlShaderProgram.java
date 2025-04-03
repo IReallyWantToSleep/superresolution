@@ -5,6 +5,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.common.render.impl.IDebuggableObject;
 import io.homo.superresolution.common.utils.ShaderCache;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
@@ -20,9 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
+import static org.lwjgl.opengl.GL43.GL_PROGRAM;
 
-public abstract class AbstractGlShaderProgram implements Destroyable {
-
+public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggableObject {
     private final Map<String, Integer> uniformLocationCache = new HashMap<>();
     public String shaderName;
     public int shaderProgram;
@@ -34,6 +35,16 @@ public abstract class AbstractGlShaderProgram implements Destroyable {
     protected boolean enableCache = false;
 
     protected AbstractGlShaderProgram() {
+    }
+
+    @Override
+    public String getDebugLabel() {
+        return shaderName + "-" + shaderProgram;
+    }
+
+    @Override
+    public void updateDebugLabel(String newLabel) {
+        glSafeObjectLabel(GL_PROGRAM, shaderProgram, newLabel);
     }
 
     public ArrayList<String> getShaderDefineList() {

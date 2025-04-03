@@ -1,7 +1,7 @@
 import superresolution.VersionConfig
 
 plugins {
-    id "dev.architectury.loom" version "1.9-SNAPSHOT" apply false
+    id "dev.architectury.loom" version "1.10-SNAPSHOT" apply false
     id "architectury-plugin" version "3.4-SNAPSHOT"
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id "com.github.johnrengelman.shadow" version "8.1.1" apply false
@@ -82,7 +82,9 @@ subprojects {
         minecraft "net.minecraft:minecraft:$versionConfig.common.minecraftVersion"
         mappings loom.layered() {
             officialMojangMappings()
-            parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
+            if (versionConfig.common.parchmentVersion != null) {
+                parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
+            }
         }
         annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.manifold_version}")
         configurations.configureEach {

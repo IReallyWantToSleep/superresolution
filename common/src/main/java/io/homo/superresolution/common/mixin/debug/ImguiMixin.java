@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public class ImguiMixin {
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;unbindWrite()V"), method = "runTick")
+    @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRender(CallbackInfo ci) {
         if (ImguiMain.getInstance() != null) {
             ImguiMain.getInstance().render();
@@ -20,7 +20,6 @@ public class ImguiMixin {
     private void onExit(CallbackInfo ci) {
         if (ImguiMain.getInstance() != null) {
             ImguiMain.getInstance().destroy();
-
         }
     }
 }

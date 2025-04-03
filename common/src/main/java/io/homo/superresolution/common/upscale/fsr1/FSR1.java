@@ -2,20 +2,19 @@ package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Vec3;
+import io.homo.superresolution.common.render.GraphicsCapabilities;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.pipeline.*;
 import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferWrapper;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.render.impl.texture.TextureWrapper;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.AlgorithmType;
+import io.homo.superresolution.common.render.impl.texture.TextureFrameBufferAdapter;
+import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
 public class FSR1 extends AbstractAlgorithm {
@@ -26,20 +25,17 @@ public class FSR1 extends AbstractAlgorithm {
     private GlTexture output;
 
     public static int checkFP16Support() {
-        if (AlgorithmHelper.hasGLExtension("GL_EXT_shader_16bit_storage") &&
-                AlgorithmHelper.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")
+        if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
+                GraphicsCapabilities.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")
         ) {
             return 1;
         }
-        if (AlgorithmHelper.hasGLExtension("GL_NV_gpu_shader5")) {
+        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) {
             return 2;
         }
         return 0;
     }
 
-    public static FSR1 create() {
-        return new FSR1();
-    }
 
     public void initShader() {
         int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
@@ -97,13 +93,13 @@ public class FSR1 extends AbstractAlgorithm {
         initShader();
         fsrUpscalePipeline = new GlPipeline();
         fsr1TempTexture = GlTexture.create(
-                AlgorithmManager.helper.getRenderWidth(),
-                AlgorithmManager.helper.getRenderHeight(),
+                MinecraftRenderHandle.getRenderWidth(),
+                MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.RGBA8
         );
         output = GlTexture.create(
-                AlgorithmManager.helper.getScreenWidth(),
-                AlgorithmManager.helper.getScreenHeight(),
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
         );
         fsrUpscalePipeline.addJob("fsr1_easu", PipelineJob.create()
@@ -120,7 +116,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .addResource(new PipelineResourceDescription(
                         PipelineResourceType.Sampler2D,
                         "input",
-                        FrameBufferWrapper.ofColor(input),
+                        FrameBufferTextureAdapter.ofColor(input),
                         PipelineResourceAccess.READ,
                         null,
                         0
@@ -148,14 +144,14 @@ public class FSR1 extends AbstractAlgorithm {
                 ))
                 .build()
         );
-        this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
+        this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
         int workRegionDim = 16;
-        int dispatchX = (AlgorithmManager.helper.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
-        int dispatchY = (AlgorithmManager.helper.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
+        int dispatchX = (MinecraftRenderHandle.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
+        int dispatchY = (MinecraftRenderHandle.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
         PipelineJobDispatchResource pipelineDispatchResource = new PipelineJobDispatchResource(
                 new Vec3(
                         dispatchX,
@@ -173,9 +169,9 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     private void setFSR1ShaderUniform(GlComputeShaderProgram shaderProgram) {
-        shaderProgram.setVec2("renderViewportSize", AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
-        shaderProgram.setVec2("containerTextureSize", AlgorithmManager.helper.getRenderWidth(), AlgorithmManager.helper.getRenderHeight());
-        shaderProgram.setVec2("upscaledViewportSize", AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
+        shaderProgram.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        shaderProgram.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        shaderProgram.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         shaderProgram.setFloat("sharpness", Config.getSharpness());
     }
 
@@ -210,11 +206,11 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        return TextureWrapper.of(output);
+        return TextureFrameBufferAdapter.of(output);
     }
 
     @Override
     protected boolean isSupport() {
-        return AlgorithmType.FSR1.getRequirement().check().support();
+        return AlgorithmDescriptions.FSR1.getRequirement().check().support();
     }
 }

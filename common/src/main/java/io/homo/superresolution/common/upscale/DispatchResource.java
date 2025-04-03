@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.common.impl.Vec2;
-import io.homo.superresolution.common.render.impl.framebuffer.MotionVectorsFrameBuffer;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import org.joml.Matrix4f;
 
 public record DispatchResource(
@@ -24,7 +24,7 @@ public record DispatchResource(
         Matrix4f lastProjectionMatrix,
         Matrix4f lastModelViewProjectionMatrix,
         Matrix4f lastViewMatrix,
-        MotionVectorsFrameBuffer motionVectors,
+        GlFrameBuffer motionVectors,
 
         Vec2 renderSize,
         Vec2 screenSize

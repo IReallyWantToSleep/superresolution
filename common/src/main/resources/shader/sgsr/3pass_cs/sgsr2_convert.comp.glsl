@@ -18,28 +18,28 @@ vec2 decodeVelocityFromTexture(vec2 ev) {
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(set = 0, binding = 1) uniform highp sampler2D InputOpaqueColor;
-layout(set = 0, binding = 2) uniform highp sampler2D InputColor;
-layout(set = 0, binding = 3) uniform highp sampler2D InputDepth;
-layout(set = 0, binding = 4) uniform highp sampler2D InputVelocity;
-layout(set = 0, binding = 5, r32ui) uniform writeonly highp uimage2D YCoCgColor;
-layout(set = 0, binding = 6, rgba16f) uniform writeonly mediump image2D MotionDepthAlphaBuffer;
+layout(binding = 1) uniform highp sampler2D InputOpaqueColor;
+layout(binding = 2) uniform highp sampler2D InputColor;
+layout(binding = 3) uniform highp sampler2D InputDepth;
+layout(binding = 4) uniform highp sampler2D InputVelocity;
+layout(binding = 5, r32ui) uniform writeonly highp uimage2D YCoCgColor;
+layout(binding = 6, rgba16f) uniform writeonly mediump image2D MotionDepthAlphaBuffer;
 
-layout(std140, set = 0, binding = 0) uniform readonly Params
+layout(std140, binding = 0) uniform Params
 {
-    uvec2                renderSize;
-    uvec2                displaySize;
-    vec2                 ViewportSizeInverse;
-    vec2                 displaySizeRcp;
-    vec2                 jitterOffset;
-    vec2                 padding1;
-    vec4                 clipToPrevClip[4];
-    float                preExposure;
-    float                cameraFovAngleHor;
-    float                cameraNear;
-    float                MinLerpContribution;
-    uint                 bSameCamera;
-    uint                 reset;
+    uvec2 renderSize;
+    uvec2 displaySize;
+    vec2 ViewportSizeInverse;
+    vec2 displaySizeRcp;
+    vec2 jitterOffset;
+    vec2 padding1;
+    vec4 clipToPrevClip[4];
+    float preExposure;
+    float cameraFovAngleHor;
+    float cameraNear;
+    float MinLerpContribution;
+    uint bSameCamera;
+    uint reset;
 } params;
 
 void main()
@@ -59,15 +59,15 @@ void main()
     vec4 topleft = textureGather(InputDepth, gatherCoord, 0);
 
     NearestZ = min(topleft.x, NearestZ);
-	NearestZ = min(topleft.y, NearestZ);
-	NearestZ = min(topleft.z, NearestZ);
-	NearestZ = min(topleft.w, NearestZ);
+    NearestZ = min(topleft.y, NearestZ);
+    NearestZ = min(topleft.z, NearestZ);
+    NearestZ = min(topleft.w, NearestZ);
 
     vec2 v11 = vec2(ViewportSizeInverse.x, 0.0);
     vec2 topRight = textureGather(InputDepth, (gatherCoord + v11), 0).yz;
 
-	NearestZ = min(topRight.x, NearestZ);
-	NearestZ = min(topRight.y, NearestZ);
+    NearestZ = min(topRight.x, NearestZ);
+    NearestZ = min(topRight.y, NearestZ);
 
     vec2 v13 = vec2(0.0, ViewportSizeInverse.y);
     vec2 bottomLeft = textureGather(InputDepth, (gatherCoord + v13), 0).xy;
@@ -86,12 +86,12 @@ void main()
     }
     else
     {
-#ifdef REQUEST_NDC_Y_UP
+        #ifdef REQUEST_NDC_Y_UP
         vec2 ScreenPos = vec2(2.0f * ViewportUV.x - 1.0f, 1.0f - 2.0f * ViewportUV.y);
-#else
+        #else
         vec2 ScreenPos = vec2(2.0f * ViewportUV - 1.0f);
-#endif
-        vec3 Position = vec3(ScreenPos, NearestZ);    //this_clip
+        #endif
+        vec3 Position = vec3(ScreenPos, NearestZ); //this_clip
         vec4 PreClip = params.clipToPrevClip[3] + ((params.clipToPrevClip[2] * Position.z) + ((params.clipToPrevClip[1] * ScreenPos.y) + (params.clipToPrevClip[0] * ScreenPos.x)));
         vec2 PreScreen = PreClip.xy / PreClip.w;
         motion = Position.xy - PreScreen;

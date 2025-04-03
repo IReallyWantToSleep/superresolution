@@ -1,16 +1,22 @@
 package io.homo.superresolution.fabric.mixin.compat.sodium;
 
+#if MC_VER > MC_1_20_4
+
+import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
+#else
+import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
+#endif
+
+#if MC_VER == MC_1_20_4
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 #if MC_VER > MC_1_20_4
-import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 #else
-import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
@@ -19,10 +25,8 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStor
 #endif
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+
 import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,18 +34,24 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
+#endif
+import org.spongepowered.asm.mixin.Mixin;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 @Mixin(SodiumOptionsGUI.class)
 public class SodiumOptionsGUIMixin extends Screen {
+    protected SodiumOptionsGUIMixin(Component title) {
+        super(title);
+    }
+    #if MC_VER == MC_1_20_4
     @Shadow(remap = false)
     @Final
     private List<OptionPage> pages;
     @Unique
     private OptionPage page;
 
-    protected SodiumOptionsGUIMixin(Component title) {
-        super(title);
-    }
+
 
     @Inject(
             method = "<init>",
@@ -80,4 +90,5 @@ public class SodiumOptionsGUIMixin extends Screen {
             ci.cancel();
         }
     }
+    #endif
 }

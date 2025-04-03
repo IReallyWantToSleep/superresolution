@@ -11,7 +11,7 @@ authors = "187J3X1"
 description = '''
 喵
 '''
-logoFile = "super_resolution_logo.png"
+logoFile = "assets/super_resolution/textures/logo.png"
 
 [[dependencies.super_resolution]]
 modId = "minecraft"
@@ -40,6 +40,6 @@ side = "BOTH"
 [[mixins]]
 config = "super_resolution.mixins.json"
 [[mixins]]
-config = "super_resolution-forge.mixins.json"
+config = "super_resolution-neoforge.mixins.json"
 [[mixins]]
-config = "super_resolution-forge-compat.mixins.json"
+config = "super_resolution-neoforge-compat.mixins.json"

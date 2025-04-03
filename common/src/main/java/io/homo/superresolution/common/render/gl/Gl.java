@@ -1,7 +1,8 @@
 package io.homo.superresolution.common.render.gl;
 
+import io.homo.superresolution.common.render.GraphicsCapabilities;
+import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.opengl.*;
-import org.lwjgl.system.NativeType;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -259,4 +260,12 @@ public class Gl {
     public static void glPixelStorei(int pname, int param) {
         GL11C.glPixelStorei(pname, param);
     }
+
+    public static void glSafeObjectLabel(int type, int id, String label) {
+        if (GraphicsCapabilities.hasGLExtension("GL_KHR_debug")) {
+            KHRDebug.glObjectLabel(type, id, StringUtils.abbreviate(label, 255));
+        }
+    }
+
+
 }

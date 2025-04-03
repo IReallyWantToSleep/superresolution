@@ -3,20 +3,23 @@ package io.homo.superresolution.common.render.gl.texture;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
+import io.homo.superresolution.common.render.impl.IDebuggableObject;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE;
+import static org.lwjgl.opengl.GL11.glGenTextures;
 
-public class GlTexture implements ITexture {
+public class GlTexture implements ITexture, IDebuggableObject {
     public int id;
     public int format;
     public int width;
     public int height;
 
     public GlTexture(int width, int height, int format) {
-        this.id = TextureUtil.generateTextureId();
+        this.id = glGenTextures();
         this.format = format;
         this.width = width;
         this.height = height;
@@ -42,6 +45,7 @@ public class GlTexture implements ITexture {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         glTexStorage2D(GL_TEXTURE_2D, 1, this.format, this.width, this.height);
         glBindTexture(GL_TEXTURE_2D, 0);
+        updateDebugLabel(getDebugLabel());
     }
 
     @Override
@@ -53,8 +57,8 @@ public class GlTexture implements ITexture {
     @Override
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
-        TextureUtil.releaseTextureId(this.id);
-        this.id = TextureUtil.generateTextureId();
+        glDeleteTextures(this.id);
+        this.id = glGenTextures();
         this.width = width;
         this.height = height;
         initializeTexture();
@@ -92,5 +96,16 @@ public class GlTexture implements ITexture {
     @Override
     public int getHeight() {
         return height;
+    }
+
+
+    @Override
+    public String getDebugLabel() {
+        return string();
+    }
+
+    @Override
+    public void updateDebugLabel(String newLabel) {
+        glSafeObjectLabel(GL_TEXTURE, getTextureId(), getDebugLabel());
     }
 }

@@ -4,11 +4,12 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.impl.framebuffer.StorageFrameBuffer;
+import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
@@ -20,11 +21,7 @@ public class Sgsr2 extends AbstractAlgorithm {
     private AbstractSgsrVariant variantInstance;
     private SgsrVariant currentVariant;
     private GlUniformBuffer<SgsrParams> params;
-
-    public static Sgsr2 create() {
-        return new Sgsr2();
-    }
-
+    
     private void initVariant() {
         if (checkVariant()) {
             if (variantInstance != null) {
@@ -51,8 +48,17 @@ public class Sgsr2 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = new StorageFrameBuffer(false);
-        this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
+        GlFrameBuffer output_ = new GlFrameBuffer();
+        output_.addAttachment(new FrameBufferAttachment(
+                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+                GlTexture.create(
+                        MinecraftRenderHandle.getRenderWidth(),
+                        MinecraftRenderHandle.getRenderHeight(),
+                        TextureFormat.RGBA8
+                )
+        ));
+        output = output_;
+        this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         params = new GlUniformBuffer<>(new SgsrParams());
     }
 
@@ -74,7 +80,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                 height,
                 width,
                 height,
-                output.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
+                output.getTextureId(FrameBufferAttachmentType.COLOR)
         );
     }
 

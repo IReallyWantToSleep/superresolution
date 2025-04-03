@@ -1,14 +1,17 @@
 package io.homo.superresolution.fabric.mixin.compat.reesessodiumoptions;
 
-import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
-import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.TabFrame;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
+import net.minecraft.client.Minecraft;
+
+#if MC_VER < MC_1_21_5
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
+import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.TabFrame;
+import net.minecraft.network.chat.Component;
+
 
 #if MC_VER > MC_1_20_1
 import java.util.Optional;
@@ -34,3 +37,8 @@ public class TabFrameMixin {
         }
     }
 }
+#else
+@Mixin(value = Minecraft.class)
+public class TabFrameMixin {
+}
+#endif

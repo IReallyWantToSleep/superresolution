@@ -24,6 +24,7 @@ public class VkDeviceManager implements Destroyable {
     public long descriptorPool;
     public VkPhysicalDeviceProperties physicalDeviceProperties;
     public VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+    public ArrayList<String> deviceExtensions = new ArrayList<>();
     public QueueFamilyIndices queueFamilyIndices;
 
     public VkDeviceManager(VkApplication application) {
@@ -174,13 +175,13 @@ public class VkDeviceManager implements Destroyable {
             vkEnumerateDeviceExtensionProperties(device, (String) null, extensionCount, null);
             VkExtensionProperties.Buffer availableExtensions = VkExtensionProperties.malloc(extensionCount.get(0), stack);
             vkEnumerateDeviceExtensionProperties(device, (String) null, extensionCount, availableExtensions);
-            ArrayList<String> extensions = new ArrayList<>();
+            deviceExtensions.clear();
             for (Iterator<VkExtensionProperties> it = availableExtensions.stream().iterator(); it.hasNext(); ) {
                 VkExtensionProperties extension = it.next();
-                extensions.add(extension.extensionNameString());
+                deviceExtensions.add(extension.extensionNameString());
             }
             for (String requiredExtension : getRequiredExtensions()) {
-                if (!extensions.contains(requiredExtension)) {
+                if (!deviceExtensions.contains(requiredExtension)) {
                     return false;
                 }
             }

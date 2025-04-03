@@ -1,5 +1,7 @@
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.config.enums.CaptureMode;
@@ -14,12 +16,13 @@ import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.render.GraphicsCapabilities;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.AlgorithmType;
-import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.common.utils.ColorUtil;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
+import me.shedaniel.clothconfig2.gui.entries.SelectionListEntry;
 import me.shedaniel.clothconfig2.impl.ConfigEntryBuilderImpl;
 import me.shedaniel.clothconfig2.impl.builders.AbstractFieldBuilder;
 import net.minecraft.client.Minecraft;
@@ -27,9 +30,11 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -49,12 +54,12 @@ public class ClothConfig {
 
     @SuppressWarnings("unchecked")
     public static void addSpecialConfig(ConfigBuilder builder, ConfigEntryBuilder entryBuilder, String key) {
-        Pair<SpecialConfig, Component> specialConfigDescription = Config.getInstance().getSpecial().description.get(key);
+        Pair<SpecialConfig, String> specialConfigDescription = Config.getInstance().getSpecial().description.get(key);
         Map<String, SpecialConfigDescription<?>> configDescriptions = specialConfigDescription.left().getDescriptions();
         Set<String> keys = configDescriptions.keySet();
         if (keys.isEmpty()) return;
 
-        ConfigCategory category = builder.getOrCreateCategory(specialConfigDescription.right());
+        ConfigCategory category = builder.getOrCreateCategory(Component.literal(specialConfigDescription.right()));
         for (String configKey : keys) {
             SpecialConfigDescription<?> configDescription = configDescriptions.get(configKey);
             AbstractFieldBuilder<?, ?, ?> fieldBuilder =
@@ -168,26 +173,29 @@ public class ClothConfig {
                 .setTextGetter((integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
                 .setSaveConsumer((i) -> Config.setSharpness(getFloat(i)))
                 .build());
-        EnumListEntry<AlgorithmType> algorithmTypeEnumSelector = entryBuilder.startEnumSelector(
+
+        SelectionListEntry<Object> algorithmSelector = entryBuilder.startSelector(
                         Component.translatable("superresolution.screen.config.options.label.algo_type"),
-                        AlgorithmType.class,
+                        AlgorithmRegistry.getAlgorithmMap().values().toArray(),
                         Config.getUpscaleAlgo()
                 )
-                .setDefaultValue(AlgorithmType.FSR1)
-                .setEnumNameProvider(((anEnum) -> Component.literal(((AlgorithmType) anEnum).getString())))
+                .setDefaultValue(AlgorithmDescriptions.FSR1)
+                .setNameProvider(((anEnum) -> Component.literal(((AlgorithmDescription<?>) anEnum).getBriefName())))
                 .setErrorSupplier((algorithmType -> {
                     if (Platform.currentPlatform.isDevelopmentEnvironment() || Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID).contains("dev")) {
                         return Optional.empty();
                     }
-                    if (List.of(AlgorithmType.NIS, AlgorithmType.FSR2).contains(algorithmType)) {
+                    if (List.of(AlgorithmDescriptions.NIS, AlgorithmDescriptions.FSR2).contains(algorithmType)) {
                         return Optional.of(Component.literal("当前环境不支持该算法"));
-                    } else if (Objects.equals(AlgorithmType.FSR2, algorithmType) && Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+                    } else if (Objects.equals(AlgorithmDescriptions.FSR2, algorithmType) && Platform.currentPlatform.getOS().type == OSType.ANDROID) {
                         return Optional.of(Component.literal("当前环境不支持该算法"));
                     }
                     return Optional.empty();
                 }))
-                .setSaveConsumer(Config::setUpscaleAlgo).build();
-        commonCategory.addEntry(algorithmTypeEnumSelector);
+                .setSaveConsumer((o -> {
+                    Config.setUpscaleAlgo((AlgorithmDescription<?>) o);
+                })).build();
+        commonCategory.addEntry(algorithmSelector);
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
                                 Component.literal(
@@ -204,14 +212,14 @@ public class ClothConfig {
                 entryBuilder.startTextDescription(
                                 Component.literal("警告：当前所选算法不稳定")
                         ).setColor(ColorUtil.color(255, 255, 128, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR2))
+                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
                         .build()
         );
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
                                 Component.literal("警告：当前所选算法未完成，无法正常使用")
                         ).setColor(ColorUtil.color(255, 255, 0, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmTypeEnumSelector, AlgorithmType.FSR2, AlgorithmType.NIS, AlgorithmType.SGSR2))
+                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
                         .build()
         );
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(
@@ -221,7 +229,10 @@ public class ClothConfig {
                 )
                 .setDefaultValue(CaptureMode.A)
                 .setErrorSupplier((captureMode -> {
-                    if (Platform.currentPlatform.getMinecraftVersion().equals("1.21.4") && captureMode == CaptureMode.B) {
+                    if (
+                            (Platform.currentPlatform.getMinecraftVersion().equals("1.21.4") && captureMode == CaptureMode.B) ||
+                                    (Platform.currentPlatform.getMinecraftVersion().equals("1.21.5") && captureMode == CaptureMode.C)
+                    ) {
                         return Optional.of(Component.literal("当前的捕获方式在 %s 无法使用".formatted(Platform.currentPlatform.getMinecraftVersion())));
                     } else {
                         return Optional.empty();
@@ -262,7 +273,7 @@ public class ClothConfig {
         ClothTextListListEntry glExtInfoEntry = new ClothTextListListEntry(
                 Component.translatable("superresolution.screen.info.button.label.opengl_ext_info").append(" ").append(
                         Component.translatable("superresolution.screen.info.text.opengl_ext_count").getString()
-                                .formatted(AlgorithmHelper.GLExtension.size())
+                                .formatted(GraphicsCapabilities.getGLExtensions().size())
                 ),
                 null,
                 true
@@ -271,18 +282,18 @@ public class ClothConfig {
         envInfoCategory.addEntry(envInfoEntry);
         envInfoCategory.addEntry(glExtInfoEntry);
         ConfigCategory algoInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.text.algo_support_status"));
-        for (AlgorithmType algorithmType : Arrays.stream(AlgorithmType.values()).toList()) {
-            if (algorithmType == AlgorithmType.NONE) continue;
+        for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
+            if (algorithmDescription.equals(AlgorithmDescriptions.NONE)) continue;
             ClothTextListListEntry algoInfoEntry = new ClothTextListListEntry(
-                    MutableComponent.create(algorithmType.getFullName().getContents()).withStyle(Style.EMPTY.withColor(
-                            AlgorithmManager.isSupportAlgorithm(algorithmType) ?
+                    MutableComponent.create(Component.literal(algorithmDescription.getDisplayName()).getContents()).withStyle(Style.EMPTY.withColor(
+                            AlgorithmManager.isSupportAlgorithm(algorithmDescription) ?
                                     ColorUtil.color(255, 255, 255, 255) :
                                     ColorUtil.color(255, 255, 0, 0)
                     )),
                     null,
                     true
             ).setTop(4).setBottom(7);
-            InfoBuilder.of(algoInfoEntry).addAlgoInfo(algorithmType);
+            InfoBuilder.of(algoInfoEntry).addAlgoInfo(algorithmDescription);
             algoInfoCategory.addEntry(algoInfoEntry);
         }
         ConfigCategory projectInfoCategory = builder.getOrCreateCategory(
@@ -334,7 +345,7 @@ public class ClothConfig {
                     .text(Component.literal(title)
                             .withStyle(Style.EMPTY
                                     .withColor(0xFF42A5F5)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                                    .withClickEvent(createURLClickEvent(url))
                             )
                             .append(Component.literal(" - "))
                             .append(
@@ -342,7 +353,7 @@ public class ClothConfig {
                                             .withStyle(Style.EMPTY
                                                     .withColor(ColorUtil.color(255, 150, 150, 150))
                                                     .withUnderlined(true)
-                                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                                                    .withClickEvent(createURLClickEvent(url))
                                             )
                             )
                     ));
@@ -374,7 +385,7 @@ public class ClothConfig {
                             .withStyle(Style.EMPTY
                                     .withUnderlined(true)
                                     .withColor(0xFF00FF00)
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                                    .withClickEvent(createURLClickEvent(url))
                             )
                     )
             );
@@ -382,12 +393,20 @@ public class ClothConfig {
                     .text(Component.literal(url)
                             .withStyle(Style.EMPTY
                                     .withColor(ColorUtil.color(255, 150, 150, 150))
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                                    .withClickEvent(createURLClickEvent(url))
                             ))
             );
         });
         projectInfoCategory.addEntry(webLinksEntry);
         projectInfoCategory.addEntry(contributorsEntry);
         projectInfoCategory.addEntry(librariesEntry);
+    }
+
+    private static ClickEvent createURLClickEvent(String url) {
+        #if MC_VER > MC_1_21_4
+        return new ClickEvent.OpenUrl(URI.create(url));
+        #else
+        return new ClickEvent(ClickEvent.Action.OPEN_URL, url);
+        #endif
     }
 }

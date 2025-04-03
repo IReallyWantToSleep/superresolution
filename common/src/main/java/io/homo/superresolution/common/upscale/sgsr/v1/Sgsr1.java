@@ -1,38 +1,37 @@
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
-import io.homo.superresolution.common.impl.Vec3;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.RenderTargetBindPoint;
-import io.homo.superresolution.common.render.gl.Gl;
-import io.homo.superresolution.common.render.gl.GlConst;
-import io.homo.superresolution.common.render.gl.GlState;
+import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.common.render.gl.pipeline.*;
 import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
-import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferWrapper;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.impl.framebuffer.StorageFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.upscale.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
-import io.homo.superresolution.common.upscale.utils.AlgorithmHelper;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
 public class Sgsr1 extends AbstractAlgorithm {
     private GlPipeline pipeline;
     private AbstractGlShaderProgram sgsrShader;
 
-    public static Sgsr1 create() {
-        return new Sgsr1();
-    }
-
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = new StorageFrameBuffer(false);
+        GlFrameBuffer output_ = new GlFrameBuffer();
+        output_.addAttachment(new FrameBufferAttachment(
+                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+                GlTexture.create(
+                        MinecraftRenderHandle.getScreenWidth(),
+                        MinecraftRenderHandle.getScreenHeight(),
+                        TextureFormat.RGBA8
+                )
+        ));
+        output = output_;
         sgsrShader = GlGeneralShaderProgram.create()
                 .addAllFragShaderTextList(FileReadHelper.readText("/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
                 .addAllVertShaderTextList(FileReadHelper.readText("/shader/sgsr/v1/sgsr1_shader.vert.glsl"))
@@ -48,7 +47,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                                 .addResource(new PipelineResourceDescription(
                                         PipelineResourceType.Sampler2D,
                                         "ps0",
-                                        FrameBufferWrapper.ofColor(input),
+                                        FrameBufferTextureAdapter.ofColor(input),
                                         PipelineResourceAccess.READ,
                                         null,
                                         0
@@ -57,12 +56,11 @@ public class Sgsr1 extends AbstractAlgorithm {
                 );
 
 
-        this.resize(AlgorithmManager.helper.getScreenWidth(), AlgorithmManager.helper.getScreenHeight());
+        this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        GlState.save("sgsr1");
         pipeline.scheduleJobs(PipelineJobDispatchResource.nothing());
         sgsrShader.use();
         sgsrShader.setVec2("renderSize", dispatchResource.renderWidth(), dispatchResource.renderHeight());
@@ -74,8 +72,6 @@ public class Sgsr1 extends AbstractAlgorithm {
         pipeline.executeJobs(PipelineJobDispatchResource.nothing());
 
         sgsrShader.clear();
-        Gl.glBindFramebuffer(GlConst.GL_DRAW_FRAMEBUFFER, GlState.get("sgsr1").writeFBO());
-        Gl.glBindFramebuffer(GlConst.GL_READ_FRAMEBUFFER, GlState.get("sgsr1").readFBO());
         return false;
     }
 
@@ -87,7 +83,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 height,
                 width,
                 height,
-                output.getTextureId(IFrameBuffer.FrameBufferAttachmentType.COLOR)
+                output.getTextureId(FrameBufferAttachmentType.COLOR)
         );
     }
 

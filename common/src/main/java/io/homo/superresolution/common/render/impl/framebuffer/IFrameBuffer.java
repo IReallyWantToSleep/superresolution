@@ -2,10 +2,7 @@ package io.homo.superresolution.common.render.impl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.impl.Destroyable;
-import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.render.RenderTargetBindPoint;
-import io.homo.superresolution.common.render.gl.GlConst;
-import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
@@ -27,6 +24,8 @@ public interface IFrameBuffer extends Destroyable {
 
     int getTextureId(FrameBufferAttachmentType attachmentType);
 
+    ITexture getTexture(FrameBufferAttachmentType attachmentType);
+
     int getFrameBufferId();
 
     void setClearColor(float red, float green, float blue, float alpha);
@@ -37,21 +36,4 @@ public interface IFrameBuffer extends Destroyable {
 
     RenderTarget asMcRenderTarget();
 
-    enum FrameBufferAttachmentType {
-        COLOR(),
-        DEPTH(),
-        DEPTH_STENCIL();
-
-        private int index;
-
-        public int getIndex() {
-            return index;
-        }
-
-        public FrameBufferAttachmentType index(int index) {
-            this.index = index;
-            return this;
-        }
-
-    }
 }
