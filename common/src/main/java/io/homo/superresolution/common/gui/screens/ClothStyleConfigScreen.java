@@ -24,6 +24,8 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.navigation.FocusNavigationEvent;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.renderer.PanoramaRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -36,6 +38,7 @@ import java.util.function.Supplier;
 
 public class ClothStyleConfigScreen extends AbstractConfigScreen {
     protected final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
+    protected final PanoramaRenderer panorama;
     public ClothListWidget listWidget;
     protected Button cancelButton, exitButton, saveButton;
     protected SearchFieldEntry searchFieldEntry;
@@ -45,6 +48,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     @SuppressWarnings({"deprecation"})
     public ClothStyleConfigScreen(Screen parent, Component title, Map<String, ConfigCategory> categoryMap, ResourceLocation backgroundLocation) {
         super(parent, title, backgroundLocation);
+        panorama = new PanoramaRenderer(TitleScreen.CUBE_MAP);
         categoryMap.forEach((categoryName, category) -> {
             List<AbstractConfigEntry<?>> entries = Lists.newArrayList();
             for (Object object : category.getEntries()) {
@@ -160,7 +164,13 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
             listWidget.scrollTo(lastScroll, false);
             lastScroll = -1145.1145;
         }
-
+        if (Minecraft.getInstance().level == null) {
+            #if MC_VER > MC_1_20_4
+            this.panorama.render(graphics, width, height, 1.0f, delta);
+            #else
+            this.panorama.render(delta, 1.0f);
+            #endif
+        }
         BlurRenderer.renderBlur();
         graphics.enableScissor(0, 0, width, listWidget.top);
         BlitRenderer.blitToScreen(
@@ -197,7 +207,6 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
         #else
         graphics.disableScissor();
         #endif
-
         graphics.drawString(font, title.getVisualOrderText(), (int) ((width) / 2f - font.width(title) / 2f), 12, -1);
         super.render(graphics, mouseX, mouseY, delta);
     }
@@ -208,17 +217,6 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     #else
     public void renderBackground(@NotNull GuiGraphics guiGraphics)
     #endif {
-        #if MC_VER > MC_1_20_4
-        if (this.minecraft != null && this.minecraft.level == null) {
-            this.renderPanorama(guiGraphics, partialTick);
-            #if MC_VER > MC_1_20_4
-            super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-            #else
-            super.renderBackground(guiGraphics);
-            #endif
-            this.renderMenuBackground(guiGraphics);
-        }
-        #endif
     }
 
 

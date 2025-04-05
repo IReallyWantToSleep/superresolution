@@ -52,7 +52,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static int cachedWidth;
     public static int cachedHeight;
     private static SuperResolution instance;
-    private final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
+    public final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F6,
