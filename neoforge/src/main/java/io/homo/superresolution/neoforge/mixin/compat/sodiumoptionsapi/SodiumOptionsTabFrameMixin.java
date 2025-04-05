@@ -2,7 +2,6 @@ package io.homo.superresolution.neoforge.mixin.compat.sodiumoptionsapi;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
@@ -10,9 +9,12 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import toni.sodiumoptionsapi.gui.SodiumOptionsTabFrame;
 
 import java.util.Objects;
+
+#if MC_VER != MC_1_21_5
+import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
+import toni.sodiumoptionsapi.gui.SodiumOptionsTabFrame;
 
 @Mixin(SodiumOptionsTabFrame.class)
 public class SodiumOptionsTabFrameMixin {
@@ -27,3 +29,8 @@ public class SodiumOptionsTabFrameMixin {
         }
     }
 }
+#else
+@Mixin(Minecraft.class)
+public class SodiumOptionsTabFrameMixin {
+}
+#endif

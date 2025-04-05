@@ -41,7 +41,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
                 FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 GlTexture.create(width, height, colorTextureFormat)
         ));
-        frameBuffer.addAttachment(new FrameBufferAttachment(
+        if (depthTextureFormat != null) frameBuffer.addAttachment(new FrameBufferAttachment(
                 depthTextureFormat.isStencil() ?
                         FrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
                         FrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
@@ -59,7 +59,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
                 FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 colorTexture
         ));
-        frameBuffer.addAttachment(new FrameBufferAttachment(
+        if (depthTexture != null) frameBuffer.addAttachment(new FrameBufferAttachment(
                 depthTexture.getTextureFormat().isStencil() ?
                         FrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
                         FrameBufferAttachment.FrameBufferAttachmentType.DEPTH,

@@ -3,8 +3,8 @@ package io.homo.superresolution.common.config;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
+import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
 public class ConfigData {
@@ -21,7 +21,7 @@ public class ConfigData {
     private boolean enableImgui;
 
     public ConfigData() {
-        boolean compatMode = Platform.currentPlatform.getOS().type == OSType.MACOS || Platform.currentPlatform.getOS().type == OSType.ANDROID;
+        boolean compatMode = new OS().type == OSType.MACOS || new OS().type == OSType.ANDROID;
         skipLoadNativeLib = compatMode;
         skipInitVulkan = compatMode;
         enableRenderDoc = !compatMode;

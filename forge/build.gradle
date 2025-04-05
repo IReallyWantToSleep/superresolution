@@ -68,18 +68,16 @@ def addModrinthMod(id, ver) {
 }
 
 def addModLib(name_) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
+    println("mod ../libs/" + name_ + ".jar")
     dependencies {
-        modImplementation(files(file.toAbsolutePath().asWritable().toString()))
+        modImplementation(files("../libs/" + name_ + ".jar"))
     }
 }
 
 def addNoModLib(name_) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
+    println("../libs/" + name_ + ".jar")
     dependencies {
-        implementation(forgeRuntimeLibrary(files(file.toAbsolutePath().asWritable().toString()))) {
-            transitive = false
-        }
+        implementation(forgeRuntimeLibrary(files("../libs/" + name_ + ".jar")))
     }
 }
 
@@ -129,11 +127,7 @@ dependencies {
     implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
         transitive = false
     }
-    implementation(
-            forgeRuntimeLibrary(
-                    files("../libs/fabric-api-base-0.4.42+d1308ded19.jar")
-            )
-    )
+    modImplementation(files("../libs/fabric-api-base-0.4.31+ef105b4977.jar"))
 }
 
 processResources {

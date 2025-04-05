@@ -2,6 +2,7 @@ package io.homo.superresolution.common.mixin;
 
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.GraphicsCapabilities;
+import org.lwjgl.glfw.GLFW;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -16,6 +17,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     public void onLoad(String s) {
+
     }
 
     public String getRefMapperConfig() {

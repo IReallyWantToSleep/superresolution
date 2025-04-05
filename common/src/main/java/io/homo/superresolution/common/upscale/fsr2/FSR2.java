@@ -8,6 +8,7 @@ import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
@@ -51,7 +52,7 @@ public class FSR2 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = new GlTexture(window.getScreenWidth(), window.getScreenHeight(), GL_RGBA8);
+        output = GlTexture.create(window.getScreenWidth(), window.getScreenHeight(), TextureFormat.RGBA8);
         this.resize(window.getScreenWidth(), window.getScreenHeight());
     }
 

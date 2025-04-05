@@ -126,7 +126,6 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         int backgroundAlpha = (int) (30 * backgroundAnimator.value()) + 20;
         Style style = this.getTextAt(mouseX, mouseY);
         hoverdText = style != null;
-
         graphics.fillGradient(x, y, x + entryWidth - 1, y + entryHeight, ColorUtil.color(backgroundAlpha, 255, 255, 255), ColorUtil.color(backgroundAlpha, 255, 255, 255));
 
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);

@@ -1,12 +1,15 @@
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.architectury.event.events.client.ClientTickEvent;
+import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.impl.Resizable;
 import io.homo.superresolution.common.platform.*;
@@ -14,9 +17,9 @@ import io.homo.superresolution.common.render.interop.GlVkInteropManager;
 import io.homo.superresolution.common.render.GraphicsCapabilities;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.none.None;
+import net.minecraft.client.KeyMapping;
 import oiiaio.fsr.NativeLibManager;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.utils.MessageBox;
@@ -26,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
+
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_K;
 
 public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
@@ -47,8 +52,22 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static int cachedWidth;
     public static int cachedHeight;
     private static SuperResolution instance;
+    private final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
+            "key.super_resolution.open_config",
+            InputConstants.Type.KEYSYM,
+            InputConstants.KEY_F6,
+            "Super Resolution"
+    );
 
     public SuperResolution() {
+        KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
+        ClientTickEvent.CLIENT_POST.register(minecraft -> {
+            while (OPENGUI_KEYMAPPING.consumeClick()) {
+                minecraft.setScreen(
+                        ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
+                );
+            }
+        });
     }
 
     public static void preInit() {
@@ -151,10 +170,6 @@ public final class SuperResolution implements Resizable, Destroyable {
             return currentAlgorithm;
         }
         return defaultAlgorithm;
-    }
-
-    public static boolean isPojavLauncher() {
-        return System.getenv("POJAV_RENDERER") != null;
     }
 
     public void init() {

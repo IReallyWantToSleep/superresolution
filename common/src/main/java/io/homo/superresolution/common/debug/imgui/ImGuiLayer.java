@@ -10,8 +10,11 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Minecraft;
 
 public class ImGuiLayer {
-    public void imgui() {
+    public float[] blurPhi = new float[1];
+    public float[] blurM = new float[1];
 
+
+    public void imgui() {
         int width = 500;
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");
@@ -26,7 +29,8 @@ public class ImGuiLayer {
                 RenderDoc.renderdoc.TriggerCapture.call();
             }
         }
-
+        ImGui.sliderFloat("blurPhi", blurPhi, 0, 16);
+        ImGui.sliderFloat("blurM", blurM, 0, 1);
         if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null) {
             ImGui.end();
             return;
