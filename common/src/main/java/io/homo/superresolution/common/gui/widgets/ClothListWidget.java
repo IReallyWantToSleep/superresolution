@@ -82,6 +82,7 @@ public class ClothListWidget extends ClothConfigScreen.ListWidget<AbstractConfig
         this.offset(32 * -x, true);
         return true;
     }
+
     #endif
     #if MC_VER > MC_1_21_1
     @Override
@@ -90,11 +91,6 @@ public class ClothListWidget extends ClothConfigScreen.ListWidget<AbstractConfig
     @Override
     protected void renderBackBackground(GuiGraphics graphics, BufferBuilder buffer, Tesselator tessellator)
     #endif {
-        #if MC_VER > MC_1_21_1
-        super.renderBackBackground(graphics);
-        #else
-        super.renderBackBackground(graphics, buffer, tessellator);
-        #endif
     }
 
     @Override

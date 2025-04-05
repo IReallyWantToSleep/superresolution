@@ -250,18 +250,6 @@ public class ClothConfig {
                 .setDefaultValue(false)
                 .setSaveConsumer(Config::setSkipInitVulkan)
                 .build());
-        commonCategory.addEntry(entryBuilder.startModifierKeyCodeField(
-                        Component.literal("打开配置界面"),
-                        ModifierKeyCode.of(
-                                InputConstants.getKey(InputConstants.KEY_X, -1),
-                                Modifier.of(false, true, false)
-                        )
-                )
-                .setDefaultValue(ModifierKeyCode.of(
-                        InputConstants.getKey(InputConstants.KEY_X, -1),
-                        Modifier.of(false, true, false)
-                ))
-                .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),
