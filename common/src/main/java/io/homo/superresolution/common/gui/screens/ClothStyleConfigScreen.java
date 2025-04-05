@@ -5,7 +5,11 @@ import com.google.common.collect.Maps;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.gui.Rectangle;
 import io.homo.superresolution.common.gui.ScissorsHandler;
+import io.homo.superresolution.common.gui.effect.BlurRenderer;
 import io.homo.superresolution.common.gui.widgets.ClothListWidget;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.entries.EmptyEntry;
@@ -85,11 +89,11 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
             this.listWidget.children().addAll((List) entries);
         });
         int buttonWidths = Math.min(200, (width - 50 - 12) / 4);
-        addRenderableWidget(cancelButton = Button.builder(
+        addWidget(cancelButton = Button.builder(
                 isEdited() ? Component.translatable("text.cloth-config.cancel_discard") : Component.translatable("gui.cancel"),
                 widget -> quit()
         ).bounds(0, height - 26, buttonWidths, 20).build());
-        addRenderableWidget(exitButton = new Button(
+        addWidget(exitButton = new Button(
                 0, height - 26, buttonWidths, 20,
                 Component.empty(),
                 button -> saveAll(true),
@@ -112,7 +116,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 super.renderWidget(graphics, mouseX, mouseY, delta);
             }
         });
-        addRenderableWidget(saveButton = new Button(
+        addWidget(saveButton = new Button(
                 0, height - 26, buttonWidths, 20,
                 Component.translatable("superresolution.screen.button.label.apply"),
                 button -> {
@@ -141,9 +145,6 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 super.renderWidget(graphics, mouseX, mouseY, delta);
             }
         });
-        saveButton.setX((width / 2) - (saveButton.getWidth() / 2));
-        cancelButton.setX(saveButton.getX() - 3 - saveButton.getWidth());
-        exitButton.setX(saveButton.getX() + 3 + saveButton.getWidth());
         Optional.ofNullable(this.afterInitConsumer).ifPresent(consumer -> consumer.accept(this));
     }
 
@@ -159,11 +160,31 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
             listWidget.scrollTo(lastScroll, false);
             lastScroll = -1145.1145;
         }
-        #if MC_VER > MC_1_20_4
-        super.render(graphics, mouseX, mouseY, delta);
-        #endif
+
+        BlurRenderer.renderBlur();
+        graphics.enableScissor(0, 0, width, listWidget.top);
+        BlitRenderer.blitToScreen(
+                BlurRenderer.blurFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
+        );
+        graphics.disableScissor();
+        graphics.enableScissor(0, listWidget.bottom, width, listWidget.height);
+        BlitRenderer.blitToScreen(
+                BlurRenderer.blurFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
+        );
+        graphics.disableScissor();
+
         listWidget.width = width;
         listWidget.render(graphics, mouseX, mouseY, delta);
+        saveButton.setX((width / 2) - (saveButton.getWidth() / 2));
+        cancelButton.setX(saveButton.getX() - 3 - saveButton.getWidth());
+        exitButton.setX(saveButton.getX() + 3 + saveButton.getWidth());
+        cancelButton.render(graphics, mouseX, mouseY, delta);
+        saveButton.render(graphics, mouseX, mouseY, delta);
+        exitButton.render(graphics, mouseX, mouseY, delta);
         #if MC_VER < MC_1_21_4
         ScissorsHandler.scissor(new Rectangle(listWidget.left, listWidget.top, listWidget.width, listWidget.bottom - listWidget.top));
         #else
@@ -178,9 +199,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
         #endif
 
         graphics.drawString(font, title.getVisualOrderText(), (int) ((width) / 2f - font.width(title) / 2f), 12, -1);
-        #if MC_VER < MC_1_21_1
         super.render(graphics, mouseX, mouseY, delta);
-        #endif
     }
 
     @Override

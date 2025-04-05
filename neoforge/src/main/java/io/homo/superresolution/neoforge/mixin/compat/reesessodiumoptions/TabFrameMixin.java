@@ -1,7 +1,6 @@
 package io.homo.superresolution.neoforge.mixin.compat.reesessodiumoptions;
 
 
-import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.TabFrame;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -12,7 +11,10 @@ import net.minecraft.network.chat.Component;
 import java.util.Optional;
 
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+
+#if MC_VER != MC_1_21_5
 import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
+import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.TabFrame;
 
 @Mixin(value = TabFrame.class, remap = false)
 public class TabFrameMixin {
@@ -24,3 +26,8 @@ public class TabFrameMixin {
         }
     }
 }
+#else
+@Mixin(value = Minecraft.class)
+public class TabFrameMixin {
+}
+#endif

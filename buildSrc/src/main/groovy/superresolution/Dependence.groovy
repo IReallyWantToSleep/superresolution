@@ -8,6 +8,6 @@ class Dependence {
     Dependence(Map lib) {
         this.name = lib.name as String
         this.version = lib.version ? lib.version as String : ""
-        this.isMod = lib.isMod ? lib.isMod as Boolean : true
+        this.isMod = lib.isMod != null ? lib.isMod as Boolean : true
     }
 }

@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
@@ -248,6 +249,18 @@ public class ClothConfig {
         commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("跳过初始化Vulkan"), Config.isSkipInitVulkan())
                 .setDefaultValue(false)
                 .setSaveConsumer(Config::setSkipInitVulkan)
+                .build());
+        commonCategory.addEntry(entryBuilder.startModifierKeyCodeField(
+                        Component.literal("打开配置界面"),
+                        ModifierKeyCode.of(
+                                InputConstants.getKey(InputConstants.KEY_X, -1),
+                                Modifier.of(false, true, false)
+                        )
+                )
+                .setDefaultValue(ModifierKeyCode.of(
+                        InputConstants.getKey(InputConstants.KEY_X, -1),
+                        Modifier.of(false, true, false)
+                ))
                 .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),

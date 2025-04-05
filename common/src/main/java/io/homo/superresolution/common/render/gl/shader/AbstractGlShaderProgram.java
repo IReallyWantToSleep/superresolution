@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
+import static org.lwjgl.opengl.GL20.glUniform4f;
 import static org.lwjgl.opengl.GL43.GL_PROGRAM;
 
 public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggableObject {
@@ -214,6 +215,10 @@ public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggabl
         glUniform3f(getUniformLocation(name), x, y, z);
     }
 
+    public void setVec4(String name, float a, float b, float c, float d) {
+        glUniform4f(getUniformLocation(name), a, b, c, d);
+    }
+
     public void setFloat(String name, float value) {
         glUniform1f(getUniformLocation(name), value);
     }
@@ -221,6 +226,11 @@ public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggabl
     public void setInt(String name, int value) {
         glUniform1i(getUniformLocation(name), value);
     }
+
+    public void setBool(String name, boolean value) {
+        glUniform1i(getUniformLocation(name), value ? 1 : 0);
+    }
+
 
     public void setStruct(String name, GlUniformBuffer<?> value, int bindingPoint) {
         value.bind(bindingPoint);

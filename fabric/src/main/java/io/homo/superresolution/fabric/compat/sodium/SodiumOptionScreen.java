@@ -17,10 +17,13 @@ import me.jellysquid.mods.sodium.client.gui.options.storage.MinecraftOptionsStor
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
-import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 
+#if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5
+import toni.sodiumoptionsapi.api.OptionGUIConstruction;
+#endif
 public class SodiumOptionScreen {
     public static void register() {
+        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5
         OptionGUIConstruction.EVENT.register((pages) -> pages.add(
                         new OptionPage(
                                 Component.translatable("superresolution.screen.config.name"), ImmutableList.of(
@@ -40,5 +43,6 @@ public class SodiumOptionScreen {
                         ))
                 )
         );
+        #endif
     }
 }

@@ -2,8 +2,11 @@ package io.homo.superresolution.common.gui.widgets;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.Tesselator;
+import io.homo.superresolution.common.gui.effect.BlurRenderer;
+import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.utils.ColorUtil;
-import me.shedaniel.clothconfig2.ClothConfigInitializer;
 import me.shedaniel.clothconfig2.api.AbstractConfigEntry;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.ClothConfigScreen;
@@ -68,6 +71,7 @@ public class ClothListWidget extends ClothConfigScreen.ListWidget<AbstractConfig
         this.offset(32 * -y, true);
         return true;
     }
+
     #else
     public boolean mouseScrolled(double mouseX, double mouseY, double x) {
         for (DynamicEntryListWidget.Entry<?> entry : this.visibleChildren()) {
@@ -79,4 +83,21 @@ public class ClothListWidget extends ClothConfigScreen.ListWidget<AbstractConfig
         return true;
     }
     #endif
+    #if MC_VER > MC_1_21_1
+    @Override
+    protected void renderBackBackground(GuiGraphics graphics)
+    #else
+    @Override
+    protected void renderBackBackground(GuiGraphics graphics, BufferBuilder buffer, Tesselator tessellator)
+    #endif {
+        #if MC_VER > MC_1_21_1
+        super.renderBackBackground(graphics);
+        #else
+        super.renderBackBackground(graphics, buffer, tessellator);
+        #endif
+    }
+
+    @Override
+    protected void renderHoleBackground(GuiGraphics graphics, int y1, int y2, int alpha1, int alpha2) {
+    }
 }

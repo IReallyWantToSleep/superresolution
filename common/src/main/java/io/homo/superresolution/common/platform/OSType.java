@@ -18,7 +18,7 @@ public enum OSType {
     }
 
     public static OSType get() {
-        if (ANDROID.isCurrentOS || SuperResolution.isPojavLauncher()) {
+        if (ANDROID.isCurrentOS || System.getenv("POJAV_RENDERER") != null) {
             return ANDROID;
         } else if (LINUX.isCurrentOS) {
             return LINUX;

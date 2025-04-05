@@ -15,7 +15,7 @@ import static io.homo.superresolution.common.render.gl.Gl.glBindFramebuffer;
 
 public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public RenderTarget renderTarget;
-    private final int clearColor = ColorUtil.color(255, 0, 0, 0);
+    private int clearColor = ColorUtil.color(255, 0, 0, 0);
 
     MinecraftRenderTargetWrapper(RenderTarget renderTarget) {
         this.renderTarget = renderTarget;

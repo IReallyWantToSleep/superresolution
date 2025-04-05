@@ -8,8 +8,11 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK11;
 
+import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.homo.superresolution.common.render.gl.Gl.*;
 import static io.homo.superresolution.common.render.gl.GlConst.*;
@@ -37,10 +40,11 @@ public class GraphicsCapabilities {
 
     public static void detectSupportedVersions() {
         int[][] versionMatrix = {
-                {4, 6}, {4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {4, 0},
-                {3, 3}, {3, 2}, {3, 1}, {3, 0},
-                {2, 1}, {2, 0},
-                {1, 5}, {1, 4}, {1, 3}, {1, 2}, {1, 1}, {1, 0}
+                {4, 6},
+                {4, 5},
+                {4, 3},
+                {3, 3},
+                {3, 2},
         };
         for (int[] version : versionMatrix) {
             int major = version[0];
@@ -58,8 +62,10 @@ public class GraphicsCapabilities {
                 int actualMinor = GLFW.glfwGetWindowAttrib(testWindow, GLFW.GLFW_CONTEXT_VERSION_MINOR);
                 glVersions.add(Pair.of(actualMajor, actualMinor));
                 GLFW.glfwDestroyWindow(testWindow);
+                SuperResolution.LOGGER.info("添加可用OpenGL版本 {}.{}", actualMajor, actualMinor);
             }
         }
+        SuperResolution.LOGGER.info("最高OpenGL版本 {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
     }
 
     public static Pair<Integer, Integer> getHighestOpenGLVersion() {
@@ -70,13 +76,15 @@ public class GraphicsCapabilities {
     }
 
     private static Set<String> detectGLExtensions() {
-        Set<String> extensions = new HashSet<>();
         int count = glGetInteger(GL_NUM_EXTENSIONS);
-        for (int i = 0; i < count; i++) {
-            extensions.add(glGetStringi(GL_EXTENSIONS, i));
-        }
-        return extensions;
+        return Collections.unmodifiableSet(
+                IntStream.range(0, count)
+                        .mapToObj(i -> glGetStringi(GL_EXTENSIONS, i))
+                        .collect(Collectors.toCollection(() ->
+                                new TreeSet<>(String.CASE_INSENSITIVE_ORDER)))
+        );
     }
+
 
     private static int[] detectVulkanVersion() {
         if (!isVulkanSupported()) {

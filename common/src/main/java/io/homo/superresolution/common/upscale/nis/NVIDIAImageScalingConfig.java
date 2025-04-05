@@ -1,17 +1,30 @@
 package io.homo.superresolution.common.upscale.nis;
 
+import io.homo.superresolution.common.render.impl.IUniformStruct;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.upscale.nis.struct.NISConfig;
+import org.lwjgl.system.MemoryStack;
 
-public class NVIDIAImageScalingConfig {
-    public static boolean NVScalerUpdateConfig(NISConfig config, float sharpness,
-                                               int inputViewportOriginX, int inputViewportOriginY,
-                                               int inputViewportWidth, int inputViewportHeight,
-                                               int inputTextureWidth, int inputTextureHeight,
-                                               int outputViewportOriginX, int outputViewportOriginY,
-                                               int outputViewportWidth, int outputViewportHeight,
-                                               int outputTextureWidth, int outputTextureHeight,
-                                               NISHDRMode hdrMode) {
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+public class NVIDIAImageScalingConfig implements IUniformStruct {
+    public NISConfig config = new NISConfig();
+    public ByteBuffer container;
+
+    public NVIDIAImageScalingConfig() {
+        container = MemoryStack.stackCalloc(NISConfig.SIZE);
+    }
+
+    public boolean NVScalerUpdateConfig(float sharpness,
+                                        int inputViewportOriginX, int inputViewportOriginY,
+                                        int inputViewportWidth, int inputViewportHeight,
+                                        int inputTextureWidth, int inputTextureHeight,
+                                        int outputViewportOriginX, int outputViewportOriginY,
+                                        int outputViewportWidth, int outputViewportHeight,
+                                        int outputTextureWidth, int outputTextureHeight,
+                                        NISHDRMode hdrMode) {
         sharpness = Math.max(Math.min(1.f, sharpness), 0.f);
         float sharpenSlider = sharpness - 0.5f;
 
@@ -92,15 +105,65 @@ public class NVIDIAImageScalingConfig {
         return !(config.kScaleX < 0.5f) && !(config.kScaleX > 1.f) && !(config.kScaleY < 0.5f) && !(config.kScaleY > 1.f);
     }
 
-    public static boolean NVSharpenUpdateConfig(NISConfig config, float sharpness,
-                                                int inputViewportOriginX, int inputViewportOriginY,
-                                                int inputViewportWidth, int inputViewportHeight,
-                                                int inputTextureWidth, int inputTextureHeight,
-                                                int outputViewportOriginX, int outputViewportOriginY,
-                                                NISHDRMode hdrMode) {
-        return NVScalerUpdateConfig(config, sharpness, inputViewportOriginX, inputViewportOriginY,
+    public boolean NVSharpenUpdateConfig(float sharpness,
+                                         int inputViewportOriginX, int inputViewportOriginY,
+                                         int inputViewportWidth, int inputViewportHeight,
+                                         int inputTextureWidth, int inputTextureHeight,
+                                         int outputViewportOriginX, int outputViewportOriginY,
+                                         NISHDRMode hdrMode) {
+        return NVScalerUpdateConfig(sharpness, inputViewportOriginX, inputViewportOriginY,
                 inputViewportWidth, inputViewportHeight, inputTextureWidth, inputTextureHeight,
                 outputViewportOriginX, outputViewportOriginY, inputViewportWidth, inputViewportHeight,
                 inputTextureWidth, inputTextureHeight, hdrMode);
+    }
+
+    public void updateData(DispatchResource dispatchResource) {
+        container.clear();
+        container.order(ByteOrder.LITTLE_ENDIAN);
+        container.putFloat(config.kDetectRatio);
+        container.putFloat(config.kDetectThres);
+        container.putFloat(config.kMinContrastRatio);
+        container.putFloat(config.kRatioNorm);
+        container.putFloat(config.kContrastBoost);
+        container.putFloat(config.kEps);
+        container.putFloat(config.kSharpStartY);
+        container.putFloat(config.kSharpScaleY);
+        container.putFloat(config.kSharpStrengthMin);
+        container.putFloat(config.kSharpStrengthScale);
+        container.putFloat(config.kSharpLimitMin);
+        container.putFloat(config.kSharpLimitScale);
+        container.putFloat(config.kScaleX);
+        container.putFloat(config.kScaleY);
+        container.putFloat(config.kDstNormX);
+        container.putFloat(config.kDstNormY);
+        container.putFloat(config.kSrcNormX);
+        container.putFloat(config.kSrcNormY);
+        container.putInt(config.kInputViewportOriginX);
+        container.putInt(config.kInputViewportOriginY);
+        container.putInt(config.kInputViewportWidth);
+        container.putInt(config.kInputViewportHeight);
+        container.putInt(config.kOutputViewportOriginX);
+        container.putInt(config.kOutputViewportOriginY);
+        container.putInt(config.kOutputViewportWidth);
+        container.putInt(config.kOutputViewportHeight);
+        container.putFloat(config.reserved0);
+        container.putFloat(config.reserved1);
+        int writtenBytes = 18 * 4 + 8 * 4 + 2 * 4;
+        while (writtenBytes < NISConfig.SIZE) {
+            container.put((byte) 0);
+            writtenBytes++;
+        }
+        container.position(256);
+        container.flip();
+    }
+
+    @Override
+    public ByteBuffer container() {
+        return container;
+    }
+
+    @Override
+    public int sizeof() {
+        return 256;
     }
 }

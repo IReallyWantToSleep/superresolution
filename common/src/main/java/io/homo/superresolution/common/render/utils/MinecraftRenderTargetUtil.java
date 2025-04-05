@@ -6,6 +6,9 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 #if MC_VER > MC_1_21_4
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import java.util.Objects;
 
 public class MinecraftRenderTargetUtil {
     public static int getFboId(RenderTarget renderTarget) {

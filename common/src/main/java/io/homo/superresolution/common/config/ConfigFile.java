@@ -3,6 +3,7 @@ package io.homo.superresolution.common.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.platform.Platform;
 import net.minecraft.client.Minecraft;
 
 import java.io.*;
@@ -10,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 public class ConfigFile {
-    public static final Path configPath = Path.of(Minecraft.getInstance().gameDirectory.toString(), "config", "superresolution.json");
+    public static final Path configPath = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "superresolution.json");
 
     public static void write() {
         try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(configPath.toString()), StandardCharsets.UTF_8)) {

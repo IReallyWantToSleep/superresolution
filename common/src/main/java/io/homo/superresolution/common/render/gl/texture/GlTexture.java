@@ -2,6 +2,7 @@ package io.homo.superresolution.common.render.gl.texture;
 
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.common.render.gl.GlState;
 import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
 import io.homo.superresolution.common.render.impl.IDebuggableObject;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
@@ -17,17 +18,23 @@ public class GlTexture implements ITexture, IDebuggableObject {
     public int format;
     public int width;
     public int height;
+    private boolean mipmap = false;
 
-    public GlTexture(int width, int height, int format) {
+    public GlTexture(int width, int height, int format, boolean mipmap) {
         this.id = glGenTextures();
         this.format = format;
         this.width = width;
         this.height = height;
+        this.mipmap = mipmap;
         initializeTexture();
     }
 
     public static GlTexture create(int width, int height, TextureFormat format) {
-        return new GlTexture(width, height, format.gl());
+        return create(width, height, format, false);
+    }
+
+    public static GlTexture create(int width, int height, TextureFormat format, boolean mipmap) {
+        return new GlTexture(width, height, format.gl(), mipmap);
     }
 
     public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, int id) {
@@ -37,13 +44,15 @@ public class GlTexture implements ITexture, IDebuggableObject {
 
     private void initializeTexture() {
         glBindTexture(GL_TEXTURE_2D, this.id);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        int minFilter = mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-        glTexStorage2D(GL_TEXTURE_2D, 1, this.format, this.width, this.height);
+        int maxLevel = mipmap ? 8 : 0;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxLevel);
+        glTexStorage2D(GL_TEXTURE_2D, maxLevel + 1, this.format, this.width, this.height);
         glBindTexture(GL_TEXTURE_2D, 0);
         updateDebugLabel(getDebugLabel());
     }
@@ -98,7 +107,6 @@ public class GlTexture implements ITexture, IDebuggableObject {
         return height;
     }
 
-
     @Override
     public String getDebugLabel() {
         return string();
@@ -107,5 +115,12 @@ public class GlTexture implements ITexture, IDebuggableObject {
     @Override
     public void updateDebugLabel(String newLabel) {
         glSafeObjectLabel(GL_TEXTURE, getTextureId(), getDebugLabel());
+    }
+
+    public void generateMipmap() {
+        try (GlState ignored = new GlState()) {
+            glBindTexture(GL_TEXTURE_2D, this.id);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
     }
 }

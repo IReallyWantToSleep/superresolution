@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale.nis.struct;
 
 public class NISConfig {
+    public static final int SIZE = 256;
     public float kDetectRatio;
     public float kDetectThres;
     public float kMinContrastRatio;

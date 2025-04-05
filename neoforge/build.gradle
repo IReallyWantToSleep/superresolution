@@ -61,15 +61,14 @@ dependencies {
         modImplementation("maven.modrinth:${lib.name}:${lib.version}-neoforge,${rootProject.minecraft_version}")
     }
     for (lib in versionConfig.neoforge.dependencies.local) {
-        def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", lib.name + ".jar")
         if (lib.isMod) {
             modImplementation(
-                    files(file.toAbsolutePath().asWritable().toString())
+                    files("../libs/" + lib.name + ".jar")
             )
         } else {
             implementation(
                     forgeRuntimeLibrary(
-                            files(file.toAbsolutePath().asWritable().toString())
+                            files("../libs/" + lib.name + ".jar")
                     )
             )
         }
