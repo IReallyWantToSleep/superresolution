@@ -10,6 +10,7 @@ import io.homo.superresolution.common.gui.widgets.ClothListWidget;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.common.utils.ColorUtil;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.entries.EmptyEntry;
@@ -160,17 +161,16 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        #if MC_VER > MC_1_20_1
+        renderBackground(graphics, mouseX, mouseY, delta)
+        #else
+        renderBackground(graphics);
+        #endif
         if (lastScroll != -1145.1145) {
             listWidget.scrollTo(lastScroll, false);
             lastScroll = -1145.1145;
         }
-        if (Minecraft.getInstance().level == null) {
-            #if MC_VER > MC_1_20_4
-            this.panorama.render(graphics, width, height, 1.0f, delta);
-            #else
-            this.panorama.render(delta, 1.0f);
-            #endif
-        }
+        /*
         BlurRenderer.renderBlur();
         graphics.enableScissor(0, 0, width, listWidget.top);
         BlitRenderer.blitToScreen(
@@ -186,6 +186,8 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
                 MinecraftRenderHandle.getScreenHeight()
         );
         graphics.disableScissor();
+        */
+
 
         listWidget.width = width;
         listWidget.render(graphics, mouseX, mouseY, delta);
@@ -217,6 +219,26 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     #else
     public void renderBackground(@NotNull GuiGraphics guiGraphics)
     #endif {
+
+        if (Minecraft.getInstance().level == null) {
+            #if MC_VER > MC_1_20_4
+            this.panorama.render(guiGraphics, width, height, 1.0f, partialTick);
+            #else
+            this.panorama.render(Minecraft.getInstance().getDeltaFrameTime(), 1.0f);
+            #endif
+        }
+
+        guiGraphics.fill(
+                0, 0,
+                width, listWidget.top,
+                ColorUtil.color(60, 0, 0, 0)
+        );
+
+        guiGraphics.fill(
+                0, listWidget.bottom,
+                width, listWidget.height,
+                ColorUtil.color(60, 0, 0, 0)
+        );
     }
 
 

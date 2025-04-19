@@ -21,6 +21,8 @@ public final class SuperResolutionNeoForge {
         ModLoadingContext.get().registerExtensionPoint(IConfigScreenFactory.class, () -> (mc, screen) -> ConfigScreenBuilder.create().buildConfigScreen(screen));
         mod = new SuperResolution();
         SuperResolution.preInit();
-        SodiumOptionScreen.register();
+        if (io.homo.superresolution.common.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
+            SodiumOptionScreen.register();
+        }
     }
 }
