@@ -1,6 +1,5 @@
-package io.homo.superresolution.common.config;
+package io.homo.superresolution.common.config.special;
 
-import io.homo.superresolution.common.config.special.*;
 import io.homo.superresolution.common.impl.Pair;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 

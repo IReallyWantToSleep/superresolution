@@ -2,6 +2,7 @@ package io.homo.superresolution.common.config;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;

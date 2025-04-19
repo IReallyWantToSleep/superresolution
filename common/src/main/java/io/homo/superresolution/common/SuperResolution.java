@@ -44,7 +44,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static boolean isPreInit;
     public static boolean gameIsLoad = false;
     public static float frameTimeDelta = 16.6f;
-    public static RenderTarget mainTarget = Minecraft.getInstance().getMainRenderTarget();
     public static AlgorithmDescription<?> algorithmDescription;
     public static GlVkInteropManager interopManager;
     public static int framebufferWidth = 0;
@@ -76,17 +75,17 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (Config.isSkipLoadNativeLib()) {
             LOGGER.warn("配置已禁用加载依赖库，将不再加载本地依赖库");
         } else if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
-            LOGGER.warn("检测到在移动设备上运行，已跳过加载依赖库");
+            LOGGER.warn("检测到在移动设备上运行，已跳过加载依赖库与Vulkan");
         } else if (Platform.currentPlatform.getOS().type == OSType.MACOS) {
-            LOGGER.warn("检测到在MacOS上运行，已跳过加载依赖库");
+            LOGGER.warn("检测到在MacOS上运行，已跳过加载依赖库与Vulkan");
         } else {
             if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
                 NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
             }
             NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
+            interopManager = new GlVkInteropManager();
+            initVulkan();
         }
-        interopManager = new GlVkInteropManager();
-        initVulkan();
         isPreInit = true;
     }
 
@@ -178,7 +177,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         RenderSystem.assertOnRenderThread();
         instance = this;
         if (Platform.currentPlatform.isDevelopmentEnvironment() && Config.isEnableImgui()) new ImguiMain();
-        mainTarget = Minecraft.getInstance().getMainRenderTarget();
+
         isInit = true;
         this.resize(SuperResolution.getMinecraftWidth(), SuperResolution.getMinecraftHeight());
     }
@@ -202,7 +201,9 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public void destroy() {
         RenderSystem.assertOnRenderThread();
-        interopManager.destroy();
+        if (interopManager != null) {
+            interopManager.destroy();
+        }
         if (currentAlgorithm != null)
             currentAlgorithm.destroy();
         AlgorithmManager.destroy();

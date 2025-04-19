@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.debug.imgui;
 
 import imgui.ImGui;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
@@ -19,15 +20,14 @@ public class ImGuiLayer {
         float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
         ImGui.begin("DEBUG");
         if (ImGui.button("Capture")) {
-            MinecraftRenderHandle.needCapture();
+            SuperResolutionAPI.debugRenderdocCapture();
         }
         if (ImGui.button("CaptureUpscale")) {
-            MinecraftRenderHandle.needCaptureUpscale();
+            SuperResolutionAPI.debugRenderdocCaptureUpscale();
+
         }
         if (ImGui.button("TriggerCapture")) {
-            if (RenderDoc.renderdoc != null) {
-                RenderDoc.renderdoc.TriggerCapture.call();
-            }
+            SuperResolutionAPI.debugRenderdocTriggerCapture();
         }
         ImGui.sliderFloat("blurPhi", blurPhi, 0, 16);
         ImGui.sliderFloat("blurM", blurM, 0, 1);

@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.config.special;
 
+import io.homo.superresolution.common.config.ConfigSpecType;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;
@@ -16,7 +17,7 @@ public class FSR1SpecialConfig extends SpecialConfig {
                         .setKey("fp16")
                         .setName(Component.literal("启用半精度(FP16)"))
                         .setTooltip(Component.literal("启用后可以提升性能但会损失一点画质"))
-                        .setType(SpecialConfigDescription.ConfigType.BOOLEAN)
+                        .setType(ConfigSpecType.BOOLEAN)
                         .setSaveConsumer((v) -> getSpecialConfigs().fsr1.fp16 = v)
                         .setDefaultValue(true)
         );

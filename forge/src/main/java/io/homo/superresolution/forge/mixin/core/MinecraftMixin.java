@@ -14,7 +14,6 @@ public class MinecraftMixin {
     private void onInitDone(CallbackInfo ci) {
         if (!SuperResolution.isPreInit) return;
         SuperResolution.initRendering();
-        SuperResolution.mainTarget = Minecraft.getInstance().getMainRenderTarget();
         SuperResolution.createAlgo();
         SuperResolutionForge.mod.init();
     }

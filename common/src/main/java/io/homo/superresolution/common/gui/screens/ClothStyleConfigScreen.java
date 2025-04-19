@@ -38,8 +38,8 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class ClothStyleConfigScreen extends AbstractConfigScreen {
+    protected static final PanoramaRenderer panorama = new PanoramaRenderer(TitleScreen.CUBE_MAP);
     protected final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
-    protected final PanoramaRenderer panorama;
     public ClothListWidget listWidget;
     protected Button cancelButton, exitButton, saveButton;
     protected SearchFieldEntry searchFieldEntry;
@@ -49,7 +49,6 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     @SuppressWarnings({"deprecation"})
     public ClothStyleConfigScreen(Screen parent, Component title, Map<String, ConfigCategory> categoryMap, ResourceLocation backgroundLocation) {
         super(parent, title, backgroundLocation);
-        panorama = new PanoramaRenderer(TitleScreen.CUBE_MAP);
         categoryMap.forEach((categoryName, category) -> {
             List<AbstractConfigEntry<?>> entries = Lists.newArrayList();
             for (Object object : category.getEntries()) {
@@ -224,7 +223,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
             #if MC_VER > MC_1_20_4
             this.panorama.render(guiGraphics, width, height, 1.0f, partialTick);
             #else
-            this.panorama.render(Minecraft.getInstance().getDeltaFrameTime(), 1.0f);
+            panorama.render(Minecraft.getInstance().getDeltaFrameTime(), 1.0f);
             #endif
         }
 

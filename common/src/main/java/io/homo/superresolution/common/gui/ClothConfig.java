@@ -90,6 +90,7 @@ public class ClothConfig {
                                         (Boolean) configDescription.getValue()
                                 ).setDefaultValue((Boolean) configDescription.getDefaultValue())
                                 .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer_());
+                        case OBJECT -> null;
                     };
             if (configDescription.getTooltip() != null) fieldBuilder.setTooltip(configDescription.getTooltip());
             category.addEntry(fieldBuilder.build());
