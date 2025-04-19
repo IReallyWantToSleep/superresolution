@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.config.special;
 
+import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import net.minecraft.network.chat.Component;
 
@@ -22,7 +23,7 @@ public class SGSR2SpecialConfig extends SpecialConfig {
                                 FS_2 普通着色器/2通道 性能最好 效果较差"""))
                         .setKey("variant")
                         .setSaveConsumer((v) -> getSpecialConfigs().sgsr2.variant = (SgsrVariant) v)
-                        .setType(SpecialConfigDescription.ConfigType.ENUM)
+                        .setType(ConfigSpecType.ENUM)
                         .setClazz(SgsrVariant.class)
         );
     }

@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.config.special;
 
+import io.homo.superresolution.common.config.ConfigSpecType;
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.network.chat.Component;
 
@@ -8,7 +9,7 @@ import java.util.function.Consumer;
 @SuppressWarnings("unchecked")
 public class SpecialConfigDescription<T> {
     protected String key;
-    protected ConfigType type;
+    protected ConfigSpecType type;
     protected T value;
     protected T defaultValue;
     protected Component name = Component.empty();
@@ -85,11 +86,11 @@ public class SpecialConfigDescription<T> {
         return this;
     }
 
-    public ConfigType getType() {
+    public ConfigSpecType getType() {
         return type;
     }
 
-    public SpecialConfigDescription<T> setType(ConfigType type) {
+    public SpecialConfigDescription<T> setType(ConfigSpecType type) {
         this.type = type;
         return this;
     }
@@ -103,7 +104,4 @@ public class SpecialConfigDescription<T> {
         return this;
     }
 
-    public enum ConfigType {
-        ENUM, FLOAT, STRING, BOOLEAN
-    }
 }
