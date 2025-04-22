@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum CaptureMode {
-    A(Component.literal("A")), //gameRenderer + noHand
-    B(Component.literal("B")), //levelRenderer + noHand
-    C(Component.literal("C")); //gameRenderer + hand
+    A(Component.translatable("superresolution.capture_mode.a")), //gameRenderer + noHand
+    B(Component.translatable("superresolution.capture_mode.b")), //levelRenderer + noHand
+    C(Component.translatable("superresolution.capture_mode.c")); //gameRenderer + hand
     public static final Map<String, CaptureMode> TEXT_MAP = new HashMap<>();
 
     static {

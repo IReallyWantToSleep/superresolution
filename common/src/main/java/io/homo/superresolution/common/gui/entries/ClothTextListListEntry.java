@@ -17,6 +17,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -154,9 +155,9 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             #endif
             int yy = y + top;
             for (LineRenderer line : this.lineRenderers) {
-                line.render(graphics, -1, yy, x + sideWidth + 5, entryWidth - (sideWidth + 5), entryHeight, mouseX, mouseY, isHovered, delta, textRenderer);
+                int lineHeight = line.render(graphics, -1, yy, x + sideWidth + 5, entryWidth - (sideWidth + 5), entryHeight, mouseX, mouseY, isHovered, delta, textRenderer);
                 Objects.requireNonNull(Minecraft.getInstance().font);
-                yy += line.line.height(textRenderer) + 1;
+                yy += lineHeight + 1;
             }
             #if MC_VER < MC_1_21_4
             ScissorsHandler.removeLastScissor();
@@ -203,19 +204,14 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             if (size == 0) {
                 return null;
             }
-
             int low = 0;
             int high = size - 1;
             int candidate = -1;
-
-            // 二分查找找到y坐标可能所在的行
             while (low <= high) {
                 int mid = (low + high) >>> 1;
                 LineRenderer line = lines.get(mid);
                 Rectangle rect = line.saveRectangle;
                 if (rect == null) {
-                    // 处理saveRectangle为null的情况，例如跳过该行
-                    // 根据实际情况调整搜索边界，此处假设后续处理
                     break;
                 }
                 double lineY = rect.y;
@@ -227,19 +223,16 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                 }
             }
 
-            // 检查候选行是否包含目标点
             if (candidate != -1) {
                 LineRenderer line = lines.get(candidate);
                 Rectangle rect = line.saveRectangle;
                 if (rect != null && rect.contains(x, y)) {
-                    FormattedCharSequence text = line.line.text;
-                    return text != null ?
+                    FormattedCharSequence text = line.line.text.getVisualOrderText();
+                    return text != FormattedCharSequence.EMPTY ?
                             this.textRenderer.getSplitter().componentStyleAtWidth(text, rect.x) :
                             Style.EMPTY;
                 }
             }
-
-            // 若候选行不包含，则无匹配项
             return null;
         }
         return null;
@@ -278,7 +271,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             return new LineRenderer(line);
         }
 
-        public void render(
+        public int render(
                 GuiGraphics graphics,
                 int index,
                 int y,
@@ -291,30 +284,35 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                 float delta,
                 Font font
         ) {
-            saveRectangle = new Rectangle(x, y, line.width(font), line.height(font));
-            graphics.pose().pushPose();
-            graphics.pose().translate(x + (line.center ? -7 : 0), y, 0);
-            graphics.pose().scale(line.scale.x, line.scale.y, 1.0f);
-            if (line.center) {
-                graphics.drawCenteredString(
-                        font,
-                        line.text,
-                        (int) ((entryWidth + 7) * 0.5 / line.scale.x),
-                        0,
-                        line.color
-                );
-            } else {
-                graphics.drawString(
-                        font,
-                        line.text,
-                        (int) (entryWidth * line.left),
-                        0,
-                        line.color, false
-                );
+            List<FormattedCharSequence> splitLines = font.split(line.text, entryWidth - 8);
+            int lineHeight = splitLines.size() * (line.height(font)) + (splitLines.size() - 1);
+            saveRectangle = new Rectangle(x, y, line.width(font), lineHeight);
+            int yOffset = 0;
+            for (FormattedCharSequence text : splitLines) {
+                graphics.pose().pushPose();
+                graphics.pose().translate(x + (line.center ? -7 : 0), y + yOffset, 0);
+                graphics.pose().scale(line.scale.x, line.scale.y, 1.0f);
+                if (line.center) {
+                    graphics.drawCenteredString(
+                            font,
+                            text,
+                            (int) ((entryWidth + 7) * 0.5 / line.scale.x),
+                            0,
+                            line.color
+                    );
+                } else {
+                    graphics.drawString(
+                            font,
+                            text,
+                            (int) (entryWidth * line.left),
+                            0,
+                            line.color, false
+                    );
+                }
+                yOffset = yOffset + line.height(font);
+                graphics.pose().popPose();
             }
-
-            graphics.pose().popPose();
-            //graphics.fillGradient((int) (x + (entryWidth * line.left)), y, x + entryWidth, y + line.height(font), ColorUtil.color(255, (int) (Math.random() * 255), 255, 255), ColorUtil.color(255, 0, 255, 255));
+            return lineHeight;
         }
     }
 }
