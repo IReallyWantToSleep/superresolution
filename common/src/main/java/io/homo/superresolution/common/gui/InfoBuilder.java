@@ -7,6 +7,7 @@ import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.GraphicsCapabilities;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.common.utils.ColorUtil;
 import oiiaio.fsr.NativeLibManager;
 import io.homo.superresolution.api.utils.Requirement;
 import net.minecraft.network.chat.Component;
@@ -160,7 +161,11 @@ public class InfoBuilder {
                                             Component.translatable("superresolution.screen.text.missing").getString()
                             ))
                             .left(0.02f)
-                            .color(255, 255, 255, 255)
+                            .color(
+                                    missingGlExtension.contains(glExt) ?
+                                            ColorUtil.color(255, 255, 0, 0) :
+                                            ColorUtil.color(255, 255, 255, 255)
+                            )
             );
         }
         this.lineContainer.addLine(
@@ -220,7 +225,11 @@ public class InfoBuilder {
                                                         Component.translatable("superresolution.screen.text.no").getString()
                                         )
                         )
-                        .color(255, 255, 255, 255)
+                        .color(
+                                !result.support() ?
+                                        ColorUtil.color(255, 255, 0, 0) :
+                                        ColorUtil.color(255, 255, 255, 255)
+                        )
         );
 
         this.lineContainer.addLine(
@@ -234,7 +243,11 @@ public class InfoBuilder {
                                         )
                         )
                         .left(0.02f)
-                        .color(255, 255, 255, 255)
+                        .color(
+                                !result.os() ?
+                                        ColorUtil.color(255, 255, 0, 0) :
+                                        ColorUtil.color(255, 255, 255, 255)
+                        )
         );
         this.lineContainer.addLine(
                 new Line()
@@ -247,7 +260,11 @@ public class InfoBuilder {
                                         )
                         )
                         .left(0.02f)
-                        .color(255, 255, 255, 255)
+                        .color(
+                                !result.env() ?
+                                        ColorUtil.color(255, 255, 0, 0) :
+                                        ColorUtil.color(255, 255, 255, 255)
+                        )
         );
         this.lineContainer.addLine(
                 new Line()
@@ -260,7 +277,11 @@ public class InfoBuilder {
                                         )
                         )
                         .left(0.02f)
-                        .color(255, 255, 255, 255)
+                        .color(
+                                !result.glExtension() ?
+                                        ColorUtil.color(255, 255, 0, 0) :
+                                        ColorUtil.color(255, 255, 255, 255)
+                        )
         );
         this.lineContainer.addLine(
                 new Line()
@@ -273,7 +294,11 @@ public class InfoBuilder {
                                         )
                         )
                         .left(0.02f)
-                        .color(255, 255, 255, 255)
+                        .color(
+                                !result.glVersion() ?
+                                        ColorUtil.color(255, 255, 0, 0) :
+                                        ColorUtil.color(255, 255, 255, 255)
+                        )
         );
         this.lineContainer.addLine(
                 new Line()
@@ -286,7 +311,11 @@ public class InfoBuilder {
                                         )
                         )
                         .left(0.02f)
-                        .color(255, 255, 255, 255)
+                        .color(
+                                !result.vulkan() ?
+                                        ColorUtil.color(255, 255, 0, 0) :
+                                        ColorUtil.color(255, 255, 255, 255)
+                        )
         );
         return this;
     }

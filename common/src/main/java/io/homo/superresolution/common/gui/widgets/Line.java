@@ -10,7 +10,7 @@ import org.joml.Vector2f;
 public class Line {
     public float left;
     public int color;
-    public FormattedCharSequence text;
+    public Component text;
     public Vector2f scale = new Vector2f(1.0f, 1.0f);
     public boolean center = false;
 
@@ -27,17 +27,17 @@ public class Line {
         return this;
     }
 
-    public Line text(String text) {
-        return text(FormattedCharSequence.forward(text, Style.EMPTY));
-    }
-
-    public Line text(FormattedCharSequence text) {
-        this.text = text;
+    public Line color(int rgba) {
+        color = rgba;
         return this;
     }
 
+    public Line text(String text) {
+        return text(Component.literal(text));
+    }
+
     public Line text(Component text) {
-        this.text = text.getVisualOrderText();
+        this.text = text;
         return this;
     }
 

@@ -4,7 +4,11 @@ import io.homo.superresolution.common.config.ConfigSpecType;
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.network.chat.Component;
 
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @SuppressWarnings("unchecked")
 public class SpecialConfigDescription<T> {
@@ -12,12 +16,16 @@ public class SpecialConfigDescription<T> {
     protected ConfigSpecType type;
     protected T value;
     protected T defaultValue;
-    protected Component name = Component.empty();
+    protected Function<T, Optional<Component>> name = (a) -> Optional.of(Component.empty());
     protected Component tooltip = null;
     protected Class<? extends Enum<?>> clazz = null;
     protected Pair<Float, Float> valueRange = null;
     protected Consumer<T> saveConsumer;
+    protected boolean nameIsSupplier = false;
 
+    public boolean isNameIsSupplier() {
+        return nameIsSupplier;
+    }
 
     public Consumer<Object> getSaveConsumer() {
         return (Consumer<Object>) saveConsumer;
@@ -69,10 +77,21 @@ public class SpecialConfigDescription<T> {
     }
 
     public Component getName() {
-        return name;
+        return name.apply(getValue()).orElse(Component.empty());
     }
 
     public SpecialConfigDescription<T> setName(Component name) {
+        nameIsSupplier = false;
+        this.name = (a) -> Optional.of(name);
+        return this;
+    }
+
+    public Function<Object, Optional<Component>> getNameSupplier() {
+        return (Function<Object, Optional<Component>>) name;
+    }
+
+    public SpecialConfigDescription<T> setNameSupplier(Function<T, Optional<Component>> name) {
+        nameIsSupplier = true;
         this.name = name;
         return this;
     }

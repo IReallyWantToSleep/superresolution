@@ -1,3 +1,26 @@
+// This file is part of the FidelityFX SDK.
+//
+// Copyright (C) 2024 Advanced Micro Devices, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and /or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+
 float AF1_x(float a) {
     return float(a);
 }
@@ -64,14 +87,14 @@ f16vec4 FsrEasuBH(vec2 p) {
 }
 
 void FsrEasuTapH(
-    inout f16vec2 aCR, inout f16vec2 aCG, inout f16vec2 aCB,
-    inout f16vec2 aW,
-    f16vec2 offX, f16vec2 offY,
-    f16vec2 dir,
-    f16vec2 len,
-    float16_t lob,
-    float16_t clp,
-    f16vec2 cR, f16vec2 cG, f16vec2 cB) {
+inout f16vec2 aCR, inout f16vec2 aCG, inout f16vec2 aCB,
+inout f16vec2 aW,
+      f16vec2 offX, f16vec2 offY,
+      f16vec2 dir,
+      f16vec2 len,
+      float16_t lob,
+      float16_t clp,
+      f16vec2 cR, f16vec2 cG, f16vec2 cB) {
     f16vec2 vX, vY;
     vX = offX * dir.xx + offY * dir.yy;
     vY = offX * (-dir.yy) + offY * dir.xx;
@@ -92,11 +115,11 @@ void FsrEasuTapH(
 }
 
 void FsrEasuSetH(
-    inout f16vec2 dirPX, inout f16vec2 dirPY,
-    inout f16vec2 lenP,
-    f16vec2 pp,
-    bool biST, bool biUV,
-    f16vec2 lA, f16vec2 lB, f16vec2 lC, f16vec2 lD, f16vec2 lE) {
+inout f16vec2 dirPX, inout f16vec2 dirPY,
+inout f16vec2 lenP,
+      f16vec2 pp,
+      bool biST, bool biUV,
+      f16vec2 lA, f16vec2 lB, f16vec2 lC, f16vec2 lD, f16vec2 lE) {
     f16vec2 w = AH2_x(float16_t(0.0));
     if (biST) w = (f16vec2(1.0, 0.0) + f16vec2(-pp.x, pp.x)) * AH2_x(float16_t(AH1_x(float16_t(1.0)) - pp.y));
     if (biUV) w = (f16vec2(1.0, 0.0) + f16vec2(-pp.x, pp.x)) * AH2_x(float16_t(pp.y));
@@ -122,7 +145,7 @@ void FsrEasuSetH(
 }
 
 void FsrEasuH(
-    out f16vec3 pix,
+out f16vec3 pix,
     uvec2 ip,
     uvec4 con0,
     uvec4 con1,
@@ -206,5 +229,5 @@ void FsrEasuH(
     f16vec3 aC = f16vec3(pR.x + pR.y, pG.x + pG.y, pB.x + pB.y);
     float16_t aW = pW.x + pW.y;
 
-    pix = min(f16vec3(bothR.y, bothG.y, bothB.y), max(-f16vec3(bothR.x, bothG.x, bothB.x), aC * AH3_x(float16_t(ARcpH1(aW)))));
+    pix = min(f16vec3(bothR.y, bothG.y, bothB.y), max(- f16vec3(bothR.x, bothG.x, bothB.x), aC * AH3_x(float16_t(ARcpH1(aW)))));
 }

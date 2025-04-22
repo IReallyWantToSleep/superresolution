@@ -69,77 +69,92 @@ public class ClothConfig {
                                         configDescription.getName(),
                                         (Class) configDescription.getClazz(),
                                         (Enum<?>) configDescription.getValue()
-                                ).setDefaultValue((Enum<?>) configDescription.getDefaultValue())
-                                .setSaveConsumer(configDescription.getSaveConsumer_());
+                                )
+                                .setDefaultValue((Enum<?>) configDescription.getDefaultValue())
+                                .setSaveConsumer(configDescription.getSaveConsumer_())
+                                .setEnumNameProvider(configDescription.isNameIsSupplier() ? (anEnum -> configDescription.getNameSupplier().apply(anEnum).orElse(Component.empty())) : null);
                         case FLOAT -> entryBuilder.startIntSlider(
                                         configDescription.getName(),
                                         getInt((Float) configDescription.getValue()),
                                         getInt(configDescription.getValueRange().left()),
                                         getInt(configDescription.getValueRange().right())
                                 )
-                                .setTextGetter((integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
+                                .setTextGetter(configDescription.isNameIsSupplier() ? (integer -> configDescription.getNameSupplier().apply(integer).orElse(Component.empty())) : (integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
                                 .setDefaultValue(getInt((Float) configDescription.getDefaultValue()))
                                 .setSaveConsumer((integer -> configDescription.getSaveConsumer().accept(integer)));
                         case STRING -> entryBuilder.startStrField(
                                         configDescription.getName(),
                                         (String) configDescription.getValue()
-                                ).setDefaultValue((String) configDescription.getDefaultValue())
+                                )
+                                .setDefaultValue((String) configDescription.getDefaultValue())
                                 .setSaveConsumer((Consumer<String>) configDescription.getSaveConsumer_());
                         case BOOLEAN -> entryBuilder.startBooleanToggle(
                                         configDescription.getName(),
                                         (Boolean) configDescription.getValue()
-                                ).setDefaultValue((Boolean) configDescription.getDefaultValue())
+                                )
+                                .setYesNoTextSupplier(configDescription.isNameIsSupplier() ? (aBoolean -> configDescription.getNameSupplier().apply(aBoolean).orElse(Component.empty())) : null)
+                                .setDefaultValue((Boolean) configDescription.getDefaultValue())
                                 .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer_());
                         case OBJECT -> null;
                     };
-            if (configDescription.getTooltip() != null) fieldBuilder.setTooltip(configDescription.getTooltip());
-            category.addEntry(fieldBuilder.build());
+            if (configDescription.getTooltip() != null) if (fieldBuilder != null) {
+                fieldBuilder.setTooltip(configDescription.getTooltip());
+            }
+            if (fieldBuilder != null) {
+                category.addEntry(fieldBuilder.build());
+            }
         }
     }
 
     public static void addDebug(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
-        ConfigCategory debugCategory = builder.getOrCreateCategory(Component.literal("DEBUG"));
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("转储着色器代码"), Config.getInstance().isDebugDumpShader())
+        ConfigCategory debugCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.debug"));
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.debug_dump_shader"),
+                        Config.getInstance().isDebugDumpShader())
                 .setDefaultValue(false)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.debug_dump_shader"))
                 .setSaveConsumer(Config.getInstance()::setDebugDumpShader)
                 .build());
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("启用RenderDoc (仅开发环境有效)"), Config.getInstance().isEnableRenderDoc())
+
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
+                        Config.getInstance().isEnableRenderDoc())
                 .setDefaultValue(true)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
                 .setSaveConsumer(Config.getInstance()::setEnableRenderDoc)
                 .build());
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("启用Imgui (仅开发环境有效)"), Config.getInstance().isEnableImgui())
+
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.enable_imgui"),
+                        Config.getInstance().isEnableImgui())
                 .setDefaultValue(true)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
                 .setSaveConsumer(Config.getInstance()::setEnableImgui)
                 .build());
-        ClothTextListEntry debugInfo =
-                new ClothTextListEntry(
-                        Component.literal("debugInfo"),
-                        () -> Component.literal(
-                                """
-                                        世界渲染用时 %sms
-                                        升采样算法用时 %sms"""
-                                        .formatted(
-                                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
-                                                        .setScale(3, RoundingMode.HALF_UP)
-                                                        .toString(),
-                                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
-                                                        .setScale(3, RoundingMode.HALF_UP)
-                                                        .toString()
-                                        )
-                        ),
-                        ColorUtil.color(255, 255, 255, 255),
-                        null
-                );
 
+        ClothTextListEntry debugInfo = new ClothTextListEntry(
+                Component.translatable("superresolution.screen.debug.performance_info"),
+                () -> Component.translatable(
+                        "superresolution.screen.debug.performance_data",
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
+                                .setScale(3, RoundingMode.HALF_UP),
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                .setScale(3, RoundingMode.HALF_UP)
+                ),
+                ColorUtil.color(255, 255, 255, 255),
+                null
+        );
         debugInfo.setDisplayRequirement(Requirement.isTrue(() -> Minecraft.getInstance().level != null));
         debugCategory.addEntry(debugInfo);
     }
 
     public static void add(ConfigBuilder builder) {
-        ConfigCategory commonCategory = builder.getOrCreateCategory(Component.literal("通用"));
+        ConfigCategory commonCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.general"));
         ConfigEntryBuilder entryBuilder = ConfigEntryBuilderImpl.create();
         if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
-            commonCategory.addEntry(entryBuilder.startTextDescription(Component.literal("警告：正在移动设备上运行，本模组对移动设备的支持不稳定，可能出现无法预料的错误")).setColor(ColorUtil.color(255, 255, 0, 0)).build());
+            commonCategory.addEntry(entryBuilder.startTextDescription(
+                            Component.translatable("superresolution.screen.config.warn.mobile_device"))
+                    .setColor(ColorUtil.color(255, 255, 0, 0)).build());
         }
         commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), Config.isEnableUpscale())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
@@ -200,32 +215,25 @@ public class ClothConfig {
         commonCategory.addEntry(algorithmSelector);
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
-                                Component.literal(
-                                        """
-                                                FSR1 --- AMD FidelityFX Super Resolution 1
-                                                FSR2 --- AMD FidelityFX Super Resolution 2
-                                                NIS --- NVIDIA Image Scaling
-                                                SGSR --- Snapdragon™ Game Super Resolution"""
-                                )
-                        )
+                                Component.translatable("superresolution.algo.description.header"))
                         .build()
         );
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
-                                Component.literal("警告：当前所选算法不稳定")
+                                Component.translatable("superresolution.screen.config.warn.algorithm_unstable")
                         ).setColor(ColorUtil.color(255, 255, 128, 0))
                         .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
                         .build()
         );
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
-                                Component.literal("警告：当前所选算法未完成，无法正常使用")
+                                Component.translatable("superresolution.screen.config.warn.algorithm_incomplete")
                         ).setColor(ColorUtil.color(255, 255, 0, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
+                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS))
                         .build()
         );
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(
-                        Component.literal("捕获方式"),
+                        Component.translatable("superresolution.screen.config.options.label.capture_mode"),
                         CaptureMode.class,
                         Config.getCaptureMode()
                 )
@@ -243,13 +251,18 @@ public class ClothConfig {
                 .setTooltipSupplier((captureMode) -> Optional.of(new Component[]{captureMode.get()}))
                 .setSaveConsumer(Config::setCaptureMode).build();
         commonCategory.addEntry(captureModeEnumSelector);
-        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("跳过加载本地依赖库"), Config.isSkipLoadNativeLib())
-                .setDefaultValue(false)
-                .setSaveConsumer(Config::setSkipLoadNativeLib)
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.skip_load_native_lib"),
+                        Config.isSkipLoadNativeLib())
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_load_native_lib"))
+                .requireRestart()
                 .build());
-        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.literal("跳过初始化Vulkan"), Config.isSkipInitVulkan())
-                .setDefaultValue(false)
-                .setSaveConsumer(Config::setSkipInitVulkan)
+
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
+                        Config.isSkipInitVulkan())
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))
+                .requireRestart()
                 .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
@@ -316,7 +329,7 @@ public class ClothConfig {
             put("Architectury API", "https://github.com/architectury/architectury-api");
             put("SpongePowered Mixin", "https://github.com/SpongePowered/Mixin");
             put("Dear ImGui", "https://github.com/ocornut/imgui");
-            put("Snapdragon™ Game Super Resolution 2", "https://github.com/SnapdragonStudios/snapdragon-gsr");
+            put("Snapdragon™ Game Super Resolution 2(1)", "https://github.com/SnapdragonStudios/snapdragon-gsr");
             put("FidelityFX Super Resolution 1.0", "https://github.com/GPUOpen-Effects/FidelityFX-FSR");
             put("FidelityFX Super Resolution 2.2", "https://github.com/GPUOpen-Effects/FidelityFX-FSR2");
             put("NVIDIA Image Scaling SDK v1.0.3", "https://github.com/NVIDIAGameWorks/NVIDIAImageScaling");
@@ -325,10 +338,22 @@ public class ClothConfig {
             put("Lightweight Java Game Library 3(LWJGL3)", "https://github.com/LWJGL/lwjgl3");
         }};
         Map<String, String> officialLinks = new LinkedHashMap<>() {{
-            put("官方网站", "https://minecraft-superresolution.netlify.app/");
-            put("GitHub仓库", "https://github.com/187J3X1-114514/superresolution");
-            put("问题追踪", "https://github.com/187J3X1-114514/superresolution/issues");
-            put("MC百科主页", "https://www.mcmod.cn/class/17888.html");
+            put(
+                    Component.translatable("superresolution.screen.info.link.official_website").getString(),
+                    "https://minecraft-superresolution.netlify.app/"
+            );
+            put(
+                    Component.translatable("superresolution.screen.info.link.github_repo").getString(),
+                    "https://github.com/187J3X1-114514/superresolution"
+            );
+            put(
+                    Component.translatable("superresolution.screen.info.link.issue_tracker").getString(),
+                    "https://github.com/187J3X1-114514/superresolution/issues"
+            );
+            put(
+                    Component.translatable("superresolution.screen.info.link.mcmod_homepage").getString(),
+                    "https://www.mcmod.cn/class/17888.html"
+            );
         }};
         ClothTextListListEntry webLinksEntry = new ClothTextListListEntry(
                 Component.translatable("superresolution.screen.info.text.website_links"),
@@ -378,6 +403,11 @@ public class ClothConfig {
         ).setTop(4).setBottom(7);
         librariesEntry.addLine(new Line()
                 .text(Component.translatable("superresolution.screen.info.text.open_source"))
+                .color(100, 200, 255, 255)
+                .center(true)
+        );
+        librariesEntry.addLine(new Line()
+                .text(Component.translatable("superresolution.screen.info.text.open_source_thank"))
                 .color(100, 200, 255, 255)
                 .center(true)
         );

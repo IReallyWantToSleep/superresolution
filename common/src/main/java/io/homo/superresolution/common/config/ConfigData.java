@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.config;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.config.enums.CaptureMode;
@@ -12,7 +13,7 @@ public class ConfigData {
     private SpecialConfigs special = new SpecialConfigs();
     private boolean enableUpscale = true;
     private float upscaleRatio = 1.7f;
-    private AlgorithmDescription<?> upscaleAlgo = AlgorithmDescriptions.FSR1;
+    private AlgorithmDescription<?> upscaleAlgo;
     private float sharpness = 0.55f;
     private CaptureMode captureMode = CaptureMode.A;
     private boolean debugDumpShader = false;
@@ -28,6 +29,21 @@ public class ConfigData {
         enableRenderDoc = !compatMode;
         enableImgui = !compatMode;
 
+    }
+
+    public static AlgorithmDescription<?> getDefaultAlgorithm() {
+        AlgorithmDescription<?> desc = null;
+        for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
+            if (algorithmDescription.requirement.check().support()) {
+                desc = algorithmDescription;
+                break;
+            }
+        }
+        if (desc == null) {
+            SuperResolution.LOGGER.info("你的硬件不支持所有算法????"); //最逆天的一集
+            throw new RuntimeException();
+        }
+        return desc;
     }
 
     public boolean isEnableRenderDoc() {
@@ -95,6 +111,14 @@ public class ConfigData {
     }
 
     public void setUpscaleAlgo(AlgorithmDescription<?> upscaleAlgo) {
+        if (this.upscaleAlgo == null) {
+            upscaleAlgo = getDefaultAlgorithm();
+        }
+
+        if (!this.upscaleAlgo.requirement.check().support()) {
+            upscaleAlgo = getDefaultAlgorithm();
+            SuperResolution.LOGGER.info("当前算法 {} 在你的硬件上不支持", this.upscaleAlgo.displayName);
+        }
         if (this.upscaleAlgo == upscaleAlgo) return;
         AlgorithmDescription<?> lastUpscaleAlgo = this.upscaleAlgo;
         this.upscaleAlgo = upscaleAlgo;
@@ -106,10 +130,10 @@ public class ConfigData {
             this.upscaleAlgo = lastUpscaleAlgo;
             SuperResolution.algorithmDescription = this.upscaleAlgo;
             if (!SuperResolution.createAlgo()) {
-                SuperResolution.LOGGER.error("在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常", upscaleAlgo.toString(), lastUpscaleAlgo.toString());
+                SuperResolution.LOGGER.error("在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常", upscaleAlgo.displayName, lastUpscaleAlgo.displayName);
                 throw new RuntimeException();
             } else {
-                SuperResolution.LOGGER.error("初始化算法 {} 失败，已回退到算法 {}", upscaleAlgo.toString(), lastUpscaleAlgo.toString());
+                SuperResolution.LOGGER.error("初始化算法 {} 失败，已回退到算法 {}", upscaleAlgo.displayName, lastUpscaleAlgo.displayName);
             }
         }
 
