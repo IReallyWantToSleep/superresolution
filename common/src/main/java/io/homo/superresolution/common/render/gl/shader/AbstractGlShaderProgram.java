@@ -79,12 +79,6 @@ public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggabl
     }
 
     protected void checkProgram() {
-        if (GL20.glGetProgrami(shaderProgram, GL20.GL_VALIDATE_STATUS) == GL20.GL_FALSE) {
-            String log = GL20.glGetProgramInfoLog(shaderProgram);
-            GL20.glDeleteProgram(shaderProgram);
-            throw new RuntimeException("Program validation failed:\n" + log);
-        }
-
         if (GL20.glGetProgrami(shaderProgram, GL20.GL_LINK_STATUS) == GL20.GL_FALSE) {
             String log = GL20.glGetProgramInfoLog(shaderProgram);
             GL20.glDeleteProgram(shaderProgram);

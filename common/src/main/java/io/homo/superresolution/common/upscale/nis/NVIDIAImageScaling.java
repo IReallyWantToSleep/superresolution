@@ -1,7 +1,10 @@
 package io.homo.superresolution.common.upscale.nis;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.impl.Vec3;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.Gl;
@@ -9,6 +12,9 @@ import io.homo.superresolution.common.render.gl.GlConst;
 import io.homo.superresolution.common.render.gl.GlState;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.common.render.gl.pipeline.*;
+
+import static org.lwjgl.stb.STBImage.*;
+
 import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
@@ -21,7 +27,10 @@ import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.utils.FileReadHelper;
 import org.lwjgl.opengl.GL43;
 
+import java.nio.ByteBuffer;
+
 import static io.homo.superresolution.common.render.gl.GlConst.GL_UNSIGNED_BYTE;
+import static io.homo.superresolution.common.upscale.nis.NVIDIAImageScalingConst.kFilterSize;
 
 public class NVIDIAImageScaling extends AbstractAlgorithm {
     private NVIDIAImageScalingConfig config;
@@ -49,32 +58,37 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 TextureFormat.RGBA8
         );
         try (GlState ignored = new GlState()) {
-            coefScaler = GlTexture.create(2, 64, TextureFormat.RGBA8);
+            Pair<Vec2, ByteBuffer> image = FileReadHelper.readTexture("/assets/super_resolution/textures/coef2.png");
+            coefScaler = GlTexture.create((int) image.first.x, (int) image.first.y, TextureFormat.RGBA8);
             Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefScaler.getTextureId());
             GL43.glTexSubImage2D(
                     GlConst.GL_TEXTURE_2D,
                     0,
                     0,
                     0,
-                    2,
-                    64,
+                    (int) image.first.x,
+                    (int) image.first.y,
                     TextureFormat.RGBA8.gl(),
                     GL_UNSIGNED_BYTE,
-                    NVIDIAImageScalingConst.coef_scale
+                    image.right()
             );
-            coefUSM = GlTexture.create(2, 64, TextureFormat.RGBA8);
+            stbi_image_free(image.right());
+            image = FileReadHelper.readTexture("/assets/super_resolution/textures/coef1.png");
+            coefUSM = GlTexture.create((int) image.first.x, (int) image.first.y, TextureFormat.RGBA8);
             Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefUSM.getTextureId());
             GL43.glTexSubImage2D(
                     GlConst.GL_TEXTURE_2D,
                     0,
                     0,
                     0,
-                    2,
-                    64,
+                    (int) image.first.x,
+                    (int) image.first.y,
                     TextureFormat.RGBA8.gl(),
                     GL_UNSIGNED_BYTE,
-                    NVIDIAImageScalingConst.coef_usm
+                    image.right()
             );
+            stbi_image_free(image.right());
+
         }
         scaleShader = GlComputeShaderProgram.create()
                 .addAllFragShaderTextList(FileReadHelper.readText("/shader/nis/nis_scaler.comp.glsl"))
@@ -131,8 +145,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     public boolean dispatch(DispatchResource dispatchResource) {
         PipelineJobDispatchResource pipelineJobDispatchResource = new PipelineJobDispatchResource(
                 new Vec3(
-                        (float) Math.ceil((double) dispatchResource.renderWidth() / 32),
-                        (float) Math.ceil((double) dispatchResource.renderHeight() / 24),
+                        (float) Math.ceil((double) dispatchResource.renderWidth() / kFilterSize),
+                        (float) Math.ceil((double) dispatchResource.renderHeight() / kFilterSize),
                         1.0f
                 )
         );
@@ -152,6 +166,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 dispatchResource.screenHeight(),
                 NISHDRMode.None
         );
+        uniformBuffer.struct().updateData(dispatchResource);
         uniformBuffer.update();
         pipeline.scheduleJob("nis_scaler", pipelineJobDispatchResource);
         scaleShader.use();
