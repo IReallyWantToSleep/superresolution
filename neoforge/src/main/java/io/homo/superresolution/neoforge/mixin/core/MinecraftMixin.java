@@ -14,7 +14,6 @@ public class MinecraftMixin {
     @Inject(at = @At(value = "RETURN"), method = "<init>")
     private void onInitDone(CallbackInfo ci) {
         SuperResolution.initRendering();
-        SuperResolution.mainTarget = Minecraft.getInstance().getMainRenderTarget();
     }
 
     @Inject(at = @At(value = "TAIL"), method = "onGameLoadFinished")
