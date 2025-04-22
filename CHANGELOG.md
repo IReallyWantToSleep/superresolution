@@ -1,3 +1,18 @@
+# 0.6.1-alpha.1
+
+* 完善开发人员API
+* 补全某些缺少的许可证文件
+* 完善国际化
+* 信息界面的一些文本有了更显眼的颜色
+* 自动检查可用算法
+* 优化UI全景图渲染
+* 修复信息界面的可展开文本列表渲染长文本时的错误
+* 修复issues/42/41/40/39
+* 修复Forge上配置在重启游戏后丢失的问题
+* 删除UI中的虚化效果
+* 现在会保存并恢复大多数的OpenGL状态
+* 移除对SodiumOptionsAPI的依赖
+
 # 0.6.0-alpha.1
 
 警告：该版本国际化尚不完善 Warning: The internationalization of this version is not yet complete
