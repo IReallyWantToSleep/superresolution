@@ -1,5 +1,6 @@
 package io.homo.superresolution.forge.mixin.compat;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.renderdoc.RenderDoc;
@@ -12,17 +13,15 @@ import java.util.List;
 import java.util.Set;
 
 public class CompatMixinPlugin implements IMixinConfigPlugin {
-    private String CLASS_START = "io.homo.superresolution.forge.mixin.compat.";
+    private final String CLASS_START = "io.homo.superresolution.forge.mixin.compat.";
 
     public CompatMixinPlugin() {
     }
 
     public void onLoad(String s) {
-
         Platform.currentPlatform = new ForgePlatform();
         Platform.currentPlatform.init();
         if (Platform.currentPlatform.isDevelopmentEnvironment()) RenderDoc.init();
-
     }
 
     public String getRefMapperConfig() {

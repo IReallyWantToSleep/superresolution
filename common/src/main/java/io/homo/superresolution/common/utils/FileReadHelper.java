@@ -2,15 +2,18 @@ package io.homo.superresolution.common.utils;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
+
+import static org.lwjgl.stb.STBImage.*;
 
 public class FileReadHelper {
     public static ArrayList<String> readText(String path) {
@@ -38,20 +41,59 @@ public class FileReadHelper {
         return lines;
     }
 
-    public static NativeImage readTexture(String path) {
-        try (InputStream inputStream = FSR1.class.getResourceAsStream(path)) {
-            if (inputStream != null) {
-                try {
-                    return NativeImage.read(inputStream);
-                } catch (IOException e) {
-                    return null;
+    public static Pair<Vec2, ByteBuffer> readTexture(String path) {
+        ByteBuffer imageBuffer = null;
+        try (InputStream is = FSR1.class.getResourceAsStream(path)) {
+            if (is == null) {
+                throw new RuntimeException("Texture not found: " + path);
+            }
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            byte[] chunk = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = is.read(chunk)) != -1) {
+                byteStream.write(chunk, 0, bytesRead);
+            }
+            byte[] bytes = byteStream.toByteArray();
+
+            imageBuffer = MemoryUtil.memAlloc(bytes.length);
+            imageBuffer.put(bytes).flip();
+
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer w = stack.mallocInt(1);
+                IntBuffer h = stack.mallocInt(1);
+                IntBuffer channels = stack.mallocInt(1);
+
+                ByteBuffer image = stbi_load_from_memory(
+                        imageBuffer,
+                        w,
+                        h,
+                        channels,
+                        4
+                );
+
+                if (image == null) {
+                    MemoryUtil.memFree(imageBuffer);
+                    imageBuffer = null;
+                    throw new RuntimeException("Failed to load texture: " + stbi_failure_reason());
                 }
+
+                MemoryUtil.memFree(imageBuffer);
+                imageBuffer = null;
+
+                return Pair.of(
+                        new Vec2(w.get(), h.get()),
+                        image
+                );
             }
         } catch (IOException e) {
-            return null;
+            throw new RuntimeException("Failed to read texture: " + path, e);
+        } finally {
+            if (imageBuffer != null) {
+                MemoryUtil.memFree(imageBuffer);
+            }
         }
-        return null;
     }
+
 
     public static ByteBuffer readSpvFile(String path) {
         try (InputStream is = FSR1.class.getResourceAsStream(path)) {

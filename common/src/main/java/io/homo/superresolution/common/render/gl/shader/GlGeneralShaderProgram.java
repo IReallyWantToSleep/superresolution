@@ -45,7 +45,7 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
             } catch (IOException e) {
                 SuperResolution.LOGGER.error(e.toString());
             }
-            throw new RuntimeException("VERTEX_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(FRAGMENT_SHADER, 32768));
+            throw new RuntimeException("VERTEX_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(VERTEX_SHADER, 32768));
         }
 
         this.shaderProgram = glCreateProgram();
