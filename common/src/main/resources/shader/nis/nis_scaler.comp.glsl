@@ -1,8 +1,8 @@
 #version 450
-#extension GL_ARB_shading_language_420pack : enable
-#extension GL_GOOGLE_include_directive : enable
+#extension GL_ARB_shading_language_420pack: enable
+#extension GL_GOOGLE_include_directive: enable
 
-layout(std140, binding = 0) uniform const_buffer
+layout (std140, binding = 0) uniform const_buffer
 {
     float kDetectRatio;
     float kDetectThres;
@@ -41,13 +41,11 @@ layout(std140, binding = 0) uniform const_buffer
     float reserved1;
 };
 
-layout(binding = 2) uniform sampler2D in_texture;
-layout(binding = 3) uniform writeonly image2D out_texture;
+layout (binding = 2) uniform sampler2D in_texture;
+layout (binding = 3) uniform writeonly image2D out_texture;
 
-layout(binding = 4) uniform sampler2D coef_scaler;
-layout(binding = 5) uniform sampler2D coef_usm;
-
-#line 1 "NIS/NIS_Scaler.h"
+layout (binding = 4) uniform sampler2D coef_scaler;
+layout (binding = 5) uniform sampler2D coef_usm;
 
 float getY(vec3 rgba)
 {
@@ -483,9 +481,7 @@ void NVScaler(uvec2 blockIdx, uint threadIdx)
     }
 }
 
-#line 86 "NIS\NIS_Main.comp.glsl"
-
-layout(local_size_x = 256) in;
+layout (local_size_x = 256) in;
 void main()
 {
     NVScaler(gl_WorkGroupID.xy, gl_LocalInvocationID.x);

@@ -13,7 +13,7 @@ public class ConfigData {
     private SpecialConfigs special = new SpecialConfigs();
     private boolean enableUpscale = true;
     private float upscaleRatio = 1.7f;
-    private AlgorithmDescription<?> upscaleAlgo;
+    private AlgorithmDescription<?> upscaleAlgo = AlgorithmDescriptions.SGSR1;
     private float sharpness = 0.55f;
     private CaptureMode captureMode = CaptureMode.A;
     private boolean debugDumpShader = false;
@@ -107,6 +107,9 @@ public class ConfigData {
     }
 
     public AlgorithmDescription<?> getUpscaleAlgo() {
+        if (this.upscaleAlgo == null) {
+            upscaleAlgo = getDefaultAlgorithm();
+        }
         return this.upscaleAlgo;
     }
 

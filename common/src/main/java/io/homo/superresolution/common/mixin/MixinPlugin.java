@@ -17,7 +17,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     public void onLoad(String s) {
-
+        GraphicsCapabilities.init();
     }
 
     public String getRefMapperConfig() {

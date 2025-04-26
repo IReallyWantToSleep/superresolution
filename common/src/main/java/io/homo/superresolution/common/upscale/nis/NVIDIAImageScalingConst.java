@@ -1,5 +1,12 @@
 package io.homo.superresolution.common.upscale.nis;
 
+import io.homo.superresolution.common.SuperResolution;
+import org.lwjgl.system.MemoryUtil;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
+
 //硬核图片存储（
 public class NVIDIAImageScalingConst {
 
@@ -270,9 +277,25 @@ public class NVIDIAImageScalingConst {
             {0, 39408, 47289, 15563, 47326, 6640, 0, 0},
     };
     public static int CB_BINDING = 0;
-    public static int SAMPLER_BINDING = 1;
-    public static int IN_TEX_BINDING = 3;
-    public static int OUT_TEX_BINDING = 2;
+    public static int IN_TEX_BINDING = 2;
+    public static int OUT_TEX_BINDING = 3;
     public static int COEF_SCALAR_BINDING = 4;
     public static int COEF_USM_BINDING = 5;
+
+    public static ByteBuffer convertToByteBuffer(char[][] data) {
+        int rows = data.length;
+        int cols = data[0].length;
+        ByteBuffer buffer = ByteBuffer.allocateDirect(rows * cols * 2)
+                .order(ByteOrder.nativeOrder());
+
+        ShortBuffer shortBuffer = buffer.asShortBuffer();
+
+        for (char[] row : data) {
+            for (char c : row) {
+                shortBuffer.put((short) c);
+            }
+        }
+        buffer.rewind();
+        return buffer;
+    }
 }

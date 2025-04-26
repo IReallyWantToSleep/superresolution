@@ -19,14 +19,9 @@ import static io.homo.superresolution.common.render.gl.GlConst.*;
 
 public class GraphicsCapabilities {
     private static final ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
-    private static Set<String> glExtensions;
-    private static int[] glVersion;
-    private static int[] vkVersion;
+    private static Set<String> glExtensions = null;
 
     public static void init() {
-        glVersion = detectGLVersion();
-        glExtensions = Collections.unmodifiableSet(detectGLExtensions());
-        vkVersion = detectVulkanVersion();
     }
 
     private static int[] detectGLVersion() {
@@ -107,26 +102,35 @@ public class GraphicsCapabilities {
     }
 
     public static int[] getGLVersion() {
-        return glVersion.clone();
+        return detectGLVersion();
     }
 
     public static String getGLVersionString() {
+        int[] glVersion = detectGLVersion();
         return glVersion[0] + "." + glVersion[1];
     }
 
     public static Set<String> getGLExtensions() {
+        if (glExtensions == null) {
+            glExtensions = Collections.unmodifiableSet(detectGLExtensions());
+        }
         return glExtensions;
     }
 
     public static boolean hasGLExtension(String name) {
+        if (glExtensions == null) {
+            glExtensions = Collections.unmodifiableSet(detectGLExtensions());
+        }
         return glExtensions.contains(name);
     }
 
     public static int[] getVulkanVersion() {
-        return vkVersion.clone();
+
+        return detectVulkanVersion();
     }
 
     public static String getVulkanVersionString() {
+        int[] vkVersion = detectVulkanVersion();
         return vkVersion[0] + "." + vkVersion[1] + "." + vkVersion[2];
     }
 
