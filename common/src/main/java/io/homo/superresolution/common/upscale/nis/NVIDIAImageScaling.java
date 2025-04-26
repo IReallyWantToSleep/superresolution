@@ -13,6 +13,9 @@ import io.homo.superresolution.common.render.gl.GlState;
 import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.common.render.gl.pipeline.*;
 
+import static org.lwjgl.opengl.GL11.GL_RGBA;
+import static org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT;
+import static org.lwjgl.opengl.GL30.GL_HALF_FLOAT;
 import static org.lwjgl.stb.STBImage.*;
 
 import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
@@ -26,8 +29,11 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.utils.FileReadHelper;
 import org.lwjgl.opengl.GL43;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import static io.homo.superresolution.common.render.gl.GlConst.GL_UNSIGNED_BYTE;
 import static io.homo.superresolution.common.upscale.nis.NVIDIAImageScalingConst.kFilterSize;
@@ -58,36 +64,61 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 TextureFormat.RGBA8
         );
         try (GlState ignored = new GlState()) {
-            Pair<Vec2, ByteBuffer> image = FileReadHelper.readTexture("/assets/super_resolution/textures/coef2.png");
-            coefScaler = GlTexture.create((int) image.first.x, (int) image.first.y, TextureFormat.RGBA8);
-            Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefScaler.getTextureId());
-            GL43.glTexSubImage2D(
-                    GlConst.GL_TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    (int) image.first.x,
-                    (int) image.first.y,
-                    TextureFormat.RGBA8.gl(),
-                    GL_UNSIGNED_BYTE,
-                    image.right()
-            );
-            stbi_image_free(image.right());
-            image = FileReadHelper.readTexture("/assets/super_resolution/textures/coef1.png");
-            coefUSM = GlTexture.create((int) image.first.x, (int) image.first.y, TextureFormat.RGBA8);
-            Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefUSM.getTextureId());
-            GL43.glTexSubImage2D(
-                    GlConst.GL_TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    (int) image.first.x,
-                    (int) image.first.y,
-                    TextureFormat.RGBA8.gl(),
-                    GL_UNSIGNED_BYTE,
-                    image.right()
-            );
-            stbi_image_free(image.right());
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer w = stack.mallocInt(1);
+                IntBuffer h = stack.mallocInt(1);
+                IntBuffer channels = stack.mallocInt(1);
+                ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef1.png", w, h, channels, 4);
+                coefScaler = GlTexture.create(
+                        NVIDIAImageScalingConst.kFilterSize / 4,
+                        NVIDIAImageScalingConst.kPhaseCount,
+                        TextureFormat.RGBA8
+                );
+
+                Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefScaler.getTextureId());
+                if (buf != null) {
+                    GL43.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    GL43.glTexSubImage2D(
+                            GlConst.GL_TEXTURE_2D,
+                            0,
+                            0,
+                            0,
+                            NVIDIAImageScalingConst.kFilterSize / 4,
+                            NVIDIAImageScalingConst.kPhaseCount,
+                            GL_RGBA,
+                            GL_UNSIGNED_BYTE,
+                            buf
+                    );
+                    stbi_image_free(buf);
+                }
+            }
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer w = stack.mallocInt(1);
+                IntBuffer h = stack.mallocInt(1);
+                IntBuffer channels = stack.mallocInt(1);
+                ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef2.png", w, h, channels, 4);
+                coefUSM = GlTexture.create(
+                        NVIDIAImageScalingConst.kFilterSize / 4,
+                        NVIDIAImageScalingConst.kPhaseCount,
+                        TextureFormat.RGBA8
+                );
+                Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefUSM.getTextureId());
+                if (buf != null) {
+                    GL43.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    GL43.glTexSubImage2D(
+                            GlConst.GL_TEXTURE_2D,
+                            0,
+                            0,
+                            0,
+                            NVIDIAImageScalingConst.kFilterSize / 4,
+                            NVIDIAImageScalingConst.kPhaseCount,
+                            GL_RGBA,
+                            GL_UNSIGNED_BYTE,
+                            buf
+                    );
+                    stbi_image_free(buf);
+                }
+            }
 
         }
         scaleShader = GlComputeShaderProgram.create()
@@ -111,7 +142,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 FrameBufferTextureAdapter.ofColor(input),
                                 PipelineResourceAccess.READ,
                                 null,
-                                2
+                                NVIDIAImageScalingConst.IN_TEX_BINDING
                         ))
                         .addResource(new PipelineResourceDescription(
                                 PipelineResourceType.Image2D,
@@ -119,7 +150,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 output,
                                 PipelineResourceAccess.WRITE,
                                 null,
-                                3
+                                NVIDIAImageScalingConst.OUT_TEX_BINDING
                         ))
                         .addResource(new PipelineResourceDescription(
                                 PipelineResourceType.Sampler2D,
@@ -127,7 +158,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 coefScaler,
                                 PipelineResourceAccess.READ,
                                 null,
-                                4
+                                NVIDIAImageScalingConst.COEF_SCALAR_BINDING
+
                         ))
                         .addResource(new PipelineResourceDescription(
                                 PipelineResourceType.Sampler2D,
@@ -135,7 +167,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 coefUSM,
                                 PipelineResourceAccess.READ,
                                 null,
-                                5
+                                NVIDIAImageScalingConst.COEF_USM_BINDING
                         ))
                         .build()
         );
@@ -145,8 +177,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     public boolean dispatch(DispatchResource dispatchResource) {
         PipelineJobDispatchResource pipelineJobDispatchResource = new PipelineJobDispatchResource(
                 new Vec3(
-                        (float) Math.ceil((double) dispatchResource.renderWidth() / kFilterSize),
-                        (float) Math.ceil((double) dispatchResource.renderHeight() / kFilterSize),
+                        (float) Math.ceil(dispatchResource.renderWidth() / 8),
+                        (float) Math.ceil(dispatchResource.renderHeight() / 8),
                         1.0f
                 )
         );
