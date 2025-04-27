@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale.nis;
 
+/*
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
@@ -33,7 +34,7 @@ import static io.homo.superresolution.common.render.gl.GlConst.GL_FRAMEBUFFER;
 import static io.homo.superresolution.common.render.gl.GlConst.GL_TEXTURE_2D;
 import static io.homo.superresolution.common.upscale.nis.NVIDIAImageScalingConst.*;
 import static org.lwjgl.vulkan.VK10.*;
-
+*/
 public class NVIDIAImageScalingVk {
     /*
     private VkComputeShader shader;

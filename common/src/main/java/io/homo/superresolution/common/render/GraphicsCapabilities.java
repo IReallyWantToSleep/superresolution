@@ -2,6 +2,7 @@ package io.homo.superresolution.common.render;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.common.render.interop.GlVkInteropManager;
 import io.homo.superresolution.common.render.vulkan.VkApplication;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
@@ -98,7 +99,7 @@ public class GraphicsCapabilities {
     }
 
     private static boolean isVulkanSupported() {
-        return SuperResolution.interopManager.supportVulkan && SuperResolution.interopManager.vulkanApp != null;
+        return GlVkInteropManager.isSupportVulkan();
     }
 
     public static int[] getGLVersion() {
@@ -125,7 +126,6 @@ public class GraphicsCapabilities {
     }
 
     public static int[] getVulkanVersion() {
-
         return detectVulkanVersion();
     }
 
@@ -140,6 +140,18 @@ public class GraphicsCapabilities {
             return vk.deviceManager.deviceExtensions.contains(name);
         }
         return false;
+    }
+
+    public static Set<String> getVulkanDeviceExtensions() {
+        if (isVulkanSupported()) {
+            VkApplication vk = SuperResolution.interopManager.vulkanApp;
+            return Set.copyOf(
+                    vk.deviceManager.deviceExtensions.stream()
+                            .collect(Collectors.toCollection(() ->
+                                    new TreeSet<>(String.CASE_INSENSITIVE_ORDER)))
+            );
+        }
+        return new HashSet<>();
     }
 
 }

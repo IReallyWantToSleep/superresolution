@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.render.interop;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Destroyable;
 import io.homo.superresolution.common.render.vulkan.*;
@@ -64,6 +65,14 @@ public class GlVkInteropManager implements Destroyable {
             vkDeviceWaitIdle(a.vulkanApp.deviceManager.device);
             glfwPollEvents();
         }
+    }
+
+    public static boolean isSupportVulkan() {
+        if (SuperResolution.interopManager != null) {
+            if (SuperResolution.interopManager.supportVulkan)
+                return SuperResolution.interopManager.vulkanApp != null;
+        }
+        return false;
     }
 
     public void init() {

@@ -204,6 +204,7 @@ public class MinecraftRenderHandle {
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
         getOriginRenderTarget().bind(RenderTargetBindPoint.WRITE);
+
         try (GlState ignored = new GlState()) {
             PerformanceInfo.begin("upscale");
             if (needCaptureUpscale) {

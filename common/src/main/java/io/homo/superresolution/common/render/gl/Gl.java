@@ -266,6 +266,4 @@ public class Gl {
             KHRDebug.glObjectLabel(type, id, StringUtils.abbreviate(label, 255));
         }
     }
-
-
 }

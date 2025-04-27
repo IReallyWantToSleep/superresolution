@@ -40,11 +40,12 @@ public class AlgorithmDescriptions {
                     "fsr2",
                     "AMD FidelityFX Super Resolution 2",
                     Requirement.nothing()
-                            .includeExtension("GL_KHR_shader_subgroup")
+                            .requiredGlExtension("GL_KHR_shader_subgroup")
                             .glMajorVersion(4)
                             .glMinorVersion(5)
-                            .addIncludeOS(new OS(Arch.X86_64, OSType.WINDOWS))
-                            .addIncludeOS(new OS(Arch.X86_64, OSType.LINUX))
+                            .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
+                            .addSupportedOS(new OS(Arch.X86_64, OSType.LINUX))
+                            .developmentEnvironment(true)
             );
     public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
             new AlgorithmDescription<>(
@@ -54,8 +55,8 @@ public class AlgorithmDescriptions {
                     "NVIDIA Image Scaling",
                     Requirement.nothing()
                             .glMajorVersion(4)
-                            .glMinorVersion(5)
-                            .requireVulkan(true)
+                            .glMinorVersion(3)
+                            .requiredGlExtension("GL_ARB_shading_language_420pack")
                             .developmentEnvironment(true)
             );
     public static final AlgorithmDescription<Sgsr1> SGSR1 =

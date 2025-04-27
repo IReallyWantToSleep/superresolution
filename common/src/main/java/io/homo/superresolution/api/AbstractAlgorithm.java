@@ -8,11 +8,6 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
-     * 是否支持该算法
-     */
-    public boolean isSupport = true;
-
-    /**
      * 输入帧缓冲区
      */
     protected IFrameBuffer input;
@@ -25,16 +20,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     public AbstractAlgorithm() {
 
     }
-
-    /**
-     * 是否支持该算法。
-     *
-     * @return 如果支持返回true，否则返回false。
-     */
-    protected boolean isSupport() {
-        return true;
-    }
-
+    
     /**
      * 初始化算法。
      */

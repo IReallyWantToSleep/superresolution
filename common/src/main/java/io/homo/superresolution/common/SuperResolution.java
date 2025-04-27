@@ -1,6 +1,5 @@
 package io.homo.superresolution.common;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.architectury.event.events.client.ClientTickEvent;
@@ -29,8 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
-
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_K;
 
 public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
@@ -106,7 +103,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void check() {
-        if (!commonRequirement.checkGlVersion()) {
+        if (!commonRequirement.check().glVersionMet()) {
             MessageBox.createError(
                     Component.translatable("superresolution.common_requirement.not_support.version").getString().formatted(
                             commonRequirement.getGlMajorVersion(),
@@ -118,9 +115,9 @@ public final class SuperResolution implements Resizable, Destroyable {
             Minecraft.getInstance().destroy();
         }
 
-        if (!commonRequirement.checkExtension()) {
+        if (!commonRequirement.check().glExtensionsPresent()) {
             StringBuilder extensionStringBuilder = new StringBuilder();
-            for (String name : commonRequirement.getMissingExtension()) {
+            for (String name : commonRequirement.getMissingGlExtensions()) {
                 extensionStringBuilder.append(name).append("\n");
             }
             MessageBox.createError(Component.translatable("superresolution.common_requirement.not_support.extension").getString()
