@@ -1,152 +1,234 @@
 package io.homo.superresolution.api.utils;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.platform.Arch;
-import io.homo.superresolution.common.platform.OS;
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.platform.*;
 import io.homo.superresolution.common.render.GraphicsCapabilities;
+import io.homo.superresolution.common.render.interop.GlVkInteropManager;
 
-import java.util.ArrayList;
+import java.util.*;
 
 public class Requirement {
-    private final ArrayList<String> includeExtension = new ArrayList<>();
-    private final ArrayList<OS> includeOS = new ArrayList<>();
+    private final Set<String> requiredGlExtensions = new HashSet<>();
+    private final Set<OS> supportedOS = new HashSet<>();
+    private final Set<String> requiredVulkanDeviceExtensions = new HashSet<>();
     private int glMajorVersion = -1;
     private int glMinorVersion = -1;
-    private boolean developmentEnvironment = false;
-    private boolean requireVulkan = false;
+    private int vulkanMajorVersion = -1;
+    private int vulkanMinorVersion = -1;
+    private int vulkanPatchVersion = -1;
+    private boolean requiresDevEnv = false;
+    private boolean requiresVulkan = false;
 
-    protected Requirement() {
+    private Requirement() {
     }
 
     public static Requirement nothing() {
         return new Requirement();
     }
 
-    public boolean isRequireVulkan() {
-        return requireVulkan;
-    }
-
-    public ArrayList<OS> getIncludeOS() {
-        return includeOS;
-    }
-
-    public boolean isDevelopmentEnvironment() {
-        return developmentEnvironment;
-    }
-
-    public Requirement developmentEnvironment(boolean developmentEnvironment) {
-        this.developmentEnvironment = developmentEnvironment;
+    public Requirement vulkanMajorVersion(int vulkanMajorVersion) {
+        this.vulkanMajorVersion = vulkanMajorVersion;
         return this;
     }
 
-    public Requirement requireVulkan(boolean requireVulkan) {
-        this.requireVulkan = requireVulkan;
+    public Requirement vulkanMinorVersion(int vulkanMinorVersion) {
+        this.vulkanMinorVersion = vulkanMinorVersion;
         return this;
     }
 
-    public Requirement glVersion(int major_version, int minor_version) {
-        this.glMajorVersion = major_version;
-        this.glMinorVersion = minor_version;
+    public Requirement vulkanPatchVersion(int vulkanPatchVersion) {
+        this.vulkanPatchVersion = vulkanPatchVersion;
         return this;
     }
 
-    public Requirement glMajorVersion(int major_version) {
-        this.glMajorVersion = major_version;
-        return this;
+    public Set<String> getRequiredGlExtensions() {
+        return Collections.unmodifiableSet(requiredGlExtensions);
     }
 
-    public Requirement glMinorVersion(int minor_version) {
-        this.glMinorVersion = minor_version;
-        return this;
+    public Set<String> getRequiredVulkanDeviceExtensions() {
+        return Collections.unmodifiableSet(requiredVulkanDeviceExtensions);
     }
 
-    public Requirement includeExtension(String name) {
-        this.includeExtension.add(name);
-        return this;
+    public boolean isRequiresVulkan() {
+        return requiresVulkan;
     }
 
-    public Result check() {
-        return new Result(checkOS(), checkGlVersion(), checkExtension(), checkEnv(), checkVulkan());
-    }
-
-    public boolean checkGlVersion() {
-        boolean version = glMajorVersion == -1 || glMajorVersion <= GraphicsCapabilities.getGLVersion()[0];
-        if (glMinorVersion != -1 && glMinorVersion > GraphicsCapabilities.getGLVersion()[1]) version = false;
-        return version;
-    }
-
-    public boolean checkVulkan() {
-        if (requireVulkan)
-            return SuperResolution.interopManager.supportVulkan && SuperResolution.interopManager.vulkanApp != null;
-        return true;
-    }
-
-    public boolean checkOS() {
-        OS currentOS = Platform.currentPlatform.getOS();
-        boolean os = includeOS.isEmpty();
-        for (OS o : includeOS) {
-            if (o.arch.equals(currentOS.arch) && o.type.equals(currentOS.type)) {
-                os = true;
-                break;
-            }
-        }
-        return os;
-    }
-
-    public boolean checkEnv() {
-        return !developmentEnvironment || Platform.currentPlatform.isDevelopmentEnvironment();
-    }
-
-    public boolean checkExtension() {
-        return getMissingExtension().isEmpty();
-    }
-
-    public ArrayList<String> getIncludeExtension() {
-        return includeExtension;
-    }
-
-    public int getGlMajorVersion() {
-        return glMajorVersion;
+    public boolean isRequiresDevEnv() {
+        return requiresDevEnv;
     }
 
     public int getGlMinorVersion() {
         return glMinorVersion;
     }
 
-    public ArrayList<String> getMissingExtension() {
-        ArrayList<String> missingExtension = new ArrayList<>();
-        for (String name : includeExtension)
-            if (!GraphicsCapabilities.hasGLExtension(name)) {
-                missingExtension.add(name);
-            }
-        return missingExtension;
+    public int getGlMajorVersion() {
+        return glMajorVersion;
     }
 
-    public Requirement addIncludeOS(Arch arch) {
-        includeOS.add(new OS(arch, OSType.ANY));
+    public int getVulkanMajorVersion() {
+        return vulkanMajorVersion;
+    }
+
+    public int getVulkanMinorVersion() {
+        return vulkanMinorVersion;
+    }
+
+    public int getVulkanPatchVersion() {
+        return vulkanPatchVersion;
+    }
+
+    public Requirement developmentEnvironment(boolean developmentEnvironment) {
+        this.requiresDevEnv = developmentEnvironment;
         return this;
     }
 
-    public Requirement addIncludeOS(OSType type) {
-        includeOS.add(new OS(Arch.ANY, type));
+    public Requirement requireVulkan(boolean requireVulkan) {
+        this.requiresVulkan = requireVulkan;
         return this;
     }
 
-    public Requirement addIncludeOS(Arch arch, OSType type) {
-        includeOS.add(new OS(arch, type));
+    public Requirement glVersion(int major, int minor) {
+        this.glMajorVersion = major;
+        this.glMinorVersion = minor;
         return this;
     }
 
-    public Requirement addIncludeOS(OS os) {
-        includeOS.add(os);
+    public Requirement vulkanVersion(int major, int minor, int patch) {
+        this.vulkanMajorVersion = major;
+        this.vulkanMinorVersion = minor;
+        this.vulkanPatchVersion = patch;
+
         return this;
     }
 
-    public record Result(boolean os, boolean glVersion, boolean glExtension, boolean env, boolean vulkan) {
+    private boolean checkVulkanVersion() {
+        if (vulkanMajorVersion == -1) return true;
+
+        int[] current = GraphicsCapabilities.getVulkanVersion();
+        return current[0] > vulkanMajorVersion ||
+                (current[0] == vulkanMajorVersion &&
+                        (current[1] > vulkanMinorVersion ||
+                                (current[1] == vulkanMinorVersion && current[2] >= vulkanPatchVersion)));
+    }
+
+    private boolean checkVulkanDeviceExtensions() {
+        return requiredVulkanDeviceExtensions.stream()
+                .allMatch(GraphicsCapabilities::hasVulkanDeviceExtension);
+    }
+
+    public Requirement requireVulkanDeviceExtension(String extension) {
+        this.requiredVulkanDeviceExtensions.add(extension);
+        return this;
+    }
+
+    public Requirement glMajorVersion(int major) {
+        this.glMajorVersion = major;
+        return this;
+    }
+
+    public Requirement glMinorVersion(int minor) {
+        this.glMinorVersion = minor;
+        return this;
+    }
+
+    public Requirement requiredGlExtension(String name) {
+        this.requiredGlExtensions.add(Objects.requireNonNull(name, "扩展名称不能为null"));
+        return this;
+    }
+
+    public Result check() {
+        return new Result(
+                checkOSCompatibility(),
+                checkGLVersion(),
+                checkGLExtensions(),
+                checkEnvironment(),
+                checkVulkanSupport(),
+                checkVulkanVersion(),
+                checkVulkanDeviceExtensions()
+        );
+    }
+
+    private boolean checkOSCompatibility() {
+        if (supportedOS.isEmpty()) return true;
+
+        final OS current = Platform.currentPlatform.getOS();
+        return supportedOS.stream()
+                .anyMatch(os -> os.arch.equals(current.arch) &&
+                        os.type.equals(current.type));
+    }
+
+    private boolean checkGLVersion() {
+        if (glMajorVersion == -1) return true;
+
+        final int[] currentVersion = GraphicsCapabilities.getGLVersion();
+        return currentVersion[0] > glMajorVersion ||
+                (currentVersion[0] == glMajorVersion && currentVersion[1] >= glMinorVersion);
+    }
+
+    private boolean checkGLExtensions() {
+        return requiredGlExtensions.stream()
+                .allMatch(GraphicsCapabilities::hasGLExtension);
+    }
+
+    private boolean checkEnvironment() {
+        return !requiresDevEnv || Platform.currentPlatform.isDevelopmentEnvironment();
+    }
+
+    private boolean checkVulkanSupport() {
+        return !requiresVulkan || (GlVkInteropManager.isSupportVulkan());
+    }
+
+    public List<String> getMissingGlExtensions() {
+        return requiredGlExtensions.stream()
+                .filter(ext -> !GraphicsCapabilities.hasGLExtension(ext))
+                .toList();
+    }
+
+    public List<String> getMissingVkExtensions() {
+        return requiredVulkanDeviceExtensions.stream()
+                .filter(ext -> !GraphicsCapabilities.hasVulkanDeviceExtension(ext))
+                .toList();
+    }
+
+
+    public Set<OS> getSupportedOS() {
+        return Collections.unmodifiableSet(supportedOS);
+    }
+
+    public Requirement addSupportedOS(Arch arch) {
+        return addSupportedOS(new OS(arch, OSType.ANY));
+    }
+
+    public Requirement addSupportedOS(OSType type) {
+        return addSupportedOS(new OS(Arch.ANY, type));
+    }
+
+    public Requirement addSupportedOS(Arch arch, OSType type) {
+        return addSupportedOS(new OS(arch, type));
+    }
+
+    public Requirement addSupportedOS(OS os) {
+        supportedOS.add(Objects.requireNonNull(os, "操作系统配置不能为null"));
+        return this;
+    }
+
+    @Deprecated
+    public ArrayList<OS> getIncludeOS() {
+        return new ArrayList<>(supportedOS);
+    }
+
+    public record Result(
+            boolean osSupported,
+            boolean glVersionMet,
+            boolean glExtensionsPresent,
+            boolean environmentValid,
+            boolean vulkanAvailable,
+            boolean vulkanVersionMet,
+            boolean vulkanDeviceExtensionsMet
+    ) {
         public boolean support() {
-            return os && glVersion && glExtension && env && vulkan;
+            return osSupported && glVersionMet && glExtensionsPresent &&
+                    environmentValid && vulkanAvailable && vulkanVersionMet && vulkanDeviceExtensionsMet;
         }
     }
 }

@@ -1,6 +1,5 @@
 package io.homo.superresolution.common.upscale.fsr2;
 
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
@@ -14,7 +13,6 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import oiiaio.fsr.NativeLibManager;
-import net.minecraft.client.Minecraft;
 import oiiaio.fsr.FfxError;
 import oiiaio.fsr.fsr2.FfxFSR2;
 import oiiaio.fsr.fsr2.FfxFsr2ContextCreateResult;
@@ -25,7 +23,6 @@ import static io.homo.superresolution.common.render.gl.GlConst.*;
 import static oiiaio.fsr.fsr2.enums.FfxFsr2InitializationFlagBits.*;
 
 public class FSR2 extends AbstractAlgorithm {
-    private static Window window = Minecraft.getInstance().getWindow();
     private final FfxFSR2 nativeApi;
     private FfxFsr2Context fsr2Context;
     private GlTexture output;
@@ -33,14 +30,7 @@ public class FSR2 extends AbstractAlgorithm {
     public FSR2() {
         super();
         RenderSystem.assertOnRenderThread();
-        this.isSupport = isSupport();
         nativeApi = NativeLibManager.getNativeApi();
-        window = Minecraft.getInstance().getWindow();
-    }
-
-    @Override
-    protected boolean isSupport() {
-        return AlgorithmDescriptions.FSR2.getRequirement().check().support() && NativeLibManager.getNativeApi() != null;
     }
 
     public void resize(int width, int height) {
@@ -52,8 +42,15 @@ public class FSR2 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = GlTexture.create(window.getScreenWidth(), window.getScreenHeight(), TextureFormat.RGBA8);
-        this.resize(window.getScreenWidth(), window.getScreenHeight());
+        output = GlTexture.create(
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight(),
+                TextureFormat.RGBA8
+        );
+        this.resize(
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
+        );
     }
 
     @Override
@@ -73,6 +70,10 @@ public class FSR2 extends AbstractAlgorithm {
 
     private void updateFSR2(int width, int height) {
         RenderSystem.assertOnRenderThread();
+        if (fsr2Context != null && fsr2Context.cppPointer > 0) {
+            nativeApi.ffxFsr2ContextDestroy(fsr2Context);
+            fsr2Context = null;
+        }
         FfxFsr2ContextCreateResult result = nativeApi.ffxFsr2CreateGL(
                 Config.getUpscaleRatio(),
                 width,

@@ -177,6 +177,10 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
     public int getItemHeight() {
         int height = 0;
         for (LineRenderer lineRenderer : this.lineRenderers) {
+            if (lineRenderer.saveRectangle != null) {
+                height += lineRenderer.saveRectangle.height + 1;
+                continue;
+            }
             height += lineRenderer.line.height(textRenderer) + 1;
         }
         return Math.min(Math.max((int) (height * expandAnimator.value()) + (expandAnimator.value() == 1.0 ? 3 + bottom : 24), 24), height + 3 + bottom);

@@ -208,9 +208,4 @@ public class FSR1 extends AbstractAlgorithm {
     public IFrameBuffer getOutputFrameBuffer() {
         return TextureFrameBufferAdapter.of(output);
     }
-
-    @Override
-    protected boolean isSupport() {
-        return AlgorithmDescriptions.FSR1.getRequirement().check().support();
-    }
 }

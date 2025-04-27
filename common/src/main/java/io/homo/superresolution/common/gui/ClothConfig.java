@@ -18,6 +18,7 @@ import io.homo.superresolution.common.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.GraphicsCapabilities;
+import io.homo.superresolution.common.render.interop.GlVkInteropManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.utils.ColorUtil;
@@ -255,6 +256,7 @@ public class ClothConfig {
                         Component.translatable("superresolution.screen.config.options.label.skip_load_native_lib"),
                         Config.isSkipLoadNativeLib())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_load_native_lib"))
+                .setSaveConsumer((Config::setSkipLoadNativeLib))
                 .requireRestart()
                 .build());
 
@@ -262,6 +264,7 @@ public class ClothConfig {
                         Component.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
                         Config.isSkipInitVulkan())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))
+                .setSaveConsumer((Config::setSkipInitVulkan))
                 .requireRestart()
                 .build());
         commonCategory.addEntry(new ClothButtonEntry(
@@ -273,7 +276,6 @@ public class ClothConfig {
             addSpecialConfig(builder, entryBuilder, key);
         }
         addDebug(builder, entryBuilder);
-
         builder.setSavingRunnable(ConfigFile::write);
     }
 
@@ -294,8 +296,22 @@ public class ClothConfig {
                 true
         ).setTop(4).setBottom(7);
         InfoBuilder.of(glExtInfoEntry).addGlExt();
+        ClothTextListListEntry vkExtInfoEntry = null;
+        if (GlVkInteropManager.isSupportVulkan()) {
+            vkExtInfoEntry = new ClothTextListListEntry(
+                    Component.translatable("superresolution.screen.info.button.label.vulkan_ext_info").append(" ").append(
+                            Component.translatable("superresolution.screen.info.text.vulkan_ext_count").getString()
+                                    .formatted(GraphicsCapabilities.getVulkanDeviceExtensions().size())
+                    ),
+                    null,
+                    true
+            ).setTop(4).setBottom(7);
+            InfoBuilder.of(vkExtInfoEntry).addVkExt();
+        }
+
         envInfoCategory.addEntry(envInfoEntry);
         envInfoCategory.addEntry(glExtInfoEntry);
+        if (GlVkInteropManager.isSupportVulkan()) envInfoCategory.addEntry(vkExtInfoEntry);
         ConfigCategory algoInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.text.algo_support_status"));
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
             if (algorithmDescription.equals(AlgorithmDescriptions.NONE)) continue;

@@ -49,11 +49,6 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     private GlUniformBuffer<NVIDIAImageScalingConfig> uniformBuffer;
 
     @Override
-    protected boolean isSupport() {
-        return AlgorithmDescriptions.NIS.getRequirement().check().support() && SuperResolution.interopManager.vulkanApp != null;
-    }
-
-    @Override
     public void init() {
         config = new NVIDIAImageScalingConfig();
         uniformBuffer = new GlUniformBuffer<>(config);
@@ -74,7 +69,6 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                         NVIDIAImageScalingConst.kPhaseCount,
                         TextureFormat.RGBA8
                 );
-
                 Gl.glBindTexture(GlConst.GL_TEXTURE_2D, coefScaler.getTextureId());
                 if (buf != null) {
                     GL43.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
