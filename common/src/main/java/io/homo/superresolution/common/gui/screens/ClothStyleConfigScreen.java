@@ -160,34 +160,29 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        #if MC_VER > MC_1_20_1
-        renderBackground(graphics, mouseX, mouseY, delta);
-        #else
-        renderBackground(graphics);
-        #endif
+        if (Minecraft.getInstance().level == null) {
+            #if MC_VER >= MC_1_21_1
+            panorama.render(graphics, width, height, 1.0f, delta);
+            #else
+            panorama.render(Minecraft.getInstance().getDeltaFrameTime(), 1.0f);
+            #endif
+        }
+        graphics.fill(
+                0, 0,
+                width, listWidget.top,
+                ColorUtil.color(60, 0, 0, 0)
+        );
+
+        graphics.fill(
+                0, listWidget.bottom,
+                width, listWidget.height,
+                ColorUtil.color(60, 0, 0, 0)
+        );
+
         if (lastScroll != -1145.1145) {
             listWidget.scrollTo(lastScroll, false);
             lastScroll = -1145.1145;
         }
-        /*
-        BlurRenderer.renderBlur();
-        graphics.enableScissor(0, 0, width, listWidget.top);
-        BlitRenderer.blitToScreen(
-                BlurRenderer.blurFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
-        );
-        graphics.disableScissor();
-        graphics.enableScissor(0, listWidget.bottom, width, listWidget.height);
-        BlitRenderer.blitToScreen(
-                BlurRenderer.blurFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
-        );
-        graphics.disableScissor();
-        */
-
-
         listWidget.width = width;
         listWidget.render(graphics, mouseX, mouseY, delta);
         saveButton.setX((width / 2) - (saveButton.getWidth() / 2));
@@ -218,26 +213,6 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     #else
     public void renderBackground(@NotNull GuiGraphics guiGraphics)
     #endif {
-
-        if (Minecraft.getInstance().level == null) {
-            #if MC_VER >= MC_1_21_1
-            this.panorama.render(guiGraphics, width, height, 1.0f, partialTick);
-            #else
-            panorama.render(Minecraft.getInstance().getDeltaFrameTime(), 1.0f);
-            #endif
-        }
-
-        guiGraphics.fill(
-                0, 0,
-                width, listWidget.top,
-                ColorUtil.color(60, 0, 0, 0)
-        );
-
-        guiGraphics.fill(
-                0, listWidget.bottom,
-                width, listWidget.height,
-                ColorUtil.color(60, 0, 0, 0)
-        );
     }
 
 
