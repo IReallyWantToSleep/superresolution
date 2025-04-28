@@ -1,7 +1,8 @@
 package io.homo.superresolution.neoforge.mixin.compat.sodium;
-#if MC_VER == MC_1_21_5
+
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.platform.Platform;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
@@ -17,7 +18,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
-#endif
 
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,21 +26,22 @@ import net.minecraft.network.chat.Component;
 
 @Mixin(SodiumOptionsGUI.class)
 public class SodiumOptionsGUIMixin extends Screen {
-    protected SodiumOptionsGUIMixin(Component title) {
-        super(title);
-    }
-    #if MC_VER == MC_1_21_5
     @Shadow(remap = false)
     @Final
     private List<OptionPage> pages;
     @Unique
     private OptionPage page;
 
+    protected SodiumOptionsGUIMixin(Component title) {
+        super(title);
+    }
+
     @Inject(
             method = "<init>",
             at = {@At("RETURN")}
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
+        if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) return;
         Component shaderPacksTranslated = Component.translatable("superresolution.screen.config.name");
         this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of(
                 OptionGroup.createBuilder()
@@ -70,5 +71,4 @@ public class SodiumOptionsGUIMixin extends Screen {
             ci.cancel();
         }
     }
-    #endif
 }
