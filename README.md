@@ -1,4 +1,8 @@
-<img src="common/src/main/resources/assets/super_resolution/logo.png" width="128">
+<div align="center"><img src="common/src/main/resources/assets/super_resolution/logo.png" width="256"/></div>
+<div align="center"><img src="https://img.shields.io/github/forks/187J3X1-114514/superresolution"/>
+<img src="https://img.shields.io/github/stars/187J3X1-114514/superresolution"/>
+<img src="https://img.shields.io/github/license/187J3X1-114514/superresolution"/>
+<img src="https://img.shields.io/github/issues/187J3X1-114514/superresolution"/></div>
 
 # Super Resolution
 
@@ -70,3 +74,10 @@ python script/buildAll.py
 
 * 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
 * 生成运动矢量
+
+---
+
+## 星星历史图
+[![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)
+
+
