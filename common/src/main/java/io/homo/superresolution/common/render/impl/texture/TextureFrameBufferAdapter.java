@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.render.impl.texture;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 
@@ -37,17 +37,17 @@ public class TextureFrameBufferAdapter implements IFrameBuffer {
     }
 
     @Override
-    public void bind(RenderTargetBindPoint bindPoint, boolean setViewport) {
+    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
 
     }
 
     @Override
-    public void bind(RenderTargetBindPoint bindPoint) {
+    public void bind(FrameBufferBindPoint bindPoint) {
 
     }
 
     @Override
-    public void unbind(RenderTargetBindPoint bindPoint) {
+    public void unbind(FrameBufferBindPoint bindPoint) {
 
     }
 

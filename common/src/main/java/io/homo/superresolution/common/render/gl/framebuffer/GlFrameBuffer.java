@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.render.gl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.render.impl.IDebuggableObject;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
@@ -96,7 +96,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
         );
     }
 
-    public static int resolveBindTarget(RenderTargetBindPoint point) {
+    public static int resolveBindTarget(FrameBufferBindPoint point) {
         return switch (point) {
             case READ -> GL_READ_FRAMEBUFFER;
             case WRITE -> GL_DRAW_FRAMEBUFFER;
@@ -105,7 +105,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     public void addAttachment(FrameBufferAttachment attachment) {
-        bind(RenderTargetBindPoint.ALL);
+        bind(FrameBufferBindPoint.ALL);
         if (attachment.type == FrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
             colorAttachment = attachment;
         } else if (attachment.type == FrameBufferAttachment.FrameBufferAttachmentType.DEPTH) {
@@ -125,19 +125,19 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public void bind(RenderTargetBindPoint bindPoint, boolean setViewport) {
+    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
         int target = resolveBindTarget(bindPoint);
         glBindFramebuffer(target, frameBufferId);
         if (setViewport) glViewport(0, 0, width, height);
     }
 
     @Override
-    public void bind(RenderTargetBindPoint bindPoint) {
+    public void bind(FrameBufferBindPoint bindPoint) {
         bind(bindPoint, true);
     }
 
     @Override
-    public void unbind(RenderTargetBindPoint bindPoint) {
+    public void unbind(FrameBufferBindPoint bindPoint) {
         glBindFramebuffer(resolveBindTarget(bindPoint), 0);
     }
 
@@ -168,7 +168,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     public void validate() {
-        bind(RenderTargetBindPoint.WRITE);
+        bind(FrameBufferBindPoint.WRITE);
         int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             String errorDesc = switch (status) {
@@ -194,7 +194,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     @Override
     public void clearFrameBuffer() {
-        bind(RenderTargetBindPoint.ALL);
+        bind(FrameBufferBindPoint.ALL);
         glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
     }
 

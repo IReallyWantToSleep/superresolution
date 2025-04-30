@@ -2,7 +2,6 @@ package io.homo.superresolution.common.render.impl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.impl.Destroyable;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
@@ -16,11 +15,11 @@ public interface IFrameBuffer extends Destroyable {
     void resizeFrameBuffer(int width, int height);
 
 
-    void bind(RenderTargetBindPoint bindPoint, boolean setViewport);
+    void bind(FrameBufferBindPoint bindPoint, boolean setViewport);
 
-    void bind(RenderTargetBindPoint bindPoint);
+    void bind(FrameBufferBindPoint bindPoint);
 
-    void unbind(RenderTargetBindPoint bindPoint);
+    void unbind(FrameBufferBindPoint bindPoint);
 
     int getTextureId(FrameBufferAttachmentType attachmentType);
 

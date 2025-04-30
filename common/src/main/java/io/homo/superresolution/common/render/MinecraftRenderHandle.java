@@ -11,17 +11,15 @@ import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.gl.GlState;
 import io.homo.superresolution.common.render.gl.GlStates;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.impl.framebuffer.LegacyStorageFrameBuffer;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.common.render.utils.CallType;
 import io.homo.superresolution.common.render.utils.MinecraftRenderTargetWrapper;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
-import io.homo.superresolution.common.render.utils.RenderTargetType;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.common.render.utils.MinecraftRenderTargetType;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
@@ -38,7 +36,7 @@ import java.util.function.Consumer;
 import static org.lwjgl.opengl.GL11.*;
 
 public class MinecraftRenderHandle {
-    private static final Map<RenderTargetType, IFrameBuffer> renderTargets = new HashMap<>();
+    private static final Map<MinecraftRenderTargetType, IFrameBuffer> renderTargets = new HashMap<>();
     private static final Map<IFrameBuffer, RenderTarget> renderTargetMap = new HashMap<>();
     public static boolean isRenderingWorld = false;
     public static float frameTime;
@@ -95,7 +93,7 @@ public class MinecraftRenderHandle {
 
     //bugjump在1.21.1后的版本重写了一堆代码，成功使发光效果不用我强行兼容力，感谢bugjump
     public static void updateEntityOutline() {
-        entityTarget = RenderTargetType.ENTITY.get(Minecraft.getInstance().levelRenderer);
+        entityTarget = MinecraftRenderTargetType.ENTITY.get(Minecraft.getInstance().levelRenderer);
         #if MC_VER < MC_1_21_4
         entityEffect = ((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).getEntityEffect();
         int renderWidth = getRenderWidth();
@@ -116,18 +114,18 @@ public class MinecraftRenderHandle {
 
     public static void updateRenderTarget() {
         renderTargets.clear();
-        for (RenderTargetType renderTargetType : RenderTargetType.values()) {
-            IFrameBuffer renderTarget = renderTargetType.get(Minecraft.getInstance().levelRenderer);
+        for (MinecraftRenderTargetType minecraftRenderTargetType : MinecraftRenderTargetType.values()) {
+            IFrameBuffer renderTarget = minecraftRenderTargetType.get(Minecraft.getInstance().levelRenderer);
             if (renderTarget != null) {
                 renderTargets.put(
-                        renderTargetType,
+                        minecraftRenderTargetType,
                         renderTarget
                 );
             }
         }
     }
 
-    public static IFrameBuffer getRenderTarget(RenderTargetType type) {
+    public static IFrameBuffer getRenderTarget(MinecraftRenderTargetType type) {
         return renderTargets.get(type);
     }
 
@@ -180,7 +178,7 @@ public class MinecraftRenderHandle {
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         #else
         setClientRenderTarget(getRenderTarget().asMcRenderTarget());
-        getRenderTarget().bind(RenderTargetBindPoint.WRITE);
+        getRenderTarget().bind(FrameBufferBindPoint.WRITE);
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         #endif
         if (needCapture) {
@@ -203,7 +201,7 @@ public class MinecraftRenderHandle {
         #else
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
-        getOriginRenderTarget().bind(RenderTargetBindPoint.WRITE);
+        getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE);
 
         try (GlState ignored = new GlState()) {
             PerformanceInfo.begin("upscale");
@@ -280,22 +278,22 @@ public class MinecraftRenderHandle {
     }
 
     public static void callOnRenderTargets(Consumer<IFrameBuffer> callback) {
-        renderTargets.forEach(((renderTargetType, renderTarget) -> {
-            if (renderTarget != null && renderTargetType != RenderTargetType.HAND) {
+        renderTargets.forEach(((minecraftRenderTargetType, renderTarget) -> {
+            if (renderTarget != null && minecraftRenderTargetType != MinecraftRenderTargetType.HAND) {
                 callback.accept(renderTarget);
             }
         }));
     }
 
-    public static void callOnRenderTargets(BiConsumer<IFrameBuffer, RenderTargetType> callback) {
-        renderTargets.forEach(((renderTargetType, renderTarget) -> {
+    public static void callOnRenderTargets(BiConsumer<IFrameBuffer, MinecraftRenderTargetType> callback) {
+        renderTargets.forEach(((minecraftRenderTargetType, renderTarget) -> {
             if (renderTarget != null) {
-                callback.accept(renderTarget, renderTargetType);
+                callback.accept(renderTarget, minecraftRenderTargetType);
             }
         }));
     }
 
-    public static void callOnRenderTarget(RenderTargetType type, Consumer<IFrameBuffer> callback) {
+    public static void callOnRenderTarget(MinecraftRenderTargetType type, Consumer<IFrameBuffer> callback) {
         if (getRenderTarget(type) != null) {
             callback.accept(getRenderTarget(type));
         }
@@ -313,13 +311,13 @@ public class MinecraftRenderHandle {
     }
 
     public static void onBlitEntityEffect() {
-        if (getRenderTarget(RenderTargetType.ENTITY) == null) return;
+        if (getRenderTarget(MinecraftRenderTargetType.ENTITY) == null) return;
         GlTexture.blitToScreen(
                 getRenderWidth(),
                 getRenderHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                getRenderTarget(RenderTargetType.ENTITY).getTextureId(FrameBufferAttachmentType.COLOR)
+                getRenderTarget(MinecraftRenderTargetType.ENTITY).getTextureId(FrameBufferAttachmentType.COLOR)
         );
     }
 
@@ -338,7 +336,7 @@ public class MinecraftRenderHandle {
                     }
                 }, true
         );
-        IFrameBuffer handRenderTarget = getRenderTarget(RenderTargetType.HAND);
+        IFrameBuffer handRenderTarget = getRenderTarget(MinecraftRenderTargetType.HAND);
         if (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight) {
             handRenderTarget.resizeFrameBuffer(
                     screenWidth,
@@ -350,19 +348,19 @@ public class MinecraftRenderHandle {
     public static void onRenderHandBegin() {
         if (!checkRenderHandCallPos()) return;
         GlStates.save("hand");
-        setClientRenderTarget(getRenderTarget(RenderTargetType.HAND).asMcRenderTarget());
+        setClientRenderTarget(getRenderTarget(MinecraftRenderTargetType.HAND).asMcRenderTarget());
         callOnRenderTarget(
-                RenderTargetType.HAND,
+                MinecraftRenderTargetType.HAND,
                 (renderTarget -> {
                     renderTarget.clearFrameBuffer();
-                    renderTarget.bind(RenderTargetBindPoint.ALL);
+                    renderTarget.bind(FrameBufferBindPoint.ALL);
                 })
         );
     }
 
     public static void blitHandRenderTarget() {
         glEnable(GL_BLEND);
-        callOnRenderTarget(RenderTargetType.HAND, (renderTarget -> GlTexture.blitToScreen(
+        callOnRenderTarget(MinecraftRenderTargetType.HAND, (renderTarget -> GlTexture.blitToScreen(
                 getScreenWidth(),
                 getScreenHeight(),
                 getScreenWidth(),

@@ -12,7 +12,7 @@ import io.homo.superresolution.common.render.gl.vertex.VertexBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.utils.FileReadHelper;
 
 import static org.lwjgl.opengl.GL11.*;
@@ -113,7 +113,7 @@ public class BlurRenderer {
             glDisable(GL_DEPTH_TEST);
             glDepthMask(false);
             blurShader.use();
-            blurFrameBuffer.bind(RenderTargetBindPoint.ALL);
+            blurFrameBuffer.bind(FrameBufferBindPoint.ALL);
             try (VertexArray vao = new VertexArray();
                  VertexBuffer vbo = new VertexBuffer()) {
                 float[] vertices = {

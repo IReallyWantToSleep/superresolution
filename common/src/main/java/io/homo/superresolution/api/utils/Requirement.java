@@ -1,6 +1,5 @@
 package io.homo.superresolution.api.utils;
 
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.*;
 import io.homo.superresolution.common.render.GraphicsCapabilities;
 import io.homo.superresolution.common.render.interop.GlVkInteropManager;

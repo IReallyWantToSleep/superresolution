@@ -88,8 +88,6 @@ public class ShaderCache {
 
         try (DataInputStream dis = new DataInputStream(
                 new BufferedInputStream(Files.newInputStream(binaryPath)))) {
-
-            // 添加格式验证
             int format = dis.readInt();
             if (!isBinaryFormatSupported(format)) {
                 LOGGER.warn("Unsupported binary format: 0x{}", Integer.toHexString(format));
@@ -98,8 +96,6 @@ public class ShaderCache {
 
             byte[] data = new byte[dis.available()];
             dis.readFully(data);
-
-            // 添加数据校验
             if (!validateBinary(data)) {
                 LOGGER.warn("Invalid binary data detected");
                 return null;

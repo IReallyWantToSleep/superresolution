@@ -5,30 +5,34 @@ import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
 public class FrameBufferTextureAdapter implements ITexture {
     private final IFrameBuffer frameBuffer;
-    private final boolean depth;
+    private final FrameBufferAttachmentType attachmentType;
 
-    FrameBufferTextureAdapter(IFrameBuffer frameBuffer, boolean depth) {
+    FrameBufferTextureAdapter(IFrameBuffer frameBuffer, FrameBufferAttachmentType attachmentType) {
         this.frameBuffer = frameBuffer;
-        this.depth = depth;
+        this.attachmentType = attachmentType;
     }
 
     public static FrameBufferTextureAdapter ofColor(IFrameBuffer frameBuffer) {
-        return new FrameBufferTextureAdapter(frameBuffer, false);
+        return of(frameBuffer, FrameBufferAttachmentType.COLOR);
     }
 
     public static FrameBufferTextureAdapter ofDepth(IFrameBuffer frameBuffer) {
-        return new FrameBufferTextureAdapter(frameBuffer, true);
+        return of(frameBuffer, FrameBufferAttachmentType.DEPTH);
+    }
+
+    public static FrameBufferTextureAdapter of(IFrameBuffer frameBuffer, FrameBufferAttachmentType attachmentType) {
+        return new FrameBufferTextureAdapter(frameBuffer, attachmentType);
     }
 
 
     @Override
     public int getTextureId() {
-        return depth ? frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH) : frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR);
+        return frameBuffer.getTextureId(attachmentType);
     }
 
     @Override
     public TextureFormat getTextureFormat() {
-        return depth ? frameBuffer.getDepthTextureFormat() : frameBuffer.getColorTextureFormat();
+        return attachmentType.equals(FrameBufferAttachmentType.COLOR) ? frameBuffer.getColorTextureFormat() : frameBuffer.getDepthTextureFormat();
     }
 
     @Override
@@ -43,11 +47,11 @@ public class FrameBufferTextureAdapter implements ITexture {
 
     @Override
     public void destroy() {
-        frameBuffer.destroy();
+        throw new UnsupportedOperationException("This method is not implemented yet.");
     }
 
     @Override
     public void resize(int width, int height) {
-        frameBuffer.resizeFrameBuffer(width, height);
+        throw new UnsupportedOperationException("This method is not implemented yet.");
     }
 }
