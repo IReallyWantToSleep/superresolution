@@ -15,5 +15,4 @@ public enum FrameBufferAttachmentType {
         this.index = index;
         return this;
     }
-
 }

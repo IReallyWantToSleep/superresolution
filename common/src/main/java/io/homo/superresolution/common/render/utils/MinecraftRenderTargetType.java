@@ -6,7 +6,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 
 import java.util.function.Function;
 
-public enum RenderTargetType {
+public enum MinecraftRenderTargetType {
     ENTITY((levelRenderer -> MinecraftRenderTargetWrapper.of(((LevelRendererAccessor) levelRenderer).getEntityRenderTarget()))),
     TRANSLUCENT((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getTranslucentTarget()))),
     ITEM_ENTITY((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getItemEntityTarget()))),
@@ -17,7 +17,7 @@ public enum RenderTargetType {
 
     private final Function<LevelRenderer, IFrameBuffer> callback;
 
-    RenderTargetType(Function<LevelRenderer, IFrameBuffer> callback) {
+    MinecraftRenderTargetType(Function<LevelRenderer, IFrameBuffer> callback) {
         this.callback = callback;
     }
 

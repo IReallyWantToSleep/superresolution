@@ -9,6 +9,8 @@
         "oculus.GlFramebufferMixin"
     ],
     "mixins": [
+        "embeddium.DefaultChunkRendererMixin",
+        "embeddium.ShaderChunkRendererMixin",
         "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "injectors": {

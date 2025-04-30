@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
 import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.common.render.gl.pipeline.*;
@@ -68,7 +68,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight());
         sgsrShader.setFloat("EdgeThreshold", 8f / 255f);
         sgsrShader.setFloat("EdgeSharpness", 2f);
-        output.bind(RenderTargetBindPoint.WRITE);
+        output.bind(FrameBufferBindPoint.WRITE);
         pipeline.executeJobs(PipelineJobDispatchResource.nothing());
 
         sgsrShader.clear();

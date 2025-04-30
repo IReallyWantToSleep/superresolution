@@ -62,17 +62,7 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
         updateDebugLabel(getDebugLabel());
         return this;
     }
-
-    public void use() {
-        RenderSystem.assertOnRenderThread();
-        glUseProgram(this.shaderProgram);
-    }
-
-    public void clear() {
-        RenderSystem.assertOnRenderThread();
-        glUseProgram(0);
-    }
-
+    
     public void setTexture(String name, int textureId, int texture) {
         glActiveTexture(GL_TEXTURE0 + texture);
         glBindTexture(GL_TEXTURE_2D, textureId);

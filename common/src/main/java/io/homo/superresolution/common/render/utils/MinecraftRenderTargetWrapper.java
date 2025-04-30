@@ -5,17 +5,21 @@ import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.utils.ColorUtil;
+
+#if MC_VER < MC_1_21_1
 import net.minecraft.client.Minecraft;
+#endif
 
 
 import static io.homo.superresolution.common.render.gl.Gl.glBindFramebuffer;
 
 public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public RenderTarget renderTarget;
-    private int clearColor = ColorUtil.color(255, 0, 0, 0);
+    private final int clearColor = ColorUtil.color(255, 0, 0, 0);
 
     MinecraftRenderTargetWrapper(RenderTarget renderTarget) {
         this.renderTarget = renderTarget;
@@ -65,11 +69,11 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         renderTarget.destroyBuffers();
     }
 
-    public void bind(RenderTargetBindPoint bindPoint, boolean setViewport) {
+    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
         #if MC_VER > MC_1_21_4
         glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), MinecraftRenderTargetUtil.getFboId(renderTarget));
         #else
-        if (bindPoint == RenderTargetBindPoint.READ) {
+        if (bindPoint == FrameBufferBindPoint.READ) {
             renderTarget.bindRead();
         } else {
             renderTarget.bindWrite(setViewport);
@@ -78,11 +82,11 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
 
     }
 
-    public void bind(RenderTargetBindPoint bindPoint) {
+    public void bind(FrameBufferBindPoint bindPoint) {
         bind(bindPoint, true);
     }
 
-    public void unbind(RenderTargetBindPoint bindPoint) {
+    public void unbind(FrameBufferBindPoint bindPoint) {
         glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), 0);
     }
 

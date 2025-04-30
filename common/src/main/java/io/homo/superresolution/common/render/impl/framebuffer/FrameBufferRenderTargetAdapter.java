@@ -2,7 +2,6 @@ package io.homo.superresolution.common.render.impl.framebuffer;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.render.utils.RenderTargetBindPoint;
 import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
 
 
@@ -141,24 +140,24 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public void bindRead() {
         updateState();
-        frameBuffer.bind(RenderTargetBindPoint.READ);
+        frameBuffer.bind(FrameBufferBindPoint.READ);
     }
 
     public void unbindRead() {
         updateState();
-        frameBuffer.unbind(RenderTargetBindPoint.READ);
+        frameBuffer.unbind(FrameBufferBindPoint.READ);
 
     }
 
     public void bindWrite(boolean setViewport) {
         updateState();
-        frameBuffer.bind(RenderTargetBindPoint.WRITE, setViewport);
+        frameBuffer.bind(FrameBufferBindPoint.WRITE, setViewport);
 
     }
 
     public void unbindWrite() {
         updateState();
-        frameBuffer.unbind(RenderTargetBindPoint.WRITE);
+        frameBuffer.unbind(FrameBufferBindPoint.WRITE);
     }
 
     public void setClearColor(float red, float green, float blue, float alpha) {
@@ -197,8 +196,10 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         updateState();
         frameBuffer.clearFrameBuffer();
     }
+
     public void resize(int width, int height) {
     }
+
     public void createBuffers(int width, int height) {
         updateState();
     }

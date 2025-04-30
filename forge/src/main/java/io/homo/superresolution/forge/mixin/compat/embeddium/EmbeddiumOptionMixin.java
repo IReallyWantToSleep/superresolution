@@ -1,5 +1,6 @@
 package io.homo.superresolution.forge.mixin.compat.embeddium;
 
+import me.jellysquid.mods.sodium.client.render.chunk.ShaderChunkRenderer;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,5 +27,6 @@ public class EmbeddiumOptionMixin {
                             return false;
                         }).build()
         );
+
     }
 }
