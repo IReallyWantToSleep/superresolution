@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.impl.Vec2;
 import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
@@ -13,15 +14,17 @@ import org.joml.Matrix4f;
 
 public class AlgorithmManager {
     public static AlgorithmParam param = new AlgorithmParam();
-    private static GlFrameBuffer motionVectorsFrameBuffer;
 
+    public static GlFrameBuffer getMotionVectorsFrameBuffer() {
+        return (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer();
+    }
 
     public static void destroy() {
 
     }
 
     public static void resize(int width, int height) {
-        motionVectorsFrameBuffer.resizeFrameBuffer(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        MotionVectorsGenerator.resize();
     }
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
@@ -96,27 +99,22 @@ public class AlgorithmManager {
                 param.lastProjectionMatrix,
                 param.lastModelViewProjectionMatrix,
                 param.lastViewMatrix,
-                motionVectorsFrameBuffer,
+                (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer(),
                 new Vec2(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
                 new Vec2(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
         );
     }
 
     public static void init() {
-        motionVectorsFrameBuffer = new GlFrameBuffer();
-        motionVectorsFrameBuffer.addAttachment(new FrameBufferAttachment(
-                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                GlTexture.create(
-                        MinecraftRenderHandle.getRenderWidth(),
-                        MinecraftRenderHandle.getRenderHeight(),
-                        TextureFormat.RG16F
-                )
-        ));
-        motionVectorsFrameBuffer.setClearColor(0, 0, 0, 1);
+
+        MotionVectorsGenerator.init();
     }
 
     public static void update() {
-        //MotionVectorsGenerator.update(getDispatchResource(), motionVectorsFrameBuffer);
+        getMotionVectorsFrameBuffer().clearFrameBuffer();
+        if (Config.isGenerateMotionVectors()) {
+            MotionVectorsGenerator.update(getDispatchResource());
+        }
     }
 
     public static class AlgorithmParam {

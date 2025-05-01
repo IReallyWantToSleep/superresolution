@@ -8,10 +8,8 @@ import io.homo.superresolution.common.render.impl.IDebuggableObject;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 
-import static io.homo.superresolution.common.render.gl.Gl.*;
-import static io.homo.superresolution.common.render.gl.GlConst.*;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE;
-import static org.lwjgl.opengl.GL11.glGenTextures;
+import static io.homo.superresolution.common.render.gl.Gl.glSafeObjectLabel;
+import static org.lwjgl.opengl.GL43.*;
 
 public class GlTexture implements ITexture, IDebuggableObject {
     public int id;
@@ -21,7 +19,7 @@ public class GlTexture implements ITexture, IDebuggableObject {
     private boolean mipmap = false;
 
     public GlTexture(int width, int height, int format, boolean mipmap) {
-        this.id = glGenTextures();
+        this.id = 0;
         this.format = format;
         this.width = width;
         this.height = height;
@@ -43,6 +41,11 @@ public class GlTexture implements ITexture, IDebuggableObject {
     }
 
     private void initializeTexture() {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalStateException("无效的尺寸: " + width + "x" + height);
+        }
+        glDeleteTextures(this.id);
+        this.id = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, this.id);
         int minFilter = mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST;
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
@@ -50,7 +53,11 @@ public class GlTexture implements ITexture, IDebuggableObject {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        int maxLevel = mipmap ? 8 : 0;
+        int maxLevel = 0;
+        if (mipmap) {
+            int maxSize = Math.max(this.width, this.height);
+            maxLevel = (int) (Math.log(maxSize) / Math.log(2));
+        }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxLevel);
         glTexStorage2D(GL_TEXTURE_2D, maxLevel + 1, this.format, this.width, this.height);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -66,8 +73,6 @@ public class GlTexture implements ITexture, IDebuggableObject {
     @Override
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
-        glDeleteTextures(this.id);
-        this.id = glGenTextures();
         this.width = width;
         this.height = height;
         initializeTexture();

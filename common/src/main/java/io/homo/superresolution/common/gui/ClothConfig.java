@@ -251,6 +251,14 @@ public class ClothConfig {
                 }))
                 .setTooltipSupplier((captureMode) -> Optional.of(new Component[]{captureMode.get()}))
                 .setSaveConsumer(Config::setCaptureMode).build();
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.generate_motion_vectors"),
+                        Config.isGenerateMotionVectors()
+                )
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
+                .setDefaultValue(false)
+                .setSaveConsumer(Config::setGenerateMotionVectors)
+                .build());
         commonCategory.addEntry(captureModeEnumSelector);
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.skip_load_native_lib"),

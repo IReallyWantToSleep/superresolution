@@ -4,6 +4,7 @@ package io.homo.superresolution.common.mixin.core;
 
 import net.minecraft.client.DeltaTracker;
 #else
+
 import com.mojang.blaze3d.vertex.PoseStack;
 #endif
 

@@ -8,6 +8,7 @@ import io.homo.superresolution.common.render.MinecraftRenderHandle;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import net.minecraft.client.Minecraft;
 
 public class ImGuiLayer {
@@ -109,6 +110,36 @@ public class ImGuiLayer {
         }
         ImGui.text("MainRenderTarget " + MinecraftRenderHandle.getScreenWidth() + " " + MinecraftRenderHandle.getScreenHeight());
         ImGui.image(MinecraftRenderHandle.getOriginRenderTarget().getFrameBufferId(),
+                width,
+                height,
+                0, 1, 1, 0);
+        ImGui.text("mv " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+        ImGui.image(AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.COLOR),
+                width,
+                height,
+                0, 1, 1, 0);
+        ImGui.text("mv grad " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+        ImGui.image(MotionVectorsGenerator.gradFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
+                width,
+                height,
+                0, 1, 1, 0);
+        ImGui.text("mv delta " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+        ImGui.image(MotionVectorsGenerator.deltaFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
+                width,
+                height,
+                0, 1, 1, 0);
+        ImGui.text("mv c " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+        ImGui.image(MotionVectorsGenerator.currentFrameTexture.getTextureId(),
+                width,
+                height,
+                0, 1, 1, 0);
+        ImGui.text("mv pt " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+        ImGui.image(MotionVectorsGenerator.previousFrameTexture.getTextureId(),
+                width,
+                height,
+                0, 1, 1, 0);
+        ImGui.text("mv pf " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
+        ImGui.image(MotionVectorsGenerator.preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
                 width,
                 height,
                 0, 1, 1, 0);

@@ -6,9 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.homo.superresolution.common.render.gl.GlConst.*;
-import static org.lwjgl.opengl.GL30.GL_R32UI;
-import static org.lwjgl.opengl.GL30.GL_RGBA16F;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum TextureFormat {
@@ -16,6 +14,7 @@ public enum TextureFormat {
     RGBA16F(GL_RGBA16F, VK_FORMAT_R16G16B16A16_SFLOAT),
     RGB8(GL_RGB8, VK_FORMAT_R8G8B8_UNORM),
     RG16F(GL_RG16F, VK_FORMAT_R16G16_SFLOAT),
+    RG32F(GL_RG32F, VK_FORMAT_R32G32_SFLOAT),
     R32F(GL_R32F, VK_FORMAT_R32_SFLOAT),
     R32UI(GL_R32UI, VK_FORMAT_R32_UINT),
     DEPTH32F(GL_DEPTH_COMPONENT32F, VK_FORMAT_D32_SFLOAT),

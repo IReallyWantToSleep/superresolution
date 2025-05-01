@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.render.gl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.render.gl.GlState;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.render.impl.IDebuggableObject;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
@@ -194,8 +195,10 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     @Override
     public void clearFrameBuffer() {
-        bind(FrameBufferBindPoint.ALL);
-        glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+        try (GlState ignored = new GlState()) {
+            bind(FrameBufferBindPoint.ALL);
+            glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+        }
     }
 
     @Override
