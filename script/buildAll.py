@@ -168,9 +168,12 @@ if __name__ == "__main__":
     print(f"\n开始构建 {len(version_configs)} 个版本:")
     
     for version, config in version_configs.items():
-        if config["skip_build"]:
-            print(f"跳过构建: {version}")
-            continue
+        try :
+            if config["skip_build"]:
+                print(f"跳过构建: {version}")
+                continue
+        except KeyError:
+            pass
         print(f"\n=== 正在构建 {version} ===")
         print("目标加载器:", ", ".join(config["common"]["platforms"]))
         
