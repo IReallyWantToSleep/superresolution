@@ -1,6 +1,14 @@
 name: Build and Upload Artifacts
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "name"
+        required: true
+      tag_name:
+        description: "tag_name"
+        required: true
 
 jobs:
   build:
@@ -32,6 +40,9 @@ jobs:
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
         with:
+          name: ${{ github.event.inputs.name }}
+          tag_name: ${{ github.event.inputs.tag_name }}
+
           token: ${{ secrets.MY_TOKEN }}
           body_path: ./CHANGELOG.md
           files: |
