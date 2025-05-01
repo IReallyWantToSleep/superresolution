@@ -16,7 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
@@ -42,8 +41,7 @@ jobs:
         with:
           name: ${{ github.event.inputs.name }}
           tag_name: ${{ github.event.inputs.tag_name }}
-
-          token: ${{ secrets.MY_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           body_path: ./CHANGELOG.md
           files: |
             ./build_jars/**
