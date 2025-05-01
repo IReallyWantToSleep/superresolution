@@ -6,11 +6,11 @@ on:
 
 jobs:
   build:
+    if: ${{ !contains(github.event.head_commit.message, 'SKIP') }}
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
