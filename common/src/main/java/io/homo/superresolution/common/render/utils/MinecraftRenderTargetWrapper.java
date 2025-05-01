@@ -10,7 +10,7 @@ import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.utils.ColorUtil;
 
-#if MC_VER < MC_1_21_1
+#if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
 #endif
 
@@ -19,7 +19,7 @@ import static io.homo.superresolution.common.render.gl.Gl.glBindFramebuffer;
 
 public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public RenderTarget renderTarget;
-    private final int clearColor = ColorUtil.color(255, 0, 0, 0);
+    private int clearColor = ColorUtil.color(255, 0, 0, 0);
 
     MinecraftRenderTargetWrapper(RenderTarget renderTarget) {
         this.renderTarget = renderTarget;
@@ -28,6 +28,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public static MinecraftRenderTargetWrapper of(RenderTarget renderTarget) {
         if (renderTarget == null) return null;
         MinecraftRenderTargetWrapper wrapper = new MinecraftRenderTargetWrapper(renderTarget);
+        wrapper.clearColor = ColorUtil.color(255, 0, 0, 0);
         return wrapper;
     }
 

@@ -5,7 +5,7 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.render.impl.texture.ITexture;
 import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-#if MC_VER < MC_1_21_1
+#if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
 #endif
 
