@@ -7,6 +7,7 @@ import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
 public class ConfigData {
@@ -23,6 +24,7 @@ public class ConfigData {
     private boolean skipInitVulkan;
     private boolean enableRenderDoc;
     private boolean enableImgui;
+    private boolean generateMotionVectors;
 
     public ConfigData() {
         skipLoadNativeLib = compatMode;
@@ -44,6 +46,15 @@ public class ConfigData {
             return AlgorithmDescriptions.NONE;
         }
         return desc;
+    }
+
+    public boolean isGenerateMotionVectors() {
+        return generateMotionVectors;
+    }
+
+    public ConfigData setGenerateMotionVectors(boolean generateMotionVectors) {
+        this.generateMotionVectors = generateMotionVectors;
+        return this;
     }
 
     public boolean isEnableRenderDoc() {
@@ -117,7 +128,7 @@ public class ConfigData {
         if (newAlgo == null) {
             newAlgo = getDefaultAlgorithm();
         }
-        if (!newAlgo.requirement.check().support()) {
+        if (!newAlgo.requirement.check().support() && !Platform.currentPlatform.isDevelopmentEnvironment()) {
             SuperResolution.LOGGER.warn("算法 {} 不支持，回退到默认算法", newAlgo.displayName);
             newAlgo = getDefaultAlgorithm();
         }

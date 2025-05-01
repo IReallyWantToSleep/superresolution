@@ -167,4 +167,12 @@ public class Config {
         instance.setSkipInitVulkan(skipInitVulkan);
 
     }
+
+    public static boolean isGenerateMotionVectors() {
+        return instance.isGenerateMotionVectors();
+    }
+
+    public static void setGenerateMotionVectors(boolean generateMotionVectors) {
+        instance.setGenerateMotionVectors(generateMotionVectors);
+    }
 }

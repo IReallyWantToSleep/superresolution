@@ -11,10 +11,12 @@ import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.render.gl.GlState;
 import io.homo.superresolution.common.render.gl.GlStates;
+import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.render.gl.texture.GlTexture;
 import io.homo.superresolution.common.render.impl.framebuffer.LegacyStorageFrameBuffer;
+import io.homo.superresolution.common.render.impl.texture.TextureFormat;
 import io.homo.superresolution.common.render.renderdoc.RenderDoc;
 import io.homo.superresolution.common.render.utils.CallType;
 import io.homo.superresolution.common.render.utils.MinecraftRenderTargetWrapper;
@@ -34,6 +36,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.*;
 
 public class MinecraftRenderHandle {
     private static final Map<MinecraftRenderTargetType, IFrameBuffer> renderTargets = new HashMap<>();
@@ -48,7 +51,6 @@ public class MinecraftRenderHandle {
     private static IFrameBuffer entityTarget;
     private static boolean needCapture = false;
     private static boolean needCaptureUpscale = false;
-
 
     public static void needCapture() {
         needCapture = true;
@@ -225,6 +227,7 @@ public class MinecraftRenderHandle {
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()
             );
+
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
                     needCaptureUpscale = false;
@@ -308,6 +311,7 @@ public class MinecraftRenderHandle {
     public static void callOnRenderTargets(Consumer<IFrameBuffer> callback, boolean includeMainRenderTarget) {
         callOnRenderTargets(callback);
         if (includeMainRenderTarget) callback.accept(getRenderTarget());
+
     }
 
     public static void onBlitEntityEffect() {

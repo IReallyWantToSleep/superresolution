@@ -106,5 +106,7 @@
     "superresolution.enum.sgsrvariant.cs_2": "CS_2 (Compute Shader/2 Pass)",
     "superresolution.enum.sgsrvariant.cs_3": "CS_3 (Compute Shader/3 Pass)",
     "superresolution.enum.sgsrvariant.fs_2": "FS_2 (Fragment Shader/2 Pass)",
+    "superresolution.screen.config.options.label.generate_motion_vectors": "Generate Motion Vectors",
+    "superresolution.screen.config.options.tooltip.generate_motion_vectors": "Motion vectors can enhance the super-resolution quality of certain algorithms (FSR2, SGSR2) but may introduce performance overhead",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

@@ -81,6 +81,8 @@
     "superresolution.screen.config.options.tooltip.enable_renderdoc": "仅开发环境有效，启用RenderDoc集成",
     "superresolution.screen.config.options.label.enable_imgui": "启用Imgui",
     "superresolution.screen.config.options.tooltip.enable_imgui": "仅开发环境有效，启用调试界面",
+    "superresolution.screen.config.options.label.generate_motion_vectors": "生成运动矢量",
+    "superresolution.screen.config.options.tooltip.generate_motion_vectors": "运动矢量可以提示部分算法（FSR2,SGSR2）的超分质量，但会损失性能",
     "superresolution.screen.debug.performance_info": "性能信息",
     "superresolution.screen.debug.performance_data": "世界渲染用时 %1$sms\n升采样算法用时 %2$sms",
     "superresolution.screen.config.warn.mobile_device": "警告：正在移动设备上运行，本模组对移动设备的支持不稳定，可能出现无法预料的错误",

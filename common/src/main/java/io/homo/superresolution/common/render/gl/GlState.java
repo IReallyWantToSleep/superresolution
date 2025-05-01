@@ -8,7 +8,9 @@ public class GlState implements AutoCloseable {
     public int vao;
     public int vbo;
     public int ebo;
-    public int fbo;
+    public int wFbo;
+    public int rFbo;
+
     public int texture2D;
     public int activeTextureNumber;
     public int[] textures;
@@ -46,7 +48,8 @@ public class GlState implements AutoCloseable {
         this.vao = glGetInteger(GL_VERTEX_ARRAY_BINDING);
         this.vbo = glGetInteger(GL_ARRAY_BUFFER_BINDING);
         this.ebo = glGetInteger(GL_ELEMENT_ARRAY_BUFFER_BINDING);
-        this.fbo = glGetInteger(GL_FRAMEBUFFER_BINDING);
+        this.rFbo = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
+        this.wFbo = glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
         this.texture2D = glGetInteger(GL_TEXTURE_BINDING_2D);
         this.activeTextureNumber = glGetInteger(GL_ACTIVE_TEXTURE);
         this.textures = new int[MAX_TEXTURES];
@@ -87,7 +90,9 @@ public class GlState implements AutoCloseable {
     }
 
     public void restore() {
-        glBindFramebuffer(GL_FRAMEBUFFER, this.fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this.wFbo);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, this.rFbo);
+
         for (int i = 0; i < MAX_TEXTURES; i++) {
             glActiveTexture(GL_TEXTURE0 + i);
             glBindTexture(GL_TEXTURE_2D, this.textures[i]);
