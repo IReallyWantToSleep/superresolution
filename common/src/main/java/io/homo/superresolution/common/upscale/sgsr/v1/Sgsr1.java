@@ -1,19 +1,19 @@
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.common.render.gl.pipeline.*;
-import io.homo.superresolution.common.render.gl.shader.AbstractGlShaderProgram;
-import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.core.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.gl.pipeline.*;
+import io.homo.superresolution.core.gl.shader.AbstractGlShaderProgram;
+import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.utils.FileReadHelper;
+import io.homo.superresolution.core.utils.FileReadHelper;
 
 public class Sgsr1 extends AbstractAlgorithm {
     private GlPipeline pipeline;

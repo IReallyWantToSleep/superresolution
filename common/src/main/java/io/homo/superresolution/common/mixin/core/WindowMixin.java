@@ -2,8 +2,7 @@ package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.impl.Vec2;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

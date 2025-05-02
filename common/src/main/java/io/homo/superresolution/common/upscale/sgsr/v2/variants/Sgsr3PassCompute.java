@@ -1,21 +1,21 @@
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
-import io.homo.superresolution.common.impl.Vec3;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.pipeline.*;
-import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.common.render.gl.texture.GlSampler;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.common.render.impl.texture.ITexture;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.render.impl.texture.TextureSupplier;
+import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.pipeline.*;
+import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
+import io.homo.superresolution.core.gl.texture.GlSampler;
+import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.impl.texture.TextureSupplier;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
-import io.homo.superresolution.common.utils.FileReadHelper;
+import io.homo.superresolution.core.utils.FileReadHelper;
 
 public class Sgsr3PassCompute extends AbstractSgsrVariant {
     private GlComputeShaderProgram activateShader;

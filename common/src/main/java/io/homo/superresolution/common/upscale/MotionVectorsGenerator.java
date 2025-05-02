@@ -1,21 +1,21 @@
 package io.homo.superresolution.common.upscale;
 
-import io.homo.superresolution.common.impl.Vec3;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.GlState;
-import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.common.render.gl.pipeline.*;
-import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.impl.texture.ITexture;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.utils.FileReadHelper;
+import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.GlState;
+import io.homo.superresolution.core.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.gl.pipeline.*;
+import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
+import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.utils.FileReadHelper;
 
-import static io.homo.superresolution.common.render.gl.Gl.*;
-import static io.homo.superresolution.common.render.gl.GlConst.*;
+import static io.homo.superresolution.core.gl.Gl.*;
+import static io.homo.superresolution.core.gl.GlConst.*;
 
 public class MotionVectorsGenerator {
     private static final GlGeneralShaderProgram preprocess =

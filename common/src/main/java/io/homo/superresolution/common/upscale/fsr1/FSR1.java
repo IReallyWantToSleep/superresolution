@@ -1,21 +1,20 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.impl.Vec3;
-import io.homo.superresolution.common.render.GraphicsCapabilities;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.pipeline.*;
-import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.common.render.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.render.impl.texture.TextureFrameBufferAdapter;
+import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.pipeline.*;
+import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
+import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
+import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.utils.FileReadHelper;
+import io.homo.superresolution.core.utils.FileReadHelper;
 
 public class FSR1 extends AbstractAlgorithm {
     private GlComputeShaderProgram fsr1EASUShader;

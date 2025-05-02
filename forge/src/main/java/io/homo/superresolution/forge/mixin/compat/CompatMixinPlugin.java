@@ -1,9 +1,7 @@
 package io.homo.superresolution.forge.mixin.compat;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.renderdoc.RenderDoc;
+import io.homo.superresolution.core.renderdoc.RenderDoc;
 import io.homo.superresolution.forge.platform.ForgePlatform;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;

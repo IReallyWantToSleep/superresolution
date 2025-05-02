@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static io.homo.superresolution.common.render.gl.GlConst.*;
+import static io.homo.superresolution.core.gl.GlConst.*;
 
 @Mixin(value = GlFramebuffer.class, remap = false)
 public abstract class GlFramebufferMixin extends GlResource {

@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.config.special;
 
-import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
 import java.util.HashMap;

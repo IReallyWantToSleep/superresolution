@@ -5,7 +5,7 @@ import imgui.ImGuiIO;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
-import io.homo.superresolution.common.impl.Destroyable;
+import io.homo.superresolution.core.impl.Destroyable;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 

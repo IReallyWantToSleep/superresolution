@@ -1,14 +1,13 @@
 package io.homo.superresolution.common.gui;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.GraphicsCapabilities;
-import io.homo.superresolution.common.render.interop.GlVkInteropManager;
+import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.core.interop.GlVkInteropManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.common.utils.ColorUtil;
+import io.homo.superresolution.core.utils.ColorUtil;
 import oiiaio.fsr.NativeLibManager;
 import io.homo.superresolution.api.utils.Requirement;
 import net.minecraft.network.chat.Component;

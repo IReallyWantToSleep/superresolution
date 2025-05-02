@@ -1,6 +1,6 @@
 package oiiaio.fsr;
 
-import io.homo.superresolution.common.utils.Md5CaculateUtil;
+import io.homo.superresolution.core.utils.Md5CaculateUtil;
 import net.minecraft.SharedConstants;
 import oiiaio.fsr.fsr2.FfxFSR2;
 import org.slf4j.Logger;
@@ -26,11 +26,13 @@ public class NativeLibManager {
     static {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")) {
+            libs.add(new NativeLib("glslang-linux-amd64", "08d5aeec95b6663a0305148693ec00e1"));
             libs.add(new NativeLib("libffx_fsr2_api_gl_x64", "adcb741d12279be5a7c7dcbe274ccab1"));
             libs.add(new NativeLib("libffx_fsr2_api_vk_x64", "77b3fc7b7ce5880d55279d3cf9784363"));
             libs.add(new NativeLib("libffx_fsr2_api_x64", "ec1baf03bf7ad3b696e411e9187e5d2d"));
             libs.add(new NativeLib("libfsr2javalib", "abd6d67844c0370d3792946e8b47b9f0", 1));
         } else if (os.contains("windows")) {
+            libs.add(new NativeLib("glslang-win-amd64", "225bd4c50aa403c15bcf2a44ecacd0c5"));
             libs.add(new NativeLib("libwinpthread-1", "59a112452ceccba063cc85d0513fd0a7"));
             libs.add(new NativeLib("libgcc_s_seh-1", "97ba9d2d7090a7d265cefed7fa40b1bf"));
             libs.add(new NativeLib("libstdc++-6", "b1852a4962ea7185dc353fe6f0ab4553"));

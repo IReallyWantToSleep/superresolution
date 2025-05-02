@@ -1,8 +1,8 @@
 package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.render.utils.CallType;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.CallType;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
 import org.spongepowered.asm.mixin.Shadow;

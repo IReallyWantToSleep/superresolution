@@ -1,42 +1,34 @@
 package io.homo.superresolution.common.upscale.nis;
 
-import com.mojang.blaze3d.platform.NativeImage;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.impl.Pair;
-import io.homo.superresolution.common.impl.Vec2;
-import io.homo.superresolution.common.impl.Vec3;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.Gl;
-import io.homo.superresolution.common.render.gl.GlConst;
-import io.homo.superresolution.common.render.gl.GlState;
-import io.homo.superresolution.common.render.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.common.render.gl.pipeline.*;
+import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.Gl;
+import io.homo.superresolution.core.gl.GlConst;
+import io.homo.superresolution.core.gl.GlState;
+import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.gl.pipeline.*;
 
 import static org.lwjgl.opengl.GL11.GL_RGBA;
 import static org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT;
-import static org.lwjgl.opengl.GL30.GL_HALF_FLOAT;
 import static org.lwjgl.stb.STBImage.*;
 
-import io.homo.superresolution.common.render.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
+import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.render.impl.texture.ITexture;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
-import io.homo.superresolution.common.utils.FileReadHelper;
+import io.homo.superresolution.core.utils.FileReadHelper;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import static io.homo.superresolution.common.render.gl.GlConst.GL_UNSIGNED_BYTE;
-import static io.homo.superresolution.common.upscale.nis.NVIDIAImageScalingConst.kFilterSize;
+import static io.homo.superresolution.core.gl.GlConst.GL_UNSIGNED_BYTE;
 
 public class NVIDIAImageScaling extends AbstractAlgorithm {
     private NVIDIAImageScalingConfig config;

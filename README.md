@@ -11,7 +11,10 @@
 # 支持的算法
 
 * FSR1
-* FSR2 (正在开发，缺少运动矢量输入)
+* FSR2 (正在开发)
+* SGSR2
+* SGSR1
+* NIS (正在开发)
 
 # 兼容性
 
@@ -28,13 +31,14 @@
 * Windows
 * Linux
 * 不支持MacOS系统
+* 不支持在移动设备上运行
 
 ## 显卡要求
 
 ### 通用
 
 * 显卡支持OpenGL版本 >= 4.3
-* 显卡支持Vulkan版本 >= 1.2 (非必须，因为功能没做完)
+* 显卡支持Vulkan版本 >= 1.2 (非必须)
 
 ### FSR1
 
@@ -73,11 +77,11 @@ python script/buildAll.py
 # 可能会有的功能
 
 * 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
-* 生成运动矢量
 
 ---
 
 ## 星星历史图
+
 [![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)
 
 

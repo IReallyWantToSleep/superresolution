@@ -3,14 +3,13 @@ package io.homo.superresolution.common.upscale.fsr2;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
-import io.homo.superresolution.common.render.impl.texture.TextureFrameBufferAdapter;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import oiiaio.fsr.NativeLibManager;
 import oiiaio.fsr.FfxError;
@@ -19,7 +18,7 @@ import oiiaio.fsr.fsr2.FfxFsr2ContextCreateResult;
 import oiiaio.fsr.fsr2.impl.*;
 import org.joml.Matrix4f;
 
-import static io.homo.superresolution.common.render.gl.GlConst.*;
+import static io.homo.superresolution.core.gl.GlConst.*;
 import static oiiaio.fsr.fsr2.enums.FfxFsr2InitializationFlagBits.*;
 
 public class FSR2 extends AbstractAlgorithm {
