@@ -1,9 +1,9 @@
 package io.homo.superresolution.api;
 
-import io.homo.superresolution.common.impl.Destroyable;
-import io.homo.superresolution.common.impl.Resizable;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.render.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.core.impl.Resizable;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
@@ -20,7 +20,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     public AbstractAlgorithm() {
 
     }
-    
+
     /**
      * 初始化算法。
      */

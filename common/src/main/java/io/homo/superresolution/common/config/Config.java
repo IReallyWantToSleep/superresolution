@@ -6,7 +6,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import net.minecraft.client.Minecraft;
 
 public class Config {

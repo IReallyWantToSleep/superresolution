@@ -40,3 +40,4 @@ void main() {
         out_motion = vec4(0.0, 0.0, 0.0, 1.0);
     }
 }
+

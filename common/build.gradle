@@ -11,9 +11,7 @@ dependencies {
     implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
     implementation "org.anarres:jcpp:1.4.14"
     implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    implementation("org.lwjgl:lwjgl-shaderc")
-    implementation("org.lwjgl:lwjgl-shaderc::natives-windows")
     implementation('com.electronwill.night-config:toml:3.6.0')
     implementation('com.electronwill.night-config:core:3.6.0')
-
+    implementation(files("./lib/glslang.jar"))
 }

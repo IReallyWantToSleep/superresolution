@@ -2,12 +2,9 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.impl.Vec2;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.framebuffer.FrameBufferAttachment;
-import io.homo.superresolution.common.render.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.common.render.gl.texture.GlTexture;
-import io.homo.superresolution.common.render.impl.texture.TextureFormat;
+import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;

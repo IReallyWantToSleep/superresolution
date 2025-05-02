@@ -1,6 +1,5 @@
 package io.homo.superresolution.common.gui;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
@@ -14,14 +13,14 @@ import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
 import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.gui.widgets.Line;
-import io.homo.superresolution.common.impl.Pair;
+import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.GraphicsCapabilities;
-import io.homo.superresolution.common.render.interop.GlVkInteropManager;
+import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.core.interop.GlVkInteropManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.utils.ColorUtil;
+import io.homo.superresolution.core.utils.ColorUtil;
 import me.shedaniel.clothconfig2.api.*;
 import me.shedaniel.clothconfig2.gui.entries.EnumListEntry;
 import me.shedaniel.clothconfig2.gui.entries.SelectionListEntry;
@@ -32,11 +31,9 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 

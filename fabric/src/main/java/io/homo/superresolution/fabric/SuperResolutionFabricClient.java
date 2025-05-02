@@ -4,10 +4,9 @@ import dev.architectury.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.ConfigFile;
-import io.homo.superresolution.common.render.renderdoc.RenderDoc;
+import io.homo.superresolution.core.renderdoc.RenderDoc;
 import io.homo.superresolution.fabric.compat.sodium.SodiumOptionScreen;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 
 public final class SuperResolutionFabricClient implements ClientModInitializer {
     public static SuperResolution mod;

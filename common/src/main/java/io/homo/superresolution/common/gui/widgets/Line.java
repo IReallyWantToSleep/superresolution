@@ -1,10 +1,8 @@
 package io.homo.superresolution.common.gui.widgets;
 
-import io.homo.superresolution.common.utils.ColorUtil;
+import io.homo.superresolution.core.utils.ColorUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.util.FormattedCharSequence;
 import org.joml.Vector2f;
 
 public class Line {

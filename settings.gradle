@@ -46,3 +46,4 @@ for (loader in gradle.ext.versionConfigSrc.common.platforms) {
     println "添加加载器 " + loaderName
     include(loaderName)
 }
+

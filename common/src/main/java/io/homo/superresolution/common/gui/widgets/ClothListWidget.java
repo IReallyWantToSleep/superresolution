@@ -2,11 +2,7 @@ package io.homo.superresolution.common.gui.widgets;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.Tesselator;
-import io.homo.superresolution.common.gui.effect.BlurRenderer;
-import io.homo.superresolution.common.render.MinecraftRenderHandle;
-import io.homo.superresolution.common.render.gl.utils.BlitRenderer;
-import io.homo.superresolution.common.render.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.utils.ColorUtil;
+import io.homo.superresolution.core.utils.ColorUtil;
 import me.shedaniel.clothconfig2.api.AbstractConfigEntry;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.ClothConfigScreen;

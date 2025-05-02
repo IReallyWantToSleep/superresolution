@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.GLX;
-import io.homo.superresolution.common.render.GraphicsCapabilities;
+import io.homo.superresolution.core.GraphicsCapabilities;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

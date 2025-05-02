@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.mixin;
 
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.common.render.GraphicsCapabilities;
+import io.homo.superresolution.core.GraphicsCapabilities;
 import org.lwjgl.glfw.GLFW;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
