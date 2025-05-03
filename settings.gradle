@@ -38,7 +38,7 @@ def loadConfig() {
 
 loadConfig()
 rootProject.name = 'super_resolution'
-
+include 'native'
 include 'common'
 for (loader in gradle.ext.versionConfigSrc.common.platforms) {
     def loaderName = loader.strip()
