@@ -20,6 +20,7 @@ jobs:
         with:
           platform: x64
           static: 1
+          version: 12.2.0
       - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
