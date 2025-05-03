@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.homo.SuperResolution'
+version = '0.0.1-alpha.1'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+}
+
+tasks.register('configureCMake', Exec) {
+    workingDir file(projectDir.path + "/cpp")
+    commandLine 'cmake', '-S', '.', '-B', 'build', '-G', 'MinGW Makefiles', "-DSRLIB_VERSION='${version}'"
+
+    doFirst {
+        delete "${projectDir}/cpp/build"
+        delete "${projectDir}/cpp/bin"
+        mkdir "${projectDir}/cpp/build"
+    }
+}
+
+tasks.register('buildCMake', Exec) {
+    dependsOn configureCMake
+    workingDir file(projectDir.path + "/cpp/build")
+    commandLine 'cmake', '--build', '.'
+}
+
+tasks.register('buildNative') {
+    dependsOn configureCMake
+    dependsOn buildCMake
+    finalizedBy copyNativeLib
+
+    doLast {
+        println "构建完成"
+    }
+}
+
+tasks.register('copyNativeLib', Copy) {
+    dependsOn buildCMake
+    from("${projectDir}/cpp/bin") {
+        include "libSuperResolution*"
+        exclude "**/*.a"
+    }
+    into "${projectDir}/../common/src/main/resources/lib/"
+
+    doFirst {
+        if (!file("${projectDir}/cpp/bin/libSuperResolution.dll").exists()) {
+            throw new GradleException("未发现库文件")
+        }
+    }
+}

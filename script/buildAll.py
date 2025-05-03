@@ -166,7 +166,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     print(f"\n开始构建 {len(version_configs)} 个版本:")
-    
+    call_gradle_task("native:buildNative")
     for version, config in version_configs.items():
         try :
             if config["skip_build"]:
