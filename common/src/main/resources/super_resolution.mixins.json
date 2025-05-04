@@ -11,7 +11,6 @@
         "core.LevelRendererMixin",
         "core.MinecraftMixin",
         "core.OptionsMixin",
-        "core.RenderTargetMixin",
         "core.WindowMixin",
         "core.accessor.LevelRendererAccessor",
         "core.accessor.MinecraftAccessor",
@@ -19,10 +18,10 @@
         "core.accessor.PostChainAccessor",
         "debug.ImguiMixin",
         "debug.KeyboardHandlerMixin",
-        "gui.GameRendererAccessor"
+        "gui.GameRendererAccessor",
+        "gui.AbstractWidgetAccessor"
     ],
     "mixins": [
-        "gui.AbstractWidgetAccessor"
     ],
     "injectors": {
         "defaultRequire": 1
