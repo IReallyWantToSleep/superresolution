@@ -1,10 +1,9 @@
-#define JAVA_CPPHELPER_CLASS "oiiaio/fsr/CPPHelper"
-
 #include "utils.h"
 #include <iostream>
 #include <vector>
 #include "ffx-fsr2-api/ffx_types.h"
 #include "vulkan/vulkan.h"
+#include "define.h"
 
 JNIEnv *cur_env;
 void set_env(JNIEnv *env)
@@ -15,6 +14,11 @@ void set_env(JNIEnv *env)
 JNIEnv *get_env()
 {
     return cur_env;
+}
+
+void check_env(JNIEnv *env)
+{
+    set_env(env);
 }
 
 void java_log(const char *msg, int level)

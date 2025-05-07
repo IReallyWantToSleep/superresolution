@@ -11,7 +11,6 @@ import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import oiiaio.fsr.NativeLibManager;
 import oiiaio.fsr.FfxError;
 import oiiaio.fsr.fsr2.FfxFSR2;
 import oiiaio.fsr.fsr2.FfxFsr2ContextCreateResult;
@@ -22,14 +21,12 @@ import static io.homo.superresolution.core.gl.GlConst.*;
 import static oiiaio.fsr.fsr2.enums.FfxFsr2InitializationFlagBits.*;
 
 public class FSR2 extends AbstractAlgorithm {
-    private final FfxFSR2 nativeApi;
     private FfxFsr2Context fsr2Context;
     private GlTexture output;
 
     public FSR2() {
         super();
         RenderSystem.assertOnRenderThread();
-        nativeApi = NativeLibManager.getNativeApi();
     }
 
     public void resize(int width, int height) {
@@ -64,16 +61,16 @@ public class FSR2 extends AbstractAlgorithm {
 
     public void destroy() {
         this.output.destroy();
-        nativeApi.ffxFsr2ContextDestroy(fsr2Context);
+        FfxFSR2.ffxFsr2ContextDestroy(fsr2Context);
     }
 
     private void updateFSR2(int width, int height) {
         RenderSystem.assertOnRenderThread();
         if (fsr2Context != null && fsr2Context.cppPointer > 0) {
-            nativeApi.ffxFsr2ContextDestroy(fsr2Context);
+            FfxFSR2.ffxFsr2ContextDestroy(fsr2Context);
             fsr2Context = null;
         }
-        FfxFsr2ContextCreateResult result = nativeApi.ffxFsr2CreateGL(
+        FfxFsr2ContextCreateResult result = FfxFSR2.ffxFsr2CreateGL(
                 Config.getUpscaleRatio(),
                 width,
                 height,
@@ -99,25 +96,25 @@ public class FSR2 extends AbstractAlgorithm {
         float m11 = projectionMatrix.m11();
         float verticalFovRadians = 2.0f * (float) Math.atan(1.0f / m11);
         float cameraFovAngleVertical = dispatchResource.verticalFov();
-        FfxResource colorResource = nativeApi.ffxGetTextureResourceGL(
+        FfxResource colorResource = FfxFSR2.ffxGetTextureResourceGL(
                 this.input.getTextureId(FrameBufferAttachmentType.COLOR),
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight(),
                 GL_RGBA8
         );
-        FfxResource depthResource = nativeApi.ffxGetTextureResourceGL(
+        FfxResource depthResource = FfxFSR2.ffxGetTextureResourceGL(
                 this.input.getTextureId(FrameBufferAttachmentType.DEPTH),
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight(),
                 GL_DEPTH_COMPONENT24
         );
-        FfxResource motionVectorsResource = nativeApi.ffxGetTextureResourceGL(
+        FfxResource motionVectorsResource = FfxFSR2.ffxGetTextureResourceGL(
                 dispatchResource.motionVectors().getTextureId(FrameBufferAttachmentType.COLOR),
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight(),
                 GL_RG16F
         );
-        FfxResource outputResource = nativeApi.ffxGetTextureResourceGL(
+        FfxResource outputResource = FfxFSR2.ffxGetTextureResourceGL(
                 output.id,
                 dispatchResource.screenWidth(),
                 dispatchResource.screenHeight(),
@@ -147,7 +144,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.cameraFovAngleVertical = cameraFovAngleVertical;
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
-        return FfxError.isOK(nativeApi.ffxFsr2ContextDispatch(dispatchDescription, fsr2Context));
+        return FfxError.isOK(FfxFSR2.ffxFsr2ContextDispatch(dispatchDescription, fsr2Context));
     }
 
     @Override

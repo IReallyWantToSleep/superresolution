@@ -13,5 +13,29 @@ dependencies {
     implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     implementation('com.electronwill.night-config:toml:3.6.0')
     implementation('com.electronwill.night-config:core:3.6.0')
-    implementation(files("./lib/glslang.jar"))
+}
+
+tasks.register("genJNIHeader", Exec) {
+    workingDir(rootProject.projectDir)
+    def outputDir = file("../native/cpp/include").absolutePath
+    def sourceFile = file("src/main/java/io/homo/superresolution/core/SuperResolutionNative.java").absolutePath
+    def sourceDirs = sourceSets.main.java.srcDirs.join(File.pathSeparator)
+    def classpath = configurations.runtimeClasspath.asPath
+    commandLine(
+            "javac",
+            "-h", outputDir,
+            "-sourcepath", sourceDirs,
+            "-classpath", classpath,
+            "-encoding", "UTF-8",
+            sourceFile
+    )
+
+    doLast {
+        delete(fileTree(
+                dir: file("src/main/java").absolutePath,
+                includes: ["**/*.class"],
+                excludes: ["**/*.java"]
+
+        ))
+    }
 }
