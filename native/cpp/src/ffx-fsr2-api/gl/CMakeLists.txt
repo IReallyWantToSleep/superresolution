@@ -30,17 +30,17 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall")
 
 file(GLOB SHADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/*.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/*.glsl2")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/*.ogl.glsl")
 
 set(PASS_SHADERS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_tcr_autogen_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_autogen_reactive_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_accumulate_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_compute_luminance_pyramid_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_depth_clip_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_lock_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_reconstruct_previous_depth_pass.glsl2
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_rcas_pass.glsl2)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_tcr_autogen_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_autogen_reactive_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_accumulate_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_compute_luminance_pyramid_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_depth_clip_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_lock_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_reconstruct_previous_depth_pass.ogl.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_rcas_pass.ogl.glsl)
 
 file(GLOB_RECURSE GL
     "${CMAKE_CURRENT_SOURCE_DIR}/../ffx_assert.cpp"

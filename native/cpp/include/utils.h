@@ -10,6 +10,7 @@
 void java_log(const char* msg,int level);
 void set_env(JNIEnv * env);
 JNIEnv* get_env();
+void check_env(JNIEnv *env);
 GLFWglproc java_glfwGetProcAddress(const char* name);
 bool ToCppBool(jboolean value);
 FfxResource ffxResourceJavaToCpp(JNIEnv* env, jobject javaffxres);

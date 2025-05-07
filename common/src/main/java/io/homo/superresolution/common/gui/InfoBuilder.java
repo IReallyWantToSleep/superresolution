@@ -5,10 +5,11 @@ import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.core.interop.GlVkInteropManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.utils.ColorUtil;
-import oiiaio.fsr.NativeLibManager;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.api.utils.Requirement;
 import net.minecraft.network.chat.Component;
 
@@ -77,7 +78,7 @@ public class InfoBuilder {
                 new Line()
                         .text(
                                 Component.translatable("superresolution.screen.info.text.native_lib_version").getString()
-                                        .formatted(NativeLibManager.nativeApiAvailable() ? NativeLibManager.getNativeApi().getVersionInfo() : "???")
+                                        .formatted(NativeLibManager.nativeApiAvailable() ? SuperResolutionNative.getVersionInfo() : "???")
                         )
                         .color(255, 255, 255, 255)
         );

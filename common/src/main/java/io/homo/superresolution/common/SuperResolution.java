@@ -19,7 +19,7 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.none.None;
 import net.minecraft.client.KeyMapping;
-import oiiaio.fsr.NativeLibManager;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.core.utils.MessageBox;
 import net.minecraft.client.Minecraft;
