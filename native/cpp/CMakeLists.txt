@@ -50,9 +50,9 @@ target_link_libraries(lib_shared
     ${PROJECT_SOURCE_DIR}/third_party/libs/libSPIRV.a
     ${PROJECT_SOURCE_DIR}/third_party/libs/libSPVRemapper.a
     -static
-    -lstdc++fs  # C++17 文件系统库支持
-    -lucrt      # Universal C Runtime
-    -lmsvcrt    # Legacy MSVC 兼容层
+    -lstdc++fs 
+    -lucrt     
+    -lmsvcrt   
     -lkernel32
     -luser32
     -lgdi32

@@ -22,6 +22,8 @@ public class GlslangShaderCompiler {
         // 顶点着色器源代码
         String shaderSrc = """
                 #version 430
+                #extension GL_GOOGLE_include_directive : enable
+                #include "a.h"
                 precision mediump float;
                 
                 layout (location = 0) in vec2 aPosition;
