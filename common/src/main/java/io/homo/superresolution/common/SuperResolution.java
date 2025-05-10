@@ -72,21 +72,14 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void preInit() {
         if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
-        if (Config.isSkipLoadNativeLib()) {
-            LOGGER.warn("配置已禁用加载依赖库，将不再加载本地依赖库");
-        } else if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
-            LOGGER.warn("检测到在移动设备上运行，已跳过加载依赖库与Vulkan");
-        } else if (Platform.currentPlatform.getOS().type == OSType.MACOS) {
-            LOGGER.warn("检测到在MacOS上运行，已跳过加载依赖库与Vulkan");
-        } else {
-            if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
-                NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
-            }
-            NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
-            GlslangShaderCompiler.init();
-            interopManager = new GlVkInteropManager();
-            initVulkan();
+        if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
+            NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
         }
+        NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
+        GlslangShaderCompiler.init();
+        interopManager = new GlVkInteropManager();
+        initVulkan();
+
         isPreInit = true;
     }
 

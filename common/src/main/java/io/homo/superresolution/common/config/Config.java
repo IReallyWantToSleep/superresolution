@@ -150,14 +150,6 @@ public class Config {
         }
     }
 
-    public static boolean isSkipLoadNativeLib() {
-        return instance.isSkipLoadNativeLib();
-    }
-
-    public static void setSkipLoadNativeLib(boolean skipLoadNativeLib) {
-        instance.setSkipLoadNativeLib(skipLoadNativeLib);
-    }
-
     public static boolean isSkipInitVulkan() {
         return instance.isSkipInitVulkan();
 

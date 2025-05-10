@@ -258,14 +258,6 @@ public class ClothConfig {
                 .build());
         commonCategory.addEntry(captureModeEnumSelector);
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
-                        Component.translatable("superresolution.screen.config.options.label.skip_load_native_lib"),
-                        Config.isSkipLoadNativeLib())
-                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_load_native_lib"))
-                .setSaveConsumer((Config::setSkipLoadNativeLib))
-                .requireRestart()
-                .build());
-
-        commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
                         Config.isSkipInitVulkan())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))

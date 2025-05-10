@@ -20,14 +20,12 @@ public class ConfigData {
     private float sharpness = 0.55f;
     private CaptureMode captureMode = CaptureMode.A;
     private boolean debugDumpShader = false;
-    private boolean skipLoadNativeLib;
     private boolean skipInitVulkan;
     private boolean enableRenderDoc;
     private boolean enableImgui;
     private boolean generateMotionVectors;
 
     public ConfigData() {
-        skipLoadNativeLib = compatMode;
         skipInitVulkan = compatMode;
         enableRenderDoc = !compatMode;
         enableImgui = !compatMode;
@@ -71,14 +69,6 @@ public class ConfigData {
 
     public void setEnableImgui(boolean enableImgui) {
         this.enableImgui = enableImgui;
-    }
-
-    public boolean isSkipLoadNativeLib() {
-        return skipLoadNativeLib;
-    }
-
-    public void setSkipLoadNativeLib(boolean skipLoadNativeLib) {
-        this.skipLoadNativeLib = skipLoadNativeLib;
     }
 
     public boolean isSkipInitVulkan() {
