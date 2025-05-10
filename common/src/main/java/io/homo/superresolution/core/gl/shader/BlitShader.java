@@ -29,7 +29,7 @@ public class BlitShader extends GlGeneralShaderProgram {
     }
 
     public void bindTexture(int textureId) {
-        this.setTexture("uTexture", textureId, 0);
+        uniforms().strictTexture("uTexture").value(textureId);
     }
 
     private static class BlitShaderProgramBuilder extends AbstractShaderProgramBuilder<BlitShader> {

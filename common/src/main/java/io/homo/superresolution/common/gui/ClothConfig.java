@@ -357,6 +357,7 @@ public class ClothConfig {
             put("Java OpenGL Math Library(JOML)", "https://github.com/JOML-CI/JOML");
             put("RenderDoc", "https://github.com/baldurk/renderdoc");
             put("Lightweight Java Game Library 3(LWJGL3)", "https://github.com/LWJGL/lwjgl3");
+            put("Glslang", "https://github.com/KhronosGroup/glslang");
         }};
         Map<String, String> officialLinks = new LinkedHashMap<>() {{
             put(

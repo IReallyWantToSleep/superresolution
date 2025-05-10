@@ -217,7 +217,7 @@ public class MotionVectorsGenerator {
             );
             pipeline.scheduleJobs(pipelineJobDispatchResource);
             preprocess.use();
-            preprocess.setFloat("exposure", 3.0f);
+            preprocess.uniforms().strictFloat("exposure").value(3.0f);
             pipeline.execute("preprocess", pipelineJobDispatchResource);
             glCopyImageSubData(
                     preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR), GL_TEXTURE_2D, 0, 0, 0, 0,
@@ -227,9 +227,10 @@ public class MotionVectorsGenerator {
             pipeline.execute("pass1", pipelineJobDispatchResource);
             pipeline.execute("pass2", pipelineJobDispatchResource);
             pass3.use();
-            pass3.setInt("window_radius", 2);
-            pass3.setFloat("min_value", 1e-6f);
-            pass3.setFloat("scale", 4f);
+            pass3.uniforms()
+                    .strictInt("window_radius").value(2)
+                    .strictFloat("min_value").value(1e-6f)
+                    .strictFloat("scale").value(4f);
             pipeline.execute("pass3", pipelineJobDispatchResource);
             glCopyImageSubData(
                     currentFrameTexture.getTextureId(), GL_TEXTURE_2D, 0, 0, 0, 0,

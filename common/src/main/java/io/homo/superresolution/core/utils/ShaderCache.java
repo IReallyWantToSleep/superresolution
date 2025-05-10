@@ -3,8 +3,11 @@ package io.homo.superresolution.core.utils;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.GraphicsCapabilities;
 import io.homo.superresolution.core.gl.shader.AbstractGlShaderProgram;
+import io.homo.superresolution.core.glslang.GlslangCompileShaderResult;
+import io.homo.superresolution.core.glslang.GlslangShaderCompiler;
+import io.homo.superresolution.core.glslang.enums.*;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL46.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
@@ -15,10 +18,15 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.lwjgl.opengl.ARBGLSPIRV.GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
 
 public class ShaderCache {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-ShaderCache");
     public static final Path CACHE_DIR = Path.of(Platform.currentPlatform.getGameFolder().toString(), "sr_shaderCache");
+    public static final Map<String, ShaderBinary> CACHE = new HashMap<>();
 
     static {
         File cacheDir = CACHE_DIR.toFile();
@@ -40,101 +48,80 @@ public class ShaderCache {
         return Md5CaculateUtil.getMD5(identityString);
     }
 
-    public static boolean saveProgramBinary(AbstractGlShaderProgram shaderProgram) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer lengthBuf = stack.mallocInt(1);
-            GL41.glGetProgramiv(shaderProgram.shaderProgram, GL41.GL_PROGRAM_BINARY_LENGTH, lengthBuf);
-            int binaryLength = lengthBuf.get(0);
-            if (binaryLength <= 0 || binaryLength > 10 * 1024 * 1024) {
-                LOGGER.warn("Invalid binary length: {}", binaryLength);
-                return false;
-            }
+    // 修改保存逻辑
+    public static boolean saveProgramBinary(AbstractGlShaderProgram program) {
+        String hash = getShaderProgramMd5(program);
 
-            ByteBuffer binaryBuffer = MemoryUtil.memAlloc(binaryLength);
-            try {
-                IntBuffer formatBuf = stack.mallocInt(1);
-                GL41.glGetProgramBinary(shaderProgram.shaderProgram, lengthBuf, formatBuf, binaryBuffer);
+        try {
+            // 保存顶点着色器SPIR-V
+            Path vertPath = CACHE_DIR.resolve(hash + ".vert.spv");
+            compileShaderToSpirv(
+                    program.getVertShaderText(),
+                    vertPath.toString(),
+                    EShLanguage.EShLangVertex
+            );
 
-                Path outputPath = CACHE_DIR.resolve(getShaderProgramMd5(shaderProgram) + ".shaderbin");
-                try (DataOutputStream dos = new DataOutputStream(
-                        new BufferedOutputStream(new FileOutputStream(outputPath.toFile())))) {
+            // 保存片段着色器SPIR-V
+            Path fragPath = CACHE_DIR.resolve(hash + ".frag.spv");
+            compileShaderToSpirv(
+                    program.getFragShaderText(),
+                    fragPath.toString(),
+                    EShLanguage.EShLangFragment
+            );
 
-                    dos.writeInt(formatBuf.get(0));
-                    byte[] data = new byte[binaryLength];
-                    binaryBuffer.get(data);
-                    dos.write(data);
-                    LOGGER.info("着色器写入缓存成功 {}", getShaderProgramMd5(shaderProgram));
-                    return true;
-                }
-            } finally {
-                MemoryUtil.memFree(binaryBuffer);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to save shader binary: {}", e.getMessage());
-            return false;
+            return true;
         } catch (Exception e) {
-            LOGGER.error("Unexpected error during shader saving", e);
+            LOGGER.error("保存SPIR-V失败", e);
             return false;
         }
     }
 
-    public static boolean checkProgramBinary(AbstractGlShaderProgram shaderProgram) {
-        return Files.exists(CACHE_DIR.resolve(getShaderProgramMd5(shaderProgram) + ".shaderbin"));
+    private static void compileShaderToSpirv(String src, String outputPath, EShLanguage stage) {
+        GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
+                src,
+                outputPath,
+                stage,
+                EShSource.EShSourceGlsl,
+                EShClient.EShClientOpenGL,
+                EShTargetClientVersion.EShTargetOpenGL_450,
+                EShTargetLanguage.EShTargetSpv,
+                EShTargetLanguageVersion.EShTargetSpv_1_0,
+                450,
+                EProfile.ECoreProfile,
+                true,
+                false
+        );
+
+        if (result.error().getValue() != 0) {
+            throw new RuntimeException(stage + " SPIR-V编译失败:\n" + result.log());
+        }
     }
 
-    public static ShaderBinary getProgramBinary(AbstractGlShaderProgram shaderProgram) {
-        Path binaryPath = CACHE_DIR.resolve(getShaderProgramMd5(shaderProgram) + ".shaderbin");
-        if (!Files.exists(binaryPath)) return null;
+    public static boolean checkProgramBinary(AbstractGlShaderProgram program) {
+        String hash = getShaderProgramMd5(program);
+        return Files.exists(CACHE_DIR.resolve(hash + ".vert.spv")) &&
+                Files.exists(CACHE_DIR.resolve(hash + ".frag.spv"));
+    }
 
-        try (DataInputStream dis = new DataInputStream(
-                new BufferedInputStream(Files.newInputStream(binaryPath)))) {
-            int format = dis.readInt();
-            if (!isBinaryFormatSupported(format)) {
-                LOGGER.warn("Unsupported binary format: 0x{}", Integer.toHexString(format));
-                return null;
-            }
+    public static ShaderBinary[] getProgramBinary(AbstractGlShaderProgram program) {
+        String hash = getShaderProgramMd5(program);
+        return new ShaderBinary[]{
+                loadBinary(hash + ".vert.spv"),
+                loadBinary(hash + ".frag.spv")
+        };
+    }
 
-            byte[] data = new byte[dis.available()];
-            dis.readFully(data);
-            if (!validateBinary(data)) {
-                LOGGER.warn("Invalid binary data detected");
-                return null;
-            }
-
+    private static ShaderBinary loadBinary(String filename) {
+        Path path = CACHE_DIR.resolve(filename);
+        try {
+            byte[] data = Files.readAllBytes(path);
             ByteBuffer buffer = MemoryUtil.memAlloc(data.length);
-            try {
-                buffer.put(data).flip();
-                LOGGER.info("读取着色器缓存成功 {}", getShaderProgramMd5(shaderProgram));
-                return new ShaderBinary(buffer, data.length, format);
-            } catch (Exception e) {
-                MemoryUtil.memFree(buffer);
-                throw e;
-            }
+            buffer.put(data).flip();
+            return new ShaderBinary(buffer, data.length, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB);
         } catch (IOException e) {
-            LOGGER.error("Failed to load shader binary: {}", e.getMessage());
+            LOGGER.error("加载SPIR-V失败: {}", filename);
             return null;
         }
-    }
-
-    private static boolean isBinaryFormatSupported(int format) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            IntBuffer countBuf = stack.mallocInt(1);
-            GL41.glGetIntegerv(GL41.GL_NUM_PROGRAM_BINARY_FORMATS, countBuf);
-            int count = countBuf.get(0);
-            if (count == 0) return false;
-            IntBuffer formats = stack.mallocInt(count);
-            GL41.glGetIntegerv(GL41.GL_PROGRAM_BINARY_FORMATS, formats);
-            for (int i = 0; i < count; i++) {
-                if (formats.get(i) == format) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private static boolean validateBinary(byte[] data) {
-        return data.length > 0 && data.length <= 10 * 1024 * 1024; // 合理大小范围
     }
 
     public record ShaderBinary(ByteBuffer binary, int size, int format) implements AutoCloseable {
