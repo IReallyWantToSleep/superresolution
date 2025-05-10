@@ -30,8 +30,8 @@ public class FSR1 extends AbstractAlgorithm {
         ) {
             return 1;
         }
-        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) {
-            return 2;
+        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) { //glslang似乎有bug？GL_NV_gpu_shader5扩展无法使用
+            return 0;
         }
         return 0;
     }

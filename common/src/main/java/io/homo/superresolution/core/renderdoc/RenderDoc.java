@@ -4,6 +4,7 @@ import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ public class RenderDoc {
     }
 
     public static void init() {
+        if (true) return;
         var apiPointer = new PointerByReference();
         RenderdocLibrary.RenderdocApi apiInstance = null;
         if (OSType.isCurrentOS(OSType.WINDOWS)) {

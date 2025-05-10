@@ -29,7 +29,7 @@
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_explicit_arithmetic_types: require
 #elif FSR_FP16_CRITERIA == 2
-#extension GL_NV_gpu_shader5: require
+#extension GL_NV_gpu_shader5: enable
 #endif
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
