@@ -1,4 +1,4 @@
-#version 420 core
+#version 430 core
 //--insert--define--//
 //============================================================================================================
 //
@@ -9,14 +9,15 @@
 //============================================================================================================
 precision mediump float;
 precision highp int;
-uniform highp vec2 renderSize;
-uniform highp vec2 renderSizeRcp;
-uniform mediump float EdgeThreshold;
-uniform mediump float EdgeSharpness;
-uniform sampler2D ps0;
 
-in mediump vec2 in_TEXCOORD0;
-out mediump vec4 out_Target0;
+layout(location = 0) uniform highp vec2 renderSize;
+layout(location = 1) uniform highp vec2 renderSizeRcp;
+layout(location = 2) uniform mediump float EdgeThreshold;
+layout(location = 3) uniform mediump float EdgeSharpness;
+layout(location = 4) uniform sampler2D ps0;
+
+layout(location = 0) in mediump vec2 in_TEXCOORD0;
+layout(location = 0) out mediump vec4 out_Target0;
 
 float fastLanczos2(float x)
 {

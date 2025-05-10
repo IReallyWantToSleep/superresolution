@@ -1,12 +1,12 @@
-#version 330
+#version 430
 precision mediump float;
 //--insert--define--//
 #define MAX_LEVELS 8
 uniform sampler2D uTexture;
-uniform vec4 weightA;
-uniform vec4 weightB;
-out vec4 FragColor;
-in vec2 vTexCoord;
+layout(location = 0) uniform vec4 weightA;
+layout(location = 1) uniform vec4 weightB;
+layout(location = 0) out vec4 FragColor;
+layout(location = 0) in vec2 vTexCoord;
 void main()
 {
     vec3 color = vec3(0.f);

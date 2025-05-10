@@ -1,7 +1,7 @@
 package io.homo.superresolution.core.gl.texture;
 
 import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.utils.BlitRenderer;
+import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
 import io.homo.superresolution.core.impl.IDebuggableObject;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
@@ -34,7 +34,7 @@ public class GlTexture implements ITexture, IDebuggableObject {
     }
 
     public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, int id) {
-        BlitRenderer.blitToScreen(id, viewWidth, viewHeight);
+        GlBlitRenderer.blitToScreen(id, viewWidth, viewHeight);
     }
 
     private void initializeTexture() {

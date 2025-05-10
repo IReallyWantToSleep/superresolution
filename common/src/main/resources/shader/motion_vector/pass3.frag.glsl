@@ -1,12 +1,12 @@
 #version 430 core
 layout(binding = 1) uniform sampler2D grad_current; // Ix, Iy
 layout(binding = 2) uniform sampler2D delta_time; // It
-uniform int window_radius = 1;
-uniform float min_value = 1e-6;
-uniform float scale = 1;
+layout(location = 0) uniform int window_radius = 1;
+layout(location = 1) uniform float min_value = 1e-6;
+layout(location = 2) uniform float scale = 1;
 
-in vec2 uv;
-out vec4 out_motion; // RG
+layout (location = 0)in vec2 uv;
+layout (location = 0)out vec4 out_motion; // RG
 
 void main() {
     vec2 texelSize = 1.0 / textureSize(grad_current, 0);

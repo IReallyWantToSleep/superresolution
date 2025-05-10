@@ -3,11 +3,11 @@ package io.homo.superresolution.core.gl.framebuffer;
 import io.homo.superresolution.core.gl.GlConst;
 import io.homo.superresolution.core.impl.texture.ITexture;
 
-public class FrameBufferAttachment {
+public class GlFrameBufferAttachment {
     public FrameBufferAttachmentType type;
     public ITexture texture;
 
-    public FrameBufferAttachment(FrameBufferAttachmentType type, ITexture texture) {
+    public GlFrameBufferAttachment(FrameBufferAttachmentType type, ITexture texture) {
         this.type = type;
         this.texture = texture;
     }

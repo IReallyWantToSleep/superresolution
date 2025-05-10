@@ -1,7 +1,7 @@
 #version 430 core
 layout(binding = 1) uniform sampler2D tex_current;
-in vec2 uv;
-out vec2 out_grad; // R: Ix, G: Iy
+layout (location = 0) in vec2 uv;
+layout (location = 0)out vec2 out_grad; // R: Ix, G: Iy
 
 void main() {
     vec2 texelSize = 1.0 / textureSize(tex_current, 0);

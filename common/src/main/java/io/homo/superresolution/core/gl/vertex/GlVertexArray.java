@@ -2,10 +2,10 @@ package io.homo.superresolution.core.gl.vertex;
 
 import static io.homo.superresolution.core.gl.Gl.*;
 
-public class VertexArray implements AutoCloseable {
+public class GlVertexArray implements AutoCloseable {
     private final int id;
 
-    public VertexArray() {
+    public GlVertexArray() {
         id = glGenVertexArrays();
     }
 

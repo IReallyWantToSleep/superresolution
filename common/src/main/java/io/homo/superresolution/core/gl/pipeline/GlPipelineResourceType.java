@@ -1,5 +1,5 @@
 package io.homo.superresolution.core.gl.pipeline;
 
-public enum PipelineResourceType {
+public enum GlPipelineResourceType {
     Image2D, Sampler2D
 }

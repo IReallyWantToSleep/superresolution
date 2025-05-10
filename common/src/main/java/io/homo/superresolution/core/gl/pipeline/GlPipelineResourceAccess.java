@@ -1,5 +1,5 @@
 package io.homo.superresolution.core.gl.pipeline;
 
-public enum PipelineResourceAccess {
+public enum GlPipelineResourceAccess {
     READ, WRITE, BOTH
 }

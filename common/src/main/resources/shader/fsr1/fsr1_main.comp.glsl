@@ -20,15 +20,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#version 460 core
+#version 460
 //--insert--define--//
 
 //扩展
+#extension GL_GOOGLE_include_directive: require
 #if FSR_FP16_CRITERIA == 1
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_explicit_arithmetic_types: require
 #elif FSR_FP16_CRITERIA == 2
-#extension GL_NV_gpu_shader5: enable
+#extension GL_NV_gpu_shader5: require
 #endif
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -42,10 +43,10 @@ layout (binding = 0, rgba8) readonly uniform image2D inImage;
 layout (binding = 1, rgba8) writeonly uniform image2D outImage;
 #endif
 //uniforms
-uniform vec2 renderViewportSize;
-uniform vec2 containerTextureSize;
-uniform vec2 upscaledViewportSize;
-uniform float sharpness;
+layout (location = 0) uniform vec2 renderViewportSize;
+layout (location = 1) uniform vec2 containerTextureSize;
+layout (location = 2) uniform vec2 upscaledViewportSize;
+layout (location = 3) uniform float sharpness;
 //类型
 #if FSR_HALF == 1
 #define VEC4 f16vec4
@@ -62,38 +63,59 @@ uniform float sharpness;
 #endif
 
 #if FSR_HALF == 1
-uint16_t halfBitsToUint16(float16_t v) { return uint16_t(packFloat2x16(f16vec2(v, 0))); }
-u16vec2 halfBitsToUint16(f16vec2 v) { return u16vec2(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0))); }
-u16vec3 halfBitsToUint16(f16vec3 v) { return u16vec3(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)), packFloat2x16(f16vec2(v.z, 0))); }
-u16vec4 halfBitsToUint16(f16vec4 v) { return u16vec4(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)), packFloat2x16(f16vec2(v.z, 0)), packFloat2x16(f16vec2(v.w, 0))); }
+uint16_t halfBitsToUint16(float16_t v) {
+    return uint16_t(packFloat2x16(f16vec2(v, 0)));
+}
+u16vec2 halfBitsToUint16(f16vec2 v) {
+    return u16vec2(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)));
+}
+u16vec3 halfBitsToUint16(f16vec3 v) {
+    return u16vec3(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)), packFloat2x16(f16vec2(v.z, 0)));
+}
+u16vec4 halfBitsToUint16(f16vec4 v) {
+    return u16vec4(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)), packFloat2x16(f16vec2(v.z, 0)), packFloat2x16(f16vec2(v.w, 0)));
+}
 
-float16_t uint16BitsToHalf(uint16_t v) { return unpackFloat2x16(uint(v)).x; }
-f16vec2 uint16BitsToHalf(u16vec2 v) { return f16vec2(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x); }
-f16vec3 uint16BitsToHalf(u16vec3 v) { return f16vec3(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x, unpackFloat2x16(uint(v.z)).x); }
-f16vec4 uint16BitsToHalf(u16vec4 v) { return f16vec4(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x, unpackFloat2x16(uint(v.z)).x, unpackFloat2x16(uint(v.w)).x); }
+float16_t uint16BitsToHalf(uint16_t v) {
+    return unpackFloat2x16(uint(v)).x;
+}
+f16vec2 uint16BitsToHalf(u16vec2 v) {
+    return f16vec2(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x);
+}
+f16vec3 uint16BitsToHalf(u16vec3 v) {
+    return f16vec3(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x, unpackFloat2x16(uint(v.z)).x);
+}
+f16vec4 uint16BitsToHalf(u16vec4 v) {
+    return f16vec4(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x, unpackFloat2x16(uint(v.z)).x, unpackFloat2x16(uint(v.w)).x);
+}
 
-uint32_t packUint2x16(u16vec2 v) { return (uint(v.y) << 16) | uint(v.x); }
-u16vec2 unpackUint2x16(uint32_t v) { return u16vec2(v & 0xffff, (v >> 16) & 0xffff); }
+uint32_t packUint2x16(u16vec2 v) {
+    return (uint(v.y) << 16) | uint(v.x);
+}
+u16vec2 unpackUint2x16(uint32_t v) {
+    return u16vec2(v & 0xffff, (v >> 16) & 0xffff);
+}
 #endif
-//--include--fsr1_common.glsl--//
+
+#include "fsr1/fsr1_common.glsl"
 #if FSR_HALF == 1
-    #if FSR_RCAS == 1
-    //--include--fsr1_rcas_fp16.comp.glsl--//
+#if FSR_RCAS == 1
+#include "fsr1/fsr1_rcas_fp16.comp.glsl"
 #endif
-    #if FSR_EASU == 1
-    //--include--fsr1_easu_fp16.comp.glsl--//
+#if FSR_EASU == 1
+#include "fsr1/fsr1_easu_fp16.comp.glsl"
 #endif
-    #define FsrEasu FsrEasuH
-    #define FsrRcas FsrRcasH
+#define FsrEasu FsrEasuH
+#define FsrRcas FsrRcasH
 #else
-    #if FSR_RCAS == 1
-    //--include--fsr1_rcas.comp.glsl--//
+#if FSR_RCAS == 1
+#include "fsr1/fsr1_rcas.comp.glsl"
 #endif
-    #if FSR_EASU == 1
-    //--include--fsr1_easu.comp.glsl--//
+#if FSR_EASU == 1
+#include "fsr1/fsr1_easu.comp.glsl"
 #endif
-    #define FsrEasu FsrEasuF
-    #define FsrRcas FsrRcasF
+#define FsrEasu FsrEasuF
+#define FsrRcas FsrRcasF
 #endif
 
 #if FSR_RCAS == 1

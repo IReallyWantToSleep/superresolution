@@ -1,9 +1,9 @@
 package io.homo.superresolution.core.gl.pipeline;
 
 import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.vertex.VertexBuffer;
+import io.homo.superresolution.core.gl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.gl.shader.AbstractGlShaderProgram;
-import io.homo.superresolution.core.gl.vertex.VertexArray;
+import io.homo.superresolution.core.gl.vertex.GlVertexArray;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 
@@ -18,19 +18,19 @@ import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 
 
-public class PipelineJob {
-    protected PipelineResourceDescriptions resourcesMap;
+public class GlPipelineJob {
+    protected GlPipelineResourceDescriptions resourcesMap;
     protected AbstractGlShaderProgram program;
-    protected PipelineJobType type;
+    protected GlPipelineJobType type;
     protected GlPipeline pipeline;
     protected IFrameBuffer targetFrameBuffer;
 
-    public static PipelineJobBuilder create() {
-        return new PipelineJobBuilder();
+    public static GlPipelineJobBuilder create() {
+        return new GlPipelineJobBuilder();
     }
 
     public void setTargetFrameBuffer(IFrameBuffer frameBuffer) {
-        if (this.type != PipelineJobType.Graphics) {
+        if (this.type != GlPipelineJobType.Graphics) {
             throw new IllegalStateException("Only Graphics jobs can set FrameBuffer targets!");
         }
         this.targetFrameBuffer = frameBuffer;
@@ -40,7 +40,7 @@ public class PipelineJob {
         this.pipeline = pipeline;
     }
 
-    protected void setupImage2DResource(PipelineResourceDescription description) {
+    protected void setupImage2DResource(GlPipelineResourceDescription description) {
         if (description.src() != null) {
             if (description.src().getTextureFormat() != null) {
                 int access = switch (description.access()) {
@@ -65,11 +65,11 @@ public class PipelineJob {
         }
     }
 
-    public PipelineResourceDescription getResource(String name) {
+    public GlPipelineResourceDescription getResource(String name) {
         return resourcesMap.resource.get(name);
     }
 
-    protected void setupSampler2DResource(PipelineResourceDescription description) {
+    protected void setupSampler2DResource(GlPipelineResourceDescription description) {
         if (description.src() != null) {
             int unit = description.unit();
             glBindTextureUnit(unit, description.src().getTextureId());
@@ -88,18 +88,18 @@ public class PipelineJob {
         });
     }
 
-    public void scheduleGraphics(PipelineJobDispatchResource dispatchResource) {
+    public void scheduleGraphics(GlPipelineJobDispatchResource dispatchResource) {
         setupResource();
     }
 
-    public void executeGraphics(PipelineJobDispatchResource dispatchResource) {
+    public void executeGraphics(GlPipelineJobDispatchResource dispatchResource) {
         try (GlState ignored = new GlState()) {
             if (targetFrameBuffer != null) {
                 targetFrameBuffer.bind(FrameBufferBindPoint.WRITE, true);
             }
             program.use();
-            try (VertexArray vao = new VertexArray();
-                 VertexBuffer vbo = new VertexBuffer()) {
+            try (GlVertexArray vao = new GlVertexArray();
+                 GlVertexBuffer vbo = new GlVertexBuffer()) {
                 float[] vertices = {
                         -1f, -1f, 0f, 0f,
                         1f, -1f, 1f, 0f,
@@ -119,11 +119,11 @@ public class PipelineJob {
         }
     }
 
-    public void scheduleCompute(PipelineJobDispatchResource dispatchResource) {
+    public void scheduleCompute(GlPipelineJobDispatchResource dispatchResource) {
         setupResource();
     }
 
-    public void executeCompute(PipelineJobDispatchResource dispatchResource) {
+    public void executeCompute(GlPipelineJobDispatchResource dispatchResource) {
         glDispatchCompute(
                 (int) dispatchResource.dimensions().x,
                 (int) dispatchResource.dimensions().y,
@@ -131,18 +131,18 @@ public class PipelineJob {
         );
     }
 
-    public void schedule(PipelineJobDispatchResource dispatchResource) {
+    public void schedule(GlPipelineJobDispatchResource dispatchResource) {
         program.use();
-        if (type == PipelineJobType.Graphics) {
+        if (type == GlPipelineJobType.Graphics) {
             scheduleGraphics(dispatchResource);
         } else {
             scheduleCompute(dispatchResource);
         }
     }
 
-    public void execute(PipelineJobDispatchResource dispatchResource) {
+    public void execute(GlPipelineJobDispatchResource dispatchResource) {
         program.use();
-        if (type == PipelineJobType.Graphics) {
+        if (type == GlPipelineJobType.Graphics) {
             executeGraphics(dispatchResource);
         } else {
             executeCompute(dispatchResource);
@@ -150,50 +150,50 @@ public class PipelineJob {
         glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
 
-    public static class PipelineJobBuilder {
-        protected PipelineResourceDescriptions resourcesMap = new PipelineResourceDescriptions();
+    public static class GlPipelineJobBuilder {
+        protected GlPipelineResourceDescriptions resourcesMap = new GlPipelineResourceDescriptions();
         protected AbstractGlShaderProgram program;
-        protected PipelineJobType type;
+        protected GlPipelineJobType type;
         private IFrameBuffer targetFrameBuffer;
 
-        public PipelineJobBuilder setProgram(AbstractGlShaderProgram program) {
+        public GlPipelineJobBuilder setProgram(AbstractGlShaderProgram program) {
             this.program = program;
             return this;
         }
 
-        public PipelineJobBuilder setType(PipelineJobType type) {
+        public GlPipelineJobBuilder setType(GlPipelineJobType type) {
             this.type = type;
             return this;
         }
 
-        public PipelineJobBuilder addResource(PipelineResourceDescriptions descriptions) {
+        public GlPipelineJobBuilder addResource(GlPipelineResourceDescriptions descriptions) {
             resourcesMap.resource.putAll(descriptions.resource);
             return this;
         }
 
-        public PipelineJobBuilder addResource(PipelineResourceDescription description) {
+        public GlPipelineJobBuilder addResource(GlPipelineResourceDescription description) {
             resourcesMap.addResource(description);
             return this;
         }
 
-        public PipelineJobBuilder setTargetFrameBuffer(IFrameBuffer frameBuffer) {
-            if (this.type != PipelineJobType.Graphics) {
+        public GlPipelineJobBuilder setTargetFrameBuffer(IFrameBuffer frameBuffer) {
+            if (this.type != GlPipelineJobType.Graphics) {
                 throw new IllegalArgumentException("FrameBuffer can only be set for Graphics jobs!");
             }
             this.targetFrameBuffer = frameBuffer;
             return this;
         }
 
-        public PipelineJob build() {
+        public GlPipelineJob build() {
             if (program == null) {
                 throw new IllegalStateException("必须指定着色器程序");
             }
-            PipelineJob pipelineJob = new PipelineJob();
+            GlPipelineJob pipelineJob = new GlPipelineJob();
             pipelineJob.program = program;
             pipelineJob.resourcesMap = resourcesMap.clone();
             pipelineJob.type = type;
             if (targetFrameBuffer != null) {
-                if (type != PipelineJobType.Graphics) {
+                if (type != GlPipelineJobType.Graphics) {
                     throw new IllegalStateException("非图形任务不能设置FrameBuffer");
                 }
                 pipelineJob.setTargetFrameBuffer(targetFrameBuffer);

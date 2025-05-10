@@ -3,15 +3,15 @@ package io.homo.superresolution.core.gl.pipeline;
 import io.homo.superresolution.core.gl.texture.GlSampler;
 import io.homo.superresolution.core.impl.texture.ITexture;
 
-public record PipelineResourceDescription(
-        PipelineResourceType type,
+public record GlPipelineResourceDescription(
+        GlPipelineResourceType type,
         String name,
         ITexture src,
-        PipelineResourceAccess access,
+        GlPipelineResourceAccess access,
         GlSampler sampler,
         int unit
 ) {
-    public PipelineResourceDescription {
+    public GlPipelineResourceDescription {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("资源名称不能为空");
         }

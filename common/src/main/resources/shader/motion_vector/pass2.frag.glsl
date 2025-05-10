@@ -2,8 +2,8 @@
 
 layout(binding = 1) uniform sampler2D tex_current;
 layout(binding = 2) uniform sampler2D tex_previous;
-in vec2 uv;
-out float out_it;
+layout (location = 0) in vec2 uv;
+layout (location = 0)out float out_it;
 
 void main() {
     float current = texture(tex_current, uv).r;
