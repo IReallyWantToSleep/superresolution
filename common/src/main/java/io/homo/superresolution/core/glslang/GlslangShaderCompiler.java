@@ -3,12 +3,41 @@ package io.homo.superresolution.core.glslang;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.core.glslang.enums.*;
-import io.homo.superresolution.core.glslang.GlslangCompileShaderResult;
 
 public class GlslangShaderCompiler {
 
     public static void init() {
         SuperResolutionNative.initGlslang();
+    }
+
+    public static GlslangCompileShaderResult compileShaderToSpirv(
+            String shaderSrc,
+            String outputFile,
+            EShLanguage stage,
+            EShSource language,
+            EShClient client,
+            EShTargetClientVersion clientVersion,
+            EShTargetLanguage targetLanguage,
+            EShTargetLanguageVersion targetLanguageVersion,
+            int defaultVersion,
+            EProfile defaultProfile,
+            boolean forceDefaultVersionAndProfile,
+            boolean forwardCompatible
+    ) {
+        return SuperResolutionNative.compileShaderToSpirv(
+                shaderSrc,
+                outputFile,
+                stage.getValue(),
+                language.getValue(),
+                client.getValue(),
+                clientVersion.getValue(),
+                targetLanguage.getValue(),
+                targetLanguageVersion.getValue(),
+                defaultVersion,
+                defaultProfile.getValue(),
+                forceDefaultVersionAndProfile,
+                forwardCompatible
+        );
     }
 
     public static void main(String[] args) {

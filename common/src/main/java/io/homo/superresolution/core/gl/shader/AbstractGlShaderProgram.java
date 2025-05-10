@@ -2,6 +2,7 @@ package io.homo.superresolution.core.gl.shader;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.core.gl.shader.uniform.ShaderUniforms;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.impl.IDebuggableObject;
@@ -197,39 +198,7 @@ public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggabl
         return i;
     }
 
-    public void setVec2(String name, float x, float y) {
-        glUniform2f(getUniformLocation(name), x, y);
-    }
-
-    public void setVec3(String name, float x, float y, float z) {
-        glUniform3f(getUniformLocation(name), x, y, z);
-    }
-
-    public void setVec4(String name, float a, float b, float c, float d) {
-        glUniform4f(getUniformLocation(name), a, b, c, d);
-    }
-
-    public void setFloat(String name, float value) {
-        glUniform1f(getUniformLocation(name), value);
-    }
-
-    public void setInt(String name, int value) {
-        glUniform1i(getUniformLocation(name), value);
-    }
-
-    public void setBool(String name, boolean value) {
-        glUniform1i(getUniformLocation(name), value ? 1 : 0);
-    }
-
-
-    public void setStruct(String name, GlUniformBuffer<?> value, int bindingPoint) {
-        value.bind(bindingPoint);
-    }
-
-
-    public void setMatrix4(String name, Matrix4f x) {
-        float[] data = new float[16];
-        x.get(data);
-        glUniformMatrix4fv(getUniformLocation(name), false, data);
+    public ShaderUniforms uniforms() {
+        return new ShaderUniforms(this);
     }
 }

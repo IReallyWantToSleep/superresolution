@@ -63,14 +63,13 @@ public class Sgsr1 extends AbstractAlgorithm {
     public boolean dispatch(DispatchResource dispatchResource) {
         pipeline.scheduleJobs(PipelineJobDispatchResource.nothing());
         sgsrShader.use();
-        sgsrShader.setVec2("renderSize", dispatchResource.renderWidth(), dispatchResource.renderHeight());
-        sgsrShader.setVec2("renderSizeRcp",
-                1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight());
-        sgsrShader.setFloat("EdgeThreshold", 8f / 255f);
-        sgsrShader.setFloat("EdgeSharpness", 2f);
+        sgsrShader.uniforms()
+                .strictVec2("renderSize").value(dispatchResource.renderWidth(), dispatchResource.renderHeight())
+                .strictVec2("renderSizeRcp").value(1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight())
+                .strictFloat("EdgeThreshold").value(8f / 255f)
+                .strictFloat("EdgeSharpness").value(2f);
         output.bind(FrameBufferBindPoint.WRITE);
         pipeline.executeJobs(PipelineJobDispatchResource.nothing());
-
         sgsrShader.clear();
         return false;
     }

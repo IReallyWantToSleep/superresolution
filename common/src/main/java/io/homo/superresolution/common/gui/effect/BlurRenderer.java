@@ -130,25 +130,10 @@ public class BlurRenderer {
                 glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
                 glEnableVertexAttribArray(1);
                 glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES);
-                blurShader.setTexture(
-                        "uTexture",
-                        blurTempTexture.getTextureId(),
-                        0
-                );
-                blurShader.setVec4(
-                        "weightA",
-                        blurWeights[0],
-                        blurWeights[1],
-                        blurWeights[2],
-                        blurWeights[3]
-                );
-                blurShader.setVec4(
-                        "weightB",
-                        blurWeights[4],
-                        blurWeights[5],
-                        blurWeights[6],
-                        blurWeights[7]
-                );
+                blurShader.uniforms()
+                        .strictTexture("uTexture").value(blurTempTexture)
+                        .strictVec4("weightA").value(blurWeights[0], blurWeights[1], blurWeights[2], blurWeights[3])
+                        .strictVec4("weightB").value(blurWeights[4], blurWeights[5], blurWeights[6], blurWeights[7]);
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
             blurShader.clear();

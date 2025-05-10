@@ -168,10 +168,11 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     private void setFSR1ShaderUniform(GlComputeShaderProgram shaderProgram) {
-        shaderProgram.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        shaderProgram.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        shaderProgram.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
-        shaderProgram.setFloat("sharpness", Config.getSharpness());
+        shaderProgram.uniforms()
+                .strictVec2("renderViewportSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
+                .strictVec2("containerTextureSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
+                .strictVec2("upscaledViewportSize").value(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+                .strictFloat("sharpness").value(Config.getSharpness());
     }
 
     @Override

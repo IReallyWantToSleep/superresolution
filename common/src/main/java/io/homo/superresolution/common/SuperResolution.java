@@ -9,6 +9,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.core.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
@@ -80,6 +81,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                 NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
             }
             NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
+            GlslangShaderCompiler.init();
             interopManager = new GlVkInteropManager();
             initVulkan();
         }
