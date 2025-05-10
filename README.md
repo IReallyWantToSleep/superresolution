@@ -29,31 +29,14 @@
 ## 系统要求
 
 * Windows
-* Linux
+* Linux (即将去除)
 * 不支持MacOS系统
 * 不支持在移动设备上运行
 
 ## 显卡要求
 
-### 通用
-
 * 显卡支持OpenGL版本 >= 4.3
 * 显卡支持Vulkan版本 >= 1.2 (非必须)
-
-### FSR1
-
-* 无特殊要求
-
-### FSR2
-
-* 显卡支持OpenGL版本 >= 4.5
-* 显卡支持支持OpenGL扩展GL_KHR_shader_subgroup
-
-*注：以上的要求NVIDIA GTX 750全部满足，只要你不是用老掉牙的显卡 (或是老版本驱动) 应该都能支持*
-
-# 已知问题
-
-* 使用FSR2时游戏有可能会没有画面
 
 # 有问题？
 
@@ -63,9 +46,9 @@
 
 # 构建
 
-首先编译[c++依赖库](https://github.com/187J3X1-114514/fsr2_opengl_java)，然后把生成的文件复制到common/src/main/resources/lib
-_(非必要)_
-
+首先编译C++依赖库，运行`native:buildNative`任务即可
+> 注：需要MinGW和Cmake
+>
 打开你的终端，运行，然后build_jars就是模组文件
 
 ```shell
@@ -76,6 +59,7 @@ python script/buildAll.py
 
 # 可能会有的功能
 
+* 可能 _(注意是可能)_ 用Java重写FSR2(FSR3)的部分代码
 * 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
 
 ---

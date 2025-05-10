@@ -50,6 +50,7 @@ public class GlslangShaderCompiler {
 
         // 顶点着色器源代码
         String shaderSrc = """
+                #define A 2.0
                 #version 430
                 #extension GL_GOOGLE_include_directive : enable
                 #include "a.h"
@@ -60,7 +61,7 @@ public class GlslangShaderCompiler {
                 layout (location = 0) out vec2 vTexCoord;
                 void main() {
                     vTexCoord = aTexCoord;
-                    gl_Position = vec4(aPosition, 0.0+1.0, 1.0);
+                    gl_Position = vec4(aPosition, A, 1.0);
                 }
                 """;
 
