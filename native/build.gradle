@@ -14,7 +14,7 @@ dependencies {
 
 tasks.register('configureCMake', Exec) {
     workingDir file(projectDir.path + "/cpp")
-    commandLine 'cmake', '-S', '.', '-B', 'build', '-G', 'MinGW Makefiles', "-DSRLIB_VERSION='${version}'"
+    commandLine 'cmake', '-S', '.', '-B', 'build', '-G', 'MinGW Makefiles' //"-DSRLIB_VERSION='${version}'"
 
     doFirst {
         delete "${projectDir}/cpp/build"

@@ -6,11 +6,11 @@ import java.nio.*;
 
 import static io.homo.superresolution.core.gl.Gl.*;
 
-public class VertexBuffer implements AutoCloseable {
+public class GlVertexBuffer implements AutoCloseable {
     private final int id;
     private int target;
 
-    public VertexBuffer() {
+    public GlVertexBuffer() {
         id = glGenBuffers();
     }
 

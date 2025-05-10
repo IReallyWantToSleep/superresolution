@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.gl.shader;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.core.gl.Gl;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.utils.ShaderCache;
 
 import java.io.FileOutputStream;
@@ -8,6 +10,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import static io.homo.superresolution.core.gl.Gl.*;
 import static io.homo.superresolution.core.gl.GlConst.*;
@@ -20,74 +24,55 @@ public class GlGeneralShaderProgram extends AbstractGlShaderProgram {
         return new GeneralShaderProgramBuilder();
     }
 
+    @Override
     public GlGeneralShaderProgram compileShader() {
         if (compiled) return this;
-        int FRAGMENT_SHADER = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(FRAGMENT_SHADER, getFragShaderText());
-        glCompileShader(FRAGMENT_SHADER);
-        if (glGetShaderi(FRAGMENT_SHADER, 35713) == 0) {
-            try (PrintWriter out = new PrintWriter(new FileOutputStream("ERROR_FRAGMENT_SHADER_SRC.glsl"))) {
-                out.println(this.getFragShaderText());
-            } catch (IOException e) {
-                SuperResolution.LOGGER.error(e.toString());
-            }
-            throw new RuntimeException("FRAGMENT_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(FRAGMENT_SHADER, 32768));
-        }
-
-        int VERTEX_SHADER = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(VERTEX_SHADER, getVertShaderText());
-        glCompileShader(VERTEX_SHADER);
-        if (glGetShaderi(VERTEX_SHADER, 35713) == 0) {
-            try (PrintWriter out = new PrintWriter(new FileOutputStream("ERROR_VERTEX_SHADER_SRC.glsl"))) {
-                out.println(this.getVertShaderText());
-            } catch (IOException e) {
-                SuperResolution.LOGGER.error(e.toString());
-            }
-            throw new RuntimeException("VERTEX_SHADER " + this.shaderName + " 无法编译着色器：" + glGetShaderInfoLog(VERTEX_SHADER, 32768));
-        }
-
-        this.shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, FRAGMENT_SHADER);
-        glAttachShader(shaderProgram, VERTEX_SHADER);
-        glLinkProgram(shaderProgram);
-        this.checkProgram();
-        glDeleteShader(FRAGMENT_SHADER);
-        glDeleteShader(VERTEX_SHADER);
-        if (enableCache) {
+        validateShaderTypes();
+        if (!ShaderCache.checkProgramBinary(this)) {
             ShaderCache.saveProgramBinary(this);
         }
-        compiled = true;
-        updateDebugLabel(getDebugLabel());
-        return this;
-    }
-
-    public void setTexture(String name, int textureId, int texture) {
-        glActiveTexture(GL_TEXTURE0 + texture);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glUniform1i(getUniformLocation(name), texture);
-    }
-
-    public static class ShaderInclude {
-        public String name;
-        public ArrayList<String> textList;
-
-        private ShaderInclude() {
+        List<Integer> shaders = new ArrayList<>();
+        try {
+            ShaderSource vertSource = shaderSources.get(ShaderSource.Type.VERTEX);
+            int vertShader = compileSingleShader(vertSource, GL_VERTEX_SHADER);
+            shaders.add(vertShader);
+            ShaderSource fragSource = shaderSources.get(ShaderSource.Type.FRAGMENT);
+            int fragShader = compileSingleShader(fragSource, GL_FRAGMENT_SHADER);
+            shaders.add(fragShader);
+            this.shaderProgram = glCreateProgram();
+            shaders.forEach(s -> glAttachShader(shaderProgram, s));
+            glLinkProgram(shaderProgram);
+            checkProgram();
+            compiled = true;
+            updateDebugLabel(getDebugLabel());
+            return this;
+        } finally {
+            shaders.forEach(Gl::glDeleteShader);
         }
+    }
 
-        public static ShaderInclude create(Collection<String> textList, String name) {
-            ShaderInclude i = new ShaderInclude();
-            i.textList = new ArrayList<>();
-            i.textList.addAll(textList);
-            i.name = name;
-            return i;
+    private void validateShaderTypes() {
+        Set<ShaderSource.Type> types = shaderSources.keySet();
+        if (!types.contains(ShaderSource.Type.VERTEX) || !types.contains(ShaderSource.Type.FRAGMENT)) {
+            throw new IllegalStateException("通用着色器必须同时拥有VERTEX与FRAGMENT类型的ShaderSource");
+        }
+        if (types.stream().anyMatch(t -> t != ShaderSource.Type.VERTEX && t != ShaderSource.Type.FRAGMENT)) {
+            throw new IllegalStateException("通用着色器仅支持VERTEX与FRAGMENT类型的ShaderSource");
         }
     }
 
     public static class GeneralShaderProgramBuilder extends AbstractShaderProgramBuilder<GlGeneralShaderProgram> {
         @Override
+        public GeneralShaderProgramBuilder addShaderSource(ShaderSource source) {
+            if (source.getType() != ShaderSource.Type.VERTEX && source.getType() != ShaderSource.Type.FRAGMENT) {
+                throw new IllegalArgumentException("通用着色器仅支持VERTEX与FRAGMENT类型的ShaderSource");
+            }
+            return (GeneralShaderProgramBuilder) super.addShaderSource(source);
+        }
+
+        @Override
         public GlGeneralShaderProgram build() {
-            return checkShaderCache() ? updateShader(new GlGeneralShaderProgram().fromBin(getShaderCache())) : updateShader(new GlGeneralShaderProgram());
+            return updateShader(new GlGeneralShaderProgram());
         }
     }
-
 }

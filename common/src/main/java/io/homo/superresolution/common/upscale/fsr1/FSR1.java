@@ -10,6 +10,7 @@ import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlTexture;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
@@ -38,37 +39,12 @@ public class FSR1 extends AbstractAlgorithm {
 
     public void initShader() {
         int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
-        GlGeneralShaderProgram.ShaderInclude fsrEasuInclude = GlGeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1/fsr1_easu.comp.glsl"),
-                "fsr1_easu.comp.glsl"
-        );
-        GlGeneralShaderProgram.ShaderInclude fsrEasuFp16Include = GlGeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1/fsr1_easu_fp16.comp.glsl"),
-                "fsr1_easu_fp16.comp.glsl"
-        );
-        GlGeneralShaderProgram.ShaderInclude fsrRcasInclude = GlGeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1/fsr1_rcas.comp.glsl"),
-                "fsr1_rcas.comp.glsl"
-        );
-        GlGeneralShaderProgram.ShaderInclude fsrRcasFp16Include = GlGeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1/fsr1_rcas_fp16.comp.glsl"),
-                "fsr1_rcas_fp16.comp.glsl"
-        );
-        GlGeneralShaderProgram.ShaderInclude fsrCommonInclude = GlGeneralShaderProgram.ShaderInclude.create(
-                FileReadHelper.readText("/shader/fsr1/fsr1_common.glsl"),
-                "fsr1_common.glsl"
-        );
         fsr1EASUShader = GlComputeShaderProgram.create()
                 .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
                 .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                 .addDefineText("FSR_EASU", String.valueOf(1))
                 .setShaderName("FSR1_EASU")
-                .addShaderInclude(fsrEasuInclude)
-                .addShaderInclude(fsrEasuFp16Include)
-                .addShaderInclude(fsrRcasInclude)
-                .addShaderInclude(fsrRcasFp16Include)
-                .addShaderInclude(fsrCommonInclude)
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1/fsr1_main.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl", true))
                 .build()
                 .compileShader();
         fsr1RCASShader = GlComputeShaderProgram.create()
@@ -76,12 +52,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                 .addDefineText("FSR_RCAS", String.valueOf(1))
                 .setShaderName("FSR1_RCAS")
-                .addShaderInclude(fsrEasuInclude)
-                .addShaderInclude(fsrEasuFp16Include)
-                .addShaderInclude(fsrRcasInclude)
-                .addShaderInclude(fsrRcasFp16Include)
-                .addShaderInclude(fsrCommonInclude)
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/fsr1/fsr1_main.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl", true))
                 .build()
                 .compileShader();
     }
@@ -101,43 +72,43 @@ public class FSR1 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
         );
-        fsrUpscalePipeline.addJob("fsr1_easu", PipelineJob.create()
-                .setType(PipelineJobType.Compute)
+        fsrUpscalePipeline.addJob("fsr1_easu", GlPipelineJob.create()
+                .setType(GlPipelineJobType.Compute)
                 .setProgram(fsr1EASUShader)
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "temp",
                         fsr1TempTexture,
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         1
                 ))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "input",
                         FrameBufferTextureAdapter.ofColor(input),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         0
                 ))
                 .build()
         );
-        fsrUpscalePipeline.addJob("fsr1_rcas", PipelineJob.create()
-                .setType(PipelineJobType.Compute)
+        fsrUpscalePipeline.addJob("fsr1_rcas", GlPipelineJob.create()
+                .setType(GlPipelineJobType.Compute)
                 .setProgram(fsr1RCASShader)
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "temp",
                         fsr1TempTexture,
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         0
                 ))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "output",
                         output,
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         1
                 ))
@@ -151,7 +122,7 @@ public class FSR1 extends AbstractAlgorithm {
         int workRegionDim = 16;
         int dispatchX = (MinecraftRenderHandle.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
         int dispatchY = (MinecraftRenderHandle.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
-        PipelineJobDispatchResource pipelineDispatchResource = new PipelineJobDispatchResource(
+        GlPipelineJobDispatchResource pipelineDispatchResource = new GlPipelineJobDispatchResource(
                 new Vec3(
                         dispatchX,
                         dispatchY,
@@ -169,10 +140,10 @@ public class FSR1 extends AbstractAlgorithm {
 
     private void setFSR1ShaderUniform(GlComputeShaderProgram shaderProgram) {
         shaderProgram.uniforms()
-                .strictVec2("renderViewportSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
-                .strictVec2("containerTextureSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
-                .strictVec2("upscaledViewportSize").value(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
-                .strictFloat("sharpness").value(Config.getSharpness());
+                .safeVec2("renderViewportSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
+                .safeVec2("containerTextureSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
+                .safeVec2("upscaledViewportSize").value(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+                .safeFloat("sharpness").value(Config.getSharpness());
     }
 
     @Override

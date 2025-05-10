@@ -4,7 +4,7 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.gl.texture.GlTexture;
@@ -49,8 +49,8 @@ public class Sgsr2 extends AbstractAlgorithm {
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
         GlFrameBuffer output_ = new GlFrameBuffer();
-        output_.addAttachment(new FrameBufferAttachment(
-                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+        output_.addAttachment(new GlFrameBufferAttachment(
+                GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 GlTexture.create(
                         MinecraftRenderHandle.getRenderWidth(),
                         MinecraftRenderHandle.getRenderHeight(),

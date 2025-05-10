@@ -35,7 +35,9 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
     private static final Minecraft minecraft = Minecraft.getInstance();
-    private static final Requirement commonRequirement = Requirement.nothing().glMajorVersion(4).glMinorVersion(3);
+    private static final Requirement commonRequirement = Requirement.nothing()
+            .glMajorVersion(4).glMinorVersion(3)
+            .requiredGlExtension("GL_ARB_gl_spirv");
     public static AbstractAlgorithm currentAlgorithm;
     public static None defaultAlgorithm = new None();
     public static boolean isInit;
@@ -132,7 +134,6 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static void initRendering() {
         if (!isPreInit) return;
-        RenderSystem.assertOnRenderThread();
         MinecraftRenderHandle.init();
         AlgorithmManager.init();
         algorithmDescription = Config.getUpscaleAlgo();
@@ -144,10 +145,10 @@ public final class SuperResolution implements Resizable, Destroyable {
         algorithmDescription = Config.getUpscaleAlgo();
         try {
             currentAlgorithm = algorithmDescription.createNewInstance();
-            SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.toString());
+            SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误 {}", algorithmDescription.toString(), e.getMessage());
+            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误 {}", algorithmDescription.getDisplayName(), e.toString());
         }
         return false;
     }
@@ -172,7 +173,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     public void init() {
         if (isInit)
             return;
-        RenderSystem.assertOnRenderThread();
         instance = this;
         if (Platform.currentPlatform.isDevelopmentEnvironment() && Config.isEnableImgui()) new ImguiMain();
 
@@ -181,7 +181,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void resize(int width, int height) {
-        RenderSystem.assertOnRenderThread();
         cachedWidth = getMinecraftWidth();
         cachedHeight = getMinecraftHeight();
         if (currentAlgorithm != null) {
@@ -198,7 +197,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void destroy() {
-        RenderSystem.assertOnRenderThread();
         if (interopManager != null) {
             interopManager.destroy();
         }

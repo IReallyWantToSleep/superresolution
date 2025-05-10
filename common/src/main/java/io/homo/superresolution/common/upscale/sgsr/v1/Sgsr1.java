@@ -2,7 +2,7 @@ package io.homo.superresolution.common.upscale.sgsr.v1;
 
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.pipeline.*;
 import io.homo.superresolution.core.gl.shader.AbstractGlShaderProgram;
@@ -10,6 +10,7 @@ import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -23,8 +24,8 @@ public class Sgsr1 extends AbstractAlgorithm {
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
         GlFrameBuffer output_ = new GlFrameBuffer();
-        output_.addAttachment(new FrameBufferAttachment(
-                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+        output_.addAttachment(new GlFrameBufferAttachment(
+                GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 GlTexture.create(
                         MinecraftRenderHandle.getScreenWidth(),
                         MinecraftRenderHandle.getScreenHeight(),
@@ -33,22 +34,22 @@ public class Sgsr1 extends AbstractAlgorithm {
         ));
         output = output_;
         sgsrShader = GlGeneralShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
-                .addAllVertShaderTextList(FileReadHelper.readText("/shader/sgsr/v1/sgsr1_shader.vert.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/sgsr/v1/sgsr1_shader.frag.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/sgsr/v1/sgsr1_shader.vert.glsl", true))
                 .setShaderName("SGSRV1")
                 .addDefineText("UseEdgeDirection", "")
                 .build()
                 .compileShader();
         pipeline = new GlPipeline()
                 .addJob("main",
-                        PipelineJob.create()
-                                .setType(PipelineJobType.Graphics)
+                        GlPipelineJob.create()
+                                .setType(GlPipelineJobType.Graphics)
                                 .setProgram(sgsrShader)
-                                .addResource(new PipelineResourceDescription(
-                                        PipelineResourceType.Sampler2D,
+                                .addResource(new GlPipelineResourceDescription(
+                                        GlPipelineResourceType.Sampler2D,
                                         "ps0",
                                         FrameBufferTextureAdapter.ofColor(input),
-                                        PipelineResourceAccess.READ,
+                                        GlPipelineResourceAccess.READ,
                                         null,
                                         0
                                 ))
@@ -61,7 +62,7 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        pipeline.scheduleJobs(PipelineJobDispatchResource.nothing());
+        pipeline.scheduleJobs(GlPipelineJobDispatchResource.nothing());
         sgsrShader.use();
         sgsrShader.uniforms()
                 .strictVec2("renderSize").value(dispatchResource.renderWidth(), dispatchResource.renderHeight())
@@ -69,7 +70,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 .strictFloat("EdgeThreshold").value(8f / 255f)
                 .strictFloat("EdgeSharpness").value(2f);
         output.bind(FrameBufferBindPoint.WRITE);
-        pipeline.executeJobs(PipelineJobDispatchResource.nothing());
+        pipeline.executeJobs(GlPipelineJobDispatchResource.nothing());
         sgsrShader.clear();
         return false;
     }

@@ -39,23 +39,23 @@ public class BlitRenderer {
 
 package io.homo.superresolution.core.gl.utils;
 
-import io.homo.superresolution.core.gl.shader.BlitShader;
-import io.homo.superresolution.core.gl.vertex.VertexBuffer;
-import io.homo.superresolution.core.gl.vertex.VertexArray;
+import io.homo.superresolution.core.gl.shader.GlBlitShader;
+import io.homo.superresolution.core.gl.vertex.GlVertexBuffer;
+import io.homo.superresolution.core.gl.vertex.GlVertexArray;
 
 import static org.lwjgl.opengl.GL30.*;
 
-public class BlitRenderer {
+public class GlBlitRenderer {
     public static void blitToScreen(int textureId, int viewWidth, int viewHeight) {
         glColorMask(true, true, true, false);
         glDisable(GL_DEPTH_TEST);
         glDepthMask(false);
         glViewport(0, 0, viewWidth, viewHeight);
-        BlitShader blitShader = BlitShader.getShader();
+        GlBlitShader blitShader = GlBlitShader.getShader();
         blitShader.use();
         blitShader.bindTexture(textureId);
-        try (VertexArray vao = new VertexArray();
-             VertexBuffer vbo = new VertexBuffer()) {
+        try (GlVertexArray vao = new GlVertexArray();
+             GlVertexBuffer vbo = new GlVertexBuffer()) {
             float[] vertices = {
                     -1f, -1f, 0f, 0f,
                     1f, -1f, 1f, 0f,

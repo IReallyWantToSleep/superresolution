@@ -2,7 +2,7 @@ package io.homo.superresolution.common.minecraft;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.core.gl.utils.BlitRenderer;
+import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
 
 
 #if MC_VER > MC_1_21_4
@@ -170,7 +170,7 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public void blitToScreen(int width, int height) {
         updateState();
-        BlitRenderer.blitToScreen(
+        GlBlitRenderer.blitToScreen(
                 frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
                 this.viewWidth,
                 this.viewHeight

@@ -3,7 +3,9 @@ package io.homo.superresolution.core.glslang;
 import io.homo.superresolution.core.utils.FileReadHelper;
 
 public class FileIncluder {
-    private static final String LOCAL_INCLUDE_BASE_PATH = "/shader/include/";
+    private static final String LOCAL_INCLUDE_BASE_PATH = "/shader/";
+    private static final String SYSTEM_INCLUDE_BASE_PATH = "/shader/include/";
+
 
     public static String cppIncludeLocal(
             String headerName,
@@ -26,7 +28,7 @@ public class FileIncluder {
             String includerName,
             int inclusionDepth
     ) {
-        String fullPath = LOCAL_INCLUDE_BASE_PATH + headerName;
+        String fullPath = SYSTEM_INCLUDE_BASE_PATH + headerName;
         try {
             return String.join("\n", FileReadHelper.readText(fullPath));
         } catch (Exception e) {

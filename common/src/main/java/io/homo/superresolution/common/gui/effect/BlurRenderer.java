@@ -7,9 +7,10 @@ import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlTexture;
-import io.homo.superresolution.core.gl.vertex.VertexArray;
-import io.homo.superresolution.core.gl.vertex.VertexBuffer;
+import io.homo.superresolution.core.gl.vertex.GlVertexArray;
+import io.homo.superresolution.core.gl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
@@ -31,8 +32,8 @@ public class BlurRenderer {
 
     static {
         BLUR = GlGeneralShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/gui_blur/blur.frag.glsl"))
-                .addAllVertShaderTextList(FileReadHelper.readText("/shader/gui_blur/blur.vert.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/gui_blur/blur.frag.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/gui_blur/blur.vert.glsl", true))
                 .setShaderName("gui-blur")
                 .build();
         blurFrameBuffer = GlFrameBuffer.create(
@@ -114,8 +115,8 @@ public class BlurRenderer {
             glDepthMask(false);
             blurShader.use();
             blurFrameBuffer.bind(FrameBufferBindPoint.ALL);
-            try (VertexArray vao = new VertexArray();
-                 VertexBuffer vbo = new VertexBuffer()) {
+            try (GlVertexArray vao = new GlVertexArray();
+                 GlVertexBuffer vbo = new GlVertexBuffer()) {
                 float[] vertices = {
                         -1f, -1f, 0f, 0f,
                         1f, -1f, 1f, 0f,

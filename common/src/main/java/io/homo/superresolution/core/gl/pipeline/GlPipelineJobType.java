@@ -1,5 +1,5 @@
 package io.homo.superresolution.core.gl.pipeline;
 
-public enum PipelineJobType {
+public enum GlPipelineJobType {
     Compute, Graphics
 }

@@ -3,13 +3,14 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.framebuffer.FrameBufferAttachment;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.pipeline.*;
 import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlTexture;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.utils.FileReadHelper;
@@ -20,28 +21,28 @@ import static io.homo.superresolution.core.gl.GlConst.*;
 public class MotionVectorsGenerator {
     private static final GlGeneralShaderProgram preprocess =
             GlGeneralShaderProgram.create()
-                    .addAllFragShaderTextList(FileReadHelper.readText("/shader/motion_vector/preprocess.frag.glsl"))
-                    .addAllVertShaderTextList(FileReadHelper.readText("/shader/motion_vector/common.vert.glsl"))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/preprocess.frag.glsl", true))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
                     .setShaderName("motion_vector_preprocess")
                     .build();
     private static final GlGeneralShaderProgram pass1 =
             GlGeneralShaderProgram.create()
-                    .addAllFragShaderTextList(FileReadHelper.readText("/shader/motion_vector/pass1.frag.glsl"))
-                    .addAllVertShaderTextList(FileReadHelper.readText("/shader/motion_vector/common.vert.glsl"))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/pass1.frag.glsl", true))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
                     .setShaderName("motion_vector_pass1")
                     .build();
 
     private static final GlGeneralShaderProgram pass2 =
             GlGeneralShaderProgram.create()
-                    .addAllFragShaderTextList(FileReadHelper.readText("/shader/motion_vector/pass2.frag.glsl"))
-                    .addAllVertShaderTextList(FileReadHelper.readText("/shader/motion_vector/common.vert.glsl"))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/pass2.frag.glsl", true))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
                     .setShaderName("motion_vector_pass2")
                     .build();
 
     private static final GlGeneralShaderProgram pass3 =
             GlGeneralShaderProgram.create()
-                    .addAllFragShaderTextList(FileReadHelper.readText("/shader/motion_vector/pass3.frag.glsl"))
-                    .addAllVertShaderTextList(FileReadHelper.readText("/shader/motion_vector/common.vert.glsl"))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/pass3.frag.glsl", true))
+                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
                     .setShaderName("motion_vector_pass3")
                     .build();
 
@@ -60,8 +61,8 @@ public class MotionVectorsGenerator {
 
     public static void init() {
         motionVectorsFrameBuffer = new GlFrameBuffer();
-        ((GlFrameBuffer) motionVectorsFrameBuffer).addAttachment(new FrameBufferAttachment(
-                FrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+        ((GlFrameBuffer) motionVectorsFrameBuffer).addAttachment(new GlFrameBufferAttachment(
+                GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 GlTexture.create(
                         MinecraftRenderHandle.getRenderWidth(),
                         MinecraftRenderHandle.getRenderHeight(),
@@ -99,14 +100,14 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderHeight()
         );
         pipeline.addJob("preprocess",
-                PipelineJob.create()
-                        .setType(PipelineJobType.Graphics)
+                GlPipelineJob.create()
+                        .setType(GlPipelineJobType.Graphics)
                         .setProgram(preprocess)
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "tex_current",
                                 MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR),
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 1
                         ))
@@ -114,14 +115,14 @@ public class MotionVectorsGenerator {
                         .build()
         );
         pipeline.addJob("pass1",
-                PipelineJob.create()
-                        .setType(PipelineJobType.Graphics)
+                GlPipelineJob.create()
+                        .setType(GlPipelineJobType.Graphics)
                         .setProgram(pass1)
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "tex_current",
                                 currentFrameTexture,
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 1
                         ))
@@ -129,45 +130,45 @@ public class MotionVectorsGenerator {
                         .build()
         );
         pipeline.addJob("pass2",
-                PipelineJob.create()
+                GlPipelineJob.create()
                         .setProgram(pass2)
-                        .setType(PipelineJobType.Graphics)
+                        .setType(GlPipelineJobType.Graphics)
                         .setTargetFrameBuffer(deltaFrameBuffer)
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "tex_current",
                                 currentFrameTexture,
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 1
                         ))
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "tex_previous",
                                 previousFrameTexture,
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 2
                         ))
                         .build()
         );
-        pipeline.addJob("pass3", PipelineJob.create()
+        pipeline.addJob("pass3", GlPipelineJob.create()
                 .setProgram(pass3)
-                .setType(PipelineJobType.Graphics)
+                .setType(GlPipelineJobType.Graphics)
                 .setTargetFrameBuffer(null)
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "grad_current",
                         gradFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         1
                 ))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "delta_time",
                         deltaFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         2
                 ))
@@ -212,7 +213,7 @@ public class MotionVectorsGenerator {
         if (!pass3.compiled) pass3.compileShader();
 
         try (GlState ignored = new GlState()) {
-            PipelineJobDispatchResource pipelineJobDispatchResource = new PipelineJobDispatchResource(
+            GlPipelineJobDispatchResource pipelineJobDispatchResource = new GlPipelineJobDispatchResource(
                     new Vec3(1, 1, 1)
             );
             pipeline.scheduleJobs(pipelineJobDispatchResource);

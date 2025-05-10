@@ -17,6 +17,7 @@ import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlTexture;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -108,50 +109,50 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
         }
         scaleShader = GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/nis/nis_scaler.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/nis/nis_scaler.comp.glsl", true))
                 .setShaderName("nis_scaler")
                 .build()
                 .compileShader();
         sharpenShader = GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper.readText("/shader/nis/nis_sharpen.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/nis/nis_sharpen.comp.glsl", true))
                 .setShaderName("nis_sharpen")
                 .build()
                 .compileShader();
         pipeline = new GlPipeline();
         pipeline.addJob("nis_scaler",
-                PipelineJob.create()
-                        .setType(PipelineJobType.Compute)
+                GlPipelineJob.create()
+                        .setType(GlPipelineJobType.Compute)
                         .setProgram(scaleShader)
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "in_texture",
                                 FrameBufferTextureAdapter.ofColor(input),
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 NVIDIAImageScalingConst.IN_TEX_BINDING
                         ))
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Image2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Image2D,
                                 "out_texture",
                                 output,
-                                PipelineResourceAccess.WRITE,
+                                GlPipelineResourceAccess.WRITE,
                                 null,
                                 NVIDIAImageScalingConst.OUT_TEX_BINDING
                         ))
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "coef_scaler",
                                 coefScaler,
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 NVIDIAImageScalingConst.COEF_SCALAR_BINDING
 
                         ))
-                        .addResource(new PipelineResourceDescription(
-                                PipelineResourceType.Sampler2D,
+                        .addResource(new GlPipelineResourceDescription(
+                                GlPipelineResourceType.Sampler2D,
                                 "coef_usm",
                                 coefUSM,
-                                PipelineResourceAccess.READ,
+                                GlPipelineResourceAccess.READ,
                                 null,
                                 NVIDIAImageScalingConst.COEF_USM_BINDING
                         ))
@@ -161,7 +162,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        PipelineJobDispatchResource pipelineJobDispatchResource = new PipelineJobDispatchResource(
+        GlPipelineJobDispatchResource pipelineJobDispatchResource = new GlPipelineJobDispatchResource(
                 new Vec3(
                         (float) Math.ceil(dispatchResource.renderWidth() / 8),
                         (float) Math.ceil(dispatchResource.renderHeight() / 8),

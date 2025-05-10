@@ -7,6 +7,7 @@ import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlSampler;
 import io.homo.superresolution.core.gl.texture.GlTexture;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.texture.TextureSupplier;
@@ -36,7 +37,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         int dispatchX = SgsrUtils.divideRoundUp(resource.screenWidth(), 8);
         int dispatchY = SgsrUtils.divideRoundUp(resource.screenHeight(), 8);
-        PipelineJobDispatchResource pipelineDispatchResource = new PipelineJobDispatchResource(
+        GlPipelineJobDispatchResource pipelineDispatchResource = new GlPipelineJobDispatchResource(
                 new Vec3(
                         dispatchX,
                         dispatchY,
@@ -57,20 +58,17 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     @Override
     public void init(Sgsr2 sgsr) {
         activateShader = GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper
-                        .readText("/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl", true))
                 .setShaderName("SGSR_3PCS_A")
                 .build()
                 .compileShader();
         convertShader = GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper
-                        .readText("/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl", true))
                 .setShaderName("SGSR_3PCS_B")
                 .build()
                 .compileShader();
         upscaleShader = GlComputeShaderProgram.create()
-                .addAllFragShaderTextList(FileReadHelper
-                        .readText("/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl"))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl", true))
                 .setShaderName("SGSR_3PCS_C")
                 .build()
                 .compileShader();
@@ -103,128 +101,128 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA16F);
-        sgsrPipeline.addJob("convert", PipelineJob.create()
+        sgsrPipeline.addJob("convert", GlPipelineJob.create()
                 .setProgram(convertShader)
-                .setType(PipelineJobType.Compute)
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .setType(GlPipelineJobType.Compute)
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "InputOpaqueColor",
                         FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer()),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         1))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "InputColor",
                         FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer()),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         2))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "InputDepth",
                         FrameBufferTextureAdapter.ofDepth(sgsr.getInputFrameBuffer()),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.NearestClamp),
                         3))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "InputVelocity",
                         FrameBufferTextureAdapter.ofColor(
                                 AlgorithmManager.getDispatchResource().motionVectors()),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         4))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "YCoCgColor",
                         YCoCgColor,
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         5))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "MotionDepthAlphaBuffer",
                         MotionDepthAlphaBuffer,
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         6))
                 .build());
-        sgsrPipeline.addJob("activate", PipelineJob.create()
+        sgsrPipeline.addJob("activate", GlPipelineJob.create()
                 .setProgram(activateShader)
-                .setType(PipelineJobType.Compute)
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .setType(GlPipelineJobType.Compute)
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "PrevLumaHistory",
                         TextureSupplier.of(() -> PrevLumaHistory),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         1))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "MotionDepthAlphaBuffer",
                         MotionDepthAlphaBuffer,
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         2))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "YCoCgColor",
                         YCoCgColor,
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         null,
                         3))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "MotionDepthClipAlphaBuffer",
                         MotionDepthClipAlphaBuffer,
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         4))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "LumaHistory",
                         TextureSupplier.of(() -> LumaHistory),
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         5))
                 .build());
-        sgsrPipeline.addJob("upscale", PipelineJob.create()
+        sgsrPipeline.addJob("upscale", GlPipelineJob.create()
                 .setProgram(upscaleShader)
-                .setType(PipelineJobType.Compute)
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .setType(GlPipelineJobType.Compute)
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "PrevHistoryOutput",
                         TextureSupplier.of(() -> PrevHistoryOutput),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.LinearClamp),
                         1))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "MotionDepthClipAlphaBuffer",
                         MotionDepthClipAlphaBuffer,
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.LinearClamp),
                         2))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Sampler2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Sampler2D,
                         "YCoCgColor",
                         TextureSupplier.of(() -> YCoCgColor),
-                        PipelineResourceAccess.READ,
+                        GlPipelineResourceAccess.READ,
                         GlSampler.create(GlSampler.SamplerType.NearestClamp),
                         3))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "SceneColorOutput",
                         FrameBufferTextureAdapter.ofColor(sgsr.getOutputFrameBuffer()),
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         5))
-                .addResource(new PipelineResourceDescription(
-                        PipelineResourceType.Image2D,
+                .addResource(new GlPipelineResourceDescription(
+                        GlPipelineResourceType.Image2D,
                         "HistoryOutput",
                         TextureSupplier.of(() -> HistoryOutput),
-                        PipelineResourceAccess.WRITE,
+                        GlPipelineResourceAccess.WRITE,
                         null,
                         4))
                 .build());
