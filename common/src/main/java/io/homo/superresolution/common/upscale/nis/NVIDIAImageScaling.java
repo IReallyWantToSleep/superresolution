@@ -1,6 +1,10 @@
 package io.homo.superresolution.common.upscale.nis;
 
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.Gl;
@@ -22,7 +26,6 @@ import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
-import io.homo.superresolution.core.utils.FileReadHelper;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.system.MemoryStack;
 
@@ -120,10 +123,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 .compileShader();
         pipeline = new GlPipeline();
         pipeline.addJob("nis_scaler",
-                GlPipelineJob.create()
-                        .setType(GlPipelineJobType.Compute)
-                        .setProgram(scaleShader)
-                        .addResource(new GlPipelineResourceDescription(
+                GlPipelineJobBuilders.compute(scaleShader)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "in_texture",
                                 FrameBufferTextureAdapter.ofColor(input),
@@ -131,7 +132,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 null,
                                 NVIDIAImageScalingConst.IN_TEX_BINDING
                         ))
-                        .addResource(new GlPipelineResourceDescription(
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Image2D,
                                 "out_texture",
                                 output,
@@ -139,7 +140,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 null,
                                 NVIDIAImageScalingConst.OUT_TEX_BINDING
                         ))
-                        .addResource(new GlPipelineResourceDescription(
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "coef_scaler",
                                 coefScaler,
@@ -148,7 +149,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 NVIDIAImageScalingConst.COEF_SCALAR_BINDING
 
                         ))
-                        .addResource(new GlPipelineResourceDescription(
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "coef_usm",
                                 coefUSM,
@@ -156,19 +157,26 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                                 null,
                                 NVIDIAImageScalingConst.COEF_USM_BINDING
                         ))
+                        .resource(GlPipelineResourceDescription.createUBOResource(
+                                "const_buffer",
+                                uniformBuffer,
+                                0
+                        ))
+                        .workGroupSupplier(this::getWorkGroupSize)
                         .build()
+        );
+    }
+
+    private Vec3 getWorkGroupSize() {
+        return new Vec3(
+                (float) Math.ceil(MinecraftRenderHandle.getRenderWidth() / 8),
+                (float) Math.ceil(MinecraftRenderHandle.getRenderHeight() / 8),
+                1.0f
         );
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        GlPipelineJobDispatchResource pipelineJobDispatchResource = new GlPipelineJobDispatchResource(
-                new Vec3(
-                        (float) Math.ceil(dispatchResource.renderWidth() / 8),
-                        (float) Math.ceil(dispatchResource.renderHeight() / 8),
-                        1.0f
-                )
-        );
         config.NVScalerUpdateConfig(
                 Config.getSharpness(),
                 0,
@@ -187,10 +195,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         );
         uniformBuffer.struct().updateData(dispatchResource);
         uniformBuffer.update();
-        pipeline.scheduleJob("nis_scaler", pipelineJobDispatchResource);
-        scaleShader.use();
-        uniformBuffer.bind(0);
-        pipeline.executeJob("nis_scaler", pipelineJobDispatchResource);
+        pipeline.execute("nis_scaler");
         return true;
     }
 

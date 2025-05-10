@@ -1,4 +1,4 @@
-package io.homo.superresolution.core.gl.pipeline;
+package io.homo.superresolution.core.gl.pipeline.jobs;
 
 import io.homo.superresolution.core.impl.Vec3;
 

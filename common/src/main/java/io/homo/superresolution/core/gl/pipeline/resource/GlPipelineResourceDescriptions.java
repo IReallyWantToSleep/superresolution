@@ -1,10 +1,10 @@
-package io.homo.superresolution.core.gl.pipeline;
+package io.homo.superresolution.core.gl.pipeline.resource;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class GlPipelineResourceDescriptions {
-    protected Map<String, GlPipelineResourceDescription> resource = new HashMap<>();
+    public Map<String, GlPipelineResourceDescription> resource = new HashMap<>();
 
     public GlPipelineResourceDescriptions addResource(GlPipelineResourceDescription description) {
         if (description.type() == GlPipelineResourceType.Sampler2D && description.access() != GlPipelineResourceAccess.READ) {
