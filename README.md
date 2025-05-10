@@ -64,6 +64,10 @@ python script/buildAll.py
 
 ---
 
+# 注意
+
+* 此项目正准备在Java上实现FSR2后端，项目的任何部分都可能被重构。
+
 ## 星星历史图
 
 [![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)

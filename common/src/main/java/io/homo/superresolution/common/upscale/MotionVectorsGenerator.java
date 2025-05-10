@@ -1,5 +1,10 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
+import io.homo.superresolution.core.gl.pipeline.jobs.GlPipelineJobDispatchResource;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.GlState;
@@ -13,7 +18,6 @@ import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
-import io.homo.superresolution.core.utils.FileReadHelper;
 
 import static io.homo.superresolution.core.gl.Gl.*;
 import static io.homo.superresolution.core.gl.GlConst.*;
@@ -100,10 +104,8 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderHeight()
         );
         pipeline.addJob("preprocess",
-                GlPipelineJob.create()
-                        .setType(GlPipelineJobType.Graphics)
-                        .setProgram(preprocess)
-                        .addResource(new GlPipelineResourceDescription(
+                GlPipelineJobBuilders.graphics(preprocess)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_current",
                                 MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR),
@@ -111,14 +113,18 @@ public class MotionVectorsGenerator {
                                 null,
                                 1
                         ))
-                        .setTargetFrameBuffer(preprocessFrameBuffer)
+                        .targetFramebuffer(preprocessFrameBuffer)
+                        .build()
+        );
+        pipeline.addJob("copy_preprocess_fbo_to_current_frame_texture",
+                GlPipelineJobBuilders.copy()
+                        .from(preprocessFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR))
+                        .to(currentFrameTexture)
                         .build()
         );
         pipeline.addJob("pass1",
-                GlPipelineJob.create()
-                        .setType(GlPipelineJobType.Graphics)
-                        .setProgram(pass1)
-                        .addResource(new GlPipelineResourceDescription(
+                GlPipelineJobBuilders.graphics(pass1)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_current",
                                 currentFrameTexture,
@@ -126,15 +132,13 @@ public class MotionVectorsGenerator {
                                 null,
                                 1
                         ))
-                        .setTargetFrameBuffer(gradFrameBuffer)
+                        .targetFramebuffer(gradFrameBuffer)
                         .build()
         );
         pipeline.addJob("pass2",
-                GlPipelineJob.create()
-                        .setProgram(pass2)
-                        .setType(GlPipelineJobType.Graphics)
-                        .setTargetFrameBuffer(deltaFrameBuffer)
-                        .addResource(new GlPipelineResourceDescription(
+                GlPipelineJobBuilders.graphics(pass2)
+                        .targetFramebuffer(deltaFrameBuffer)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_current",
                                 currentFrameTexture,
@@ -142,7 +146,7 @@ public class MotionVectorsGenerator {
                                 null,
                                 1
                         ))
-                        .addResource(new GlPipelineResourceDescription(
+                        .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_previous",
                                 previousFrameTexture,
@@ -152,28 +156,32 @@ public class MotionVectorsGenerator {
                         ))
                         .build()
         );
-        pipeline.addJob("pass3", GlPipelineJob.create()
-                .setProgram(pass3)
-                .setType(GlPipelineJobType.Graphics)
-                .setTargetFrameBuffer(null)
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "grad_current",
-                        gradFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
-                        GlPipelineResourceAccess.READ,
-                        null,
-                        1
-                ))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "delta_time",
-                        deltaFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
-                        GlPipelineResourceAccess.READ,
-                        null,
-                        2
-                ))
-                .setTargetFrameBuffer(motionVectorsFrameBuffer)
-                .build()
+        pipeline.addJob("pass3",
+                GlPipelineJobBuilders.graphics(pass3)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "grad_current",
+                                gradFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
+                                GlPipelineResourceAccess.READ,
+                                null,
+                                1
+                        ))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "delta_time",
+                                deltaFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
+                                GlPipelineResourceAccess.READ,
+                                null,
+                                2
+                        ))
+                        .targetFramebuffer(motionVectorsFrameBuffer)
+                        .build()
+        );
+        pipeline.addJob("copy_current_frame_texture_to_previous_frame_texture",
+                GlPipelineJobBuilders.copy()
+                        .from(currentFrameTexture)
+                        .to(previousFrameTexture)
+                        .build()
         );
     }
 

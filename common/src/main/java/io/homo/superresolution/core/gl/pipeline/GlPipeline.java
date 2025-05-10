@@ -1,5 +1,10 @@
 package io.homo.superresolution.core.gl.pipeline;
 
+import io.homo.superresolution.core.gl.pipeline.jobs.GlPipelineJob;
+import io.homo.superresolution.core.gl.pipeline.jobs.GlPipelineJobDispatchResource;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescriptions;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,6 +52,14 @@ public class GlPipeline {
         jobs.values().forEach((job) -> job.execute(dispatchResource));
     }
 
+    public void scheduleJobs() {
+        jobs.values().forEach((job) -> job.schedule(GlPipelineJobDispatchResource.nothing()));
+    }
+
+    public void executeJobs() {
+        jobs.values().forEach((job) -> job.execute(GlPipelineJobDispatchResource.nothing()));
+    }
+
     public void scheduleJob(String name, GlPipelineJobDispatchResource dispatchResource) {
         jobs.get(name).schedule(dispatchResource);
     }
@@ -54,6 +67,15 @@ public class GlPipeline {
     public void executeJob(String name, GlPipelineJobDispatchResource dispatchResource) {
         jobs.get(name).execute(dispatchResource);
     }
+
+    public void scheduleJob(String name) {
+        jobs.get(name).schedule(GlPipelineJobDispatchResource.nothing());
+    }
+
+    public void executeJob(String name) {
+        jobs.get(name).execute(GlPipelineJobDispatchResource.nothing());
+    }
+
 
     public void executeAll(GlPipelineJobDispatchResource dispatchResource) {
         scheduleJobs(dispatchResource);
@@ -63,6 +85,16 @@ public class GlPipeline {
     public void execute(String name, GlPipelineJobDispatchResource dispatchResource) {
         scheduleJob(name, dispatchResource);
         executeJob(name, dispatchResource);
+    }
+
+    public void execute(String name) {
+        scheduleJob(name, GlPipelineJobDispatchResource.nothing());
+        executeJob(name, GlPipelineJobDispatchResource.nothing());
+    }
+
+    public void executeAll() {
+        scheduleJobs(GlPipelineJobDispatchResource.nothing());
+        executeJobs(GlPipelineJobDispatchResource.nothing());
     }
 
     public GlPipelineResourceDescription findResource(String name, boolean searchJobs) {

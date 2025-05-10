@@ -1,5 +1,9 @@
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
+import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.pipeline.*;
@@ -16,7 +20,6 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
-import io.homo.superresolution.core.utils.FileReadHelper;
 
 public class Sgsr2PassCompute extends AbstractSgsrVariant {
     private GlComputeShaderProgram convertShader;
@@ -29,23 +32,21 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     private ITexture PrevHistoryOutput;
     private ITexture HistoryOutput;
 
+    private Vec3 getWorkGroupSize() {
+        int dispatchX = SgsrUtils.divideRoundUp(MinecraftRenderHandle.getScreenWidth(), 8);
+        int dispatchY = SgsrUtils.divideRoundUp(MinecraftRenderHandle.getScreenHeight(), 8);
+        return new Vec3(
+                dispatchX,
+                dispatchY,
+                1
+        );
+    }
+
     @Override
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
-        int dispatchX = SgsrUtils.divideRoundUp(resource.screenWidth(), 8);
-        int dispatchY = SgsrUtils.divideRoundUp(resource.screenHeight(), 8);
-        GlPipelineJobDispatchResource pipelineDispatchResource = new GlPipelineJobDispatchResource(
-                new Vec3(
-                        dispatchX,
-                        dispatchY,
-                        1));
         swapHistoryOutput();
-        //swapLumaHistory();
-        sgsrPipeline.scheduleJob("convert", pipelineDispatchResource);
-        sgsr.getParams().bind(0);
-        sgsrPipeline.executeJob("convert", pipelineDispatchResource);
-        sgsrPipeline.scheduleJob("upscale", pipelineDispatchResource);
-        sgsr.getParams().bind(0);
-        sgsrPipeline.executeJob("upscale", pipelineDispatchResource);
+        sgsrPipeline.execute("convert");
+        sgsrPipeline.execute("upscale");
     }
 
     @Override
@@ -81,86 +82,96 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA16F);
-        sgsrPipeline.addJob("convert", GlPipelineJob.create()
-                .setProgram(convertShader)
-                .setType(GlPipelineJobType.Compute)
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "InputColor",
-                        FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer()),
-                        GlPipelineResourceAccess.READ,
-                        null,
-                        1))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "InputDepth",
-                        FrameBufferTextureAdapter.ofDepth(sgsr.getInputFrameBuffer()),
-                        GlPipelineResourceAccess.READ,
-                        GlSampler.create(GlSampler.SamplerType.NearestClamp),
-                        2))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "InputVelocity",
-                        FrameBufferTextureAdapter.ofColor(
-                                AlgorithmManager.getDispatchResource().motionVectors()),
-                        GlPipelineResourceAccess.READ,
-                        null,
-                        3))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Image2D,
-                        "MotionDepthClipAlphaBuffer",
-                        MotionDepthClipAlphaBuffer,
-                        GlPipelineResourceAccess.WRITE,
-                        null,
-                        0))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Image2D,
-                        "YCoCgColor",
-                        YCoCgColor,
-                        GlPipelineResourceAccess.WRITE,
-                        null,
-                        1))
-                .build());
+        sgsrPipeline.addJob("convert",
+                GlPipelineJobBuilders.compute(convertShader)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "InputColor",
+                                FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer()),
+                                GlPipelineResourceAccess.READ,
+                                null,
+                                1))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "InputDepth",
+                                FrameBufferTextureAdapter.ofDepth(sgsr.getInputFrameBuffer()),
+                                GlPipelineResourceAccess.READ,
+                                GlSampler.create(GlSampler.SamplerType.NearestClamp),
+                                2))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "InputVelocity",
+                                FrameBufferTextureAdapter.ofColor(
+                                        AlgorithmManager.getDispatchResource().motionVectors()),
+                                GlPipelineResourceAccess.READ,
+                                null,
+                                3))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Image2D,
+                                "MotionDepthClipAlphaBuffer",
+                                MotionDepthClipAlphaBuffer,
+                                GlPipelineResourceAccess.WRITE,
+                                null,
+                                0))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Image2D,
+                                "YCoCgColor",
+                                YCoCgColor,
+                                GlPipelineResourceAccess.WRITE,
+                                null,
+                                1))
+                        .resource(GlPipelineResourceDescription.createUBOResource(
+                                "Params",
+                                sgsr.getParams(),
+                                0
+                        ))
+                        .workGroupSupplier(this::getWorkGroupSize)
+                        .build());
 
-        sgsrPipeline.addJob("upscale", GlPipelineJob.create()
-                .setProgram(upscaleShader)
-                .setType(GlPipelineJobType.Compute)
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "PrevHistoryOutput",
-                        TextureSupplier.of(() -> PrevHistoryOutput),
-                        GlPipelineResourceAccess.READ,
-                        GlSampler.create(GlSampler.SamplerType.LinearClamp),
-                        7))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "MotionDepthClipAlphaBuffer",
-                        MotionDepthClipAlphaBuffer,
-                        GlPipelineResourceAccess.READ,
-                        GlSampler.create(GlSampler.SamplerType.LinearClamp),
-                        8))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Sampler2D,
-                        "YCoCgColor",
-                        YCoCgColor,
-                        GlPipelineResourceAccess.READ,
-                        GlSampler.create(GlSampler.SamplerType.NearestClamp),
-                        9))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Image2D,
-                        "SceneColorOutput",
-                        FrameBufferTextureAdapter.ofColor(sgsr.getOutputFrameBuffer()),
-                        GlPipelineResourceAccess.WRITE,
-                        null,
-                        0))
-                .addResource(new GlPipelineResourceDescription(
-                        GlPipelineResourceType.Image2D,
-                        "HistoryOutput",
-                        TextureSupplier.of(() -> HistoryOutput),
-                        GlPipelineResourceAccess.WRITE,
-                        null,
-                        1))
-                .build());
+        sgsrPipeline.addJob("upscale",
+                GlPipelineJobBuilders.compute(upscaleShader)
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "PrevHistoryOutput",
+                                TextureSupplier.of(() -> PrevHistoryOutput),
+                                GlPipelineResourceAccess.READ,
+                                GlSampler.create(GlSampler.SamplerType.LinearClamp),
+                                7))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "MotionDepthClipAlphaBuffer",
+                                MotionDepthClipAlphaBuffer,
+                                GlPipelineResourceAccess.READ,
+                                GlSampler.create(GlSampler.SamplerType.LinearClamp),
+                                8))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Sampler2D,
+                                "YCoCgColor",
+                                YCoCgColor,
+                                GlPipelineResourceAccess.READ,
+                                GlSampler.create(GlSampler.SamplerType.NearestClamp),
+                                9))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Image2D,
+                                "SceneColorOutput",
+                                FrameBufferTextureAdapter.ofColor(sgsr.getOutputFrameBuffer()),
+                                GlPipelineResourceAccess.WRITE,
+                                null,
+                                0))
+                        .resource(GlPipelineResourceDescription.createTextureResource(
+                                GlPipelineResourceType.Image2D,
+                                "HistoryOutput",
+                                TextureSupplier.of(() -> HistoryOutput),
+                                GlPipelineResourceAccess.WRITE,
+                                null,
+                                1))
+                        .resource(GlPipelineResourceDescription.createUBOResource(
+                                "Params",
+                                sgsr.getParams(),
+                                0
+                        ))
+                        .workGroupSupplier(this::getWorkGroupSize)
+                        .build());
     }
 
     private void swapHistoryOutput() {
