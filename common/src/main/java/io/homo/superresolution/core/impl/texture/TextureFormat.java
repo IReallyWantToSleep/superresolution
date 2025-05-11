@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public enum TextureFormat {
@@ -15,13 +15,15 @@ public enum TextureFormat {
     RGB8(GL_RGB8, VK_FORMAT_R8G8B8_UNORM),
     RG16F(GL_RG16F, VK_FORMAT_R16G16_SFLOAT),
     RG32F(GL_RG32F, VK_FORMAT_R32G32_SFLOAT),
+    R16F(GL_R16F, VK_FORMAT_R16_SFLOAT),
+    R8(GL_R8, VK_FORMAT_R8_UNORM),
     R32F(GL_R32F, VK_FORMAT_R32_SFLOAT),
     R32UI(GL_R32UI, VK_FORMAT_R32_UINT),
     DEPTH32F(GL_DEPTH_COMPONENT32F, VK_FORMAT_D32_SFLOAT),
     DEPTH24_STENCIL8(GL_DEPTH24_STENCIL8, VK_FORMAT_D24_UNORM_S8_UINT),
-    DEPTH24(GL_DEPTH_COMPONENT24, VK_FORMAT_X8_D24_UNORM_PACK32);
-
-
+    DEPTH24(GL_DEPTH_COMPONENT24, VK_FORMAT_X8_D24_UNORM_PACK32),
+    R16_SNORM(GL_R16_SNORM, VK_FORMAT_R16_SNORM),
+    R11G11B10F(GL_R11F_G11F_B10F, VK_FORMAT_B10G11R11_UFLOAT_PACK32);
     private static final Map<Integer, TextureFormat> GL_TO_FORMAT;
     private static final Map<Integer, TextureFormat> VK_TO_FORMAT;
 

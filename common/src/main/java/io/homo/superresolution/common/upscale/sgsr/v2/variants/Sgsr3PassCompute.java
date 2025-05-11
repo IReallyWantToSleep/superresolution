@@ -9,7 +9,7 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.pipeline.*;
 import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlSampler;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
@@ -62,31 +62,31 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                 .build()
                 .compileShader();
         sgsrPipeline = new GlPipeline();
-        PrevLumaHistory = GlTexture.create(
+        PrevLumaHistory = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32UI);
-        LumaHistory = GlTexture.create(
+        LumaHistory = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32UI);
-        YCoCgColor = GlTexture.create(
+        YCoCgColor = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32UI);
-        MotionDepthClipAlphaBuffer = GlTexture.create(
+        MotionDepthClipAlphaBuffer = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.RGBA16F);
-        MotionDepthAlphaBuffer = GlTexture.create(
+        MotionDepthAlphaBuffer = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.RGBA16F);
-        PrevHistoryOutput = GlTexture.create(
+        PrevHistoryOutput = GlTexture2D.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA16F);
-        HistoryOutput = GlTexture.create(
+        HistoryOutput = GlTexture2D.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA16F);

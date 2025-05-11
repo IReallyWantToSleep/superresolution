@@ -18,7 +18,7 @@ import static org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT;
 import static org.lwjgl.stb.STBImage.*;
 
 import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
@@ -49,7 +49,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         config = new NVIDIAImageScalingConfig();
         uniformBuffer = new GlUniformBuffer<>(config);
         input = MinecraftRenderHandle.getRenderTarget();
-        output = GlTexture.create(
+        output = GlTexture2D.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
@@ -60,7 +60,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 IntBuffer h = stack.mallocInt(1);
                 IntBuffer channels = stack.mallocInt(1);
                 ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef1.png", w, h, channels, 4);
-                coefScaler = GlTexture.create(
+                coefScaler = GlTexture2D.create(
                         NVIDIAImageScalingConst.kFilterSize / 4,
                         NVIDIAImageScalingConst.kPhaseCount,
                         TextureFormat.RGBA8
@@ -87,7 +87,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 IntBuffer h = stack.mallocInt(1);
                 IntBuffer channels = stack.mallocInt(1);
                 ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef2.png", w, h, channels, 4);
-                coefUSM = GlTexture.create(
+                coefUSM = GlTexture2D.create(
                         NVIDIAImageScalingConst.kFilterSize / 4,
                         NVIDIAImageScalingConst.kPhaseCount,
                         TextureFormat.RGBA8
@@ -201,7 +201,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        GlTexture.blitToScreen(
+        GlTexture2D.blitToScreen(
                 width,
                 height,
                 width,

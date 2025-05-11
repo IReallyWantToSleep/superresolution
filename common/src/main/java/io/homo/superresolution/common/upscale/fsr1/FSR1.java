@@ -10,7 +10,7 @@ import io.homo.superresolution.core.GraphicsCapabilities;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.pipeline.*;
 import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
@@ -23,8 +23,8 @@ public class FSR1 extends AbstractAlgorithm {
     private GlComputeShaderProgram fsr1EASUShader;
     private GlComputeShaderProgram fsr1RCASShader;
     private GlPipeline fsrUpscalePipeline;
-    private GlTexture fsr1TempTexture;
-    private GlTexture output;
+    private GlTexture2D fsr1TempTexture;
+    private GlTexture2D output;
 
     public static int checkFP16Support() {
         if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
@@ -64,12 +64,12 @@ public class FSR1 extends AbstractAlgorithm {
         input = MinecraftRenderHandle.getRenderTarget();
         initShader();
         fsrUpscalePipeline = new GlPipeline();
-        fsr1TempTexture = GlTexture.create(
+        fsr1TempTexture = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.RGBA8
         );
-        output = GlTexture.create(
+        output = GlTexture2D.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
@@ -152,7 +152,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        GlTexture.blitToScreen(output.width, output.height, width, height, this.output.id);
+        GlTexture2D.blitToScreen(output.getWidth(), output.getHeight(), width, height, this.output.getTextureId());
     }
 
     @Override
@@ -171,7 +171,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        return output.id;
+        return output.getTextureId();
     }
 
     @Override

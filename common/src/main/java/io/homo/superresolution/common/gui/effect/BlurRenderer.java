@@ -6,7 +6,7 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.gl.vertex.GlVertexArray;
 import io.homo.superresolution.core.gl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
@@ -14,7 +14,6 @@ import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.utils.FileReadHelper;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glDepthMask;
@@ -26,7 +25,7 @@ import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 public class BlurRenderer {
     public static final GlGeneralShaderProgram BLUR;
     public static final GlFrameBuffer blurFrameBuffer;
-    public static final GlTexture blurTempTexture;
+    public static final GlTexture2D blurTempTexture;
     public static final int MAX_LEVELS = 8;
     private static final float[] blurWeights = new float[MAX_LEVELS];
 
@@ -42,11 +41,11 @@ public class BlurRenderer {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        blurTempTexture = GlTexture.create(
+        blurTempTexture = GlTexture2D.create(
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8,
-                true
+                GlTexture2D.AUTO_MIPMAP_LEVEL
         );
     }
 
@@ -73,7 +72,7 @@ public class BlurRenderer {
                     MinecraftRenderHandle.getOriginRenderTarget().getHeight()
             );
         }
-        GlTexture dst = blurTempTexture;
+        GlTexture2D dst = blurTempTexture;
         ITexture src = MinecraftRenderHandle.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.COLOR);
         dst.copyFromTex(src.getTextureId());
         dst.generateMipmap();

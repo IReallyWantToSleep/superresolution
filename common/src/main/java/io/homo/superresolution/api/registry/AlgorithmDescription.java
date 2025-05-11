@@ -54,6 +54,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
             instance.init();
             return instance;
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }

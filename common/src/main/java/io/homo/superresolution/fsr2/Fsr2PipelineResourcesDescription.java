@@ -1,0 +1,67 @@
+package io.homo.superresolution.fsr2;
+
+import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.impl.texture.ITexture;
+
+public class Fsr2PipelineResourcesDescription {
+    private String name;
+    private String shaderName;
+    private ITexture texture;
+    private GlUniformBuffer<?> ubo;
+    private boolean isWritable = false;
+    private boolean isUBO = false;
+
+    public GlUniformBuffer<?> ubo() {
+        return ubo;
+    }
+
+    public Fsr2PipelineResourcesDescription ubo(GlUniformBuffer<?> ubo) {
+        this.ubo = ubo;
+        return this;
+    }
+
+    public boolean isUBO() {
+        return isUBO;
+    }
+
+    public Fsr2PipelineResourcesDescription ubo(boolean UBO) {
+        isUBO = UBO;
+        return this;
+    }
+
+    public boolean isWritable() {
+        return isWritable;
+    }
+
+    public Fsr2PipelineResourcesDescription writable(boolean writable) {
+        isWritable = writable;
+        return this;
+    }
+
+    public Fsr2PipelineResourcesDescription name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Fsr2PipelineResourcesDescription shaderName(String shaderName) {
+        this.shaderName = shaderName;
+        return this;
+    }
+
+    public Fsr2PipelineResourcesDescription texture(ITexture texture) {
+        this.texture = texture;
+        return this;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public String shaderName() {
+        return shaderName;
+    }
+
+    public ITexture texture() {
+        return texture;
+    }
+}

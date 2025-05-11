@@ -13,7 +13,7 @@ import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.GlStates;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.renderdoc.RenderDoc;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -309,7 +309,7 @@ public class MinecraftRenderHandle {
 
     public static void onBlitEntityEffect() {
         if (getRenderTarget(MinecraftRenderTargetType.ENTITY) == null) return;
-        GlTexture.blitToScreen(
+        GlTexture2D.blitToScreen(
                 getRenderWidth(),
                 getRenderHeight(),
                 getScreenWidth(),
@@ -357,7 +357,7 @@ public class MinecraftRenderHandle {
 
     public static void blitHandRenderTarget() {
         glEnable(GL_BLEND);
-        callOnRenderTarget(MinecraftRenderTargetType.HAND, (renderTarget -> GlTexture.blitToScreen(
+        callOnRenderTarget(MinecraftRenderTargetType.HAND, (renderTarget -> GlTexture2D.blitToScreen(
                 getScreenWidth(),
                 getScreenHeight(),
                 getScreenWidth(),

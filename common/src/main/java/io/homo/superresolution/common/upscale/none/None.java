@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.upscale.none;
 
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -20,7 +20,7 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        MinecraftRenderHandle.callOnRenderTarget(frameBuffer -> GlTexture.blitToScreen(
+        MinecraftRenderHandle.callOnRenderTarget(frameBuffer -> GlTexture2D.blitToScreen(
                 frameBuffer.getWidth(),
                 frameBuffer.getHeight(),
                 width,
