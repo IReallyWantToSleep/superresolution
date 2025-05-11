@@ -12,7 +12,7 @@ import io.homo.superresolution.core.gl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.pipeline.*;
 import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
@@ -67,7 +67,7 @@ public class MotionVectorsGenerator {
         motionVectorsFrameBuffer = new GlFrameBuffer();
         ((GlFrameBuffer) motionVectorsFrameBuffer).addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                GlTexture.create(
+                GlTexture2D.create(
                         MinecraftRenderHandle.getRenderWidth(),
                         MinecraftRenderHandle.getRenderHeight(),
                         TextureFormat.RG16F
@@ -87,12 +87,12 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderHeight()
         );
 
-        previousFrameTexture = GlTexture.create(
+        previousFrameTexture = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32F
         );
-        currentFrameTexture = GlTexture.create(
+        currentFrameTexture = GlTexture2D.create(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
                 TextureFormat.R32F

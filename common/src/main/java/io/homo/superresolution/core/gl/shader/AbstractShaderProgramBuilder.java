@@ -27,6 +27,11 @@ public abstract class AbstractShaderProgramBuilder<T extends AbstractGlShaderPro
         return this;
     }
 
+    public AbstractShaderProgramBuilder<T> addDefineText(Map<String, String> map) {
+        this.shaderDefineList.putAll(map);
+        return this;
+    }
+
     public abstract T build();
 
     @SuppressWarnings("unchecked")

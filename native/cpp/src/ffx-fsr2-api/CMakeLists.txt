@@ -49,7 +49,7 @@ endif()
 add_compile_definitions(_UNICODE)
 add_compile_definitions(UNICODE)
 set(FFX_SC_BASE_ARGS
-    -reflection -deps=gcc -DFFX_GPU=1
+    -reflection -deps=gcc -DFFX_GPU=1 
     -DFFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF=0
     -DFFX_FSR2_OPTION_ACCUMULATE_SAMPLERS_USE_DATA_HALF=0
     -DFFX_FSR2_OPTION_REPROJECT_SAMPLERS_USE_DATA_HALF=1

@@ -12,7 +12,7 @@ import io.homo.superresolution.core.gl.shader.AbstractGlShaderProgram;
 import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
@@ -28,7 +28,7 @@ public class Sgsr1 extends AbstractAlgorithm {
         GlFrameBuffer output_ = new GlFrameBuffer();
         output_.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                GlTexture.create(
+                GlTexture2D.create(
                         MinecraftRenderHandle.getScreenWidth(),
                         MinecraftRenderHandle.getScreenHeight(),
                         TextureFormat.RGBA8
@@ -78,7 +78,7 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public void blitToScreen(int width, int height) {
-        GlTexture.blitToScreen(
+        GlTexture2D.blitToScreen(
                 width,
                 height,
                 width,

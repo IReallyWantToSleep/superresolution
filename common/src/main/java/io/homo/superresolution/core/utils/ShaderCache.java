@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.utils;
 
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.GraphicsCapabilities;
 import io.homo.superresolution.core.gl.shader.AbstractGlShaderProgram;
@@ -76,6 +77,14 @@ public class ShaderCache {
                 currentSourceResult = compileShaderToSpirv(source.getSource(), path.toString(), mapToGlslangType(type));
                 if (currentSourceResult.error() != GlslangCompileShaderError.OK) {
                     throw new AbstractGlShaderProgram.ShaderCompileException(currentSourceResult.log());
+                }
+                if (Config.getInstance().isDebugDumpShader()) {
+                    try {
+                        Files.write(Path.of(CACHE_DIR.toAbsolutePath().toString(), program.shaderName + ".source.glsl"), currentSourceResult.sourceCode().getBytes(StandardCharsets.UTF_8));
+                        Files.write(Path.of(CACHE_DIR.toAbsolutePath().toString(), program.shaderName + ".preprocessed.glsl"), currentSourceResult.preprocessedCode().getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e0) {
+                        LOGGER.error("无法保存着色器源码文件: {}", e0.getMessage());
+                    }
                 }
             }
             return true;

@@ -141,7 +141,8 @@ public final class SuperResolution implements Resizable, Destroyable {
             SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误 {}", algorithmDescription.getDisplayName(), e.toString());
+            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
+            e.printStackTrace();
         }
         return false;
     }

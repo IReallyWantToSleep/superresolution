@@ -4,7 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.impl.IDebuggableObject;
-import io.homo.superresolution.core.gl.texture.GlTexture;
+import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.minecraft.RenderTargetCache;
@@ -40,13 +40,13 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
         frameBuffer.height = height;
         frameBuffer.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                GlTexture.create(width, height, colorTextureFormat)
+                GlTexture2D.create(width, height, colorTextureFormat)
         ));
         if (depthTextureFormat != null) frameBuffer.addAttachment(new GlFrameBufferAttachment(
                 depthTextureFormat.isStencil() ?
                         GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
                         GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
-                GlTexture.create(width, height, depthTextureFormat)
+                GlTexture2D.create(width, height, depthTextureFormat)
         ));
         frameBuffer.validate();
         return frameBuffer;
@@ -72,8 +72,8 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     public static @NotNull GlFrameBuffer create(int width, int height) {
         return create(
-                GlTexture.create(width, height, TextureFormat.RGBA8),
-                GlTexture.create(width, height, TextureFormat.DEPTH24),
+                GlTexture2D.create(width, height, TextureFormat.RGBA8),
+                GlTexture2D.create(width, height, TextureFormat.DEPTH24),
                 width,
                 height
         );
@@ -81,8 +81,8 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     public static @NotNull GlFrameBuffer create() {
         return create(
-                GlTexture.create(1, 1, TextureFormat.RGBA8),
-                GlTexture.create(1, 1, TextureFormat.DEPTH24),
+                GlTexture2D.create(1, 1, TextureFormat.RGBA8),
+                GlTexture2D.create(1, 1, TextureFormat.DEPTH24),
                 1,
                 1
         );

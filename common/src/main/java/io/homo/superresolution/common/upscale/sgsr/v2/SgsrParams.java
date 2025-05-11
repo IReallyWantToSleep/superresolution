@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
 public class SgsrParams implements IUniformStruct {
     private final ByteBuffer container;
     private int sameFrameNum = 0;
-    // 新增字段 prev_view_proj_matrix 用于保存上一帧的视图投影矩阵
     private Matrix4f prev_view_proj_matrix;
 
     public SgsrParams() {

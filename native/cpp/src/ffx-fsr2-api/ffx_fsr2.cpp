@@ -801,9 +801,9 @@ static void scheduleDispatch(FfxFsr2Context_Private *context, const FfxFsr2Dispa
 
 static FfxErrorCode fsr2Dispatch(FfxFsr2Context_Private *context, const FfxFsr2DispatchDescription *params)
 {
-    //if ((context->contextDescription.flags & FFX_FSR2_ENABLE_DEBUG_CHECKING) == FFX_FSR2_ENABLE_DEBUG_CHECKING)
+    // if ((context->contextDescription.flags & FFX_FSR2_ENABLE_DEBUG_CHECKING) == FFX_FSR2_ENABLE_DEBUG_CHECKING)
     //{
-        fsr2DebugCheckDispatch(context, params);
+    fsr2DebugCheckDispatch(context, params);
     //}
     // take a short cut to the command list
     FfxCommandList commandList = params->commandList;
