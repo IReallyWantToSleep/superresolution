@@ -24,9 +24,9 @@ public class NativeLibManager {
     static {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("linux")) {
-            libs.add(new NativeLib("libSuperResolution", "abd6d67844c0370d3792946e8b47b9f0", 1));
+            libs.add(new NativeLib("libSuperResolution", "-", 1));
         } else if (os.contains("windows")) {
-            libs.add(new NativeLib("libSuperResolution", "5c8d1a057783f0bc6f6c46d718b6d57b", 1));
+            libs.add(new NativeLib("libSuperResolution", "982c6f4df5e19b8594a15ad22dd43fd3", 1));
         }
     }
 

@@ -7,6 +7,8 @@ import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.homo.superresolution.core.gl.Gl.glSafeObjectLabel;
 import static org.lwjgl.opengl.GL43.*;
@@ -16,12 +18,12 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     private static final int MAX_MIPMAP_LEVELS = 16;
     private static final int DEFAULT_ALIGNMENT = 4;
     private final int format;
+    private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
     private int id;
     private int width;
     private int height;
     private int mipmapLevel;
     private boolean mipmapEnabled;
-
     public GlTexture2D(int width, int height, int format, int mipmapLevel) {
         validateDimensions(width, height);
         this.format = format;
@@ -43,9 +45,39 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         GlBlitRenderer.blitToScreen(id, viewWidth, viewHeight);
     }
 
+    public int getMipmapLevel() {
+        return mipmapLevel;
+    }
+
+    public GlTextureView getMipView(int level) {
+        return mipViews.computeIfAbsent(level, this::createMipView);
+    }
+
+    private GlTextureView createMipView(int level) {
+        try (GlState ignored = new GlState()) {
+            if (level < 0 || level > this.mipmapLevel) {
+                throw new IllegalArgumentException("Invalid mip level: " + level);
+            }
+
+            return GlTextureView.create(
+                    this,
+                    GL_TEXTURE_2D,
+                    level,    // minLevel
+                    1,        // numLevels
+                    0,        // minLayer
+                    1         // numLayers
+            );
+        }
+    }
+
     private void configureTextureParameters() {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                mipmapEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+        if (format != TextureFormat.R32UI.gl()) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    mipmapEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+        } else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    mipmapEnabled ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
+        }
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -173,6 +205,8 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
 
     @Override
     public void destroy() {
+        mipViews.values().forEach(GlTextureView::destroy);
+        mipViews.clear();
         glDeleteTextures(this.id);
     }
 

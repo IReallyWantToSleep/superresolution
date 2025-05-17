@@ -1,7 +1,6 @@
-package io.homo.superresolution.common.upscale.fsr2.java;
+package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
@@ -15,8 +14,9 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.fsr2.*;
 import org.joml.Matrix4f;
 
+
 public class FSR2 extends AbstractAlgorithm {
-    private Fsr2Context fsr2Context;
+    public Fsr2Context fsr2Context;
     private GlTexture2D output;
 
     public FSR2() {
@@ -91,8 +91,9 @@ public class FSR2 extends AbstractAlgorithm {
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight())
         );
-        dispatchDescription.enableSharpening = false;
-        dispatchDescription.sharpness = Config.getSharpness();
+
+        dispatchDescription.enableSharpening = true;
+        dispatchDescription.sharpness = 1 - Config.getSharpness();
         dispatchDescription.frameTimeDelta = dispatchResource.frameTimeDelta();
         dispatchDescription.preExposure = 1.0f;
         dispatchDescription.reset = false;

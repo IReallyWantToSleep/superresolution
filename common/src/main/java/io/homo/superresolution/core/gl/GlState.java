@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.gl;
 
 import static org.lwjgl.opengl.GL32.*;
+import static org.lwjgl.opengl.GL42.GL_MAX_IMAGE_UNITS;
 
 public class GlState implements AutoCloseable {
     private static final int MAX_TEXTURES = 32;

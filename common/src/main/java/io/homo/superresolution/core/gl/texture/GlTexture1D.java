@@ -6,6 +6,8 @@ import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static io.homo.superresolution.core.gl.Gl.glSafeObjectLabel;
 import static org.lwjgl.opengl.GL43.*;
@@ -17,6 +19,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     private final int id;
     private final int format;
+    private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
     private int width;
     private int mipmapLevel;
     private boolean mipmapEnabled;
@@ -38,9 +41,35 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         return new GlTexture1D(width, format.gl(), mipmapLevel);
     }
 
+    public GlTextureView getMipView(int level) {
+        return mipViews.computeIfAbsent(level, k -> createMipView(k));
+    }
+
+    private GlTextureView createMipView(int level) {
+        try (GlState ignored = new GlState()) {
+            if (level < 0 || level > this.mipmapLevel) {
+                throw new IllegalArgumentException("Invalid mip level: " + level);
+            }
+
+            return GlTextureView.create(
+                    this,
+                    GL_TEXTURE_1D,
+                    level,
+                    1,
+                    0,
+                    1
+            );
+        }
+    }
+
     private void configureTextureParameters() {
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
-                mipmapEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+        if (format != TextureFormat.R32UI.gl()) {
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
+                    mipmapEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
+        } else {
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
+                    mipmapEnabled ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
+        }
         glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_BASE_LEVEL, 0);
@@ -152,6 +181,8 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     @Override
     public void destroy() {
+        mipViews.values().forEach(GlTextureView::destroy);
+        mipViews.clear();
         glDeleteTextures(this.id);
     }
 

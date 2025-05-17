@@ -9,98 +9,10 @@ extern "C" {
 #endif
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2ContextDestroy
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2ContextDestroy
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2ContextDispatch
- * Signature: (Loiiaio/fsr/fsr2/impl/FfxResource;Loiiaio/fsr/fsr2/impl/FfxResource;Loiiaio/fsr/fsr2/impl/FfxResource;Loiiaio/fsr/fsr2/impl/FfxResource;Loiiaio/fsr/fsr2/impl/FfxResource;Loiiaio/fsr/fsr2/impl/FfxResource;Loiiaio/fsr/fsr2/impl/FfxResource;FFFFIIZFFFZFFFFZJ)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2ContextDispatch
-  (JNIEnv *, jclass, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jfloat, jfloat, jfloat, jfloat, jint, jint, jboolean, jfloat, jfloat, jfloat, jboolean, jfloat, jfloat, jfloat, jfloat, jboolean, jlong);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2CreateGL
- * Signature: (IFIII)[J
- */
-JNIEXPORT jlongArray JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2CreateGL
-  (JNIEnv *, jclass, jint, jfloat, jint, jint, jint);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxGetTextureResourceVk
- * Signature: (JJIII)Loiiaio/fsr/fsr2/impl/FfxResource;
- */
-JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxGetTextureResourceVk
-  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2CreateVk
- * Signature: (JJIFIII)[I
- */
-JNIEXPORT jintArray JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2CreateVk
-  (JNIEnv *, jclass, jlong, jlong, jint, jfloat, jint, jint, jint);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2GetScratchMemorySizeVk
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2GetScratchMemorySizeVk
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxGetCommandListVK
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxGetCommandListVK
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
  * Method:    getVersionInfo
  * Signature: ()Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_getVersionInfo
-  (JNIEnv *, jclass);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2GetJitterPhaseCount
- * Signature: (II)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2GetJitterPhaseCount
-  (JNIEnv *, jclass, jint, jint);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2GetJitterOffset
- * Signature: (II)[F
- */
-JNIEXPORT jfloatArray JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2GetJitterOffset
-  (JNIEnv *, jclass, jint, jint);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxGetTextureResourceGL
- * Signature: (JIII)Loiiaio/fsr/fsr2/impl/FfxResource;
- */
-JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxGetTextureResourceGL
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
-
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    ffxFsr2GetScratchMemorySizeGL
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_ffxFsr2GetScratchMemorySizeGL
   (JNIEnv *, jclass);
 
 /*

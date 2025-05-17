@@ -1,5 +1,6 @@
 package io.homo.superresolution.fsr2;
 
+
 import static java.lang.Math.pow;
 
 public class Fsr2Utils {
@@ -42,5 +43,32 @@ public class Fsr2Utils {
                                 int[] rectInfo) {
 
         spdSetup(dispatchThreadGroupCountXY, workGroupOffset, numWorkGroupsAndMips, rectInfo, -1);
+    }
+
+    private static int packHalf2x16(float x, float y) {
+        int hx = floatToHalfIntBits(x);
+        int hy = floatToHalfIntBits(y);
+        return (hy << 16) | (hx & 0xffff);
+    }
+
+    private static int floatToHalfIntBits(float value) {
+        int bits = Float.floatToRawIntBits(value);
+        int sign = (bits >>> 16) & 0x8000;
+        int exp = ((bits >>> 23) & 0xff) - 127 + 15;
+
+        if (exp > 0x1f) exp = 0x1f;
+        if (exp < 0) exp = 0;
+
+        int mantissa = (bits >>> 13) & 0x3ff;
+        return sign | (exp << 10) | mantissa;
+    }
+
+    public static void rcasCon(int[] con, float sharpness) {
+        sharpness = (float) Math.pow(2.0, -sharpness);
+        con[0] = Float.floatToRawIntBits(sharpness);
+        con[1] = packHalf2x16(sharpness, sharpness);
+        con[2] = 0;
+        con[3] = 0;
+
     }
 }

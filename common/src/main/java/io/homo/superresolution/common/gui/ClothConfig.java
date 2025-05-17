@@ -13,6 +13,7 @@ import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
 import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.gui.widgets.Line;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
@@ -171,8 +172,8 @@ public class ClothConfig {
                 .setTooltipSupplier((integer -> {
                     float value = getFloat(integer);
                     return Optional.of(new Component[]{Component.literal(Component.translatable("superresolution.screen.config.options.tooltip.upscale_ratio").getString().formatted(
-                            (int) (SuperResolution.getMinecraftWidth() / value),
-                            (int) (SuperResolution.getMinecraftHeight() / value),
+                            (int) (MinecraftRenderHandle.getScreenWidth() / value),
+                            (int) (MinecraftRenderHandle.getScreenHeight() / value),
                             (int) ((1 / value) * 100) + "%"
                     ))});
                 }))
@@ -182,7 +183,7 @@ public class ClothConfig {
                         Component.translatable("superresolution.screen.config.options.label.sharpness"),
                         getInt(Config.getSharpness()),
                         getInt(0.0),
-                        getInt(2.0)
+                        getInt(1.0)
                 )
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.sharpness"))
                 .setDefaultValue(getInt(0.55))
@@ -223,7 +224,7 @@ public class ClothConfig {
                 entryBuilder.startTextDescription(
                                 Component.translatable("superresolution.screen.config.warn.algorithm_incomplete")
                         ).setColor(ColorUtil.color(255, 255, 0, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS))
+                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.NIS))
                         .build()
         );
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(
