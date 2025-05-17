@@ -31,9 +31,9 @@ public abstract class Fsr2BasePipeline {
 
     protected abstract void shaderBindings();
 
-    protected Fsr2PipelineResourcesDescription getResourcesDescription(String name) {
+    protected Fsr2PipelineResources.Fsr2ResourceEntry getResourcesDescription(String name) {
         if (!shaderBindingMap.containsKey(name)) throw new RuntimeException(name);
-        if (!context.resources.getShaderNameResourceMap().containsKey(name)) throw new RuntimeException(name);
-        return context.resources.getShaderNameResourceMap().get(name);
+        if (!context.resources.shaderNameMap().containsKey(name)) throw new RuntimeException(name);
+        return context.resources.resource(context.resources.shaderNameMap().get(name));
     }
 }

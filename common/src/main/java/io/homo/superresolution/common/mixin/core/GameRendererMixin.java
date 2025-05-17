@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -45,6 +46,16 @@ public abstract class GameRendererMixin {
         if (Minecraft.getInstance().level != null) {
             MinecraftRenderHandle.onRenderWorldEnd(CallType.GAME_RENDERER);
         }
+    }
+
+    @Inject(at = @At(value = "HEAD"), method = "render")
+    private void onRenderBegin(CallbackInfo ci) {
+        PerformanceInfo.begin("gameRenderer");
+    }
+
+    @Inject(at = @At(value = "RETURN"), method = "render")
+    private void onRenderEnd(CallbackInfo ci) {
+        PerformanceInfo.end("gameRenderer");
     }
 
     @Inject(at = @At(value = "HEAD"), method = "renderItemInHand")

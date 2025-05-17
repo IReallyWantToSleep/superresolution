@@ -346,13 +346,8 @@ public class MinecraftRenderHandle {
         if (!checkRenderHandCallPos()) return;
         GlStates.save("hand");
         setClientRenderTarget(getRenderTarget(MinecraftRenderTargetType.HAND).asMcRenderTarget());
-        callOnRenderTarget(
-                MinecraftRenderTargetType.HAND,
-                (renderTarget -> {
-                    renderTarget.clearFrameBuffer();
-                    renderTarget.bind(FrameBufferBindPoint.ALL);
-                })
-        );
+        getRenderTarget(MinecraftRenderTargetType.HAND).clearFrameBuffer();
+        getRenderTarget(MinecraftRenderTargetType.HAND).bind(FrameBufferBindPoint.ALL);
     }
 
     public static void blitHandRenderTarget() {

@@ -53,6 +53,7 @@ typedef struct ResourceBinding
     wchar_t name[64];
 } ResourceBinding;
 
+
 static const ResourceBinding srvResourceBindingTable[] =
     {
         {FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_COLOR, L"r_input_color_jittered"},
@@ -506,6 +507,7 @@ static FfxErrorCode fsr2Create(FfxFsr2Context_Private *context, const FfxFsr2Con
     uint8_t defaultReactiveMaskData = 0U;
     uint32_t atomicInitData = 0U;
     float defaultExposure[] = {0.0f, 0.0f};
+    
     const FfxResourceType texture1dResourceType = (context->contextDescription.flags & FFX_FSR2_ENABLE_TEXTURE1D_USAGE) ? FFX_RESOURCE_TYPE_TEXTURE1D : FFX_RESOURCE_TYPE_TEXTURE2D;
 
     // declare internal resources needed

@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.gui.screens;
 
+import io.homo.superresolution.common.config.Config;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

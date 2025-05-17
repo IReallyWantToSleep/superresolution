@@ -82,9 +82,8 @@
     "superresolution.screen.config.options.label.enable_imgui": "Enable Imgui",
     "superresolution.screen.config.options.tooltip.enable_imgui": "Development environment only. Enable debug interface",
     "superresolution.screen.debug.performance_info": "Performance Information",
-    "superresolution.screen.debug.performance_data": "World render time %1$sms\nUpscale algorithm time %2$sms",
+    "superresolution.screen.debug.performance_data": "Frame time %1$sms\nWorld render time %2$sms\nUpscale algorithm time %3$sms",
     "superresolution.screen.config.warn.mobile_device": "Warning: Running on mobile device. This mod's mobile support is unstable and may cause unexpected issues",
-    "superresolution.algo.description.header": "FSR1 --- AMD FidelityFX Super Resolution 1\nFSR2 --- AMD FidelityFX Super Resolution 2\nNIS --- NVIDIA Image Scaling\nSGSR --- Snapdragon™ Game Super Resolution",
     "superresolution.screen.config.warn.algorithm_unstable": "Warning: Currently selected algorithm is unstable",
     "superresolution.screen.config.warn.algorithm_incomplete": "Warning: Currently selected algorithm is incomplete and non-functional",
     "superresolution.screen.config.options.label.capture_mode": "Capture Mode",
@@ -108,5 +107,7 @@
     "superresolution.enum.sgsrvariant.fs_2": "FS_2 (Fragment Shader/2 Pass)",
     "superresolution.screen.config.options.label.generate_motion_vectors": "Generate Motion Vectors",
     "superresolution.screen.config.options.tooltip.generate_motion_vectors": "Motion vectors can enhance the super-resolution quality of certain algorithms (FSR2, SGSR2) but may introduce performance overhead",
+    "superresolution.screen.config.options.label.pause_game_on_gui": "Pause game when configuration interface is open",
+    "key.super_resolution.open_config": "Open Configuration Interface",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

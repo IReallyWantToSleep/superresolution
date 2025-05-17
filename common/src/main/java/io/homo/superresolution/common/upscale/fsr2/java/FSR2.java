@@ -5,16 +5,15 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
+import io.homo.superresolution.core.impl.Vec2;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.fsr2.Fsr2Context;
-import io.homo.superresolution.fsr2.Fsr2ContextConfig;
-import io.homo.superresolution.fsr2.Fsr2ContextFlags;
-import io.homo.superresolution.fsr2.Fsr2Dimensions;
+import io.homo.superresolution.fsr2.*;
+import org.joml.Matrix4f;
 
 public class FSR2 extends AbstractAlgorithm {
     private Fsr2Context fsr2Context;
@@ -77,61 +76,20 @@ public class FSR2 extends AbstractAlgorithm {
         fsr2Context.destroy();
     }
 
-    private void updateFSR2(int width, int height) {
-        RenderSystem.assertOnRenderThread();
-        if (fsr2Context != null) {
-            fsr2Context.destroy();
-            fsr2Context = null;
-        }
-
-    }
-
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
-        return true;
-        /*
         if (fsr2Context == null) return false;
-        RenderSystem.assertOnRenderThread();
         Matrix4f projectionMatrix = dispatchResource.projectionMatrix();
         float m11 = projectionMatrix.m11();
-        float verticalFovRadians = 2.0f * (float) Math.atan(1.0f / m11);
         float cameraFovAngleVertical = dispatchResource.verticalFov();
-        FfxResource colorResource = FfxFSR2.ffxGetTextureResourceGL(
-                this.input.getTextureId(FrameBufferAttachmentType.COLOR),
+        Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
+        dispatchDescription.setColor(this.input.getTexture(FrameBufferAttachmentType.COLOR));
+        dispatchDescription.setDepth(this.input.getTexture(FrameBufferAttachmentType.DEPTH));
+        dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.COLOR));
+        dispatchDescription.setOutput(this.output);
+        dispatchDescription.setJitterOffset(new Vec2(0));
+        dispatchDescription.setRenderSize(new Vec2(
                 dispatchResource.renderWidth(),
-                dispatchResource.renderHeight(),
-                GL_RGBA8
-        );
-        FfxResource depthResource = FfxFSR2.ffxGetTextureResourceGL(
-                this.input.getTextureId(FrameBufferAttachmentType.DEPTH),
-                dispatchResource.renderWidth(),
-                dispatchResource.renderHeight(),
-                GL_DEPTH_COMPONENT24
-        );
-        FfxResource motionVectorsResource = FfxFSR2.ffxGetTextureResourceGL(
-                dispatchResource.motionVectors().getTextureId(FrameBufferAttachmentType.COLOR),
-                dispatchResource.renderWidth(),
-                dispatchResource.renderHeight(),
-                GL_RG16F
-        );
-        FfxResource outputResource = FfxFSR2.ffxGetTextureResourceGL(
-                output.getTextureId(),
-                dispatchResource.screenWidth(),
-                dispatchResource.screenHeight(),
-                GL_RGBA8
-        );
-        FfxFsr2DispatchDescription dispatchDescription = FfxFsr2DispatchDescription.create();
-        dispatchDescription.color = colorResource;
-        dispatchDescription.depth = depthResource;
-        dispatchDescription.motionVectors = motionVectorsResource;
-        dispatchDescription.output = outputResource;
-        dispatchDescription.jitterOffset = FfxFloatCoords2D.create(0, 0);
-        dispatchDescription.motionVectorScale = FfxFloatCoords2D.create(
-                dispatchResource.renderWidth(),
-                dispatchResource.renderHeight()
-        );
-        dispatchDescription.renderSize = FfxDimensions2D.create(
-                dispatchResource.renderWidth(),
-                dispatchResource.renderHeight()
+                dispatchResource.renderHeight())
         );
         dispatchDescription.enableSharpening = false;
         dispatchDescription.sharpness = Config.getSharpness();
@@ -143,7 +101,8 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.cameraFovAngleVertical = cameraFovAngleVertical;
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
-        return FfxError.isOK(FfxFSR2.ffxFsr2ContextDispatch(dispatchDescription, fsr2Context));*/
+        fsr2Context.dispatch(dispatchDescription);
+        return true;
     }
 
     @Override

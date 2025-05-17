@@ -134,15 +134,16 @@ public class ClothConfig {
                 Component.translatable("superresolution.screen.debug.performance_info"),
                 () -> Component.translatable(
                         "superresolution.screen.debug.performance_data",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("runTick"))
                                 .setScale(3, RoundingMode.HALF_UP),
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
-                                .setScale(3, RoundingMode.HALF_UP)
+                        Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
+                                .setScale(3, RoundingMode.HALF_UP) : "?",
+                        Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                .setScale(3, RoundingMode.HALF_UP) : "?"
                 ),
                 ColorUtil.color(255, 255, 255, 255),
                 null
         );
-        debugInfo.setDisplayRequirement(Requirement.isTrue(() -> Minecraft.getInstance().level != null));
         debugCategory.addEntry(debugInfo);
     }
 
@@ -213,11 +214,6 @@ public class ClothConfig {
         commonCategory.addEntry(algorithmSelector);
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
-                                Component.translatable("superresolution.algo.description.header"))
-                        .build()
-        );
-        commonCategory.addEntry(
-                entryBuilder.startTextDescription(
                                 Component.translatable("superresolution.screen.config.warn.algorithm_unstable")
                         ).setColor(ColorUtil.color(255, 255, 128, 0))
                         .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
@@ -263,6 +259,11 @@ public class ClothConfig {
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))
                 .setSaveConsumer((Config::setSkipInitVulkan))
                 .requireRestart()
+                .build());
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.pause_game_on_gui"),
+                        Config.isPauseGameOnGui())
+                .setSaveConsumer((Config::setPauseGameOnGui))
                 .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
