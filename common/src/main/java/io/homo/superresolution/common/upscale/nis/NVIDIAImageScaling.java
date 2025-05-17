@@ -54,12 +54,15 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
         );
+        stbi_set_flip_vertically_on_load(true);
+
         try (GlState ignored = new GlState()) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 IntBuffer w = stack.mallocInt(1);
                 IntBuffer h = stack.mallocInt(1);
                 IntBuffer channels = stack.mallocInt(1);
-                ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef1.png", w, h, channels, 4);
+                ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef_scaler.png", w, h, channels, 4);
+
                 coefScaler = GlTexture2D.create(
                         NVIDIAImageScalingConst.kFilterSize / 4,
                         NVIDIAImageScalingConst.kPhaseCount,
@@ -86,7 +89,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 IntBuffer w = stack.mallocInt(1);
                 IntBuffer h = stack.mallocInt(1);
                 IntBuffer channels = stack.mallocInt(1);
-                ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef2.png", w, h, channels, 4);
+                ByteBuffer buf = stbi_load("I:/super_resolution_moddev/superresolution/common/src/main/resources/assets/super_resolution/textures/coef_usm.png", w, h, channels, 4);
                 coefUSM = GlTexture2D.create(
                         NVIDIAImageScalingConst.kFilterSize / 4,
                         NVIDIAImageScalingConst.kPhaseCount,
@@ -111,6 +114,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
             }
 
         }
+        stbi_set_flip_vertically_on_load(false);
+        
         scaleShader = GlComputeShaderProgram.create()
                 .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/nis/nis_scaler.comp.glsl", true))
                 .setShaderName("nis_scaler")
@@ -169,8 +174,8 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
     private Vec3 getWorkGroupSize() {
         return new Vec3(
-                (float) Math.ceil(MinecraftRenderHandle.getRenderWidth() / 8),
-                (float) Math.ceil(MinecraftRenderHandle.getRenderHeight() / 8),
+                (float) Math.ceil(MinecraftRenderHandle.getScreenWidth() / 32) + 1,
+                (float) Math.ceil(MinecraftRenderHandle.getScreenHeight() / 24) + 1,
                 1.0f
         );
     }

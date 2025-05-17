@@ -24,6 +24,7 @@ public class ConfigData {
     private boolean enableRenderDoc;
     private boolean enableImgui;
     private boolean generateMotionVectors;
+    private boolean pauseGameOnGui;
 
     public ConfigData() {
         skipInitVulkan = compatMode;
@@ -44,6 +45,15 @@ public class ConfigData {
             return AlgorithmDescriptions.NONE;
         }
         return desc;
+    }
+
+    public boolean isPauseGameOnGui() {
+        return pauseGameOnGui;
+    }
+
+    public ConfigData setPauseGameOnGui(boolean pauseGameOnGui) {
+        this.pauseGameOnGui = pauseGameOnGui;
+        return this;
     }
 
     public boolean isGenerateMotionVectors() {

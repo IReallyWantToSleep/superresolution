@@ -84,9 +84,8 @@
     "superresolution.screen.config.options.label.generate_motion_vectors": "生成运动矢量",
     "superresolution.screen.config.options.tooltip.generate_motion_vectors": "运动矢量可以提示部分算法（FSR2,SGSR2）的超分质量，但会损失性能",
     "superresolution.screen.debug.performance_info": "性能信息",
-    "superresolution.screen.debug.performance_data": "世界渲染用时 %1$sms\n升采样算法用时 %2$sms",
+    "superresolution.screen.debug.performance_data": "帧时间 %1$sms\n世界渲染用时 %2$sms\n升采样算法用时 %3$sms",
     "superresolution.screen.config.warn.mobile_device": "警告：正在移动设备上运行，本模组对移动设备的支持不稳定，可能出现无法预料的错误",
-    "superresolution.algo.description.header": "FSR1 --- AMD FidelityFX Super Resolution 1\nFSR2 --- AMD FidelityFX Super Resolution 2\nNIS --- NVIDIA Image Scaling\nSGSR --- Snapdragon™ Game Super Resolution",
     "superresolution.screen.config.warn.algorithm_unstable": "警告：当前所选算法不稳定",
     "superresolution.screen.config.warn.algorithm_incomplete": "警告：当前所选算法未完成，无法正常使用",
     "superresolution.screen.config.options.label.capture_mode": "捕获方式",
@@ -97,6 +96,7 @@
     "superresolution.screen.config.options.tooltip.skip_load_native_lib": "跳过加载本地库可能导致功能异常",
     "superresolution.screen.config.options.label.skip_init_vulkan": "跳过初始化Vulkan",
     "superresolution.screen.config.options.tooltip.skip_init_vulkan": "跳过Vulkan初始化可能影响部分算法",
+    "superresolution.screen.config.options.label.pause_game_on_gui": "打开配置界面时暂停游戏",
     "superresolution.screen.info.link.official_website": "官方网站",
     "superresolution.screen.info.link.github_repo": "GitHub仓库",
     "superresolution.screen.info.link.issue_tracker": "问题追踪",
@@ -108,5 +108,6 @@
     "superresolution.enum.sgsrvariant.cs_2": "CS_2 (计算着色器/2通道)",
     "superresolution.enum.sgsrvariant.cs_3": "CS_3 (计算着色器/3通道)",
     "superresolution.enum.sgsrvariant.fs_2": "FS_2 (普通着色器/2通道)",
+    "key.super_resolution.open_config": "打开配置界面",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

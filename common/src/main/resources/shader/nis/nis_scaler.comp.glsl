@@ -2,6 +2,18 @@
 #extension GL_ARB_shading_language_420pack: enable
 #extension GL_GOOGLE_include_directive: enable
 
+#define NIS_THREAD_GROUP_SIZE 256
+#define NIS_BLOCK_WIDTH 32
+#define NIS_BLOCK_HEIGHT 24
+#define kPhaseCount  64
+#define kFilterSize  6
+#define kSupportSize 6
+#define kPadSize     kSupportSize
+#define kTilePitch (NIS_BLOCK_WIDTH + kPadSize)
+#define kTileSize (kTilePitch * (NIS_BLOCK_HEIGHT + kPadSize))
+#define kEdgeMapPitch (NIS_BLOCK_WIDTH + 2)
+#define kEdgeMapSize (kEdgeMapPitch * (NIS_BLOCK_HEIGHT + 2))
+
 layout (std140, binding = 0) uniform const_buffer
 {
     float kDetectRatio;
@@ -46,6 +58,11 @@ layout (binding = 3) uniform writeonly image2D out_texture;
 
 layout (binding = 4) uniform sampler2D coef_scaler;
 layout (binding = 5) uniform sampler2D coef_usm;
+
+shared float shPixelsY[kTileSize];
+shared float shCoefScaler[kPhaseCount][kFilterSize];
+shared float shCoefUSM[kPhaseCount][kFilterSize];
+shared vec4 shEdgeMap[kEdgeMapSize];
 
 float getY(vec3 rgba)
 {
@@ -109,16 +126,8 @@ vec4 GetEdgeMap(float p[4][4], int i, int j)
     return vec4(weight_0, weight_90, weight_45, weight_135);
 }
 
-shared float shPixelsY[((32 + 6) * (24 + 6))];
-shared float shCoefScaler[64][6];
-shared float shCoefUSM[64][6];
-shared vec4 shEdgeMap[((32 + 2) * (24 + 2))];
-
-void LoadFilterBanksSh(int i0) {
-    int i = i0;
-
-    if (i < 64 * 2)
-
+void LoadFilterBanksSh(int i0, int di) {
+    for (int i = i0; i < kPhaseCount * 2; i += di)
     {
         int phase = i >> 1;
         int vIdx = i & 1;
@@ -329,32 +338,32 @@ float AddDirFilters(float p[6][6], float phase_x_frac, float phase_y_frac, int p
 
 void NVScaler(uvec2 blockIdx, uint threadIdx)
 {
-    int dstBlockX = int(32 * blockIdx.x);
-    int dstBlockY = int(24 * blockIdx.y);
+    int dstBlockX = int(NIS_BLOCK_WIDTH * blockIdx.x);
+    int dstBlockY = int(NIS_BLOCK_HEIGHT * blockIdx.y);
 
     const int srcBlockStartX = int(floor((dstBlockX + 0.5f) * kScaleX - 0.5f));
     const int srcBlockStartY = int(floor((dstBlockY + 0.5f) * kScaleY - 0.5f));
-    const int srcBlockEndX = int(ceil((dstBlockX + 32 + 0.5f) * kScaleX - 0.5f));
-    const int srcBlockEndY = int(ceil((dstBlockY + 24 + 0.5f) * kScaleY - 0.5f));
+    const int srcBlockEndX = int(ceil((dstBlockX + NIS_BLOCK_WIDTH + 0.5f) * kScaleX - 0.5f));
+    const int srcBlockEndY = int(ceil((dstBlockY + NIS_BLOCK_HEIGHT + 0.5f) * kScaleY - 0.5f));
 
-    int numTilePixelsX = srcBlockEndX - srcBlockStartX + 6 - 1;
-    int numTilePixelsY = srcBlockEndY - srcBlockStartY + 6 - 1;
+    int numTilePixelsX = srcBlockEndX - srcBlockStartX + kSupportSize - 1;
+    int numTilePixelsY = srcBlockEndY - srcBlockStartY + kSupportSize - 1;
 
     numTilePixelsX += numTilePixelsX & 0x1;
     numTilePixelsY += numTilePixelsY & 0x1;
     const int numTilePixels = numTilePixelsX * numTilePixelsY;
 
-    const int numEdgeMapPixelsX = numTilePixelsX - 6 + 2;
-    const int numEdgeMapPixelsY = numTilePixelsY - 6 + 2;
+    const int numEdgeMapPixelsX = numTilePixelsX - kSupportSize + 2;
+    const int numEdgeMapPixelsY = numTilePixelsY - kSupportSize + 2;
     const int numEdgeMapPixels = numEdgeMapPixelsX * numEdgeMapPixelsY;
 
     {
-        for (uint i = threadIdx * 2; i < uint(numTilePixels) >> 1; i += 256 * 2)
+        for (uint i = threadIdx * 2; i < uint(numTilePixels) >> 1; i += NIS_THREAD_GROUP_SIZE * 2)
         {
             uint py = (i / numTilePixelsX) * 2;
             uint px = i % numTilePixelsX;
 
-            float kShift = 0.5f - (6 - 1) / 2;
+            float kShift = 0.5f - (kSupportSize - 1) / 2;
 
             const float tx = (srcBlockStartX + px + kShift) * kSrcNormX;
             const float ty = (srcBlockStartY + py + kShift) * kSrcNormY;
@@ -365,46 +374,46 @@ void NVScaler(uvec2 blockIdx, uint threadIdx)
             {
                 for (int k = 0; k < 2; k++)
                 {
-                    const vec4 px = textureLod(in_texture, vec2(tx + k * kSrcNormX, ty + j * kSrcNormY), 0);
+                    const vec4 px = texture(in_texture, vec2(tx + k * kSrcNormX, ty + j * kSrcNormY));
                     p[j][k] = getY(px.xyz);
                 }
             }
 
-            const uint idx = py * (32 + 6) + px;
+            const uint idx = py * kTilePitch + px;
             shPixelsY[idx] = float(p[0][0]);
             shPixelsY[idx + 1] = float(p[0][1]);
-            shPixelsY[idx + (32 + 6)] = float(p[1][0]);
-            shPixelsY[idx + (32 + 6) + 1] = float(p[1][1]);
+            shPixelsY[idx + kTilePitch] = float(p[1][0]);
+            shPixelsY[idx + kTilePitch + 1] = float(p[1][1]);
         }
     }
     groupMemoryBarrier();
     barrier();
     {
-        for (uint i = threadIdx * 2; i < uint(numEdgeMapPixels) >> 1; i += 256 * 2)
+        for (uint i = threadIdx * 2; i < uint(numEdgeMapPixels) >> 1; i += NIS_THREAD_GROUP_SIZE * 2)
         {
             uint py = (i / numEdgeMapPixelsX) * 2;
             uint px = i % numEdgeMapPixelsX;
 
-            const uint edgeMapIdx = py * (32 + 2) + px;
+            const uint edgeMapIdx = py * kEdgeMapPitch + px;
 
-            uint tileCornerIdx = (py + 1) * (32 + 6) + px + 1;
+            uint tileCornerIdx = (py + 1) * kTilePitch + px + 1;
             float p[4][4];
 
             for (int j = 0; j < 4; j++)
             {
                 for (int k = 0; k < 4; k++)
                 {
-                    p[j][k] = shPixelsY[tileCornerIdx + j * (32 + 6) + k];
+                    p[j][k] = shPixelsY[tileCornerIdx + j * kTilePitch + k];
                 }
             }
 
             shEdgeMap[edgeMapIdx] = vec4(GetEdgeMap(p, 0, 0));
             shEdgeMap[edgeMapIdx + 1] = vec4(GetEdgeMap(p, 0, 1));
-            shEdgeMap[edgeMapIdx + (32 + 2)] = vec4(GetEdgeMap(p, 1, 0));
-            shEdgeMap[edgeMapIdx + (32 + 2) + 1] = vec4(GetEdgeMap(p, 1, 1));
+            shEdgeMap[edgeMapIdx + kEdgeMapPitch] = vec4(GetEdgeMap(p, 1, 0));
+            shEdgeMap[edgeMapIdx + kEdgeMapPitch + 1] = vec4(GetEdgeMap(p, 1, 1));
         }
     }
-    LoadFilterBanksSh(int(threadIdx));
+    LoadFilterBanksSh(int(threadIdx), NIS_THREAD_GROUP_SIZE);
     groupMemoryBarrier();
     barrier();
 
@@ -418,11 +427,11 @@ void NVScaler(uvec2 blockIdx, uint threadIdx)
 
     const float fx = srcX - floor(srcX);
 
-    const int fx_int = int(fx * 64);
+    const int fx_int = int(floor(fx * kPhaseCount + 0.5f));
 
-    for (int k = 0; k < 32 * 24 / 256; ++k)
+    for (int k = 0; k < NIS_BLOCK_WIDTH * NIS_BLOCK_HEIGHT / NIS_THREAD_GROUP_SIZE; ++k)
     {
-        const int dstY = dstBlockY + pos.y + k * (256 / 32);
+        const int dstY = dstBlockY + pos.y + k * (NIS_THREAD_GROUP_SIZE / NIS_BLOCK_WIDTH);
 
         const float srcY = (0.5f + dstY) * kScaleY - 0.5f;
 
@@ -431,33 +440,34 @@ void NVScaler(uvec2 blockIdx, uint threadIdx)
 
             const float fy = srcY - floor(srcY);
 
-            const int fy_int = int(fy * 64);
-
-            const int startEdgeMapIdx = py * (32 + 2) + px;
+            const int fy_int = int(floor(fy * kPhaseCount + 0.5f));
+            const int startEdgeMapIdx = py * kEdgeMapPitch + px;
             vec4 edge[2][2];
 
             for (int i = 0; i < 2; i++)
             {
                 for (int j = 0; j < 2; j++)
                 {
-                    edge[i][j] = shEdgeMap[startEdgeMapIdx + (i * (32 + 2)) + j];
+                    edge[i][j] = shEdgeMap[startEdgeMapIdx + (i * kEdgeMapPitch) + j];
                 }
             }
             const vec4 w = GetInterpEdgeMap(edge, fx, fy) * 1;
 
-            const int startTileIdx = py * (32 + 6) + px;
+            const int startTileIdx = py * kTilePitch + px;
             float p[6][6];
             {
                 for (int i = 0; i < 6; ++i)
                 {
                     for (int j = 0; j < 6; ++j)
                     {
-                        p[i][j] = shPixelsY[startTileIdx + i * (32 + 6) + j];
+                        p[i][j] = shPixelsY[startTileIdx + i * kTilePitch + j];
                     }
                 }
             }
 
-            const float baseWeight = float(1.f) - w.x - w.y - w.z - w.w;
+            //const float baseWeight = float(1.f) - w.x - w.y - w.z - w.w;
+            const float weightSum = w.x + w.y + w.z + w.w;
+            const float baseWeight = (weightSum > 1e-5f) ? (1.0f - weightSum) : 1.0f;
 
             float opY = 0;
 
@@ -468,7 +478,7 @@ void NVScaler(uvec2 blockIdx, uint threadIdx)
             vec2 coord = vec2((srcX + 0.5f) * kSrcNormX, (srcY + 0.5f) * kSrcNormY);
             vec2 dstCoord = vec2(dstX, dstY);
 
-            vec4 op = textureLod(in_texture, coord, 0);
+            vec4 op = texture(in_texture, coord);
             float y = getY(vec3(op.x, op.y, op.z));
 
             const float corr = opY * (1.0f / float(1.f)) - y;
@@ -481,7 +491,7 @@ void NVScaler(uvec2 blockIdx, uint threadIdx)
     }
 }
 
-layout (local_size_x = 256) in;
+layout (local_size_x = NIS_THREAD_GROUP_SIZE) in;
 void main()
 {
     NVScaler(gl_WorkGroupID.xy, gl_LocalInvocationID.x);

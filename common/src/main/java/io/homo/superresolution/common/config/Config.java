@@ -144,6 +144,22 @@ public class Config {
         resolutionChangeCallback = callback;
     }
 
+    public static boolean isPauseGameOnGui() {
+        return instance.isPauseGameOnGui();
+    }
+
+    public static ConfigData setPauseGameOnGui(boolean pauseGameOnGui) {
+        return instance.setPauseGameOnGui(pauseGameOnGui);
+    }
+
+    public static boolean isDebugDumpShader() {
+        return instance.isDebugDumpShader();
+    }
+
+    public static void setDebugDumpShader(boolean debugDumpShader) {
+        instance.setDebugDumpShader(debugDumpShader);
+    }
+
     private static void runResolutionChangeCallback() {
         if (resolutionChangeCallback != null) {
             resolutionChangeCallback.run();

@@ -19,30 +19,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-/// @defgroup Core
-/// @defgroup HLSL
-/// @defgroup GLSL
-/// @defgroup GPU
-/// @defgroup CPU
-/// @defgroup CAS
-/// @defgroup FSR1
 
 #if !defined(FFX_CORE_H)
 #define FFX_CORE_H
 
 #include "fsr2/ffx_common_types.h"
 
-#if defined(FFX_CPU)
-    #include "fsr2/ffx_core_cpu.h"
-#endif // #if defined(FFX_CPU)
-
 #if defined(FFX_GLSL) && defined(FFX_GPU)
     #include "fsr2/ffx_core_glsl.h"
 #endif // #if defined(FFX_GLSL) && defined(FFX_GPU)
-
-#if defined(FFX_HLSL) && defined(FFX_GPU)
-    #include "fsr2/ffx_core_hlsl.h"
-#endif // #if defined(FFX_HLSL) && defined(FFX_GPU)
 
 #if defined(FFX_GPU)
     #include "fsr2/ffx_core_gpu_common.h"

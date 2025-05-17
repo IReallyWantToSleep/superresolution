@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.debug.PerformanceInfo;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,6 +17,15 @@ public class MinecraftMixin {
         SuperResolution.gameIsLoad = true;
     }
 
+    @Inject(at = @At(value = "HEAD"), method = "runTick")
+    private void onRenderBegin(CallbackInfo ci) {
+        PerformanceInfo.begin("runTick");
+    }
+
+    @Inject(at = @At(value = "RETURN"), method = "runTick")
+    private void onRenderEnd(CallbackInfo ci) {
+        PerformanceInfo.end("runTick");
+    }
 
     @Inject(at = @At(value = "HEAD"), method = "destroy")
     private void onExit(CallbackInfo ci) {
