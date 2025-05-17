@@ -14,11 +14,25 @@ import java.util.Set;
 
 public class Fsr2PipelineResources {
 
+
+    private final Map<Fsr2ResourceEntry, Fsr2PipelineResourceType> resourceEntriesMap = new HashMap<>();
     private final Map<Fsr2PipelineResourceType, Fsr2ResourceEntry> resources = new HashMap<>();
     private final Map<Fsr2PipelineResourceType, Fsr2ResourceCreateDescription> resourceCreateDescriptions = new HashMap<>();
     private final Map<String, Fsr2PipelineResourceType> shaderNameMap = new HashMap<>();
 
     public Fsr2PipelineResources() {
+    }
+
+    public Map<Fsr2ResourceEntry, Fsr2PipelineResourceType> resourceEntriesMap() {
+        return resourceEntriesMap;
+    }
+
+    public Map<Fsr2PipelineResourceType, Fsr2ResourceEntry> resources() {
+        return resources;
+    }
+
+    public Map<Fsr2PipelineResourceType, Fsr2ResourceCreateDescription> resourceCreateDescriptions() {
+        return resourceCreateDescriptions;
     }
 
     public Map<String, Fsr2PipelineResourceType> shaderNameMap() {
@@ -30,6 +44,7 @@ public class Fsr2PipelineResources {
             throw new RuntimeException(type.toString());
         resourceCreateDescriptions.put(type, description);
         resources.put(type, new Fsr2ResourceEntry(description));
+        resourceEntriesMap.put(resources.get(type), type);
         if (type.srvShaderName() != null) {
             shaderNameMap.put(type.srvShaderName(), type);
         }

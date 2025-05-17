@@ -135,6 +135,7 @@ public class Fsr2CBFSR2 implements IUniformStruct {
         deltaTime = desc.frameTimeDelta();
         dynamicResChangeFactor = 0.0f;
         viewSpaceToMetersFactor = desc.viewSpaceToMetersFactor() > 0 ? desc.viewSpaceToMetersFactor() : 1.0f;
+        fillBuffer();
     }
 
     @Override

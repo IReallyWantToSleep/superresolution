@@ -97,6 +97,10 @@ public class GraphicsCapabilities {
         }
     }
 
+    public static boolean isFp16Supported() {
+        return hasGLExtension("GL_NV_gpu_shader5") || hasGLExtension("GL_AMD_gpu_shader_half_float");
+    }
+
     private static boolean isVulkanSupported() {
         return GlVkInteropManager.isSupportVulkan();
     }
