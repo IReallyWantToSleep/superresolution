@@ -29,7 +29,8 @@ public class Fsr2GenerateReactivePipeline extends Fsr2BasePipeline {
 
     @Override
     public void execute(Fsr2PipelineDispatchResource dispatchResource) {
-
+        pipeline.scheduleJobs();
+        pipeline.executeJobs();
     }
 
 }

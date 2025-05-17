@@ -3,6 +3,7 @@ package io.homo.superresolution.fsr2;
 import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.fsr2.pipelines.*;
 import io.homo.superresolution.fsr2.struct.Fsr2CBFSR2;
+import io.homo.superresolution.fsr2.struct.Fsr2CBRcas;
 import io.homo.superresolution.fsr2.struct.Fsr2CBSpd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ public class Fsr2Context {
     public GlUniformBuffer<Fsr2CBFSR2> fsr2ConstantsUBO = new GlUniformBuffer<>(fsr2Constants);
     public Fsr2CBSpd fsr2SpdConstants = new Fsr2CBSpd();
     public GlUniformBuffer<Fsr2CBSpd> fsr2SpdConstantsUBO = new GlUniformBuffer<>(fsr2SpdConstants);
+    public Fsr2CBRcas fsr2RcasConstants = new Fsr2CBRcas();
+    public GlUniformBuffer<Fsr2CBRcas> fsr2RcasConstantsUBO = new GlUniformBuffer<>(fsr2RcasConstants);
     private int frameIndex = 0;
 
     public Fsr2Context(
@@ -49,6 +52,26 @@ public class Fsr2Context {
                 dimensions.screenWidth(),
                 dimensions.screenHeight()
         );
+        accumulatePipeline = new Fsr2AccumulatePipeline(this);
+        rcasPipeline = new Fsr2RCASPipeline(this);
+        accumulateSharpenPipeline = new Fsr2AccumulateSharpenPipeline(this);
+        computeLuminancePyramidPipeline = new Fsr2ComputeLuminancePyramidPipeline(this);
+        depthClipPipeline = new Fsr2DepthClipPipeline(this);
+        generateReactivePipeline = new Fsr2GenerateReactivePipeline(this);
+        lockPipeline = new Fsr2LockPipeline(this);
+        reconstructPreviousDepthPipeline = new Fsr2ReconstructPreviousDepthPipeline(this);
+        tcrAutogeneratePipeline = new Fsr2TcrAutogeneratePipeline(this);
+
+        accumulatePipeline.init();
+        rcasPipeline.init();
+        accumulateSharpenPipeline.init();
+        computeLuminancePyramidPipeline.init();
+        depthClipPipeline.init();
+        generateReactivePipeline.init();
+        lockPipeline.init();
+        reconstructPreviousDepthPipeline.init();
+        tcrAutogeneratePipeline.init();
+
         accumulatePipeline.resize(dimensions);
         rcasPipeline.resize(dimensions);
         accumulateSharpenPipeline.resize(dimensions);
@@ -82,26 +105,6 @@ public class Fsr2Context {
                 dimensions.screenHeight()
         );
 
-        accumulatePipeline = new Fsr2AccumulatePipeline(this);
-        rcasPipeline = new Fsr2RCASPipeline(this);
-        accumulateSharpenPipeline = new Fsr2AccumulateSharpenPipeline(this);
-        computeLuminancePyramidPipeline = new Fsr2ComputeLuminancePyramidPipeline(this);
-        depthClipPipeline = new Fsr2DepthClipPipeline(this);
-        generateReactivePipeline = new Fsr2GenerateReactivePipeline(this);
-        lockPipeline = new Fsr2LockPipeline(this);
-        reconstructPreviousDepthPipeline = new Fsr2ReconstructPreviousDepthPipeline(this);
-        tcrAutogeneratePipeline = new Fsr2TcrAutogeneratePipeline(this);
-
-        accumulatePipeline.init();
-        rcasPipeline.init();
-        accumulateSharpenPipeline.init();
-        computeLuminancePyramidPipeline.init();
-        depthClipPipeline.init();
-        generateReactivePipeline.init();
-        lockPipeline.init();
-        reconstructPreviousDepthPipeline.init();
-        tcrAutogeneratePipeline.init();
-
         resize(this.dimensions);
     }
 
@@ -109,26 +112,58 @@ public class Fsr2Context {
         resources.resource(Fsr2PipelineResourceType.INPUT_COLOR).setResource(dispatchDescription.color);
         resources.resource(Fsr2PipelineResourceType.INPUT_MOTION_VECTORS).setResource(dispatchDescription.motionVectors);
         resources.resource(Fsr2PipelineResourceType.INPUT_DEPTH).setResource(dispatchDescription.depth);
-        resources.resource(Fsr2PipelineResourceType.INPUT_EXPOSURE).setResource(dispatchDescription.exposure);
-        resources.resource(Fsr2PipelineResourceType.INPUT_REACTIVE_MASK).setResource(dispatchDescription.reactive);
-        resources.resource(Fsr2PipelineResourceType.INPUT_TRANSPARENCY_AND_COMPOSITION_MASK).setResource(dispatchDescription.transparencyAndComposition);
-        fsr2Constants.update(
-                this,
-                dispatchDescription,
-                dimensions
+        resources.resource(Fsr2PipelineResourceType.INPUT_EXPOSURE).setResource(
+                dispatchDescription.exposure == null ?
+                        resources.resource(Fsr2PipelineResourceType.INTERNAL_DEFAULT_EXPOSURE).getResource() :
+                        dispatchDescription.exposure
         );
-        fsr2SpdConstants.update(
-                this,
-                dispatchDescription,
-                dimensions
+        resources.resource(Fsr2PipelineResourceType.INPUT_REACTIVE_MASK).setResource(
+                dispatchDescription.reactive == null ?
+                        resources.resource(Fsr2PipelineResourceType.INTERNAL_DEFAULT_REACTIVITY).getResource() :
+                        dispatchDescription.reactive
         );
+        resources.resource(Fsr2PipelineResourceType.INPUT_TRANSPARENCY_AND_COMPOSITION_MASK).setResource(
+                dispatchDescription.transparencyAndComposition == null ?
+                        resources.resource(Fsr2PipelineResourceType.INTERNAL_DEFAULT_REACTIVITY).getResource() : //fsr2原版用的也是INTERNAL_DEFAULT_REACTIVITY
+                        dispatchDescription.transparencyAndComposition
+        );
+        resources.resource(Fsr2PipelineResourceType.UPSCALED_OUTPUT).setResource(dispatchDescription.output);
+
+        fsr2Constants.update(this, dispatchDescription, dimensions);
+        fsr2SpdConstants.update(this, dispatchDescription, dimensions);
+        fsr2RcasConstants.update(this, dispatchDescription, dimensions);
         fsr2ConstantsUBO.update();
         fsr2SpdConstantsUBO.update();
+        fsr2RcasConstantsUBO.update();
+
+        Fsr2PipelineDispatchResource pipelineDispatchResource = new Fsr2PipelineDispatchResource(
+                resources,
+                config,
+                dimensions,
+                dispatchDescription
+        );
+
+        computeLuminancePyramidPipeline.execute(pipelineDispatchResource);
+        reconstructPreviousDepthPipeline.execute(pipelineDispatchResource);
+        depthClipPipeline.execute(pipelineDispatchResource);
+        lockPipeline.execute(pipelineDispatchResource);
+        if (dispatchDescription.enableSharpening()) {
+            accumulateSharpenPipeline.execute(pipelineDispatchResource);
+            rcasPipeline.execute(pipelineDispatchResource);
+        } else {
+            accumulatePipeline.execute(pipelineDispatchResource);
+        }
+
         if (dispatchDescription.reset()) {
             frameIndex = 0;
         } else {
             frameIndex++;
+            frameIndex = frameIndex % 16;
         }
+    }
+
+    public boolean isOddFrame() {
+        return (frameIndex & 1) != 0;
     }
 
 

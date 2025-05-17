@@ -2,8 +2,6 @@ package io.homo.superresolution.fsr2;
 
 import io.homo.superresolution.core.impl.Vec2;
 import io.homo.superresolution.core.impl.texture.ITexture;
-import oiiaio.fsr.fsr2.impl.FfxDimensions2D;
-import oiiaio.fsr.fsr2.impl.FfxFloatCoords2D;
 
 public class Fsr2DispatchDescription {
     public ITexture color;

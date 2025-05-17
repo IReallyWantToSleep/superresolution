@@ -1,5 +1,7 @@
 package io.homo.superresolution.fsr2.pipelines;
 
+import io.homo.superresolution.core.GpuVendor;
+import io.homo.superresolution.core.GraphicsCapabilities;
 import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
 import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
@@ -32,12 +34,18 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
     public void init() {
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_FSR2_OPTION_APPLY_SHARPENING", "1");
+        shaderDefines.put("FFX_HALF", GraphicsCapabilities.detectGpuVendor() == GpuVendor.NVIDIA ? "0" : "1");
+
         program = GlComputeShaderProgram.create()
                 .addDefineText(getShaderDefines(shaderDefines))
                 .setShaderName("fsr2_accumulate_sharpen")
                 .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr2/ffx_fsr2_accumulate_pass.ogl.glsl", true))
                 .build()
                 .compileShader();
+    }
+
+    @Override
+    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
         GlPipelineJobBuilders.ComputeJobBuilder jobBuilder =
                 GlPipelineJobBuilders.compute(program)
                         .workGroupSupplier(() -> new Vec3(
@@ -45,6 +53,7 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
                                 (float) (context.dimensions.screenHeight() + (7)) / 8,
                                 1
                         ));
+
         jobBuilder.resource(
                 GlPipelineResourceDescription.createUBOResource(
                         "cbFSR2",
@@ -52,6 +61,7 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
                         18
                 )
         );
+
         jobBuilder.resource(
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
@@ -68,10 +78,13 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(
+                        .resourceTypeSupplier(
                                 context.config.flags.isEnableDisplayResolutionMotionVectors() ?
-                                        Fsr2PipelineResourceType.INPUT_MOTION_VECTORS :
-                                        Fsr2PipelineResourceType.DILATED_MOTION_VECTORS
+                                        () -> Fsr2PipelineResourceType.INPUT_MOTION_VECTORS :
+                                        () -> context.isOddFrame() ?
+                                                Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2 :
+                                                Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1
+
                         )
                         .binding(15)
                         .access(GlPipelineResourceAccess.READ)
@@ -79,14 +92,22 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR)
+                        .resourceTypeSupplier(
+                                () -> context.isOddFrame() ?
+                                        Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_2 :
+                                        Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_1
+                        )
                         .binding(16)
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(Fsr2PipelineResourceType.LOCK_STATUS)
+                        .resourceTypeSupplier(
+                                () -> context.isOddFrame() ?
+                                        Fsr2PipelineResourceType.LOCK_STATUS_2 :
+                                        Fsr2PipelineResourceType.LOCK_STATUS_1
+                        )
                         .binding(17)
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
@@ -128,21 +149,33 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(Fsr2PipelineResourceType.LUMA_HISTORY)
+                        .resourceTypeSupplier(
+                                () -> context.isOddFrame() ?
+                                        Fsr2PipelineResourceType.LUMA_HISTORY_2 :
+                                        Fsr2PipelineResourceType.LUMA_HISTORY_1
+                        )
                         .binding(12)
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR)
+                        .resourceTypeSupplier(
+                                () -> context.isOddFrame() ?
+                                        Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_1 :
+                                        Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_2
+                        )
                         .binding(0)
                         .access(GlPipelineResourceAccess.BOTH)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(Fsr2PipelineResourceType.LOCK_STATUS)
+                        .resourceTypeSupplier(
+                                () -> context.isOddFrame() ?
+                                        Fsr2PipelineResourceType.LOCK_STATUS_1 :
+                                        Fsr2PipelineResourceType.LOCK_STATUS_2
+                        )
                         .binding(1)
                         .access(GlPipelineResourceAccess.BOTH)
                         .getResourceDescription(context)
@@ -163,17 +196,18 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
-                        .resourceType(Fsr2PipelineResourceType.LUMA_HISTORY)
+                        .resourceTypeSupplier(
+                                () -> context.isOddFrame() ?
+                                        Fsr2PipelineResourceType.LUMA_HISTORY_1 :
+                                        Fsr2PipelineResourceType.LUMA_HISTORY_2
+                        )
                         .binding(4)
                         .access(GlPipelineResourceAccess.BOTH)
                         .getResourceDescription(context)
         );
         pipeline.addJob("fsr2_accumulate_sharpen", jobBuilder.build());
-    }
-
-    @Override
-    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
-
+        pipeline.scheduleJobs();
+        pipeline.executeJobs();
     }
 
 }

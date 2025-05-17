@@ -130,7 +130,7 @@ public class Fsr2PipelineResources {
                         new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RGBA16F, 2, "FSR2_InternalUpscaled2"));
         addResourceDescription(Fsr2PipelineResourceType.SCENE_LUMINANCE,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth / 2f, renderHeight / 2f), TextureFormat.R16F, 2, "FSR2_ExposureMips", 0));
+                        new Vec2(Math.max((float) Math.ceil(renderWidth / 2f), 1), Math.max((float) Math.ceil(renderHeight / 2f), 1)), TextureFormat.R16F, 2, "FSR2_ExposureMips", 0));
         addResourceDescription(Fsr2PipelineResourceType.LUMA_HISTORY_1,
                 new Fsr2ResourceCreateDescription(
                         new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RGBA8, 2, "FSR2_LumaHistory1"));
@@ -204,6 +204,10 @@ public class Fsr2PipelineResources {
                 GlTexture2D tex = GlTexture2D.create(
                         (int) desc.size.x, (int) desc.size.y, desc.format,
                         desc.mipCount == 0 ? GlTexture2D.AUTO_MIPMAP_LEVEL : desc.mipCount);
+                Fsr2Context.LOGGER.info("创建资源 ({} {} {} {}) ({}x{} {} {} {})",
+                        type.toString(), type.srvShaderName(), type.uavShaderName(), type.id(),
+                        desc.size.x, desc.size.y, desc.format.name(), desc.mipCount, desc.label
+                );
                 resourceEntry.setResource(tex);
             } else {
                 throw new RuntimeException(desc.label);

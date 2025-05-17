@@ -14,14 +14,37 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.homo.superresolution.core.gl.Gl.*;
-import static io.homo.superresolution.core.gl.GlConst.*;
+import static org.lwjgl.opengl.GL43.*;
 
 public class GraphicsCapabilities {
     private static final ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
     private static Set<String> glExtensions = null;
+    private static GpuVendor gpuVendor = null;
 
     public static void init() {
+    }
+
+    public static GpuVendor detectGpuVendor() {
+        if (gpuVendor == null) {
+            String renderer = glGetString(GL_RENDERER);
+            String vendor = glGetString(GL_VENDOR);
+            gpuVendor = parseVendorFromName(vendor + " " + renderer);
+        }
+        return gpuVendor;
+    }
+
+    private static GpuVendor parseVendorFromName(String rawName) {
+        if (rawName == null) return GpuVendor.UNKNOWN;
+
+        String lowerName = rawName.toLowerCase();
+        if (lowerName.contains("nvidia") || lowerName.contains("geforce")) {
+            return GpuVendor.NVIDIA;
+        } else if (lowerName.contains("amd") || lowerName.contains("radeon") || lowerName.contains("ati ")) {
+            return GpuVendor.AMD;
+        } else if (lowerName.contains("intel") || lowerName.contains("iris") || lowerName.contains("hd graphics")) {
+            return GpuVendor.INTEL;
+        }
+        return GpuVendor.UNKNOWN;
     }
 
     private static int[] detectGLVersion() {

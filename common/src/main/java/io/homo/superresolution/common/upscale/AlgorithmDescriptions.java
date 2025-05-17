@@ -5,7 +5,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
-import io.homo.superresolution.common.upscale.fsr2.java.FSR2;
+import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;

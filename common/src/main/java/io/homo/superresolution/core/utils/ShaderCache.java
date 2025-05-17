@@ -150,7 +150,7 @@ public class ShaderCache {
                 EShClient.EShClientOpenGL,
                 EShTargetClientVersion.EShTargetOpenGL_450,
                 EShTargetLanguage.EShTargetSpv,
-                EShTargetLanguageVersion.EShTargetSpv_1_0,
+                EShTargetLanguageVersion.EShTargetSpv_1_4,
                 460,
                 EProfile.ENoProfile,
                 true,
