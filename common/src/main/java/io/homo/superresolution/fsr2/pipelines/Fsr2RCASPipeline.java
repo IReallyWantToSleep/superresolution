@@ -2,6 +2,7 @@ package io.homo.superresolution.fsr2.pipelines;
 
 import io.homo.superresolution.fsr2.Fsr2Context;
 import io.homo.superresolution.fsr2.Fsr2Dimensions;
+import io.homo.superresolution.fsr2.Fsr2PipelineDispatchResource;
 import io.homo.superresolution.fsr2.Fsr2PipelineResources;
 
 public class Fsr2RCASPipeline extends Fsr2BasePipeline {
@@ -27,7 +28,7 @@ public class Fsr2RCASPipeline extends Fsr2BasePipeline {
     }
 
     @Override
-    protected void shaderBindings() {
+    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
 
     }
 

@@ -3,6 +3,7 @@ package io.homo.superresolution.fsr2;
 import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.fsr2.pipelines.*;
 import io.homo.superresolution.fsr2.struct.Fsr2CBFSR2;
+import io.homo.superresolution.fsr2.struct.Fsr2CBSpd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,9 +24,10 @@ public class Fsr2Context {
     public Fsr2PipelineResources resources = new Fsr2PipelineResources();
     public Fsr2ContextConfig config;
     public Fsr2Dimensions dimensions;
-    public Fsr2CBFSR2 constants = new Fsr2CBFSR2();
-    public GlUniformBuffer<Fsr2CBFSR2> constantsUBO = new GlUniformBuffer<>(constants);
-
+    public Fsr2CBFSR2 fsr2Constants = new Fsr2CBFSR2();
+    public GlUniformBuffer<Fsr2CBFSR2> fsr2ConstantsUBO = new GlUniformBuffer<>(fsr2Constants);
+    public Fsr2CBSpd fsr2SpdConstants = new Fsr2CBSpd();
+    public GlUniformBuffer<Fsr2CBSpd> fsr2SpdConstantsUBO = new GlUniformBuffer<>(fsr2SpdConstants);
     private int frameIndex = 0;
 
     public Fsr2Context(
@@ -110,12 +112,18 @@ public class Fsr2Context {
         resources.resource(Fsr2PipelineResourceType.INPUT_EXPOSURE).setResource(dispatchDescription.exposure);
         resources.resource(Fsr2PipelineResourceType.INPUT_REACTIVE_MASK).setResource(dispatchDescription.reactive);
         resources.resource(Fsr2PipelineResourceType.INPUT_TRANSPARENCY_AND_COMPOSITION_MASK).setResource(dispatchDescription.transparencyAndComposition);
-        constants.update(
+        fsr2Constants.update(
                 this,
                 dispatchDescription,
                 dimensions
         );
-        constantsUBO.update();
+        fsr2SpdConstants.update(
+                this,
+                dispatchDescription,
+                dimensions
+        );
+        fsr2ConstantsUBO.update();
+        fsr2SpdConstantsUBO.update();
         if (dispatchDescription.reset()) {
             frameIndex = 0;
         } else {
