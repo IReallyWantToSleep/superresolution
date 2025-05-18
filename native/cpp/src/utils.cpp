@@ -1,7 +1,6 @@
 #include "utils.h"
 #include <iostream>
 #include <vector>
-#include "vulkan/vulkan.h"
 #include "define.h"
 
 JNIEnv *cur_env;
@@ -29,20 +28,6 @@ void java_log(const char *msg, int level)
     cur_env->DeleteLocalRef(jmsg);
 }
 
-GLFWglproc java_glfwGetProcAddress(const char *name)
-{
-    jclass cpp_helper = cur_env->FindClass(JAVA_CPPHELPER_CLASS);
-    jmethodID methodID = cur_env->GetStaticMethodID(cpp_helper, "CPP_glfwGetProcAddress", "(Ljava/lang/String;)J");
-    if (methodID)
-    {
-        jstring jmsg = cur_env->NewStringUTF(name);
-        jlong jlongValue = cur_env->CallStaticLongMethod(cpp_helper, methodID, jmsg);
-        GLFWglproc glfwProc = reinterpret_cast<GLFWglproc>(jlongValue);
-        cur_env->DeleteLocalRef(jmsg);
-        return glfwProc;
-    }
-    return 0;
-}
 
 bool ToCppBool(jboolean value)
 {

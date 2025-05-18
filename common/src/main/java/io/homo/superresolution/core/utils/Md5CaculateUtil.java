@@ -44,7 +44,10 @@ public class Md5CaculateUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(getMD5(new File("I:/super_resolution_moddev/superresolution/common/src/main/resources/lib/libSuperResolution.dll")));
+        System.out.println(getMD5(new File("I:/super_resolution_moddev/superresolution/common/src/main/resources/lib/libSuperResolution+win64.dll")));
+        System.out.println(getMD5(new File("I:/super_resolution_moddev/superresolution/common/src/main/resources/lib/libSuperResolution+android.so")));
+        System.out.println(getMD5(new File("I:/super_resolution_moddev/superresolution/common/src/main/resources/lib/libSuperResolution+linux64.so")));
+
 
     }
 }
