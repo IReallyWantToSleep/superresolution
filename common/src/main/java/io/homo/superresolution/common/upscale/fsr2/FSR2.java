@@ -3,6 +3,7 @@ package io.homo.superresolution.common.upscale.fsr2;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Vec2;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
@@ -17,6 +18,7 @@ import org.joml.Matrix4f;
 
 public class FSR2 extends AbstractAlgorithm {
     public Fsr2Context fsr2Context;
+    private GlFrameBuffer outputFbo;
     private GlTexture2D output;
 
     public FSR2() {
@@ -27,6 +29,8 @@ public class FSR2 extends AbstractAlgorithm {
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
         this.output.resize(width, height);
+        outputFbo.resizeFrameBuffer(width, height);
+
         fsr2Context.resize(new Fsr2Dimensions(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
@@ -42,6 +46,12 @@ public class FSR2 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
+        );
+        outputFbo = GlFrameBuffer.create(
+                output,
+                null,
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
         );
         fsr2Context = new Fsr2Context(
                 Fsr2ContextConfig.create(
@@ -66,13 +76,10 @@ public class FSR2 extends AbstractAlgorithm {
         return dispatchFSR2(dispatchResource);
     }
 
-    @Override
-    public void blitToScreen(int width, int height) {
-        GlTexture2D.blitToScreen(output.getWidth(), output.getHeight(), width, height, this.output.getTextureId());
-    }
 
     public void destroy() {
         this.output.destroy();
+        outputFbo.destroy();
         fsr2Context.destroy();
     }
 
@@ -112,7 +119,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        return TextureFrameBufferAdapter.of(output);
+        return outputFbo;
     }
 
 

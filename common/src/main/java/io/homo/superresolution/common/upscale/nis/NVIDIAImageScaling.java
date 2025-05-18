@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale.nis;
 
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
 import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
@@ -21,6 +22,7 @@ import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
@@ -43,6 +45,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     private ITexture coefScaler;
     private ITexture coefUSM;
     private GlUniformBuffer<NVIDIAImageScalingConfig> uniformBuffer;
+    private GlFrameBuffer outputFbo;
 
     @Override
     public void init() {
@@ -53,6 +56,12 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
+        );
+        outputFbo = GlFrameBuffer.create(
+                output,
+                null,
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
         );
         stbi_set_flip_vertically_on_load(true);
 
@@ -115,7 +124,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
 
         }
         stbi_set_flip_vertically_on_load(false);
-        
+
         scaleShader = GlComputeShaderProgram.create()
                 .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/nis/nis_scaler.comp.glsl", true))
                 .setShaderName("nis_scaler")
@@ -205,17 +214,6 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     }
 
     @Override
-    public void blitToScreen(int width, int height) {
-        GlTexture2D.blitToScreen(
-                width,
-                height,
-                width,
-                height,
-                output.getTextureId()
-        );
-    }
-
-    @Override
     public void destroy() {
         output.destroy();
         scaleShader.destroy();
@@ -223,6 +221,7 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         coefUSM.destroy();
         coefScaler.destroy();
         uniformBuffer.delete();
+        outputFbo.destroy();
     }
 
     @Override
@@ -231,10 +230,19 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
+        outputFbo.resizeFrameBuffer(
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
+        );
     }
 
     @Override
     public int getOutputTextureId() {
         return output.getTextureId();
+    }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputFbo;
     }
 }

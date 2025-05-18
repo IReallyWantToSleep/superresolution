@@ -203,9 +203,7 @@ public class ClothConfig {
                     if (Platform.currentPlatform.isDevelopmentEnvironment() || Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID).contains("dev")) {
                         return Optional.empty();
                     }
-                    if (List.of(AlgorithmDescriptions.NIS, AlgorithmDescriptions.FSR2).contains(algorithmType)) {
-                        return Optional.of(Component.literal("当前环境不支持该算法"));
-                    } else if (Objects.equals(AlgorithmDescriptions.FSR2, algorithmType) && Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+                    if (!((AlgorithmDescription<?>) algorithmType).getRequirement().check().support()) {
                         return Optional.of(Component.literal("当前环境不支持该算法"));
                     }
                     return Optional.empty();

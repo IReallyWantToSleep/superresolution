@@ -48,7 +48,7 @@
         "modmenu_version": "14.0.0-rc.2"
     },
     "neoforge": {
-        "loader_version": "21.5.2-beta",
+        "loader_version": "21.5.66-beta",
         "dependencies": {
             "modrinth": [
                 {

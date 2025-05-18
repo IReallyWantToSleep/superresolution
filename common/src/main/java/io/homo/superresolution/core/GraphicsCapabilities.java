@@ -1,5 +1,6 @@
 package io.homo.superresolution.core;
 
+
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.interop.GlVkInteropManager;
@@ -8,6 +9,8 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK11;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.IntBuffer;
 import java.util.*;
@@ -17,6 +20,8 @@ import java.util.stream.IntStream;
 import static org.lwjgl.opengl.GL43.*;
 
 public class GraphicsCapabilities {
+    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-GraphicsCapabilities");
+
     private static final ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
     private static Set<String> glExtensions = null;
     private static GpuVendor gpuVendor = null;
@@ -57,6 +62,7 @@ public class GraphicsCapabilities {
     }
 
     public static void detectSupportedVersions() {
+        glVersions.clear();
         int[][] versionMatrix = {
                 {4, 6},
                 {4, 5},
@@ -80,10 +86,10 @@ public class GraphicsCapabilities {
                 int actualMinor = GLFW.glfwGetWindowAttrib(testWindow, GLFW.GLFW_CONTEXT_VERSION_MINOR);
                 glVersions.add(Pair.of(actualMajor, actualMinor));
                 GLFW.glfwDestroyWindow(testWindow);
-                SuperResolution.LOGGER.info("添加可用OpenGL版本 {}.{}", actualMajor, actualMinor);
+                LOGGER.info("添加可用OpenGL版本 {}.{}", actualMajor, actualMinor);
             }
         }
-        SuperResolution.LOGGER.info("最高OpenGL版本 {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
+        LOGGER.info("最高OpenGL版本 {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
     }
 
     public static Pair<Integer, Integer> getHighestOpenGLVersion() {

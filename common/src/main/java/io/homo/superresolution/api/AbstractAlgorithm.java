@@ -35,14 +35,6 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     public abstract boolean dispatch(DispatchResource dispatchResource);
 
     /**
-     * 将结果绘制到屏幕上。
-     *
-     * @param width  绘制区域的宽度(游戏屏幕宽度)。
-     * @param height 绘制区域的高度(游戏屏幕高度)。
-     */
-    public abstract void blitToScreen(int width, int height);
-
-    /**
      * 销毁算法，释放资源。
      */
     @Override
