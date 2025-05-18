@@ -47,3 +47,34 @@ tasks.register('copyNativeLib', Copy) {
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
+
+tasks.register('printLibMd5') {
+    dependsOn copyNativeLib
+    doLast {
+        def libDir = file("${projectDir}/../common/src/main/resources/lib/")
+        if (!libDir.exists()) {
+            println "目录不存在: ${libDir.path}"
+            return
+        }
+        libDir.eachFile { file ->
+            if (file.isFile() && file.name.startsWith("libSuperResolution")) {
+                def md5 = calculateMD5(file)
+                println "${file.name}: ${md5}"
+            }
+        }
+    }
+}
+
+def calculateMD5(File file) {
+    def md = java.security.MessageDigest.getInstance('MD5')
+    file.withInputStream { is ->
+        byte[] buffer = new byte[8192]
+        int read
+        while ((read = is.read(buffer)) != -1) {
+            md.update(buffer, 0, read)
+        }
+    }
+    return md.digest().encodeHex().toString()
+}
+
+copyNativeLib.finalizedBy printLibMd5

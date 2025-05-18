@@ -11,7 +11,7 @@
 # 支持的算法
 
 * FSR1
-* FSR2 (正在开发)
+* FSR2 (从C++移植到Java，可能与原版有略微不同)
 * SGSR2
 * SGSR1
 * NIS (正在开发)
@@ -29,7 +29,7 @@
 ## 系统要求
 
 * Windows
-* Linux (即将去除)
+* Linux ~~(即将去除)~~
 * 不支持MacOS系统
 * 不支持在移动设备上运行
 
@@ -47,7 +47,7 @@
 # 构建
 
 首先编译C++依赖库，运行`native:buildNative`任务即可
-> 注：需要MinGW和Cmake
+> 注：Windows平台需要MinGW和Cmake，其它要求看[这里](native/README.md)
 >
 打开你的终端，运行，然后build_jars就是模组文件
 
@@ -59,14 +59,10 @@ python script/buildAll.py
 
 # 可能会有的功能
 
-* 可能 _(注意是可能)_ 用Java重写FSR2(FSR3)的部分代码
+* 可能 _(注意是可能)_ 用Java重写FSR2(FSR3)的部分代码，目前FSR2部分完成，基本可用，但部分功能由于不需要所以没有移植
 * 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
 
 ---
-
-# 注意
-
-* 此项目正准备在Java上实现FSR2后端，项目的任何部分都可能被重构。
 
 ## 星星历史图
 

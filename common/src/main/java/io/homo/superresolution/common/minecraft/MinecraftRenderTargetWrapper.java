@@ -96,12 +96,12 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         #if MC_VER > MC_1_21_4
         return switch (attachmentType) {
             case COLOR -> MinecraftRenderTargetUtil.getColorTexId(renderTarget);
-            case DEPTH, DEPTH_STENCIL -> MinecraftRenderTargetUtil.getDepthTexId(renderTarget);
+            case ANY_DEPTH, DEPTH, DEPTH_STENCIL -> MinecraftRenderTargetUtil.getDepthTexId(renderTarget);
         };
         #else
         return switch (attachmentType) {
             case COLOR -> renderTarget.getColorTextureId();
-            case DEPTH, DEPTH_STENCIL -> renderTarget.getDepthTextureId();
+            case ANY_DEPTH ,DEPTH, DEPTH_STENCIL -> renderTarget.getDepthTextureId();
         };
         #endif
 
@@ -111,7 +111,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
         return switch (attachmentType) {
             case COLOR -> FrameBufferTextureAdapter.ofColor(this);
-            case DEPTH, DEPTH_STENCIL -> FrameBufferTextureAdapter.ofDepth(this);
+            case ANY_DEPTH, DEPTH, DEPTH_STENCIL -> FrameBufferTextureAdapter.ofDepth(this);
         };
     }
 

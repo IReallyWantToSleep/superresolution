@@ -147,3 +147,5 @@ build_jars
 .vscode
 /native/cpp/bin/
 /common/src/main/resources/lib/libSuperResolution.*
+*/bin/*
+/bin

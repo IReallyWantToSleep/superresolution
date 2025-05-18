@@ -1,5 +1,5 @@
 {
-    "skip_build": true,
+    "skip_build": false,
     "common": {
         "java_version": 21,
         "minecraft_version": "1.21.5",
@@ -27,12 +27,20 @@
         "dependencies": {
             "modrinth": [
                 {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.4-1.8.3+fabric"
+                },
+                {
                     "name": "iris",
                     "version": "1.8.10+1.21.5-fabric"
                 },
                 {
                     "name": "sodium",
                     "version": "mc1.21.5-0.6.12-fabric"
+                },
+                {
+                    "name": "sodium-options-api",
+                    "version": "fabric-1.21.5-1.0.11"
                 }
             ],
             "local": []
@@ -50,9 +58,45 @@
                 {
                     "name": "sodium",
                     "version": "mc1.21.5-0.6.12-neoforge"
+                },
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.4-1.8.3+neoforge"
+                },
+                {
+                    "name": "sodium-options-api",
+                    "version": "neoforge-1.21.5-1.0.11"
                 }
             ],
             "local": [
+                {
+                    "name": "fabric-api-base-0.4.42+d1308ded19",
+                    "isMod": true
+                },
+                {
+                    "name": "fabric-block-view-api-v2-1.0.10+9afaaf8c19",
+                    "isMod": true
+                },
+                {
+                    "name": "fabric-renderer-api-v1-6.0.0",
+                    "isMod": true
+                },
+                {
+                    "name": "fabric-rendering-data-attachment-v1-0.3.48+73761d2e19",
+                    "isMod": true
+                },
+                {
+                    "name": "net.caffeinemc.sodium-neoforge-0.6.12+mc1.21.5-service",
+                    "isMod": true
+                },
+                {
+                    "name": "antlr4-runtime-4.13.1",
+                    "isMod": false
+                },
+                {
+                    "name": "glsl-transformer-2.0.1",
+                    "isMod": false
+                }
             ]
         }
     }

@@ -9,6 +9,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
@@ -28,13 +29,13 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.function.Consumer;
 
 public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
-    private static final Minecraft minecraft = Minecraft.getInstance();
     private static final Requirement commonRequirement = Requirement.nothing()
             .glMajorVersion(4).glMinorVersion(3)
             .requiredGlExtension("GL_ARB_gl_spirv");
@@ -50,6 +51,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static int framebufferHeight = 0;
     public static int cachedWidth;
     public static int cachedHeight;
+    private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
     public final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
@@ -59,6 +61,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     );
 
     public SuperResolution() {
+        if (minecraft == null) minecraft = Minecraft.getInstance();
         KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
             while (OPENGUI_KEYMAPPING.consumeClick()) {
@@ -70,15 +73,19 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void preInit() {
+        if (minecraft == null) minecraft = Minecraft.getInstance();
+        File gameDir = Platform.currentPlatform.getGameFolder().toFile();
         if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
-        if (!NativeLibManager.check(minecraft.gameDirectory.getAbsolutePath())) {
-            NativeLibManager.extract(minecraft.gameDirectory.getAbsolutePath());
+        if (!NativeLibManager.check(gameDir.getAbsolutePath())) {
+            NativeLibManager.extract(gameDir.getAbsolutePath());
         }
-        NativeLibManager.load(minecraft.gameDirectory.getAbsolutePath());
+        NativeLibManager.load(gameDir.getAbsolutePath());
         GlslangShaderCompiler.init();
-        interopManager = new GlVkInteropManager();
-        initVulkan();
+        if (new OS().type == OSType.WINDOWS) {
+            interopManager = new GlVkInteropManager();
+            initVulkan();
+        }
 
         isPreInit = true;
     }
@@ -100,6 +107,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void check() {
+        if (minecraft == null) minecraft = Minecraft.getInstance();
+
         if (!commonRequirement.check().glVersionMet()) {
             MessageBox.createError(
                     Component.translatable("superresolution.common_requirement.not_support.version").getString().formatted(
@@ -126,23 +135,29 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void initRendering() {
-        if (!isPreInit) return;
-        MinecraftRenderHandle.init();
-        AlgorithmManager.init();
-        algorithmDescription = Config.getUpscaleAlgo();
+        try (GlState ignored = new GlState()) {
+            if (minecraft == null) minecraft = Minecraft.getInstance();
+            if (!isPreInit) return;
+            MinecraftRenderHandle.init();
+            AlgorithmManager.init();
+            algorithmDescription = Config.getUpscaleAlgo();
+        }
     }
 
     public static boolean createAlgo() {
-        if (!isPreInit) return false;
-        defaultAlgorithm.init();
-        algorithmDescription = Config.getUpscaleAlgo();
-        try {
-            currentAlgorithm = algorithmDescription.createNewInstance();
-            SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
-            return true;
-        } catch (Exception e) {
-            SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
-            e.printStackTrace();
+        try (GlState ignored = new GlState()) {
+            if (minecraft == null) minecraft = Minecraft.getInstance();
+            if (!isPreInit) return false;
+            defaultAlgorithm.init();
+            algorithmDescription = Config.getUpscaleAlgo();
+            try {
+                currentAlgorithm = algorithmDescription.createNewInstance();
+                SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
+                return true;
+            } catch (Exception e) {
+                SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
+                e.printStackTrace();
+            }
         }
         return false;
     }
@@ -165,6 +180,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void init() {
+        if (minecraft == null) minecraft = Minecraft.getInstance();
+
         if (isInit)
             return;
         instance = this;

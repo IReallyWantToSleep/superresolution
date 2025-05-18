@@ -8,10 +8,13 @@ import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
 #if MC_VER > MC_1_21_4
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
-import io.homo.superresolution.common.render.impl.texture.GpuTextureAdapter;
-import io.homo.superresolution.common.render.impl.texture.ITexture;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.impl.texture.ITexture;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
+
 
 public class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IFrameBuffer frameBuffer;
@@ -75,7 +78,7 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public void blitToScreen() {
         updateState();
-        BlitRenderer.blitToScreen(
+        GlBlitRenderer.blitToScreen(
                 frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
                 this.viewWidth,
                 this.viewHeight

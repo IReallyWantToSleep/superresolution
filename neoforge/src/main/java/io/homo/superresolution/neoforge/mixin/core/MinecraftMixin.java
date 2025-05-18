@@ -1,6 +1,5 @@
 package io.homo.superresolution.neoforge.mixin.core;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.neoforge.SuperResolutionNeoForge;
 import net.minecraft.client.Minecraft;

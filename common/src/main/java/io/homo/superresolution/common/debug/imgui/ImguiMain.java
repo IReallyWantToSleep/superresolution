@@ -5,6 +5,7 @@ import imgui.ImGuiIO;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.core.impl.Destroyable;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
@@ -43,7 +44,7 @@ public class ImguiMain implements Destroyable {
     }
 
     public void render() {
-        if (!initDone) return;
+        if (!initDone || !Config.isEnableImgui()) return;
         imGuiGlfw.newFrame();
         imGuiGl3.newFrame();
         ImGui.newFrame();

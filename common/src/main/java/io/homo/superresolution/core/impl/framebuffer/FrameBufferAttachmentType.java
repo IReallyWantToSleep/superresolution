@@ -2,6 +2,7 @@ package io.homo.superresolution.core.impl.framebuffer;
 
 public enum FrameBufferAttachmentType {
     COLOR(),
+    ANY_DEPTH(),
     DEPTH(),
     DEPTH_STENCIL();
 

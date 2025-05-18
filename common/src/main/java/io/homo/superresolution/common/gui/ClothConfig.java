@@ -35,6 +35,7 @@ import net.minecraft.network.chat.Style;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -452,7 +453,7 @@ public class ClothConfig {
 
     private static ClickEvent createURLClickEvent(String url) {
         #if MC_VER > MC_1_21_4
-        return new ClickEvent.OpenUrl(URI.create(url));
+        return new ClickEvent.OpenUrl(java.net.URI.create(url));
         #else
         return new ClickEvent(ClickEvent.Action.OPEN_URL, url);
         #endif

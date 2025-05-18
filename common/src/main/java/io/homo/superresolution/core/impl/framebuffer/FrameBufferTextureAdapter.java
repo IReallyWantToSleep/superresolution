@@ -17,7 +17,7 @@ public class FrameBufferTextureAdapter implements ITexture {
     }
 
     public static FrameBufferTextureAdapter ofDepth(IFrameBuffer frameBuffer) {
-        return of(frameBuffer, FrameBufferAttachmentType.DEPTH);
+        return of(frameBuffer, FrameBufferAttachmentType.ANY_DEPTH);
     }
 
     public static FrameBufferTextureAdapter of(IFrameBuffer frameBuffer, FrameBufferAttachmentType attachmentType) {

@@ -112,7 +112,6 @@ FfxFloat32x4 SpdReduce4(FfxFloat32x4 v0, FfxFloat32x4 v1, FfxFloat32x4 v2, FfxFl
 
 // define fetch and store functions Packed
 #if FFX_HALF
-#error Callback must be implemented
 
 FFX_GROUPSHARED FfxFloat16x2 spdIntermediateRG[16][16];
 FFX_GROUPSHARED FfxFloat16x2 spdIntermediateBA[16][16];
