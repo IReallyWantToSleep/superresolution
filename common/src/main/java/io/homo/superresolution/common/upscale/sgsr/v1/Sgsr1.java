@@ -66,10 +66,10 @@ public class Sgsr1 extends AbstractAlgorithm {
         pipeline.scheduleJobs();
         sgsrShader.use();
         sgsrShader.uniforms()
-                .strictVec2("renderSize").value(dispatchResource.renderWidth(), dispatchResource.renderHeight())
-                .strictVec2("renderSizeRcp").value(1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight())
-                .strictFloat("EdgeThreshold").value(8f / 255f)
-                .strictFloat("EdgeSharpness").value(2f);
+                .safeVec2("renderSize").value(dispatchResource.renderWidth(), dispatchResource.renderHeight())
+                .safeVec2("renderSizeRcp").value(1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight())
+                .safeFloat("EdgeThreshold").value(8f / 255f)
+                .safeFloat("EdgeSharpness").value(2f);
         pipeline.executeJobs();
         sgsrShader.clear();
         return false;

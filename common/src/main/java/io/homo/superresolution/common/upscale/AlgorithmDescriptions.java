@@ -43,9 +43,6 @@ public class AlgorithmDescriptions {
                             .requiredGlExtension("GL_KHR_shader_subgroup")
                             .glMajorVersion(4)
                             .glMinorVersion(5)
-                            .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
-                            .addSupportedOS(new OS(Arch.X86_64, OSType.LINUX))
-                            .developmentEnvironment(true)
             );
     public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
             new AlgorithmDescription<>(
