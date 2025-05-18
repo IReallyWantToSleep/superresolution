@@ -142,6 +142,7 @@ build_jars
 /forge/bin
 /neoforge/bin
 /common/bin
+/native/bin
 
 .vscode
 /native/cpp/bin/

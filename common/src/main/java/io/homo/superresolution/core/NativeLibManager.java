@@ -1,5 +1,8 @@
 package io.homo.superresolution.core;
 
+import io.homo.superresolution.common.platform.Arch;
+import io.homo.superresolution.common.platform.OS;
+import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
 import net.minecraft.SharedConstants;
 import org.slf4j.Logger;
@@ -22,11 +25,15 @@ public class NativeLibManager {
     private static boolean nativeApiAvailable;
 
     static {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("linux")) {
-            libs.add(new NativeLib("libSuperResolution", "-", 1));
-        } else if (os.contains("windows")) {
-            libs.add(new NativeLib("libSuperResolution", "982c6f4df5e19b8594a15ad22dd43fd3", 1));
+        OS os = new OS();
+        if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
+            libs.add(new NativeLib("libSuperResolution+win64", "cce9e677e647afbc24a25d92952dba7c", 1));
+        }
+        if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
+            libs.add(new NativeLib("libSuperResolution+android", "d0b33be24e664881e4b66b9dae1f56b1", 1));
+        }
+        if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
+            libs.add(new NativeLib("libSuperResolution+linux64", "c2c38eede35a0814f9b490979d491b97", 1));
         }
     }
 
@@ -145,12 +152,10 @@ public class NativeLibManager {
 
         protected static String formatLibName(String name) {
             String os = System.getProperty("os.name").toLowerCase();
-            if (os.contains("linux")) {
-                return name + ".so";
-            } else if (os.contains("windows")) {
+            if (os.contains("windows")) {
                 return name + ".dll";
             }
-            return null;
+            return name + ".so";
         }
     }
 }

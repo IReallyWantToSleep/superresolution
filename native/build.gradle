@@ -46,10 +46,4 @@ tasks.register('copyNativeLib', Copy) {
         exclude "**/*.a"
     }
     into "${projectDir}/../common/src/main/resources/lib/"
-
-    doFirst {
-        if (!file("${projectDir}/cpp/bin/libSuperResolution.dll").exists()) {
-            throw new GradleException("未发现库文件")
-        }
-    }
 }
