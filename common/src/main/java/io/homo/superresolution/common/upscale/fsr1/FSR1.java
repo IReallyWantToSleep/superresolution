@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
 import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
@@ -11,6 +12,7 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.gl.pipeline.*;
 import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
@@ -18,12 +20,14 @@ import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import org.lwjgl.opengl.GL46;
 
 public class FSR1 extends AbstractAlgorithm {
     private GlComputeShaderProgram fsr1EASUShader;
     private GlComputeShaderProgram fsr1RCASShader;
     private GlPipeline fsrUpscalePipeline;
     private GlTexture2D fsr1TempTexture;
+    private GlFrameBuffer outputFbo;
     private GlTexture2D output;
 
     public static int checkFP16Support() {
@@ -73,6 +77,12 @@ public class FSR1 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
                 TextureFormat.RGBA8
+        );
+        outputFbo = GlFrameBuffer.create(
+                output,
+                null,
+                MinecraftRenderHandle.getScreenWidth(),
+                MinecraftRenderHandle.getScreenHeight()
         );
         fsrUpscalePipeline.addJob("fsr1_easu",
                 GlPipelineJobBuilders.compute(fsr1EASUShader)
@@ -150,10 +160,6 @@ public class FSR1 extends AbstractAlgorithm {
                 .safeFloat("sharpness").value(Config.getSharpness());
     }
 
-    @Override
-    public void blitToScreen(int width, int height) {
-        GlTexture2D.blitToScreen(output.getWidth(), output.getHeight(), width, height, this.output.getTextureId());
-    }
 
     @Override
     public void destroy() {
@@ -161,12 +167,14 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1TempTexture.destroy();
         fsr1EASUShader.destroy();
         fsr1RCASShader.destroy();
+        outputFbo.destroy();
     }
 
     @Override
     public void resize(int width, int height) {
         fsr1TempTexture.resize(width, height);
         output.resize(width, height);
+        outputFbo.resizeFrameBuffer(width, height);
     }
 
     @Override
@@ -181,6 +189,6 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        return TextureFrameBufferAdapter.of(output);
+        return outputFbo;
     }
 }

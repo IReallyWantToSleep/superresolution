@@ -1,6 +1,6 @@
 package io.homo.superresolution.neoforge.mixin.compat.iris;
 
-import com.mojang.blaze3d.textures.GpuTexture;
+
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
@@ -53,7 +53,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     }
     #else
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
-    private void checkFboCompleteness(GpuTexture texture, CallbackInfo ci) {
+    private void checkFboCompleteness(com.mojang.blaze3d.textures.GpuTexture texture, CallbackInfo ci) {
         int status = getStatus();
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             throw new RuntimeException(String.valueOf(status));
@@ -61,7 +61,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     }
 
     @Inject(method = "addDepthAttachment", at = @At("HEAD"))
-    public void addDepthAttachment(GpuTexture texture, CallbackInfo ci) {
+    public void addDepthAttachment(com.mojang.blaze3d.textures.GpuTexture texture, CallbackInfo ci) {
         if (super_resolution$currentDepthAttachmentType != 0) {
             IrisRenderSystem.framebufferTexture2D(
                     getGlId(),

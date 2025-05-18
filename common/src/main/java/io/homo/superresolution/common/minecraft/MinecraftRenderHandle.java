@@ -22,6 +22,10 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL44;
+import org.lwjgl.opengl.GL45;
+import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
@@ -218,9 +222,14 @@ public class MinecraftRenderHandle {
                 }
                 SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
             }
-            SuperResolution.getCurrentAlgorithm().blitToScreen(
-                    MinecraftRenderHandle.getScreenWidth(),
-                    MinecraftRenderHandle.getScreenHeight()
+            IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+            GL45.glBlitNamedFramebuffer(
+                    outFbo.getFrameBufferId(),
+                    MinecraftRenderHandle.getOriginRenderTarget().getFrameBufferId(),
+                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
+                    0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
+                    GL46.GL_COLOR_BUFFER_BIT,
+                    GL46.GL_NEAREST
             );
 
             if (needCaptureUpscale) {
@@ -241,6 +250,8 @@ public class MinecraftRenderHandle {
                 RenderDoc.renderdoc.EndFrameCapture.call(null, null);
             }
         }
+
+        getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE);
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {

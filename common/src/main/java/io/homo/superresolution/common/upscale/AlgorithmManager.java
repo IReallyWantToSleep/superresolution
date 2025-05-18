@@ -80,8 +80,12 @@ public class AlgorithmManager {
         return new DispatchResource(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
+                new Vec2(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
+                new Vec2(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
+
                 MinecraftRenderHandle.getFrameCount(),
                 MinecraftRenderHandle.frameTime,
                 (float) param.verticalFov,
@@ -92,13 +96,13 @@ public class AlgorithmManager {
                 param.currentProjectionMatrix,
                 param.currentModelViewProjectionMatrix,
                 param.currentViewMatrix,
+
                 param.lastModelViewMatrix,
                 param.lastProjectionMatrix,
                 param.lastModelViewProjectionMatrix,
                 param.lastViewMatrix,
-                (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer(),
-                new Vec2(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
-                new Vec2(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+
+                (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer()
         );
     }
 

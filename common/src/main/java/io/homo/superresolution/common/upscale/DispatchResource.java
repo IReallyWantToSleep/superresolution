@@ -7,12 +7,18 @@ import org.joml.Matrix4f;
 public record DispatchResource(
         int renderWidth,
         int renderHeight,
+        Vec2 renderSize,
+
         int screenWidth,
         int screenHeight,
+        Vec2 screenSize,
+        
         int frameCount,
         float frameTimeDelta,
+
         float verticalFov,
         float horizontalFov,
+
         float cameraNear,
         float cameraFar,
 
@@ -20,15 +26,12 @@ public record DispatchResource(
         Matrix4f projectionMatrix,
         Matrix4f modelViewProjectionMatrix,
         Matrix4f viewMatrix,
+
         Matrix4f lastModelViewMatrix,
         Matrix4f lastProjectionMatrix,
         Matrix4f lastModelViewProjectionMatrix,
         Matrix4f lastViewMatrix,
-        GlFrameBuffer motionVectors,
 
-        Vec2 renderSize,
-        Vec2 screenSize
-
-
+        GlFrameBuffer motionVectors
 ) {
 }

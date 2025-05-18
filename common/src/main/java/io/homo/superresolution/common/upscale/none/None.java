@@ -5,6 +5,7 @@ import io.homo.superresolution.core.gl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 
 public class None extends AbstractAlgorithm {
     @Override
@@ -17,18 +18,7 @@ public class None extends AbstractAlgorithm {
     public boolean dispatch(DispatchResource dispatchResource) {
         return true;
     }
-
-    @Override
-    public void blitToScreen(int width, int height) {
-        MinecraftRenderHandle.callOnRenderTarget(frameBuffer -> GlTexture2D.blitToScreen(
-                frameBuffer.getWidth(),
-                frameBuffer.getHeight(),
-                width,
-                height,
-                frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR)
-        ));
-    }
-
+    
     public void resize(int width, int height) {
     }
 
@@ -41,5 +31,15 @@ public class None extends AbstractAlgorithm {
 
     public int getOutputTextureId() {
         return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.COLOR);
+    }
+
+    @Override
+    public IFrameBuffer getInputFrameBuffer() {
+        return MinecraftRenderHandle.getRenderTarget();
+    }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return MinecraftRenderHandle.getRenderTarget();
     }
 }
