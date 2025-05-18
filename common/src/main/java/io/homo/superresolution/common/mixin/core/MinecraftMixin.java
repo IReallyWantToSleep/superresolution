@@ -2,7 +2,10 @@ package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -19,6 +22,9 @@ public class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
+        #if MC_VER > MC_1_21_4
+        GL11.glViewport(0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        #endif
         PerformanceInfo.begin("runTick");
     }
 

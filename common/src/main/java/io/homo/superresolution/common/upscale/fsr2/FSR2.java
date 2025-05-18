@@ -83,7 +83,11 @@ public class FSR2 extends AbstractAlgorithm {
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
         dispatchDescription.setColor(this.input.getTexture(FrameBufferAttachmentType.COLOR));
-        dispatchDescription.setDepth(this.input.getTexture(FrameBufferAttachmentType.DEPTH));
+        dispatchDescription.setDepth(
+                this.input.getTexture(FrameBufferAttachmentType.DEPTH) == null ?
+                        this.input.getTexture(FrameBufferAttachmentType.DEPTH_STENCIL) :
+                        this.input.getTexture(FrameBufferAttachmentType.DEPTH)
+        );
         dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.COLOR));
         dispatchDescription.setOutput(this.output);
         dispatchDescription.setJitterOffset(new Vec2(0));

@@ -12,7 +12,7 @@ import java.util.Optional;
 
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 
-#if MC_VER != MC_1_21_5
+#if MC_VER != 1
 import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
 import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.TabFrame;
 

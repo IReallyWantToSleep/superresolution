@@ -148,6 +148,9 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
             case COLOR -> colorAttachment != null ? colorAttachment.texture.getTextureId() : -1;
             case DEPTH -> depthAttachment != null ? depthAttachment.texture.getTextureId() : -1;
             case DEPTH_STENCIL -> depthStencilAttachment != null ? depthStencilAttachment.texture.getTextureId() : -1;
+            case ANY_DEPTH -> depthStencilAttachment != null ?
+                    depthStencilAttachment.texture.getTextureId() :
+                    depthAttachment != null ? depthAttachment.texture.getTextureId() : -1;
         };
     }
 
@@ -157,6 +160,9 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
             case COLOR -> colorAttachment != null ? colorAttachment.texture : null;
             case DEPTH -> depthAttachment != null ? depthAttachment.texture : null;
             case DEPTH_STENCIL -> depthStencilAttachment != null ? depthStencilAttachment.texture : null;
+            case ANY_DEPTH -> depthStencilAttachment != null ?
+                    depthStencilAttachment.texture :
+                    depthAttachment != null ? depthAttachment.texture : null;
         };
     }
 

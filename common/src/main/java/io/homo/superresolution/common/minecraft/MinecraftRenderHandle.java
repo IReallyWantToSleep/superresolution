@@ -11,9 +11,11 @@ import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.GlStates;
+import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
+import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.renderdoc.RenderDoc;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -70,9 +72,9 @@ public class MinecraftRenderHandle {
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
         #if MC_VER > MC_1_21_4
-        renderTarget = GlFrameBuffer.create(
-                TextureFormat.RGBA8,
-                TextureFormat.DEPTH24_STENCIL8,
+        renderTarget = io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer.create(
+                io.homo.superresolution.core.impl.texture.TextureFormat.RGBA8,
+                io.homo.superresolution.core.impl.texture.TextureFormat.DEPTH24_STENCIL8,
                 getRenderWidth(),
                 getRenderHeight()
         );
@@ -189,7 +191,7 @@ public class MinecraftRenderHandle {
         frameCount++;
 
         #if MC_VER > MC_1_21_4
-        ((GlTexture) getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR)).copyFromTex(
+        ((io.homo.superresolution.core.gl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR)).copyFromTex(
                 ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
         );
         getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());
@@ -249,7 +251,7 @@ public class MinecraftRenderHandle {
     }
 
     public static float getCurrentScaleFactor() {
-        return isRenderingWorld ? getScaleFactor() : 1;
+        return isRenderingWorld && minecraft.level != null ? getScaleFactor() : 1;
     }
 
     public static float getScaleFactor() {

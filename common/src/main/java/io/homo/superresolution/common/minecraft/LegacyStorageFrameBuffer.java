@@ -163,7 +163,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
         return switch (attachmentType) {
             case COLOR -> attachmentType.getIndex() == 0 ? this.colorTextureId : this.colorAttachment1;
-            case DEPTH -> this.depthBufferId;
+            case ANY_DEPTH, DEPTH -> this.depthBufferId;
             case DEPTH_STENCIL -> stencilEnabled ? this.depthBufferId : -1;
         };
     }
