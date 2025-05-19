@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.gl;
 
 import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.core.gl.dsa.GL45DirectStateAccessImpl;
+import io.homo.superresolution.core.gl.dsa.IGlDirectStateAccess;
 import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.opengl.*;
 
@@ -11,6 +13,8 @@ import java.nio.IntBuffer;
 import static io.homo.superresolution.core.gl.GlConst.*;
 
 public class Gl {
+    public static final IGlDirectStateAccess DSA = new GL45DirectStateAccessImpl();
+
     public static int[] getVersion() {
         return new int[]{glGetInteger(GL_MAJOR_VERSION), glGetInteger(GL_MINOR_VERSION)};
     }
