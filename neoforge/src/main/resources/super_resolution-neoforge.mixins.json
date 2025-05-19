@@ -7,8 +7,6 @@
         "core.MinecraftMixin"
     ],
     "mixins": [
-        "core.NeoForgeDisplayWindowAccessor",
-        "core.NeoForgeDisplayWindowMixin"
     ],
     "injectors": {
         "defaultRequire": 1
