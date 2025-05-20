@@ -68,7 +68,7 @@ public class GlVkInteropManager implements Destroyable {
     }
 
     public static boolean isSupportVulkan() {
-        if (SuperResolution.interopManager != null) {
+        if (SuperResolution.interopManager != null && !Config.isSkipInitVulkan()) {
             if (SuperResolution.interopManager.supportVulkan)
                 return SuperResolution.interopManager.vulkanApp != null;
         }

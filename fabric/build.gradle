@@ -109,9 +109,11 @@ dependencies {
     implementation "org.anarres:jcpp:1.4.14"
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "io.github.douira:glsl-transformer:2.0.1"
+    if (enableVulkan) {
+        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+        include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    }
 
-    implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
 
     include(implementation('com.electronwill.night-config:toml:3.6.0'))
     include(implementation('com.electronwill.night-config:core:3.6.0'))

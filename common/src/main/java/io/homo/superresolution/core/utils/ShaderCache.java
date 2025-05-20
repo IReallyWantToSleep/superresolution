@@ -33,6 +33,10 @@ public class ShaderCache {
     public static final Map<String, ShaderBinary> CACHE = new HashMap<>();
 
     static {
+        createCacheDir();
+    }
+
+    public static void createCacheDir() {
         File cacheDir = CACHE_DIR.toFile();
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
             LOGGER.error("Failed to create shader cache directory: {}", CACHE_DIR);
@@ -40,6 +44,8 @@ public class ShaderCache {
     }
 
     private static String getShaderProgramMd5(AbstractGlShaderProgram shaderProgram) {
+        createCacheDir();
+
         StringBuilder identityBuilder = new StringBuilder();
 
         for (ShaderSource.Type type : ShaderSource.Type.values()) {
@@ -64,6 +70,8 @@ public class ShaderCache {
     }
 
     public static boolean saveProgramBinary(AbstractGlShaderProgram program) {
+        createCacheDir();
+
         String hash = getShaderProgramMd5(program);
         ShaderSource currentSource = null;
         GlslangCompileShaderResult currentSourceResult = null;
@@ -116,6 +124,8 @@ public class ShaderCache {
     }
 
     public static boolean checkProgramBinary(AbstractGlShaderProgram program) {
+        createCacheDir();
+
         String hash = getShaderProgramMd5(program);
         for (ShaderSource.Type type : program.getShaderSources().keySet()) {
             String suffix = getShaderSuffix(type);
@@ -127,6 +137,8 @@ public class ShaderCache {
     }
 
     public static ShaderBinary getShaderBinary(AbstractGlShaderProgram program, ShaderSource.Type type) {
+        createCacheDir();
+
         String hash = getShaderProgramMd5(program);
         String filename = hash + "." + getShaderSuffix(type);
         return loadBinary(filename);
@@ -142,6 +154,8 @@ public class ShaderCache {
 
 
     private static GlslangCompileShaderResult compileShaderToSpirv(String src, String outputPath, EShLanguage stage) {
+        createCacheDir();
+
         GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                 src,
                 outputPath,
@@ -161,6 +175,8 @@ public class ShaderCache {
 
 
     private static ShaderBinary loadBinary(String filename) {
+        createCacheDir();
+        
         Path path = CACHE_DIR.resolve(filename);
         try {
             byte[] data = Files.readAllBytes(path);

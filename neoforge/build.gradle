@@ -82,9 +82,12 @@ dependencies {
     forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
     forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
     forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
-    implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    if (enableVulkan) {
+        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+        forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+        include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    }
+
     implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
         transitive = false
     }
