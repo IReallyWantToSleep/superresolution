@@ -9,8 +9,10 @@ plugins {
 }
 
 ext {
+    enableVulkan = sr_enable_vulkan == "true"
     versionConfig = VersionConfig.loadFromFile(new File("$rootDir/versionConfigs/${minecraft_version}.json"))
 }
+
 
 static int toVerCode(String verStr) {
     int a = Integer.parseInt(verStr.split("\\.")[0])
@@ -30,6 +32,8 @@ def writeDefine() {
         }
     }
     sb.append("MC_VER=" + toVerCode(versionConfig.common.minecraftVersion) + "\n")
+    sb.append("ENABLE_VULKAN=%s\n".formatted(rootProject.enableVulkan ? "1" : "0"))
+    if (rootProject.enableVulkan) println("enableVulkan")
     println("MC_VER=%s -> %s".formatted(versionConfig.common.minecraftVersion, toVerCode(versionConfig.common.minecraftVersion)))
     new File(projectDir.asWritable().absolutePath, "build.properties").text = sb.toString()
 }
@@ -96,11 +100,16 @@ subprojects {
                 force "org.lwjgl:lwjgl-stb:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-jemalloc:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-tinyfd:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion"
+                if (enableVulkan) {
+                    force "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion"
+
+                }
                 force "org.lwjgl:lwjgl-freetype:$versionConfig.common.lwjglVersion"
             }
         }
-        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+        if (enableVulkan) {
+            implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+        }
         implementation "org.lwjgl:lwjgl-glfw:$versionConfig.common.lwjglVersion"
     }
 

@@ -30,6 +30,3 @@ def to_mcmod_api_string(loader: str):
         "neoforge": 13,
     }
     return loader_mapping.get(loader, 0)
-
-
-print(parse_version_string("superresolution-fabric-1.20.1-0.6.2-alpha.1.jar"))

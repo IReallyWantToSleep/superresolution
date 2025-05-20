@@ -37,6 +37,7 @@ def loadConfig() {
 }
 
 loadConfig()
+sr_enable_vulkan = sr_enable_vulkan == "true"
 rootProject.name = 'super_resolution'
 include 'native'
 include 'common'

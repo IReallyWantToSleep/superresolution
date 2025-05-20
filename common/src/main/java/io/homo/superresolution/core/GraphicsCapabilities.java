@@ -162,6 +162,9 @@ public class GraphicsCapabilities {
     }
 
     public static String getVulkanVersionString() {
+        if (!isVulkanSupported()) {
+            return "0.0.0";
+        }
         int[] vkVersion = detectVulkanVersion();
         return vkVersion[0] + "." + vkVersion[1] + "." + vkVersion[2];
     }
