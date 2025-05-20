@@ -1,3 +1,8 @@
+# 0.7.0-alpha.2
+
+* 修正缓存目录创建逻辑
+* 修复issues/58
+
 # 0.7.0-alpha.1
 
 * 现在模组必须需要`GL_ARB_gl_spirv`OpenGL扩展
