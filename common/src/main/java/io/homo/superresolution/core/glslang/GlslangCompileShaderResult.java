@@ -2,17 +2,29 @@ package io.homo.superresolution.core.glslang;
 
 import io.homo.superresolution.core.glslang.enums.GlslangCompileShaderError;
 
+import java.nio.ByteBuffer;
+
 public class GlslangCompileShaderResult {
     private final String sourceCode;
     private final String preprocessedCode;
     private final long spirVDataSize;
-    private final String spirVFilePath;
+    private final ByteBuffer spirvBuffer;
     private final GlslangCompileShaderError error;
     private final String log;
 
-    public GlslangCompileShaderResult(String sourceCode, String preprocessedCode, int error, long spirVDataSize, String spirVFilePath, String log) {
+    public GlslangCompileShaderResult(
+            String sourceCode,
+            String preprocessedCode,
+            int error,
+            long spirVDataSize,
+            ByteBuffer spirvBuffer,
+            String log
+    ) {
         this.sourceCode = sourceCode;
         this.preprocessedCode = preprocessedCode;
+        this.spirVDataSize = spirVDataSize;
+        this.spirvBuffer = spirvBuffer;
+        this.log = log;
         if (error == GlslangCompileShaderError.OK.getValue()) {
             this.error = GlslangCompileShaderError.OK;
         } else if (error == GlslangCompileShaderError.LINK_ERROR.getValue()) {
@@ -24,9 +36,6 @@ public class GlslangCompileShaderResult {
         } else {
             this.error = GlslangCompileShaderError.OK;
         }
-        this.spirVDataSize = spirVDataSize;
-        this.spirVFilePath = spirVFilePath;
-        this.log = log;
     }
 
     public String log() {
@@ -45,8 +54,8 @@ public class GlslangCompileShaderResult {
         return spirVDataSize;
     }
 
-    public String spirVFilePath() {
-        return spirVFilePath;
+    public ByteBuffer spirvBuffer() {
+        return spirvBuffer;
     }
 
     public GlslangCompileShaderError error() {

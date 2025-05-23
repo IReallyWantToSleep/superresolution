@@ -4,4 +4,6 @@
     #include "jni_win64.h"
 #elif defined(ON_ANDROID)
     #include <jni.h>
+#else
+#include "jni_win64.h"
 #endif

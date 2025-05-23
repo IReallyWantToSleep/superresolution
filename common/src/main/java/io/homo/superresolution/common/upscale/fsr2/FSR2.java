@@ -98,6 +98,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.COLOR));
         dispatchDescription.setOutput(this.output);
         dispatchDescription.setJitterOffset(new Vec2(0));
+        dispatchDescription.setExposure(GlTexture2D.create(1, 1, TextureFormat.RGBA8));
         dispatchDescription.setRenderSize(new Vec2(
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight())
@@ -114,6 +115,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
         fsr2Context.dispatch(dispatchDescription);
+        dispatchDescription.exposure().destroy();
         return true;
     }
 

@@ -8,6 +8,7 @@ import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.IDebuggableObject;
 import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.utils.ShaderCache;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL20;
 
 import java.io.IOException;
@@ -23,6 +24,8 @@ import static io.homo.superresolution.common.SuperResolution.LOGGER;
 import static io.homo.superresolution.core.gl.Gl.glSafeObjectLabel;
 import static org.lwjgl.opengl.GL43.*;
 import static org.lwjgl.opengl.GL46.glSpecializeShader;
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
 
 public abstract class AbstractGlShaderProgram implements Destroyable, IDebuggableObject {
     private final Map<String, Integer> uniformLocationCache = new HashMap<>();

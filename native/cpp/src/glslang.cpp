@@ -1,7 +1,6 @@
 #include <glslang/Include/glslang_c_interface.h>
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/Public/ResourceLimits.h>
-
 #include <glslang/SPIRV/GlslangToSpv.h>
 #include "jni_header.h"
 #include "define.h"
@@ -37,31 +36,29 @@ private:
     IncludeResult *handleInclude(const char *headerName, const char *includerName, size_t inclusionDepth, bool isLocal)
     {
         JNIEnv *env = get_env();
+        jclass helperClass = env->FindClass(JAVA_GLSLANG_INCLUDER_HELPER);
         jmethodID method = env->GetStaticMethodID(
-            env->FindClass(JAVA_GLSLANG_INCLUDER_HELPER),
+            helperClass,
             isLocal ? "cppIncludeLocal" : "cppIncludeSystem",
             "(Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;");
-
         jstring jHeader = env->NewStringUTF(headerName);
         jstring jIncluder = env->NewStringUTF(includerName);
 
         jstring result = static_cast<jstring>(env->CallStaticObjectMethod(
-            env->FindClass(JAVA_GLSLANG_INCLUDER_HELPER),
-            method,
-            jHeader,
-            jIncluder,
-            static_cast<jint>(inclusionDepth)));
+            helperClass, method, jHeader, jIncluder, static_cast<jint>(inclusionDepth)));
 
         const char *content = env->GetStringUTFChars(result, nullptr);
-        size_t len = env->GetStringLength(result);
+        size_t len = env->GetStringUTFLength(result);
 
         char *contentCopy = new char[len + 1];
-        strcpy(contentCopy, content);
+        memcpy(contentCopy, content, len);
+        contentCopy[len] = 0;
 
         env->ReleaseStringUTFChars(result, content);
         env->DeleteLocalRef(result);
         env->DeleteLocalRef(jHeader);
         env->DeleteLocalRef(jIncluder);
+        env->DeleteLocalRef(helperClass);
 
         return new IncludeResult(headerName, contentCopy, len, nullptr);
     }
@@ -79,12 +76,10 @@ JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_d
     glslang::FinalizeProcess();
     return 0;
 }
-
 JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_compileShaderToSpirv(
     JNIEnv *env,
     jclass clazz,
     jstring shaderSrc,
-    jstring outputFile,
     jint stage,
     jint language,
     jint client,
@@ -96,10 +91,8 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
     jboolean force_default_version_and_profile,
     jboolean forward_compatible)
 {
-
     check_env(env);
     const char *shaderSource = env->GetStringUTFChars(shaderSrc, nullptr);
-    const char *outputFilePath = outputFile ? env->GetStringUTFChars(outputFile, nullptr) : nullptr;
 
     EShLanguage shaderStage = static_cast<EShLanguage>(stage);
     glslang::TShader shader(shaderStage);
@@ -114,11 +107,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
                         static_cast<glslang::EShTargetClientVersion>(client_version));
     shader.setEnvTarget(glslang::EShTargetSpv,
                         static_cast<glslang::EShTargetLanguageVersion>(target_language_version));
-    std::vector<std::string> extensions = {
-        "GL_EXT_shader_16bit_storage",
-        "GL_EXT_shader_explicit_arithmetic_types",
-        "GL_NV_gpu_shader5"};
-    shader.addProcesses(extensions);
+
     std::string preprocessed;
     bool success = shader.preprocess(
         &resources,
@@ -132,25 +121,27 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
 
     jclass resultClass = env->FindClass("io/homo/superresolution/core/glslang/GlslangCompileShaderResult");
     jmethodID constructor = env->GetMethodID(resultClass, "<init>",
-                                             "(Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;Ljava/lang/String;)V");
+                                             "(Ljava/lang/String;Ljava/lang/String;IJLjava/nio/ByteBuffer;Ljava/lang/String;)V");
 
-    if (!success)
+    auto makeResult = [&](int errorCode, const char *log, jlong size, jobject buffer)
     {
         jstring jSource = env->NewStringUTF(shaderSource);
         jstring jPreprocessed = env->NewStringUTF(preprocessed.c_str());
-        jstring jLog = env->NewStringUTF(shader.getInfoLog());
+        jstring jLog = env->NewStringUTF(log ? log : "");
         jobject result = env->NewObject(resultClass, constructor,
                                         jSource,
                                         jPreprocessed,
-                                        static_cast<jint>(1), // PREPROCESS_ERROR
-                                        static_cast<jlong>(0),
-                                        nullptr,
+                                        static_cast<jint>(errorCode),
+                                        size,
+                                        buffer,
                                         jLog);
-
         env->ReleaseStringUTFChars(shaderSrc, shaderSource);
-        if (outputFile)
-            env->ReleaseStringUTFChars(outputFile, outputFilePath);
         return result;
+    };
+
+    if (!success)
+    {
+        return makeResult(1, shader.getInfoLog(), 0, nullptr); // PREPROCESS_ERROR
     }
     success = shader.parse(
         &resources,
@@ -162,21 +153,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
         includer);
     if (!success)
     {
-        jstring jSource = env->NewStringUTF(shaderSource);
-        jstring jPreprocessed = env->NewStringUTF(preprocessed.c_str());
-        jstring jLog = env->NewStringUTF(shader.getInfoLog());
-        jobject result = env->NewObject(resultClass, constructor,
-                                        jSource,
-                                        jPreprocessed,
-                                        static_cast<jint>(2), // PARSE_ERROR
-                                        static_cast<jlong>(0),
-                                        nullptr,
-                                        jLog);
-
-        env->ReleaseStringUTFChars(shaderSrc, shaderSource);
-        if (outputFile)
-            env->ReleaseStringUTFChars(outputFile, outputFilePath);
-        return result;
+        return makeResult(2, shader.getInfoLog(), 0, nullptr); // PARSE_ERROR
     }
 
     glslang::TProgram program;
@@ -184,53 +161,20 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
     success = program.link(EShMsgDefault);
     if (!success)
     {
-        jstring jSource = env->NewStringUTF(shaderSource);
-        jstring jPreprocessed = env->NewStringUTF(preprocessed.c_str());
-        jstring jLog = env->NewStringUTF(program.getInfoLog());
-        jobject result = env->NewObject(resultClass, constructor,
-                                        jSource,
-                                        jPreprocessed,
-                                        static_cast<jint>(3), // LINK_ERROR
-                                        static_cast<jlong>(0),
-                                        nullptr,
-                                        jLog);
-
-        env->ReleaseStringUTFChars(shaderSrc, shaderSource);
-        if (outputFile)
-            env->ReleaseStringUTFChars(outputFile, outputFilePath);
-        return result;
+        return makeResult(3, program.getInfoLog(), 0, nullptr); // LINK_ERROR
     }
 
     std::vector<unsigned int> spirv;
     glslang::GlslangToSpv(*program.getIntermediate(shaderStage), spirv);
 
-    jstring jSpirvPath = nullptr;
-    if (outputFilePath)
+    size_t dataSize = spirv.size() * sizeof(unsigned int);
+    jobject spirvBuffer = nullptr;
+    if (dataSize > 0)
     {
-        std::ofstream out(outputFilePath, std::ios::binary);
-        if (out)
-        {
-            out.write(reinterpret_cast<const char *>(spirv.data()), spirv.size() * sizeof(unsigned int));
-            out.close();
-            jSpirvPath = env->NewStringUTF(outputFilePath);
-        }
+        void *nativeBuf = malloc(dataSize);
+        memcpy(nativeBuf, spirv.data(), dataSize);
+        spirvBuffer = env->NewDirectByteBuffer(nativeBuf, dataSize);
     }
 
-    jstring jSource = env->NewStringUTF(shaderSource);
-    jstring jPreprocessed = env->NewStringUTF(preprocessed.c_str());
-    jstring jLog = env->NewStringUTF(program.getInfoLog());
-
-    jobject result = env->NewObject(resultClass, constructor,
-                                    jSource,
-                                    jPreprocessed,
-                                    static_cast<jint>(0), // OK
-                                    static_cast<jlong>(spirv.size() * sizeof(unsigned int)),
-                                    jSpirvPath,
-                                    jLog);
-
-    env->ReleaseStringUTFChars(shaderSrc, shaderSource);
-    if (outputFile)
-        env->ReleaseStringUTFChars(outputFile, outputFilePath);
-
-    return result;
+    return makeResult(0, program.getInfoLog(), static_cast<jlong>(dataSize), spirvBuffer);
 }

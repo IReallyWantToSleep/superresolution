@@ -51,7 +51,6 @@ public class Fsr2PipelineResources {
         if (type.uavShaderName() != null) {
             shaderNameMap.put(type.uavShaderName(), type);
         }
-        Fsr2Context.LOGGER.info("添加资源 {} {} {} {}", type, type.srvShaderName(), type.uavShaderName(), type.id());
     }
 
     public void init(int renderWidth, int renderHeight, int upscaledWidth, int upscaledHeight) {
@@ -194,20 +193,12 @@ public class Fsr2PipelineResources {
                 GlTexture1D tex = GlTexture1D.create(
                         (int) desc.size.x, desc.format,
                         desc.mipCount == 0 ? GlTexture1D.AUTO_MIPMAP_LEVEL : desc.mipCount);
-                Fsr2Context.LOGGER.info("创建资源 ({} {} {} {}) ({}x{} {} {} {})",
-                        type.toString(), type.srvShaderName(), type.uavShaderName(), type.id(),
-                        desc.size.x, desc.size.y, desc.format.name(), desc.mipCount, desc.label
-                );
 
                 resourceEntry.setResource(tex);
             } else if (desc.dim == 2) {
                 GlTexture2D tex = GlTexture2D.create(
                         (int) desc.size.x, (int) desc.size.y, desc.format,
                         desc.mipCount == 0 ? GlTexture2D.AUTO_MIPMAP_LEVEL : desc.mipCount);
-                Fsr2Context.LOGGER.info("创建资源 ({} {} {} {}) ({}x{} {} {} {})",
-                        type.toString(), type.srvShaderName(), type.uavShaderName(), type.id(),
-                        desc.size.x, desc.size.y, desc.format.name(), desc.mipCount, desc.label
-                );
                 resourceEntry.setResource(tex);
             } else {
                 throw new RuntimeException(desc.label);
