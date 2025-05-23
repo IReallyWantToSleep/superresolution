@@ -18,10 +18,18 @@ JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative
  * Method:    compileShaderToSpirv
- * Signature: (Ljava/lang/String;Ljava/lang/String;IIIIIIIIZZ)Lio/homo/superresolution/core/glslang/GlslangCompileShaderResult;
+ * Signature: (Ljava/lang/String;IIIIIIIIZZ)Lio/homo/superresolution/core/glslang/GlslangCompileShaderResult;
  */
 JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_compileShaderToSpirv
-  (JNIEnv *, jclass, jstring, jstring, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jboolean);
+  (JNIEnv *, jclass, jstring, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jboolean);
+
+/*
+ * Class:     io_homo_superresolution_core_SuperResolutionNative
+ * Method:    freeDirectBuffer
+ * Signature: (Ljava/nio/ByteBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_freeDirectBuffer
+  (JNIEnv *, jclass, jobject);
 
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative

@@ -1,6 +1,9 @@
 package io.homo.superresolution.core;
 
 import io.homo.superresolution.core.glslang.GlslangCompileShaderResult;
+import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
+
+import java.nio.ByteBuffer;
 
 
 public class SuperResolutionNative {
@@ -8,7 +11,6 @@ public class SuperResolutionNative {
 
     public static native GlslangCompileShaderResult compileShaderToSpirv(
             String shaderSrc,
-            String outputFile,
             int stage,
             int language,
             int client,
@@ -20,6 +22,8 @@ public class SuperResolutionNative {
             boolean force_default_version_and_profile,
             boolean forward_compatible
     );
+
+    public static native void freeDirectBuffer(ByteBuffer buffer);
 
     public static native int initGlslang();
 

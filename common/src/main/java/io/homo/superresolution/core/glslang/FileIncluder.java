@@ -16,12 +16,9 @@ public class FileIncluder {
     ) {
         String resolvedPath = resolveRelativePath(headerName, includerName);
         String fullPath = LOCAL_INCLUDE_BASE_PATH + resolvedPath;
-        System.err.printf("[INCLUDE-LOCAL] header: %s, includer: %s, depth: %d, resolved: %s%n",
-                headerName, includerName, inclusionDepth, fullPath);
         try {
             return String.join("\n", FileReadHelper.readText(fullPath));
         } catch (Exception e) {
-            System.err.println("Local include failed: " + fullPath + " | " + e.getMessage());
             return "// ERROR: include failed: " + fullPath;
         }
     }
@@ -32,12 +29,9 @@ public class FileIncluder {
             int inclusionDepth
     ) {
         String fullPath = SYSTEM_INCLUDE_BASE_PATH + headerName;
-        System.err.printf("[INCLUDE-SYSTEM] header: %s, includer: %s, depth: %d, resolved: %s%n",
-                headerName, includerName, inclusionDepth, fullPath);
         try {
             return String.join("\n", FileReadHelper.readText(fullPath));
         } catch (Exception e) {
-            System.err.println("System include failed: " + fullPath + " | " + e.getMessage());
             return "// ERROR: include failed: " + fullPath;
         }
     }

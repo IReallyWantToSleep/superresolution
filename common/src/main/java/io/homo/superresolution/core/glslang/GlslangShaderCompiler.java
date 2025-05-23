@@ -4,7 +4,9 @@ import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.core.glslang.enums.*;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.system.MemoryUtil;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public class GlslangShaderCompiler {
@@ -15,7 +17,6 @@ public class GlslangShaderCompiler {
 
     public static GlslangCompileShaderResult compileShaderToSpirv(
             String shaderSrc,
-            String outputFile,
             EShLanguage stage,
             EShSource language,
             EShClient client,
@@ -29,7 +30,6 @@ public class GlslangShaderCompiler {
     ) {
         return SuperResolutionNative.compileShaderToSpirv(
                 shaderSrc,
-                outputFile,
                 stage.getValue(),
                 language.getValue(),
                 client.getValue(),
@@ -108,7 +108,7 @@ public class GlslangShaderCompiler {
                         """,
                 defines
         );
-
+/*
         GlslangCompileShaderResult result =
                 SuperResolutionNative.compileShaderToSpirv(
                         shaderSrc,
@@ -129,6 +129,6 @@ public class GlslangShaderCompiler {
         System.out.println(result.spirVDataSize());
         System.out.println(result.spirVFilePath());
         System.out.println(result.log());
-        System.out.println(result.error().getValue());
+        System.out.println(result.error().getValue());*/
     }
 }
