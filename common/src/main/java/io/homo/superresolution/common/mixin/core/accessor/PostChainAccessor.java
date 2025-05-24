@@ -12,6 +12,10 @@ import java.util.List;
 public interface PostChainAccessor {
     #if MC_VER < MC_1_21_4
     @Mutable
+    @Accessor(value = "screenTarget")
+    void setScreenTarget(RenderTarget screenTarget);
+
+    @Mutable
     @Accessor(value = "fullSizedTargets")
     List<RenderTarget> getFullSizedTargets();
 

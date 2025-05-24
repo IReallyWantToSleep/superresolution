@@ -3,16 +3,19 @@ package io.homo.superresolution.common.mixin.core;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
+    @Unique
+    private int super_resolution$cacheWidth = 0;
+    @Unique
+    private int super_resolution$cacheHeight = 0;
 
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
@@ -22,8 +25,13 @@ public class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
+        if (super_resolution$cacheWidth != MinecraftRenderHandle.getScreenWidth() || super_resolution$cacheHeight != MinecraftRenderHandle.getScreenHeight()) {
+            super_resolution$cacheWidth = MinecraftRenderHandle.getScreenWidth();
+            super_resolution$cacheHeight = MinecraftRenderHandle.getScreenHeight();
+            Minecraft.getInstance().resizeDisplay();
+        }
         #if MC_VER > MC_1_21_4
-        GL11.glViewport(0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        org.lwjgl.opengl.GL11.glViewport(0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         #endif
         PerformanceInfo.begin("runTick");
     }

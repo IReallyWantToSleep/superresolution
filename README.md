@@ -4,7 +4,12 @@
 <img src="https://img.shields.io/github/license/187J3X1-114514/superresolution"/>
 <img src="https://img.shields.io/github/issues/187J3X1-114514/superresolution"/></div>
 
-# Super Resolution
+<div align="center">
+<h1>Super Resolution</h1>
+<a href="docs/README_EN.md">English</a> <span>简体中文</span>
+</div>
+
+----
 
 在Minecraft中内置超分辨率算法，以提升性能/画质
 
@@ -28,19 +33,20 @@
 
 ## 系统要求
 
-* Windows
-* Linux ~~(即将去除)~~
-* 不支持MacOS系统
-* 不支持在移动设备上运行
+* Windows 10/11 x64
+* Linux x64
+* 目前不支持在移动设备上运行，但提供安卓的本机库，安卓端的计算着色器，DSA，SpirV着色器二进制等功能工作不正常
+* 永远不会支持MacOS系统
 
 ## 显卡要求
 
-* 显卡支持OpenGL版本 >= 4.3
-* 显卡支持Vulkan版本 >= 1.2 (非必须)
+* 支持OpenGL版本 >= 4.3
+* 支持OpenGL扩展 `GL_ARB_direct_state_access` `GL_ARB_gl_spirv`
+* 支持Vulkan版本 >= 1.2 (非必须)
 
 # 有问题？
 
-发现Bug，游戏崩溃，想要支持其他游戏版本（仅限1.16及以上，加载器仅限Forge,Fabric,NeoForge）
+发现Bug，游戏崩溃，想要支持其他游戏版本（仅限1.18及以上，加载器仅限Forge,Fabric,NeoForge，视移植难度进行移植）
 
 在[这里](https://github.com/187J3X1-114514/superresolution/issues)打开一个issues
 
@@ -59,7 +65,6 @@ python script/buildAll.py
 
 # 可能会有的功能
 
-* 可能 _(注意是可能)_ 用Java重写FSR2(FSR3)的部分代码，目前FSR2部分完成，基本可用，但部分功能由于不需要所以没有移植
 * 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
 
 ---

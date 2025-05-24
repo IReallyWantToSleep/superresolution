@@ -20,7 +20,7 @@ public class OptionsMixin {
 
     @Inject(method = "graphicsMode", at = @At("TAIL"))
     private void overwriteGraphicsMode(CallbackInfoReturnable<OptionInstance<GraphicsStatus>> cir) {
-        if (((GraphicsStatus) (((OptionInstanceAccessor) (Object) cir.getReturnValue()).getValue())).getId() == 2 && Config.isEnableUpscale()) {
+        if (((GraphicsStatus) (((OptionInstanceAccessor) (Object) cir.getReturnValue()).getValue())).getId() == 2) {
             graphicsMode.set(GraphicsStatus.FANCY);
         }
     }
