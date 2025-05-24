@@ -1,4 +1,4 @@
-<div align="center"><img src="common/src/main/resources/assets/super_resolution/logo.png" width="256"/></div>
+<div align="center"><img src="https://raw.githubusercontent.com/187J3X1-114514/superresolution/refs/heads/multi-version/common/src/main/resources/assets/super_resolution/logo.png" width="256"/></div>
 <div align="center"><img src="https://img.shields.io/github/forks/187J3X1-114514/superresolution"/>
 <img src="https://img.shields.io/github/stars/187J3X1-114514/superresolution"/>
 <img src="https://img.shields.io/github/license/187J3X1-114514/superresolution"/>
