@@ -27,7 +27,7 @@ public class NativeLibManager {
     static {
         OS os = new OS();
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
-            libs.add(new NativeLib("libSuperResolution+win64", "4e2e8d48c3267ac383b7c52884a3572c", 1));
+            libs.add(new NativeLib("libSuperResolution+win64", "7d083c7c15ddee2c2e3cf1c67231e9f7", 1));
         }
         if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
             libs.add(new NativeLib("libSuperResolution+android", "d0b33be24e664881e4b66b9dae1f56b1", 1));
