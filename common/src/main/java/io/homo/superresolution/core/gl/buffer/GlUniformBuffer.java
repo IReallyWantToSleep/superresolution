@@ -1,9 +1,11 @@
 package io.homo.superresolution.core.gl.buffer;
 
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.impl.IUniformStruct;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL45;
 
 import java.nio.ByteBuffer;
 
@@ -17,7 +19,7 @@ public class GlUniformBuffer<T extends IUniformStruct> {
         this.struct = struct;
         this.bufferSize = struct.sizeof();
         validateBufferSize(bufferSize);
-        this.uboId = GL15.glGenBuffers();
+        this.uboId = Gl.DSA.createBuffer();
         initializeBuffer();
     }
 
@@ -26,47 +28,31 @@ public class GlUniformBuffer<T extends IUniformStruct> {
     }
 
     private void initializeBuffer() {
-        GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, uboId);
-        try {
-            ByteBuffer data = struct.container();
-            GL15.glBufferData(GL31.GL_UNIFORM_BUFFER, data, GL15.GL_DYNAMIC_DRAW);
-        } finally {
-            GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
-        }
+        ByteBuffer data = struct.container();
+        Gl.DSA.bufferData(uboId, GL45.GL_UNIFORM_BUFFER, data, GL45.GL_DYNAMIC_DRAW);
     }
 
     public void update() {
         checkNotClosed();
         validateStructSize();
-        GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, uboId);
-        try {
-            ByteBuffer data = struct.container();
-            GL15.glBufferSubData(GL31.GL_UNIFORM_BUFFER, 0, data);
-        } finally {
-            GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
-        }
+        ByteBuffer data = struct.container();
+        Gl.DSA.bufferSubData(uboId, 0, data);
     }
 
     public void partialUpdate(int offset, ByteBuffer data) {
         checkNotClosed();
         validateOffset(offset, data.remaining());
-
-        GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, uboId);
-        try {
-            GL15.glBufferSubData(GL31.GL_UNIFORM_BUFFER, offset, data);
-        } finally {
-            GL15.glBindBuffer(GL31.GL_UNIFORM_BUFFER, 0);
-        }
+        Gl.DSA.bufferSubData(uboId, offset, data);
     }
 
     public void bind(int bindingPoint) {
         checkNotClosed();
-        GL30.glBindBufferBase(GL31.GL_UNIFORM_BUFFER, bindingPoint, uboId);
+        Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, bindingPoint, uboId);
     }
 
     public synchronized void delete() {
         if (!isClosed) {
-            GL15.glDeleteBuffers(uboId);
+            Gl.DSA.deleteBuffer(uboId);
             uboId = 0;
             isClosed = true;
         }

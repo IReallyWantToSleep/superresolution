@@ -19,6 +19,9 @@ import io.homo.superresolution.core.gl.Gl;
 import static io.homo.superresolution.core.gl.Gl.*;
 
 import static io.homo.superresolution.core.gl.GlConst.*;
+import static org.lwjgl.opengl.GL11.GL_COLOR;
+import static org.lwjgl.opengl.GL11.GL_DEPTH;
+import static org.lwjgl.opengl.GL30.GL_DEPTH_STENCIL;
 import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_UNDEFINED;
 import static org.lwjgl.opengl.GL30C.glCheckFramebufferStatus;
 
@@ -109,7 +112,6 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     public void addAttachment(GlFrameBufferAttachment attachment) {
-        bind(FrameBufferBindPoint.ALL);
         if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
             colorAttachment = attachment;
         } else if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH) {
@@ -177,8 +179,10 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     public void validate() {
-        bind(FrameBufferBindPoint.WRITE);
-        int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        int status = Gl.DSA.checkNamedFramebufferStatus(
+                frameBufferId,
+                GL_FRAMEBUFFER
+        );
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             String errorDesc = switch (status) {
                 case GL_FRAMEBUFFER_UNDEFINED -> "UNDEFINED";
@@ -203,9 +207,30 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     @Override
     public void clearFrameBuffer() {
-        try (GlState ignored = new GlState()) {
-            bind(FrameBufferBindPoint.ALL);
-            glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+        if (colorAttachment != null) {
+            Gl.DSA.clearNamedFramebufferfv(
+                    frameBufferId,
+                    GL_COLOR,
+                    0,
+                    clearColor
+            );
+        }
+        if (depthAttachment != null) {
+            Gl.DSA.clearNamedFramebufferfv(
+                    frameBufferId,
+                    GL_DEPTH,
+                    0,
+                    new float[]{1.0f} // 深度清除值
+            );
+        }
+        if (depthStencilAttachment != null) {
+            Gl.DSA.clearNamedFramebufferfi(
+                    frameBufferId,
+                    GL_DEPTH_STENCIL,
+                    0,
+                    1.0f,  // 深度值
+                    0      // 模板值
+            );
         }
     }
 

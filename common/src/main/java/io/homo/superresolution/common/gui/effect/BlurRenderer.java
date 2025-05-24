@@ -3,6 +3,7 @@ package io.homo.superresolution.common.gui.effect;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
@@ -14,6 +15,7 @@ import io.homo.superresolution.core.impl.shader.ShaderSource;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
+import org.lwjgl.opengl.GL45;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glDepthMask;
@@ -114,7 +116,7 @@ public class BlurRenderer {
             glDepthMask(false);
             blurShader.use();
             blurFrameBuffer.bind(FrameBufferBindPoint.ALL);
-            try (GlVertexArray vao = new GlVertexArray();
+            try (GlVertexArray vaoObj = new GlVertexArray();
                  GlVertexBuffer vbo = new GlVertexBuffer()) {
                 float[] vertices = {
                         -1f, -1f, 0f, 0f,
@@ -122,14 +124,39 @@ public class BlurRenderer {
                         1f, 1f, 1f, 1f,
                         -1f, 1f, 0f, 1f
                 };
-                vao.bind();
-                vbo.bind(GL_ARRAY_BUFFER);
+                int vao = vaoObj.id();
+                Gl.DSA.vertexArrayVertexBuffer(
+                        vao,
+                        0,
+                        vbo.getId(),
+                        0,
+                        4 * Float.BYTES
+                );
+
+                Gl.DSA.vertexArrayAttribFormat(
+                        vao,
+                        0,
+                        2,
+                        GL_FLOAT,
+                        false,
+                        0
+                );
+                Gl.DSA.enableVertexArrayAttrib(vao, 0);
+                Gl.DSA.vertexArrayAttribBinding(vao, 0, 0);
+                Gl.DSA.vertexArrayAttribFormat(
+                        vao,
+                        1,
+                        2,
+                        GL_FLOAT,
+                        false,
+                        2 * Float.BYTES
+                );
+                Gl.DSA.enableVertexArrayAttrib(vao, 1);
+                Gl.DSA.vertexArrayAttribBinding(vao, 1, 0);
+
                 vbo.uploadData(vertices, GL_STATIC_DRAW);
-                int stride = 4 * Float.BYTES;
-                glEnableVertexAttribArray(0);
-                glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0);
-                glEnableVertexAttribArray(1);
-                glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES);
+
+                Gl.DSA.bindVertexArray(vao);
                 blurShader.uniforms()
                         .strictTexture("uTexture").value(blurTempTexture)
                         .strictVec4("weightA").value(blurWeights[0], blurWeights[1], blurWeights[2], blurWeights[3])

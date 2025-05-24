@@ -6,6 +6,7 @@ import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
 import io.homo.superresolution.core.impl.IDebuggableObject;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -106,21 +107,19 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
 
     public void uploadData(int mipLevel, int xoffset, int yoffset, int width, int height,
                            int format, int type, ByteBuffer data, int alignment) {
-        try (GlState ignored = new GlState()) {
-            glBindTexture(GL_TEXTURE_2D, this.id);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-            glTexSubImage2D(
-                    GL_TEXTURE_2D,
-                    mipLevel,
-                    xoffset,
-                    yoffset,
-                    width,
-                    height,
-                    format,
-                    type,
-                    data
-            );
-        }
+        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+
+        Gl.DSA.textureSubImage2D(
+                this.id,
+                mipLevel,
+                xoffset,
+                yoffset,
+                width,
+                height,
+                format,
+                type,
+                MemoryUtil.memAddress(data)
+        );
     }
 
     public void uploadData(int format, int type, ByteBuffer data) {
@@ -136,7 +135,16 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     public void copyFromFBO(int srcFbo) {
         glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
         glBindTexture(GL_TEXTURE_2D, this.id);
-        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+        Gl.DSA.copyTextureSubImage2D(
+                this.id,
+                0,
+                0,
+                0,
+                0,
+                0,
+                width,
+                height
+        );
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
@@ -199,10 +207,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     public void generateMipmap() {
-        try (GlState ignored = new GlState()) {
-            glBindTexture(GL_TEXTURE_2D, this.id);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
+        Gl.DSA.generateTextureMipmap(this.id);
     }
 
     @Override

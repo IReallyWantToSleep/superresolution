@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.gl.vertex;
 
+import io.homo.superresolution.core.gl.Gl;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL45;
 
 import java.nio.*;
 
@@ -11,7 +13,7 @@ public class GlVertexBuffer implements AutoCloseable {
     private int target;
 
     public GlVertexBuffer() {
-        id = glGenBuffers();
+        id = Gl.DSA.createBuffer();
     }
 
     public void bind(int target) {
@@ -22,17 +24,23 @@ public class GlVertexBuffer implements AutoCloseable {
     public void uploadData(float[] data, int usage) {
         FloatBuffer buffer = BufferUtils.createFloatBuffer(data.length);
         buffer.put(data).flip();
-        glBufferData(target, buffer, usage);
+        //glBufferData(target, buffer, usage);
+        Gl.DSA.bufferData(id, target, buffer, usage);
     }
 
     public void uploadData(int[] data, int usage) {
         IntBuffer buffer = BufferUtils.createIntBuffer(data.length);
         buffer.put(data).flip();
-        glBufferData(target, buffer, usage);
+        //glBufferData(target, buffer, usage);
+        Gl.DSA.bufferData(id, target, buffer, usage);
     }
 
     @Override
     public void close() {
-        glDeleteBuffers(id);
+        Gl.DSA.deleteBuffer(id);
+    }
+
+    public int getId() {
+        return id;
     }
 }

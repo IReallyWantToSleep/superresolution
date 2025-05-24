@@ -5,6 +5,7 @@ import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.impl.IDebuggableObject;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -93,19 +94,16 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     public void uploadData(int mipLevel, int xoffset, int width,
                            int format, int type, ByteBuffer data, int alignment) {
-        try (GlState ignored = new GlState()) {
-            glBindTexture(GL_TEXTURE_1D, this.id);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-            glTexSubImage1D(
-                    GL_TEXTURE_1D,
-                    mipLevel,
-                    xoffset,
-                    width,
-                    format,
-                    type,
-                    data
-            );
-        }
+        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+        Gl.DSA.textureSubImage1D(
+                this.id,
+                mipLevel,
+                xoffset,
+                width,
+                format,
+                type,
+                MemoryUtil.memAddress(data)
+        );
     }
 
     public void uploadData(int format, int type, ByteBuffer data) {
@@ -176,10 +174,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     }
 
     public void generateMipmap() {
-        try (GlState ignored = new GlState()) {
-            glBindTexture(GL_TEXTURE_1D, this.id);
-            glGenerateMipmap(GL_TEXTURE_1D);
-        }
+        Gl.DSA.generateTextureMipmap(this.id);
     }
 
     @Override
