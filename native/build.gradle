@@ -1,3 +1,5 @@
+import java.util.regex.Pattern
+
 plugins {
     id 'java'
 }
@@ -77,4 +79,40 @@ def calculateMD5(File file) {
     return md.digest().encodeHex().toString()
 }
 
-copyNativeLib.finalizedBy printLibMd5
+tasks.register('updateNativeLibMd5') {
+    dependsOn copyNativeLib
+    doLast {
+        def libDir = file("${projectDir}/../common/src/main/resources/lib/")
+        def md5Map = [:]
+        libDir.eachFile { file ->
+            if (file.isFile() && file.name.startsWith("libSuperResolution")) {
+                def baseName = file.name.replaceFirst(~/\.[^.]+$/, '')
+                def md5 = calculateMD5(file)
+                md5Map[baseName] = md5
+                println "计算MD5: ${baseName} -> ${md5}"
+            }
+        }
+
+        def javaFile = file("${projectDir}/../common/src/main/java/io/homo/superresolution/core/NativeLibManager.java")
+        if (!javaFile.exists()) {
+            throw new GradleException("找不到NativeLibManager.java文件: ${javaFile.path}")
+        }
+
+        def content = javaFile.text
+
+        md5Map.each { baseName, newMd5 ->
+            def escapedBaseName = java.util.regex.Pattern.quote(baseName)
+            def pattern = /(libs\.add\s*\(\s*new NativeLib\s*\(\s*"${escapedBaseName}"\s*,\s*")([^"]*)("\s*)(,\s*\d+)?(\s*\)\s*\);)/
+
+            content = content.replaceAll(pattern) { fullMatch, prefix, oldMd5, md5Suffix, optionalArg, closingBrace ->
+                println "更新库 ${baseName}: 旧MD5 ${oldMd5} → 新MD5 ${newMd5}"
+                "${prefix}${newMd5}${md5Suffix}${optionalArg ?: ''}${closingBrace}"
+            }
+        }
+
+        javaFile.write(content, 'UTF-8')
+        println "已更新NativeLibManager中的MD5值"
+    }
+}
+
+copyNativeLib.finalizedBy printLibMd5, updateNativeLibMd5
