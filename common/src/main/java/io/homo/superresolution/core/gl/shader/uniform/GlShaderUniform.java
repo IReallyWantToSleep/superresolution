@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.gl.shader.uniform;
 
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import org.joml.Matrix4f;
@@ -14,47 +15,50 @@ import static org.lwjgl.opengl.GL20.*;
 public abstract class GlShaderUniform<T> {
     protected final int uniformLocation;
     protected final GlShaderUniforms shaderUniforms;
+    protected final int program;
 
-    protected GlShaderUniform(int uniformLocation, GlShaderUniforms shaderUniforms) {
+    protected GlShaderUniform(int program, int uniformLocation, GlShaderUniforms shaderUniforms) {
         this.uniformLocation = uniformLocation;
         this.shaderUniforms = shaderUniforms;
+        this.program = program;
     }
 
     public abstract GlShaderUniforms value(T value);
 
     protected void set(int value) {
         if (uniformLocation < 0) return;
-        glUniform1i(uniformLocation, value);
+
+        Gl.DSA.programUniform1i(program, uniformLocation, value);
     }
 
     protected void set(float value) {
         if (uniformLocation < 0) return;
-        glUniform1f(uniformLocation, value);
+        Gl.DSA.programUniform1f(program, uniformLocation, value);
     }
 
     protected void set(float x, float y) {
         if (uniformLocation < 0) return;
-        glUniform2f(uniformLocation, x, y);
+        Gl.DSA.programUniform2f(program, uniformLocation, x, y);
     }
 
     protected void set(float x, float y, float z) {
         if (uniformLocation < 0) return;
-        glUniform3f(uniformLocation, x, y, z);
+        Gl.DSA.programUniform3f(program, uniformLocation, x, y, z);
     }
 
     protected void set(float x, float y, float z, float w) {
         if (uniformLocation < 0) return;
-        glUniform4f(uniformLocation, x, y, z, w);
+        Gl.DSA.programUniform4f(program, uniformLocation, x, y, z, w);
     }
 
     protected void set(Matrix4f matrix) {
         if (uniformLocation < 0) return;
-        glUniformMatrix4fv(uniformLocation, false, matrix.get(new float[16]));
+        Gl.DSA.programUniformMatrix4fv(program, uniformLocation, false, matrix.get(new float[16]));
     }
 
     public static class Vec2 extends GlShaderUniform<io.homo.superresolution.core.impl.Vec2> {
-        public Vec2(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Vec2(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -70,8 +74,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Vec3 extends GlShaderUniform<io.homo.superresolution.core.impl.Vec3> {
-        public Vec3(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Vec3(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -89,8 +93,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Vec4 extends GlShaderUniform<io.homo.superresolution.core.impl.Vec4> {
-        public Vec4(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Vec4(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -108,8 +112,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Float extends GlShaderUniform<java.lang.Float> {
-        public Float(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Float(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -121,8 +125,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Int extends GlShaderUniform<Integer> {
-        public Int(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Int(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -134,8 +138,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Bool extends GlShaderUniform<Boolean> {
-        public Bool(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Bool(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -147,8 +151,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Matrix4 extends GlShaderUniform<Matrix4f> {
-        public Matrix4(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Matrix4(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -160,8 +164,8 @@ public abstract class GlShaderUniform<T> {
     }
 
     public static class Texture extends GlShaderUniform<ITexture> {
-        public Texture(int location, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Texture(int program, int location, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
         }
 
         @Override
@@ -188,8 +192,8 @@ public abstract class GlShaderUniform<T> {
     public static class Struct extends GlShaderUniform<GlUniformBuffer<?>> {
         private final int bindingPoint;
 
-        public Struct(int location, int bindingPoint, GlShaderUniforms shaderUniforms) {
-            super(location, shaderUniforms);
+        public Struct(int program, int location, int bindingPoint, GlShaderUniforms shaderUniforms) {
+            super(program, location, shaderUniforms);
             this.bindingPoint = bindingPoint;
         }
 

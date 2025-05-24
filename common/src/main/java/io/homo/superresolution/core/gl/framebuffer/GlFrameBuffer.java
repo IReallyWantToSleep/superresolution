@@ -14,7 +14,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
+import io.homo.superresolution.core.gl.Gl;
+
 import static io.homo.superresolution.core.gl.Gl.*;
+
 import static io.homo.superresolution.core.gl.GlConst.*;
 import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_UNDEFINED;
 import static org.lwjgl.opengl.GL30C.glCheckFramebufferStatus;
@@ -26,7 +29,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     private GlFrameBufferAttachment depthAttachment = null;
     private GlFrameBufferAttachment depthStencilAttachment = null;
 
-    private int frameBufferId = glGenFramebuffers();
+    private int frameBufferId = Gl.DSA.createFramebuffer();
     private int width;
     private int height;
 
@@ -114,10 +117,9 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
         } else {
             depthStencilAttachment = attachment;
         }
-        glFramebufferTexture2D(
-                GL_FRAMEBUFFER,
+        Gl.DSA.framebufferTexture(
+                this.frameBufferId,
                 attachment.type.attachmentId(),
-                GL_TEXTURE_2D,
                 attachment.texture.getTextureId(),
                 0
         );
@@ -169,7 +171,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     @Override
     public void destroy() {
         if (frameBufferId != -1) {
-            glDeleteFramebuffers(frameBufferId);
+            Gl.DSA.deleteFramebuffer(frameBufferId);
             frameBufferId = -1;
         }
     }
@@ -246,8 +248,8 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
         for (GlFrameBufferAttachment attachment : attachments) {
             attachment.texture.resize(width, height);
         }
-        glDeleteFramebuffers(this.frameBufferId);
-        this.frameBufferId = glGenFramebuffers();
+        Gl.DSA.deleteFramebuffer(frameBufferId);
+        this.frameBufferId = Gl.DSA.createFramebuffer();
         this.width = width;
         this.height = height;
         ArrayList<GlFrameBufferAttachment> temp = new ArrayList<>(attachments);

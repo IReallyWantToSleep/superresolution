@@ -1,5 +1,7 @@
 package io.homo.superresolution.core.gl.texture;
 
+import io.homo.superresolution.core.gl.Gl;
+
 import static io.homo.superresolution.core.gl.Gl.*;
 import static io.homo.superresolution.core.gl.GlConst.*;
 
