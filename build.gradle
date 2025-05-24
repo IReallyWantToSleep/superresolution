@@ -1,4 +1,5 @@
 import superresolution.VersionConfig
+import superresolution.ModrinthUploader
 
 plugins {
     id "dev.architectury.loom" version "1.10-SNAPSHOT" apply false
@@ -138,9 +139,107 @@ subprojects {
         }
     }
 }
-
 forgix {
     group = "io.homo.superresolution"
     mergedJarName = "superresolution-${rootProject.mod_version}-${versionConfig.common.minecraftVersion}.jar"
     outputDir = "build/"
+}
+tasks.register("uploadToModrinth") {
+    doLast {
+        def changelogFile = new File("CHANGELOG.md")
+        if (!changelogFile.exists()) {
+            throw new GradleException("CHANGELOG.md not found!")
+        }
+
+        def (currentVersion, latestChangelog) = parseChangelog(changelogFile)
+
+        println "\n=== 最新版本更新日志 (${currentVersion}) ===\n"
+        latestChangelog.each { println it }
+        println "\n========================"
+
+        def confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().toLowerCase()
+
+        if (!confirm.startsWith("y")) {
+            println "上传已取消"
+            return
+        }
+
+        ModrinthUploader.init()
+        def jarsDir = file("${projectDir}/build_jars")
+        println("将要上传的文件：")
+        jarsDir.eachFile { file ->
+            println(file.absolutePath)
+        }
+
+        confirm = getConsoleInput("是否继续？(Y/N): ").trim().toLowerCase()
+        if (!confirm.startsWith("y")) {
+            println "上传已取消"
+            return
+        }
+        jarsDir.eachFile { file ->
+            def notSucceed = true
+            while (notSucceed) {
+                try {
+                    ModrinthUploader.uploadFile(file, latestChangelog.join("\n"))
+                    notSucceed = false
+                } catch (Exception e) {
+                    e.printStackTrace()
+                    println "上传失败，重试"
+                }
+            }
+        }
+
+    }
+}
+
+
+static def parseChangelog(File file) {
+    def versionPattern = ~/^#\s+(\d+\.\d+\.\d+(-[a-zA-Z]+(\.[\d]+)?)*)\s*$/
+    def currentVersion = null
+    def changelog = []
+    def versionEnded = false
+    def previousEmpty = false
+
+    file.eachLine { line ->
+        if (versionEnded) return
+
+        def matcher = (line =~ versionPattern)
+        if (matcher.matches()) {
+            if (currentVersion == null) {
+                currentVersion = matcher.group(1)
+                changelog << line
+            } else {
+                versionEnded = true
+                return
+            }
+        } else if (currentVersion != null) {
+            if (line.trim().isEmpty()) {
+                if (previousEmpty) {
+                    versionEnded = true
+                    return
+                }
+                previousEmpty = true
+            } else {
+                previousEmpty = false
+            }
+            changelog << line
+        }
+    }
+
+    while (changelog.last().trim().isEmpty()) {
+        changelog.removeLast()
+    }
+
+    return [currentVersion, changelog]
+}
+
+def getConsoleInput(String prompt) {
+    try {
+        print prompt
+        def br = new BufferedReader(new InputStreamReader(System.in))
+        println ""
+        return br.readLine()
+    } catch (IOException e) {
+        throw new GradleException("无法读取用户输入", e)
+    }
 }

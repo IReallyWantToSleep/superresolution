@@ -5,11 +5,14 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
+    implementation 'dev.masecla:Modrinth4J:2.2.0'
     implementation gradleApi()
     implementation localGroovy()
+
 }
 
 sourceSets {
