@@ -1,47 +1,10 @@
-/*package io.homo.superresolution.common.render.gl.utils;
-
-import io.homo.superresolution.common.render.gl.GlState;
-import io.homo.superresolution.common.render.gl.shader.BlitShader;
-import io.homo.superresolution.common.render.gl.vertex.VertexBuffer;
-import io.homo.superresolution.common.render.gl.vertex.VertexArray;
-
-import static org.lwjgl.opengl.GL30.*;
-
-public class BlitRenderer {
-    public static void blitToScreen(int textureId, int viewWidth, int viewHeight) {
-        try (GlState ignored = new GlState()) {
-            glViewport(0, 0, viewWidth, viewHeight);
-            BlitShader blitShader = BlitShader.getShader();
-            blitShader.use();
-            blitShader.bindTexture(textureId);
-            try (VertexArray vao = new VertexArray();
-                 VertexBuffer vbo = new VertexBuffer()) {
-                float[] vertices = {
-                        -1f, -1f, 0f, 0f,
-                        1f, -1f, 1f, 0f,
-                        1f, 1f, 1f, 1f,
-                        -1f, 1f, 0f, 1f
-                };
-                vao.bind();
-                vbo.bind(GL_ARRAY_BUFFER);
-                vbo.uploadData(vertices, GL_STATIC_DRAW);
-                int stride = 4 * Float.BYTES;
-                glEnableVertexAttribArray(0);
-                glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0); // 位置属性
-                glEnableVertexAttribArray(1);
-                glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES); // 纹理坐标属性
-                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-            }
-            blitShader.clear();
-        }
-    }
-}*/
-
 package io.homo.superresolution.core.gl.utils;
 
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.shader.GlBlitShader;
 import io.homo.superresolution.core.gl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.gl.vertex.GlVertexArray;
+import org.lwjgl.opengl.GL45;
 
 import static org.lwjgl.opengl.GL30.*;
 
@@ -54,7 +17,7 @@ public class GlBlitRenderer {
         GlBlitShader blitShader = GlBlitShader.getShader();
         blitShader.use();
         blitShader.bindTexture(textureId);
-        try (GlVertexArray vao = new GlVertexArray();
+        try (GlVertexArray vaoObj = new GlVertexArray();
              GlVertexBuffer vbo = new GlVertexBuffer()) {
             float[] vertices = {
                     -1f, -1f, 0f, 0f,
@@ -62,15 +25,40 @@ public class GlBlitRenderer {
                     1f, 1f, 1f, 1f,
                     -1f, 1f, 0f, 1f
             };
-            vao.bind();
-            vbo.bind(GL_ARRAY_BUFFER);
+            int vao = vaoObj.id();
+            Gl.DSA.vertexArrayVertexBuffer(
+                    vao,
+                    0,
+                    vbo.getId(),
+                    0,
+                    4 * Float.BYTES
+            );
+
+            Gl.DSA.vertexArrayAttribFormat(
+                    vao,
+                    0,
+                    2,
+                    GL_FLOAT,
+                    false,
+                    0
+            );
+            Gl.DSA.enableVertexArrayAttrib(vao, 0);
+            Gl.DSA.vertexArrayAttribBinding(vao, 0, 0);
+            Gl.DSA.vertexArrayAttribFormat(
+                    vao,
+                    1,
+                    2,
+                    GL_FLOAT,
+                    false,
+                    2 * Float.BYTES
+            );
+            Gl.DSA.enableVertexArrayAttrib(vao, 1);
+            Gl.DSA.vertexArrayAttribBinding(vao, 1, 0);
+
             vbo.uploadData(vertices, GL_STATIC_DRAW);
-            int stride = 4 * Float.BYTES;
-            glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 2, GL_FLOAT, false, stride, 0); // 位置属性
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 2, GL_FLOAT, false, stride, 2 * Float.BYTES); // 纹理坐标属性
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+            Gl.DSA.bindVertexArray(vao);
+            GL45.glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
         blitShader.clear();
         glDepthMask(true);

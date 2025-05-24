@@ -38,7 +38,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
     private static final Requirement commonRequirement = Requirement.nothing()
             .glMajorVersion(4).glMinorVersion(3)
-            .requiredGlExtension("GL_ARB_gl_spirv");
+            .requiredGlExtension("GL_ARB_gl_spirv")
+            .requiredGlExtension("GL_ARB_direct_state_access");
     public static AbstractAlgorithm currentAlgorithm;
     public static None defaultAlgorithm = new None();
     public static boolean isInit;

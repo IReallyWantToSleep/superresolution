@@ -25,5 +25,4 @@ public class GlPipelineCopyJob extends GlPipelineJob {
                 source.getWidth(), source.getHeight(), 1
         );
     }
-
 }

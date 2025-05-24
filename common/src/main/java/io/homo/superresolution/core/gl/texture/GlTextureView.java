@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.gl.texture;
 
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.texture.TextureFormat;
 
@@ -37,11 +38,9 @@ public class GlTextureView implements ITexture {
         if (parent.getTextureId() == 0) {
             throw new IllegalStateException("Parent texture is not initialized");
         }
-        int viewId = glGenTextures();
-        glTextureView(
-                viewId,
-                type,
+        int viewId = Gl.DSA.createTextureView(
                 parent.getTextureId(),
+                type,
                 parent.getTextureFormat().gl(),
                 minLevel,
                 numLevels,
@@ -106,7 +105,7 @@ public class GlTextureView implements ITexture {
 
     @Override
     public void destroy() {
-        glDeleteTextures(this.id);
+        Gl.DSA.deleteTexture(this.id);
         this.id = -1;
     }
 

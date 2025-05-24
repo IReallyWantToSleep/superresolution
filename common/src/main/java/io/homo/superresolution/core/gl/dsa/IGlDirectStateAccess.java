@@ -2,7 +2,16 @@ package io.homo.superresolution.core.gl.dsa;
 
 import org.lwjgl.opengl.GL45C;
 
+import java.nio.Buffer;
+
 public interface IGlDirectStateAccess {
+    /// 采样器
+    int createSampler();
+
+    void samplerParameteri(int sampler, int pname, int param);
+
+    void deleteSampler(int sampler);
+
     /// 纹理
     int createTexture2D();
 
@@ -18,8 +27,16 @@ public interface IGlDirectStateAccess {
 
     void textureSubImage1D(int texture, int level, int xoffset, int width, int format, int type, long pixels);
 
+    int createTextureView(int srcTexture, int target, int internalFormat,
+                          int minLevel, int numLevels, int minLayer, int numLayers);
+
+    void generateTextureMipmap(int texture);
+
+
     /// 顶点
     int createVertexArray();
+
+    void bindVertexArray(int vao);
 
     void vertexArrayVertexBuffer(int vao, int bindingIndex, int buffer, long offset, int stride);
 
@@ -34,8 +51,19 @@ public interface IGlDirectStateAccess {
 
     void framebufferTexture(int framebuffer, int attachment, int texture, int level);
 
+    int checkNamedFramebufferStatus(int framebuffer, int target);
 
-    /// Uniform部分
+    void clearNamedFramebufferfv(int framebuffer, int buffer, int drawbuffer, float[] value);
+
+    void clearNamedFramebufferfi(int framebuffer, int buffer, int drawbuffer, float depth, int stencil);
+
+    /// 着色器部分
+    void bindImageTexture(int unit, int texture, int level, boolean layered, int layer, int access, int format);
+
+    void bindTextureUnit(int unit, int texture);
+
+    void bindSampler(int unit, int sampler);
+
     void programUniform1i(int program, int location, int value);
 
     void programUniform1f(int program, int location, float value);
@@ -82,4 +110,17 @@ public interface IGlDirectStateAccess {
     void copyTextureSubImage1D(int texture, int level,
                                int xoffset,
                                int x, int y, int width);
+
+    // Buffer相关
+    int createBuffer();
+
+    void bufferData(int buffer, int target, Buffer data, int usage);
+
+    void bufferSubData(int buffer, int offset, Buffer data);
+
+    void deleteBuffer(int buffer);
+
+    void bindBufferBase(int target, int bindingPoint, int buffer);
+
+
 }

@@ -20,6 +20,7 @@ public class FSR2 extends AbstractAlgorithm {
     public Fsr2Context fsr2Context;
     private GlFrameBuffer outputFbo;
     private GlTexture2D output;
+    private GlTexture2D exposureTexture;
 
     public FSR2() {
         super();
@@ -53,6 +54,7 @@ public class FSR2 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
+        exposureTexture = GlTexture2D.create(1, 1, TextureFormat.RGBA8);
         fsr2Context = new Fsr2Context(
                 Fsr2ContextConfig.create(
                         new Fsr2ContextFlags()
@@ -81,6 +83,7 @@ public class FSR2 extends AbstractAlgorithm {
         this.output.destroy();
         outputFbo.destroy();
         fsr2Context.destroy();
+        exposureTexture.destroy();
     }
 
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
@@ -98,7 +101,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.COLOR));
         dispatchDescription.setOutput(this.output);
         dispatchDescription.setJitterOffset(new Vec2(0));
-        dispatchDescription.setExposure(GlTexture2D.create(1, 1, TextureFormat.RGBA8));
+        dispatchDescription.setExposure(exposureTexture);
         dispatchDescription.setRenderSize(new Vec2(
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight())
@@ -115,7 +118,6 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
         fsr2Context.dispatch(dispatchDescription);
-        dispatchDescription.exposure().destroy();
         return true;
     }
 
