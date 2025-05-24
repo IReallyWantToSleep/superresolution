@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.gl.texture;
 
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
 import io.homo.superresolution.core.impl.IDebuggableObject;
@@ -24,6 +25,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     private int height;
     private int mipmapLevel;
     private boolean mipmapEnabled;
+
     public GlTexture2D(int width, int height, int format, int mipmapLevel) {
         validateDimensions(width, height);
         this.format = format;
@@ -72,31 +74,30 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
 
     private void configureTextureParameters() {
         if (format != TextureFormat.R32UI.gl()) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+            Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER,
                     mipmapEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
         } else {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+            Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER,
                     mipmapEnabled ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
         }
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-        if (mipmapEnabled) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmapLevel);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_BASE_LEVEL, 0);
+        if (mipmapEnabled) Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, mipmapLevel);
     }
 
     private void allocateTextureStorage() {
         int levels = mipmapEnabled ? (mipmapLevel + 1) : 1;
-        glTexStorage2D(GL_TEXTURE_2D, levels, format, width, height);
+        Gl.DSA.textureStorage2D(this.id, levels, format, width, height);
     }
 
     private void initializeTexture() {
         try (GlState ignored = new GlState()) {
             if (this.id >= 0) {
-                glDeleteTextures(this.id);
+                Gl.DSA.deleteTexture(this.id);
             }
-            this.id = glGenTextures();
-            glBindTexture(GL_TEXTURE_2D, this.id);
+            this.id = Gl.DSA.createTexture2D();
             configureTextureParameters();
             allocateTextureStorage();
             updateDebugLabel(getDebugLabel());
@@ -140,7 +141,8 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     public void copyFromTex(int srcTex) {
-        glCopyImageSubData(srcTex, GL_TEXTURE_2D, 0, 0, 0, 0,
+        glCopyImageSubData(
+                srcTex, GL_TEXTURE_2D, 0, 0, 0, 0,
                 this.id, GL_TEXTURE_2D, 0, 0, 0, 0,
                 width, height, 1);
     }
@@ -207,7 +209,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     public void destroy() {
         mipViews.values().forEach(GlTextureView::destroy);
         mipViews.clear();
-        glDeleteTextures(this.id);
+        Gl.DSA.deleteTexture(this.id);
     }
 
     @Override

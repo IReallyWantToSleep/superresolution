@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.gl.texture;
 
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.impl.IDebuggableObject;
 import io.homo.superresolution.core.impl.texture.ITexture;
@@ -10,7 +11,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static io.homo.superresolution.core.gl.Gl.glSafeObjectLabel;
-import static org.lwjgl.opengl.GL43.*;
+import static org.lwjgl.opengl.GL45.*;
+
 
 public class GlTexture1D implements ITexture, IDebuggableObject {
     public static final int AUTO_MIPMAP_LEVEL = 0;
@@ -26,7 +28,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     public GlTexture1D(int width, int format, int mipmapLevel) {
         validateDimensions(width);
-        this.id = glGenTextures();
+        this.id = Gl.DSA.createTexture1D();
         this.format = format;
         this.width = width;
         configureMipmap(mipmapLevel);
@@ -64,26 +66,25 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     private void configureTextureParameters() {
         if (format != TextureFormat.R32UI.gl()) {
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
+            Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER,
                     mipmapEnabled ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST);
         } else {
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
+            Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER,
                     mipmapEnabled ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST);
         }
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_BASE_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, mipmapLevel);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_BASE_LEVEL, 0);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, mipmapLevel);
     }
 
     private void allocateTextureStorage() {
         int levels = mipmapEnabled ? (mipmapLevel + 1) : 1;
-        glTexStorage1D(GL_TEXTURE_1D, levels, format, width);
+        Gl.DSA.textureStorage1D(this.id, levels, format, width);
     }
 
     private void initializeTexture() {
         try (GlState ignored = new GlState()) {
-            glBindTexture(GL_TEXTURE_1D, this.id);
             configureTextureParameters();
             allocateTextureStorage();
             updateDebugLabel(getDebugLabel());
@@ -118,9 +119,11 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     }
 
     public void copyFromTex(int srcTex) {
-        glCopyImageSubData(srcTex, GL_TEXTURE_1D, 0, 0, 0, 0,
+        glCopyImageSubData(
+                srcTex, GL_TEXTURE_1D, 0, 0, 0, 0,
                 this.id, GL_TEXTURE_1D, 0, 0, 0, 0,
-                width, 1, 1);
+                width, 1, 1
+        );
     }
 
     @Override
@@ -183,7 +186,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     public void destroy() {
         mipViews.values().forEach(GlTextureView::destroy);
         mipViews.clear();
-        glDeleteTextures(this.id);
+        Gl.DSA.deleteTexture(this.id);
     }
 
     @Override

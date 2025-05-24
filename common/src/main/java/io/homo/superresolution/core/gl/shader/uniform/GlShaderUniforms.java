@@ -10,39 +10,39 @@ public class GlShaderUniforms {
     }
 
     public GlShaderUniform.Vec2 strictVec2(String name) {
-        return new GlShaderUniform.Vec2(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Vec2(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Texture strictTexture(String name) {
-        return new GlShaderUniform.Texture(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Texture(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Vec3 strictVec3(String name) {
-        return new GlShaderUniform.Vec3(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Vec3(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Vec4 strictVec4(String name) {
-        return new GlShaderUniform.Vec4(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Vec4(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Float strictFloat(String name) {
-        return new GlShaderUniform.Float(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Float(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Int strictInt(String name) {
-        return new GlShaderUniform.Int(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Int(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Bool strictBool(String name) {
-        return new GlShaderUniform.Bool(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Bool(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Matrix4 strictMatrix4(String name) {
-        return new GlShaderUniform.Matrix4(getLocationOrThrow(name), this);
+        return new GlShaderUniform.Matrix4(program.shaderProgram, getLocationOrThrow(name), this);
     }
 
     public GlShaderUniform.Struct strictStruct(String name, int bindingPoint) {
-        return new GlShaderUniform.Struct(getLocationOrThrow(name), bindingPoint, this);
+        return new GlShaderUniform.Struct(program.shaderProgram, getLocationOrThrow(name), bindingPoint, this);
     }
 
     public GlShaderUniform.Vec2 safeVec2(String name) {
@@ -79,7 +79,7 @@ public class GlShaderUniforms {
 
     public GlShaderUniform.Struct safeStruct(String name, int bindingPoint) {
         int loc = program.getUniformLocation(name);
-        return new GlShaderUniform.Struct(loc, bindingPoint, this);
+        return new GlShaderUniform.Struct(program.shaderProgram, loc, bindingPoint, this);
     }
 
     private int getLocationOrThrow(String name) {
@@ -92,11 +92,11 @@ public class GlShaderUniforms {
 
     private <T extends GlShaderUniform<?>> GlShaderUniform<?> createSafeUniform(String name, UniformConstructor<T> constructor) {
         int loc = program.getUniformLocation(name);
-        return constructor.create(loc, this);
+        return constructor.create(program.shaderProgram, loc, this);
     }
 
     @FunctionalInterface
     private interface UniformConstructor<T> {
-        T create(int location, GlShaderUniforms shaderUniforms);
+        T create(int program, int location, GlShaderUniforms shaderUniforms);
     }
 }

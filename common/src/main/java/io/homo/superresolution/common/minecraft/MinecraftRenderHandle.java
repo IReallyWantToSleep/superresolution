@@ -9,6 +9,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.GlStates;
 import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
@@ -223,7 +224,7 @@ public class MinecraftRenderHandle {
                 SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
             }
             IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-            GL45.glBlitNamedFramebuffer(
+            Gl.DSA.blitFramebuffer(
                     outFbo.getFrameBufferId(),
                     MinecraftRenderHandle.getOriginRenderTarget().getFrameBufferId(),
                     0, 0, outFbo.getWidth(), outFbo.getHeight(),
