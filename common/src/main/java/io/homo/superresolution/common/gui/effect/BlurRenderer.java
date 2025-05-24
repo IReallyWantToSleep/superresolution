@@ -158,9 +158,9 @@ public class BlurRenderer {
 
                 Gl.DSA.bindVertexArray(vao);
                 blurShader.uniforms()
-                        .strictTexture("uTexture").value(blurTempTexture)
-                        .strictVec4("weightA").value(blurWeights[0], blurWeights[1], blurWeights[2], blurWeights[3])
-                        .strictVec4("weightB").value(blurWeights[4], blurWeights[5], blurWeights[6], blurWeights[7]);
+                        .safeTexture("uTexture").value(blurTempTexture)
+                        .safeVec4("weightA").value(blurWeights[0], blurWeights[1], blurWeights[2], blurWeights[3])
+                        .safeVec4("weightB").value(blurWeights[4], blurWeights[5], blurWeights[6], blurWeights[7]);
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
             blurShader.clear();
