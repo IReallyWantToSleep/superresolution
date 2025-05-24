@@ -1,0 +1,90 @@
+name: Bug报告
+description: Bug报告模板(ZH)
+title: "[Bug]: "
+labels: [ "bug" ]
+projects: [ ]
+assignees: [ ]
+body:
+  - type: input
+    id: mc-version
+    attributes:
+      label: Minecraft版本
+      description: 你正在使用的Minecraft版本
+      placeholder: "1.20.1"
+    validations:
+      required: true
+  - type: input
+    id: mod-version
+    attributes:
+      label: Mod版本
+      description: 你正在使用的Mod版本
+      placeholder: "0.7.0-alpha.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: mod-loader
+    attributes:
+      label: Mod加载器
+      description: 你正在使用的Mod加载器
+      options:
+        - Fabric
+        - Forge
+        - NeoForge
+    validations:
+      required: true
+  - type: input
+    id: mod-loader-version
+    attributes:
+      label: Mod加载器版本
+      description: 你正在使用的Mod加载器版本
+      placeholder: "45.1.0"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: 显卡
+      description: 你的显卡
+      placeholder: "NVIDIA GeForce RTX 3050"
+  - type: input
+    id: gpu-drivers-version
+    attributes:
+      label: 显卡驱动程序版本
+      description: 你的显卡驱动程序版本
+      placeholder: "560.94"
+  - type: textarea
+    id: description
+    attributes:
+      label: 描述此Bug
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 重现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: crash-reports
+    attributes:
+      label: 崩溃报告
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图
+      description: 如果是渲染Bug或者界面问题，请在此处上传相关截图
+  - type: textarea
+    id: mod-list
+    attributes:
+      label: 模组列表
+      description: 安装的模组与版本
+    validations:
+      required: true
