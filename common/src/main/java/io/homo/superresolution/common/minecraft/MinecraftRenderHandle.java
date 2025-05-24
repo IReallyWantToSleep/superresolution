@@ -12,20 +12,15 @@ import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.gl.Gl;
 import io.homo.superresolution.core.gl.GlState;
 import io.homo.superresolution.core.gl.GlStates;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
 import io.homo.superresolution.core.renderdoc.RenderDoc;
 import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
-import org.lwjgl.opengl.GL43;
-import org.lwjgl.opengl.GL44;
-import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -47,8 +42,6 @@ public class MinecraftRenderHandle {
     private static Minecraft minecraft;
     private static IFrameBuffer originRenderTarget;
     private static IFrameBuffer renderTarget;
-    private static PostChain entityEffect;
-    private static IFrameBuffer entityTarget;
     private static boolean needCapture = false;
     private static boolean needCaptureUpscale = false;
 
@@ -94,20 +87,22 @@ public class MinecraftRenderHandle {
     }
 
     //bugjump在1.21.1后的版本重写了一堆代码，成功使发光效果不用我强行兼容力，感谢bugjump
-    public static void updateEntityOutline() {
-        entityTarget = MinecraftRenderTargetType.ENTITY.get(Minecraft.getInstance().levelRenderer);
+    public static void updateLevelEffect() {
         #if MC_VER < MC_1_21_4
-        entityEffect = ((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).getEntityEffect();
+        //fixPostChain(((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).getEntityEffect());
+        #endif
+    }
+
+    public static void fixPostChain(PostChain postChain) {
+        #if MC_VER < MC_1_21_4
         int renderWidth = getRenderWidth();
         int renderHeight = getRenderHeight();
-        for (RenderTarget renderTarget : ((PostChainAccessor) entityEffect).getFullSizedTargets()) {
+        for (RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
             if (renderTarget.width != renderWidth ||
                     renderTarget.height != renderHeight ||
-                    ((PostChainAccessor) entityEffect).getScreenWidth() != renderWidth ||
-                    ((PostChainAccessor) entityEffect).getScreenHeight() != renderHeight) {
-
-                entityEffect.resize(renderWidth, renderHeight);
-
+                    ((PostChainAccessor) postChain).getScreenWidth() != renderWidth ||
+                    ((PostChainAccessor) postChain).getScreenHeight() != renderHeight) {
+                postChain.resize(renderWidth, renderHeight);
                 break;
             }
         }
@@ -132,11 +127,11 @@ public class MinecraftRenderHandle {
     }
 
     public static void onInitEntityEffectBegin() {
-        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
+        //setClientRenderTarget(getRenderTarget().asMcRenderTarget());
     }
 
     public static void onInitEntityEffectEnd() {
-        setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
+        //setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
     }
 
     public static void resize() {
@@ -172,7 +167,7 @@ public class MinecraftRenderHandle {
             SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
         }
         PerformanceInfo.begin("world");
-        updateEntityOutline();
+        updateLevelEffect();
         updateRenderTarget();
         updateRenderTargetSize();
         #if MC_VER > MC_1_21_4
