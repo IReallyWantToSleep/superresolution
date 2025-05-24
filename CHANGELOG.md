@@ -1,6 +1,6 @@
 # 0.7.1-alpha.1
 
-* 现在模组必须需要`GL_ARB_direct_state_access`OpenGL扩展
+* 现在模组需要`GL_ARB_direct_state_access`OpenGL扩展
 * 将多数的GL调用由传统方式改为DSA调用，或许会提升性能
 * 优化FSR2性能
 * 修复AMD显卡上的异常崩溃
