@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.mixin.core;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
@@ -19,14 +20,40 @@ public class WindowMixin {
     @Shadow
     private int framebufferHeight;
 
+    @Inject(at = @At("RETURN"), method = "getScreenWidth", cancellable = true)
+    private void getScreenWidth(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(super_resolution$clampSize((ci.getReturnValueI())));
+    }
+
+    @Inject(at = @At("RETURN"), method = "getScreenHeight", cancellable = true)
+    private void getScreenHeight(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(super_resolution$clampSize((ci.getReturnValueI())));
+    }
+
+    @Inject(at = @At("RETURN"), method = "getGuiScaledWidth", cancellable = true)
+    private void getGuiScaledWidth(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(super_resolution$clampSize((ci.getReturnValueI())));
+    }
+
+    @Inject(at = @At("RETURN"), method = "getGuiScaledHeight", cancellable = true)
+    private void getGuiScaledHeight(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(super_resolution$clampSize((ci.getReturnValueI())));
+    }
+
+
     @Inject(at = @At("RETURN"), method = "getWidth", cancellable = true)
     private void getFramebufferWidth(CallbackInfoReturnable<Integer> ci) {
-        ci.setReturnValue(super_resolution$scale(ci.getReturnValueI()));
+        ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValueI())));
+    }
+
+    @Unique
+    private int super_resolution$clampSize(int size) {
+        return Math.max(size, 1);
     }
 
     @Inject(at = @At("RETURN"), method = "getHeight", cancellable = true)
     private void getFramebufferHeight(CallbackInfoReturnable<Integer> ci) {
-        ci.setReturnValue(super_resolution$scale(ci.getReturnValueI()));
+        ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValueI())));
     }
 
     @Unique
