@@ -38,7 +38,7 @@ public abstract class PostChainMixin {
     @Shadow
     @Final
     private String name;
-    #else
+    #if MC_VER >= MC_1_21_1
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void onInitPostChain(
             TextureManager textureManager,
@@ -61,9 +61,8 @@ public abstract class PostChainMixin {
         this.load(textureManager, resourceLocation);
         SuperResolution.LOGGER.info("已注入PostChain {}", this.name);
     }
-    #endif
 
-    #if MC_VER < MC_1_21_1
+    #else
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void onInitPostChain(
             TextureManager textureManager,
@@ -86,6 +85,7 @@ public abstract class PostChainMixin {
         this.load(textureManager, name);
         SuperResolution.LOGGER.info("已注入PostChain {}", this.name);
     }
+    #endif
 
     @Shadow
     public abstract void resize(int width, int height);
