@@ -7,12 +7,12 @@ public interface AlgorithmResizeEvent {
             AlgorithmResizeEvent.class,
             (listeners) -> (algorithm, screenWidth, screenHeight, renderWidth, renderHeight) -> {
                 for (AlgorithmResizeEvent listener : listeners) {
-                    listener.onAlgorithmRegister(algorithm, screenWidth, screenHeight, renderWidth, renderHeight);
+                    listener.onAlgorithmResize(algorithm, screenWidth, screenHeight, renderWidth, renderHeight);
                 }
             }
     );
 
-    void onAlgorithmRegister(
+    void onAlgorithmResize(
             AbstractAlgorithm algorithm,
             int screenWidth, int screenHeight,
             int renderWidth, int renderHeight

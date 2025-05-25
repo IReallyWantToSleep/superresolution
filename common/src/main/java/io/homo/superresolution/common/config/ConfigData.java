@@ -34,8 +34,6 @@ public class ConfigData {
         skipInitVulkan = compatMode;
         enableRenderDoc = !compatMode;
         enableImgui = !compatMode;
-        injectPostChainBlackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
-        injectPostChainBlackList.add("minecraft:shaders/post/blur.json");
     }
 
     public static AlgorithmDescription<?> getDefaultAlgorithm() {
