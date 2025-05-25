@@ -267,6 +267,7 @@ public class ClothConfig {
                 .build());
         List<String> injectPostChainBlackList = new ArrayList<>();
         injectPostChainBlackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
+        injectPostChainBlackList.add("minecraft:shaders/post/blur.json");
         commonCategory.addEntry(entryBuilder.startStrList(
                         Component.translatable("superresolution.screen.config.options.label.inject_postChain_black_list"),
                         Config.getInjectPostChainBlackList())
