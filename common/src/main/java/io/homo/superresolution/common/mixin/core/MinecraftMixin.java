@@ -30,9 +30,7 @@ public class MinecraftMixin {
             super_resolution$cacheHeight = MinecraftRenderHandle.getScreenHeight();
             Minecraft.getInstance().resizeDisplay();
         }
-        #if MC_VER > MC_1_21_4
         org.lwjgl.opengl.GL11.glViewport(0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
-        #endif
         PerformanceInfo.begin("runTick");
     }
 

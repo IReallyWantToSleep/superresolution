@@ -10,6 +10,9 @@ import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ConfigData {
     private static final OSType CURRENT_OS_TYPE = new OS().type;
     private static final boolean compatMode = CURRENT_OS_TYPE == OSType.MACOS || CURRENT_OS_TYPE == OSType.ANDROID;
@@ -25,11 +28,13 @@ public class ConfigData {
     private boolean enableImgui;
     private boolean generateMotionVectors;
     private boolean pauseGameOnGui;
+    private List<String> injectPostChainBlackList = new ArrayList<>();
 
     public ConfigData() {
         skipInitVulkan = compatMode;
         enableRenderDoc = !compatMode;
         enableImgui = !compatMode;
+        injectPostChainBlackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
     }
 
     public static AlgorithmDescription<?> getDefaultAlgorithm() {
@@ -45,6 +50,14 @@ public class ConfigData {
             return AlgorithmDescriptions.NONE;
         }
         return desc;
+    }
+
+    public List<String> getInjectPostChainBlackList() {
+        return injectPostChainBlackList;
+    }
+
+    public void setInjectPostChainBlackList(List<String> injectPostChainBlackList) {
+        this.injectPostChainBlackList = injectPostChainBlackList;
     }
 
     public boolean isPauseGameOnGui() {

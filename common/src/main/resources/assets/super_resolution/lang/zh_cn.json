@@ -109,5 +109,8 @@
     "superresolution.enum.sgsrvariant.cs_3": "CS_3 (计算着色器/3通道)",
     "superresolution.enum.sgsrvariant.fs_2": "FS_2 (普通着色器/2通道)",
     "key.super_resolution.open_config": "打开配置界面",
-    "superresolution.translate.PoweredByDeepSeek": "?"
+    "superresolution.translate.PoweredByDeepSeek": "?",
+    "superresolution.algo.description.header": "FSR1 --- AMD FidelityFX Super Resolution 1\nFSR2 --- AMD FidelityFX Super Resolution 2\nNIS --- NVIDIA Image Scaling\nSGSR --- Snapdragon™ Game Super Resolution",
+    "superresolution.screen.config.options.label.inject_postChain_black_list": "PostChain注入黑名单",
+    "superresolution.screen.config.options.tooltip.inject_postChain_black_list": "部分模组使用PostChain来实现UI效果\n本模组注入代码到PostChain会导致UI效果使用世界渲染分辨率来渲染，这会造成一些渲染问题（比如ModernUI的界面虚化）\n在此处添加希望排除的PostChain名称，本模组便会跳过它们\n修改后可能重启游戏才会生效"
 }
