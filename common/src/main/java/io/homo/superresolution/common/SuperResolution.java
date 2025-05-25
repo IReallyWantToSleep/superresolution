@@ -6,6 +6,7 @@ import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.core.gl.GlState;
@@ -141,6 +142,8 @@ public final class SuperResolution implements Resizable, Destroyable {
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
             algorithmDescription = Config.getUpscaleAlgo();
+            /////////生成AI训练数据集
+            if (Platform.currentPlatform.isDevelopmentEnvironment()) DataSetGenerator.init();
         }
     }
 

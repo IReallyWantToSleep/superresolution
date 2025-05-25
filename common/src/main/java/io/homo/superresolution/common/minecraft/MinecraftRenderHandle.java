@@ -4,6 +4,8 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
+import io.homo.superresolution.api.event.LevelRenderEndEvent;
+import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.CaptureMode;
@@ -168,6 +170,9 @@ public class MinecraftRenderHandle {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
             }
         }
+        try (GlState ignored = new GlState()) {
+            LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
+        }
     }
 
     public static void onRenderWorldEnd(CallType type) {
@@ -184,7 +189,9 @@ public class MinecraftRenderHandle {
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
         getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE, true);
-
+        try (GlState ignored = new GlState()) {
+            LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
+        }
 
         try (GlState ignored = new GlState()) {
             PerformanceInfo.begin("upscale");
