@@ -9,6 +9,8 @@ import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import net.minecraft.client.Minecraft;
 
+import java.util.List;
+
 public class Config {
     private static ConfigData instance = new ConfigData();
     private static Runnable resolutionChangeCallback;
@@ -27,6 +29,13 @@ public class Config {
         });
     }
 
+    public static List<String> getInjectPostChainBlackList() {
+        return instance.getInjectPostChainBlackList();
+    }
+
+    public static void setInjectPostChainBlackList(List<String> injectPostChainBlackList) {
+        instance.setInjectPostChainBlackList(injectPostChainBlackList);
+    }
 
     public static boolean isEnableRenderDoc() {
         return instance.isEnableRenderDoc();
@@ -129,7 +138,9 @@ public class Config {
     }
 
     public static void setEnableUpscale(boolean enableUpscale) {
+        boolean resolutionChanged = isEnableUpscale() != enableUpscale;
         instance.setEnableUpscale(enableUpscale);
+        if (resolutionChanged) runResolutionChangeCallback();
     }
 
     public static SpecialConfigs getSpecial() {

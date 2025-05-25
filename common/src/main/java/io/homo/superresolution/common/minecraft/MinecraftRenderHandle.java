@@ -86,15 +86,9 @@ public class MinecraftRenderHandle {
         );
     }
 
-    //bugjump在1.21.1后的版本重写了一堆代码，成功使发光效果不用我强行兼容力，感谢bugjump
-    public static void updateLevelEffect() {
-        #if MC_VER < MC_1_21_4
-        //fixPostChain(((LevelRendererAccessor) Minecraft.getInstance().levelRenderer).getEntityEffect());
-        #endif
-    }
-
     public static void fixPostChain(PostChain postChain) {
         #if MC_VER < MC_1_21_4
+        postChain.getName();
         int renderWidth = getRenderWidth();
         int renderHeight = getRenderHeight();
         for (RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
@@ -125,15 +119,7 @@ public class MinecraftRenderHandle {
     public static IFrameBuffer getRenderTarget(MinecraftRenderTargetType type) {
         return renderTargets.get(type);
     }
-
-    public static void onInitEntityEffectBegin() {
-        //setClientRenderTarget(getRenderTarget().asMcRenderTarget());
-    }
-
-    public static void onInitEntityEffectEnd() {
-        //setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
-    }
-
+    
     public static void resize() {
         int screenWidth = getScreenWidth();
         int screenHeight = getScreenHeight();
@@ -167,7 +153,6 @@ public class MinecraftRenderHandle {
             SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
         }
         PerformanceInfo.begin("world");
-        updateLevelEffect();
         updateRenderTarget();
         updateRenderTargetSize();
         #if MC_VER > MC_1_21_4
@@ -198,7 +183,7 @@ public class MinecraftRenderHandle {
         #else
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
-        getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE);
+        getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE, true);
 
 
         try (GlState ignored = new GlState()) {
@@ -247,8 +232,13 @@ public class MinecraftRenderHandle {
                 RenderDoc.renderdoc.EndFrameCapture.call(null, null);
             }
         }
-
         getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE);
+        Gl.glViewport(
+                0,
+                0,
+                getScreenWidth(),
+                getScreenHeight()
+        );
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {

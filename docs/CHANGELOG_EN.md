@@ -1,3 +1,8 @@
+# 0.7.1-alpha.2
+
+* New option: PostChain Injection Blacklist
+* Add logs to record injected PostChains
+
 # 0.7.1-alpha.1
 
 * The mod now **requires** the `GL_ARB_direct_state_access` OpenGL extension

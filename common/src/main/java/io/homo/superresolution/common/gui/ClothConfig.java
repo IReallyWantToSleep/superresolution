@@ -265,6 +265,16 @@ public class ClothConfig {
                         Config.isPauseGameOnGui())
                 .setSaveConsumer((Config::setPauseGameOnGui))
                 .build());
+        List<String> injectPostChainBlackList = new ArrayList<>();
+        injectPostChainBlackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
+        commonCategory.addEntry(entryBuilder.startStrList(
+                        Component.translatable("superresolution.screen.config.options.label.inject_postChain_black_list"),
+                        Config.getInjectPostChainBlackList())
+                .setDefaultValue(injectPostChainBlackList)
+                .requireRestart()
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.inject_postChain_black_list"))
+                .setSaveConsumer((Config::setInjectPostChainBlackList))
+                .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),

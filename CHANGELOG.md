@@ -1,3 +1,8 @@
+# 0.7.1-alpha.2
+
+* 新增选项：PostChain注入黑名单
+* 添加日志来记录已经注入的PostChain
+
 # 0.7.1-alpha.1
 
 * 现在模组需要`GL_ARB_direct_state_access`OpenGL扩展

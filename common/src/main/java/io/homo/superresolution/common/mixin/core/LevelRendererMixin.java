@@ -31,15 +31,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
-    @Inject(at = @At(value = "HEAD"), method = "initOutline")
-    private void onInitOutline(CallbackInfo ci) {
-        MinecraftRenderHandle.onInitEntityEffectBegin();
-    }
-
-    @Inject(at = @At(value = "RETURN"), method = "initOutline")
-    private void onInitOutlineEnd(CallbackInfo ci) {
-        MinecraftRenderHandle.onInitEntityEffectEnd();
-    }
 
 
     #if MC_VER <= MC_1_21_1
