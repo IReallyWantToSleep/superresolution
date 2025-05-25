@@ -8,10 +8,10 @@ public interface AlgorithmDispatchEvent {
             AlgorithmDispatchEvent.class,
             (listeners) -> (algorithm, dispatchResource) -> {
                 for (AlgorithmDispatchEvent listener : listeners) {
-                    listener.onAlgorithmRegister(algorithm, dispatchResource);
+                    listener.onAlgorithmDispatch(algorithm, dispatchResource);
                 }
             }
     );
 
-    void onAlgorithmRegister(AbstractAlgorithm algorithm, DispatchResource dispatchResource);
+    void onAlgorithmDispatch(AbstractAlgorithm algorithm, DispatchResource dispatchResource);
 }

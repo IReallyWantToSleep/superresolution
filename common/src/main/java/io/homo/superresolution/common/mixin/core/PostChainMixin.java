@@ -11,21 +11,24 @@ import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Mixin(PostChain.class)
 public abstract class PostChainMixin {
     #if MC_VER < MC_1_21_4
+    @Unique
+    private List<String> super_resolution$blackList = null;
     @Shadow
     @Final
     private List<PostPass> passes;
@@ -38,6 +41,7 @@ public abstract class PostChainMixin {
     @Shadow
     @Final
     private String name;
+
     #if MC_VER >= MC_1_21_1
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void onInitPostChain(
@@ -71,7 +75,7 @@ public abstract class PostChainMixin {
             ResourceLocation name,
             CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
-        if (onBlackList()) return;
+        if (super_resolution$onBlackList()) return;
 
         if (!screenTarget.equals(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -98,7 +102,7 @@ public abstract class PostChainMixin {
 
     @Inject(method = "resize", at = @At("HEAD"), cancellable = true)
     public void onResize(int width, int height, CallbackInfo ci) {
-        if (onBlackList()) return;
+        if (super_resolution$onBlackList()) return;
 
         if (
                 width != MinecraftRenderHandle.getRenderWidth() ||
@@ -111,12 +115,20 @@ public abstract class PostChainMixin {
 
     @Inject(method = "process", at = @At("HEAD"))
     public void onProcess(float partialTicks, CallbackInfo ci) {
-        if (onBlackList()) return;
+        if (super_resolution$onBlackList()) return;
         MinecraftRenderHandle.fixPostChain((PostChain) (Object) this);
     }
 
-    private boolean onBlackList() {
-        return Config.getInjectPostChainBlackList().contains(name);
+    @Unique
+    private boolean super_resolution$onBlackList() {
+        if (super_resolution$blackList == null) {
+            super_resolution$blackList = new ArrayList<>();
+            super_resolution$blackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
+            super_resolution$blackList.add("minecraft:shaders/post/blur.json");
+            super_resolution$blackList.addAll(Config.getInjectPostChainBlackList());
+        }
+
+        return super_resolution$blackList.contains(name);
     }
     #endif
 }

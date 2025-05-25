@@ -1,7 +1,6 @@
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
@@ -196,7 +195,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         cachedWidth = getMinecraftWidth();
         cachedHeight = getMinecraftHeight();
         if (currentAlgorithm != null) {
-            AlgorithmResizeEvent.EVENT.invoker().onAlgorithmRegister(
+            AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
                     currentAlgorithm,
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight(),

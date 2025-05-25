@@ -3,6 +3,7 @@ package io.homo.superresolution.common.minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
+import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.CaptureMode;
@@ -24,7 +25,6 @@ import net.minecraft.client.renderer.PostChain;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
-import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
 #endif
 import java.util.HashMap;
 import java.util.Map;
@@ -119,7 +119,7 @@ public class MinecraftRenderHandle {
     public static IFrameBuffer getRenderTarget(MinecraftRenderTargetType type) {
         return renderTargets.get(type);
     }
-    
+
     public static void resize() {
         int screenWidth = getScreenWidth();
         int screenHeight = getScreenHeight();
@@ -197,12 +197,19 @@ public class MinecraftRenderHandle {
             try (GlState ignored_ = new GlState()) {
                 DispatchResource dispatchResource = AlgorithmManager.getDispatchResource();
                 if (SuperResolution.currentAlgorithm != null) {
-                    AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmRegister(
+                    AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
                             SuperResolution.currentAlgorithm,
                             dispatchResource
                     );
                 }
                 SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+                if (SuperResolution.currentAlgorithm != null) {
+                    AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
+                            SuperResolution.currentAlgorithm,
+                            SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.COLOR)
+                    );
+                }
+
             }
             IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
             Gl.DSA.blitFramebuffer(
