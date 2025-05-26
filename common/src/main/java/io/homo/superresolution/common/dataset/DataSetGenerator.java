@@ -44,6 +44,7 @@ public class DataSetGenerator {
     );
     private static GlFrameBuffer tempFbo;
     private static GlGeneralShaderProgram copyShader;
+    private static GlGeneralShaderProgram copyShader0;
 
     public static void init() {
         if (!OUTPUT_DIR.exists() && !OUTPUT_DIR.mkdirs()) {
@@ -53,13 +54,20 @@ public class DataSetGenerator {
         LevelRenderStartEvent.EVENT.register(DataSetGenerator::onLevelBegin);
         LevelRenderEndEvent.EVENT.register(DataSetGenerator::onLevelEnd);
         tempFbo = GlFrameBuffer.create(
-                TextureFormat.R16F, null, 1, 1
+                TextureFormat.RGBA8, null, 1, 1
         );
         copyShader = GlGeneralShaderProgram.create()
                 .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/depth_to_r16f.vert.glsl", true))
                 .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/depth_to_r16f.frag.glsl", true))
                 .setShaderName("dataset_build_copy_depth_to_color")
-                .build();
+                .build()
+                .compileShader();
+        copyShader0 = GlGeneralShaderProgram.create()
+                .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/rg16f_to_rgb.vert.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/rg16f_to_rgb.frag.glsl", true))
+                .setShaderName("dataset_build_copy_rg16f_to_rgb")
+                .build()
+                .compileShader();
     }
 
     private static void writeImage(ITexture texture, String path) {
@@ -149,8 +157,22 @@ public class DataSetGenerator {
                 HR_DEPTH_IMAGE.getAbsolutePath()
         );
 
+        copyJob = GlPipelineJobBuilders.graphics(copyShader0)
+                .resource(GlPipelineResourceDescription.createTextureResource(
+                        GlPipelineResourceType.Sampler2D,
+                        "tex",
+                        AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.COLOR),
+                        GlPipelineResourceAccess.READ,
+                        null,
+                        0
+                ))
+                .targetFramebuffer(tempFbo)
+                .build();
+        copyJob.schedule(GlPipelineJobDispatchResource.nothing());
+        copyJob.execute(GlPipelineJobDispatchResource.nothing());
+
         writeImage(
-                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.COLOR),
+                tempFbo.getTexture(FrameBufferAttachmentType.COLOR),
                 HR_MV_IMAGE.getAbsolutePath()
         );
     }

@@ -1,3 +1,10 @@
+# 0.7.1-alpha.3
+
+* 修复1.21.1+UI错位问题
+* 新增事件：AlgorithmDispatchFinishEvent
+* 新增事件：LevelRenderStartEvent
+* 新增事件：LevelRenderEndEvent
+
 # 0.7.1-alpha.2
 
 * 新增选项：PostChain注入黑名单

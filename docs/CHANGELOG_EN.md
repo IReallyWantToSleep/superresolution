@@ -1,3 +1,10 @@
+# 0.7.1-alpha.3
+
+* Fixed UI misalignment issue in versions 1.21.1+
+* Added event: AlgorithmDispatchFinishEvent
+* Added event: LevelRenderStartEvent
+* Added event: LevelRenderEndEvent
+
 # 0.7.1-alpha.2
 
 * New option: PostChain Injection Blacklist
