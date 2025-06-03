@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.minecraft;
 
 import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import net.minecraft.client.renderer.LevelRenderer;
 
 import java.util.function.Function;

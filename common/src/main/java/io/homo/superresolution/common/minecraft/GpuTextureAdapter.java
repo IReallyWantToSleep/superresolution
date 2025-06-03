@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.minecraft;
 
 
-import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 #if MC_VER > MC_1_21_4
 import com.mojang.blaze3d.opengl.DirectStateAccess;

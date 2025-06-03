@@ -2,6 +2,7 @@ package io.homo.superresolution.common.minecraft;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.sun.jna.Pointer;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
@@ -12,14 +13,14 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.core.gl.Gl;
-import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.GlStates;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.renderdoc.RenderDoc;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.opengl.GlStates;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
@@ -45,10 +46,15 @@ public class MinecraftRenderHandle {
     private static IFrameBuffer originRenderTarget;
     private static IFrameBuffer renderTarget;
     private static boolean needCapture = false;
+    private static boolean needCaptureVulkan = false;
     private static boolean needCaptureUpscale = false;
 
     public static void needCapture() {
         needCapture = true;
+    }
+
+    public static void needCaptureVulkan() {
+        needCaptureVulkan = true;
     }
 
     public static void needCaptureUpscale() {
@@ -170,6 +176,16 @@ public class MinecraftRenderHandle {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
             }
         }
+        if (needCaptureVulkan) {
+            if (RenderDoc.renderdoc != null) {
+                if (SuperResolution.interopManager.vulkanApp != null) {
+                    RenderDoc.renderdoc.StartFrameCapture.call(
+                            new Pointer(SuperResolution.interopManager.vulkanApp.getInstance().address()),
+                            null
+                    );
+                }
+            }
+        }
         try (GlState ignored = new GlState()) {
             LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
         }
@@ -240,12 +256,6 @@ public class MinecraftRenderHandle {
         }
         PerformanceInfo.end("world");
         frameTime = PerformanceInfo.getAsMillis("world");
-        if (needCapture) {
-            if (RenderDoc.renderdoc != null) {
-                needCapture = false;
-                RenderDoc.renderdoc.EndFrameCapture.call(null, null);
-            }
-        }
         getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE);
         Gl.glViewport(
                 0,
@@ -253,6 +263,23 @@ public class MinecraftRenderHandle {
                 getScreenWidth(),
                 getScreenHeight()
         );
+        if (needCapture) {
+            if (RenderDoc.renderdoc != null) {
+                needCapture = false;
+                RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+            }
+        }
+        if (needCaptureVulkan) {
+            if (RenderDoc.renderdoc != null) {
+                if (SuperResolution.interopManager.vulkanApp != null) {
+                    needCaptureVulkan = false;
+                    RenderDoc.renderdoc.EndFrameCapture.call(
+                            Pointer.createConstant(SuperResolution.interopManager.vulkanApp.getInstance().address()),
+                            null
+                    );
+                }
+            }
+        }
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {
@@ -328,7 +355,7 @@ public class MinecraftRenderHandle {
                 getRenderHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                getRenderTarget(MinecraftRenderTargetType.ENTITY).getTextureId(FrameBufferAttachmentType.COLOR)
+                getRenderTarget(MinecraftRenderTargetType.ENTITY).getTexture(FrameBufferAttachmentType.COLOR)
         );
     }
 
@@ -371,7 +398,7 @@ public class MinecraftRenderHandle {
                 getScreenHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                renderTarget.getTextureId(FrameBufferAttachmentType.COLOR)
+                renderTarget.getTexture(FrameBufferAttachmentType.COLOR)
         )));
         glDisable(GL_BLEND);
     }

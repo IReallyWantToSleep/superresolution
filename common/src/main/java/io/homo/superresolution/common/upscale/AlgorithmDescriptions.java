@@ -44,18 +44,18 @@ public class AlgorithmDescriptions {
                             .glMajorVersion(4)
                             .glMinorVersion(5)
             );
-    public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
-            new AlgorithmDescription<>(
-                    NVIDIAImageScaling.class,
-                    "NIS",
-                    "nis",
-                    "NVIDIA Image Scaling",
-                    Requirement.nothing()
-                            .glMajorVersion(4)
-                            .glMinorVersion(3)
-                            .requiredGlExtension("GL_ARB_shading_language_420pack")
-                            .developmentEnvironment(true)
-            );
+    //public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
+    //        new AlgorithmDescription<>(
+    //                NVIDIAImageScaling.class,
+    //                "NIS",
+    //                "nis",
+    //                "NVIDIA Image Scaling",
+    //                Requirement.nothing()
+    //                        .glMajorVersion(4)
+    //                        .glMinorVersion(3)
+    //                        .requiredGlExtension("GL_ARB_shading_language_420pack")
+    //                        .developmentEnvironment(true)
+    //        );
     public static final AlgorithmDescription<Sgsr1> SGSR1 =
             new AlgorithmDescription<>(
                     Sgsr1.class,
@@ -81,7 +81,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(NONE);
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
-        AlgorithmRegistry.registry(NIS);
+        //AlgorithmRegistry.registry(NIS);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         AlgorithmRegisterEvent.EVENT.invoker().onAlgorithmRegister();

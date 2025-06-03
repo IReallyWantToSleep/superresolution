@@ -1,11 +1,10 @@
 package io.homo.superresolution.common.upscale.none;
 
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 public class None extends AbstractAlgorithm {
     @Override
@@ -18,7 +17,7 @@ public class None extends AbstractAlgorithm {
     public boolean dispatch(DispatchResource dispatchResource) {
         return true;
     }
-    
+
     public void resize(int width, int height) {
     }
 

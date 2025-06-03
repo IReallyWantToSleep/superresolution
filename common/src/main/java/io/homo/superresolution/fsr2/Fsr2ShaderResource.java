@@ -1,14 +1,12 @@
 package io.homo.superresolution.fsr2;
 
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
-import io.homo.superresolution.core.gl.texture.GlSampler;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
-import io.homo.superresolution.core.impl.texture.TextureSupplier;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -93,8 +91,14 @@ public class Fsr2ShaderResource {
                                 ITexture texture = (ITexture) resourceEntry.get().getResource();
                                 if (texture == null) {
                                     Fsr2Context.LOGGER.error("%s %s".formatted(resourceEntry.get().type().name(), resourceEntry.get().getDescription().label));
-                                    return GlTexture2D.create(
-                                            1, 1, TextureFormat.RGBA8
+                                    return RenderSystems.current().createTexture(
+                                            TextureDescription.create()
+                                                    .width(1)
+                                                    .height(1)
+                                                    .type(TextureType.Texture2D)
+                                                    .format(TextureFormat.RGBA8)
+                                                    .usages(TextureUsages.create().storage().sampler())
+                                                    .build()
                                     );
                                 }
                                 return texture;

@@ -1,26 +1,22 @@
 package io.homo.superresolution.common.dataset;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
-import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.jobs.GlPipelineJob;
-import io.homo.superresolution.core.gl.pipeline.jobs.GlPipelineJobDispatchResource;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
-import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJob;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobDispatchResource;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import net.minecraft.client.KeyMapping;
 import org.lwjgl.system.MemoryUtil;
 
@@ -35,7 +31,7 @@ import java.nio.file.Paths;
 import static org.lwjgl.opengl.GL33.*;
 
 public class DataSetGenerator {
-    public static final File OUTPUT_DIR = Paths.get("N:\\msrdataset").toFile();
+    public static final File OUTPUT_DIR = Paths.get("C:\\Users\\yyyyy\\AppData\\Local\\msrdataset").toFile();
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
@@ -43,8 +39,8 @@ public class DataSetGenerator {
             "Super Resolution"
     );
     private static GlFrameBuffer tempFbo;
-    private static GlGeneralShaderProgram copyShader;
-    private static GlGeneralShaderProgram copyShader0;
+    private static GlShaderProgram copyShader;
+    private static GlShaderProgram copyShader0;
 
     public static void init() {
         if (!OUTPUT_DIR.exists() && !OUTPUT_DIR.mkdirs()) {
@@ -55,19 +51,27 @@ public class DataSetGenerator {
         LevelRenderEndEvent.EVENT.register(DataSetGenerator::onLevelEnd);
         tempFbo = GlFrameBuffer.create(
                 TextureFormat.RGBA8, null, 1, 1
+        );/*
+        copyShader = SRRenderSystem.current().createShaderProgram(
+                ShaderDescription.general(
+                                new ShaderSource(ShaderType.VERTEX, "/shader/depth_to_r16f.vert.glsl", true),
+                                new ShaderSource(ShaderType.FRAGMENT, "/shader/depth_to_r16f.frag.glsl", true)
+                        )
+                        .name("dataset_build_copy_depth_to_color")
+                        .build()
         );
         copyShader = GlGeneralShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/depth_to_r16f.vert.glsl", true))
-                .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/depth_to_r16f.frag.glsl", true))
+                .addShaderSource()
+                .addShaderSource()
                 .setShaderName("dataset_build_copy_depth_to_color")
                 .build()
                 .compileShader();
         copyShader0 = GlGeneralShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/rg16f_to_rgb.vert.glsl", true))
-                .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/rg16f_to_rgb.frag.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderType.VERTEX, "/shader/rg16f_to_rgb.vert.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderType.FRAGMENT, "/shader/rg16f_to_rgb.frag.glsl", true))
                 .setShaderName("dataset_build_copy_rg16f_to_rgb")
                 .build()
-                .compileShader();
+                .compileShader();*/
     }
 
     private static void writeImage(ITexture texture, String path) {

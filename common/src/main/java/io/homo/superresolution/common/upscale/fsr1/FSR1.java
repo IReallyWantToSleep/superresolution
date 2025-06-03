@@ -1,34 +1,39 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.UniformBuffer;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.impl.Vec3;
-import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.pipeline.*;
-import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
-import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import org.lwjgl.opengl.GL46;
 
 public class FSR1 extends AbstractAlgorithm {
-    private GlComputeShaderProgram fsr1EASUShader;
-    private GlComputeShaderProgram fsr1RCASShader;
+    private GlShaderProgram fsr1EASUShader;
+    private GlShaderProgram fsr1RCASShader;
     private GlPipeline fsrUpscalePipeline;
     private GlTexture2D fsr1TempTexture;
     private GlFrameBuffer outputFbo;
     private GlTexture2D output;
+    private UniformBuffer buffer;
 
     public static int checkFP16Support() {
         if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
@@ -45,38 +50,56 @@ public class FSR1 extends AbstractAlgorithm {
 
     public void initShader() {
         int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
-        fsr1EASUShader = GlComputeShaderProgram.create()
-                .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
-                .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
-                .addDefineText("FSR_EASU", String.valueOf(1))
-                .setShaderName("FSR1_EASU")
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl", true))
-                .build()
-                .compileShader();
-        fsr1RCASShader = GlComputeShaderProgram.create()
-                .addDefineText("FSR_FP16_CRITERIA", String.valueOf(fp16))
-                .addDefineText("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
-                .addDefineText("FSR_RCAS", String.valueOf(1))
-                .setShaderName("FSR1_RCAS")
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl", true))
-                .build()
-                .compileShader();
+        fsr1EASUShader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
+                        .name("FSR1_EASU")
+                        .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
+                        .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
+                        .addDefine("FSR_EASU", String.valueOf(1))
+                        .uniformBlock("fsr1_data", 0, buffer.getSize())
+                        .build()
+        );
+        fsr1EASUShader.compile();
+        fsr1RCASShader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
+                        .name("FSR1_RCAS")
+                        .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
+                        .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
+                        .addDefine("FSR_RCAS", String.valueOf(1))
+                        .uniformBlock("fsr1_data", 0, buffer.getSize())
+                        .build()
+        );
+        fsr1RCASShader.compile();
     }
 
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
+        buffer = UniformBuffer.create()
+                .vec2Entry("renderViewportSize")
+                .vec2Entry("containerTextureSize")
+                .vec2Entry("upscaledViewportSize")
+                .floatEntry("sharpness")
+                .build();
         initShader();
         fsrUpscalePipeline = new GlPipeline();
-        fsr1TempTexture = GlTexture2D.create(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.RGBA8
+        fsr1TempTexture = (GlTexture2D) RenderSystems.current().createTexture(
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .format(TextureFormat.RGBA8)
+                        .usages(TextureUsages.create().sampler().storage())
+                        .build()
         );
-        output = GlTexture2D.create(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA8
+        output = (GlTexture2D) RenderSystems.current().createTexture(
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getScreenWidth())
+                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .format(TextureFormat.RGBA8)
+                        .usages(TextureUsages.create().sampler().storage())
+                        .build()
         );
         outputFbo = GlFrameBuffer.create(
                 output,
@@ -142,22 +165,18 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
+        buffer.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        buffer.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        buffer.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        buffer.setFloat("sharpness", Config.getSharpness());
+        buffer.fillBuffer();
+        fsr1RCASShader.uniforms().block("fsr1_data").set(buffer);
+        fsr1EASUShader.uniforms().block("fsr1_data").set(buffer);
         fsrUpscalePipeline.scheduleJob("fsr1_easu");
-        setFSR1ShaderUniform(fsr1EASUShader);
         fsrUpscalePipeline.executeJob("fsr1_easu");
         fsrUpscalePipeline.scheduleJob("fsr1_rcas");
-        setFSR1ShaderUniform(fsr1RCASShader);
         fsrUpscalePipeline.executeJob("fsr1_rcas");
         return true;
-    }
-
-    private void setFSR1ShaderUniform(GlComputeShaderProgram shaderProgram) {
-        shaderProgram.use();
-        shaderProgram.uniforms()
-                .safeVec2("renderViewportSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
-                .safeVec2("containerTextureSize").value(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight())
-                .safeVec2("upscaledViewportSize").value(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
-                .safeFloat("sharpness").value(Config.getSharpness());
     }
 
 

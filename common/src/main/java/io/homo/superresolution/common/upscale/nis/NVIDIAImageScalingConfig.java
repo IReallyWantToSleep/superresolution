@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.upscale.nis;
 
-import io.homo.superresolution.core.impl.IUniformStruct;
+import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.upscale.nis.struct.NISConfig;

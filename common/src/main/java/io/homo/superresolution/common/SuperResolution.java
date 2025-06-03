@@ -9,14 +9,15 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.glslang.GlslangShaderCompiler;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.platform.*;
-import io.homo.superresolution.core.interop.GlVkInteropManager;
-import io.homo.superresolution.core.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.none.None;
@@ -87,7 +88,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             interopManager = new GlVkInteropManager();
             initVulkan();
         }
-
+        RenderSystems.init();
         isPreInit = true;
     }
 
@@ -143,7 +144,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             AlgorithmManager.init();
             algorithmDescription = Config.getUpscaleAlgo();
             /////////生成AI训练数据集
-            if (Platform.currentPlatform.isDevelopmentEnvironment()) DataSetGenerator.init();
+            //if (Platform.currentPlatform.isDevelopmentEnvironment()) DataSetGenerator.init();
         }
     }
 

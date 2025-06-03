@@ -2,7 +2,7 @@ package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.core.impl.Vec2;
 
-import io.homo.superresolution.core.impl.IUniformStruct;
+import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;

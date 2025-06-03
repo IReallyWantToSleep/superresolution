@@ -1,31 +1,31 @@
 package io.homo.superresolution.common.upscale.nis;
 
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.Gl;
-import io.homo.superresolution.core.gl.GlConst;
-import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.gl.pipeline.*;
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlConst;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 
 import static org.lwjgl.opengl.GL11.GL_RGBA;
 import static org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT;
 import static org.lwjgl.stb.STBImage.*;
 
-import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import org.lwjgl.opengl.GL43;
@@ -34,9 +34,10 @@ import org.lwjgl.system.MemoryStack;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-import static io.homo.superresolution.core.gl.GlConst.GL_UNSIGNED_BYTE;
+import static io.homo.superresolution.core.graphics.opengl.GlConst.GL_UNSIGNED_BYTE;
 
-public class NVIDIAImageScaling extends AbstractAlgorithm {
+public class NVIDIAImageScaling {
+    /*
     private NVIDIAImageScalingConfig config;
     private ITexture output;
     private GlPipeline pipeline;
@@ -126,12 +127,12 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
         stbi_set_flip_vertically_on_load(false);
 
         scaleShader = GlComputeShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/nis/nis_scaler.comp.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderType.COMPUTE, "/shader/nis/nis_scaler.comp.glsl", true))
                 .setShaderName("nis_scaler")
                 .build()
                 .compileShader();
         sharpenShader = GlComputeShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/nis/nis_sharpen.comp.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderType.COMPUTE, "/shader/nis/nis_sharpen.comp.glsl", true))
                 .setShaderName("nis_sharpen")
                 .build()
                 .compileShader();
@@ -244,5 +245,5 @@ public class NVIDIAImageScaling extends AbstractAlgorithm {
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
         return outputFbo;
-    }
+    }*/
 }

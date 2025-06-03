@@ -3,8 +3,8 @@ package io.homo.superresolution.api;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.renderdoc.RenderDoc;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
@@ -51,6 +51,10 @@ public class SuperResolutionAPI {
 
     public static void debugRenderdocCaptureUpscale() {
         MinecraftRenderHandle.needCaptureUpscale();
+    }
+
+    public static void debugRenderdocCaptureVulkan() {
+        MinecraftRenderHandle.needCaptureVulkan();
     }
 
     public static void debugRenderdocTriggerCapture() {

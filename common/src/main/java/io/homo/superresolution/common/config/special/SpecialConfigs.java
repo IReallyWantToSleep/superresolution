@@ -18,7 +18,7 @@ public class SpecialConfigs {
     public SpecialConfigs() {
         description.put("fsr1", Pair.of(fsr1, AlgorithmDescriptions.FSR1.getDisplayName()));
         description.put("fsr2", Pair.of(fsr2, AlgorithmDescriptions.FSR2.getDisplayName()));
-        description.put("nis", Pair.of(nis, AlgorithmDescriptions.NIS.getDisplayName()));
+        //description.put("nis", Pair.of(nis, AlgorithmDescriptions.NIS.getDisplayName()));
         description.put("sgsr2", Pair.of(sgsr2, AlgorithmDescriptions.SGSR2.getDisplayName()));
         description.put("sgsr1", Pair.of(sgsr1, AlgorithmDescriptions.SGSR1.getDisplayName()));
     }

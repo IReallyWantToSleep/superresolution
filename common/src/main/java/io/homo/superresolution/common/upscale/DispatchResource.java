@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.core.impl.Vec2;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import org.joml.Matrix4f;
 
 public record DispatchResource(
@@ -12,7 +12,7 @@ public record DispatchResource(
         int screenWidth,
         int screenHeight,
         Vec2 screenSize,
-        
+
         int frameCount,
         float frameTimeDelta,
 

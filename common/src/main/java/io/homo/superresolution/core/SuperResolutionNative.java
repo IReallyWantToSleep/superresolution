@@ -1,7 +1,6 @@
 package io.homo.superresolution.core;
 
-import io.homo.superresolution.core.glslang.GlslangCompileShaderResult;
-import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
+import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 
 import java.nio.ByteBuffer;
 

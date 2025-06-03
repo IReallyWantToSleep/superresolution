@@ -1,7 +1,7 @@
 package io.homo.superresolution.fsr2;
 
 import io.homo.superresolution.core.impl.Vec2;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
 public class Fsr2ResourceCreateDescription {
     public Vec2 size;
@@ -11,7 +11,7 @@ public class Fsr2ResourceCreateDescription {
     public int mipCount;
 
     public Fsr2ResourceCreateDescription(Vec2 size, TextureFormat format, int dim, String label) {
-        this(size, format, dim, label, 1);
+        this(size, format, dim, label, -1);
     }
 
     public Fsr2ResourceCreateDescription(Vec2 size, TextureFormat format, int dim, String label, int mipCount) {

@@ -1,7 +1,7 @@
 package io.homo.superresolution.fsr2.pipelines;
 
-import io.homo.superresolution.core.GraphicsCapabilities;
-import io.homo.superresolution.core.gl.pipeline.GlPipeline;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
 import io.homo.superresolution.fsr2.*;
 
 import java.util.HashMap;

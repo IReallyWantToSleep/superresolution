@@ -7,11 +7,11 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
-import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.fsr2.Fsr2Context;
 import io.homo.superresolution.fsr2.Fsr2PipelineResourceType;
 import io.homo.superresolution.fsr2.Fsr2PipelineResources;
@@ -33,6 +33,10 @@ public class ImGuiLayer {
         }
         if (ImGui.button("CaptureUpscale")) {
             SuperResolutionAPI.debugRenderdocCaptureUpscale();
+
+        }
+        if (ImGui.button("CaptureVulkan")) {
+            SuperResolutionAPI.debugRenderdocCaptureVulkan();
 
         }
         if (ImGui.button("TriggerCapture")) {

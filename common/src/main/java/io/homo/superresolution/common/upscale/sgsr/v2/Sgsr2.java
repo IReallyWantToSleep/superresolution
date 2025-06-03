@@ -3,13 +3,16 @@ package io.homo.superresolution.common.upscale.sgsr.v2;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBufferAttachment;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
@@ -52,11 +55,13 @@ public class Sgsr2 extends AbstractAlgorithm {
         GlFrameBuffer output_ = new GlFrameBuffer();
         output_.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                GlTexture2D.create(
-                        MinecraftRenderHandle.getRenderWidth(),
-                        MinecraftRenderHandle.getRenderHeight(),
-                        TextureFormat.RGBA8
-                )
+                RenderSystems.current().createTexture(TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .usages(TextureUsages.create().sampler().storage().sampler())
+                        .format(TextureFormat.RGBA8)
+                        .build())
         ));
         output = output_;
         this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
