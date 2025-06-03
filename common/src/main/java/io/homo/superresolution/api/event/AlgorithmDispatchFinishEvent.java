@@ -1,7 +1,7 @@
 package io.homo.superresolution.api.event;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 public interface AlgorithmDispatchFinishEvent {
     Event<AlgorithmDispatchFinishEvent> EVENT = EventFactory.create(

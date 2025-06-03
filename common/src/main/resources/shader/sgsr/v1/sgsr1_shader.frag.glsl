@@ -10,10 +10,12 @@
 precision mediump float;
 precision highp int;
 
-layout(location = 0) uniform highp vec2 renderSize;
-layout(location = 1) uniform highp vec2 renderSizeRcp;
-layout(location = 2) uniform mediump float EdgeThreshold;
-layout(location = 3) uniform mediump float EdgeSharpness;
+layout(binding = 0, std140) uniform sgsr1_data_t {
+    vec2 renderSize;
+    vec2 renderSizeRcp;
+    float EdgeThreshold;
+    float EdgeSharpness;
+} sgsr1_data;
 layout(location = 4) uniform sampler2D ps0;
 
 layout(location = 0) in mediump vec2 in_TEXCOORD0;
@@ -70,22 +72,22 @@ void main()
     xCenter = abs(in_TEXCOORD0.x + -0.5);
     highp float yCenter;
     yCenter = abs(in_TEXCOORD0.y + -0.5);
-    highp vec2 imgCoord = ((in_TEXCOORD0.xy * renderSize) + vec2(-0.5, 0.5));
+    highp vec2 imgCoord = ((in_TEXCOORD0.xy * sgsr1_data.renderSize) + vec2(-0.5, 0.5));
     highp vec2 imgCoordPixel = floor(imgCoord);
-    highp vec2 coord = (imgCoordPixel * renderSizeRcp);
+    highp vec2 coord = (imgCoordPixel * sgsr1_data.renderSizeRcp);
     vec2 pl = (imgCoord - imgCoordPixel);
     vec4 left = textureGather(ps0, coord, 1);
 
     float edgeVote = abs(left.z - left.y) + abs(color[1] - left.y) + abs(color[1] - left.z);
-    if (edgeVote > EdgeThreshold)
+    if (edgeVote > sgsr1_data.EdgeThreshold)
     {
-        coord.x += renderSizeRcp.x;
-        highp vec2 offset = vec2(renderSizeRcp.x, 0.0);
+        coord.x += sgsr1_data.renderSizeRcp.x;
+        highp vec2 offset = vec2(sgsr1_data.renderSizeRcp.x, 0.0);
         vec4 right = textureGather(ps0, coord + offset, 1);
         vec4 upDown;
-        highp vec2 offset1 = vec2(0.0, -renderSizeRcp.y);
+        highp vec2 offset1 = vec2(0.0, -sgsr1_data.renderSizeRcp.y);
         upDown.xy = textureGather(ps0, coord + offset1, 1).wz;
-        highp vec2 offset2 = vec2(0.0, renderSizeRcp.y);
+        highp vec2 offset2 = vec2(0.0, sgsr1_data.renderSizeRcp.y);
         upDown.zw = textureGather(ps0, coord + offset2, 1).yx;
 
         float mean = (left.y + left.z + right.x + right.w) * 0.25;
@@ -120,7 +122,7 @@ void main()
         float finalY = aWY.y / aWY.x;
         float maxY = max(max(left.y, left.z), max(right.x, right.w));
         float minY = min(min(left.y, left.z), min(right.x, right.w));
-        float deltaY = clamp(EdgeSharpness * finalY, minY, maxY) - color.w;
+        float deltaY = clamp(sgsr1_data.EdgeSharpness * finalY, minY, maxY) - color.w;
 
         deltaY = clamp(deltaY, -23.0 / 255.0, 23.0 / 255.0);
 

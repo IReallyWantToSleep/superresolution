@@ -17,8 +17,8 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.core.GraphicsCapabilities;
-import io.homo.superresolution.core.interop.GlVkInteropManager;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.utils.ColorUtil;
@@ -35,7 +35,6 @@ import net.minecraft.network.chat.Style;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -216,14 +215,14 @@ public class ClothConfig {
                 entryBuilder.startTextDescription(
                                 Component.translatable("superresolution.screen.config.warn.algorithm_unstable")
                         ).setColor(ColorUtil.color(255, 255, 128, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2, AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
+                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2 /*AlgorithmDescriptions.NIS*/, AlgorithmDescriptions.SGSR2))
                         .build()
         );
         commonCategory.addEntry(
                 entryBuilder.startTextDescription(
                                 Component.translatable("superresolution.screen.config.warn.algorithm_incomplete")
                         ).setColor(ColorUtil.color(255, 255, 0, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.NIS))
+                        //.setDisplayRequirement(Requirement.isValue(algorithmSelector/*AlgorithmDescriptions.NIS*/))
                         .build()
         );
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(

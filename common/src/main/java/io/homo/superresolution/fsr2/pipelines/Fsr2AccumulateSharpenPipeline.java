@@ -1,19 +1,22 @@
 package io.homo.superresolution.fsr2.pipelines;
 
-import io.homo.superresolution.core.GpuVendor;
-import io.homo.superresolution.core.GraphicsCapabilities;
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.GpuVendor;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.impl.Vec3;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.fsr2.*;
 
 import java.util.HashMap;
 
 public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
-    private GlComputeShaderProgram program;
+    private GlShaderProgram program;
 
     public Fsr2AccumulateSharpenPipeline(Fsr2Context context) {
         super(context);
@@ -35,13 +38,13 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_FSR2_OPTION_APPLY_SHARPENING", "1");
         shaderDefines.put("FFX_HALF", GraphicsCapabilities.detectGpuVendor() == GpuVendor.NVIDIA ? "0" : "1");
-
-        program = GlComputeShaderProgram.create()
-                .addDefineText(getShaderDefines(shaderDefines))
-                .setShaderName("fsr2_accumulate_sharpen")
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr2/ffx_fsr2_accumulate_pass.ogl.glsl", true))
-                .build()
-                .compileShader();
+        program = RenderSystems.current().createShaderProgram(
+                ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2/ffx_fsr2_accumulate_pass.ogl.glsl", true))
+                        .addDefines(getShaderDefines(shaderDefines))
+                        .name("fsr2_accumulate")
+                        .build()
+        );
+        program.compile();
     }
 
     @Override

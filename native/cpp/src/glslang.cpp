@@ -119,7 +119,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
         &preprocessed,
         includer);
 
-    jclass resultClass = env->FindClass("io/homo/superresolution/core/glslang/GlslangCompileShaderResult");
+    jclass resultClass = env->FindClass(JAVA_GLSLANG_COMPILE_RESULT);
     jmethodID constructor = env->GetMethodID(resultClass, "<init>",
                                              "(Ljava/lang/String;Ljava/lang/String;IJLjava/nio/ByteBuffer;Ljava/lang/String;)V");
 

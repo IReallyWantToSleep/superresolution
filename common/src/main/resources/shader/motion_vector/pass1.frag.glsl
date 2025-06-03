@@ -3,6 +3,13 @@ layout(binding = 1) uniform sampler2D tex_current;
 layout (location = 0) in vec2 uv;
 layout (location = 0)out vec2 out_grad; // R: Ix, G: Iy
 
+layout(std140, binding = 0) uniform motion_vector_data_t {
+    float exposure;
+    int window_radius;
+    float min_value;
+    float scale;
+} motion_vector_data;
+
 void main() {
     vec2 texelSize = 1.0 / textureSize(tex_current, 0);
     float right = texture(tex_current, uv + vec2(texelSize.x, 0.0)).r;

@@ -1,22 +1,23 @@
 package io.homo.superresolution.fsr2.pipelines;
 
-import io.homo.superresolution.core.GpuVendor;
-import io.homo.superresolution.core.GraphicsCapabilities;
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
-import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlSampler;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Vec3;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.fsr2.*;
 
 import java.util.HashMap;
 
 public class Fsr2ComputeLuminancePyramidPipeline extends Fsr2BasePipeline {
-    private GlComputeShaderProgram program;
+    private GlShaderProgram program;
 
     public Fsr2ComputeLuminancePyramidPipeline(Fsr2Context context) {
         super(context);
@@ -36,13 +37,13 @@ public class Fsr2ComputeLuminancePyramidPipeline extends Fsr2BasePipeline {
     public void init() {
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_HALF", "0");
-
-        program = GlComputeShaderProgram.create()
-                .addDefineText(getShaderDefines(shaderDefines))
-                .setShaderName("fsr2_compute_luminance_pyramid")
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/fsr2/ffx_fsr2_compute_luminance_pyramid_pass.ogl.glsl", true))
-                .build()
-                .compileShader();
+        program = RenderSystems.current().createShaderProgram(
+                ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2/ffx_fsr2_compute_luminance_pyramid_pass.ogl.glsl", true))
+                        .addDefines(getShaderDefines(shaderDefines))
+                        .name("fsr2_compute_luminance_pyramid")
+                        .build()
+        );
+        program.compile();
 
     }
 

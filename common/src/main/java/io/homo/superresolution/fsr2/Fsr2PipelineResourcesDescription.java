@@ -1,7 +1,7 @@
 package io.homo.superresolution.fsr2;
 
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 public class Fsr2PipelineResourcesDescription {
     private String name;

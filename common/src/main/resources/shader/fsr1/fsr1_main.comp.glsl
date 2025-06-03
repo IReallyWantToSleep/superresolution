@@ -32,21 +32,23 @@
 #extension GL_NV_gpu_shader5: enable
 #endif
 
-layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 //输入/输出
 #if FSR_EASU == 1
-layout (binding = 0) uniform sampler2D inImage;
-layout (binding = 1, rgba8) writeonly uniform image2D outImage;
+layout(binding = 0) uniform sampler2D inImage;
+layout(binding = 1, rgba8) writeonly uniform image2D outImage;
 #endif
 #if FSR_RCAS == 1
-layout (binding = 0, rgba8) readonly uniform image2D inImage;
-layout (binding = 1, rgba8) writeonly uniform image2D outImage;
+layout(binding = 0, rgba8) readonly uniform image2D inImage;
+layout(binding = 1, rgba8) writeonly uniform image2D outImage;
 #endif
 //uniforms
-layout (location = 0) uniform vec2 renderViewportSize;
-layout (location = 1) uniform vec2 containerTextureSize;
-layout (location = 2) uniform vec2 upscaledViewportSize;
-layout (location = 3) uniform float sharpness;
+layout(binding = 0, std140) uniform fsr1_data_t {
+    vec2 renderViewportSize;
+    vec2 containerTextureSize;
+    vec2 upscaledViewportSize;
+    float sharpness;
+} fsr1_data;
 //类型
 #if FSR_HALF == 1
 #define VEC4 f16vec4
@@ -121,7 +123,7 @@ u16vec2 unpackUint2x16(uint32_t v) {
 #if FSR_RCAS == 1
 void mainRcas() {
     uvec4 const0;
-    FsrRcasCon(const0, sharpness);
+    FsrRcasCon(const0, fsr1_data.sharpness);
     uvec2 gxy = ARmp8x8(gl_LocalInvocationID.x) + uvec2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
     VEC3 gamma2Color = VEC3(0, 0, 0);
     FsrRcas(gamma2Color.r, gamma2Color.g, gamma2Color.b, gxy, const0);
@@ -141,12 +143,12 @@ void mainRcas() {
 void mainEasu() {
     uvec4 const0, const1, const2, const3;
     FsrEasuCon(const0, const1, const2, const3,
-               float(renderViewportSize.x),
-               float(renderViewportSize.y),
-               float(containerTextureSize.x),
-               float(containerTextureSize.y),
-               float(upscaledViewportSize.x),
-               float(upscaledViewportSize.y));
+        float(fsr1_data.renderViewportSize.x),
+        float(fsr1_data.renderViewportSize.y),
+        float(fsr1_data.containerTextureSize.x),
+        float(fsr1_data.containerTextureSize.y),
+        float(fsr1_data.upscaledViewportSize.x),
+        float(fsr1_data.upscaledViewportSize.y));
 
     uvec2 gxy = ARmp8x8(gl_LocalInvocationID.x) + uvec2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
     VEC3 gamma2Color = VEC3(0, 0, 0);

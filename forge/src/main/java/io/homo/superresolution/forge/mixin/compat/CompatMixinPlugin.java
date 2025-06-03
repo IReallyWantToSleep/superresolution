@@ -1,7 +1,7 @@
 package io.homo.superresolution.forge.mixin.compat;
 
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.core.renderdoc.RenderDoc;
+import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.forge.platform.ForgePlatform;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;

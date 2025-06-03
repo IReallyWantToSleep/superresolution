@@ -1,85 +1,128 @@
 package io.homo.superresolution.common.upscale;
 
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.jobs.GlPipelineJobDispatchResource;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.UniformBuffer;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBufferAttachment;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.gl.pipeline.*;
-import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
-
-import static io.homo.superresolution.core.gl.Gl.*;
-import static io.homo.superresolution.core.gl.GlConst.*;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
 public class MotionVectorsGenerator {
-    private static final GlGeneralShaderProgram preprocess =
-            GlGeneralShaderProgram.create()
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/preprocess.frag.glsl", true))
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
-                    .setShaderName("motion_vector_preprocess")
-                    .build();
-    private static final GlGeneralShaderProgram pass1 =
-            GlGeneralShaderProgram.create()
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/pass1.frag.glsl", true))
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
-                    .setShaderName("motion_vector_pass1")
-                    .build();
+    public static GlShaderProgram preprocessShader;
+    public static GlShaderProgram pass1Shader;
+    public static GlShaderProgram pass2Shader;
+    public static GlShaderProgram pass3Shader;
+    public static GlPipeline pipeline;
+    public static GlTexture2D currentFrameTexture;
+    public static GlTexture2D previousFrameTexture;
+    public static GlFrameBuffer gradFrameBuffer;
+    public static GlFrameBuffer deltaFrameBuffer;
+    public static GlFrameBuffer preprocessFrameBuffer;
+    public static GlFrameBuffer motionVectorsFrameBuffer;
+    public static UniformBuffer uniformBuffer;
 
-    private static final GlGeneralShaderProgram pass2 =
-            GlGeneralShaderProgram.create()
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/pass2.frag.glsl", true))
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
-                    .setShaderName("motion_vector_pass2")
-                    .build();
+    public static void initShaders() {
+        preprocessShader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.create()
+                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/preprocess.frag.glsl"))
+                        .name("motion_vector_preprocess")
+                        .uniformBlock("motion_vector_data", 0, uniformBuffer.getSize())
+                        .build()
+        );
+        preprocessShader.compile();
 
-    private static final GlGeneralShaderProgram pass3 =
-            GlGeneralShaderProgram.create()
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/motion_vector/pass3.frag.glsl", true))
-                    .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/motion_vector/common.vert.glsl", true))
-                    .setShaderName("motion_vector_pass3")
-                    .build();
+        pass1Shader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.create()
+                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass1.frag.glsl"))
+                        .name("motion_vector_pass1")
+                        .uniformBlock("motion_vector_data", 0, uniformBuffer.getSize())
+                        .build()
+        );
+        pass1Shader.compile();
 
-    private static final GlPipeline pipeline = new GlPipeline();
-    public static IFrameBuffer gradFrameBuffer;
-    public static IFrameBuffer deltaFrameBuffer;
-    public static IFrameBuffer preprocessFrameBuffer;
+        pass2Shader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.create()
+                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass2.frag.glsl"))
+                        .name("motion_vector_pass2")
+                        .uniformBlock("motion_vector_data", 0, uniformBuffer.getSize())
+                        .build()
+        );
+        pass2Shader.compile();
 
-    public static ITexture currentFrameTexture;
-    public static ITexture previousFrameTexture;
-    public static IFrameBuffer motionVectorsFrameBuffer;
-
-    public static IFrameBuffer getMotionVectorsFrameBuffer() {
-        return motionVectorsFrameBuffer;
+        pass3Shader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.create()
+                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass3.frag.glsl"))
+                        .name("motion_vector_pass3")
+                        .uniformBlock("motion_vector_data", 0, uniformBuffer.getSize())
+                        .build()
+        );
+        pass3Shader.compile();
     }
 
     public static void init() {
-        motionVectorsFrameBuffer = new GlFrameBuffer();
-        ((GlFrameBuffer) motionVectorsFrameBuffer).addAttachment(new GlFrameBufferAttachment(
-                GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                GlTexture2D.create(
-                        MinecraftRenderHandle.getRenderWidth(),
-                        MinecraftRenderHandle.getRenderHeight(),
-                        TextureFormat.RG16F
-                )
-        ));
-        motionVectorsFrameBuffer.setClearColor(0, 0, 0, 1);
+        uniformBuffer = UniformBuffer.create()
+                .floatEntry("exposure")
+                .intEntry("window_radius")
+                .floatEntry("min_value")
+                .floatEntry("scale")
+                .build();
+
+        initShaders();
+
+        pipeline = new GlPipeline();
+        currentFrameTexture = (GlTexture2D) RenderSystems.current().createTexture(
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .format(TextureFormat.R32F)
+                        .usages(TextureUsages.create().sampler().storage())
+                        .build()
+        );
+
+        previousFrameTexture = (GlTexture2D) RenderSystems.current().createTexture(
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .format(TextureFormat.R32F)
+                        .usages(TextureUsages.create().sampler().storage())
+                        .build()
+        );
+        motionVectorsFrameBuffer = GlFrameBuffer.create(
+                TextureFormat.RG16F,
+                null,
+                MinecraftRenderHandle.getRenderWidth(),
+                MinecraftRenderHandle.getRenderHeight()
+        );
+
         gradFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RG32F,
                 null,
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight()
         );
+
         deltaFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.R32F,
                 null,
@@ -87,28 +130,20 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderHeight()
         );
 
-        previousFrameTexture = GlTexture2D.create(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.R32F
-        );
-        currentFrameTexture = GlTexture2D.create(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.R32F
-        );
         preprocessFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.R32F,
                 null,
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight()
         );
+
+        // Setup pipeline jobs
         pipeline.addJob("preprocess",
-                GlPipelineJobBuilders.graphics(preprocess)
+                GlPipelineJobBuilders.graphics(preprocessShader)
                         .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_current",
-                                MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR),
+                                FrameBufferTextureAdapter.ofColor(MinecraftRenderHandle.getRenderTarget()),
                                 GlPipelineResourceAccess.READ,
                                 null,
                                 1
@@ -116,14 +151,16 @@ public class MotionVectorsGenerator {
                         .targetFramebuffer(preprocessFrameBuffer)
                         .build()
         );
+
         pipeline.addJob("copy_preprocess_fbo_to_current_frame_texture",
                 GlPipelineJobBuilders.copy()
-                        .from(preprocessFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR))
+                        .from(FrameBufferTextureAdapter.ofColor(preprocessFrameBuffer))
                         .to(currentFrameTexture)
                         .build()
         );
+
         pipeline.addJob("pass1",
-                GlPipelineJobBuilders.graphics(pass1)
+                GlPipelineJobBuilders.graphics(pass1Shader)
                         .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_current",
@@ -135,9 +172,9 @@ public class MotionVectorsGenerator {
                         .targetFramebuffer(gradFrameBuffer)
                         .build()
         );
+
         pipeline.addJob("pass2",
-                GlPipelineJobBuilders.graphics(pass2)
-                        .targetFramebuffer(deltaFrameBuffer)
+                GlPipelineJobBuilders.graphics(pass2Shader)
                         .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "tex_current",
@@ -154,14 +191,16 @@ public class MotionVectorsGenerator {
                                 null,
                                 2
                         ))
+                        .targetFramebuffer(deltaFrameBuffer)
                         .build()
         );
+
         pipeline.addJob("pass3",
-                GlPipelineJobBuilders.graphics(pass3)
+                GlPipelineJobBuilders.graphics(pass3Shader)
                         .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "grad_current",
-                                gradFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
+                                FrameBufferTextureAdapter.ofColor(gradFrameBuffer),
                                 GlPipelineResourceAccess.READ,
                                 null,
                                 1
@@ -169,7 +208,7 @@ public class MotionVectorsGenerator {
                         .resource(GlPipelineResourceDescription.createTextureResource(
                                 GlPipelineResourceType.Sampler2D,
                                 "delta_time",
-                                deltaFrameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
+                                FrameBufferTextureAdapter.ofColor(deltaFrameBuffer),
                                 GlPipelineResourceAccess.READ,
                                 null,
                                 2
@@ -177,75 +216,69 @@ public class MotionVectorsGenerator {
                         .targetFramebuffer(motionVectorsFrameBuffer)
                         .build()
         );
+
         pipeline.addJob("copy_current_frame_texture_to_previous_frame_texture",
                 GlPipelineJobBuilders.copy()
                         .from(currentFrameTexture)
                         .to(previousFrameTexture)
                         .build()
         );
+
+        resize();
     }
 
     public static void resize() {
-        motionVectorsFrameBuffer.resizeFrameBuffer(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
+        int width = MinecraftRenderHandle.getRenderWidth();
+        int height = MinecraftRenderHandle.getRenderHeight();
 
-        gradFrameBuffer.resizeFrameBuffer(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
-        deltaFrameBuffer.resizeFrameBuffer(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
-        preprocessFrameBuffer.resizeFrameBuffer(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
-        previousFrameTexture.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
-        currentFrameTexture.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
-        );
-
+        currentFrameTexture.resize(width, height);
+        previousFrameTexture.resize(width, height);
+        motionVectorsFrameBuffer.resizeFrameBuffer(width, height);
+        gradFrameBuffer.resizeFrameBuffer(width, height);
+        deltaFrameBuffer.resizeFrameBuffer(width, height);
+        preprocessFrameBuffer.resizeFrameBuffer(width, height);
     }
 
-    public static void update(DispatchResource dispatchResource) {
-        if (!preprocess.compiled) preprocess.compileShader();
-        if (!pass1.compiled) pass1.compileShader();
-        if (!pass2.compiled) pass2.compileShader();
-        if (!pass3.compiled) pass3.compileShader();
+    public static void update() {
+        uniformBuffer.setFloat("exposure", 3.0f);
+        uniformBuffer.setInt("window_radius", 2);
+        uniformBuffer.setFloat("min_value", 1e-6f);
+        uniformBuffer.setFloat("scale", 4f);
+        uniformBuffer.fillBuffer();
 
-        try (GlState ignored = new GlState()) {
-            GlPipelineJobDispatchResource pipelineJobDispatchResource = new GlPipelineJobDispatchResource(
-                    new Vec3(1, 1, 1)
-            );
-            pipeline.scheduleJobs(pipelineJobDispatchResource);
-            preprocess.use();
-            preprocess.uniforms().safeFloat("exposure").value(3.0f);
-            pipeline.execute("preprocess", pipelineJobDispatchResource);
-            glCopyImageSubData(
-                    preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.COLOR), GL_TEXTURE_2D, 0, 0, 0, 0,
-                    currentFrameTexture.getTextureId(), GL_TEXTURE_2D, 0, 0, 0, 0,
-                    dispatchResource.renderWidth(), dispatchResource.renderHeight(), 1
-            );
-            pipeline.execute("pass1", pipelineJobDispatchResource);
-            pipeline.execute("pass2", pipelineJobDispatchResource);
-            pass3.use();
-            pass3.uniforms()
-                    .safeInt("window_radius").value(2)
-                    .safeFloat("min_value").value(1e-6f)
-                    .safeFloat("scale").value(4f);
-            pipeline.execute("pass3", pipelineJobDispatchResource);
-            glCopyImageSubData(
-                    currentFrameTexture.getTextureId(), GL_TEXTURE_2D, 0, 0, 0, 0,
-                    previousFrameTexture.getTextureId(), GL_TEXTURE_2D, 0, 0, 0, 0,
-                    dispatchResource.renderWidth(), dispatchResource.renderHeight(), 1
-            );
-        }
+        pipeline.scheduleJob("preprocess");
+        pipeline.executeJob("preprocess");
+
+        pipeline.scheduleJob("copy_preprocess_fbo_to_current_frame_texture");
+        pipeline.executeJob("copy_preprocess_fbo_to_current_frame_texture");
+
+        pipeline.scheduleJob("pass1");
+        pipeline.executeJob("pass1");
+
+        pipeline.scheduleJob("pass2");
+        pipeline.executeJob("pass2");
+
+        pipeline.scheduleJob("pass3");
+        pipeline.executeJob("pass3");
+
+        pipeline.scheduleJob("copy_current_frame_texture_to_previous_frame_texture");
+        pipeline.executeJob("copy_current_frame_texture_to_previous_frame_texture");
+    }
+
+    public static void destroy() {
+        currentFrameTexture.destroy();
+        previousFrameTexture.destroy();
+        motionVectorsFrameBuffer.destroy();
+        gradFrameBuffer.destroy();
+        deltaFrameBuffer.destroy();
+        preprocessFrameBuffer.destroy();
+        preprocessShader.destroy();
+        pass1Shader.destroy();
+        pass2Shader.destroy();
+        pass3Shader.destroy();
+    }
+
+    public static IFrameBuffer getMotionVectorsFrameBuffer() {
+        return motionVectorsFrameBuffer;
     }
 }

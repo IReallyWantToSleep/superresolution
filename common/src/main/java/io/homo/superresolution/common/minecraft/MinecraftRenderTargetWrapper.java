@@ -1,13 +1,13 @@
 package io.homo.superresolution.common.minecraft;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.utils.ColorUtil;
 
 #if MC_VER < MC_1_21_4
@@ -15,7 +15,7 @@ import net.minecraft.client.Minecraft;
 #endif
 
 
-import static io.homo.superresolution.core.gl.Gl.glBindFramebuffer;
+import static io.homo.superresolution.core.graphics.opengl.Gl.glBindFramebuffer;
 
 public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public RenderTarget renderTarget;
@@ -101,7 +101,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         #else
         return switch (attachmentType) {
             case COLOR -> renderTarget.getColorTextureId();
-            case ANY_DEPTH ,DEPTH, DEPTH_STENCIL -> renderTarget.getDepthTextureId();
+            case ANY_DEPTH, DEPTH, DEPTH_STENCIL -> renderTarget.getDepthTextureId();
         };
         #endif
 

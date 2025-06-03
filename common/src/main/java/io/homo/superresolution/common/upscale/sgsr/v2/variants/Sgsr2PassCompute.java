@@ -1,20 +1,20 @@
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
-import io.homo.superresolution.core.gl.pipeline.GlPipelineJobBuilders;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.gl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
+import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.pipeline.*;
-import io.homo.superresolution.core.gl.shader.GlComputeShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlSampler;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
-import io.homo.superresolution.core.impl.texture.TextureSupplier;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
@@ -22,8 +22,8 @@ import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
 
 public class Sgsr2PassCompute extends AbstractSgsrVariant {
-    private GlComputeShaderProgram convertShader;
-    private GlComputeShaderProgram upscaleShader;
+    private GlShaderProgram convertShader;
+    private GlShaderProgram upscaleShader;
     private GlPipeline sgsrPipeline;
     private ITexture PrevLumaHistory;
     private ITexture YCoCgColor;
@@ -51,37 +51,57 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
 
     @Override
     public void init(Sgsr2 sgsr) {
-        convertShader = GlComputeShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl", true))
-                .setShaderName("SGSR_2PCS_A")
-                .build()
-                .compileShader();
-        upscaleShader = GlComputeShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl", true))
-                .setShaderName("SGSR_2PCS_B")
-                .build()
-                .compileShader();
+        convertShader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.create()
+                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl", true))
+                        .name("SGSR_2PCS_A")
+                        .build()
+        );
+        convertShader.compile();
+        upscaleShader = RenderSystems.current().createShaderProgram(
+                ShaderDescription.create()
+                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl", true))
+                        .name("SGSR_2PCS_B")
+                        .build()
+        );
+        upscaleShader.compile();
         sgsrPipeline = new GlPipeline();
-        PrevLumaHistory = GlTexture2D.create(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.R32UI);
-        YCoCgColor = GlTexture2D.create(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.R32UI);
-        MotionDepthClipAlphaBuffer = GlTexture2D.create(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                TextureFormat.RGBA16F);
-        PrevHistoryOutput = GlTexture2D.create(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA16F);
-        HistoryOutput = GlTexture2D.create(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA16F);
+        PrevLumaHistory = RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getRenderWidth())
+                .height(MinecraftRenderHandle.getRenderHeight())
+                .format(TextureFormat.R32UI)
+                .usages(TextureUsages.create().storage().sampler())
+                .build());
+        YCoCgColor = RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getRenderWidth())
+                .height(MinecraftRenderHandle.getRenderHeight())
+                .format(TextureFormat.R32UI)
+                .usages(TextureUsages.create().storage().sampler())
+                .build());
+
+        MotionDepthClipAlphaBuffer = RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getRenderWidth())
+                .height(MinecraftRenderHandle.getRenderHeight())
+                .format(TextureFormat.RGBA16F)
+                .usages(TextureUsages.create().storage().sampler())
+                .build());
+        PrevHistoryOutput = RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getScreenWidth())
+                .height(MinecraftRenderHandle.getScreenHeight())
+                .format(TextureFormat.RGBA16F)
+                .usages(TextureUsages.create().storage().sampler())
+                .build());
+        HistoryOutput = RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getScreenWidth())
+                .height(MinecraftRenderHandle.getScreenHeight())
+                .format(TextureFormat.RGBA16F)
+                .usages(TextureUsages.create().storage().sampler())
+                .build());
         sgsrPipeline.addJob("convert",
                 GlPipelineJobBuilders.compute(convertShader)
                         .resource(GlPipelineResourceDescription.createTextureResource(

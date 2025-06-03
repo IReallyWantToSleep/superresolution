@@ -4,7 +4,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.core.impl.Vec2;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
@@ -114,7 +114,7 @@ public class AlgorithmManager {
     public static void update() {
         getMotionVectorsFrameBuffer().clearFrameBuffer();
         if (Config.isGenerateMotionVectors()) {
-            MotionVectorsGenerator.update(getDispatchResource());
+            MotionVectorsGenerator.update();
         }
     }
 

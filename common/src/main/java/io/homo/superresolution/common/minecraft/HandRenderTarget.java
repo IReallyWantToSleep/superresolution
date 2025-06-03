@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.minecraft;
 
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 public class HandRenderTarget {
     public static IFrameBuffer handRenderTarget;

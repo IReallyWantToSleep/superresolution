@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.minecraft;
 
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 import java.util.*;
 

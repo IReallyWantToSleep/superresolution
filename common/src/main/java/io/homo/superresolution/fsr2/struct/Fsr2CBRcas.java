@@ -1,6 +1,6 @@
 package io.homo.superresolution.fsr2.struct;
 
-import io.homo.superresolution.core.impl.IUniformStruct;
+import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.fsr2.Fsr2Context;
 import io.homo.superresolution.fsr2.Fsr2Dimensions;
 import io.homo.superresolution.fsr2.Fsr2DispatchDescription;

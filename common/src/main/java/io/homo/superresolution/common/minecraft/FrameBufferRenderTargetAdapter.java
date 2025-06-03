@@ -2,7 +2,7 @@ package io.homo.superresolution.common.minecraft;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
+import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 
 
 #if MC_VER > MC_1_21_4
@@ -111,11 +111,11 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 }
 #else
 import com.mojang.blaze3d.platform.GlStateManager;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
-public class FrameBufferRenderTargetAdapter extends RenderTarget {
+class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IFrameBuffer frameBuffer;
 
     FrameBufferRenderTargetAdapter(IFrameBuffer frameBuffer) {
@@ -174,7 +174,7 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
     public void blitToScreen(int width, int height) {
         updateState();
         GlBlitRenderer.blitToScreen(
-                frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
+                frameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
                 this.viewWidth,
                 this.viewHeight
         );

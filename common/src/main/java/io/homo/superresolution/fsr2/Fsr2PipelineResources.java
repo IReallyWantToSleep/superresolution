@@ -1,11 +1,12 @@
 package io.homo.superresolution.fsr2;
 
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
-import io.homo.superresolution.core.gl.texture.GlTexture1D;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Vec2;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -190,15 +191,53 @@ public class Fsr2PipelineResources {
 
             if (desc.dim == 1) {
                 if (desc.size.y != 1) throw new RuntimeException(desc.label);
-                GlTexture1D tex = GlTexture1D.create(
-                        (int) desc.size.x, desc.format,
-                        desc.mipCount == 0 ? GlTexture1D.AUTO_MIPMAP_LEVEL : desc.mipCount);
+                GlTexture1D tex = (GlTexture1D) RenderSystems.current().createTexture(
+                        TextureDescription.create()
+                                .type(TextureType.Texture1D)
+                                .usages(TextureUsages.create().storage().sampler())
+                                .width((int) desc.size.x)
+                                .mipmapSettings(
+                                        desc.mipCount == 0 ?
+                                                TextureMipmapSettings.auto() :
+                                                desc.mipCount == -1 ?
+                                                        TextureMipmapSettings.disabled() :
+                                                        TextureMipmapSettings.manual(desc.mipCount, true)
+                                )
+                                .format(desc.format)
+                                .filterMode(
+                                        desc.mipCount == 0 ?
+                                                TextureFilterMode.LINEAR_MIPMAP_LINEAR :
+                                                desc.mipCount == -1 ?
+                                                        TextureFilterMode.NEAREST :
+                                                        TextureFilterMode.LINEAR_MIPMAP_LINEAR
+                                ).build()
+                );
 
                 resourceEntry.setResource(tex);
             } else if (desc.dim == 2) {
-                GlTexture2D tex = GlTexture2D.create(
-                        (int) desc.size.x, (int) desc.size.y, desc.format,
-                        desc.mipCount == 0 ? GlTexture2D.AUTO_MIPMAP_LEVEL : desc.mipCount);
+                GlTexture2D tex = (GlTexture2D) RenderSystems.current().createTexture(
+                        TextureDescription.create()
+                                .type(TextureType.Texture2D)
+                                .usages(TextureUsages.create().storage().sampler())
+                                .width((int) desc.size.x)
+                                .height((int) desc.size.y)
+                                .mipmapSettings(
+                                        desc.mipCount == 0 ?
+                                                TextureMipmapSettings.auto() :
+                                                desc.mipCount == -1 ?
+                                                        TextureMipmapSettings.disabled() :
+                                                        TextureMipmapSettings.manual(desc.mipCount, true)
+                                )
+                                .format(desc.format)
+                                .filterMode(
+                                        desc.mipCount == 0 ?
+                                                TextureFilterMode.LINEAR_MIPMAP_LINEAR :
+                                                desc.mipCount == -1 ?
+                                                        TextureFilterMode.NEAREST :
+                                                        TextureFilterMode.LINEAR_MIPMAP_LINEAR
+                                )
+                                .build()
+                );
                 resourceEntry.setResource(tex);
             } else {
                 throw new RuntimeException(desc.label);

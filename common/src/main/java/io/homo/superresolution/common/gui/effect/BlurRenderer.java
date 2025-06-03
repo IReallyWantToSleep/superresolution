@@ -3,56 +3,59 @@ package io.homo.superresolution.common.gui.effect;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.Gl;
-import io.homo.superresolution.core.gl.GlState;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.gl.shader.GlGeneralShaderProgram;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
-import io.homo.superresolution.core.gl.vertex.GlVertexArray;
-import io.homo.superresolution.core.gl.vertex.GlVertexBuffer;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.shader.ShaderSource;
-import io.homo.superresolution.core.impl.texture.ITexture;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferBindPoint;
-import org.lwjgl.opengl.GL45;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexArray;
+import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.glDepthMask;
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 
 public class BlurRenderer {
-    public static final GlGeneralShaderProgram BLUR;
+    public static final GlShaderProgram BLUR;
     public static final GlFrameBuffer blurFrameBuffer;
     public static final GlTexture2D blurTempTexture;
     public static final int MAX_LEVELS = 8;
     private static final float[] blurWeights = new float[MAX_LEVELS];
 
     static {
-        BLUR = GlGeneralShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderSource.Type.FRAGMENT, "/shader/gui_blur/blur.frag.glsl", true))
-                .addShaderSource(new ShaderSource(ShaderSource.Type.VERTEX, "/shader/gui_blur/blur.vert.glsl", true))
+        BLUR = null;/*GlGeneralShaderProgram.create()
+                .addShaderSource(new ShaderSource(ShaderType.FRAGMENT, "/shader/gui_blur/blur.frag.glsl", true))
+                .addShaderSource(new ShaderSource(ShaderType.VERTEX, "/shader/gui_blur/blur.vert.glsl", true))
                 .setShaderName("gui-blur")
-                .build();
+                .build();*/
         blurFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RGBA8,
                 null,
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        blurTempTexture = GlTexture2D.create(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA8,
-                GlTexture2D.AUTO_MIPMAP_LEVEL
+        blurTempTexture = (GlTexture2D) RenderSystems.current().createTexture(
+                TextureDescription
+                        .create()
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getScreenWidth())
+                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .format(TextureFormat.RGBA8)
+                        .usages(TextureUsages.create().sampler().attachmentColor())
+                        .mipmapsAuto()
+                        .build()
         );
     }
 
     public static void compileShader() {
-        if (!BLUR.compiled) BLUR.compileShader();
+        if (!BLUR.isCompiled()) BLUR.compile();
     }
 
     public static void copyTextureAndGenMipmap() {
@@ -98,7 +101,7 @@ public class BlurRenderer {
 
     public static void renderBlur() {
         compileShader();
-        GlGeneralShaderProgram blurShader = BLUR;
+        GlShaderProgram blurShader = BLUR;
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {
             genBlurWeights(
                     ImguiMain.getInstance().imguiLayer.blurPhi[0],
@@ -114,7 +117,7 @@ public class BlurRenderer {
         try (GlState ignored = new GlState()) {
             glDisable(GL_DEPTH_TEST);
             glDepthMask(false);
-            blurShader.use();
+            Gl.glUseProgram(BLUR.handle);
             blurFrameBuffer.bind(FrameBufferBindPoint.ALL);
             try (GlVertexArray vaoObj = new GlVertexArray();
                  GlVertexBuffer vbo = new GlVertexBuffer()) {
@@ -157,13 +160,13 @@ public class BlurRenderer {
                 vbo.uploadData(vertices, GL_STATIC_DRAW);
 
                 Gl.DSA.bindVertexArray(vao);
-                blurShader.uniforms()
-                        .safeTexture("uTexture").value(blurTempTexture)
-                        .safeVec4("weightA").value(blurWeights[0], blurWeights[1], blurWeights[2], blurWeights[3])
-                        .safeVec4("weightB").value(blurWeights[4], blurWeights[5], blurWeights[6], blurWeights[7]);
+                //blurShader.uniforms()
+                //        .safeTexture("uTexture").value(blurTempTexture)
+                //        .safeVec4("weightA").value(blurWeights[0], blurWeights[1], blurWeights[2], blurWeights[3])
+                //        .safeVec4("weightB").value(blurWeights[4], blurWeights[5], blurWeights[6], blurWeights[7]);
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
-            blurShader.clear();
+            //blurShader.clear();
             glDepthMask(true);
         }
     }

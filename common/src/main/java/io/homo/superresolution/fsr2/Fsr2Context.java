@@ -1,6 +1,6 @@
 package io.homo.superresolution.fsr2;
 
-import io.homo.superresolution.core.gl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.fsr2.pipelines.*;
 import io.homo.superresolution.fsr2.struct.Fsr2CBFSR2;
 import io.homo.superresolution.fsr2.struct.Fsr2CBRcas;

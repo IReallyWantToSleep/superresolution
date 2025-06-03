@@ -63,6 +63,7 @@ layout (binding = FSR2_BIND_CB_REACTIVE, std140) uniform cbGenerateReactive_t
 FFX_FSR2_NUM_THREADS
 void main()
 {
+
     FfxUInt32x2 uDispatchThreadId = gl_GlobalInvocationID.xy;
 
     FfxFloat32x3 ColorPreAlpha  = LoadOpaqueOnly(FFX_MIN16_I2(uDispatchThreadId)).rgb;

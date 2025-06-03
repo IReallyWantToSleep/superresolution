@@ -3,13 +3,16 @@ package io.homo.superresolution.common.upscale.fsr2;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.gl.texture.GlTexture2D;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Vec2;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.texture.TextureFormat;
-import io.homo.superresolution.core.impl.texture.TextureFrameBufferAdapter;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.fsr2.*;
@@ -43,10 +46,14 @@ public class FSR2 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        output = GlTexture2D.create(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                TextureFormat.RGBA8
+
+        output = (GlTexture2D) RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getScreenWidth())
+                .height(MinecraftRenderHandle.getScreenHeight())
+                .format(TextureFormat.RGBA8)
+                .usages(TextureUsages.create().sampler().storage().sampler())
+                .build()
         );
         outputFbo = GlFrameBuffer.create(
                 output,
@@ -54,7 +61,14 @@ public class FSR2 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        exposureTexture = GlTexture2D.create(1, 1, TextureFormat.RGBA8);
+        exposureTexture = (GlTexture2D) RenderSystems.current().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(1)
+                .height(1)
+                .format(TextureFormat.RGBA8)
+                .usages(TextureUsages.create().sampler().storage().sampler())
+                .build()
+        );
         fsr2Context = new Fsr2Context(
                 Fsr2ContextConfig.create(
                         new Fsr2ContextFlags()
