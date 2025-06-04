@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 import static org.lwjgl.opengl.GL43.*;
@@ -19,10 +20,10 @@ public class GlPipelineCopyJob extends GlPipelineJob {
 
     @Override
     public void execute(GlPipelineJobDispatchResource resource) {
-        glCopyImageSubData(
-                source.getTextureId(), GL_TEXTURE_2D, 0, 0, 0, 0,
-                dest.getTextureId(), GL_TEXTURE_2D, 0, 0, 0, 0,
-                source.getWidth(), source.getHeight(), 1
+        RenderSystems.opengl().copyTexture(
+                source, dest,
+                0, 0, source.getWidth(), source.getHeight(), 1,
+                0, 0, source.getWidth(), source.getHeight(), 1
         );
     }
 }

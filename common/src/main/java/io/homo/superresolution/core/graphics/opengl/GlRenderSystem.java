@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.graphics.opengl;
 
-import io.homo.superresolution.core.graphics.IRenderSystem;
+import io.homo.superresolution.core.graphics.impl.vertex.*;
+import io.homo.superresolution.core.graphics.system.IRenderState;
+import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -9,21 +11,36 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL45;
+import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
+import org.lwjgl.opengl.*;
 
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
 import static org.lwjgl.opengl.GL44.glClearTexImage;
 
 public class GlRenderSystem implements IRenderSystem {
     private GlShaderProgram shaderProgram;
+    private GlRenderState renderState;
+    // 存储最近一次 setVertexAttributes 设置的属性布局
+    private VertexAttribute[] pendingVertexAttributes = null;
+
+    public GlShaderProgram getShaderProgram() {
+        return shaderProgram;
+    }
+
+    @Override
+    public void setShaderProgram(IShaderProgram<?> shaderProgram) {
+        this.shaderProgram = (GlShaderProgram) shaderProgram;
+    }
 
     @Override
     public void initRenderSystem() {
+        this.renderState = new GlRenderState();
     }
 
     @Override
     public void destroyRenderSystem() {
+        this.renderState = null;
+        this.pendingVertexAttributes = null;
     }
 
     @Override
@@ -44,20 +61,24 @@ public class GlRenderSystem implements IRenderSystem {
 
     @Override
     public void clearTexture(ITexture texture, int[] color) {
-        if (texture == null) {
-            throw new IllegalArgumentException("clearTexture: 输入的纹理对象为null");
-        }
-
         float[] clearColor = new float[]{
                 color[0] / 255.0f,
                 color[1] / 255.0f,
                 color[2] / 255.0f,
                 color[3] / 255.0f
         };
+        clearTexture(texture, clearColor);
+    }
+
+    @Override
+    public void clearTexture(ITexture texture, float[] color) {
+        if (texture == null) {
+            throw new OpenGLException("clearTexture: 输入的纹理对象为null");
+        }
         glClearTexImage(
                 texture.getTextureId(), 0,
                 texture.getTextureFormat().gl(),
-                GL_FLOAT, clearColor
+                GL_FLOAT, color
         );
     }
 
@@ -77,14 +98,14 @@ public class GlRenderSystem implements IRenderSystem {
             int dstLevel
     ) {
         if (src == null || dst == null) {
-            throw new IllegalArgumentException("copyTexture: 源或目标纹理为null");
+            throw new OpenGLException("copyTexture: 源或目标纹理为null");
         }
         if (src.getTextureFormat() != dst.getTextureFormat()) {
-            throw new IllegalArgumentException("copyTexture: 源和目标纹理格式不一致，无法拷贝：" +
+            throw new OpenGLException("copyTexture: 源和目标纹理格式不一致，无法拷贝：" +
                     src.getTextureFormat() + " -> " + dst.getTextureFormat());
         }
         if (src.getTextureType() != dst.getTextureType()) {
-            throw new IllegalArgumentException("copyTexture: 源和目标纹理类型不一致，无法拷贝：" +
+            throw new OpenGLException("copyTexture: 源和目标纹理类型不一致，无法拷贝：" +
                     src.getTextureType() + " -> " + dst.getTextureType());
         }
 
@@ -108,20 +129,81 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public void setViewport(int x, int y, int w, int h) {
-        Gl.glViewport(x, y, w, h);
-    }
-
-    @Override
-    public void setShaderProgram(IShaderProgram<?> shaderProgram) {
-        this.shaderProgram = (GlShaderProgram) shaderProgram;
-    }
-
-    @Override
     public void dispatchCompute(int x, int y, int z) {
         if (this.shaderProgram == null) {
-            throw new IllegalStateException("dispatchCompute: 未设置当前着色器程序");
+            throw new OpenGLException("dispatchCompute: 未设置当前着色器程序");
         }
-        Gl.glDispatchCompute(x, y, z);
+        try (GlState state = new GlState()) {
+            GL45.glUseProgram(this.shaderProgram.handle);
+            Gl.glDispatchCompute(x, y, z);
+        }
+    }
+
+    @Override
+    public IVertexBuffer createVertexBuffer(VertexBufferDescription description) {
+        return GlVertexBuffer.create(description);
+    }
+
+    @Override
+    public void uploadVertexData(IVertexBuffer vertexBuffer, float[] data, int offset, int length) {
+        if (!(vertexBuffer instanceof GlVertexBuffer)) {
+            throw new IllegalArgumentException("uploadVertexData: Only GlVertexBuffer is supported");
+        }
+        vertexBuffer.updateData(data, offset, length);
+    }
+
+    @Override
+    public void setVertexAttributes(VertexAttribute[] attributes) {
+        this.pendingVertexAttributes = attributes;
+    }
+
+    private void applyVertexAttributes(VertexAttribute[] attributes) {
+        if (attributes == null) return;
+        for (VertexAttribute attr : attributes) {
+            GL20.glEnableVertexAttribArray(attr.getLocation());
+            GL20.glVertexAttribPointer(
+                    attr.getLocation(),
+                    attr.getComponentCount(),
+                    attr.getDataType() == VertexAttribute.DataType.FLOAT ? GL11.GL_FLOAT : GL11.GL_INT,
+                    false,
+                    attr.getStride(),
+                    attr.getOffset()
+            );
+        }
+    }
+
+    @Override
+    public void draw(PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int firstVertex, int vertexCount) {
+        if (!(vertexBuffer instanceof GlVertexBuffer)) {
+            throw new OpenGLException("draw: 参数vertexBuffer的类型不为GlVertexBuffer");
+        }
+        if (this.shaderProgram == null) {
+            throw new OpenGLException("draw: 未设置当前着色器程序");
+        }
+        try (GlState ig = new GlState()) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBuffer.getId());
+            applyVertexAttributes(this.pendingVertexAttributes);
+            int glPrimitive = switch (primitiveType) {
+                case TRIANGLES -> GL11.GL_TRIANGLES;
+                case LINES -> GL11.GL_LINES;
+                case POINTS -> GL11.GL_POINTS;
+            };
+            GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
+            for (VertexAttribute attr : this.pendingVertexAttributes) {
+                GL20.glDisableVertexAttribArray(attr.getLocation());
+            }
+        }
+    }
+
+    @Override
+    public void destroyVertexBuffer(IVertexBuffer vertexBuffer) {
+        if (vertexBuffer != null) {
+            vertexBuffer.destroy();
+        }
+    }
+
+    @Override
+    public IRenderState renderState() {
+        return renderState;
     }
 }

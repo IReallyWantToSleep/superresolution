@@ -4,23 +4,12 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.buffer.UniformBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexArray;
-import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
-
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.glDepthMask;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 
 public class BlurRenderer {
     public static final GlShaderProgram BLUR;
@@ -28,8 +17,10 @@ public class BlurRenderer {
     public static final GlTexture2D blurTempTexture;
     public static final int MAX_LEVELS = 8;
     private static final float[] blurWeights = new float[MAX_LEVELS];
+    protected static UniformBuffer uniformBlock;
 
     static {
+
         BLUR = null;/*GlGeneralShaderProgram.create()
                 .addShaderSource(new ShaderSource(ShaderType.FRAGMENT, "/shader/gui_blur/blur.frag.glsl", true))
                 .addShaderSource(new ShaderSource(ShaderType.VERTEX, "/shader/gui_blur/blur.vert.glsl", true))
@@ -100,6 +91,7 @@ public class BlurRenderer {
     }
 
     public static void renderBlur() {
+        /*
         compileShader();
         GlShaderProgram blurShader = BLUR;
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {
@@ -169,5 +161,7 @@ public class BlurRenderer {
             //blurShader.clear();
             glDepthMask(true);
         }
+        */
+
     }
 }

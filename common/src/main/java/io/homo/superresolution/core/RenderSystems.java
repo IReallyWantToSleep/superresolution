@@ -12,7 +12,9 @@ public class RenderSystems {
         opengl = new GlRenderSystem();
         if (!Config.isSkipInitVulkan()) {
             vulkan = new VkRenderSystem();
+            //vulkan.initRenderSystem();
         }
+        opengl.initRenderSystem();
     }
 
     public static GlRenderSystem opengl() {

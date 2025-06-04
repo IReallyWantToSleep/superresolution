@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 import static org.lwjgl.opengl.GL44.*;
@@ -19,10 +20,6 @@ public class GlPipelineClearJob extends GlPipelineJob {
 
     @Override
     public void execute(GlPipelineJobDispatchResource resource) {
-        glClearTexImage(
-                target.getTextureId(), 0,
-                target.getTextureFormat().gl(),
-                GL_FLOAT, clearColor
-        );
+        RenderSystems.opengl().clearTexture(this.target, clearColor);
     }
 }

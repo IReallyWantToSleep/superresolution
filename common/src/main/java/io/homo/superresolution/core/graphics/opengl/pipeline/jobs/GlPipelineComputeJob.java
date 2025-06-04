@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.impl.Vec3;
 
@@ -34,15 +36,17 @@ public class GlPipelineComputeJob extends GlPipelineJob {
 
     @Override
     public void schedule(GlPipelineJobDispatchResource dispatchResource) {
-        Gl.glUseProgram(program.handle);
-        setupResource();
+        try (GlState state = new GlState()) {
+            Gl.glUseProgram(program.handle);
+            RenderSystems.opengl().setShaderProgram(this.program);
+            setupResource();
+        }
     }
 
     @Override
     public void execute(GlPipelineJobDispatchResource dispatchResource) {
-        Gl.glUseProgram(program.handle);
         Vec3 workGroupSize = workGroupSizeSupplier.get();
-        glDispatchCompute(
+        RenderSystems.opengl().dispatchCompute(
                 (int) workGroupSize.x,
                 (int) workGroupSize.y,
                 (int) workGroupSize.z
