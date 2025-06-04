@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
+import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescriptions;
@@ -65,6 +66,7 @@ public abstract class GlPipelineJob {
     }
 
     protected void setupResource() {
+
         resourcesMap.resource.forEach((name, description) -> {
             switch (description.type()) {
                 case Image2D -> setupImage2DResource(description);
@@ -72,6 +74,7 @@ public abstract class GlPipelineJob {
                 case UniformBuffer -> setupUniformBufferResource(description);
             }
         });
+
     }
 
     public abstract void schedule(GlPipelineJobDispatchResource dispatchResource);

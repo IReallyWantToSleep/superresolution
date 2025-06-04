@@ -1,9 +1,13 @@
-package io.homo.superresolution.core.graphics;
+package io.homo.superresolution.core.graphics.system;
 
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
+import io.homo.superresolution.core.graphics.impl.vertex.VertexAttribute;
+import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 
 public interface IRenderSystem {
     /**
@@ -45,6 +49,15 @@ public interface IRenderSystem {
     void clearTexture(ITexture texture, int[] color);
 
     /**
+     * 将纹理清空为指定颜色。
+     *
+     * @param texture 目标纹理
+     * @param color   RGBA颜色数组，每个分量范围为0~1
+     */
+    void clearTexture(ITexture texture, float[] color);
+
+
+    /**
      * 将源纹理的指定区域复制到目标纹理的指定区域。
      *
      * @param src      源纹理
@@ -76,31 +89,11 @@ public interface IRenderSystem {
     );
 
     /**
-     * 设置渲染视口。
-     *
-     * @param x 视口左上角X坐标
-     * @param y 视口左上角Y坐标
-     * @param w 视口宽度
-     * @param h 视口高度
-     */
-    void setViewport(int x, int y, int w, int h);
-
-    /**
      * 设置当前使用的着色器程序。
      *
      * @param shaderProgram 着色器程序对象
      */
     void setShaderProgram(IShaderProgram<?> shaderProgram);
-
-    /**
-     * 以(0,0)为起点设置视口。
-     *
-     * @param w 视口宽度
-     * @param h 视口高度
-     */
-    default void setViewport(int w, int h) {
-        setViewport(0, 0, w, h);
-    }
 
     /**
      * 执行计算着色器任务。
@@ -110,4 +103,54 @@ public interface IRenderSystem {
      * @param z Z方向工作组数
      */
     void dispatchCompute(int x, int y, int z);
+
+
+    /**
+     * 创建顶点缓冲区
+     *
+     * @param description 顶点缓冲区描述对象，包含缓冲区大小和用途等参数
+     * @return 新创建的顶点缓冲区对象
+     */
+    IVertexBuffer createVertexBuffer(VertexBufferDescription description);
+
+    /**
+     * 上传顶点数据到缓冲区
+     *
+     * @param vertexBuffer 目标顶点缓冲区
+     * @param data         顶点数据数组
+     * @param offset       数据在数组中的起始偏移量
+     * @param length       要上传的数据长度（以字节为单位）
+     */
+    void uploadVertexData(IVertexBuffer vertexBuffer, float[] data, int offset, int length);
+
+    /**
+     * 设置顶点属性布局
+     *
+     * @param attributes 顶点属性描述数组，定义每个属性的数据类型和布局
+     */
+    void setVertexAttributes(VertexAttribute[] attributes);
+
+    /**
+     * 执行绘制命令
+     *
+     * @param primitiveType 图元类型（如三角形、线条等）
+     * @param vertexBuffer  要使用的顶点缓冲区
+     * @param firstVertex   起始顶点索引
+     * @param vertexCount   要绘制的顶点数量
+     */
+    void draw(PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int firstVertex, int vertexCount);
+
+    /**
+     * 销毁顶点缓冲区并释放资源
+     *
+     * @param vertexBuffer 要销毁的顶点缓冲区
+     */
+    void destroyVertexBuffer(IVertexBuffer vertexBuffer);
+
+    /**
+     * 获取渲染状态
+     *
+     * @return 渲染状态
+     */
+    IRenderState renderState();
 }

@@ -15,6 +15,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
 import io.homo.superresolution.core.impl.Vec3;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
@@ -165,13 +166,18 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
+
         buffer.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         buffer.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         buffer.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         buffer.setFloat("sharpness", Config.getSharpness());
         buffer.fillBuffer();
-        fsr1RCASShader.uniforms().block("fsr1_data").set(buffer);
-        fsr1EASUShader.uniforms().block("fsr1_data").set(buffer);
+        try (GlShaderUniforms uniforms = fsr1RCASShader.uniforms()) {
+            uniforms.block("fsr1_data").set(buffer);
+        }
+        try (GlShaderUniforms uniforms = fsr1EASUShader.uniforms()) {
+            uniforms.block("fsr1_data").set(buffer);
+        }
         fsrUpscalePipeline.scheduleJob("fsr1_easu");
         fsrUpscalePipeline.executeJob("fsr1_easu");
         fsrUpscalePipeline.scheduleJob("fsr1_rcas");
