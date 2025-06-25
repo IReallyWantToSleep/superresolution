@@ -2,7 +2,8 @@ package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.UniformBuffer;
+import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
+import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -15,8 +16,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
-import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
@@ -34,7 +34,7 @@ public class FSR1 extends AbstractAlgorithm {
     private GlTexture2D fsr1TempTexture;
     private GlFrameBuffer outputFbo;
     private GlTexture2D output;
-    private UniformBuffer buffer;
+    private StructuredUniformBuffer buffer;
 
     public static int checkFP16Support() {
         if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
@@ -57,7 +57,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_EASU", String.valueOf(1))
-                        .uniformBlock("fsr1_data", 0, buffer.getSize())
+                        .uniformBuffer("fsr1_data", 0, buffer.size())
                         .build()
         );
         fsr1EASUShader.compile();
@@ -67,7 +67,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_RCAS", String.valueOf(1))
-                        .uniformBlock("fsr1_data", 0, buffer.getSize())
+                        .uniformBuffer("fsr1_data", 0, buffer.size())
                         .build()
         );
         fsr1RCASShader.compile();
@@ -76,7 +76,7 @@ public class FSR1 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        buffer = UniformBuffer.create()
+        buffer = UniformStructBuilder.start()
                 .vec2Entry("renderViewportSize")
                 .vec2Entry("containerTextureSize")
                 .vec2Entry("upscaledViewportSize")
@@ -153,11 +153,11 @@ public class FSR1 extends AbstractAlgorithm {
         this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
     }
 
-    private Vec3 getWorkGroupSize() {
+    private Vector3f getWorkGroupSize() {
         int workRegionDim = 16;
         int dispatchX = (MinecraftRenderHandle.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
         int dispatchY = (MinecraftRenderHandle.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
-        return new Vec3(
+        return new Vector3f(
                 dispatchX,
                 dispatchY,
                 1
@@ -166,18 +166,13 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-
         buffer.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         buffer.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         buffer.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         buffer.setFloat("sharpness", Config.getSharpness());
         buffer.fillBuffer();
-        try (GlShaderUniforms uniforms = fsr1RCASShader.uniforms()) {
-            uniforms.block("fsr1_data").set(buffer);
-        }
-        try (GlShaderUniforms uniforms = fsr1EASUShader.uniforms()) {
-            uniforms.block("fsr1_data").set(buffer);
-        }
+        fsr1RCASShader.uniforms().buffer("fsr1_data").set(buffer);
+        fsr1EASUShader.uniforms().buffer("fsr1_data").set(buffer);
         fsrUpscalePipeline.scheduleJob("fsr1_easu");
         fsrUpscalePipeline.executeJob("fsr1_easu");
         fsrUpscalePipeline.scheduleJob("fsr1_rcas");
@@ -204,7 +199,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        return output.getTextureId();
+        return output.handle();
     }
 
     @Override

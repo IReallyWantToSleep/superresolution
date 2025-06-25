@@ -10,10 +10,9 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -266,10 +265,10 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                         .build());
     }
 
-    private Vec3 getWorkGroupSize() {
+    private Vector3f getWorkGroupSize() {
         int dispatchX = SgsrUtils.divideRoundUp(MinecraftRenderHandle.getScreenWidth(), 8);
         int dispatchY = SgsrUtils.divideRoundUp(MinecraftRenderHandle.getScreenHeight(), 8);
-        return new Vec3(
+        return new Vector3f(
                 dispatchX,
                 dispatchY,
                 1

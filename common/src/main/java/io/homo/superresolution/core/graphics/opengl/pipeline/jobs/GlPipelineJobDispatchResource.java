@@ -1,11 +1,11 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
-import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.math.Vector3f;
 
 public record GlPipelineJobDispatchResource(
-        Vec3 dimensions
+        Vector3f dimensions
 ) {
     public static GlPipelineJobDispatchResource nothing() {
-        return new GlPipelineJobDispatchResource(new Vec3(0.0F));
+        return new GlPipelineJobDispatchResource(new Vector3f(0.0F));
     }
 }

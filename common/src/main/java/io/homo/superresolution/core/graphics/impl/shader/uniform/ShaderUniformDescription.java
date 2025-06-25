@@ -5,16 +5,22 @@ public class ShaderUniformDescription {
     private final ShaderUniformType type;
     private int binding = -1;
     private int bufferSize = -1;
+    private ShaderUniformAccess access = ShaderUniformAccess.Both;
 
     private ShaderUniformDescription(Builder builder) {
         this.name = builder.name;
         this.type = builder.type;
         this.binding = builder.binding;
         this.bufferSize = builder.bufferSize;
+        this.access = builder.access;
     }
 
     public static Builder builder(String name, ShaderUniformType type) {
         return new Builder(name, type);
+    }
+
+    public ShaderUniformAccess access() {
+        return this.access;
     }
 
     public String name() {
@@ -38,10 +44,16 @@ public class ShaderUniformDescription {
         private final ShaderUniformType type;
         private int binding = -1;
         private int bufferSize = -1;
+        private ShaderUniformAccess access = ShaderUniformAccess.Both;
 
         public Builder(String name, ShaderUniformType type) {
             this.name = name;
             this.type = type;
+        }
+
+        public Builder access(ShaderUniformAccess access) {
+            this.access = access;
+            return this;
         }
 
         public Builder binding(int binding) {
@@ -50,7 +62,7 @@ public class ShaderUniformDescription {
         }
 
         public Builder bufferSize(int size) {
-            if (type != ShaderUniformType.Block) {
+            if (type != ShaderUniformType.Buffer) {
                 throw new IllegalArgumentException("Buffer size only applicable to uniform blocks");
             }
             this.bufferSize = size;

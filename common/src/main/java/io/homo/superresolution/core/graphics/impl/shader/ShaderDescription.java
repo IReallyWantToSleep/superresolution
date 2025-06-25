@@ -1,6 +1,5 @@
 package io.homo.superresolution.core.graphics.impl.shader;
 
-import io.homo.superresolution.core.graphics.impl.shader.uniform.IShaderUniform;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformDescription;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformType;
 
@@ -72,8 +71,8 @@ public class ShaderDescription {
 
         }
 
-        public Builder uniformBlock(String name, int binding, int bufferSize) {
-            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.Block)
+        public Builder uniformBuffer(String name, int binding, int bufferSize) {
+            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.Buffer)
                     .binding(binding)
                     .bufferSize(bufferSize)
                     .build());

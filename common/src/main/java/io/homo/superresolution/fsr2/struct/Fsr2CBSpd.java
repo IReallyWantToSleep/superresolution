@@ -18,7 +18,7 @@ public class Fsr2CBSpd implements IUniformStruct {
     private int mips = 0;
 
     public Fsr2CBSpd() {
-        this.container = MemoryStack.stackCalloc(sizeof());
+        this.container = MemoryStack.stackCalloc(size());
         this.container.order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -55,7 +55,7 @@ public class Fsr2CBSpd implements IUniformStruct {
     }
 
     @Override
-    public int sizeof() {
+    public int size() {
         return 32;
     }
 

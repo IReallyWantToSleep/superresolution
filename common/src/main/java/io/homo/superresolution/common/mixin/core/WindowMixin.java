@@ -80,4 +80,11 @@ public class WindowMixin {
         SuperResolution.framebufferHeight = framebufferHeight;
         MinecraftRenderHandle.resize();
     }
+
+    @Inject(at = @At("RETURN"), method = "onFramebufferResize")
+    private void onUpdateFramebuff0erSize(CallbackInfo ci) {
+        SuperResolution.framebufferWidth = framebufferWidth;
+        SuperResolution.framebufferHeight = framebufferHeight;
+        MinecraftRenderHandle.resize();
+    }
 }

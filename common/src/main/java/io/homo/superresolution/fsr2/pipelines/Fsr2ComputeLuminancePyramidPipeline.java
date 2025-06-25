@@ -10,7 +10,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.fsr2.*;
 
@@ -67,7 +67,7 @@ public class Fsr2ComputeLuminancePyramidPipeline extends Fsr2BasePipeline {
                             int endIndexY = (rectInfo[1] + rectInfo[3] - 1) / 64;
                             dispatchThreadGroupCountXY[0] = endIndexX + 1 - workGroupOffset[0];
                             dispatchThreadGroupCountXY[1] = endIndexY + 1 - workGroupOffset[1];
-                            return new Vec3(
+                            return new Vector3f(
                                     dispatchThreadGroupCountXY[0],
                                     dispatchThreadGroupCountXY[1],
                                     1

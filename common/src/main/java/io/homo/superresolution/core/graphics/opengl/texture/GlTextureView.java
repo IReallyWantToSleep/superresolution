@@ -33,11 +33,11 @@ public class GlTextureView implements ITexture {
         if (parent == null) {
             throw new IllegalArgumentException("Parent texture cannot be null");
         }
-        if (parent.getTextureId() == 0) {
+        if (parent.handle() == 0) {
             throw new IllegalStateException("Parent texture is not initialized");
         }
         int viewId = Gl.DSA.createTextureView(
-                parent.getTextureId(),
+                parent.handle(),
                 type,
                 parent.getTextureFormat().gl(),
                 minLevel,
@@ -82,7 +82,7 @@ public class GlTextureView implements ITexture {
     }
 
     @Override
-    public int getTextureId() {
+    public int handle() {
         return id;
     }
 

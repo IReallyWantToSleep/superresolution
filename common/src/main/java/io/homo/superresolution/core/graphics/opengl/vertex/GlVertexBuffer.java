@@ -32,7 +32,7 @@ public class GlVertexBuffer implements IVertexBuffer {
 
 
     @Override
-    public int getId() {
+    public int handle() {
         return id;
     }
 
@@ -51,7 +51,7 @@ public class GlVertexBuffer implements IVertexBuffer {
         FloatBuffer buffer = BufferUtils.createFloatBuffer(length);
         buffer.put(data, offset, length);
         buffer.flip();
-        GL45.glNamedBufferSubData(this.id, 0, buffer);
+        Gl.DSA.bufferSubData(this.id, 0, buffer);
     }
 
     @Override

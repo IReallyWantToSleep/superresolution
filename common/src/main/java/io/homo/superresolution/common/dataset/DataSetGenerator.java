@@ -138,7 +138,7 @@ public class DataSetGenerator {
         File HR_MV_IMAGE = Paths.get(dir.getPath(), "hr_mv.bin").toFile();
 
         writeImage(
-                MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR),
+                MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.Color),
                 HR_RGB_IMAGE.getAbsolutePath()
         );
 
@@ -146,7 +146,7 @@ public class DataSetGenerator {
                 .resource(GlPipelineResourceDescription.createTextureResource(
                         GlPipelineResourceType.Sampler2D,
                         "depthTex",
-                        MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.ANY_DEPTH),
+                        MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth),
                         GlPipelineResourceAccess.READ,
                         null,
                         0
@@ -157,7 +157,7 @@ public class DataSetGenerator {
         copyJob.execute(GlPipelineJobDispatchResource.nothing());
 
         writeImage(
-                tempFbo.getTexture(FrameBufferAttachmentType.COLOR),
+                tempFbo.getTexture(FrameBufferAttachmentType.Color),
                 HR_DEPTH_IMAGE.getAbsolutePath()
         );
 
@@ -165,7 +165,7 @@ public class DataSetGenerator {
                 .resource(GlPipelineResourceDescription.createTextureResource(
                         GlPipelineResourceType.Sampler2D,
                         "tex",
-                        AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.COLOR),
+                        AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color),
                         GlPipelineResourceAccess.READ,
                         null,
                         0
@@ -176,7 +176,7 @@ public class DataSetGenerator {
         copyJob.execute(GlPipelineJobDispatchResource.nothing());
 
         writeImage(
-                tempFbo.getTexture(FrameBufferAttachmentType.COLOR),
+                tempFbo.getTexture(FrameBufferAttachmentType.Color),
                 HR_MV_IMAGE.getAbsolutePath()
         );
     }
@@ -208,7 +208,7 @@ public class DataSetGenerator {
                 texture.getWidth(),
                 texture.getHeight()
         );
-        glBindFramebuffer(GL_FRAMEBUFFER, temp.getFrameBufferId());
+        glBindFramebuffer(GL_FRAMEBUFFER, temp.handle());
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
         int pixelFormat = getGLPixelFormat(texture.getTextureFormat());

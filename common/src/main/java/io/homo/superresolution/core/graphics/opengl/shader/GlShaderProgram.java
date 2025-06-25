@@ -29,13 +29,17 @@ import static org.lwjgl.opengl.GL46.glSpecializeShader;
 
 public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebuggableObject {
     private final ShaderDescription description;
-    public int handle;
+    private int handle;
     private boolean isCompiled = false;
     private GlShaderUniforms uniforms;
-
     public GlShaderProgram(ShaderDescription description) {
         this.description = description;
         this.handle = Gl.glCreateProgram();
+    }
+
+    @Override
+    public int handle() {
+        return handle;
     }
 
     @Override

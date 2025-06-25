@@ -6,9 +6,6 @@ public enum TextureWrapMode {
     CLAMP_TO_EDGE,
     CLAMP_TO_BORDER;
 
-    /**
-     * 获取对应的OpenGL枚举值
-     */
     public int gl() {
         return switch (this) {
             case REPEAT -> org.lwjgl.opengl.GL11.GL_REPEAT;
@@ -19,9 +16,6 @@ public enum TextureWrapMode {
         };
     }
 
-    /**
-     * 获取对应的Vulkan枚举值
-     */
     public int vk() {
         return switch (this) {
             case REPEAT -> org.lwjgl.vulkan.VK10.VK_SAMPLER_ADDRESS_MODE_REPEAT;

@@ -25,11 +25,11 @@ public class None extends AbstractAlgorithm {
     }
 
     public int getInputTextureId() {
-        return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.COLOR);
+        return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.Color);
     }
 
     public int getOutputTextureId() {
-        return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.COLOR);
+        return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.Color);
     }
 
     @Override

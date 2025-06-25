@@ -8,4 +8,6 @@ public interface IShaderUniform<T, SELF extends IShaderUniform> extends Destroya
     String name();
 
     int binding();
+
+    ShaderUniformAccess access();
 }

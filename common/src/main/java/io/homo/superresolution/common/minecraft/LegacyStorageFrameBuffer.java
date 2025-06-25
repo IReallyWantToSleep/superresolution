@@ -135,7 +135,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     }
 
     public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
-        if (bindPoint == FrameBufferBindPoint.READ) {
+        if (bindPoint == FrameBufferBindPoint.Read) {
             this.bindRead();
         } else {
             this.bindWrite(setViewport);
@@ -147,9 +147,9 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     }
 
     public void unbind(FrameBufferBindPoint bindPoint) {
-        if (bindPoint == FrameBufferBindPoint.READ) {
+        if (bindPoint == FrameBufferBindPoint.Read) {
             this.unbindRead();
-        } else if (bindPoint == FrameBufferBindPoint.WRITE) {
+        } else if (bindPoint == FrameBufferBindPoint.Write) {
             this.unbindWrite();
         } else {
             this.unbindRead();
@@ -160,9 +160,9 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     @Override
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
         return switch (attachmentType) {
-            case COLOR -> attachmentType.getIndex() == 0 ? this.colorTextureId : this.colorAttachment1;
-            case ANY_DEPTH, DEPTH -> this.depthBufferId;
-            case DEPTH_STENCIL -> stencilEnabled ? this.depthBufferId : -1;
+            case Color -> attachmentType.getIndex() == 0 ? this.colorTextureId : this.colorAttachment1;
+            case AnyDepth, Depth -> this.depthBufferId;
+            case DepthStencil -> stencilEnabled ? this.depthBufferId : -1;
         };
     }
 
@@ -172,7 +172,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     }
 
     @Override
-    public int getFrameBufferId() {
+    public int handle() {
         return this.frameBufferId;
     }
 

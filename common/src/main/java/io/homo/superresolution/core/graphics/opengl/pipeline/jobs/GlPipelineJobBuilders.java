@@ -3,7 +3,7 @@ package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescriptions;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
@@ -102,7 +102,7 @@ public final class GlPipelineJobBuilders {
     public static final class ComputeJobBuilder {
         private final GlShaderProgram program;
         private final GlPipelineResourceDescriptions resources = new GlPipelineResourceDescriptions();
-        private Supplier<Vec3> workGroupSizeSupplier = () -> new Vec3(1, 1, 1);
+        private Supplier<Vector3f> workGroupSizeSupplier = () -> new Vector3f(1, 1, 1);
 
         private ComputeJobBuilder(GlShaderProgram program) {
             if (program == null) {
@@ -112,11 +112,11 @@ public final class GlPipelineJobBuilders {
         }
 
         public ComputeJobBuilder workGroup(int x, int y, int z) {
-            this.workGroupSizeSupplier = () -> new Vec3(x, y, z);
+            this.workGroupSizeSupplier = () -> new Vector3f(x, y, z);
             return this;
         }
 
-        public ComputeJobBuilder workGroupSupplier(Supplier<Vec3> workGroupSizeSupplier) {
+        public ComputeJobBuilder workGroupSupplier(Supplier<Vector3f> workGroupSizeSupplier) {
             this.workGroupSizeSupplier = workGroupSizeSupplier;
             return this;
         }

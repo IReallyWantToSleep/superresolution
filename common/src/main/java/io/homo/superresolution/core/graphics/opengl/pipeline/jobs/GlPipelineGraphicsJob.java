@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
+import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
@@ -29,31 +30,26 @@ public class GlPipelineGraphicsJob extends GlPipelineJob {
 
     @Override
     public void execute(GlPipelineJobDispatchResource dispatchResource) {
-        try (GlState ignored = new GlState()) {
+        try (GlState ignored = new GlState(
+                GlState.STATE_TEXTURE_2D |
+                        GlState.STATE_ACTIVE_TEXTURE |
+                        GlState.STATE_TEXTURES |
+                        GlState.STATE_PROGRAM |
+                        GlState.STATE_VERTEX_OPERATIONS |
+                        GlState.STATE_DRAW_FBO |
+                        GlState.STATE_READ_FBO
+        )) {
             if (targetFrameBuffer != null) {
-                targetFrameBuffer.bind(FrameBufferBindPoint.WRITE, true);
+                targetFrameBuffer.bind(FrameBufferBindPoint.Write, true);
             }
-            IRenderSystem rs = RenderSystems.current();
-            rs.setShaderProgram(program);
-            float[] vertices = {
-                    -1f, -1f, 0f, 0f,
-                    1f, -1f, 1f, 0f,
-                    1f, 1f, 1f, 1f,
-
-                    -1f, -1f, 0f, 0f,
-                    1f, 1f, 1f, 1f,
-                    -1f, 1f, 0f, 1f
-            };
-            VertexBufferDescription desc = new VertexBufferDescription(vertices.length * Float.BYTES, false);
-            IVertexBuffer vbo = rs.createVertexBuffer(desc);
-            rs.uploadVertexData(vbo, vertices, 0, vertices.length);
-            VertexAttribute[] attributes = new VertexAttribute[]{
-                    new VertexAttribute(0, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 0),
-                    new VertexAttribute(1, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 2 * Float.BYTES)
-            };
-            rs.setVertexAttributes(attributes);
-            rs.draw(PrimitiveType.TRIANGLES, vbo, 0, 6);
-            rs.destroyVertexBuffer(vbo);
+            try (DrawObject fullscreenQuad = DrawObject.fullscreenQuad(RenderSystems.current())) {
+                RenderSystems.current().draw(
+                        program,
+                        fullscreenQuad,
+                        0,
+                        DrawObject.fullscreenQuadVertexCount()
+                );
+            }
         }
     }
 }

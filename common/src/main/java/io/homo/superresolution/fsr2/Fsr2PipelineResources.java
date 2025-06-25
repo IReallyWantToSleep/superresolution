@@ -6,7 +6,7 @@ import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -97,85 +97,85 @@ public class Fsr2PipelineResources {
         // 动态资源
         addResourceDescription(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.RGBA16F, 2, "FSR2_PreparedInputColor"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.RGBA16F, 2, "FSR2_PreparedInputColor"));
         addResourceDescription(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R32UI, 2, "FSR2_ReconstructedPrevNearestDepth"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R32UI, 2, "FSR2_ReconstructedPrevNearestDepth"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.RG16F, 2, "FSR2_InternalDilatedVelocity1"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.RG16F, 2, "FSR2_InternalDilatedVelocity1"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.RG16F, 2, "FSR2_InternalDilatedVelocity2"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.RG16F, 2, "FSR2_InternalDilatedVelocity2"));
         addResourceDescription(Fsr2PipelineResourceType.DILATED_DEPTH,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R32F, 2, "FSR2_DilatedDepth"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R32F, 2, "FSR2_DilatedDepth"));
         addResourceDescription(Fsr2PipelineResourceType.LOCK_STATUS_1,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RG16F, 2, "FSR2_LockStatus1"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.RG16F, 2, "FSR2_LockStatus1"));
         addResourceDescription(Fsr2PipelineResourceType.LOCK_STATUS_2,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RG16F, 2, "FSR2_LockStatus2"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.RG16F, 2, "FSR2_LockStatus2"));
         addResourceDescription(Fsr2PipelineResourceType.LOCK_INPUT_LUMA,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R16F, 2, "FSR2_LockInputLuma"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R16F, 2, "FSR2_LockInputLuma"));
         addResourceDescription(Fsr2PipelineResourceType.NEW_LOCKS,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.R8, 2, "FSR2_NewLocks"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.R8, 2, "FSR2_NewLocks"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_1,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RGBA16F, 2, "FSR2_InternalUpscaled1"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.RGBA16F, 2, "FSR2_InternalUpscaled1"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_2,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RGBA16F, 2, "FSR2_InternalUpscaled2"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.RGBA16F, 2, "FSR2_InternalUpscaled2"));
         addResourceDescription(Fsr2PipelineResourceType.SCENE_LUMINANCE,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(Math.max((float) Math.ceil(renderWidth / 2f), 1), Math.max((float) Math.ceil(renderHeight / 2f), 1)), TextureFormat.R16F, 2, "FSR2_ExposureMips", 0));
+                        new Vector2f(Math.max((float) Math.ceil(renderWidth / 2f), 1), Math.max((float) Math.ceil(renderHeight / 2f), 1)), TextureFormat.R16F, 2, "FSR2_ExposureMips", 0));
         addResourceDescription(Fsr2PipelineResourceType.LUMA_HISTORY_1,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RGBA8, 2, "FSR2_LumaHistory1"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.RGBA8, 2, "FSR2_LumaHistory1"));
         addResourceDescription(Fsr2PipelineResourceType.LUMA_HISTORY_2,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(upscaledWidth, upscaledHeight), TextureFormat.RGBA8, 2, "FSR2_LumaHistory2"));
+                        new Vector2f(upscaledWidth, upscaledHeight), TextureFormat.RGBA8, 2, "FSR2_LumaHistory2"));
         addResourceDescription(Fsr2PipelineResourceType.SPD_ATOMIC_COUNT,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(1), TextureFormat.R32UI, 2, "FSR2_SpdAtomicCounter"));
+                        new Vector2f(1), TextureFormat.R32UI, 2, "FSR2_SpdAtomicCounter"));
         addResourceDescription(Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.RG8, 2, "FSR2_DilatedReactiveMasks"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.RG8, 2, "FSR2_DilatedReactiveMasks"));
         addResourceDescription(Fsr2PipelineResourceType.LANCZOS_LUT,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(128, 1), TextureFormat.R16_SNORM, 1, "FSR2_LanczosLutData"));
+                        new Vector2f(128, 1), TextureFormat.R16_SNORM, 1, "FSR2_LanczosLutData"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_DEFAULT_REACTIVITY,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(1), TextureFormat.R8, 1, "FSR2_DefaultReactiviyMask"));
+                        new Vector2f(1), TextureFormat.R8, 1, "FSR2_DefaultReactiviyMask"));
         addResourceDescription(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(16, 16), TextureFormat.R16_SNORM, 2, "FSR2_MaximumUpsampleBias"));
+                        new Vector2f(16, 16), TextureFormat.R16_SNORM, 2, "FSR2_MaximumUpsampleBias"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_DEFAULT_EXPOSURE,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(1), TextureFormat.RG32F, 1, "FSR2_DefaultExposure"));
+                        new Vector2f(1), TextureFormat.RG32F, 1, "FSR2_DefaultExposure"));
         addResourceDescription(Fsr2PipelineResourceType.AUTO_EXPOSURE,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(1), TextureFormat.RG32F, 1, "FSR2_AutoExposure"));
+                        new Vector2f(1), TextureFormat.RG32F, 1, "FSR2_AutoExposure"));
         addResourceDescription(Fsr2PipelineResourceType.AUTOREACTIVE,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R8, 2, "FSR2_AutoReactive"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R8, 2, "FSR2_AutoReactive"));
         addResourceDescription(Fsr2PipelineResourceType.AUTOCOMPOSITION,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R8, 2, "FSR2_AutoComposition"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R8, 2, "FSR2_AutoComposition"));
         addResourceDescription(Fsr2PipelineResourceType.PREV_PRE_ALPHA_COLOR_1,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPreAlpha0"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPreAlpha0"));
         addResourceDescription(Fsr2PipelineResourceType.PREV_POST_ALPHA_COLOR_1,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPostAlpha0"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPostAlpha0"));
         addResourceDescription(Fsr2PipelineResourceType.PREV_PRE_ALPHA_COLOR_2,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPreAlpha1"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPreAlpha1"));
         addResourceDescription(Fsr2PipelineResourceType.PREV_POST_ALPHA_COLOR_2,
                 new Fsr2ResourceCreateDescription(
-                        new Vec2(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPostAlpha1"));
+                        new Vector2f(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPostAlpha1"));
 
         Set<Map.Entry<Fsr2PipelineResourceType, Fsr2ResourceCreateDescription>> entries = new HashSet<>(resourceCreateDescriptions.entrySet());
         for (Map.Entry<Fsr2PipelineResourceType, Fsr2ResourceCreateDescription> entry : entries) {

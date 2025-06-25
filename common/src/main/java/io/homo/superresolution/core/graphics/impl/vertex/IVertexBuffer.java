@@ -1,8 +1,8 @@
 package io.homo.superresolution.core.graphics.impl.vertex;
 
-public interface IVertexBuffer {
-    int getId();
+import io.homo.superresolution.core.graphics.impl.GpuObject;
 
+public interface IVertexBuffer extends GpuObject {
     int getSize();
 
     boolean isDynamic();

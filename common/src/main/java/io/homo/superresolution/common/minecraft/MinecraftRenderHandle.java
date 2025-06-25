@@ -13,6 +13,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
@@ -168,9 +169,10 @@ public class MinecraftRenderHandle {
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         #else
         setClientRenderTarget(getRenderTarget().asMcRenderTarget());
-        getRenderTarget().bind(FrameBufferBindPoint.WRITE);
+        getRenderTarget().bind(FrameBufferBindPoint.Write);
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         #endif
+        RenderSystems.current().finish();
         if (needCapture) {
             if (RenderDoc.renderdoc != null) {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
@@ -189,13 +191,14 @@ public class MinecraftRenderHandle {
         try (GlState ignored = new GlState()) {
             LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
         }
+        RenderSystems.current().finish();
     }
 
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
+        RenderSystems.current().finish();
         isRenderingWorld = false;
         frameCount++;
-
         #if MC_VER > MC_1_21_4
         ((io.homo.superresolution.core.gl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR)).copyFromTex(
                 ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
@@ -204,11 +207,12 @@ public class MinecraftRenderHandle {
         #else
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
-        getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE, true);
+        getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         try (GlState ignored = new GlState()) {
             LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }
 
+        RenderSystems.current().finish();
         try (GlState ignored = new GlState()) {
             PerformanceInfo.begin("upscale");
             if (needCaptureUpscale) {
@@ -229,15 +233,15 @@ public class MinecraftRenderHandle {
                 if (SuperResolution.currentAlgorithm != null) {
                     AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
                             SuperResolution.currentAlgorithm,
-                            SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.COLOR)
+                            SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
                     );
                 }
 
             }
             IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
             Gl.DSA.blitFramebuffer(
-                    outFbo.getFrameBufferId(),
-                    MinecraftRenderHandle.getOriginRenderTarget().getFrameBufferId(),
+                    outFbo.handle(),
+                    MinecraftRenderHandle.getOriginRenderTarget().handle(),
                     0, 0, outFbo.getWidth(), outFbo.getHeight(),
                     0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
                     GL46.GL_COLOR_BUFFER_BIT,
@@ -253,10 +257,11 @@ public class MinecraftRenderHandle {
             PerformanceInfo.end("upscale");
             if (Config.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                 blitHandRenderTarget();
+            RenderSystems.current().finish();
         }
         PerformanceInfo.end("world");
         frameTime = PerformanceInfo.getAsMillis("world");
-        getOriginRenderTarget().bind(FrameBufferBindPoint.WRITE);
+        getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
         Gl.glViewport(
                 0,
                 0,
@@ -280,6 +285,7 @@ public class MinecraftRenderHandle {
                 }
             }
         }
+        RenderSystems.current().finish();
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {
@@ -355,7 +361,7 @@ public class MinecraftRenderHandle {
                 getRenderHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                getRenderTarget(MinecraftRenderTargetType.ENTITY).getTexture(FrameBufferAttachmentType.COLOR)
+                getRenderTarget(MinecraftRenderTargetType.ENTITY).getTexture(FrameBufferAttachmentType.Color)
         );
     }
 
@@ -388,7 +394,7 @@ public class MinecraftRenderHandle {
         GlStates.save("hand");
         setClientRenderTarget(getRenderTarget(MinecraftRenderTargetType.HAND).asMcRenderTarget());
         getRenderTarget(MinecraftRenderTargetType.HAND).clearFrameBuffer();
-        getRenderTarget(MinecraftRenderTargetType.HAND).bind(FrameBufferBindPoint.ALL);
+        getRenderTarget(MinecraftRenderTargetType.HAND).bind(FrameBufferBindPoint.All);
     }
 
     public static void blitHandRenderTarget() {
@@ -398,7 +404,7 @@ public class MinecraftRenderHandle {
                 getScreenHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
-                renderTarget.getTexture(FrameBufferAttachmentType.COLOR)
+                renderTarget.getTexture(FrameBufferAttachmentType.Color)
         )));
         glDisable(GL_BLEND);
     }

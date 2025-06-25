@@ -14,8 +14,8 @@ public class TextureSupplier implements ITexture {
     }
 
     @Override
-    public int getTextureId() {
-        return supplier.get().getTextureId();
+    public int handle() {
+        return supplier.get().handle();
     }
 
     @Override

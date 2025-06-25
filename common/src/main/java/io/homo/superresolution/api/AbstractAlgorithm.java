@@ -96,7 +96,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * @return 输入帧缓冲区的颜色纹理ID。
      */
     public int getInputTextureId() {
-        return input.getTextureId(FrameBufferAttachmentType.COLOR);
+        return input.getTextureId(FrameBufferAttachmentType.Color);
     }
 
     /**
@@ -105,6 +105,6 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * @return 输出帧缓冲区的颜色纹理ID。
      */
     public int getOutputTextureId() {
-        return output.getTextureId(FrameBufferAttachmentType.COLOR);
+        return output.getTextureId(FrameBufferAttachmentType.Color);
     }
 }

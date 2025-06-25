@@ -3,8 +3,6 @@ package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
-import static org.lwjgl.opengl.GL44.*;
-
 public class GlPipelineClearJob extends GlPipelineJob {
     private final ITexture target;
     private final float[] clearColor;
@@ -20,6 +18,6 @@ public class GlPipelineClearJob extends GlPipelineJob {
 
     @Override
     public void execute(GlPipelineJobDispatchResource resource) {
-        RenderSystems.opengl().clearTexture(this.target, clearColor);
+        RenderSystems.opengl().clearTextureRGBA(this.target, clearColor);
     }
 }

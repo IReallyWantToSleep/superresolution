@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.gui.entries;
 
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.common.mixin.gui.AbstractWidgetAccessor;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,7 +17,7 @@ public class ClothButtonEntry extends AbstractConfigListEntry<Boolean> {
     private final Button button;
     private boolean fullSize;
 
-    public ClothButtonEntry(Component name, Button.OnPress onPress, Vec2 size) {
+    public ClothButtonEntry(Component name, Button.OnPress onPress, Vector2f size) {
         super(name, false);
         button = Button.builder(name, onPress)
                 .bounds(0, 0, (int) size.x, (int) size.y).build();

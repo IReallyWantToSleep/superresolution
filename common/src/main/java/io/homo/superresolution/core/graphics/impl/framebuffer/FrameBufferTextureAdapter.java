@@ -12,11 +12,11 @@ public class FrameBufferTextureAdapter implements ITexture {
     }
 
     public static FrameBufferTextureAdapter ofColor(IFrameBuffer frameBuffer) {
-        return of(frameBuffer, FrameBufferAttachmentType.COLOR);
+        return of(frameBuffer, FrameBufferAttachmentType.Color);
     }
 
     public static FrameBufferTextureAdapter ofDepth(IFrameBuffer frameBuffer) {
-        return of(frameBuffer, FrameBufferAttachmentType.ANY_DEPTH);
+        return of(frameBuffer, FrameBufferAttachmentType.AnyDepth);
     }
 
     public static FrameBufferTextureAdapter of(IFrameBuffer frameBuffer, FrameBufferAttachmentType attachmentType) {
@@ -25,13 +25,13 @@ public class FrameBufferTextureAdapter implements ITexture {
 
 
     @Override
-    public int getTextureId() {
+    public int handle() {
         return frameBuffer.getTextureId(attachmentType);
     }
 
     @Override
     public TextureFormat getTextureFormat() {
-        return attachmentType.equals(FrameBufferAttachmentType.COLOR) ? frameBuffer.getColorTextureFormat() : frameBuffer.getDepthTextureFormat();
+        return attachmentType.equals(FrameBufferAttachmentType.Color) ? frameBuffer.getColorTextureFormat() : frameBuffer.getDepthTextureFormat();
     }
 
     @Override

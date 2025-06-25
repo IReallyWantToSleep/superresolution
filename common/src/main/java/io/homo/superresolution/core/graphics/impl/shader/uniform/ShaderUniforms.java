@@ -4,17 +4,16 @@ import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.impl.Destroyable;
 
-import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class ShaderUniforms<
         SELF extends ShaderUniforms<?, ?, ?, ?, ?>,
         A extends IShaderProgram<SELF>,
-        B extends IShaderUniformBlock<?, ?>,
+        B extends IShaderUniformBuffer<?, ?>,
         C extends IShaderUniformSamplerTexture<?>,
         D extends IShaderUniformStorageTexture<?>
-        > implements Destroyable, AutoCloseable {
+        > implements Destroyable {
     protected final Map<String, ShaderUniformDescription> shaderUniforms;
     protected final A program;
     protected final ShaderDescription description;
@@ -37,11 +36,9 @@ public abstract class ShaderUniforms<
         return description;
     }
 
-    public abstract B block(String name);
+    public abstract B buffer(String name);
 
     public abstract C samplerTexture(String name);
 
     public abstract D storageTexture(String name);
-
-    public abstract void close();
 }

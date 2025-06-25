@@ -9,7 +9,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobB
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.impl.Vec3;
+import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.fsr2.*;
 
@@ -51,7 +51,7 @@ public class Fsr2AccumulateSharpenPipeline extends Fsr2BasePipeline {
     public void execute(Fsr2PipelineDispatchResource dispatchResource) {
         GlPipelineJobBuilders.ComputeJobBuilder jobBuilder =
                 GlPipelineJobBuilders.compute(program)
-                        .workGroupSupplier(() -> new Vec3(
+                        .workGroupSupplier(() -> new Vector3f(
                                 (float) (context.dimensions.screenWidth() + (7)) / 8,
                                 (float) (context.dimensions.screenHeight() + (7)) / 8,
                                 1
