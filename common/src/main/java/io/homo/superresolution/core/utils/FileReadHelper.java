@@ -2,7 +2,7 @@ package io.homo.superresolution.core.utils;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.impl.Pair;
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -40,7 +40,7 @@ public class FileReadHelper {
         return lines;
     }
 
-    public static Pair<Vec2, ByteBuffer> readTexture(String path) {
+    public static Pair<Vector2f, ByteBuffer> readTexture(String path) {
         ByteBuffer imageBuffer = null;
         try (InputStream is = FSR1.class.getResourceAsStream(path)) {
             if (is == null) {
@@ -80,7 +80,7 @@ public class FileReadHelper {
                 imageBuffer = null;
 
                 return Pair.of(
-                        new Vec2(w.get(), h.get()),
+                        new Vector2f(w.get(), h.get()),
                         image
                 );
             }

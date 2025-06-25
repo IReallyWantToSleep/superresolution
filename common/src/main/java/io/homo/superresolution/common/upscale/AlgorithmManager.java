@@ -2,7 +2,8 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
@@ -80,11 +81,11 @@ public class AlgorithmManager {
         return new DispatchResource(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
-                new Vec2(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
 
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight(),
-                new Vec2(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
+                new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
 
                 MinecraftRenderHandle.getFrameCount(),
                 MinecraftRenderHandle.frameTime,
@@ -116,6 +117,7 @@ public class AlgorithmManager {
         if (Config.isGenerateMotionVectors()) {
             MotionVectorsGenerator.update();
         }
+        RenderSystems.current().finish();
     }
 
     public static class AlgorithmParam {

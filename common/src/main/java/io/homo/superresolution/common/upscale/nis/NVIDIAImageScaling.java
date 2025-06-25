@@ -1,41 +1,5 @@
 package io.homo.superresolution.common.upscale.nis;
 
-import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
-import io.homo.superresolution.core.impl.Vec3;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.GlConst;
-import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
-
-import static org.lwjgl.opengl.GL11.GL_RGBA;
-import static org.lwjgl.opengl.GL11.GL_UNPACK_ALIGNMENT;
-import static org.lwjgl.stb.STBImage.*;
-
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
-import org.lwjgl.opengl.GL43;
-import org.lwjgl.system.MemoryStack;
-
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-
-import static io.homo.superresolution.core.graphics.opengl.GlConst.GL_UNSIGNED_BYTE;
-
 public class NVIDIAImageScaling {
     /*
     private NVIDIAImageScalingConfig config;

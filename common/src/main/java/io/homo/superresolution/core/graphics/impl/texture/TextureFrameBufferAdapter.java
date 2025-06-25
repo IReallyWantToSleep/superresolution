@@ -52,7 +52,7 @@ public class TextureFrameBufferAdapter implements IFrameBuffer {
 
     @Override
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
-        return attachmentType == FrameBufferAttachmentType.COLOR ? texture.getTextureId() : -1;
+        return attachmentType == FrameBufferAttachmentType.Color ? texture.handle() : -1;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class TextureFrameBufferAdapter implements IFrameBuffer {
     }
 
     @Override
-    public int getFrameBufferId() {
+    public int handle() {
         return -100;
     }
 

@@ -1,10 +1,12 @@
 package io.homo.superresolution.core.graphics.impl.framebuffer;
 
+import org.lwjgl.system.MemoryUtil;
+
 public enum FrameBufferAttachmentType {
-    COLOR(),
-    ANY_DEPTH(),
-    DEPTH(),
-    DEPTH_STENCIL();
+    Color(),
+    AnyDepth(),
+    Depth(),
+    DepthStencil();
 
     private int index;
 

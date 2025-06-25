@@ -138,32 +138,32 @@ class FrameBufferRenderTargetAdapter extends RenderTarget {
         this.height = frameBuffer.getHeight();
         this.viewWidth = frameBuffer.getWidth();
         this.viewHeight = frameBuffer.getHeight();
-        this.frameBufferId = frameBuffer.getFrameBufferId();
-        this.colorTextureId = frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR);
-        this.depthBufferId = frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH_STENCIL) == -1 ? frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH) : frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH_STENCIL);
+        this.frameBufferId = frameBuffer.handle();
+        this.colorTextureId = frameBuffer.getTextureId(FrameBufferAttachmentType.Color);
+        this.depthBufferId = frameBuffer.getTextureId(FrameBufferAttachmentType.DepthStencil) == -1 ? frameBuffer.getTextureId(FrameBufferAttachmentType.Depth) : frameBuffer.getTextureId(FrameBufferAttachmentType.DepthStencil);
     }
 
 
     public void bindRead() {
         updateState();
-        frameBuffer.bind(FrameBufferBindPoint.READ);
+        frameBuffer.bind(FrameBufferBindPoint.Read);
     }
 
     public void unbindRead() {
         updateState();
-        frameBuffer.unbind(FrameBufferBindPoint.READ);
+        frameBuffer.unbind(FrameBufferBindPoint.Read);
 
     }
 
     public void bindWrite(boolean setViewport) {
         updateState();
-        frameBuffer.bind(FrameBufferBindPoint.WRITE, setViewport);
+        frameBuffer.bind(FrameBufferBindPoint.Write, setViewport);
 
     }
 
     public void unbindWrite() {
         updateState();
-        frameBuffer.unbind(FrameBufferBindPoint.WRITE);
+        frameBuffer.unbind(FrameBufferBindPoint.Write);
     }
 
     public void setClearColor(float red, float green, float blue, float alpha) {
@@ -174,7 +174,7 @@ class FrameBufferRenderTargetAdapter extends RenderTarget {
     public void blitToScreen(int width, int height) {
         updateState();
         GlBlitRenderer.blitToScreen(
-                frameBuffer.getTexture(FrameBufferAttachmentType.COLOR),
+                frameBuffer.getTexture(FrameBufferAttachmentType.Color),
                 this.viewWidth,
                 this.viewHeight
         );
@@ -213,12 +213,12 @@ class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public int getColorTextureId() {
         updateState();
-        return frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR);
+        return frameBuffer.getTextureId(FrameBufferAttachmentType.Color);
     }
 
     public int getDepthTextureId() {
         updateState();
-        return frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH_STENCIL) == -1 ? frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH) : frameBuffer.getTextureId(FrameBufferAttachmentType.DEPTH_STENCIL);
+        return frameBuffer.getTextureId(FrameBufferAttachmentType.DepthStencil) == -1 ? frameBuffer.getTextureId(FrameBufferAttachmentType.Depth) : frameBuffer.getTextureId(FrameBufferAttachmentType.DepthStencil);
     }
 
     public void destroyBuffers() {

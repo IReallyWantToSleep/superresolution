@@ -139,11 +139,11 @@ public class TextureDescription {
 
         public TextureDescription build() {
             if (description.usages.getUsages().contains(TextureUsage.AttachmentDepth) &&
-                    !description.format.name().startsWith("DEPTH")) {
+                    !description.format.name().toUpperCase().startsWith("DEPTH")) {
                 throw new IllegalStateException("Depth attachment requires a depth texture format");
             }
             if (description.mipmapSettings.isEnabled() &&
-                    !description.filterMode.name().contains("MIPMAP")) {
+                    !description.filterMode.name().toUpperCase().contains("MIPMAP")) {
                 throw new IllegalStateException("Mipmap enabled but filter mode doesn't support mipmapping");
             }
             return description;

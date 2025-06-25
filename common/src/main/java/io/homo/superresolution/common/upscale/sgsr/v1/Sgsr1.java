@@ -2,10 +2,10 @@ package io.homo.superresolution.common.upscale.sgsr.v1;
 
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.UniformBuffer;
+import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
+import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniforms;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
@@ -16,8 +16,6 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
-import io.homo.superresolution.core.impl.Vec2;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -31,13 +29,13 @@ public class Sgsr1 extends AbstractAlgorithm {
     private GlPipeline pipeline;
     private GlTexture2D outputColor;
     private GlFrameBuffer outputFbo;
-    private UniformBuffer buffer;
+    private StructuredUniformBuffer buffer;
 
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
 
-        buffer = UniformBuffer.create()
+        buffer = UniformStructBuilder.start()
                 .vec2Entry("renderSize")
                 .vec2Entry("renderSizeRcp")
                 .floatEntry("EdgeThreshold")
@@ -66,7 +64,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
                         .name("SGSRV1")
                         .addDefine("UseEdgeDirection", "")
-                        .uniformBlock("sgsr1_data", 0, buffer.getSize())
+                        .uniformBuffer("sgsr1_data", 0, buffer.size())
                         .build()
         );
         sgsrShader.compile();
@@ -91,14 +89,14 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        try (GlShaderUniforms uniforms = sgsrShader.uniforms()) {
-            buffer.setVec2("renderSize", dispatchResource.renderWidth(), dispatchResource.renderHeight());
-            buffer.setVec2("renderSizeRcp", 1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight());
-            buffer.setFloat("EdgeThreshold", 8f / 255f);
-            buffer.setFloat("EdgeSharpness", 2f);
-            buffer.fillBuffer();
-            uniforms.block("sgsr1_data").set(buffer);
-        }
+
+        buffer.setVec2("renderSize", dispatchResource.renderWidth(), dispatchResource.renderHeight());
+        buffer.setVec2("renderSizeRcp", 1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight());
+        buffer.setFloat("EdgeThreshold", 8f / 255f);
+        buffer.setFloat("EdgeSharpness", 2f);
+        buffer.fillBuffer();
+        sgsrShader.uniforms().buffer("sgsr1_data").set(buffer);
+
         pipeline.scheduleJob("sgsr1_main");
         pipeline.executeJob("sgsr1_main");
         return true;

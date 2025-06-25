@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public class CompatMixinPlugin implements IMixinConfigPlugin {
-    private String CLASS_START = "io.homo.superresolution.fabric.mixin.compat.";
+    private final String CLASS_START = "io.homo.superresolution.fabric.mixin.compat.";
 
     public CompatMixinPlugin() {
     }
@@ -27,7 +27,7 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
 
     public boolean shouldApplyMixin(String s, String s1) {
         String modid = s1.replace(CLASS_START, "").split("\\.")[0];
-        if (Objects.equals(modid, "reesessodiumoptions")){
+        if (Objects.equals(modid, "reesessodiumoptions")) {
             return Platform.currentPlatform.isModLoaded("reeses-sodium-options");
         }
         return Platform.currentPlatform.isModLoaded(modid);

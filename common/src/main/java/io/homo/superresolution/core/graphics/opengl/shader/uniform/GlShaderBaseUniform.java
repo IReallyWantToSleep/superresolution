@@ -2,27 +2,29 @@ package io.homo.superresolution.core.graphics.opengl.shader.uniform;
 
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.IShaderUniform;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.IShaderUniformBlock;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformBuffer;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
 import io.homo.superresolution.core.graphics.opengl.OpenGLException;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 
-public abstract class ShaderBaseUniform<T, SELF extends IShaderUniform<?, ?>> implements IShaderUniform<T, SELF> {
+public abstract class GlShaderBaseUniform<T, SELF extends IShaderUniform<?, ?>> implements IShaderUniform<T, SELF> {
     private final String name;
     private final int binding;
     protected T current;
-    protected GlShaderProgram program;
+    protected ShaderUniformAccess access;
 
-    public ShaderBaseUniform(
+    public GlShaderBaseUniform(
             String name,
-            int binding
+            int binding,
+            ShaderUniformAccess access
     ) {
         this.name = name;
         this.binding = binding;
+        this.access = access;
     }
 
-    public void bindProgram(GlShaderProgram program) {
-        this.program = program;
+    @Override
+    public ShaderUniformAccess access() {
+        return access;
     }
 
     @Override
@@ -39,11 +41,5 @@ public abstract class ShaderBaseUniform<T, SELF extends IShaderUniform<?, ?>> im
     @Override
     public int binding() {
         return binding;
-    }
-
-    protected void check() {
-        if (!RenderSystems.opengl().getShaderProgram().equals(program)) {
-            throw new OpenGLException("正在设置着色器 %s 的Uniform数据，但当前着色器为 %s".formatted(RenderSystems.opengl().getShaderProgram(), program));
-        }
     }
 }

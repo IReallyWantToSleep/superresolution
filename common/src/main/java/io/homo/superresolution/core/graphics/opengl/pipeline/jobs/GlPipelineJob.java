@@ -29,7 +29,7 @@ public abstract class GlPipelineJob {
                 };
                 glBindImageTexture(
                         description.unit(),
-                        description.src().getTextureId(),
+                        description.src().handle(),
                         0,
                         false,
                         0,
@@ -51,7 +51,7 @@ public abstract class GlPipelineJob {
     protected void setupSampler2DResource(GlPipelineResourceDescription description) {
         if (description.src() != null) {
             int unit = description.unit();
-            glBindTextureUnit(unit, description.src().getTextureId());
+            glBindTextureUnit(unit, description.src().handle());
             if (description.sampler() != null) {
                 glBindSampler(unit, description.sampler().id);
             }

@@ -14,7 +14,7 @@ public class GlUniformBuffer<T extends IUniformStruct> {
 
     public GlUniformBuffer(T struct) {
         this.struct = struct;
-        this.bufferSize = struct.sizeof();
+        this.bufferSize = struct.size();
         validateBufferSize(bufferSize);
         this.uboId = Gl.DSA.createBuffer();
         initializeBuffer();
@@ -68,10 +68,10 @@ public class GlUniformBuffer<T extends IUniformStruct> {
     }
 
     private void validateStructSize() {
-        if (struct.sizeof() != bufferSize) {
+        if (struct.size() != bufferSize) {
             throw new IllegalArgumentException(
                     "Struct size mismatch! Expected: " + bufferSize +
-                            ", Actual: " + struct.sizeof()
+                            ", Actual: " + struct.size()
             );
         }
     }

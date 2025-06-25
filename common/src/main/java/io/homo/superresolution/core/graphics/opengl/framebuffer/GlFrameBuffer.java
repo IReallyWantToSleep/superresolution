@@ -5,7 +5,6 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.minecraft.RenderTargetCache;
@@ -152,9 +151,9 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     public static int resolveBindTarget(FrameBufferBindPoint point) {
         return switch (point) {
-            case READ -> GL_READ_FRAMEBUFFER;
-            case WRITE -> GL_DRAW_FRAMEBUFFER;
-            case ALL -> GL_FRAMEBUFFER;
+            case Read -> GL_READ_FRAMEBUFFER;
+            case Write -> GL_DRAW_FRAMEBUFFER;
+            case All -> GL_FRAMEBUFFER;
         };
     }
 
@@ -169,7 +168,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
         Gl.DSA.framebufferTexture(
                 this.frameBufferId,
                 attachment.type.attachmentId(),
-                attachment.texture.getTextureId(),
+                attachment.texture.handle(),
                 0
         );
         attachments.add(attachment);
@@ -196,22 +195,22 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     @Override
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
         return switch (attachmentType) {
-            case COLOR -> colorAttachment != null ? colorAttachment.texture.getTextureId() : -1;
-            case DEPTH -> depthAttachment != null ? depthAttachment.texture.getTextureId() : -1;
-            case DEPTH_STENCIL -> depthStencilAttachment != null ? depthStencilAttachment.texture.getTextureId() : -1;
-            case ANY_DEPTH -> depthStencilAttachment != null ?
-                    depthStencilAttachment.texture.getTextureId() :
-                    depthAttachment != null ? depthAttachment.texture.getTextureId() : -1;
+            case Color -> colorAttachment != null ? colorAttachment.texture.handle() : -1;
+            case Depth -> depthAttachment != null ? depthAttachment.texture.handle() : -1;
+            case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture.handle() : -1;
+            case AnyDepth -> depthStencilAttachment != null ?
+                    depthStencilAttachment.texture.handle() :
+                    depthAttachment != null ? depthAttachment.texture.handle() : -1;
         };
     }
 
     @Override
     public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
         return switch (attachmentType) {
-            case COLOR -> colorAttachment != null ? colorAttachment.texture : null;
-            case DEPTH -> depthAttachment != null ? depthAttachment.texture : null;
-            case DEPTH_STENCIL -> depthStencilAttachment != null ? depthStencilAttachment.texture : null;
-            case ANY_DEPTH -> depthStencilAttachment != null ?
+            case Color -> colorAttachment != null ? colorAttachment.texture : null;
+            case Depth -> depthAttachment != null ? depthAttachment.texture : null;
+            case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture : null;
+            case AnyDepth -> depthStencilAttachment != null ?
                     depthStencilAttachment.texture :
                     depthAttachment != null ? depthAttachment.texture : null;
         };
@@ -282,7 +281,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public int getFrameBufferId() {
+    public int handle() {
         return frameBufferId;
     }
 
@@ -337,7 +336,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     public String getDebugLabel() {
         return "FrameBuffer-%s|Color-%s|Depth-%s|DepthStencil-%s"
                 .formatted(
-                        getFrameBufferId(),
+                        handle(),
                         colorAttachment != null ? colorAttachment.texture.string() : "None",
                         depthAttachment != null ? depthAttachment.texture.string() : "None",
                         depthStencilAttachment != null ? depthStencilAttachment.texture.string() : "None"
@@ -346,6 +345,6 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        glSafeObjectLabel(GL_FRAMEBUFFER, getFrameBufferId(), newLabel);
+        glSafeObjectLabel(GL_FRAMEBUFFER, handle(), newLabel);
     }
 }

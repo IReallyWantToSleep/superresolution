@@ -2,7 +2,6 @@ package io.homo.superresolution.core.graphics.system;
 
 import io.homo.superresolution.core.graphics.impl.BlendFactor;
 import io.homo.superresolution.core.graphics.impl.DepthFunc;
-import io.homo.superresolution.core.impl.Vec4;
 
 public interface IRenderState {
     float[] viewport();

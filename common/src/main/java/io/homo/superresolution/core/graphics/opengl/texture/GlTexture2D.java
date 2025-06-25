@@ -61,7 +61,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     private GlTextureView createMipView(int level) {
-        try (GlState ignored = new GlState()) {
+        try (GlState ignored = new GlState(GlState.STATE_TEXTURE_2D | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             if (level < 0 || level > this.mipmapLevel) {
                 throw new IllegalArgumentException("Invalid mip level: " + level);
             }
@@ -92,7 +92,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     private void initializeTexture() {
-        try (GlState ignored = new GlState()) {
+        try (GlState ignored = new GlState(GlState.STATE_TEXTURE_2D | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             configureTextureParameters();
             allocateTextureStorage();
             updateDebugLabel(getDebugLabel());
@@ -151,7 +151,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     @Override
-    public int getTextureId() {
+    public int handle() {
         return id;
     }
 
@@ -215,7 +215,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        glSafeObjectLabel(GL_TEXTURE, getTextureId(), getDebugLabel());
+        glSafeObjectLabel(GL_TEXTURE, handle(), getDebugLabel());
     }
 
     public void generateMipmap() {

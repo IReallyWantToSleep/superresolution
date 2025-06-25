@@ -14,7 +14,7 @@ public class Fsr2CBRcas implements IUniformStruct {
     private final ByteBuffer container;
 
     public Fsr2CBRcas() {
-        this.container = MemoryStack.stackCalloc(sizeof());
+        this.container = MemoryStack.stackCalloc(size());
         this.container.order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -26,7 +26,7 @@ public class Fsr2CBRcas implements IUniformStruct {
         for (int i = 0; i < 4; ++i) {
             container.putInt(rcasConfig[i]);
         }
-        container.position(sizeof());
+        container.position(size());
         container.flip();
     }
 
@@ -36,7 +36,7 @@ public class Fsr2CBRcas implements IUniformStruct {
     }
 
     @Override
-    public int sizeof() {
+    public int size() {
         return 16;
     }
 }

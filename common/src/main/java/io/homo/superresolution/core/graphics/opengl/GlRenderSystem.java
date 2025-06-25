@@ -1,6 +1,10 @@
 package io.homo.superresolution.core.graphics.opengl;
 
+import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
+import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
+import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
+import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformStorageTexture;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
@@ -14,23 +18,15 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import org.lwjgl.opengl.*;
 
+import static io.homo.superresolution.core.graphics.opengl.Gl.glBindImageTexture;
+import static io.homo.superresolution.core.graphics.opengl.Gl.glBindTextureUnit;
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.glFinish;
+import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL44.glClearTexImage;
 
 public class GlRenderSystem implements IRenderSystem {
-    private GlShaderProgram shaderProgram;
     private GlRenderState renderState;
-    // 存储最近一次 setVertexAttributes 设置的属性布局
-    private VertexAttribute[] pendingVertexAttributes = null;
-
-    public GlShaderProgram getShaderProgram() {
-        return shaderProgram;
-    }
-
-    @Override
-    public void setShaderProgram(IShaderProgram<?> shaderProgram) {
-        this.shaderProgram = (GlShaderProgram) shaderProgram;
-    }
 
     @Override
     public void initRenderSystem() {
@@ -40,7 +36,6 @@ public class GlRenderSystem implements IRenderSystem {
     @Override
     public void destroyRenderSystem() {
         this.renderState = null;
-        this.pendingVertexAttributes = null;
     }
 
     @Override
@@ -60,23 +55,23 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public void clearTexture(ITexture texture, int[] color) {
+    public void clearTextureRGBA(ITexture texture, int[] color) {
         float[] clearColor = new float[]{
                 color[0] / 255.0f,
                 color[1] / 255.0f,
                 color[2] / 255.0f,
                 color[3] / 255.0f
         };
-        clearTexture(texture, clearColor);
+        clearTextureRGBA(texture, clearColor);
     }
 
     @Override
-    public void clearTexture(ITexture texture, float[] color) {
+    public void clearTextureRGBA(ITexture texture, float[] color) {
         if (texture == null) {
             throw new OpenGLException("clearTexture: 输入的纹理对象为null");
         }
         glClearTexImage(
-                texture.getTextureId(), 0,
+                texture.handle(), 0,
                 texture.getTextureFormat().gl(),
                 GL_FLOAT, color
         );
@@ -112,15 +107,15 @@ public class GlRenderSystem implements IRenderSystem {
         switch (src.getTextureType()) {
             case Texture1D:
                 GL45.glCopyImageSubData(
-                        src.getTextureId(), GL11.GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
-                        dst.getTextureId(), GL11.GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
+                        src.handle(), GL11.GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
+                        dst.handle(), GL11.GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
                         srcX1 - srcX0, 1, 1
                 );
                 break;
             case Texture2D:
                 GL45.glCopyImageSubData(
-                        src.getTextureId(), GL11.GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
-                        dst.getTextureId(), GL11.GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
+                        src.handle(), GL11.GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
+                        dst.handle(), GL11.GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
                         srcX1 - srcX0, srcY1 - srcY0, 1
                 );
                 break;
@@ -129,12 +124,17 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public void dispatchCompute(int x, int y, int z) {
-        if (this.shaderProgram == null) {
-            throw new OpenGLException("dispatchCompute: 未设置当前着色器程序");
+    public void dispatchCompute(IShaderProgram<?> shaderProgram, int x, int y, int z) {
+        if (shaderProgram == null) {
+            throw new OpenGLException("dispatchCompute: 着色器程序为null");
         }
-        try (GlState state = new GlState()) {
-            GL45.glUseProgram(this.shaderProgram.handle);
+        try (GlState state = new GlState(
+                GlState.STATE_TEXTURE_2D |
+                        GlState.STATE_ACTIVE_TEXTURE |
+                        GlState.STATE_TEXTURES |
+                        GlState.STATE_PROGRAM
+        )) {
+            setupShaderProgram((GlShaderProgram) shaderProgram);
             Gl.glDispatchCompute(x, y, z);
         }
     }
@@ -144,55 +144,60 @@ public class GlRenderSystem implements IRenderSystem {
         return GlVertexBuffer.create(description);
     }
 
-    @Override
-    public void uploadVertexData(IVertexBuffer vertexBuffer, float[] data, int offset, int length) {
-        if (!(vertexBuffer instanceof GlVertexBuffer)) {
-            throw new IllegalArgumentException("uploadVertexData: Only GlVertexBuffer is supported");
-        }
-        vertexBuffer.updateData(data, offset, length);
-    }
 
     @Override
-    public void setVertexAttributes(VertexAttribute[] attributes) {
-        this.pendingVertexAttributes = attributes;
-    }
-
-    private void applyVertexAttributes(VertexAttribute[] attributes) {
-        if (attributes == null) return;
-        for (VertexAttribute attr : attributes) {
-            GL20.glEnableVertexAttribArray(attr.getLocation());
-            GL20.glVertexAttribPointer(
-                    attr.getLocation(),
-                    attr.getComponentCount(),
-                    attr.getDataType() == VertexAttribute.DataType.FLOAT ? GL11.GL_FLOAT : GL11.GL_INT,
-                    false,
-                    attr.getStride(),
-                    attr.getOffset()
-            );
+    public void draw(IShaderProgram<?> shaderProgram, DrawObject drawObject, int firstVertex, int vertexCount) {
+        if (shaderProgram == null) {
+            throw new OpenGLException("draw: 着色器程序为null");
         }
-    }
-
-    @Override
-    public void draw(PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int firstVertex, int vertexCount) {
-        if (!(vertexBuffer instanceof GlVertexBuffer)) {
-            throw new OpenGLException("draw: 参数vertexBuffer的类型不为GlVertexBuffer");
-        }
-        if (this.shaderProgram == null) {
-            throw new OpenGLException("draw: 未设置当前着色器程序");
-        }
-        try (GlState ig = new GlState()) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBuffer.getId());
-            applyVertexAttributes(this.pendingVertexAttributes);
-            int glPrimitive = switch (primitiveType) {
+        try (GlState ig = new GlState(
+                GlState.STATE_TEXTURE_2D |
+                        GlState.STATE_ACTIVE_TEXTURE |
+                        GlState.STATE_TEXTURES |
+                        GlState.STATE_PROGRAM |
+                        GlState.STATE_VERTEX_OPERATIONS |
+                        GlState.STATE_DRAW_FBO |
+                        GlState.STATE_READ_FBO
+        )) {
+            setupShaderProgram((GlShaderProgram) shaderProgram);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
+            GL45.glBindVertexArray(drawObject.getVertexArray().handle());
+            int glPrimitive = switch (drawObject.getPrimitiveType()) {
                 case TRIANGLES -> GL11.GL_TRIANGLES;
+                case TRIANGLE_STRIP -> GL11.GL_TRIANGLE_STRIP;
                 case LINES -> GL11.GL_LINES;
                 case POINTS -> GL11.GL_POINTS;
             };
             GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
-            for (VertexAttribute attr : this.pendingVertexAttributes) {
-                GL20.glDisableVertexAttribArray(attr.getLocation());
-            }
         }
+    }
+
+    private void setupShaderProgram(GlShaderProgram shaderProgram) {
+        Gl.glUseProgram(shaderProgram.handle());
+        var uniformMap = shaderProgram.uniforms().getUniformMap();
+        uniformMap.forEach((name, uniform) -> {
+            if (uniform instanceof GlShaderUniformBuffer<?>) {
+                Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer<?>) uniform).getUboId());
+            }
+            if (uniform instanceof GlShaderUniformStorageTexture) {
+                glBindImageTexture(
+                        uniform.binding(),
+                        ((GlShaderUniformStorageTexture) uniform).texture().handle(),
+                        0,
+                        false,
+                        0,
+                        switch (uniform.access()) {
+                            case Read -> GL_READ_ONLY;
+                            case Write -> GL_WRITE_ONLY;
+                            case Both -> GL_READ_WRITE;
+                        },
+                        ((GlShaderUniformStorageTexture) uniform).texture().getTextureFormat().gl()
+                );
+            }
+            if (uniform instanceof GlShaderUniformSamplerTexture) {
+                glBindTextureUnit(uniform.binding(), ((GlShaderUniformSamplerTexture) uniform).texture().handle());
+            }
+        });
     }
 
     @Override
@@ -205,5 +210,10 @@ public class GlRenderSystem implements IRenderSystem {
     @Override
     public IRenderState renderState() {
         return renderState;
+    }
+
+    @Override
+    public void finish() {
+        glFinish();
     }
 }

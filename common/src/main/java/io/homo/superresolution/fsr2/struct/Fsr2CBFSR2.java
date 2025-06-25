@@ -1,7 +1,7 @@
 package io.homo.superresolution.fsr2.struct;
 
 import io.homo.superresolution.core.graphics.impl.IUniformStruct;
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.fsr2.Fsr2Context;
 import io.homo.superresolution.fsr2.Fsr2Dimensions;
 import io.homo.superresolution.fsr2.Fsr2DispatchDescription;
@@ -35,7 +35,7 @@ public class Fsr2CBFSR2 implements IUniformStruct {
     private float viewSpaceToMetersFactor = 1.0f;
 
     public Fsr2CBFSR2() {
-        this.container = MemoryStack.stackCalloc(sizeof());
+        this.container = MemoryStack.stackCalloc(size());
     }
 
     public void fillBuffer() {
@@ -100,10 +100,10 @@ public class Fsr2CBFSR2 implements IUniformStruct {
                 (int) desc.renderSize().x, (int) desc.renderSize().y,
                 desc.cameraFovAngleVertical
         );
-        Vec2 jitterVec = desc.jitterOffset() != null ? desc.jitterOffset() : new Vec2(0, 0);
+        Vector2f jitterVec = desc.jitterOffset() != null ? desc.jitterOffset() : new Vector2f(0, 0);
         jitter[0] = jitterVec.x;
         jitter[1] = jitterVec.y;
-        Vec2 mvScale = desc.motionVectorScale() != null ? desc.motionVectorScale() : new Vec2(1, 1);
+        Vector2f mvScale = desc.motionVectorScale() != null ? desc.motionVectorScale() : new Vector2f(1, 1);
         motionVectorScale[0] = mvScale.x;
         motionVectorScale[1] = mvScale.y;
         downscaleFactor[0] = dims.renderWidth() / (float) dims.screenWidth();
@@ -144,7 +144,7 @@ public class Fsr2CBFSR2 implements IUniformStruct {
     }
 
     @Override
-    public int sizeof() {
+    public int size() {
         return 128;
     }
 

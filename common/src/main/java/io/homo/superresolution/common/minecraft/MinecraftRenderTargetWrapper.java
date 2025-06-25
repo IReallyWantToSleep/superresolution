@@ -74,7 +74,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         #if MC_VER > MC_1_21_4
         glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), MinecraftRenderTargetUtil.getFboId(renderTarget));
         #else
-        if (bindPoint == FrameBufferBindPoint.READ) {
+        if (bindPoint == FrameBufferBindPoint.Read) {
             renderTarget.bindRead();
         } else {
             renderTarget.bindWrite(setViewport);
@@ -100,8 +100,8 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
         };
         #else
         return switch (attachmentType) {
-            case COLOR -> renderTarget.getColorTextureId();
-            case ANY_DEPTH, DEPTH, DEPTH_STENCIL -> renderTarget.getDepthTextureId();
+            case Color -> renderTarget.getColorTextureId();
+            case AnyDepth, Depth, DepthStencil -> renderTarget.getDepthTextureId();
         };
         #endif
 
@@ -110,13 +110,13 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     @Override
     public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
         return switch (attachmentType) {
-            case COLOR -> FrameBufferTextureAdapter.ofColor(this);
-            case ANY_DEPTH, DEPTH, DEPTH_STENCIL -> FrameBufferTextureAdapter.ofDepth(this);
+            case Color -> FrameBufferTextureAdapter.ofColor(this);
+            case AnyDepth, Depth, DepthStencil -> FrameBufferTextureAdapter.ofDepth(this);
         };
     }
 
     @Override
-    public int getFrameBufferId() {
+    public int handle() {
         #if MC_VER > MC_1_21_4
         return MinecraftRenderTargetUtil.getFboId(renderTarget);
         #else

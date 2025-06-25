@@ -5,5 +5,5 @@ import java.nio.ByteBuffer;
 public interface IUniformStruct {
     ByteBuffer container();
 
-    int sizeof();
+    int size();
 }

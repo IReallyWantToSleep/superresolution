@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 
 import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -15,7 +15,7 @@ public class SgsrParams implements IUniformStruct {
     private Matrix4f prev_view_proj_matrix;
 
     public SgsrParams() {
-        this.container = MemoryStack.stackCalloc(sizeof());
+        this.container = MemoryStack.stackCalloc(size());
     }
 
     private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
@@ -28,28 +28,28 @@ public class SgsrParams implements IUniformStruct {
         return diff < threshold;
     }
 
-    public void setRenderSize(Vec2 renderSize) {
+    public void setRenderSize(Vector2f renderSize) {
         container.putInt(0, (int) renderSize.x);
         container.putInt(4, (int) renderSize.y);
     }
 
-    public void setDisplaySize(Vec2 displaySize) {
+    public void setDisplaySize(Vector2f displaySize) {
         container.putInt(8, (int) displaySize.x);
         container.putInt(12, (int) displaySize.y);
     }
 
-    public void setRenderSizeRcp(Vec2 renderSizeRcp) {
+    public void setRenderSizeRcp(Vector2f renderSizeRcp) {
         container.putFloat(16, renderSizeRcp.x);
         container.putFloat(20, renderSizeRcp.y);
 
     }
 
-    public void setDisplaySizeRcp(Vec2 displaySizeRcp) {
+    public void setDisplaySizeRcp(Vector2f displaySizeRcp) {
         container.putFloat(24, displaySizeRcp.x);
         container.putFloat(28, displaySizeRcp.y);
     }
 
-    public void setJitterOffset(Vec2 jitterOffset) {
+    public void setJitterOffset(Vector2f jitterOffset) {
         container.putFloat(32, jitterOffset.x);
         container.putFloat(36, jitterOffset.y);
     }
@@ -94,7 +94,7 @@ public class SgsrParams implements IUniformStruct {
         setDisplaySize(dispatchResource.screenSize());
         setRenderSizeRcp(dispatchResource.renderSize().divideInto(1.0f));
         setDisplaySizeRcp(dispatchResource.screenSize().divideInto(1.0f));
-        setJitterOffset(new Vec2(0.0f));
+        setJitterOffset(new Vector2f(0.0f));
         fillZero(40, 48);
         //const auto curr_view_proj_matrix        = m_cameraProjection * m_cameraView;
         //const auto inv_current_view_proj_matrix = glm::inverse( m_cameraView ) * glm::inverse( m_cameraProjection );
@@ -137,7 +137,7 @@ public class SgsrParams implements IUniformStruct {
     }
 
     @Override
-    public int sizeof() {
+    public int size() {
         return 144;
     }
 }

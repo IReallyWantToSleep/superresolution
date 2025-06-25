@@ -1,6 +1,6 @@
 package io.homo.superresolution.fsr2;
 
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 public class Fsr2DispatchDescription {
@@ -11,9 +11,9 @@ public class Fsr2DispatchDescription {
     public ITexture reactive;
     public ITexture transparencyAndComposition;
     public ITexture output;
-    public Vec2 jitterOffset;
-    public Vec2 motionVectorScale;
-    public Vec2 renderSize;
+    public Vector2f jitterOffset;
+    public Vector2f motionVectorScale;
+    public Vector2f renderSize;
     public boolean enableSharpening;
     public float sharpness;
     public float frameTimeDelta;
@@ -92,29 +92,29 @@ public class Fsr2DispatchDescription {
         return this;
     }
 
-    public Vec2 jitterOffset() {
+    public Vector2f jitterOffset() {
         return jitterOffset;
     }
 
-    public Fsr2DispatchDescription setJitterOffset(Vec2 jitterOffset) {
+    public Fsr2DispatchDescription setJitterOffset(Vector2f jitterOffset) {
         this.jitterOffset = jitterOffset;
         return this;
     }
 
-    public Vec2 motionVectorScale() {
+    public Vector2f motionVectorScale() {
         return motionVectorScale;
     }
 
-    public Fsr2DispatchDescription setMotionVectorScale(Vec2 motionVectorScale) {
+    public Fsr2DispatchDescription setMotionVectorScale(Vector2f motionVectorScale) {
         this.motionVectorScale = motionVectorScale;
         return this;
     }
 
-    public Vec2 renderSize() {
+    public Vector2f renderSize() {
         return renderSize;
     }
 
-    public Fsr2DispatchDescription setRenderSize(Vec2 renderSize) {
+    public Fsr2DispatchDescription setRenderSize(Vector2f renderSize) {
         this.renderSize = renderSize;
         return this;
     }

@@ -9,7 +9,7 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.impl.Vec2;
+import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -106,17 +106,17 @@ public class FSR2 extends AbstractAlgorithm {
         float m11 = projectionMatrix.m11();
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
-        dispatchDescription.setColor(this.input.getTexture(FrameBufferAttachmentType.COLOR));
+        dispatchDescription.setColor(this.input.getTexture(FrameBufferAttachmentType.Color));
         dispatchDescription.setDepth(
-                this.input.getTexture(FrameBufferAttachmentType.DEPTH) == null ?
-                        this.input.getTexture(FrameBufferAttachmentType.DEPTH_STENCIL) :
-                        this.input.getTexture(FrameBufferAttachmentType.DEPTH)
+                this.input.getTexture(FrameBufferAttachmentType.Depth) == null ?
+                        this.input.getTexture(FrameBufferAttachmentType.DepthStencil) :
+                        this.input.getTexture(FrameBufferAttachmentType.Depth)
         );
-        dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.COLOR));
+        dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.Color));
         dispatchDescription.setOutput(this.output);
-        dispatchDescription.setJitterOffset(new Vec2(0));
+        dispatchDescription.setJitterOffset(new Vector2f(0));
         dispatchDescription.setExposure(exposureTexture);
-        dispatchDescription.setRenderSize(new Vec2(
+        dispatchDescription.setRenderSize(new Vector2f(
                 dispatchResource.renderWidth(),
                 dispatchResource.renderHeight())
         );
@@ -143,7 +143,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        return output.getTextureId();
+        return output.handle();
     }
 
 }

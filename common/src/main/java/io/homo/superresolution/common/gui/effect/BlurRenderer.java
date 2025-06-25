@@ -1,10 +1,8 @@
 package io.homo.superresolution.common.gui.effect;
 
-import io.homo.superresolution.common.debug.imgui.ImguiMain;
-import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.UniformBuffer;
+import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
@@ -17,7 +15,7 @@ public class BlurRenderer {
     public static final GlTexture2D blurTempTexture;
     public static final int MAX_LEVELS = 8;
     private static final float[] blurWeights = new float[MAX_LEVELS];
-    protected static UniformBuffer uniformBlock;
+    protected static StructuredUniformBuffer uniformBlock;
 
     static {
 
@@ -69,8 +67,8 @@ public class BlurRenderer {
             );
         }
         GlTexture2D dst = blurTempTexture;
-        ITexture src = MinecraftRenderHandle.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.COLOR);
-        dst.copyFromTex(src.getTextureId());
+        ITexture src = MinecraftRenderHandle.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color);
+        dst.copyFromTex(src.handle());
         dst.generateMipmap();
     }
 

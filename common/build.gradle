@@ -37,7 +37,6 @@ tasks.register("genJNIHeader", Exec) {
                 dir: file("src/main/java").absolutePath,
                 includes: ["**/*.class"],
                 excludes: ["**/*.java"]
-
         ))
     }
 }
