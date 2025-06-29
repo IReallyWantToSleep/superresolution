@@ -1,5 +1,6 @@
 package io.homo.superresolution.fsr2;
 
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
@@ -7,15 +8,15 @@ public class Fsr2PipelineResourcesDescription {
     private String name;
     private String shaderName;
     private ITexture texture;
-    private GlUniformBuffer<?> ubo;
+    private GlBuffer ubo;
     private boolean isWritable = false;
     private boolean isUBO = false;
 
-    public GlUniformBuffer<?> ubo() {
+    public GlBuffer ubo() {
         return ubo;
     }
 
-    public Fsr2PipelineResourcesDescription ubo(GlUniformBuffer<?> ubo) {
+    public Fsr2PipelineResourcesDescription ubo(GlBuffer ubo) {
         this.ubo = ubo;
         return this;
     }

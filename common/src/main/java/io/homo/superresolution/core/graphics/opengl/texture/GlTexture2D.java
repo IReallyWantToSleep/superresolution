@@ -20,6 +20,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     private static final int DEFAULT_ALIGNMENT = 4;
     private final TextureFormat format;
     private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
+    private final int requestedLevel;
     private TextureUsages usages = null;
     private TextureType type = null;
     private TextureFilterMode filterMode = null;
@@ -40,7 +41,8 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         this.type = description.getType();
         this.filterMode = description.getFilterMode();
         this.wrapMode = description.getWrapMode();
-        configureMipmap(description.getMipmapSettings().getLevels());
+        this.requestedLevel = description.getMipmapSettings().getLevels();
+        configureMipmap(requestedLevel);
         initializeTexture();
     }
 
@@ -234,6 +236,9 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     public void resize(int width, int height) {
         this.width = width;
         this.height = height;
+        Gl.DSA.deleteTexture(this.id);
+        this.id = Gl.DSA.createTexture2D();
+        configureMipmap(requestedLevel);
         initializeTexture();
     }
 }

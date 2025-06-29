@@ -46,7 +46,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
 
     @Override
     public void init(Sgsr2 sgsr) {
-        activateShader = RenderSystems.current().createShaderProgram(
+        activateShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl", true))
                         .name("SGSR_3PCS_A")
@@ -55,7 +55,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         );
         activateShader.compile();
 
-        convertShader = RenderSystems.current().createShaderProgram(
+        convertShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl", true))
                         .name("SGSR_3PCS_B")
@@ -64,7 +64,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         );
         convertShader.compile();
 
-        upscaleShader = RenderSystems.current().createShaderProgram(
+        upscaleShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl", true))
                         .name("SGSR_3PCS_C")
@@ -74,49 +74,49 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         upscaleShader.compile();
 
         sgsrPipeline = new GlPipeline();
-        PrevLumaHistory = RenderSystems.current().createTexture(TextureDescription.create()
+        PrevLumaHistory = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getRenderWidth())
                 .height(MinecraftRenderHandle.getRenderHeight())
                 .format(TextureFormat.R32UI)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
-        LumaHistory = RenderSystems.current().createTexture(TextureDescription.create()
+        LumaHistory = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getRenderWidth())
                 .height(MinecraftRenderHandle.getRenderHeight())
                 .format(TextureFormat.R32UI)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
-        YCoCgColor = RenderSystems.current().createTexture(TextureDescription.create()
+        YCoCgColor = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getRenderWidth())
                 .height(MinecraftRenderHandle.getRenderHeight())
                 .format(TextureFormat.R32UI)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
-        MotionDepthClipAlphaBuffer = RenderSystems.current().createTexture(TextureDescription.create()
+        MotionDepthClipAlphaBuffer = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getRenderWidth())
                 .height(MinecraftRenderHandle.getRenderHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
-        MotionDepthAlphaBuffer = RenderSystems.current().createTexture(TextureDescription.create()
+        MotionDepthAlphaBuffer = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getRenderWidth())
                 .height(MinecraftRenderHandle.getRenderHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
-        PrevHistoryOutput = RenderSystems.current().createTexture(TextureDescription.create()
+        PrevHistoryOutput = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getScreenWidth())
                 .height(MinecraftRenderHandle.getScreenHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
-        HistoryOutput = RenderSystems.current().createTexture(TextureDescription.create()
+        HistoryOutput = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getScreenWidth())
                 .height(MinecraftRenderHandle.getScreenHeight())

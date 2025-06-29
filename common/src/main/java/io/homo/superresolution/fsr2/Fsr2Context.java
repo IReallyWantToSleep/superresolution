@@ -1,5 +1,9 @@
 package io.homo.superresolution.fsr2;
 
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.fsr2.pipelines.*;
 import io.homo.superresolution.fsr2.struct.Fsr2CBFSR2;
@@ -26,11 +30,11 @@ public class Fsr2Context {
     public Fsr2ContextConfig config;
     public Fsr2Dimensions dimensions;
     public Fsr2CBFSR2 fsr2Constants = new Fsr2CBFSR2();
-    public GlUniformBuffer<Fsr2CBFSR2> fsr2ConstantsUBO = new GlUniformBuffer<>(fsr2Constants);
+    public GlBuffer fsr2ConstantsUBO;
     public Fsr2CBSpd fsr2SpdConstants = new Fsr2CBSpd();
-    public GlUniformBuffer<Fsr2CBSpd> fsr2SpdConstantsUBO = new GlUniformBuffer<>(fsr2SpdConstants);
+    public GlBuffer fsr2SpdConstantsUBO;
     public Fsr2CBRcas fsr2RcasConstants = new Fsr2CBRcas();
-    public GlUniformBuffer<Fsr2CBRcas> fsr2RcasConstantsUBO = new GlUniformBuffer<>(fsr2RcasConstants);
+    public GlBuffer fsr2RcasConstantsUBO;
     private int frameIndex = 0;
 
     public Fsr2Context(
@@ -94,9 +98,38 @@ public class Fsr2Context {
         lockPipeline.destroy();
         reconstructPreviousDepthPipeline.destroy();
         tcrAutogeneratePipeline.destroy();
+
+        fsr2Constants.free();
+        fsr2SpdConstants.free();
+        fsr2RcasConstants.free();
+        fsr2ConstantsUBO.destroy();
+        fsr2SpdConstantsUBO.destroy();
+        fsr2RcasConstantsUBO.destroy();
     }
 
     public void init() {
+        this.fsr2RcasConstantsUBO = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .size(this.fsr2RcasConstants.size())
+                        .usage(BufferUsage.UBO)
+                        .build()
+        );
+        this.fsr2SpdConstantsUBO = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .size(this.fsr2SpdConstants.size())
+                        .usage(BufferUsage.UBO)
+                        .build()
+        );
+        this.fsr2ConstantsUBO = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .size(this.fsr2Constants.size())
+                        .usage(BufferUsage.UBO)
+                        .build()
+        );
+        this.fsr2SpdConstantsUBO.setBufferData(this.fsr2SpdConstants);
+        this.fsr2ConstantsUBO.setBufferData(this.fsr2Constants);
+        this.fsr2RcasConstantsUBO.setBufferData(this.fsr2RcasConstants);
+
         resources = new Fsr2PipelineResources();
         resources.init(
                 dimensions.renderWidth(),
@@ -132,9 +165,9 @@ public class Fsr2Context {
         fsr2Constants.update(this, dispatchDescription, dimensions);
         fsr2SpdConstants.update(this, dispatchDescription, dimensions);
         fsr2RcasConstants.update(this, dispatchDescription, dimensions);
-        fsr2ConstantsUBO.update();
-        fsr2SpdConstantsUBO.update();
-        fsr2RcasConstantsUBO.update();
+        fsr2ConstantsUBO.upload();
+        fsr2SpdConstantsUBO.upload();
+        fsr2RcasConstantsUBO.upload();
 
         Fsr2PipelineDispatchResource pipelineDispatchResource = new Fsr2PipelineDispatchResource(
                 resources,

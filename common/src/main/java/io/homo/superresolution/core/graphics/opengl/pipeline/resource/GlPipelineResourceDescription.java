@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.resource;
 
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -8,7 +9,7 @@ public record GlPipelineResourceDescription(
         GlPipelineResourceType type,
         String name,
         ITexture src,
-        GlUniformBuffer<?> ubo,
+        GlBuffer ubo,
         GlPipelineResourceAccess access,
         GlSampler sampler,
         int unit
@@ -28,7 +29,7 @@ public record GlPipelineResourceDescription(
 
     public static GlPipelineResourceDescription createUBOResource(
             String name,
-            GlUniformBuffer<?> ubo,
+            GlBuffer ubo,
             int bindingPoint
     ) {
         return new GlPipelineResourceDescription(

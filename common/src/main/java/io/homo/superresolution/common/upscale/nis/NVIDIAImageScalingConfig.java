@@ -163,7 +163,7 @@ public class NVIDIAImageScalingConfig implements IUniformStruct {
     }
 
     @Override
-    public int size() {
+    public long size() {
         return 256;
     }
 }

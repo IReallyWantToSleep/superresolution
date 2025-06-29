@@ -358,14 +358,6 @@ public class GlState implements AutoCloseable {
         }
     }
 
-    private void setVertexAttribArray(int index, boolean enabled) {
-        if (enabled) {
-            glEnableVertexAttribArray(index);
-        } else {
-            glDisableVertexAttribArray(index);
-        }
-    }
-
     private void setGlCap(int cap, boolean enabled) {
         if (enabled) glEnable(cap);
         else glDisable(cap);

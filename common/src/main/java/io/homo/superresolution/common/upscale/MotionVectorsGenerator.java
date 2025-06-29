@@ -1,6 +1,8 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
@@ -8,6 +10,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
@@ -35,44 +38,45 @@ public class MotionVectorsGenerator {
     public static GlFrameBuffer preprocessFrameBuffer;
     public static GlFrameBuffer motionVectorsFrameBuffer;
     public static StructuredUniformBuffer structuredUniformBuffer;
+    private static GlBuffer ubo;
 
     public static void initShaders() {
-        preprocessShader = RenderSystems.current().createShaderProgram(
+        preprocessShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/preprocess.frag.glsl"))
                         .name("motion_vector_preprocess")
-                        .uniformBuffer("motion_vector_data", 0, structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .build()
         );
         preprocessShader.compile();
 
-        pass1Shader = RenderSystems.current().createShaderProgram(
+        pass1Shader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass1.frag.glsl"))
                         .name("motion_vector_pass1")
-                        .uniformBuffer("motion_vector_data", 0, structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .build()
         );
         pass1Shader.compile();
 
-        pass2Shader = RenderSystems.current().createShaderProgram(
+        pass2Shader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass2.frag.glsl"))
                         .name("motion_vector_pass2")
-                        .uniformBuffer("motion_vector_data", 0, structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .build()
         );
         pass2Shader.compile();
 
-        pass3Shader = RenderSystems.current().createShaderProgram(
+        pass3Shader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass3.frag.glsl"))
                         .name("motion_vector_pass3")
-                        .uniformBuffer("motion_vector_data", 0, structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .build()
         );
         pass3Shader.compile();
@@ -85,11 +89,16 @@ public class MotionVectorsGenerator {
                 .floatEntry("min_value")
                 .floatEntry("scale")
                 .build();
-
+        ubo = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .size(structuredUniformBuffer.size())
+                        .usage(BufferUsage.UBO)
+                        .build()
+        );
         initShaders();
 
         pipeline = new GlPipeline();
-        currentFrameTexture = (GlTexture2D) RenderSystems.current().createTexture(
+        currentFrameTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getRenderWidth())
@@ -99,7 +108,7 @@ public class MotionVectorsGenerator {
                         .build()
         );
 
-        previousFrameTexture = (GlTexture2D) RenderSystems.current().createTexture(
+        previousFrameTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getRenderWidth())

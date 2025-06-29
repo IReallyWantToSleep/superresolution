@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.graphics.vulkan.cmd;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanApplication;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -52,7 +54,7 @@ public class VulkanCommandManager {
                     return i;
                 }
             }
-            throw new RuntimeException("No suitable queue family found");
+            throw new VulkanException("No suitable queue family found");
         }
     }
 
@@ -64,10 +66,7 @@ public class VulkanCommandManager {
                     .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
-            int err = vkCreateCommandPool(app.getDevice(), poolInfo, null, pCommandPool);
-            if (err != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create command pool: " + err);
-            }
+            VulkanUtils.VK_CHECK(vkCreateCommandPool(app.getDevice(), poolInfo, null, pCommandPool), "Failed to create command pool");
             commandPool = pCommandPool.get(0);
         }
     }
@@ -89,10 +88,7 @@ public class VulkanCommandManager {
                     .commandBufferCount(1);
 
             PointerBuffer pCommandBuffer = stack.mallocPointer(1);
-            int err = vkAllocateCommandBuffers(app.getDevice(), allocInfo, pCommandBuffer);
-            if (err != VK_SUCCESS) {
-                throw new RuntimeException("Failed to allocate command buffer: " + err);
-            }
+            VulkanUtils.VK_CHECK(vkAllocateCommandBuffers(app.getDevice(), allocInfo, pCommandBuffer), "Failed to allocate command buffer");
             VkCommandBuffer cmdBuf = new VkCommandBuffer(pCommandBuffer.get(0), app.getDevice());
             allocatedBuffers.add(cmdBuf);
             return cmdBuf;
@@ -106,10 +102,7 @@ public class VulkanCommandManager {
                     .pCommandBuffers(stack.pointers(commandBuffer));
 
             vkEndCommandBuffer(commandBuffer);
-            int err = vkQueueSubmit(graphicsQueue, submitInfo, VK_NULL_HANDLE);
-            if (err != VK_SUCCESS) {
-                throw new RuntimeException("Failed to submit command buffer: " + err);
-            }
+            VulkanUtils.VK_CHECK(vkQueueSubmit(graphicsQueue, submitInfo, VK_NULL_HANDLE), "Failed to submit command buffer");
             vkQueueWaitIdle(graphicsQueue);
         }
     }

@@ -2,6 +2,8 @@ package io.homo.superresolution.common.upscale.sgsr.v1;
 
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
@@ -9,6 +11,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
@@ -30,6 +33,7 @@ public class Sgsr1 extends AbstractAlgorithm {
     private GlTexture2D outputColor;
     private GlFrameBuffer outputFbo;
     private StructuredUniformBuffer buffer;
+    private GlBuffer ubo;
 
     @Override
     public void init() {
@@ -41,8 +45,14 @@ public class Sgsr1 extends AbstractAlgorithm {
                 .floatEntry("EdgeThreshold")
                 .floatEntry("EdgeSharpness")
                 .build();
-
-        outputColor = (GlTexture2D) RenderSystems.current().createTexture(
+        ubo = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .usage(BufferUsage.UBO)
+                        .size(buffer.size())
+                        .build()
+        );
+        ubo.setBufferData(buffer);
+        outputColor = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getScreenWidth())
@@ -58,13 +68,13 @@ public class Sgsr1 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenHeight()
         );
         output = outputFbo;
-        sgsrShader = RenderSystems.current().createShaderProgram(
+        sgsrShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/sgsr/v1/sgsr1_shader.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
                         .name("SGSRV1")
                         .addDefine("UseEdgeDirection", "")
-                        .uniformBuffer("sgsr1_data", 0, buffer.size())
+                        .uniformBuffer("sgsr1_data", 0, (int) buffer.size())
                         .build()
         );
         sgsrShader.compile();
@@ -89,14 +99,13 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-
         buffer.setVec2("renderSize", dispatchResource.renderWidth(), dispatchResource.renderHeight());
         buffer.setVec2("renderSizeRcp", 1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight());
         buffer.setFloat("EdgeThreshold", 8f / 255f);
         buffer.setFloat("EdgeSharpness", 2f);
         buffer.fillBuffer();
-        sgsrShader.uniforms().buffer("sgsr1_data").set(buffer);
-
+        ubo.upload();
+        sgsrShader.uniforms().buffer("sgsr1_data").set(ubo);
         pipeline.scheduleJob("sgsr1_main");
         pipeline.executeJob("sgsr1_main");
         return true;
@@ -113,6 +122,8 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputColor.destroy();
         sgsrShader.destroy();
         outputFbo.destroy();
+        buffer.free();
+        ubo.destroy();
     }
 
     @Override

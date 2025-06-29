@@ -47,7 +47,7 @@ public class FSR2 extends AbstractAlgorithm {
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
 
-        output = (GlTexture2D) RenderSystems.current().createTexture(TextureDescription.create()
+        output = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getScreenWidth())
                 .height(MinecraftRenderHandle.getScreenHeight())
@@ -61,7 +61,7 @@ public class FSR2 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        exposureTexture = (GlTexture2D) RenderSystems.current().createTexture(TextureDescription.create()
+        exposureTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(1)
                 .height(1)
