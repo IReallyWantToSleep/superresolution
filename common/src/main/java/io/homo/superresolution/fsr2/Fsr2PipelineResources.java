@@ -2,6 +2,7 @@ package io.homo.superresolution.fsr2;
 
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
@@ -191,7 +192,7 @@ public class Fsr2PipelineResources {
 
             if (desc.dim == 1) {
                 if (desc.size.y != 1) throw new RuntimeException(desc.label);
-                GlTexture1D tex = (GlTexture1D) RenderSystems.current().createTexture(
+                GlTexture1D tex = (GlTexture1D) RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture1D)
                                 .usages(TextureUsages.create().storage().sampler())
@@ -215,7 +216,7 @@ public class Fsr2PipelineResources {
 
                 resourceEntry.setResource(tex);
             } else if (desc.dim == 2) {
-                GlTexture2D tex = (GlTexture2D) RenderSystems.current().createTexture(
+                GlTexture2D tex = (GlTexture2D) RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .usages(TextureUsages.create().storage().sampler())
@@ -286,7 +287,7 @@ public class Fsr2PipelineResources {
 
         public Fsr2ResourceType type() {
             return resource == null ? Fsr2ResourceType.NULL :
-                    (resource instanceof GlUniformBuffer<?> ? Fsr2ResourceType.UBO : Fsr2ResourceType.TEXTURE);
+                    (resource instanceof GlBuffer ? Fsr2ResourceType.UBO : Fsr2ResourceType.TEXTURE);
         }
 
         public Fsr2ResourceCreateDescription getDescription() {

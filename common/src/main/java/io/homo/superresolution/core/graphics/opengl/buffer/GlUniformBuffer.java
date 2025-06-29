@@ -14,7 +14,7 @@ public class GlUniformBuffer<T extends IUniformStruct> {
 
     public GlUniformBuffer(T struct) {
         this.struct = struct;
-        this.bufferSize = struct.size();
+        this.bufferSize = (int) struct.size();
         validateBufferSize(bufferSize);
         this.uboId = Gl.DSA.createBuffer();
         initializeBuffer();

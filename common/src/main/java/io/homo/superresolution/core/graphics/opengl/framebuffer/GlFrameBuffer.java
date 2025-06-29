@@ -43,7 +43,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
         frameBuffer.height = height;
         frameBuffer.addAttachment(new GlFrameBufferAttachment(
                         GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                        RenderSystems.current().createTexture(
+                        RenderSystems.current().device().createTexture(
                                 TextureDescription.create()
                                         .type(TextureType.Texture2D)
                                         .format(colorTextureFormat)
@@ -58,7 +58,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
                 depthTextureFormat.isStencil() ?
                         GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
                         GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
-                RenderSystems.current().createTexture(
+                RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .format(depthTextureFormat)
@@ -92,7 +92,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     public static @NotNull GlFrameBuffer create(int width, int height) {
         return create(
-                RenderSystems.current().createTexture(
+                RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .format(TextureFormat.RGBA8)
@@ -101,7 +101,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
                                 .usages(TextureUsages.create().storage().sampler().attachmentColor())
                                 .build()
                 ),
-                RenderSystems.current().createTexture(
+                RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .format(TextureFormat.DEPTH24)
@@ -117,7 +117,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     public static @NotNull GlFrameBuffer create() {
         return create(
-                RenderSystems.current().createTexture(
+                RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .format(TextureFormat.RGBA8)
@@ -126,7 +126,7 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
                                 .usages(TextureUsages.create().storage().sampler().attachmentColor())
                                 .build()
                 ),
-                RenderSystems.current().createTexture(
+                RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .format(TextureFormat.DEPTH24)

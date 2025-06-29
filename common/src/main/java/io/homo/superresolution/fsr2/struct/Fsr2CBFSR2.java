@@ -1,17 +1,20 @@
 package io.homo.superresolution.fsr2.struct;
 
 import io.homo.superresolution.core.graphics.impl.IUniformStruct;
+import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.fsr2.Fsr2Context;
 import io.homo.superresolution.fsr2.Fsr2Dimensions;
 import io.homo.superresolution.fsr2.Fsr2DispatchDescription;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import static io.homo.superresolution.fsr2.Fsr2Utils.ffxFsr2GetJitterPhaseCount;
 
-public class Fsr2CBFSR2 implements IUniformStruct {
+public class Fsr2CBFSR2 implements IBufferData {
     private final ByteBuffer container;
     private final int[] renderSize = new int[2];
     private final int[] maxRenderSize = new int[2];
@@ -35,7 +38,27 @@ public class Fsr2CBFSR2 implements IUniformStruct {
     private float viewSpaceToMetersFactor = 1.0f;
 
     public Fsr2CBFSR2() {
-        this.container = MemoryStack.stackCalloc(size());
+        this.container = MemoryStack.stackCalloc((int) size());
+    }
+
+    @Override
+    public void free() {
+        MemoryUtil.memFree(container);
+    }
+
+    @Override
+    public void put(byte[] src, long offset) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void updatePartial(Buffer data, long offset, long length) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void update(Buffer data) {
+        throw new RuntimeException();
     }
 
     public void fillBuffer() {
@@ -144,7 +167,7 @@ public class Fsr2CBFSR2 implements IUniformStruct {
     }
 
     @Override
-    public int size() {
+    public long size() {
         return 128;
     }
 

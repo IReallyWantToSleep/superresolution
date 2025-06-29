@@ -33,7 +33,7 @@ public class DrawObject implements Destroyable, AutoCloseable {
                 1f, -1f, 1f, 1f
         };
         VertexBufferDescription desc = new VertexBufferDescription(vertices.length * Float.BYTES, false);
-        IVertexBuffer vbo = renderSystem.createVertexBuffer(desc);
+        IVertexBuffer vbo = renderSystem.device().createVertexBuffer(desc);
         vbo.updateData(vertices, 0, vertices.length);
         VertexAttribute[] attributes = new VertexAttribute[]{
                 new VertexAttribute(0, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 0),

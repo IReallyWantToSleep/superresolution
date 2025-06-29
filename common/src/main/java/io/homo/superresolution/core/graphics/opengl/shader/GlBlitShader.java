@@ -10,7 +10,7 @@ public class GlBlitShader {
 
     public static GlShaderProgram getShader() {
         if (shaderCache == null) {
-            shaderCache = RenderSystems.current().createShaderProgram(
+            shaderCache = RenderSystems.current().device().createShaderProgram(
                     ShaderDescription.create()
                             .fragment(new ShaderSource(ShaderType.FRAGMENT, "/shader/blit.frag.glsl", true))
                             .vertex(new ShaderSource(ShaderType.VERTEX, "/shader/blit.vert.glsl", true))

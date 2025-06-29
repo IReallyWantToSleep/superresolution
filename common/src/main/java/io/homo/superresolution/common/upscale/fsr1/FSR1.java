@@ -2,8 +2,7 @@ package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
-import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
+import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -34,7 +33,9 @@ public class FSR1 extends AbstractAlgorithm {
     private GlTexture2D fsr1TempTexture;
     private GlFrameBuffer outputFbo;
     private GlTexture2D output;
-    private StructuredUniformBuffer buffer;
+    private StructuredUniformBuffer fsr1UBOData;
+    private IBuffer fsr1UBO;
+
 
     public static int checkFP16Support() {
         if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
@@ -51,23 +52,23 @@ public class FSR1 extends AbstractAlgorithm {
 
     public void initShader() {
         int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
-        fsr1EASUShader = RenderSystems.current().createShaderProgram(
+        fsr1EASUShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
                         .name("FSR1_EASU")
                         .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_EASU", String.valueOf(1))
-                        .uniformBuffer("fsr1_data", 0, buffer.size())
+                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
                         .build()
         );
         fsr1EASUShader.compile();
-        fsr1RCASShader = RenderSystems.current().createShaderProgram(
+        fsr1RCASShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
                         .name("FSR1_RCAS")
                         .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_RCAS", String.valueOf(1))
-                        .uniformBuffer("fsr1_data", 0, buffer.size())
+                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
                         .build()
         );
         fsr1RCASShader.compile();
@@ -76,15 +77,22 @@ public class FSR1 extends AbstractAlgorithm {
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
-        buffer = UniformStructBuilder.start()
+        fsr1UBOData = UniformStructBuilder.start()
                 .vec2Entry("renderViewportSize")
                 .vec2Entry("containerTextureSize")
                 .vec2Entry("upscaledViewportSize")
                 .floatEntry("sharpness")
                 .build();
+        fsr1UBO = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .size(fsr1UBOData.size())
+                        .usage(BufferUsage.UBO)
+                        .build()
+        );
+        fsr1UBO.setBufferData(fsr1UBOData);
         initShader();
         fsrUpscalePipeline = new GlPipeline();
-        fsr1TempTexture = (GlTexture2D) RenderSystems.current().createTexture(
+        fsr1TempTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getRenderWidth())
@@ -93,7 +101,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler().storage())
                         .build()
         );
-        output = (GlTexture2D) RenderSystems.current().createTexture(
+        output = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getScreenWidth())
@@ -166,13 +174,14 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        buffer.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        buffer.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        buffer.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
-        buffer.setFloat("sharpness", Config.getSharpness());
-        buffer.fillBuffer();
-        fsr1RCASShader.uniforms().buffer("fsr1_data").set(buffer);
-        fsr1EASUShader.uniforms().buffer("fsr1_data").set(buffer);
+        fsr1UBOData.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        fsr1UBOData.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        fsr1UBOData.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        fsr1UBOData.setFloat("sharpness", Config.getSharpness());
+        fsr1UBOData.fillBuffer();
+        fsr1UBO.upload();
+        fsr1RCASShader.uniforms().buffer("fsr1_data").set(fsr1UBO);
+        fsr1EASUShader.uniforms().buffer("fsr1_data").set(fsr1UBO);
         fsrUpscalePipeline.scheduleJob("fsr1_easu");
         fsrUpscalePipeline.executeJob("fsr1_easu");
         fsrUpscalePipeline.scheduleJob("fsr1_rcas");
@@ -187,6 +196,8 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1TempTexture.destroy();
         fsr1EASUShader.destroy();
         fsr1RCASShader.destroy();
+        fsr1UBOData.free();
+        fsr1UBO.destroy();
         outputFbo.destroy();
     }
 

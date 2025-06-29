@@ -34,7 +34,7 @@ public class Fsr2DepthClipPipeline extends Fsr2BasePipeline {
 
     @Override
     public void init() {
-        program = RenderSystems.current().createShaderProgram(
+        program = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2/ffx_fsr2_depth_clip_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_depth_clip")

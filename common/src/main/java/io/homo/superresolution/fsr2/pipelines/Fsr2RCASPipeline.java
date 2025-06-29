@@ -32,7 +32,7 @@ public class Fsr2RCASPipeline extends Fsr2BasePipeline {
 
     @Override
     public void init() {
-        program = RenderSystems.current().createShaderProgram(
+        program = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2/ffx_fsr2_rcas_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_rcas")

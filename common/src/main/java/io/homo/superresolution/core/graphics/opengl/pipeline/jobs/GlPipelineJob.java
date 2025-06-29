@@ -1,9 +1,12 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescriptions;
+import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
+import org.lwjgl.opengl.GL45;
 
 import static io.homo.superresolution.core.graphics.opengl.Gl.*;
 import static io.homo.superresolution.core.graphics.opengl.GlConst.*;
@@ -61,7 +64,11 @@ public abstract class GlPipelineJob {
     protected void setupUniformBufferResource(GlPipelineResourceDescription description) {
         if (description.ubo() != null) {
             int unit = description.unit();
-            description.ubo().bind(unit);
+            Gl.DSA.bindBufferBase(
+                    GL45.GL_UNIFORM_BUFFER,
+                    unit,
+                    description.ubo().handle()
+            );
         }
     }
 

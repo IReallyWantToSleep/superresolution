@@ -7,7 +7,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
-import io.homo.superresolution.core.utils.ShaderCompiler;
+import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL45;
 
@@ -32,6 +32,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     private int handle;
     private boolean isCompiled = false;
     private GlShaderUniforms uniforms;
+
     public GlShaderProgram(ShaderDescription description) {
         this.description = description;
         this.handle = Gl.glCreateProgram();

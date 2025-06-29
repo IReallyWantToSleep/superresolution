@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.system;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
+import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -26,20 +27,9 @@ public interface IRenderSystem {
     void destroyRenderSystem();
 
     /**
-     * 创建一个纹理。
-     *
-     * @param description 纹理描述对象
-     * @return 新创建的纹理对象
+     * 获取硬件
      */
-    ITexture createTexture(TextureDescription description);
-
-    /**
-     * 创建一个着色器程序。
-     *
-     * @param description 着色器描述对象
-     * @return 新创建的着色器程序对象
-     */
-    IShaderProgram<?> createShaderProgram(ShaderDescription description);
+    IDevice device();
 
     /**
      * 将纹理清空为指定颜色。
@@ -47,7 +37,15 @@ public interface IRenderSystem {
      * @param texture 目标纹理
      * @param color   RGBA颜色数组，每个分量范围为0~255
      */
-    void clearTextureRGBA(ITexture texture, int[] color);
+    default void clearTextureRGBA(ITexture texture, int[] color) {
+        float[] clearColor = new float[]{
+                color[0] / 255.0f,
+                color[1] / 255.0f,
+                color[2] / 255.0f,
+                color[3] / 255.0f
+        };
+        clearTextureRGBA(texture, clearColor);
+    }
 
     /**
      * 将纹理清空为指定颜色。
@@ -56,6 +54,22 @@ public interface IRenderSystem {
      * @param color   RGBA颜色数组，每个分量范围为0~1
      */
     void clearTextureRGBA(ITexture texture, float[] color);
+
+    /**
+     * 将纹理清空为指定深度值。
+     *
+     * @param texture 目标纹理
+     * @param depth   深度值，范围为0~1
+     */
+    void clearTextureDepth(ITexture texture, float depth);
+
+    /**
+     * 将纹理清空为指定模板值。
+     *
+     * @param texture 目标纹理
+     * @param stencil 模板值，范围为0~255
+     */
+    void clearTextureStencil(ITexture texture, int stencil);
 
 
     /**
@@ -90,14 +104,6 @@ public interface IRenderSystem {
     );
 
     /**
-     * 创建顶点缓冲区
-     *
-     * @param description 顶点缓冲区描述对象，包含缓冲区大小和用途等参数
-     * @return 新创建的顶点缓冲区对象
-     */
-    IVertexBuffer createVertexBuffer(VertexBufferDescription description);
-
-    /**
      * 执行绘制命令
      *
      * @param shaderProgram 着色器程序对象
@@ -116,14 +122,6 @@ public interface IRenderSystem {
      * @param z             Z方向工作组数
      */
     void dispatchCompute(IShaderProgram<?> shaderProgram, int x, int y, int z);
-
-
-    /**
-     * 销毁顶点缓冲区并释放资源
-     *
-     * @param vertexBuffer 要销毁的顶点缓冲区
-     */
-    void destroyVertexBuffer(IVertexBuffer vertexBuffer);
 
     /**
      * 获取渲染状态

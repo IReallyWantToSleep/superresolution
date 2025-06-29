@@ -7,8 +7,10 @@ import io.homo.superresolution.core.math.Vector4f;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 
 public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
     protected final int size;
@@ -21,14 +23,51 @@ public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
         this.size = size;
     }
 
-    public int size() {
+    public long size() {
         return size;
+    }
+
+
+    @Override
+    public void put(byte[] src, long offset) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void updatePartial(Buffer data, long offset, long length) {
+        Objects.requireNonNull(data, "Data buffer cannot be null");
+        if (offset < 0 || length < 0 || offset + length > size) {
+            throw new IndexOutOfBoundsException("Invalid offset or length");
+        }
+        if (data.remaining() < length) {
+            throw new IllegalArgumentException("Not enough data in input buffer");
+        }
+
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(data),
+                MemoryUtil.memAddress(container) + offset,
+                length
+        );
+    }
+
+    @Override
+    public void update(Buffer data) {
+        Objects.requireNonNull(data, "Data buffer cannot be null");
+        if (data.limit() != size) {
+            throw new IllegalArgumentException("Data size must match buffer size");
+        }
+
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(data),
+                MemoryUtil.memAddress(container),
+                size
+        );
     }
 
     public ByteBuffer container() {
         return container;
     }
-    
+
     public StructuredUniformBuffer setFloat(String name, float value) {
         Entry entry = entries.get(name);
         if (entry instanceof FloatEntry) {
@@ -111,7 +150,8 @@ public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
         return this;
     }
 
-    public void destroy() {
+    public void free() {
+        this.entries.clear();
         MemoryUtil.memFree(container);
     }
 

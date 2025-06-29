@@ -7,6 +7,7 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -160,7 +161,7 @@ public class ImGuiLayer {
         if (Config.getUpscaleAlgo() == AlgorithmDescriptions.FSR2 && SuperResolution.getCurrentAlgorithm() instanceof FSR2) {
             Fsr2Context context = ((FSR2) SuperResolution.getCurrentAlgorithm()).fsr2Context;
             for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
-                if (entry.getValue().getResource() == null || (entry.getValue().getResource() instanceof GlUniformBuffer<?>))
+                if (entry.getValue().getResource() == null || (entry.getValue().getResource() instanceof GlBuffer))
                     continue;
                 ITexture texture = (ITexture) entry.getValue().getResource();
                 ImGui.text(entry.getValue().getDescription().label + " " + texture.getWidth() + " " + texture.getHeight());

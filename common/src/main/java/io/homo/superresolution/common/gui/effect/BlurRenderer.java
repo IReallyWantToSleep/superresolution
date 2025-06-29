@@ -30,7 +30,7 @@ public class BlurRenderer {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        blurTempTexture = (GlTexture2D) RenderSystems.current().createTexture(
+        blurTempTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription
                         .create()
                         .type(TextureType.Texture2D)

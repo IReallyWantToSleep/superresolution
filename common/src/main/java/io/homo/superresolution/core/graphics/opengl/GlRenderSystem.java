@@ -1,6 +1,8 @@
 package io.homo.superresolution.core.graphics.opengl;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
+import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
@@ -27,10 +29,12 @@ import static org.lwjgl.opengl.GL44.glClearTexImage;
 
 public class GlRenderSystem implements IRenderSystem {
     private GlRenderState renderState;
+    private GlDevice device;
 
     @Override
     public void initRenderSystem() {
         this.renderState = new GlRenderState();
+        this.device = new GlDevice();
     }
 
     @Override
@@ -39,42 +43,42 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public ITexture createTexture(TextureDescription description) {
-        if (description.getType() == TextureType.Texture2D) {
-            return GlTexture2D.create(description);
-        }
-        if (description.getType() == TextureType.Texture1D) {
-            return GlTexture1D.create(description);
-        }
-        return null;
+    public GlDevice device() {
+        return device;
     }
 
-    @Override
-    public GlShaderProgram createShaderProgram(ShaderDescription description) {
-        return OpenGLShaderFactory.createShader(description);
-    }
-
-    @Override
-    public void clearTextureRGBA(ITexture texture, int[] color) {
-        float[] clearColor = new float[]{
-                color[0] / 255.0f,
-                color[1] / 255.0f,
-                color[2] / 255.0f,
-                color[3] / 255.0f
-        };
-        clearTextureRGBA(texture, clearColor);
-    }
 
     @Override
     public void clearTextureRGBA(ITexture texture, float[] color) {
         if (texture == null) {
-            throw new OpenGLException("clearTexture: 输入的纹理对象为null");
+            throw new OpenGLException("clearTextureRGBA: 输入的纹理对象为null");
         }
-        glClearTexImage(
-                texture.handle(), 0,
-                texture.getTextureFormat().gl(),
-                GL_FLOAT, color
-        );
+        TextureFormat format = texture.getTextureFormat();
+        if (format.isInteger()) {
+            int[] intColor = new int[color.length];
+            for (int i = 0; i < color.length; i++) intColor[i] = (int) (color[i] * 255);
+            glClearTexImage(texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
+        } else {
+            glClearTexImage(texture.handle(), 0, format.gl(), GL_FLOAT, color);
+        }
+    }
+
+    @Override
+    public void clearTextureDepth(ITexture texture, float depth) {
+        if (texture == null) {
+            throw new OpenGLException("clearTextureDepth: 输入的纹理对象为null");
+        }
+        float[] clearDepth = new float[]{depth};
+        glClearTexImage(texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
+    }
+
+    @Override
+    public void clearTextureStencil(ITexture texture, int stencil) {
+        if (texture == null) {
+            throw new OpenGLException("clearTextureStencil: 输入的纹理对象为null");
+        }
+        int[] clearStencil = new int[]{stencil};
+        glClearTexImage(texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
     }
 
     @Override
@@ -140,12 +144,6 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public IVertexBuffer createVertexBuffer(VertexBufferDescription description) {
-        return GlVertexBuffer.create(description);
-    }
-
-
-    @Override
     public void draw(IShaderProgram<?> shaderProgram, DrawObject drawObject, int firstVertex, int vertexCount) {
         if (shaderProgram == null) {
             throw new OpenGLException("draw: 着色器程序为null");
@@ -177,34 +175,33 @@ public class GlRenderSystem implements IRenderSystem {
         var uniformMap = shaderProgram.uniforms().getUniformMap();
         uniformMap.forEach((name, uniform) -> {
             if (uniform instanceof GlShaderUniformBuffer<?>) {
-                Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer<?>) uniform).getUboId());
+                if (((GlShaderUniformBuffer<?>) uniform).buffer() != null) {
+                    Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer<?>) uniform).buffer().handle());
+                }
             }
             if (uniform instanceof GlShaderUniformStorageTexture) {
-                glBindImageTexture(
-                        uniform.binding(),
-                        ((GlShaderUniformStorageTexture) uniform).texture().handle(),
-                        0,
-                        false,
-                        0,
-                        switch (uniform.access()) {
-                            case Read -> GL_READ_ONLY;
-                            case Write -> GL_WRITE_ONLY;
-                            case Both -> GL_READ_WRITE;
-                        },
-                        ((GlShaderUniformStorageTexture) uniform).texture().getTextureFormat().gl()
-                );
+                if (((GlShaderUniformStorageTexture) uniform).texture() != null) {
+                    glBindImageTexture(
+                            uniform.binding(),
+                            ((GlShaderUniformStorageTexture) uniform).texture().handle(),
+                            0,
+                            false,
+                            0,
+                            switch (uniform.access()) {
+                                case Read -> GL_READ_ONLY;
+                                case Write -> GL_WRITE_ONLY;
+                                case Both -> GL_READ_WRITE;
+                            },
+                            ((GlShaderUniformStorageTexture) uniform).texture().getTextureFormat().gl()
+                    );
+                }
             }
             if (uniform instanceof GlShaderUniformSamplerTexture) {
-                glBindTextureUnit(uniform.binding(), ((GlShaderUniformSamplerTexture) uniform).texture().handle());
+                if (((GlShaderUniformSamplerTexture) uniform).texture() != null) {
+                    glBindTextureUnit(uniform.binding(), ((GlShaderUniformSamplerTexture) uniform).texture().handle());
+                }
             }
         });
-    }
-
-    @Override
-    public void destroyVertexBuffer(IVertexBuffer vertexBuffer) {
-        if (vertexBuffer != null) {
-            vertexBuffer.destroy();
-        }
     }
 
     @Override

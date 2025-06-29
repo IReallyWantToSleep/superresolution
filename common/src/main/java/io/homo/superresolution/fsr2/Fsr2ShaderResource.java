@@ -2,7 +2,7 @@ package io.homo.superresolution.fsr2;
 
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
@@ -79,7 +79,7 @@ public class Fsr2ShaderResource {
             return
                     GlPipelineResourceDescription.createUBOResource(
                             name,
-                            (GlUniformBuffer<?>) resourceEntry.get().getResource(),
+                            (GlBuffer) resourceEntry.get().getResource(),
                             binding
                     );
         } else {
@@ -91,7 +91,7 @@ public class Fsr2ShaderResource {
                                 ITexture texture = (ITexture) resourceEntry.get().getResource();
                                 if (texture == null) {
                                     Fsr2Context.LOGGER.error("%s %s".formatted(resourceEntry.get().type().name(), resourceEntry.get().getDescription().label));
-                                    return RenderSystems.current().createTexture(
+                                    return RenderSystems.current().device().createTexture(
                                             TextureDescription.create()
                                                     .width(1)
                                                     .height(1)

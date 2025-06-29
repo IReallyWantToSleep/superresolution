@@ -1,21 +1,24 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
+import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.math.Vector2f;
 
 import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-public class SgsrParams implements IUniformStruct {
+public class SgsrParams implements IBufferData {
     private final ByteBuffer container;
     private int sameFrameNum = 0;
     private Matrix4f prev_view_proj_matrix;
 
     public SgsrParams() {
-        this.container = MemoryStack.stackCalloc(size());
+        this.container = MemoryStack.stackCalloc((int) size());
     }
 
     private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
@@ -137,7 +140,29 @@ public class SgsrParams implements IUniformStruct {
     }
 
     @Override
-    public int size() {
+    public long size() {
         return 144;
+    }
+
+    @Override
+    public void free() {
+        MemoryUtil.memFree(container);
+    }
+
+    @Override
+    public void put(byte[] src, long offset) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void updatePartial(Buffer data, long offset, long length) {
+        throw new RuntimeException();
+
+    }
+
+    @Override
+    public void update(Buffer data) {
+        throw new RuntimeException();
+
     }
 }

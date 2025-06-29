@@ -17,9 +17,10 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     public static final int AUTO_MIPMAP_LEVEL = 0;
     private static final int MAX_MIPMAP_LEVELS = 16;
     private static final int DEFAULT_ALIGNMENT = 4;
-    private final int id;
     private final TextureFormat format;
     private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
+    private final int requestedLevel;
+    private int id;
     private TextureUsages usages = null;
     private TextureType type = null;
     private TextureFilterMode filterMode = null;
@@ -27,6 +28,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     private int width;
     private int mipmapLevel;
     private boolean mipmapEnabled;
+
 
     protected GlTexture1D(TextureDescription description) {
         validateDimensions(description.getWidth());
@@ -40,8 +42,8 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         if (type != TextureType.Texture1D) {
             throw new RuntimeException();
         }
-
-        configureMipmap(description.getMipmapSettings().getLevels());
+        this.requestedLevel = description.getMipmapSettings().getLevels();
+        configureMipmap(requestedLevel);
         initializeTexture();
     }
 
@@ -204,6 +206,9 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     @Override
     public void resize(int width, int height) {
         this.width = width;
+        Gl.DSA.deleteTexture(this.id);
+        this.id = Gl.DSA.createTexture1D();
+        configureMipmap(requestedLevel);
         initializeTexture();
     }
 }
