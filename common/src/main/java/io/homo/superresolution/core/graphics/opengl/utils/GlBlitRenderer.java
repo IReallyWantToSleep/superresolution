@@ -27,6 +27,7 @@ public class GlBlitRenderer {
             );
             RenderSystems.current().draw(
                     blitShader,
+                    null,
                     fullscreenQuad,
                     0,
                     DrawObject.fullscreenQuadVertexCount()

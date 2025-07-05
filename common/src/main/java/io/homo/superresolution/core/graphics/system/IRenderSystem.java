@@ -2,6 +2,7 @@ package io.homo.superresolution.core.graphics.system;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -107,11 +108,12 @@ public interface IRenderSystem {
      * 执行绘制命令
      *
      * @param shaderProgram 着色器程序对象
+     * @param frameBuffer   目标帧缓冲区
      * @param drawObject
      * @param firstVertex   起始顶点索引
      * @param vertexCount   要绘制的顶点数量
      */
-    void draw(IShaderProgram<?> shaderProgram, DrawObject drawObject, int firstVertex, int vertexCount);
+    void draw(IShaderProgram<?> shaderProgram, IFrameBuffer frameBuffer, DrawObject drawObject, int firstVertex, int vertexCount);
 
     /**
      * 执行计算着色器任务。

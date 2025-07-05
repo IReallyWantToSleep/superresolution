@@ -1,0 +1,37 @@
+package io.homo.superresolution.api.config.values.single;
+
+import io.homo.superresolution.api.config.values.ConfigValue;
+
+import java.util.List;
+import java.util.function.Supplier;
+
+public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
+    private final Class<T> enumClass;
+
+    public EnumValue(List<String> path, Supplier<T> defaultSupplier, Class<T> enumClass, String comment) {
+        super(path, defaultSupplier, comment);
+        this.enumClass = enumClass;
+    }
+
+    @Override
+    public boolean isValid(Object value) {
+        if (value == null) return false;
+        if (value instanceof String) {
+            try {
+                Enum.valueOf(enumClass, (String) value);
+                return true;
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
+        }
+        return enumClass.isInstance(value);
+    }
+
+    @Override
+    protected T convertType(Object value) {
+        if (enumClass.isInstance(value)) return enumClass.cast(value);
+        if (value instanceof String)
+            return Enum.valueOf(enumClass, (String) value);
+        throw new IllegalArgumentException("Cannot convert " + value + " to enum " + enumClass);
+    }
+}

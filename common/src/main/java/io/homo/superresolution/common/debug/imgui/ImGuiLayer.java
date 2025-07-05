@@ -27,7 +27,7 @@ public class ImGuiLayer {
 
     public void imgui() {
         int width = 500;
-        float height = (((float) width) / SuperResolution.getMinecraftWidth()) * SuperResolution.getMinecraftHeight();
+        float height = (((float) width) / MinecraftRenderHandle.getScreenWidth()) * MinecraftRenderHandle.getScreenHeight();
         ImGui.begin("DEBUG");
         if (ImGui.button("Capture")) {
             SuperResolutionAPI.debugRenderdocCapture();
@@ -158,7 +158,7 @@ public class ImGuiLayer {
                 0, 1, 1, 0);
 
 
-        if (Config.getUpscaleAlgo() == AlgorithmDescriptions.FSR2 && SuperResolution.getCurrentAlgorithm() instanceof FSR2) {
+        if (Config.getUpscaleAlgorithm() == AlgorithmDescriptions.FSR2 && SuperResolution.getCurrentAlgorithm() instanceof FSR2) {
             Fsr2Context context = ((FSR2) SuperResolution.getCurrentAlgorithm()).fsr2Context;
             for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
                 if (entry.getValue().getResource() == null || (entry.getValue().getResource() instanceof GlBuffer))

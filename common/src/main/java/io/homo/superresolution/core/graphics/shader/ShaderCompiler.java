@@ -39,89 +39,6 @@ public class ShaderCompiler {
         return saveProgramBinaryWithApi(program, "vk");
     }
 
-    public static boolean checkVulkanProgramBinary(IShaderProgram<?> program) {
-        return checkProgramBinaryWithApi(program, "vk");
-    }
-
-    public static ShaderBinary getVulkanShaderBinary(IShaderProgram<?> program, ShaderType type) {
-        return getShaderBinaryWithApi(program, type, "vk");
-    }
-
-    // ========= OpenGL =========
-    public static boolean saveOpenGLProgramBinary(IShaderProgram<?> program) {
-        return saveProgramBinaryWithApi(program, "ogl");
-    }
-
-    public static boolean checkOpenGLProgramBinary(IShaderProgram<?> program) {
-        return checkProgramBinaryWithApi(program, "ogl");
-    }
-
-    public static ShaderBinary getOpenGLShaderBinary(IShaderProgram<?> program, ShaderType type) {
-        return getShaderBinaryWithApi(program, type, "ogl");
-    }
-
-    public static void createCacheDir() {
-        File cacheDir = CACHE_DIR.toFile();
-        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            LOGGER.error("无法创建着色器缓存目录: {}", CACHE_DIR);
-        }
-    }
-
-    private static String getOpenGLShaderProgramMd5(IShaderProgram<?> shaderProgram) {
-        StringBuilder identityBuilder = new StringBuilder();
-
-        for (ShaderType type : ShaderType.values()) {
-            ShaderSource sources = shaderProgram.getDescription().sourceMap().get(type);
-            if (sources != null) {
-                identityBuilder.append(type.name()).append(":");
-                identityBuilder.append(sources.getSource());
-            }
-        }
-        List<String> sortedDefines = shaderProgram.getDescription().definesMap().entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .sorted()
-                .collect(Collectors.toList());
-        identityBuilder
-                .append(shaderProgram.getDescription().shaderName())
-                .append(String.join("|", sortedDefines))
-                .append(GraphicsCapabilities.getGLVersion()[0])
-                .append(GraphicsCapabilities.getGLVersion()[1])
-                .append(GL11.glGetString(GL11.GL_VENDOR))
-                .append(GL11.glGetString(GL11.GL_RENDERER));
-        return Md5CaculateUtil.getMD5(identityBuilder.toString());
-    }
-
-    private static String getVulkanShaderProgramMd5(IShaderProgram<?> shaderProgram) {
-        StringBuilder identityBuilder = new StringBuilder();
-        ArrayList<String> sortedDefines = new ArrayList<>(new ArrayList<>(shaderProgram.getDescription().definesMap().entrySet()).stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue()).toList());
-
-        for (ShaderType type : ShaderType.values()) {
-            ShaderSource sources = shaderProgram.getDescription().sourceMap().get(type);
-            if (sources != null) {
-                identityBuilder.append(type.name()).append(":");
-                identityBuilder.append(sources.getSource());
-                sortedDefines.addAll(sources.getShaderDefines().values());
-            }
-        }
-        sortedDefines = (ArrayList<String>) sortedDefines.stream().sorted()
-                .collect(Collectors.toList());
-
-        identityBuilder
-                .append(shaderProgram.getDescription().shaderName())
-                .append(String.join("|", sortedDefines))
-                .append(Arrays.toString(GraphicsCapabilities.getVulkanVersion()));
-        return Md5CaculateUtil.getMD5(identityBuilder.toString());
-    }
-
-    private static String getShaderProgramMd5(IShaderProgram<?> shaderProgram, String apiTag) {
-        if (isVulkan(apiTag)) {
-            return getVulkanShaderProgramMd5(shaderProgram);
-        } else {
-            return getOpenGLShaderProgramMd5(shaderProgram);
-        }
-    }
-
     private static boolean saveProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
         createCacheDir();
 
@@ -162,7 +79,7 @@ public class ShaderCompiler {
 
                 LOGGER.info("保存SPIR-V，大小={} bytes, 路径={}", size, path);
 
-                if (Config.getInstance().isDebugDumpShader()) {
+                if (Config.isDebugDumpShader()) {
                     try {
                         Path srcPath = Path.of(CACHE_DIR.toAbsolutePath().toString(),
                                 program.getDescription().shaderName() + "." + type.name().toLowerCase() + "." + apiTag + ".source.glsl");
@@ -216,39 +133,23 @@ public class ShaderCompiler {
         }
     }
 
-    private static EShLanguage mapToGlslangType(ShaderType type) {
-        return switch (type) {
-            case VERTEX -> EShLanguage.EShLangVertex;
-            case FRAGMENT -> EShLanguage.EShLangFragment;
-            case COMPUTE -> EShLanguage.EShLangCompute;
-        };
-    }
-
-    private static boolean checkProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
-        createCacheDir();
-
-        String hash = getShaderProgramMd5(program, apiTag);
-        for (ShaderType type : program.getDescription().sourceMap().keySet()) {
-            Path path = CACHE_DIR.resolve(
-                    program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv"
-            );
-
-            if (!Files.exists(path)) {
-                LOGGER.info("未找到缓存文件: {}", path);
-                return false;
-            }
+    public static void createCacheDir() {
+        File cacheDir = CACHE_DIR.toFile();
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            LOGGER.error("无法创建着色器缓存目录: {}", CACHE_DIR);
         }
-        LOGGER.info("着色器缓存文件存在。");
-        return true;
     }
 
-    private static ShaderBinary getShaderBinaryWithApi(IShaderProgram<?> program, ShaderType type, String apiTag) {
-        createCacheDir();
+    private static String getShaderProgramMd5(IShaderProgram<?> shaderProgram, String apiTag) {
+        if (isVulkan(apiTag)) {
+            return getVulkanShaderProgramMd5(shaderProgram);
+        } else {
+            return getOpenGLShaderProgramMd5(shaderProgram);
+        }
+    }
 
-        String hash = getShaderProgramMd5(program, apiTag);
-        String filename = program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv";
-        LOGGER.info("加载缓存二进制: {}", filename);
-        return loadBinaryWithApi(filename, apiTag);
+    private static boolean isVulkan(String apiTag) {
+        return apiTag.equals("vk");
     }
 
     private static GlslangCompileShaderResult compileShaderToSpirv(
@@ -279,6 +180,96 @@ public class ShaderCompiler {
         return result;
     }
 
+    private static EShLanguage mapToGlslangType(ShaderType type) {
+        return switch (type) {
+            case VERTEX -> EShLanguage.EShLangVertex;
+            case FRAGMENT -> EShLanguage.EShLangFragment;
+            case COMPUTE -> EShLanguage.EShLangCompute;
+        };
+    }
+
+    private static String getVulkanShaderProgramMd5(IShaderProgram<?> shaderProgram) {
+        StringBuilder identityBuilder = new StringBuilder();
+        ArrayList<String> sortedDefines = new ArrayList<>(new ArrayList<>(shaderProgram.getDescription().definesMap().entrySet()).stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue()).toList());
+
+        for (ShaderType type : ShaderType.values()) {
+            ShaderSource sources = shaderProgram.getDescription().sourceMap().get(type);
+            if (sources != null) {
+                identityBuilder.append(type.name()).append(":");
+                identityBuilder.append(sources.getSource());
+                sortedDefines.addAll(sources.getShaderDefines().values());
+            }
+        }
+        sortedDefines = (ArrayList<String>) sortedDefines.stream().sorted()
+                .collect(Collectors.toList());
+
+        identityBuilder
+                .append(shaderProgram.getDescription().shaderName())
+                .append(String.join("|", sortedDefines))
+                .append(Arrays.toString(GraphicsCapabilities.getVulkanVersion()));
+        return Md5CaculateUtil.getMD5(identityBuilder.toString());
+    }
+
+    private static String getOpenGLShaderProgramMd5(IShaderProgram<?> shaderProgram) {
+        StringBuilder identityBuilder = new StringBuilder();
+
+        for (ShaderType type : ShaderType.values()) {
+            ShaderSource sources = shaderProgram.getDescription().sourceMap().get(type);
+            if (sources != null) {
+                identityBuilder.append(type.name()).append(":");
+                identityBuilder.append(sources.getSource());
+            }
+        }
+        List<String> sortedDefines = shaderProgram.getDescription().definesMap().entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .sorted()
+                .collect(Collectors.toList());
+        identityBuilder
+                .append(shaderProgram.getDescription().shaderName())
+                .append(String.join("|", sortedDefines))
+                .append(GraphicsCapabilities.getGLVersion()[0])
+                .append(GraphicsCapabilities.getGLVersion()[1])
+                .append(GL11.glGetString(GL11.GL_VENDOR))
+                .append(GL11.glGetString(GL11.GL_RENDERER));
+        return Md5CaculateUtil.getMD5(identityBuilder.toString());
+    }
+
+    public static boolean checkVulkanProgramBinary(IShaderProgram<?> program) {
+        return checkProgramBinaryWithApi(program, "vk");
+    }
+
+    private static boolean checkProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
+        createCacheDir();
+
+        String hash = getShaderProgramMd5(program, apiTag);
+        for (ShaderType type : program.getDescription().sourceMap().keySet()) {
+            Path path = CACHE_DIR.resolve(
+                    program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv"
+            );
+
+            if (!Files.exists(path)) {
+                LOGGER.info("未找到缓存文件: {}", path);
+                return false;
+            }
+        }
+        LOGGER.info("着色器缓存文件存在。");
+        return true;
+    }
+
+    public static ShaderBinary getVulkanShaderBinary(IShaderProgram<?> program, ShaderType type) {
+        return getShaderBinaryWithApi(program, type, "vk");
+    }
+
+    private static ShaderBinary getShaderBinaryWithApi(IShaderProgram<?> program, ShaderType type, String apiTag) {
+        createCacheDir();
+
+        String hash = getShaderProgramMd5(program, apiTag);
+        String filename = program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv";
+        LOGGER.info("加载缓存二进制: {}", filename);
+        return loadBinaryWithApi(filename, apiTag);
+    }
+
     private static ShaderBinary loadBinaryWithApi(String filename, String apiTag) {
         createCacheDir();
 
@@ -297,8 +288,17 @@ public class ShaderCompiler {
         }
     }
 
-    private static boolean isVulkan(String apiTag) {
-        return apiTag.equals("vk");
+    // ========= OpenGL =========
+    public static boolean saveOpenGLProgramBinary(IShaderProgram<?> program) {
+        return saveProgramBinaryWithApi(program, "ogl");
+    }
+
+    public static boolean checkOpenGLProgramBinary(IShaderProgram<?> program) {
+        return checkProgramBinaryWithApi(program, "ogl");
+    }
+
+    public static ShaderBinary getOpenGLShaderBinary(IShaderProgram<?> program, ShaderType type) {
+        return getShaderBinaryWithApi(program, type, "ogl");
     }
 
     public record ShaderBinary(ByteBuffer binary, int size, int format) implements AutoCloseable {

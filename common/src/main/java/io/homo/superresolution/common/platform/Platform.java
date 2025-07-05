@@ -1,6 +1,5 @@
 package io.homo.superresolution.common.platform;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 
 import java.nio.file.Path;

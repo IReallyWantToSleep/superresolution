@@ -2,8 +2,11 @@ package io.homo.superresolution.core.graphics.opengl;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformStorageTexture;
@@ -128,6 +131,46 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
+    public void draw(
+            IShaderProgram<?> shaderProgram,
+            IFrameBuffer frameBuffer,
+            DrawObject drawObject,
+            int firstVertex,
+            int vertexCount
+    ) {
+        if (shaderProgram == null) {
+            throw new OpenGLException("draw: 着色器程序为null");
+        }
+        try (GlState ig = new GlState(
+                GlState.STATE_TEXTURE_2D |
+                        GlState.STATE_ACTIVE_TEXTURE |
+                        GlState.STATE_TEXTURES |
+                        GlState.STATE_PROGRAM |
+                        GlState.STATE_VERTEX_OPERATIONS |
+                        GlState.STATE_DRAW_FBO |
+                        GlState.STATE_READ_FBO
+        )) {
+            if (frameBuffer != null) {
+                if (frameBuffer instanceof GlFrameBuffer) {
+                    frameBuffer.bind(FrameBufferBindPoint.Write, false);
+                } else {
+                    throw new OpenGLException("draw: 目标帧缓冲区不是由OpenGL创建的");
+                }
+            }
+            setupShaderProgram((GlShaderProgram) shaderProgram);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
+            GL45.glBindVertexArray(drawObject.getVertexArray().handle());
+            int glPrimitive = switch (drawObject.getPrimitiveType()) {
+                case TRIANGLES -> GL11.GL_TRIANGLES;
+                case TRIANGLE_STRIP -> GL11.GL_TRIANGLE_STRIP;
+                case LINES -> GL11.GL_LINES;
+                case POINTS -> GL11.GL_POINTS;
+            };
+            GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
+        }
+    }
+
+    @Override
     public void dispatchCompute(IShaderProgram<?> shaderProgram, int x, int y, int z) {
         if (shaderProgram == null) {
             throw new OpenGLException("dispatchCompute: 着色器程序为null");
@@ -144,30 +187,13 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public void draw(IShaderProgram<?> shaderProgram, DrawObject drawObject, int firstVertex, int vertexCount) {
-        if (shaderProgram == null) {
-            throw new OpenGLException("draw: 着色器程序为null");
-        }
-        try (GlState ig = new GlState(
-                GlState.STATE_TEXTURE_2D |
-                        GlState.STATE_ACTIVE_TEXTURE |
-                        GlState.STATE_TEXTURES |
-                        GlState.STATE_PROGRAM |
-                        GlState.STATE_VERTEX_OPERATIONS |
-                        GlState.STATE_DRAW_FBO |
-                        GlState.STATE_READ_FBO
-        )) {
-            setupShaderProgram((GlShaderProgram) shaderProgram);
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
-            GL45.glBindVertexArray(drawObject.getVertexArray().handle());
-            int glPrimitive = switch (drawObject.getPrimitiveType()) {
-                case TRIANGLES -> GL11.GL_TRIANGLES;
-                case TRIANGLE_STRIP -> GL11.GL_TRIANGLE_STRIP;
-                case LINES -> GL11.GL_LINES;
-                case POINTS -> GL11.GL_POINTS;
-            };
-            GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
-        }
+    public IRenderState renderState() {
+        return renderState;
+    }
+
+    @Override
+    public void finish() {
+        glFinish();
     }
 
     private void setupShaderProgram(GlShaderProgram shaderProgram) {
@@ -202,15 +228,5 @@ public class GlRenderSystem implements IRenderSystem {
                 }
             }
         });
-    }
-
-    @Override
-    public IRenderState renderState() {
-        return renderState;
-    }
-
-    @Override
-    public void finish() {
-        glFinish();
     }
 }

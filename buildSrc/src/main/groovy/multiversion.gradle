@@ -1,0 +1,98 @@
+import groovy.json.JsonSlurper
+import multiversion.*
+
+import java.nio.file.Paths
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+static def fetchAllReleaseVersions() {
+    try {
+        def url = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json'
+        def connection = new URL(url).openConnection().readTimeout(300)
+        def manifest = new JsonSlurper().parse(connection.inputStream)
+        println("✅️️ Minecraft版本信息获取成功")
+        return manifest.versions
+                .findAll { it.type == 'release' }
+                .collect { it.id }
+    }catch (Exception e){
+        println("⚠️ Minecraft版本信息获取失败，使用默认版本列表")
+        return [
+                '1.21.7', '1.21.6', '1.21.5', '1.21.4',
+                '1.21.3', '1.21.2', '1.21.1', '1.21',
+                '1.20.6', '1.20.5', '1.20.4', '1.20.3',
+                '1.20.2', '1.20.1', '1.20', '1.19.4',
+                '1.19.3', '1.19.2', '1.19.1', '1.19',
+                '1.18.2', '1.18.1', '1.18', '1.17.1',
+                '1.17', '1.16.5', '1.16.4', '1.16.3',
+                '1.16.2', '1.16.1', '1.16', '1.15.2',
+                '1.15.1', '1.15', '1.14.4', '1.14.3',
+                '1.14.2', '1.14.1', '1.14', '1.13.2',
+                '1.13.1', '1.13', '1.12.2', '1.12.1',
+                '1.12', '1.11.2', '1.11.1', '1.11',
+                '1.10.2', '1.10.1', '1.10', '1.9.4',
+                '1.9.3', '1.9.2', '1.9.1', '1.9',
+                '1.8.9', '1.8.8', '1.8.7', '1.8.6',
+                '1.8.5', '1.8.4', '1.8.3', '1.8.2',
+                '1.8.1', '1.8', '1.7.10', '1.7.9',
+                '1.7.8', '1.7.7', '1.7.6', '1.7.5',
+                '1.7.4', '1.7.3', '1.7.2', '1.6.4',
+                '1.6.2', '1.6.1', '1.5.2', '1.5.1',
+                '1.4.7', '1.4.5', '1.4.6', '1.4.4',
+                '1.4.2', '1.3.2', '1.3.1', '1.2.5',
+                '1.2.4', '1.2.3', '1.2.2', '1.2.1',
+                '1.1', '1.0'
+        ]
+    }
+}
+static int toVersionCode(String verStr) {
+    int a = Integer.parseInt(verStr.split("\\.")[0])
+    int b = Integer.parseInt(verStr.split("\\.")[1])
+    int c = verStr.split("\\.").length > 2 ? Integer.parseInt(verStr.split("\\.")[2]) : 0
+    return (a * 10000000) + (b * 1000) + (c * 1)
+}
+def versionConfigVar = null
+
+try{
+    versionConfigVar = VersionConfig.loadFromFile(new File(getVersionConfigPath().toString()))
+} catch (Exception e){
+    println("❌️ 无法解析版本配置")
+    e.printStackTrace()
+    throw new GradleException("无法解析版本配置 ${getVersionConfigPath().toString()}");
+}
+ext {
+    allMinecraftVersions = fetchAllReleaseVersions()
+
+}
+
+def writeDefines() {
+    StringBuilder sb = new StringBuilder()
+    ext.allMinecraftVersions.each { str ->
+        def ver = str
+        def verCode = toVersionCode(ver)
+        sb.append("MC_" + ver.replace(".", "_") + "=" + verCode + "\n")
+    }
+    sb.append("MC_VER=" + toVersionCode(versionConfig.common.minecraftVersion) + "\n")
+    new File(projectDir.asWritable().absolutePath, "build.properties").text = sb.toString()
+    println("❇️ 成功写入定义文件")
+}
+
+def getVersionConfigPath(){
+    return Paths.get(
+            rootDir.toString(),
+            "configs",
+            "${minecraft_version}.json"
+    )
+}
+
+def getCurrentVersionConfig(){
+    return project.versionConfig
+}
+ext.getVersionConfigPath = this.&getVersionConfigPath
+ext.writeDefines = this.&writeDefines
+ext.getCurrentVersionConfig = this.&getCurrentVersionConfig
+ext.versionConfig = versionConfigVar
+
+writeDefines()

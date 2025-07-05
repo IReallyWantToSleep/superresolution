@@ -1,5 +1,7 @@
 package io.homo.superresolution.common.config.special;
 
+import io.homo.superresolution.api.config.ModConfigSpecBuilder;
+import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import net.minecraft.network.chat.Component;
@@ -8,14 +10,22 @@ import java.util.Map;
 import java.util.Optional;
 
 public class SGSR2SpecialConfig extends SpecialConfig {
-    public SgsrVariant variant = SgsrVariant.CS_2;
+    public EnumValue<SgsrVariant> VARIANT = specBuilder.defineEnum(
+            "special/sgsr2/variant",
+            SgsrVariant.class,
+            () -> SgsrVariant.CS_2
+    );
+
+    public SGSR2SpecialConfig(ModConfigSpecBuilder specBuilder) {
+        super(specBuilder);
+    }
 
     @Override
     protected void buildDescriptions(Map<String, SpecialConfigDescription<?>> map) {
         map.put(
                 "variant",
                 new SpecialConfigDescription<>()
-                        .setValue(getSpecialConfigs().sgsr2.variant)
+                        .setValue(getSpecialConfigs().SGSR2.VARIANT.get())
                         .setDefaultValue(SgsrVariant.CS_2)
                         .setNameSupplier((variant) -> switch ((SgsrVariant) variant) {
                             case CS_2 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.cs_2"));
@@ -24,7 +34,7 @@ public class SGSR2SpecialConfig extends SpecialConfig {
                         })
                         .setTooltip(Component.translatable("superresolution.screen.config.special.sgsr2.variant.tooltip"))
                         .setKey("variant")
-                        .setSaveConsumer((v) -> getSpecialConfigs().sgsr2.variant = (SgsrVariant) v)
+                        .setSaveConsumer((v) -> getSpecialConfigs().SGSR2.VARIANT.set(v))
                         .setType(ConfigSpecType.ENUM)
                         .setClazz(SgsrVariant.class)
         );

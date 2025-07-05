@@ -39,115 +39,6 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class ClothConfig {
-    private static int getInt(float v) {
-        return (int) (v * 1e4);
-    }
-
-    private static int getInt(double v) {
-        return (int) (v * 1e4);
-    }
-
-
-    private static float getFloat(int v) {
-        return (float) (v / 1e4);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static void addSpecialConfig(ConfigBuilder builder, ConfigEntryBuilder entryBuilder, String key) {
-        Pair<SpecialConfig, String> specialConfigDescription = Config.getInstance().getSpecial().description.get(key);
-        Map<String, SpecialConfigDescription<?>> configDescriptions = specialConfigDescription.left().getDescriptions();
-        Set<String> keys = configDescriptions.keySet();
-        if (keys.isEmpty()) return;
-
-        ConfigCategory category = builder.getOrCreateCategory(Component.literal(specialConfigDescription.right()));
-        for (String configKey : keys) {
-            SpecialConfigDescription<?> configDescription = configDescriptions.get(configKey);
-            AbstractFieldBuilder<?, ?, ?> fieldBuilder =
-                    switch (configDescription.getType()) {
-                        case ENUM -> entryBuilder.startEnumSelector(
-                                        configDescription.getName(),
-                                        (Class) configDescription.getClazz(),
-                                        (Enum<?>) configDescription.getValue()
-                                )
-                                .setDefaultValue((Enum<?>) configDescription.getDefaultValue())
-                                .setSaveConsumer(configDescription.getSaveConsumer_())
-                                .setEnumNameProvider(configDescription.isNameIsSupplier() ? (anEnum -> configDescription.getNameSupplier().apply(anEnum).orElse(Component.empty())) : null);
-                        case FLOAT -> entryBuilder.startIntSlider(
-                                        configDescription.getName(),
-                                        getInt((Float) configDescription.getValue()),
-                                        getInt(configDescription.getValueRange().left()),
-                                        getInt(configDescription.getValueRange().right())
-                                )
-                                .setTextGetter(configDescription.isNameIsSupplier() ? (integer -> configDescription.getNameSupplier().apply(integer).orElse(Component.empty())) : (integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
-                                .setDefaultValue(getInt((Float) configDescription.getDefaultValue()))
-                                .setSaveConsumer((integer -> configDescription.getSaveConsumer().accept(integer)));
-                        case STRING -> entryBuilder.startStrField(
-                                        configDescription.getName(),
-                                        (String) configDescription.getValue()
-                                )
-                                .setDefaultValue((String) configDescription.getDefaultValue())
-                                .setSaveConsumer((Consumer<String>) configDescription.getSaveConsumer_());
-                        case BOOLEAN -> entryBuilder.startBooleanToggle(
-                                        configDescription.getName(),
-                                        (Boolean) configDescription.getValue()
-                                )
-                                .setYesNoTextSupplier(configDescription.isNameIsSupplier() ? (aBoolean -> configDescription.getNameSupplier().apply(aBoolean).orElse(Component.empty())) : null)
-                                .setDefaultValue((Boolean) configDescription.getDefaultValue())
-                                .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer_());
-                        case OBJECT -> null;
-                    };
-            if (configDescription.getTooltip() != null) if (fieldBuilder != null) {
-                fieldBuilder.setTooltip(configDescription.getTooltip());
-            }
-            if (fieldBuilder != null) {
-                category.addEntry(fieldBuilder.build());
-            }
-        }
-    }
-
-    public static void addDebug(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
-        ConfigCategory debugCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.debug"));
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(
-                        Component.translatable("superresolution.screen.config.options.label.debug_dump_shader"),
-                        Config.getInstance().isDebugDumpShader())
-                .setDefaultValue(false)
-                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.debug_dump_shader"))
-                .setSaveConsumer(Config.getInstance()::setDebugDumpShader)
-                .build());
-
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(
-                        Component.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
-                        Config.getInstance().isEnableRenderDoc())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
-                .setSaveConsumer(Config.getInstance()::setEnableRenderDoc)
-                .build());
-
-        debugCategory.addEntry(entryBuilder.startBooleanToggle(
-                        Component.translatable("superresolution.screen.config.options.label.enable_imgui"),
-                        Config.getInstance().isEnableImgui())
-                .setDefaultValue(true)
-                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
-                .setSaveConsumer(Config.getInstance()::setEnableImgui)
-                .build());
-
-        ClothTextListEntry debugInfo = new ClothTextListEntry(
-                Component.translatable("superresolution.screen.debug.performance_info"),
-                () -> Component.translatable(
-                        "superresolution.screen.debug.performance_data",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("runTick"))
-                                .setScale(3, RoundingMode.HALF_UP),
-                        Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
-                                .setScale(3, RoundingMode.HALF_UP) : "?",
-                        Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
-                                .setScale(3, RoundingMode.HALF_UP) : "?"
-                ),
-                ColorUtil.color(255, 255, 255, 255),
-                null
-        );
-        debugCategory.addEntry(debugInfo);
-    }
-
     public static void add(ConfigBuilder builder) {
         ConfigCategory commonCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.general"));
         ConfigEntryBuilder entryBuilder = ConfigEntryBuilderImpl.create();
@@ -194,7 +85,7 @@ public class ClothConfig {
         SelectionListEntry<Object> algorithmSelector = entryBuilder.startSelector(
                         Component.translatable("superresolution.screen.config.options.label.algo_type"),
                         AlgorithmRegistry.getAlgorithmMap().values().toArray(),
-                        Config.getUpscaleAlgo()
+                        Config.getUpscaleAlgorithm()
                 )
                 .setDefaultValue(AlgorithmDescriptions.FSR1)
                 .setNameProvider(((anEnum) -> Component.literal(((AlgorithmDescription<?>) anEnum).getBriefName())))
@@ -208,7 +99,7 @@ public class ClothConfig {
                     return Optional.empty();
                 }))
                 .setSaveConsumer((o -> {
-                    Config.setUpscaleAlgo((AlgorithmDescription<?>) o);
+                    Config.setUpscaleAlgorithm((AlgorithmDescription<?>) o);
                 })).build();
         commonCategory.addEntry(algorithmSelector);
         commonCategory.addEntry(
@@ -278,11 +169,119 @@ public class ClothConfig {
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),
                 true
         ));
-        for (String key : Config.getInstance().getSpecial().description.keySet()) {
+        for (String key : Config.SPECIAL.description.keySet()) {
             addSpecialConfig(builder, entryBuilder, key);
         }
         addDebug(builder, entryBuilder);
-        builder.setSavingRunnable(ConfigFile::write);
+        builder.setSavingRunnable(Config.SPEC::save);
+    }
+
+    private static int getInt(float v) {
+        return (int) (v * 1e4);
+    }
+
+    private static int getInt(double v) {
+        return (int) (v * 1e4);
+    }
+
+    private static float getFloat(int v) {
+        return (float) (v / 1e4);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void addSpecialConfig(ConfigBuilder builder, ConfigEntryBuilder entryBuilder, String key) {
+        Pair<SpecialConfig, String> specialConfigDescription = Config.SPECIAL.description.get(key);
+        Map<String, SpecialConfigDescription<?>> configDescriptions = specialConfigDescription.left().getDescriptions();
+        Set<String> keys = configDescriptions.keySet();
+        if (keys.isEmpty()) return;
+
+        ConfigCategory category = builder.getOrCreateCategory(Component.literal(specialConfigDescription.right()));
+        for (String configKey : keys) {
+            SpecialConfigDescription<?> configDescription = configDescriptions.get(configKey);
+            AbstractFieldBuilder<?, ?, ?> fieldBuilder =
+                    switch (configDescription.getType()) {
+                        case ENUM -> entryBuilder.startEnumSelector(
+                                        configDescription.getName(),
+                                        (Class) configDescription.getClazz(),
+                                        (Enum<?>) configDescription.getValue()
+                                )
+                                .setDefaultValue((Enum<?>) configDescription.getDefaultValue())
+                                .setSaveConsumer(configDescription.getSaveConsumer_())
+                                .setEnumNameProvider(configDescription.isNameIsSupplier() ? (anEnum -> configDescription.getNameSupplier().apply(anEnum).orElse(Component.empty())) : null);
+                        case FLOAT -> entryBuilder.startIntSlider(
+                                        configDescription.getName(),
+                                        getInt((Float) configDescription.getValue()),
+                                        getInt(configDescription.getValueRange().left()),
+                                        getInt(configDescription.getValueRange().right())
+                                )
+                                .setTextGetter(configDescription.isNameIsSupplier() ? (integer -> configDescription.getNameSupplier().apply(integer).orElse(Component.empty())) : (integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
+                                .setDefaultValue(getInt((Float) configDescription.getDefaultValue()))
+                                .setSaveConsumer((integer -> configDescription.getSaveConsumer().accept(integer)));
+                        case STRING -> entryBuilder.startStrField(
+                                        configDescription.getName(),
+                                        (String) configDescription.getValue()
+                                )
+                                .setDefaultValue((String) configDescription.getDefaultValue())
+                                .setSaveConsumer((Consumer<String>) configDescription.getSaveConsumer_());
+                        case BOOLEAN -> entryBuilder.startBooleanToggle(
+                                        configDescription.getName(),
+                                        (Boolean) configDescription.getValue()
+                                )
+                                .setYesNoTextSupplier(configDescription.isNameIsSupplier() ? (aBoolean -> configDescription.getNameSupplier().apply(aBoolean).orElse(Component.empty())) : null)
+                                .setDefaultValue((Boolean) configDescription.getDefaultValue())
+                                .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer_());
+                        case OBJECT -> null;
+                    };
+            if (configDescription.getTooltip() != null) if (fieldBuilder != null) {
+                fieldBuilder.setTooltip(configDescription.getTooltip());
+            }
+            if (fieldBuilder != null) {
+                category.addEntry(fieldBuilder.build());
+            }
+        }
+    }
+
+    public static void addDebug(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
+        ConfigCategory debugCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.debug"));
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.debug_dump_shader"),
+                        Config.isDebugDumpShader())
+                .setDefaultValue(false)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.debug_dump_shader"))
+                .setSaveConsumer(Config::setDebugDumpShader)
+                .build());
+
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
+                        Config.isEnableRenderDoc())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
+                .setSaveConsumer(Config::setEnableRenderDoc)
+                .build());
+
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.enable_imgui"),
+                        Config.isEnableImgui())
+                .setDefaultValue(true)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
+                .setSaveConsumer(Config::setEnableImgui)
+                .build());
+
+        ClothTextListEntry debugInfo = new ClothTextListEntry(
+                Component.translatable("superresolution.screen.debug.performance_info"),
+                () -> Component.translatable(
+                        "superresolution.screen.debug.performance_data",
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("runTick"))
+                                .setScale(3, RoundingMode.HALF_UP),
+                        Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("world") - PerformanceInfo.getAsMillis("upscale"))
+                                .setScale(3, RoundingMode.HALF_UP) : "?",
+                        Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                .setScale(3, RoundingMode.HALF_UP) : "?"
+                ),
+                ColorUtil.color(255, 255, 255, 255),
+                null
+        );
+        debugCategory.addEntry(debugInfo);
     }
 
     public static void addInfos(ConfigBuilder builder) {

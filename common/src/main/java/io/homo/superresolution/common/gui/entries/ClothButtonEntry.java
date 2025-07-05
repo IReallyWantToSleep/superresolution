@@ -7,8 +7,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +44,23 @@ public class ClothButtonEntry extends AbstractConfigListEntry<Boolean> {
         return List.of(button);
     }
 
+
+    public boolean isDragging() {
+        return false;
+    }
+
+    public void setDragging(boolean b) {
+
+    }
+
+    public @Nullable GuiEventListener getFocused() {
+        return null;
+    }
+
+    public void setFocused(@Nullable GuiEventListener guiEventListener) {
+
+    }
+
     @Override
     public List<? extends NarratableEntry> narratables() {
         return List.of(button);
@@ -69,5 +88,15 @@ public class ClothButtonEntry extends AbstractConfigListEntry<Boolean> {
         button.setY(y);
         button.render(graphics, mouseX, mouseY, delta);
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
+    }
+
+    @Override
+    public NarrationPriority narrationPriority() {
+        return null;
+    }
+
+    @Override
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
+
     }
 }

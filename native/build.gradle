@@ -1,5 +1,3 @@
-import java.util.regex.Pattern
-
 plugins {
     id 'java'
 }
@@ -14,38 +12,49 @@ repositories {
 dependencies {
 }
 
-tasks.register('configureCMake', Exec) {
+static def isLib(String name){
+    return name.endsWith(".so") || name.endsWith(".dylib") || name.endsWith(".dll")
+}
+tasks.register('configureCMakeWin', Exec) {
     workingDir file(projectDir.path + "/cpp")
-    commandLine 'cmake', '-S', '.', '-B', 'build', '-G', 'MinGW Makefiles' //"-DSRLIB_VERSION='${version}'"
+    commandLine "cmake","." ,"-B" ,"build" ,"-G" ,"Ninja", "-DCMAKE_BUILD_TYPE=Release","-DCMAKE_C_COMPILER=clang","-DCMAKE_CXX_COMPILER=clang++"
 
     doFirst {
         delete "${projectDir}/cpp/build"
         delete "${projectDir}/cpp/bin"
         mkdir "${projectDir}/cpp/build"
+        println("❇️ 执行命令 ${commandLine.join(" ")}")
     }
 }
 
-tasks.register('buildCMake', Exec) {
-    dependsOn configureCMake
-    workingDir file(projectDir.path + "/cpp/build")
-    commandLine 'cmake', '--build', '.'
+tasks.named('clean') {
+    doFirst {
+        delete "${projectDir}/cpp/build"
+        delete "${projectDir}/cpp/bin"
+    }
 }
 
-tasks.register('buildNative') {
-    dependsOn configureCMake
-    dependsOn buildCMake
-    finalizedBy copyNativeLib
+tasks.register('buildCMakeWin', Exec) {
+    dependsOn configureCMakeWin
+    workingDir file(projectDir.path + "/cpp")
+    commandLine 'cmake', '--build', 'build'
+    doFirst {
+        println("❇️ 执行命令 ${commandLine.join(" ")}")
+    }
+}
 
+tasks.register('buildWin') {
+    dependsOn configureCMakeWin
+    dependsOn buildCMakeWin
+    finalizedBy copyNativeLib
     doLast {
-        println "构建完成"
+        println "✅️ 本机库构建完成"
     }
 }
 
 tasks.register('copyNativeLib', Copy) {
-    dependsOn buildCMake
     from("${projectDir}/cpp/bin") {
-        include "libSuperResolution*"
-        exclude "**/*.a"
+        include "libSuperResolution*.so","libSuperResolution*.dll","libSuperResolution*.dylib"
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
@@ -55,11 +64,11 @@ tasks.register('printLibMd5') {
     doLast {
         def libDir = file("${projectDir}/../common/src/main/resources/lib/")
         if (!libDir.exists()) {
-            println "目录不存在: ${libDir.path}"
+            println "❌️ 目录不存在: ${libDir.path}"
             return
         }
         libDir.eachFile { file ->
-            if (file.isFile() && file.name.startsWith("libSuperResolution")) {
+            if (file.isFile() && file.name.startsWith("libSuperResolution") && isLib(file.name)) {
                 def md5 = calculateMD5(file)
                 println "${file.name}: ${md5}"
             }
@@ -85,17 +94,17 @@ tasks.register('updateNativeLibMd5') {
         def libDir = file("${projectDir}/../common/src/main/resources/lib/")
         def md5Map = [:]
         libDir.eachFile { file ->
-            if (file.isFile() && file.name.startsWith("libSuperResolution")) {
+            if (file.isFile() && file.name.startsWith("libSuperResolution") && isLib(file.name)) {
                 def baseName = file.name.replaceFirst(~/\.[^.]+$/, '')
                 def md5 = calculateMD5(file)
                 md5Map[baseName] = md5
-                println "计算MD5: ${baseName} -> ${md5}"
+                println "❇️ 计算MD5: ${baseName} -> ${md5}"
             }
         }
 
         def javaFile = file("${projectDir}/../common/src/main/java/io/homo/superresolution/core/NativeLibManager.java")
         if (!javaFile.exists()) {
-            throw new GradleException("找不到NativeLibManager.java文件: ${javaFile.path}")
+            throw new GradleException("❌️ 找不到NativeLibManager.java文件: ${javaFile.path}")
         }
 
         def content = javaFile.text
@@ -105,13 +114,13 @@ tasks.register('updateNativeLibMd5') {
             def pattern = /(libs\.add\s*\(\s*new NativeLib\s*\(\s*"${escapedBaseName}"\s*,\s*")([^"]*)("\s*)(,\s*\d+)?(\s*\)\s*\);)/
 
             content = content.replaceAll(pattern) { fullMatch, prefix, oldMd5, md5Suffix, optionalArg, closingBrace ->
-                println "更新库 ${baseName}: 旧MD5 ${oldMd5} → 新MD5 ${newMd5}"
+                println "❇️ 更新库 ${baseName}: 旧MD5 ${oldMd5} → 新MD5 ${newMd5}"
                 "${prefix}${newMd5}${md5Suffix}${optionalArg ?: ''}${closingBrace}"
             }
         }
 
         javaFile.write(content, 'UTF-8')
-        println "已更新NativeLibManager中的MD5值"
+        println "✅️ 已更新NativeLibManager中的MD5值"
     }
 }
 

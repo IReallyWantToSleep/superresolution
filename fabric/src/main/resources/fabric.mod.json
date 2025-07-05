@@ -42,6 +42,5 @@
     },
     "breaks": {
         "resolutioncontrol": "*"
-    },
-    "accessWidener": "super_resolution.accesswidener"
+    }
 }

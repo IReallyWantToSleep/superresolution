@@ -168,7 +168,7 @@ class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public void setClearColor(float red, float green, float blue, float alpha) {
         updateState();
-        frameBuffer.setClearColor(red, green, blue, alpha);
+        frameBuffer.setClearColorRGBA(red, green, blue, alpha);
     }
 
     public void blitToScreen(int width, int height) {

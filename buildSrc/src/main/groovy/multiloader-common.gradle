@@ -1,0 +1,52 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+base {
+    archivesName = "${mod_id}-${project.name}-${minecraft_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(getCurrentVersionConfig().common.javaVersion)
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+    maven{url 'https://maven.neoforged.net'}
+    maven { url 'https://maven.aliyun.com/repository/central' }
+    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven {url "https://maven.architectury.dev/"}
+    maven {url "https://maven.nucleoid.xyz/"}
+    maven { url "https://maven.shedaniel.me/" }
+    maven {url "https://maven.neoforged.net/releases"}
+    maven {url "https://libraries.minecraft.net"}
+    maven {url "https://maven.fabricmc.net/"}
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Sponge'
+                url = 'https://repo.spongepowered.org/repository/maven-public'
+            }
+        }
+        filter { includeGroupAndSubgroups('org.spongepowered') }
+    }
+    exclusiveContent {
+        forRepositories(
+                maven {
+            name = 'ParchmentMC'
+            url = 'https://maven.parchmentmc.org/'
+        },
+                maven {
+                    name = "NeoForge"
+                    url = 'https://maven.neoforged.net/releases'
+                })
+        filter { includeGroup('org.parchmentmc.data') }
+    }
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
+}

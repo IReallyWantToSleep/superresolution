@@ -9,6 +9,7 @@ import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
@@ -47,7 +48,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static boolean isInit;
     public static boolean isPreInit;
     public static boolean gameIsLoad = false;
-    public static float frameTimeDelta = 16.6f;
     public static AlgorithmDescription<?> algorithmDescription;
     public static GlVkInteropManager interopManager;
     public static int framebufferWidth = 0;
@@ -93,20 +93,12 @@ public final class SuperResolution implements Resizable, Destroyable {
         isPreInit = true;
     }
 
-    public static int getMinecraftWidth() {
-        return Math.max(Minecraft.getInstance().getWindow().getScreenWidth(), 1);
-    }
-
-    public static int getMinecraftHeight() {
-        return Math.max(Minecraft.getInstance().getWindow().getScreenHeight(), 1);
+    public static void initVulkan() {
+        interopManager.init();
     }
 
     public static SuperResolution getInstance() {
         return instance;
-    }
-
-    public static void setFrameTimeDelta(float value) {
-        frameTimeDelta = value;
     }
 
     public static void check() {
@@ -143,7 +135,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             if (!isPreInit) return;
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
-            algorithmDescription = Config.getUpscaleAlgo();
+            algorithmDescription = Config.getUpscaleAlgorithm();
             /////////生成AI训练数据集
             //if (Platform.currentPlatform.isDevelopmentEnvironment()) DataSetGenerator.init();
         }
@@ -154,7 +146,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return false;
             defaultAlgorithm.init();
-            algorithmDescription = Config.getUpscaleAlgo();
+            algorithmDescription = Config.getUpscaleAlgorithm();
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
@@ -165,16 +157,6 @@ public final class SuperResolution implements Resizable, Destroyable {
             }
         }
         return false;
-    }
-
-    public static void initVulkan() {
-        interopManager.init();
-    }
-
-    public static void callAlgo(Consumer<AbstractAlgorithm> fn) {
-        if (currentAlgorithm != null) {
-            fn.accept(currentAlgorithm);
-        }
     }
 
     public static AbstractAlgorithm getCurrentAlgorithm() {
@@ -193,12 +175,12 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (Platform.currentPlatform.isDevelopmentEnvironment() && Config.isEnableImgui()) new ImguiMain();
 
         isInit = true;
-        this.resize(SuperResolution.getMinecraftWidth(), SuperResolution.getMinecraftHeight());
+        this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
     }
 
     public void resize(int width, int height) {
-        cachedWidth = getMinecraftWidth();
-        cachedHeight = getMinecraftHeight();
+        cachedWidth = MinecraftWindow.getWindowWidth();
+        cachedHeight = MinecraftWindow.getWindowHeight();
         if (currentAlgorithm != null) {
             AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
                     currentAlgorithm,
@@ -207,9 +189,9 @@ public final class SuperResolution implements Resizable, Destroyable {
                     MinecraftRenderHandle.getRenderWidth(),
                     MinecraftRenderHandle.getRenderHeight()
             );
-            currentAlgorithm.resize(getMinecraftWidth(), getMinecraftHeight());
+            currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
         }
-        AlgorithmManager.resize(getMinecraftWidth(), getMinecraftHeight());
+        AlgorithmManager.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
     }
 
     public void destroy() {

@@ -1,22 +1,143 @@
 package io.homo.superresolution.common.config;
 
-import com.google.gson.GsonBuilder;
+import io.homo.superresolution.api.config.*;
+import io.homo.superresolution.api.config.values.list.StringListValue;
+import io.homo.superresolution.api.config.values.single.BooleanValue;
+import io.homo.superresolution.api.config.values.single.EnumValue;
+import io.homo.superresolution.api.config.values.single.FloatValue;
+import io.homo.superresolution.api.config.values.single.StringValue;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.config.enums.CaptureMode;
-import io.homo.superresolution.common.config.enums.SgsrVariant;
+import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.platform.OS;
+import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class Config {
-    private static ConfigData instance = new ConfigData();
-    private static Runnable resolutionChangeCallback;
+    public static final ModConfigSpec SPEC;
+    public static final SpecialConfigs SPECIAL;
+    private static final BooleanValue ENABLE_UPSCALE;
+    private static final FloatValue UPSCALE_RATIO;
+    private static final StringValue UPSCALE_ALGO;
+    private static final FloatValue SHARPNESS;
+    private static final EnumValue<CaptureMode> CAPTURE_MODE;
+    private static final BooleanValue DEBUG_DUMP_SHADER;
+    private static final BooleanValue SKIP_INIT_VULKAN;
+    private static final BooleanValue ENABLE_RENDER_DOC;
+    private static final BooleanValue ENABLE_IMGUI;
+    private static final BooleanValue GENERATE_MOTION_VECTORS;
+    private static final BooleanValue PAUSE_GAME_ON_GUI;
+    private static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
+    private static final OSType CURRENT_OS_TYPE = new OS().type;
+    private static final boolean compatMode = CURRENT_OS_TYPE == OSType.MACOS || CURRENT_OS_TYPE == OSType.ANDROID;
+    private static final Runnable resolutionChangeCallback;
 
     static {
-        setResolutionChangeCallback(() -> {
+        ModConfigSpecBuilder builder = new ModConfigSpecBuilder();
+
+        Supplier<Boolean> compatDefault = () -> compatMode;
+        Supplier<Boolean> nonCompatDefault = () -> !compatMode;
+        Supplier<String> defaultAlgoSupplier = () -> getDefaultAlgorithm().codeName;
+
+        ENABLE_UPSCALE = builder.defineBoolean(
+                "enable_upscale",
+                () -> true,
+                "Enable super-resolution upscaling"
+        );
+
+        UPSCALE_RATIO = builder.defineFloat(
+                "upscale_ratio",
+                () -> 1.7f,
+                "Upscale ratio factor",
+                value -> value >- 0.1f && value <= 4.0f
+        );
+
+        UPSCALE_ALGO = builder.defineString(
+                "upscale_algo",
+                defaultAlgoSupplier,
+                "Algorithm used for upscaling",
+                value -> {
+                    if (value == null) return false;
+                    AlgorithmDescription<?> algo = AlgorithmRegistry.getDescriptionByID(value);
+                    return algo != null;
+                }
+        );
+
+        SHARPNESS = builder.defineFloat(
+                "sharpness",
+                () -> 0.55f,
+                "Sharpness adjustment factor",
+                value -> value >= 0.0f && value <= 1.0f
+        );
+
+        CAPTURE_MODE = builder.defineEnum(
+                "capture_mode",
+                CaptureMode.class,
+                () -> CaptureMode.A,
+                "Screen capture mode"
+        );
+
+        PAUSE_GAME_ON_GUI = builder.defineBoolean(
+                "pause_game_on_gui",
+                () -> false,
+                "Pause game when GUI is open"
+        );
+
+        INJECT_POST_CHAIN_BLACKLIST = builder.defineStringList(
+                "inject_post_chain_blacklist",
+                ArrayList::new,
+                "List of post-processing chains to skip injection",
+                value -> value != null && !value.isEmpty()
+        );
+
+        DEBUG_DUMP_SHADER = builder.defineBoolean(
+                "debug/debug_dump_shader",
+                () -> false,
+                "Dump shaders for debugging purposes"
+        );
+
+        SKIP_INIT_VULKAN = builder.defineBoolean(
+                "debug/skip_init_vulkan",
+                compatDefault,
+                "Skip Vulkan initialization (auto-set based on OS)"
+        );
+
+        ENABLE_RENDER_DOC = builder.defineBoolean(
+                "debug/enable_render_doc",
+                nonCompatDefault,
+                "Enable RenderDoc integration (auto-disabled on incompatible OS)"
+        );
+
+        ENABLE_IMGUI = builder.defineBoolean(
+                "debug/enable_imgui",
+                nonCompatDefault,
+                "Enable ImGui debug interface (auto-disabled on incompatible OS)"
+        );
+
+        GENERATE_MOTION_VECTORS = builder.defineBoolean(
+                "experiment/generate_motion_vectors",
+                () -> false,
+                "Generate motion vectors for advanced effects"
+        );
+        SPECIAL = new SpecialConfigs(builder);
+        Path configPath = Platform.currentPlatform
+                .getGameFolder()
+                .resolve("config")
+                .resolve("super_resolution.toml");
+        builder.configPath(configPath);
+        SPEC = builder.build();
+        resolutionChangeCallback = () -> {
             MinecraftRenderHandle.resize();
             SuperResolution.getInstance().resize(
                     MinecraftRenderHandle.getScreenWidth(),
@@ -26,172 +147,183 @@ public class Config {
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()
             );
-        });
+        };
     }
 
-    public static List<String> getInjectPostChainBlackList() {
-        return instance.getInjectPostChainBlackList();
-    }
+    public static AlgorithmDescription<?> getDefaultAlgorithm() {
+        try {
+            GL.getCapabilities();
+        } catch (Exception e) {
+            return AlgorithmDescriptions.SGSR1;
+        }
+        for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
+            if (algorithmDescription.requirement.check().support()) {
+                return algorithmDescription;
+            }
+        }
 
-    public static void setInjectPostChainBlackList(List<String> injectPostChainBlackList) {
-        instance.setInjectPostChainBlackList(injectPostChainBlackList);
-    }
-
-    public static boolean isEnableRenderDoc() {
-        return instance.isEnableRenderDoc();
-    }
-
-    public static void setEnableRenderDoc(boolean enableRenderDoc) {
-        instance.setEnableRenderDoc(enableRenderDoc);
-    }
-
-    public static boolean isEnableImgui() {
-        return instance.isEnableImgui();
-    }
-
-    public static void setEnableImgui(boolean enableImgui) {
-        instance.setEnableImgui(enableImgui);
-    }
-
-    public static ConfigData getInstance() {
-        return instance;
-    }
-
-    public static void setInstance(ConfigData instance) {
-        if (instance != null) Config.instance = instance;
-    }
-
-    public static void registerTypeAdapter(GsonBuilder gsonBuilder) {
-        gsonBuilder.registerTypeAdapter(
-                AlgorithmDescription.class,
-                new AlgorithmDescriptionSerializer()
-        );
-        gsonBuilder.registerTypeAdapter(
-                CaptureMode.class,
-                new EnumSerializer.Builder<CaptureMode>()
-                        .addMapping("a", CaptureMode.A)
-                        .addMapping("b", CaptureMode.B)
-                        .addMapping("c", CaptureMode.C)
-                        .setDefault(CaptureMode.A)
-                        .build()
-        );
-
-        gsonBuilder.registerTypeAdapter(
-                SgsrVariant.class,
-                new EnumSerializer.Builder<SgsrVariant>()
-                        .addMapping("CS_2", SgsrVariant.CS_2)
-                        .addMapping("CS_3", SgsrVariant.CS_3)
-                        .addMapping("FS_2", SgsrVariant.FS_2)
-                        .setDefault(SgsrVariant.CS_2)
-                        .build()
-        );
-    }
-
-    public static CaptureMode getCaptureMode() {
-        return instance.getCaptureMode();
-    }
-
-    public static void setCaptureMode(CaptureMode captureMode) {
-        instance.setCaptureMode(captureMode);
+        SuperResolution.LOGGER.info("你的硬件不支持所有算法????"); //最逆天的一集
+        return AlgorithmDescriptions.NONE;
     }
 
     public static float getRenderScaleFactor() {
-        return instance.getRenderScaleFactor();
+        return ENABLE_UPSCALE.get() ? 1 / UPSCALE_RATIO.get() : 1;
+    }
+
+    public static AlgorithmDescription<?> getUpscaleAlgorithm() {
+        String algoName = UPSCALE_ALGO.get();
+        AlgorithmDescription<?> algo = AlgorithmRegistry.getDescriptionByID(algoName);
+
+        if (algo == null) {
+            algo = getDefaultAlgorithm();
+            UPSCALE_ALGO.set(algo.codeName);
+        }
+
+        if (!algo.requirement.check().support() && !Platform.currentPlatform.isDevelopmentEnvironment()) {
+            SuperResolution.LOGGER.warn("算法 {} 不支持，回退到默认算法", algo.displayName);
+            AlgorithmDescription<?> defaultAlgo = getDefaultAlgorithm();
+            setUpscaleAlgorithm(defaultAlgo);
+            return defaultAlgo;
+        }
+
+        return algo;
+    }
+
+    public static void setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
+        if (newAlgo == null) {
+            newAlgo = getDefaultAlgorithm();
+        }
+
+        AlgorithmDescription<?> currentAlgo = getUpscaleAlgorithm();
+        if (currentAlgo == newAlgo) return;
+
+        UPSCALE_ALGO.set(newAlgo.codeName);
+
+        SuperResolution.algorithmDescription = newAlgo;
+        if (SuperResolution.currentAlgorithm != null) {
+            SuperResolution.currentAlgorithm.destroy();
+        }
+
+        if (!SuperResolution.createAlgo()) {
+            UPSCALE_ALGO.set(currentAlgo.codeName);
+            SuperResolution.algorithmDescription = currentAlgo;
+
+            if (!SuperResolution.createAlgo()) {
+                SuperResolution.LOGGER.error(
+                        "在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常",
+                        newAlgo.displayName,
+                        currentAlgo.displayName
+                );
+                throw new RuntimeException("Algorithm initialization failed");
+            } else {
+                SuperResolution.LOGGER.error(
+                        "初始化算法 {} 失败，已回退到算法 {}",
+                        newAlgo.displayName,
+                        currentAlgo.displayName
+                );
+            }
+        }
+    }
+
+    public static boolean isEnableUpscale() {
+        return ENABLE_UPSCALE.get();
+    }
+
+    public static void setEnableUpscale(boolean value) {
+        boolean resolutionChanged = isEnableUpscale() != value;
+        ENABLE_UPSCALE.set(value);
+        if (resolutionChanged) resolutionChangeCallback.run();
+    }
+
+    public static float getSharpness() {
+        return SHARPNESS.get();
+    }
+
+    public static void setSharpness(float value) {
+        SHARPNESS.set(value);
+    }
+
+    public static CaptureMode getCaptureMode() {
+        return CAPTURE_MODE.get();
+    }
+
+    public static void setCaptureMode(CaptureMode value) {
+        CAPTURE_MODE.set(value);
     }
 
     public static float getUpscaleRatio() {
-        return instance.getUpscaleRatio();
+        return UPSCALE_RATIO.get();
     }
 
     public static void setUpscaleRatio(float value) {
         boolean resolutionChanged = getUpscaleRatio() != value;
-        instance.setUpscaleRatio(value);
-        if (resolutionChanged) runResolutionChangeCallback();
-    }
-
-    public static AlgorithmDescription<?> getUpscaleAlgo() {
-        return instance.getUpscaleAlgo();
-    }
-
-    public static void setUpscaleAlgo(AlgorithmDescription<?> upscaleAlgo) {
-        instance.setUpscaleAlgo(upscaleAlgo);
-    }
-
-    public static float getSharpness() {
-        return instance.getSharpness();
-    }
-
-    public static void setSharpness(float sharpness) {
-        instance.setSharpness(sharpness);
-    }
-
-    public static double getMinUpscaleRatio() {
-        int maxSize = 16384;
-        if (Minecraft.getInstance().getWindow() == null) return 0.1;
-        double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
-        double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
-        return Math.max(maxWidth, maxHeight);
-    }
-
-    public static boolean isEnableUpscale() {
-        return instance.isEnableUpscale();
-    }
-
-    public static void setEnableUpscale(boolean enableUpscale) {
-        boolean resolutionChanged = isEnableUpscale() != enableUpscale;
-        instance.setEnableUpscale(enableUpscale);
-        if (resolutionChanged) runResolutionChangeCallback();
-    }
-
-    public static SpecialConfigs getSpecial() {
-        return instance.getSpecial();
-    }
-
-    public static void setSpecial(SpecialConfigs special) {
-        instance.setSpecial(special);
-    }
-
-    public static void setResolutionChangeCallback(Runnable callback) {
-        resolutionChangeCallback = callback;
-    }
-
-    public static boolean isPauseGameOnGui() {
-        return instance.isPauseGameOnGui();
-    }
-
-    public static ConfigData setPauseGameOnGui(boolean pauseGameOnGui) {
-        return instance.setPauseGameOnGui(pauseGameOnGui);
+        UPSCALE_RATIO.set(value);
+        if (resolutionChanged) resolutionChangeCallback.run();
     }
 
     public static boolean isDebugDumpShader() {
-        return instance.isDebugDumpShader();
+        return DEBUG_DUMP_SHADER.get();
     }
 
-    public static void setDebugDumpShader(boolean debugDumpShader) {
-        instance.setDebugDumpShader(debugDumpShader);
-    }
-
-    private static void runResolutionChangeCallback() {
-        if (resolutionChangeCallback != null) {
-            resolutionChangeCallback.run();
-        }
+    public static void setDebugDumpShader(boolean value) {
+        DEBUG_DUMP_SHADER.set(value);
     }
 
     public static boolean isSkipInitVulkan() {
-        return instance.isSkipInitVulkan();
-
+        return SKIP_INIT_VULKAN.get();
     }
 
-    public static void setSkipInitVulkan(boolean skipInitVulkan) {
-        instance.setSkipInitVulkan(skipInitVulkan);
+    public static void setSkipInitVulkan(boolean value) {
+        SKIP_INIT_VULKAN.set(value);
+    }
 
+    public static boolean isEnableRenderDoc() {
+        return ENABLE_RENDER_DOC.get();
+    }
+
+    public static void setEnableRenderDoc(boolean value) {
+        ENABLE_RENDER_DOC.set(value);
+    }
+
+    public static boolean isEnableImgui() {
+        return ENABLE_IMGUI.get();
+    }
+
+    public static void setEnableImgui(boolean value) {
+        ENABLE_IMGUI.set(value);
     }
 
     public static boolean isGenerateMotionVectors() {
-        return instance.isGenerateMotionVectors();
+        return GENERATE_MOTION_VECTORS.get();
     }
 
-    public static void setGenerateMotionVectors(boolean generateMotionVectors) {
-        instance.setGenerateMotionVectors(generateMotionVectors);
+    public static void setGenerateMotionVectors(boolean value) {
+        GENERATE_MOTION_VECTORS.set(value);
     }
+
+    public static boolean isPauseGameOnGui() {
+        return PAUSE_GAME_ON_GUI.get();
+    }
+
+    public static void setPauseGameOnGui(boolean value) {
+        PAUSE_GAME_ON_GUI.set(value);
+    }
+
+    public static List<String> getInjectPostChainBlackList() {
+        return INJECT_POST_CHAIN_BLACKLIST.get();
+    }
+
+    public static void setInjectPostChainBlackList(List<String> value) {
+        INJECT_POST_CHAIN_BLACKLIST.set(value);
+    }
+
+    public static float getMinUpscaleRatio() {
+        int maxSize = 16384;
+        if (Minecraft.getInstance().getWindow() == null) return 0.1f;
+        double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
+        double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
+        return (float) Math.max(maxWidth, maxHeight);
+    }
+
+
 }

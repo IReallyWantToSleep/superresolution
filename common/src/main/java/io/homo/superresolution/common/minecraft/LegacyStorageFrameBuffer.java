@@ -187,7 +187,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     }
 
     @Override
-    public void setClearColor(float red, float green, float blue, float alpha) {
+    public void setClearColorRGBA(float red, float green, float blue, float alpha) {
         super.setClearColor(red, green, blue, alpha);
     }
 

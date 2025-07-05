@@ -12,7 +12,7 @@ public class HandRenderTarget {
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()
             );
-            handRenderTarget.setClearColor(0, 0, 0, 0);
+            handRenderTarget.setClearColorRGBA(0, 0, 0, 0);
             handRenderTarget.resizeFrameBuffer(
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()

@@ -6,12 +6,13 @@
     "minVersion": "0.8",
     "client": [
         "embeddium.EmbeddiumOptionMixin",
-        "oculus.GlFramebufferMixin"
-    ],
-    "mixins": [
+        "oculus.GlFramebufferMixin",
         "embeddium.DefaultChunkRendererMixin",
         "embeddium.ShaderChunkRendererMixin",
         "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
+    ],
+    "mixins": [
+
     ],
     "injectors": {
         "defaultRequire": 1

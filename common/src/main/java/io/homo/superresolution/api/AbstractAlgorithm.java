@@ -38,9 +38,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * 销毁算法，释放资源。
      */
     @Override
-    public void destroy() {
-        this.output.destroy();
-    }
+    public abstract void destroy();
 
     /**
      * 调整帧缓冲区的大小。
@@ -49,10 +47,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * @param height 新的高度(游戏屏幕高度)。
      */
     @Override
-    public void resize(int width, int height) {
-        this.input.resizeFrameBuffer(width, height);
-        this.output.resizeFrameBuffer(width, height);
-    }
+    public abstract void resize(int width, int height);
 
     /**
      * 获取输入帧缓冲区。

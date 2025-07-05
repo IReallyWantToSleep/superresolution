@@ -32,14 +32,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
 
-
-    #if MC_VER <= MC_1_21_1
-    @Redirect(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;blitToScreen(IIZ)V"), method = "doEntityOutline")
-    private void fixEntityOutlineEffect(RenderTarget instance, int width, int height, boolean disableBlend) {
-        MinecraftRenderHandle.onBlitEntityEffect();
-    }
-    #endif
-
     #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
     private void onResizePostChain(PostChain instance, int w, int h) {

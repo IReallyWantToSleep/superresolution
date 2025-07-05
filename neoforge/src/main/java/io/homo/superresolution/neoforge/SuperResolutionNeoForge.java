@@ -1,6 +1,7 @@
 package io.homo.superresolution.neoforge;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.neoforge.compat.sodium.SodiumOptionScreen;
@@ -18,7 +19,7 @@ public final class SuperResolutionNeoForge {
     public static SuperResolution mod;
 
     public SuperResolutionNeoForge(ModContainer container) {
-        ConfigFile.read();
+        Config.SPEC.load();
         ModLoadingContext.get().registerExtensionPoint(IConfigScreenFactory.class, () -> (mc, screen) -> ConfigScreenBuilder.create().buildConfigScreen(screen));
         mod = new SuperResolution();
         SuperResolution.preInit();

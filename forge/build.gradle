@@ -1,46 +1,9 @@
-import java.nio.file.Paths
-
 plugins {
-    id 'com.github.johnrengelman.shadow'
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev.legacyforge'
 }
-
-loom {
-    forge {
-        mixinConfig "super_resolution.mixins.json"
-        mixinConfig "super_resolution-forge.mixins.json"
-        mixinConfig "super_resolution-forge-compat.mixins.json"
-    }
-    runs {
-        client {
-            client()
-            runDir("../run")
-        }
-        server {
-            server()
-            runDir("../run")
-        }
-    }
-}
-
-architectury {
-    platformSetupLoomIde()
-    forge()
-}
-configurations {
-    common {
-        canBeResolved = true
-        canBeConsumed = false
-    }
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentForge.extendsFrom common
-
-    // Files in this configuration will be bundled into your mod using the Shadow plugin.
-    // Don't use the `shadow` configuration from the plugin itself as it's meant for excluding files.
-    shadowBundle {
-        canBeResolved = true
-        canBeConsumed = false
-    }
+base {
+    archivesName = "superresolution-forge-${minecraft_version}"
 }
 
 repositories {
@@ -51,86 +14,114 @@ repositories {
         }
     }
     maven {
+        name = 'NeoForged'
+        url = 'https://maven.neoforged.net/releases'
+    }
+    maven {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
         content {
             includeGroup "maven.modrinth"
         }
     }
-    maven {
-        name = 'NeoForged'
-        url = 'https://maven.neoforged.net/releases'
-    }
 }
 
-def addModrinthMod(id, ver) {
-    dependencies { modImplementation("maven.modrinth:${id}:${ver}-forge,${rootProject.minecraft_version}") }
-}
-
-def addModLib(name_) {
-    println("mod ../libs/" + name_ + ".jar")
-    dependencies {
-        modImplementation(files("../libs/" + name_ + ".jar"))
-    }
-}
-
-def addNoModLib(name_) {
-    println("../libs/" + name_ + ".jar")
-    dependencies {
-        implementation(forgeRuntimeLibrary(files("../libs/" + name_ + ".jar")))
-    }
-}
-
-dependencies {
-    forge "net.minecraftforge:forge:$versionConfig.common.minecraftVersion-$versionConfig.forge.loaderVersion"
-    if (((String) (versionConfig.common.architecturyApiVersion)).startsWith("1.")) {
-        modImplementation "me.shedaniel:architectury-forge:$versionConfig.common.architecturyApiVersion"
-    } else {
-        modImplementation "dev.architectury:architectury-forge:$versionConfig.common.architecturyApiVersion"
-    }
-    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
-    shadowBundle(project(path: ":common", configuration: "transformProductionForge"))
-    for (lib in versionConfig.forge.dependencies.modrinth) {
-        addModrinthMod(lib.name, lib.version)
-    }
-    for (lib in versionConfig.forge.dependencies.local) {
-        if (lib.isMod) {
-            addModLib(lib.name)
-        } else {
-            addNoModLib(lib.name)
+legacyForge {
+    version = "${minecraft_version}-${versionConfig.forge.loaderVersion}"
+    runs {
+        configureEach {
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group :"io.github.spair",
+                            name: "imgui-java-app",
+                            version: "1.87.5"
+                    )
+            )
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group : "io.github.spair",
+                            name : "imgui-java-binding",
+                            version : "1.87.5"
+                    )
+            )
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group : "io.github.spair",
+                            name : "imgui-java-lwjgl3",
+                            version : "1.87.5"
+                    )
+            )
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group : "org.lwjgl",
+                            name : "lwjgl-vulkan",
+                            version : "$versionConfig.common.lwjglVersion"
+                    )
+            )
+        }
+        client {
+            client()
+            gameDirectory = rootProject.file('runs/forge')
         }
     }
-    if (((String) (versionConfig.common.architecturyApiVersion)).startsWith("1.")) {
-        modImplementation "me.shedaniel:architectury:$versionConfig.common.architecturyApiVersionn"
-    } else {
-        modImplementation "dev.architectury:architectury:$versionConfig.common.architecturyApiVersion"
-    }
-    implementation("io.github.spair:imgui-java-app:1.87.5")
-    implementation("io.github.spair:imgui-java-binding:1.87.5")
-    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
-    modImplementation("me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion")
-    forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
-    forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
-    forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
-    if (enableVulkan) {
-        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-        forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
     }
 
-    if (rootProject.minecraft_version != "1.16.5") {
-        compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
-        implementation("io.github.llamalad7:mixinextras-forge:0.4.1")
+    parchment {
+        minecraftVersion = versionConfig.common.parchmentVersion.split(":")[0]
+        mappingsVersion = versionConfig.common.parchmentVersion.split(":")[1]
     }
+}
 
-    include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    implementation(forgeRuntimeLibrary('org.apache.commons:commons-math3:3.6.1'))
-    implementation(forgeRuntimeLibrary('org.apache.bcel:bcel:6.6.1')) {
-        exclude group: 'org.apache.commons', module: 'commons-lang3'
+mixin {
+    add sourceSets.main, 'super_resolution.refmap.json'
+    config 'super_resolution.mixins.json'
+    config 'super_resolution-forge.mixins.json'
+    config 'super_resolution-forge-compat.mixins.json'
+}
+
+sourceSets.main.resources.srcDir 'src/generated/resources'
+dependencies {
+    compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+    //implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
+    compileOnly("org.jetbrains:annotations:25.0.0")
+    implementation "io.github.spair:imgui-java-app:1.87.5"
+    implementation "io.github.spair:imgui-java-binding:1.87.5"
+    implementation "io.github.spair:imgui-java-lwjgl3:1.87.5"
+    jarJar(implementation "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+
+    modImplementation "dev.architectury:architectury-forge:$versionConfig.common.architecturyApiVersion"
+    modImplementation "me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion"
+    implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb"
+
+    for (lib in versionConfig.forge.dependencies.modrinth) {
+        modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${rootProject.minecraft_version}")
     }
-    implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
-        transitive = false
+    for (lib in versionConfig.forge.dependencies.local) {
+        if (lib.isMod){
+            if (lib.compileOnly) {
+                modCompileOnly(files("../libs/" + lib.name + ".jar"))
+            } else {
+                modImplementation(files("../libs/" + lib.name + ".jar"))
+            }
+        }else{
+            if (lib.compileOnly) {
+                compileOnly(files("../libs/" + lib.name + ".jar"))
+            } else {
+                implementation(files("../libs/" + lib.name + ".jar"))
+            }
+        }
     }
-    modImplementation(files("../libs/fabric-api-base-0.4.31+ef105b4977.jar"))
+}
+
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
 }
 
 processResources {
@@ -144,11 +135,8 @@ processResources {
     }
 }
 
-shadowJar {
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = 'dev-shadow'
-}
-
-remapJar {
-    input.set shadowJar.archiveFile
+jar {
+    manifest.attributes([
+            "MixinConfigs": "super_resolution.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json"
+    ])
 }
