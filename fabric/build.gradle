@@ -1,44 +1,8 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-
 import java.nio.file.Paths
 
 plugins {
-    id 'com.github.johnrengelman.shadow'
-}
-loom {
-    runs {
-        client {
-            client()
-            runDir("../run")
-        }
-        server {
-            server()
-            runDir("../run")
-        }
-    }
-}
-
-architectury {
-    platformSetupLoomIde()
-    fabric()
-}
-
-configurations {
-    common {
-        canBeResolved = true
-        canBeConsumed = false
-    }
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
-
-    // Files in this configuration will be bundled into your mod using the Shadow plugin.
-    // Don't use the `shadow` configuration from the plugin itself as it's meant for excluding files.
-    shadowBundle {
-        canBeResolved = true
-        canBeConsumed = false
-    }
-
+    id 'multiloader-loader'
+    id 'fabric-loom'
 }
 
 repositories {
@@ -59,64 +23,72 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
-    maven {
-        url "https://maven.nucleoid.xyz/"
-    }
 }
-
-def addModrinthMod(id, ver) {
-    dependencies { modImplementation("maven.modrinth:${id}:${ver}-fabric,${rootProject.minecraft_version}") }
-}
-
-def addNoModLib(name_) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
-    dependencies {
-        implementation(files(file.toAbsolutePath().asWritable().toString()))
-    }
-}
-
-def addModLib(name_) {
-    def file = Paths.get(rootProject.projectDir.asWritable().absolutePath, "libs", name_ + ".jar")
-
-    dependencies {
-        modImplementation(files(file.toAbsolutePath().asWritable().toString()))
-    }
-}
-
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:$versionConfig.fabric.loaderVersion"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:$versionConfig.fabric.apiVersion"
-    modImplementation "dev.architectury:architectury-fabric:$versionConfig.common.architecturyApiVersion"
-    modImplementation("com.terraformersmc:modmenu:$versionConfig.fabric.modmenuVersion")
-    modImplementation("me.shedaniel.cloth:cloth-config-fabric:$versionConfig.common.clothConfigVersion")
-    for (lib in versionConfig.fabric.dependencies.modrinth) {
-        addModrinthMod(lib.name, lib.version)
-    }
-    for (lib in versionConfig.fabric.dependencies.local) {
-        if (lib.isMod) {
-            addModLib(lib.name)
-        } else {
-            addNoModLib(lib.name)
-        }
-    }
 
-    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
-    shadowBundle project(path: ':common', configuration: 'transformProductionFabric')
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.layered {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
+    }
+    modImplementation "net.fabricmc:fabric-loader:${versionConfig.fabric.loaderVersion}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${versionConfig.fabric.apiVersion}"
+    //依赖的mod
+    modImplementation "dev.architectury:architectury-fabric:$versionConfig.common.architecturyApiVersion"
+    modImplementation "me.shedaniel.cloth:cloth-config-fabric:$versionConfig.common.clothConfigVersion"
+    modImplementation("com.terraformersmc:modmenu:$versionConfig.fabric.modmenuVersion")
+
+    //依赖库
     implementation "io.github.spair:imgui-java-app:1.87.5"
     implementation "io.github.spair:imgui-java-binding:1.87.5"
     implementation "io.github.spair:imgui-java-lwjgl3:1.87.5"
     implementation "org.anarres:jcpp:1.4.14"
     implementation "org.antlr:antlr4-runtime:4.13.1"
     implementation "io.github.douira:glsl-transformer:2.0.1"
-    if (enableVulkan) {
-        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-        include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    }
-
-
+    implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     include(implementation('com.electronwill.night-config:toml:3.6.0'))
     include(implementation('com.electronwill.night-config:core:3.6.0'))
+
+    //额外库/模组
+    for (lib in versionConfig.fabric.dependencies.modrinth) {
+        def depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${rootProject.minecraft_version}"
+        if (lib.compileOnly) {
+            modCompileOnly(depName)
+        } else {
+            modImplementation(depName)
+        }
+    }
+    for (lib in versionConfig.fabric.dependencies.local) {
+        if (lib.isMod){
+            if (lib.compileOnly) {
+                modCompileOnly(files("../libs/" + lib.name + ".jar"))
+            } else {
+                modImplementation(files("../libs/" + lib.name + ".jar"))
+            }
+        }else{
+            if (lib.compileOnly) {
+                compileOnly(files("../libs/" + lib.name + ".jar"))
+            } else {
+                implementation(files("../libs/" + lib.name + ".jar"))
+            }
+        }
+    }
+}
+
+loom {
+    mixin {
+        defaultRefmapName.set("${mod_id}.refmap.json")
+    }
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client')
+            ideConfigGenerated(true)
+            runDir('../runs/fabric')
+        }
+    }
 }
 
 processResources {
@@ -135,16 +107,4 @@ processResources {
             )
         }
     }
-}
-
-shadowJar {
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = 'dev-shadow'
-}
-
-remapJar {
-    input.set shadowJar.archiveFile
-}
-loom {
-    accessWidenerPath = file('src/main/resources/super_resolution.accesswidener')
 }

@@ -66,7 +66,7 @@ public class TextureFrameBufferAdapter implements IFrameBuffer {
     }
 
     @Override
-    public void setClearColor(float red, float green, float blue, float alpha) {
+    public void setClearColorRGBA(float red, float green, float blue, float alpha) {
 
     }
 

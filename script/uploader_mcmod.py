@@ -1,7 +1,6 @@
 import requests
 import os
 
-
 class MCMODModUploader:
     def __init__(self, class_id, cookies=None):
         self.base_url = "https://modfile-dl.mcmod.cn"

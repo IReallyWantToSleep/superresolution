@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 public class ConfigFile {
+    /*
     public static final Path configPath = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "superresolution.json");
 
     public static void write() {
@@ -81,4 +82,5 @@ public class ConfigFile {
         ConfigFile.read();
         System.out.println("0");
     }
+    */
 }

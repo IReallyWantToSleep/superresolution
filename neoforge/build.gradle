@@ -1,35 +1,6 @@
-import java.nio.file.Paths
-
 plugins {
-    id 'com.github.johnrengelman.shadow'
-}
-
-loom {
-    neoForge {}
-
-    runs {
-        client {
-            client()
-            runDir("../run")
-        }
-        server {
-            server()
-            runDir("../run")
-        }
-    }
-
-}
-
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
-configurations {
-    common
-    shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
 }
 
 repositories {
@@ -52,50 +23,108 @@ repositories {
     }
 }
 
+configurations {
+    libraries
+}
 
-dependencies {
-    neoForge "net.neoforged:neoforge:${versionConfig.neoforge.loaderVersion}"
-    common(project(path: ':common', configuration: 'namedElements')) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
-    for (lib in versionConfig.neoforge.dependencies.modrinth) {
-        modImplementation("maven.modrinth:${lib.name}:${lib.version}-neoforge,${rootProject.minecraft_version}")
+sourceSets {
+    main {
+        resources{
+            srcDir 'src/generated/resources'
+        }
     }
-    for (lib in versionConfig.neoforge.dependencies.local) {
-        if (lib.isMod) {
-            modImplementation(
-                    files("../libs/" + lib.name + ".jar")
+
+    configureEach {
+        it.runtimeClasspath += configurations.libraries
+    }
+}
+
+
+neoForge {
+    version = versionConfig.neoforge.loaderVersion
+    parchment {
+        minecraftVersion = versionConfig.common.parchmentVersion.split(":")[0]
+        mappingsVersion = versionConfig.common.parchmentVersion.split(":")[1]
+    }
+    runs {
+        configureEach {
+            systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group :"io.github.spair",
+                            name: "imgui-java-app",
+                            version: "1.87.5"
+                    )
             )
-        } else {
-            implementation(
-                    forgeRuntimeLibrary(
-                            files("../libs/" + lib.name + ".jar")
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group : "io.github.spair",
+                            name : "imgui-java-binding",
+                            version : "1.87.5"
+                    )
+            )
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group : "io.github.spair",
+                            name : "imgui-java-lwjgl3",
+                            version : "1.87.5"
+                    )
+            )
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group : "org.lwjgl",
+                            name : "lwjgl-vulkan",
+                            version : "$versionConfig.common.lwjglVersion"
                     )
             )
         }
+        client {
+            client()
+            gameDirectory = rootProject.file('runs/neoforge')
+        }
     }
-    modImplementation("me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion")
-    modImplementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
-    modCompileOnly "dev.architectury:architectury:$versionConfig.common.architecturyApiVersion"
-    implementation("io.github.spair:imgui-java-app:1.87.5")
-    implementation("io.github.spair:imgui-java-binding:1.87.5")
-    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
-    forgeRuntimeLibrary "io.github.spair:imgui-java-app:1.87.5"
-    forgeRuntimeLibrary "io.github.spair:imgui-java-binding:1.87.5"
-    forgeRuntimeLibrary "io.github.spair:imgui-java-lwjgl3:1.87.5"
-    if (enableVulkan) {
-        implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-        forgeRuntimeLibrary("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-        include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
     }
+}
 
-    implementation(forgeRuntimeLibrary("org.anarres:jcpp:1.4.14")) {
-        transitive = false
+dependencies{
+    libraries(implementation("io.github.spair:imgui-java-app:1.87.5"))
+    libraries(implementation("io.github.spair:imgui-java-binding:1.87.5"))
+    libraries(implementation("io.github.spair:imgui-java-lwjgl3:1.87.5"))
+    libraries(jarJar(implementation("org.lwjgl:lwjgl-vulkan:")))
+
+
+    implementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
+    implementation "me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion"
+    implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8"
+
+    for (lib in versionConfig.neoforge.dependencies.modrinth) {
+        def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${rootProject.minecraft_version}"
+        if (lib.compileOnly) {
+            compileOnly(depName)
+        } else {
+            implementation(depName)
+        }
     }
-    implementation(
-            forgeRuntimeLibrary(
-                    files("../libs/MixinSquared-0.2.0-beta.6.jar")
-            )
-    )
+    for (lib in versionConfig.neoforge.dependencies.local) {
+        if (lib.isMod){
+            if (lib.compileOnly) {
+                compileOnly(files("../libs/" + lib.name + ".jar"))
+            } else {
+                implementation(files("../libs/" + lib.name + ".jar"))
+            }
+        }else{
+            if (lib.compileOnly) {
+                libraries(compileOnly(files("../libs/" + lib.name + ".jar")))
+            } else {
+                libraries(implementation(files("../libs/" + lib.name + ".jar")))
+            }
+        }
+    }
 }
 
 processResources {
@@ -107,13 +136,4 @@ processResources {
                 versionRange: versionConfig.common.neoforgeVersionRange
         )
     }
-}
-
-shadowJar {
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier = "dev-shadow"
-}
-
-remapJar {
-    input.set shadowJar.archiveFile
 }

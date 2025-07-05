@@ -13,7 +13,7 @@ public final class SuperResolutionFabricClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ConfigFile.read();
+        Config.SPEC.load();
         if (Platform.isDevelopmentEnvironment() && Config.isEnableRenderDoc()) RenderDoc.init();
         SuperResolution.preInit();
         mod = new SuperResolution();

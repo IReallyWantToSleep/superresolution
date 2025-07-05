@@ -33,7 +33,7 @@ public class TextureMipmapSettings {
     }
 
     public int getLevels() {
-        return levels;
+        return enabled ? levels : 0;
     }
 
     public boolean isAutoGenerate() {

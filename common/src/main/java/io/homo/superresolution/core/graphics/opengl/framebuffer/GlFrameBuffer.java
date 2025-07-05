@@ -14,13 +14,7 @@ import java.util.ArrayList;
 
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
-import static io.homo.superresolution.core.graphics.opengl.Gl.*;
-
-import static io.homo.superresolution.core.graphics.opengl.GlConst.*;
-import static org.lwjgl.opengl.GL11.GL_COLOR;
-import static org.lwjgl.opengl.GL11.GL_DEPTH;
-import static org.lwjgl.opengl.GL30.GL_DEPTH_STENCIL;
-import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_UNDEFINED;
+import static org.lwjgl.opengl.GL30.*;
 
 public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     private final float[] clearColor = {0, 0, 0, 0};
@@ -176,47 +170,6 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
-        int target = resolveBindTarget(bindPoint);
-        glBindFramebuffer(target, frameBufferId);
-        if (setViewport) glViewport(0, 0, width, height);
-    }
-
-    @Override
-    public void bind(FrameBufferBindPoint bindPoint) {
-        bind(bindPoint, true);
-    }
-
-    @Override
-    public void unbind(FrameBufferBindPoint bindPoint) {
-        glBindFramebuffer(resolveBindTarget(bindPoint), 0);
-    }
-
-    @Override
-    public int getTextureId(FrameBufferAttachmentType attachmentType) {
-        return switch (attachmentType) {
-            case Color -> colorAttachment != null ? colorAttachment.texture.handle() : -1;
-            case Depth -> depthAttachment != null ? depthAttachment.texture.handle() : -1;
-            case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture.handle() : -1;
-            case AnyDepth -> depthStencilAttachment != null ?
-                    depthStencilAttachment.texture.handle() :
-                    depthAttachment != null ? depthAttachment.texture.handle() : -1;
-        };
-    }
-
-    @Override
-    public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
-        return switch (attachmentType) {
-            case Color -> colorAttachment != null ? colorAttachment.texture : null;
-            case Depth -> depthAttachment != null ? depthAttachment.texture : null;
-            case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture : null;
-            case AnyDepth -> depthStencilAttachment != null ?
-                    depthStencilAttachment.texture :
-                    depthAttachment != null ? depthAttachment.texture : null;
-        };
-    }
-
-    @Override
     public void destroy() {
         if (frameBufferId != -1) {
             Gl.DSA.deleteFramebuffer(frameBufferId);
@@ -281,12 +234,69 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public int handle() {
-        return frameBufferId;
+    public void resizeFrameBuffer(int width, int height) {
+        for (GlFrameBufferAttachment attachment : attachments) {
+            attachment.texture.resize(width, height);
+        }
+        Gl.DSA.deleteFramebuffer(frameBufferId);
+        if (width < 1 || height < 1) {
+            throw new RuntimeException("%s %s".formatted(width, height));
+        }
+        this.frameBufferId = Gl.DSA.createFramebuffer();
+        this.width = width;
+        this.height = height;
+        ArrayList<GlFrameBufferAttachment> temp = new ArrayList<>(attachments);
+        attachments.clear();
+        for (GlFrameBufferAttachment attachment : temp) {
+            addAttachment(attachment);
+        }
+        validate();
+        updateDebugLabel(getDebugLabel());
     }
 
     @Override
-    public void setClearColor(float r, float g, float b, float a) {
+    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
+        int target = resolveBindTarget(bindPoint);
+        glBindFramebuffer(target, frameBufferId);
+        if (setViewport) glViewport(0, 0, width, height);
+    }
+
+    @Override
+    public void bind(FrameBufferBindPoint bindPoint) {
+        bind(bindPoint, true);
+    }
+
+    @Override
+    public void unbind(FrameBufferBindPoint bindPoint) {
+        glBindFramebuffer(resolveBindTarget(bindPoint), 0);
+    }
+
+    @Override
+    public int getTextureId(FrameBufferAttachmentType attachmentType) {
+        return switch (attachmentType) {
+            case Color -> colorAttachment != null ? colorAttachment.texture.handle() : -1;
+            case Depth -> depthAttachment != null ? depthAttachment.texture.handle() : -1;
+            case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture.handle() : -1;
+            case AnyDepth -> depthStencilAttachment != null ?
+                    depthStencilAttachment.texture.handle() :
+                    depthAttachment != null ? depthAttachment.texture.handle() : -1;
+        };
+    }
+
+    @Override
+    public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
+        return switch (attachmentType) {
+            case Color -> colorAttachment != null ? colorAttachment.texture : null;
+            case Depth -> depthAttachment != null ? depthAttachment.texture : null;
+            case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture : null;
+            case AnyDepth -> depthStencilAttachment != null ?
+                    depthStencilAttachment.texture :
+                    depthAttachment != null ? depthAttachment.texture : null;
+        };
+    }
+
+    @Override
+    public void setClearColorRGBA(float r, float g, float b, float a) {
         clearColor[0] = r;
         clearColor[1] = g;
         clearColor[2] = b;
@@ -315,21 +325,8 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public void resizeFrameBuffer(int width, int height) {
-        for (GlFrameBufferAttachment attachment : attachments) {
-            attachment.texture.resize(width, height);
-        }
-        Gl.DSA.deleteFramebuffer(frameBufferId);
-        this.frameBufferId = Gl.DSA.createFramebuffer();
-        this.width = width;
-        this.height = height;
-        ArrayList<GlFrameBufferAttachment> temp = new ArrayList<>(attachments);
-        attachments.clear();
-        for (GlFrameBufferAttachment attachment : temp) {
-            addAttachment(attachment);
-        }
-        validate();
-        updateDebugLabel(getDebugLabel());
+    public int handle() {
+        return frameBufferId;
     }
 
     @Override
@@ -345,6 +342,6 @@ public class GlFrameBuffer implements IFrameBuffer, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        glSafeObjectLabel(GL_FRAMEBUFFER, handle(), newLabel);
+        Gl.glSafeObjectLabel(GL_FRAMEBUFFER, handle(), newLabel);
     }
 }

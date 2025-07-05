@@ -1,10 +1,10 @@
 package io.homo.superresolution.core.graphics.opengl;
 
-import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.debug.PerformanceInfo;
-
 import static org.lwjgl.opengl.GL45.*;
 
+/**
+ * OpenGL的状态机我跟你没完！
+ */
 public class GlState implements AutoCloseable {
     public static final long STATE_PROGRAM = 1L << 0;
     public static final long STATE_VAO = 1L << 1;

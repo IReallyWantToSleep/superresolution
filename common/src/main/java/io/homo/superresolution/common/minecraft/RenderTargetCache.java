@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.minecraft;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 import java.util.*;
@@ -7,7 +8,7 @@ import java.util.*;
 public class RenderTargetCache {
     private static final Map<IFrameBuffer, FrameBufferRenderTargetAdapter> cached = new HashMap<>();
 
-    public static FrameBufferRenderTargetAdapter cacheOf(IFrameBuffer frameBuffer) {
+    public static RenderTarget cacheOf(IFrameBuffer frameBuffer) {
         if (cached.get(frameBuffer) == null) {
             FrameBufferRenderTargetAdapter renderTarget = FrameBufferRenderTargetAdapter.ofRenderTarget(frameBuffer);
             cached.put(frameBuffer, renderTarget);

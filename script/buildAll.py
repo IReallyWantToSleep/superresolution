@@ -3,7 +3,7 @@
 ENABLE_GRADLE_OUTPUT = True  # 是否显示gradle的输出
 ENABLE_GRADLE_OUTPUT_INFO = False  # 是否在gradle的命令行加入--info <-显示致死量日志
 OUTPUT_DIR = "build_jars"  # 输出目录
-VERSION_CONFIGS_DIR = "versionConfigs"  # 版本配置目录
+VERSION_CONFIGS_DIR = "configs"  # 版本配置目录
 #################################################################
 import os
 import re
@@ -134,6 +134,7 @@ def should_copy(filename: str) -> bool:
     return all((
         not filename.endswith("dev-shadow.jar"),
         not filename.endswith("sources.jar"),
+        not filename.endswith("javadoc.jar"),
         filename.endswith(".jar")
     ))
 
@@ -166,7 +167,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     print(f"\n开始构建 {len(version_configs)} 个版本:")
-    call_gradle_task("native:buildNative")
+    call_gradle_task("native:buildWin")
     for version, config in version_configs.items():
         try :
             if config["skip_build"]:

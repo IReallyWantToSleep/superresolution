@@ -125,7 +125,7 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     }
 
     @Override
-    public void setClearColor(float red, float green, float blue, float alpha) {
+    public void setClearColorRGBA(float red, float green, float blue, float alpha) {
         #if MC_VER > MC_1_21_4
         clearColor = ColorUtil.color((int) (alpha * 255), (int) (red * 255), (int) (green * 255), (int) (blue * 255));
         #else

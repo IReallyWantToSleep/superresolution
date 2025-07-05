@@ -36,44 +36,6 @@ public class FSR1 extends AbstractAlgorithm {
     private StructuredUniformBuffer fsr1UBOData;
     private IBuffer fsr1UBO;
 
-
-    public static int checkFP16Support() {
-        if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
-                GraphicsCapabilities.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")
-        ) {
-            return 1;
-        }
-        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) { //glslang似乎有bug？GL_NV_gpu_shader5扩展无法使用
-            return 0;
-        }
-        return 0;
-    }
-
-
-    public void initShader() {
-        int fp16 = Config.getInstance().getSpecial().fsr1.fp16 ? checkFP16Support() : 0;
-        fsr1EASUShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
-                        .name("FSR1_EASU")
-                        .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
-                        .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
-                        .addDefine("FSR_EASU", String.valueOf(1))
-                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
-                        .build()
-        );
-        fsr1EASUShader.compile();
-        fsr1RCASShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
-                        .name("FSR1_RCAS")
-                        .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
-                        .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
-                        .addDefine("FSR_RCAS", String.valueOf(1))
-                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
-                        .build()
-        );
-        fsr1RCASShader.compile();
-    }
-
     @Override
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
@@ -161,6 +123,30 @@ public class FSR1 extends AbstractAlgorithm {
         this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
     }
 
+    public void initShader() {
+        int fp16 = Config.SPECIAL.FSR1.FP16.get() ? checkFP16Support() : 0;
+        fsr1EASUShader = RenderSystems.current().device().createShaderProgram(
+                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
+                        .name("FSR1_EASU")
+                        .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
+                        .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
+                        .addDefine("FSR_EASU", String.valueOf(1))
+                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .build()
+        );
+        fsr1EASUShader.compile();
+        fsr1RCASShader = RenderSystems.current().device().createShaderProgram(
+                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
+                        .name("FSR1_RCAS")
+                        .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
+                        .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
+                        .addDefine("FSR_RCAS", String.valueOf(1))
+                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .build()
+        );
+        fsr1RCASShader.compile();
+    }
+
     private Vector3f getWorkGroupSize() {
         int workRegionDim = 16;
         int dispatchX = (MinecraftRenderHandle.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
@@ -170,6 +156,18 @@ public class FSR1 extends AbstractAlgorithm {
                 dispatchY,
                 1
         );
+    }
+
+    public static int checkFP16Support() {
+        if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
+                GraphicsCapabilities.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")
+        ) {
+            return 1;
+        }
+        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) { //glslang似乎有bug？GL_NV_gpu_shader5扩展无法使用
+            return 0;
+        }
+        return 0;
     }
 
     @Override
@@ -209,8 +207,8 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
-    public int getOutputTextureId() {
-        return output.handle();
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputFbo;
     }
 
     @Override
@@ -219,7 +217,7 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFbo;
+    public int getOutputTextureId() {
+        return output.handle();
     }
 }

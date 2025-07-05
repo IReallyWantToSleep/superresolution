@@ -85,7 +85,7 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
      * @param blue  蓝色分量 [0,1]
      * @param alpha 透明度 [0,1]
      */
-    void setClearColor(float red, float green, float blue, float alpha);
+    void setClearColorRGBA(float red, float green, float blue, float alpha);
 
     /**
      * 获取颜色附件纹理格式

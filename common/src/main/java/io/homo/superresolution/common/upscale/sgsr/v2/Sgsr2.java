@@ -10,10 +10,8 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
@@ -29,37 +27,6 @@ public class Sgsr2 extends AbstractAlgorithm {
     private SgsrVariant currentVariant;
     private SgsrParams params;
     private GlBuffer paramsUbo;
-
-    @Override
-    public void destroy() {
-        super.destroy();
-        this.variantInstance.destroy();
-        params.free();
-        paramsUbo.destroy();
-    }
-
-    private void initVariant() {
-        if (checkVariant()) {
-            if (variantInstance != null) {
-                variantInstance.destroy();
-            }
-            variantInstance = switch (Config.getSpecial().sgsr2.variant) {
-                case CS_2 -> new Sgsr2PassCompute();
-                case CS_3 -> new Sgsr3PassCompute();
-                case FS_2 -> new Sgsr2PassFragment();
-            };
-            variantInstance.init(this);
-        }
-    }
-
-    private boolean checkVariant() {
-        if (variantInstance == null) return true;
-        if (Config.getSpecial().sgsr2.variant != currentVariant) {
-            currentVariant = Config.getSpecial().sgsr2.variant;
-            return true;
-        }
-        return false;
-    }
 
     @Override
     public void init() {
@@ -97,9 +64,44 @@ public class Sgsr2 extends AbstractAlgorithm {
     }
 
     @Override
+    public void destroy() {
+        this.variantInstance.destroy();
+        params.free();
+        paramsUbo.destroy();
+    }
+
+    @Override
     public void resize(int width, int height) {
         safeVariantInstance((sgsrVariant -> sgsrVariant.resize(width, height)));
         this.output.resizeFrameBuffer(width, height);
+    }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return super.getOutputFrameBuffer();
+    }
+
+    private void initVariant() {
+        if (checkVariant()) {
+            if (variantInstance != null) {
+                variantInstance.destroy();
+            }
+            variantInstance = switch (Config.SPECIAL.SGSR2.VARIANT.get()) {
+                case CS_2 -> new Sgsr2PassCompute();
+                case CS_3 -> new Sgsr3PassCompute();
+                case FS_2 -> new Sgsr2PassFragment();
+            };
+            variantInstance.init(this);
+        }
+    }
+
+    private boolean checkVariant() {
+        if (variantInstance == null) return true;
+        if (Config.SPECIAL.SGSR2.VARIANT.get() != currentVariant) {
+            currentVariant = Config.SPECIAL.SGSR2.VARIANT.get();
+            return true;
+        }
+        return false;
     }
 
     private void safeVariantInstance(Consumer<AbstractSgsrVariant> callback) {
@@ -108,10 +110,5 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     public GlBuffer getParams() {
         return paramsUbo;
-    }
-
-    @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return super.getOutputFrameBuffer();
     }
 }

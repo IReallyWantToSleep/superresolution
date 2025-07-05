@@ -88,7 +88,7 @@ public class MinecraftRenderHandle {
         #else
         renderTarget = new LegacyStorageFrameBuffer(true);
         #endif
-        renderTarget.setClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        renderTarget.setClearColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
         renderTarget.resizeFrameBuffer(
                 getRenderWidth(),
                 getRenderHeight()
@@ -313,11 +313,11 @@ public class MinecraftRenderHandle {
     }
 
     public static int getScreenHeight() {
-        return Math.max(SuperResolution.getMinecraftHeight(), 1);
+        return Math.max(MinecraftWindow.getWindowHeight(), 1);
     }
 
     public static int getScreenWidth() {
-        return Math.max(SuperResolution.getMinecraftWidth(), 1);
+        return Math.max(MinecraftWindow.getWindowWidth(), 1);
     }
 
     public static void callOnRenderTargets(Consumer<IFrameBuffer> callback) {
@@ -356,13 +356,14 @@ public class MinecraftRenderHandle {
 
     public static void onBlitEntityEffect() {
         if (getRenderTarget(MinecraftRenderTargetType.ENTITY) == null) return;
+        /*
         GlTexture2D.blitToScreen(
                 getRenderWidth(),
                 getRenderHeight(),
                 getScreenWidth(),
                 getScreenHeight(),
                 getRenderTarget(MinecraftRenderTargetType.ENTITY).getTexture(FrameBufferAttachmentType.Color)
-        );
+        );*/
     }
 
     public static void updateRenderTargetSize() {
