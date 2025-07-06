@@ -17,7 +17,7 @@ static def isLib(String name){
 }
 tasks.register('configureCMakeWin', Exec) {
     workingDir file(projectDir.path + "/cpp")
-    commandLine "cmake", "." ,"-B" ,"build" ,"-G" ,"Ninja", "-DCMAKE_BUILD_TYPE=Release","-DCMAKE_C_COMPILER=clang","-DCMAKE_CXX_COMPILER=clang++"
+    commandLine "cmake", "." ,"-B" ,"build" ,"-G" ,"Ninja", "-DCMAKE_BUILD_TYPE=Debug","-DCMAKE_C_COMPILER=clang","-DCMAKE_CXX_COMPILER=clang++"
 
     doFirst {
         delete "${projectDir}/cpp/build"

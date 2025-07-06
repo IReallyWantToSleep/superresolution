@@ -61,4 +61,16 @@ public class GlslangCompileShaderResult {
     public GlslangCompileShaderError error() {
         return error;
     }
+
+    @Override
+    public String toString() {
+        return "GlslangCompileShaderResult{" +
+                "sourceCode='" + sourceCode + '\'' +
+                ", preprocessedCode='" + preprocessedCode + '\'' +
+                ", spirVDataSize=" + spirVDataSize +
+                ", spirvBuffer=" + spirvBuffer +
+                ", error=" + error +
+                ", log='" + log + '\'' +
+                '}';
+    }
 }

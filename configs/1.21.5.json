@@ -3,7 +3,7 @@
     "common": {
         "java_version": 21,
         "minecraft_version": "1.21.5",
-        "parchment_version": null,
+        "parchment_version": "1.21.5:2025.06.15",
         "platforms": [
             "fabric",
             "neoforge"
@@ -69,34 +69,6 @@
                 }
             ],
             "local": [
-                {
-                    "name": "fabric-api-base-0.4.42+d1308ded19",
-                    "isMod": true
-                },
-                {
-                    "name": "fabric-block-view-api-v2-1.0.10+9afaaf8c19",
-                    "isMod": true
-                },
-                {
-                    "name": "fabric-renderer-api-v1-6.0.0",
-                    "isMod": true
-                },
-                {
-                    "name": "fabric-rendering-data-attachment-v1-0.3.48+73761d2e19",
-                    "isMod": true
-                },
-                {
-                    "name": "net.caffeinemc.sodium-neoforge-0.6.12+mc1.21.5-service",
-                    "isMod": true
-                },
-                {
-                    "name": "antlr4-runtime-4.13.1",
-                    "isMod": false
-                },
-                {
-                    "name": "glsl-transformer-2.0.1",
-                    "isMod": false
-                }
             ]
         }
     }

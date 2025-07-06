@@ -4,6 +4,17 @@
 
 * 使用`-DSRLIB_VERSION=0.0.0`指定版本
 * 使用`llvm-strip --strip-all (LIBPATH)` 可减小最终库文件大小
+* 请自行构建[Glslang](https://github.com/KhronosGroup/glslang)
+
+## 构建Glslang
+
+注意：
+
+* [提交哈希](cpp/glslang-commit-hash)
+* 只可使用Clang作为编译器
+* [使用的LLVM工具链](https://github.com/llvm/llvm-project/releases/tag/llvmorg-18.1.8)
+
+请按照Glslang库中的描述构建
 
 ## Windows
 
@@ -14,7 +25,7 @@
 * [使用的LLVM工具链](https://github.com/llvm/llvm-project/releases/tag/llvmorg-18.1.8)
 
 ```shell
-cmake . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+cmake . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
@@ -27,7 +38,7 @@ cmake --build build
 * 在Linux上编译时你可能需要更改CMAKE_MAKE_PROGRAM
 
 ```shell
-cmake -B build -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="install" -DANDROID_ABI=arm64-v8a -DCMAKE_BUILD_TYPE=Release -DANDROID_STL=c++_static -DANDROID_PLATFORM=android-24 -DCMAKE_SYSTEM_NAME=Android -DANDROID_TOOLCHAIN=clang -DANDROID_ARM_MODE=arm -DCMAKE_MAKE_PROGRAM="$env:ANDROID_NDK_HOME\prebuilt\windows-x86_64\bin\make.exe" ` -DCMAKE_TOOLCHAIN_FILE="$env:ANDROID_NDK_HOME\build\cmake\android.toolchain.cmake"
+cmake -B build -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="install" -DANDROID_ABI=arm64-v8a -DCMAKE_BUILD_TYPE=Debug -DANDROID_STL=c++_static -DANDROID_PLATFORM=android-24 -DCMAKE_SYSTEM_NAME=Android -DANDROID_TOOLCHAIN=clang -DANDROID_ARM_MODE=arm -DCMAKE_MAKE_PROGRAM="$env:ANDROID_NDK_HOME\prebuilt\windows-x86_64\bin\make.exe" ` -DCMAKE_TOOLCHAIN_FILE="$env:ANDROID_NDK_HOME\build\cmake\android.toolchain.cmake"
 cmake --build build
 ```
 
@@ -40,7 +51,7 @@ cmake --build build
 * 
 
 ```shell
-cmake . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+cmake . -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 

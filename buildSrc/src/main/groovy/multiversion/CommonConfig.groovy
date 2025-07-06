@@ -4,6 +4,7 @@ class CommonConfig {
     int javaVersion
     String minecraftVersion
     String parchmentVersion
+    String neoFormVersion
     List<String> platforms
     String lwjglVersion
     String architecturyApiVersion
@@ -11,12 +12,14 @@ class CommonConfig {
     String modArtifactMinecraftVer
     String forgeVersionRange
     String neoforgeVersionRange
+
     List<String> fabricVersionRange
 
     CommonConfig(Map config) {
         this.javaVersion = config.java_version as Integer
         this.minecraftVersion = config.minecraft_version as String
         this.parchmentVersion = config.parchment_version as String
+        if (config.neoform_version != null) this.neoFormVersion = config.neoform_version as String
         this.platforms = config.platforms as List<String>
         this.lwjglVersion = config.lwjgl_version as String
         this.architecturyApiVersion = config.architectury_api_version as String

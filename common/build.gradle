@@ -11,7 +11,7 @@ if (isNewVersion) {
 
 if (isNewVersion) {
     neoForge {
-        neoFormVersion = getCurrentNeoFormVersion()
+        neoFormVersion = versionConfig.common.neoFormVersion == null ? getCurrentNeoFormVersion() : versionConfig.common.neoFormVersion
         parchment {
             minecraftVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[0]
             mappingsVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[1]
@@ -52,8 +52,14 @@ dependencies {
     compileOnly 'com.electronwill.night-config:toml:3.6.0'
     compileOnly 'com.electronwill.night-config:core:3.6.0'
     // 没这玩意MixinPlugin会报错找不到ClassNode
-    compileOnly 'org.ow2.asm:asm:9.7.1'
-    compileOnly 'org.ow2.asm:asm-tree:9.7.1'
+    if (minecraft_version <="1.21.1"){
+        compileOnly 'org.ow2.asm:asm:9.7.1'
+        compileOnly 'org.ow2.asm:asm-tree:9.7.1'
+    }else{
+        compileOnly 'org.ow2.asm:asm:9.6'
+        compileOnly 'org.ow2.asm:asm-tree:9.6'
+    }
+
 
     if (isNewVersion) {
         compileOnly "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"

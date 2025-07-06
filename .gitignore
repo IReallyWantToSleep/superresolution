@@ -150,3 +150,7 @@ build_jars
 /common/src/main/resources/lib/libSuperResolution*
 */bin/*
 /bin
+
+/native/cpp/third_party/libs/android
+/native/cpp/third_party/libs/linux64
+/native/cpp/third_party/libs/win64
