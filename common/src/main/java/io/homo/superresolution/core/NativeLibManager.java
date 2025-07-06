@@ -3,6 +3,9 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
+import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
+import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
 import net.minecraft.SharedConstants;
 import org.slf4j.Logger;
@@ -127,11 +130,28 @@ public class NativeLibManager {
     }
 
     public static void main(String[] args) {
-        if (!NativeLibManager.check("I:\\superresolution\\fabric\\run")) {
+        if (!NativeLibManager.check("runs/temp")) {
             LOGGER.info("正在提取依赖库");
-            NativeLibManager.extract("I:\\superresolution\\fabric\\run");
+            NativeLibManager.extract("runs/temp");
         }
-        NativeLibManager.load("I:\\superresolution\\fabric\\run");
+        NativeLibManager.load("runs/temp");
+        SuperResolutionNative.initGlslang();
+        System.out.println(SuperResolutionNative.getVersionInfo());
+        GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
+                "",
+                EShLanguage.EShLangVertex,
+                EShSource.EShSourceGlsl,
+                EShClient.EShClientOpenGL,
+                EShTargetClientVersion.EShTargetOpenGL_450,
+                EShTargetLanguage.EShTargetSpv,
+                EShTargetLanguageVersion.EShTargetSpv_1_4,
+                460,
+                EProfile.ENoProfile,
+                true,
+                false
+        );
+        System.out.println(result);
+        SuperResolutionNative.destroyGlslang();
     }
 
     public static class NativeLib {

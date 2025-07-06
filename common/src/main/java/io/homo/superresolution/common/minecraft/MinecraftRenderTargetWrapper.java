@@ -95,8 +95,8 @@ public class MinecraftRenderTargetWrapper implements IFrameBuffer {
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
         #if MC_VER > MC_1_21_4
         return switch (attachmentType) {
-            case COLOR -> MinecraftRenderTargetUtil.getColorTexId(renderTarget);
-            case ANY_DEPTH, DEPTH, DEPTH_STENCIL -> MinecraftRenderTargetUtil.getDepthTexId(renderTarget);
+            case Color -> MinecraftRenderTargetUtil.getColorTexId(renderTarget);
+            case AnyDepth , Depth , DepthStencil -> MinecraftRenderTargetUtil.getDepthTexId(renderTarget);
         };
         #else
         return switch (attachmentType) {

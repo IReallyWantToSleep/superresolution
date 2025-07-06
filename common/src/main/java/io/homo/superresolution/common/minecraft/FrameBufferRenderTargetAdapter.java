@@ -2,25 +2,27 @@ package io.homo.superresolution.common.minecraft;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 
 
 #if MC_VER > MC_1_21_4
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
-import io.homo.superresolution.core.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import io.homo.superresolution.core.gl.utils.GlBlitRenderer;
+import org.lwjgl.opengl.GL46;
 
 
 public class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IFrameBuffer frameBuffer;
 
     FrameBufferRenderTargetAdapter(IFrameBuffer frameBuffer) {
-        super(frameBuffer.getFrameBufferId() + "-IFrameBuffer-" + frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR), frameBuffer.getDepthTextureFormat() != null);
+        super(frameBuffer.handle() + "-IFrameBuffer-" + frameBuffer.getTextureId(FrameBufferAttachmentType.Color), frameBuffer.getDepthTextureFormat() != null);
         this.frameBuffer = frameBuffer;
         updateState();
     }
@@ -34,13 +36,13 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         this.height = frameBuffer.getHeight();
         this.viewWidth = frameBuffer.getWidth();
         this.viewHeight = frameBuffer.getHeight();
-        this.colorTexture = GpuTextureAdapter.ofTexture(frameBuffer.getTexture(FrameBufferAttachmentType.COLOR));
+        this.colorTexture = GpuTextureAdapter.ofTexture(frameBuffer.getTexture(FrameBufferAttachmentType.Color));
         ((GpuTextureAdapter) this.colorTexture).bindFramebuffer(frameBuffer);
-        ITexture texture = frameBuffer.getTexture(FrameBufferAttachmentType.DEPTH_STENCIL);
+        ITexture texture = frameBuffer.getTexture(FrameBufferAttachmentType.DepthStencil);
         if (texture != null) {
             this.depthTexture = GpuTextureAdapter.ofTexture(texture);
         } else {
-            texture = frameBuffer.getTexture(FrameBufferAttachmentType.DEPTH);
+            texture = frameBuffer.getTexture(FrameBufferAttachmentType.Depth);
             if (texture != null) {
                 this.depthTexture = GpuTextureAdapter.ofTexture(texture);
             }
@@ -78,16 +80,22 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public void blitToScreen() {
         updateState();
-        GlBlitRenderer.blitToScreen(
-                frameBuffer.getTextureId(FrameBufferAttachmentType.COLOR),
-                this.viewWidth,
-                this.viewHeight
+        Gl.DSA.blitFramebuffer(
+                frameBuffer.handle(),
+                new GlState(GlState.STATE_DRAW_FBO).wFbo,
+                0,0, frameBuffer.getWidth(), frameBuffer.getHeight(),
+                0,0, frameBuffer.getWidth(), frameBuffer.getHeight(),
+                GL46.GL_COLOR_BUFFER_BIT, GL46.GL_NEAREST
         );
     }
 
     public void blitAndBlendToTexture(GpuTexture gpuTexture) {
         updateState();
-        blitToScreen();
+        GlBlitRenderer.blitToScreen(
+                frameBuffer.getTexture(FrameBufferAttachmentType.Color),
+                this.viewWidth,
+                this.viewHeight
+        );
     }
 
     @Nullable

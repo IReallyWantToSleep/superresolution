@@ -79,9 +79,9 @@ public class MinecraftRenderHandle {
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
         #if MC_VER > MC_1_21_4
-        renderTarget = io.homo.superresolution.core.gl.framebuffer.GlFrameBuffer.create(
-                io.homo.superresolution.core.impl.texture.TextureFormat.RGBA8,
-                io.homo.superresolution.core.impl.texture.TextureFormat.DEPTH24_STENCIL8,
+        renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
+                io.homo.superresolution.core.graphics.impl.texture.TextureFormat.RGBA8,
+                io.homo.superresolution.core.graphics.impl.texture.TextureFormat.DEPTH24_STENCIL8,
                 getRenderWidth(),
                 getRenderHeight()
         );
@@ -200,7 +200,7 @@ public class MinecraftRenderHandle {
         isRenderingWorld = false;
         frameCount++;
         #if MC_VER > MC_1_21_4
-        ((io.homo.superresolution.core.gl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.COLOR)).copyFromTex(
+        ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
                 ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
         );
         getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());

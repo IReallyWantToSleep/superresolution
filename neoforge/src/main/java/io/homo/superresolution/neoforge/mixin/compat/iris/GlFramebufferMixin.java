@@ -73,7 +73,7 @@ public abstract class GlFramebufferMixin extends GlResource {
             );
         }
 
-        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(texture.getGlId()).getInternalFormat());
+        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(((com.mojang.blaze3d.opengl.GlTexture)texture).glId()).getInternalFormat());
     }
     #endif
 
