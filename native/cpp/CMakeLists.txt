@@ -86,12 +86,14 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/glslang-default-resource-limits.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/glslang.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/OSDependent.lib
+        ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPVRemapper.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/MachineIndependent.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/GenericCodeGen.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV-Tools.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV-Tools-opt.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV-Tools-reduce.lib
+        ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV-Tools-link.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV-Tools-lint.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPIRV-Tools-diff.lib
         ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/SPVRemapper.lib

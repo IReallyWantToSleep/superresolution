@@ -1,8 +1,7 @@
 package io.homo.superresolution.api.config;
 
+import com.electronwill.nightconfig.core.ConfigSpec;
 import com.electronwill.nightconfig.core.io.ParsingException;
-import io.homo.superresolution.api.config.values.ConfigValue;
-import io.homo.superresolution.api.config.values.ListValue;
 import io.homo.superresolution.api.config.values.list.*;
 import io.homo.superresolution.api.config.values.single.*;
 
@@ -13,10 +12,11 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class ModConfigSpecBuilder {
-    private final Map<List<String>, ConfigValue<?>> values = new LinkedHashMap<>();
-    private final Map<List<String>, String> comments = new HashMap<>();
-    protected boolean autoSave = true;
+    protected final Map<List<String>, ConfigValue<?>> values = new LinkedHashMap<>();
+    protected final Map<List<String>, String> comments = new HashMap<>();
+    protected boolean autoSave = false;
     protected boolean autoReload = false;
+    protected final ConfigSpec spec = new ConfigSpec();
     private List<String> lastPath = List.of();
     private Path configPath;
 
@@ -814,7 +814,8 @@ public class ModConfigSpecBuilder {
         ModConfigSpec spec = new ModConfigSpec(this, configPath);
         spec.configValues.putAll(values);
         spec.comments.putAll(comments);
-
+        values.values().forEach((values) -> values.configSpec = spec);
+        spec.fillSpec();
         try {
             spec.load();
         } catch (ParsingException e) {

@@ -14,6 +14,7 @@ import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
@@ -38,14 +39,14 @@ import java.util.function.Consumer;
 import static org.lwjgl.opengl.GL11.*;
 
 public class MinecraftRenderHandle {
-    private static final Map<MinecraftRenderTargetType, IFrameBuffer> renderTargets = new HashMap<>();
-    private static final Map<IFrameBuffer, RenderTarget> renderTargetMap = new HashMap<>();
+    private static final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
+    private static final Map<IBindableFrameBuffer, RenderTarget> renderTargetMap = new HashMap<>();
     public static boolean isRenderingWorld = false;
     public static float frameTime;
     private static int frameCount = 0;
     private static Minecraft minecraft;
-    private static IFrameBuffer originRenderTarget;
-    private static IFrameBuffer renderTarget;
+    private static IBindableFrameBuffer originRenderTarget;
+    private static IBindableFrameBuffer renderTarget;
     private static boolean needCapture = false;
     private static boolean needCaptureVulkan = false;
     private static boolean needCaptureUpscale = false;
@@ -66,11 +67,11 @@ public class MinecraftRenderHandle {
         return frameCount;
     }
 
-    public static IFrameBuffer getOriginRenderTarget() {
+    public static IBindableFrameBuffer getOriginRenderTarget() {
         return originRenderTarget;
     }
 
-    public static IFrameBuffer getRenderTarget() {
+    public static IBindableFrameBuffer getRenderTarget() {
         return renderTarget;
     }
 
@@ -115,7 +116,7 @@ public class MinecraftRenderHandle {
     public static void updateRenderTarget() {
         renderTargets.clear();
         for (MinecraftRenderTargetType minecraftRenderTargetType : MinecraftRenderTargetType.values()) {
-            IFrameBuffer renderTarget = minecraftRenderTargetType.get(Minecraft.getInstance().levelRenderer);
+            IBindableFrameBuffer renderTarget = minecraftRenderTargetType.get(Minecraft.getInstance().levelRenderer);
             if (renderTarget != null) {
                 renderTargets.put(
                         minecraftRenderTargetType,
@@ -125,7 +126,7 @@ public class MinecraftRenderHandle {
         }
     }
 
-    public static IFrameBuffer getRenderTarget(MinecraftRenderTargetType type) {
+    public static IBindableFrameBuffer getRenderTarget(MinecraftRenderTargetType type) {
         return renderTargets.get(type);
     }
 
@@ -352,18 +353,6 @@ public class MinecraftRenderHandle {
         callOnRenderTargets(callback);
         if (includeMainRenderTarget) callback.accept(getRenderTarget());
 
-    }
-
-    public static void onBlitEntityEffect() {
-        if (getRenderTarget(MinecraftRenderTargetType.ENTITY) == null) return;
-        /*
-        GlTexture2D.blitToScreen(
-                getRenderWidth(),
-                getRenderHeight(),
-                getScreenWidth(),
-                getScreenHeight(),
-                getRenderTarget(MinecraftRenderTargetType.ENTITY).getTexture(FrameBufferAttachmentType.Color)
-        );*/
     }
 
     public static void updateRenderTargetSize() {

@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev.legacyforge'
 }
 base {
-    archivesName = "superresolution-forge-${minecraft_version}"
+    archivesName = "super_resolution-forge-${minecraft_version}"
 }
 
 repositories {

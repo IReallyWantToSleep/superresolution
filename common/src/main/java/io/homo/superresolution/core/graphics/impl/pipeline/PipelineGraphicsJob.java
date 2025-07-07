@@ -5,7 +5,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
-public class PipelineGraphicsJob implements IPipelineJob {
+public class PipelineGraphicsJob extends GpuComputeJob<PipelineGraphicsJob> implements IPipelineJob {
     protected final float[] viewport = new float[]{-1, -1, -1, -1};
     protected IFrameBuffer frameBuffer;
     protected IShaderProgram<?> program = null;
@@ -48,6 +48,7 @@ public class PipelineGraphicsJob implements IPipelineJob {
 
     @Override
     public void execute(IRenderSystem renderSystem) {
+        setupProgramResources(program);
         renderSystem.renderState().save();
         if (viewport[0] > -1 && viewport[1] > -1 && viewport[2] > -1 && viewport[3] > -1
         ) {

@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.opengl;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
+import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -131,6 +132,17 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     @Override
+    public void copyBuffer(IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size) {
+        GL46.glCopyBufferSubData(
+                src.handle(),
+                dst.handle(),
+                srcOffset,
+                dstOffset,
+                size
+        );
+    }
+
+    @Override
     public void draw(
             IShaderProgram<?> shaderProgram,
             IFrameBuffer frameBuffer,
@@ -152,7 +164,7 @@ public class GlRenderSystem implements IRenderSystem {
         )) {
             if (frameBuffer != null) {
                 if (frameBuffer instanceof GlFrameBuffer) {
-                    frameBuffer.bind(FrameBufferBindPoint.Write, false);
+                    ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.Write, false);
                 } else {
                     throw new OpenGLException("draw: 目标帧缓冲区不是由OpenGL创建的");
                 }
@@ -200,9 +212,9 @@ public class GlRenderSystem implements IRenderSystem {
         Gl.glUseProgram(shaderProgram.handle());
         var uniformMap = shaderProgram.uniforms().getUniformMap();
         uniformMap.forEach((name, uniform) -> {
-            if (uniform instanceof GlShaderUniformBuffer<?>) {
-                if (((GlShaderUniformBuffer<?>) uniform).buffer() != null) {
-                    Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer<?>) uniform).buffer().handle());
+            if (uniform instanceof GlShaderUniformBuffer) {
+                if (((GlShaderUniformBuffer) uniform).buffer() != null) {
+                    Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
                 }
             }
             if (uniform instanceof GlShaderUniformStorageTexture) {

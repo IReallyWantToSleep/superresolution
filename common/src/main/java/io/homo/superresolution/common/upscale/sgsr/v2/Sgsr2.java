@@ -19,6 +19,7 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
+import io.homo.superresolution.core.impl.Destroyable;
 
 import java.util.function.Consumer;
 
@@ -65,7 +66,7 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
-        this.variantInstance.destroy();
+        safeVariantInstance(Destroyable::destroy);
         params.free();
         paramsUbo.destroy();
     }

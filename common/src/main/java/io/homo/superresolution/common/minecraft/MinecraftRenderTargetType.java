@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.minecraft;
 
 import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import net.minecraft.client.renderer.LevelRenderer;
 
@@ -15,13 +16,13 @@ public enum MinecraftRenderTargetType {
     CLOUDS((levelRenderer -> MinecraftRenderTargetWrapper.of(levelRenderer.getCloudsTarget()))),
     HAND((levelRenderer) -> HandRenderTarget.getHandRenderTarget());
 
-    private final Function<LevelRenderer, IFrameBuffer> callback;
+    private final Function<LevelRenderer, IBindableFrameBuffer> callback;
 
-    MinecraftRenderTargetType(Function<LevelRenderer, IFrameBuffer> callback) {
+    MinecraftRenderTargetType(Function<LevelRenderer, IBindableFrameBuffer> callback) {
         this.callback = callback;
     }
 
-    public IFrameBuffer get(LevelRenderer levelRenderer) {
+    public IBindableFrameBuffer get(LevelRenderer levelRenderer) {
         return callback.apply(levelRenderer);
     }
 }

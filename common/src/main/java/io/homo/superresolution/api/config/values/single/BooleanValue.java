@@ -1,6 +1,7 @@
 package io.homo.superresolution.api.config.values.single;
 
-import io.homo.superresolution.api.config.values.ConfigValue;
+import com.electronwill.nightconfig.core.ConfigSpec;
+import io.homo.superresolution.api.config.ConfigValue;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -11,7 +12,7 @@ public class BooleanValue extends ConfigValue<Boolean> {
 
     public BooleanValue(List<String> path, Supplier<Boolean> defaultSupplier, String comment, Predicate<Boolean> validator) {
         super(path, defaultSupplier, comment);
-        this.validator = validator;
+        this.validator = (obj) -> obj != null && validator.test(obj);
     }
 
     @Override
@@ -20,6 +21,15 @@ public class BooleanValue extends ConfigValue<Boolean> {
             return validator.test((Boolean) value);
         }
         return false;
+    }
+
+    @Override
+    protected void fillSpec(ConfigSpec spec) {
+        spec.define(
+                path,
+                defaultSupplier,
+                (Object obj) -> validator.test((Boolean) obj)
+        );
     }
 
     @Override

@@ -1,6 +1,7 @@
 package io.homo.superresolution.api.config.values.list;
 
-import io.homo.superresolution.api.config.values.ListValue;
+import com.electronwill.nightconfig.core.ConfigSpec;
+import io.homo.superresolution.api.config.ListValue;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -23,6 +24,15 @@ public class IntListValue extends ListValue<Integer> {
                     throw new IllegalArgumentException("Cannot convert to Integer: " + obj);
                 },
                 elementValidator
+        );
+    }
+
+    @Override
+    protected void fillSpec(ConfigSpec spec) {
+        spec.defineList(
+                path,
+                defaultSupplier::get,
+                (Object obj) -> elementValidator.test((Integer) obj)
         );
     }
 }

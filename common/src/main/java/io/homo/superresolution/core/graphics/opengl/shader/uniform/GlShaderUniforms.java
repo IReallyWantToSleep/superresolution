@@ -11,7 +11,7 @@ import java.util.Map;
 public class GlShaderUniforms extends ShaderUniforms<
         GlShaderUniforms,
         GlShaderProgram,
-        GlShaderUniformBuffer<?>,
+        GlShaderUniformBuffer,
         GlShaderUniformSamplerTexture,
         GlShaderUniformStorageTexture> {
     private final Map<String, GlShaderBaseUniform<?, ?>> uniformMap = new HashMap<>();
@@ -21,7 +21,7 @@ public class GlShaderUniforms extends ShaderUniforms<
         description.shaderUniforms().values().forEach((uniformDescription) -> {
             uniformMap.put(uniformDescription.name(), switch (uniformDescription.type()) {
                 case Buffer ->
-                        new GlShaderUniformBuffer<>(uniformDescription.name(), uniformDescription.binding(), uniformDescription.access());
+                        new GlShaderUniformBuffer(uniformDescription.name(), uniformDescription.binding(), uniformDescription.access());
                 case SamplerTexture ->
                         new GlShaderUniformSamplerTexture(uniformDescription.name(), uniformDescription.binding(), uniformDescription.access());
                 case StorageTexture ->
@@ -31,8 +31,8 @@ public class GlShaderUniforms extends ShaderUniforms<
     }
 
     @Override
-    public GlShaderUniformBuffer<?> buffer(String name) {
-        return (GlShaderUniformBuffer<?>) uniformMap.get(name);
+    public GlShaderUniformBuffer buffer(String name) {
+        return (GlShaderUniformBuffer) uniformMap.get(name);
     }
 
     @Override
