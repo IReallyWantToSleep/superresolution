@@ -1,6 +1,7 @@
 package io.homo.superresolution.api.config.values.single;
 
-import io.homo.superresolution.api.config.values.ConfigValue;
+import com.electronwill.nightconfig.core.ConfigSpec;
+import io.homo.superresolution.api.config.ConfigValue;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -11,12 +12,21 @@ public class StringValue extends ConfigValue<String> {
 
     public StringValue(List<String> path, Supplier<String> defaultSupplier, String comment, Predicate<String> validator) {
         super(path, defaultSupplier, comment);
-        this.validator = validator;
+        this.validator = (obj) -> obj != null && validator.test(obj);
     }
 
     @Override
     public boolean isValid(Object value) {
         return value instanceof String && validator.test((String) value);
+    }
+
+    @Override
+    protected void fillSpec(ConfigSpec spec) {
+        spec.define(
+                path,
+                defaultSupplier,
+                (Object obj) -> validator.test((String) obj)
+        );
     }
 
     @Override

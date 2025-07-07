@@ -2,8 +2,7 @@ package io.homo.superresolution.common.minecraft;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 
 
@@ -124,19 +123,19 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoi
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 class FrameBufferRenderTargetAdapter extends RenderTarget {
-    private IFrameBuffer frameBuffer;
+    private IBindableFrameBuffer frameBuffer;
 
-    FrameBufferRenderTargetAdapter(IFrameBuffer frameBuffer) {
+    FrameBufferRenderTargetAdapter(IBindableFrameBuffer frameBuffer) {
         super(frameBuffer.getDepthTextureFormat() != null);
         this.frameBuffer = frameBuffer;
         updateState();
     }
 
-    protected static FrameBufferRenderTargetAdapter ofRenderTarget(IFrameBuffer frameBuffer) {
+    protected static FrameBufferRenderTargetAdapter ofRenderTarget(IBindableFrameBuffer frameBuffer) {
         return new FrameBufferRenderTargetAdapter(frameBuffer);
     }
 
-    public FrameBufferRenderTargetAdapter bindFrameBuffer(IFrameBuffer frameBuffer) {
+    public FrameBufferRenderTargetAdapter bindFrameBuffer(IBindableFrameBuffer frameBuffer) {
         this.frameBuffer = frameBuffer;
         return this;
     }

@@ -1,6 +1,7 @@
 package io.homo.superresolution.api.config.values.single;
 
-import io.homo.superresolution.api.config.values.ConfigValue;
+import com.electronwill.nightconfig.core.ConfigSpec;
+import io.homo.superresolution.api.config.ConfigValue;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -11,7 +12,7 @@ public class FloatValue extends ConfigValue<Float> {
 
     public FloatValue(List<String> path, Supplier<Float> defaultSupplier, String comment, Predicate<Float> validator) {
         super(path, defaultSupplier, comment);
-        this.validator = validator;
+        this.validator = (obj) -> obj != null && validator.test(obj);
     }
 
     @Override
@@ -20,6 +21,15 @@ public class FloatValue extends ConfigValue<Float> {
             return validator.test(((Number) value).floatValue());
         }
         return false;
+    }
+
+    @Override
+    protected void fillSpec(ConfigSpec spec) {
+        spec.define(
+                path,
+                defaultSupplier,
+                (Object obj) -> validator.test((Float) obj)
+        );
     }
 
     @Override

@@ -1,11 +1,8 @@
 package io.homo.superresolution.common.minecraft;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.utils.ColorUtil;
@@ -17,7 +14,7 @@ import net.minecraft.client.Minecraft;
 
 import static io.homo.superresolution.core.graphics.opengl.Gl.glBindFramebuffer;
 
-public class MinecraftRenderTargetWrapper implements IFrameBuffer {
+public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     public RenderTarget renderTarget;
     private int clearColor = ColorUtil.color(255, 0, 0, 0);
 

@@ -4,24 +4,24 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.IShaderUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
 
-public class GlShaderUniformBuffer<T extends IBuffer> extends GlShaderBaseUniform<T, GlShaderUniformBuffer<?>> implements IShaderUniformBuffer<T, GlShaderUniformBuffer<?>> {
+public class GlShaderUniformBuffer extends GlShaderBaseUniform<IBuffer, GlShaderUniformBuffer> implements IShaderUniformBuffer<IBuffer, GlShaderUniformBuffer> {
     public GlShaderUniformBuffer(String name, int binding, ShaderUniformAccess access) {
         super(name, binding, access);
     }
 
     @Override
-    public GlShaderUniformBuffer<?> setBuffer(T buffer) {
+    public GlShaderUniformBuffer setBuffer(IBuffer buffer) {
         return set(buffer);
     }
 
     @Override
-    public T buffer() {
+    public IBuffer buffer() {
         return current;
     }
 
     @Override
-    public GlShaderUniformBuffer<?> set(IBuffer value) {
-        return super.set((T) value);
+    public GlShaderUniformBuffer set(IBuffer value) {
+        return super.set((IBuffer) value);
     }
 
     @Override

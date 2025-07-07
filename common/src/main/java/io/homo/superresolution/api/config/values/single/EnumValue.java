@@ -1,8 +1,10 @@
 package io.homo.superresolution.api.config.values.single;
 
-import io.homo.superresolution.api.config.values.ConfigValue;
+import com.electronwill.nightconfig.core.ConfigSpec;
+import io.homo.superresolution.api.config.ConfigValue;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
@@ -25,6 +27,15 @@ public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
             }
         }
         return enumClass.isInstance(value);
+    }
+
+    @Override
+    protected void fillSpec(ConfigSpec spec) {
+        spec.define(
+                path,
+                defaultSupplier,
+                Objects::nonNull
+        );
     }
 
     @Override

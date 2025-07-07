@@ -1,4 +1,6 @@
-package io.homo.superresolution.api.config.values;
+package io.homo.superresolution.api.config;
+
+import com.electronwill.nightconfig.core.ConfigSpec;
 
 import java.util.List;
 import java.util.function.Function;
@@ -8,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class ListValue<E> extends ConfigValue<List<E>> {
     private final Function<Object, E> elementConverter;
-    private final Predicate<E> elementValidator;
+    protected final Predicate<E> elementValidator;
 
     public ListValue(
             List<String> path,
@@ -37,6 +39,14 @@ public class ListValue<E> extends ConfigValue<List<E>> {
             }
         }
         return true;
+    }
+
+    protected void fillSpec(ConfigSpec spec) {
+        spec.defineList(
+                path,
+                defaultSupplier::get,
+                (Object obj) -> elementValidator.test((E) obj)
+        );
     }
 
     @Override

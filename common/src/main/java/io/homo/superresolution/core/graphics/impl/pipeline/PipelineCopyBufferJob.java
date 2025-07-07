@@ -2,6 +2,7 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
+import org.lwjgl.opengl.GL46;
 
 public class PipelineCopyBufferJob implements IPipelineJob {
     protected long srcOffset = 0;
@@ -80,7 +81,13 @@ public class PipelineCopyBufferJob implements IPipelineJob {
 
     @Override
     public void execute(IRenderSystem renderSystem) {
-
+        renderSystem.copyBuffer(
+                source,
+                destination,
+                srcOffset,
+                dstOffset,
+                size
+        );
     }
 
     @Override

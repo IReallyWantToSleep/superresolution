@@ -1,12 +1,13 @@
 package io.homo.superresolution.common.minecraft;
 
+import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 public class HandRenderTarget {
-    public static IFrameBuffer handRenderTarget;
+    public static IBindableFrameBuffer handRenderTarget;
 
-    public static IFrameBuffer getHandRenderTarget() {
+    public static IBindableFrameBuffer getHandRenderTarget() {
         if (handRenderTarget == null) {
             handRenderTarget = GlFrameBuffer.create(
                     MinecraftRenderHandle.getScreenWidth(),

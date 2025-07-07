@@ -6,7 +6,7 @@ import io.homo.superresolution.core.math.Vector3i;
 
 import java.util.function.Supplier;
 
-public class PipelineComputeJob implements IPipelineJob {
+public class PipelineComputeJob extends GpuComputeJob<PipelineComputeJob> implements IPipelineJob {
     protected Supplier<Vector3i> workGroupSizeSupplier = null;
     protected IShaderProgram<?> program = null;
 
@@ -45,7 +45,14 @@ public class PipelineComputeJob implements IPipelineJob {
 
     @Override
     public void execute(IRenderSystem renderSystem) {
-
+        setupProgramResources(program);
+        Vector3i workGroup = this.workGroupSizeSupplier.get();
+        renderSystem.dispatchCompute(
+                program,
+                workGroup.x,
+                workGroup.y,
+                workGroup.z
+        );
     }
 
     @Override

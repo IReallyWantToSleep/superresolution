@@ -1,22 +1,38 @@
 package io.homo.superresolution.api.config;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
-import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.ConfigSpec;
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.file.CommentedFileConfigBuilder;
 import com.electronwill.nightconfig.core.io.WritingMode;
-import io.homo.superresolution.api.config.values.ConfigValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ModConfigSpec {
+    public static final Logger LOGGER = LoggerFactory.getLogger("SRConfigAPI");
     protected final CommentedFileConfig configData;
     protected final Map<List<String>, ConfigValue<?>> configValues = new LinkedHashMap<>();
     protected final Map<List<String>, String> comments = new HashMap<>();
+    protected final ConfigSpec spec;
+    private final ReentrantLock lock = new ReentrantLock();
 
     protected ModConfigSpec(ModConfigSpecBuilder builder, Path configPath) {
+        try {
+            if (!Files.exists(configPath)) {
+                Files.createDirectories(configPath.getParent());
+                Files.createFile(configPath);
+                LOGGER.info("Config file not found, creating new default at: {}", configPath);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to create config file:", e);
+        }
+
         CommentedFileConfigBuilder configDataBuilder = CommentedFileConfig.builder(configPath);
         if (builder.autoSave) {
             configDataBuilder.autosave();
@@ -24,54 +40,30 @@ public class ModConfigSpec {
         if (builder.autoReload) {
             configDataBuilder.autoreload();
         }
-        configDataBuilder.onFileNotFound((file, configFormat) -> {
-            Files.createDirectories(file.getParent());
-            initializeDefaultValues();
-            return true;
-        });
+        configDataBuilder.sync();
         configDataBuilder.writingMode(WritingMode.REPLACE);
         this.configData = configDataBuilder.build();
+        this.spec = builder.spec;
+    }
+
+    protected void fillSpec() {
+        configValues.values().forEach((configValue -> configValue.configSpec = this));
+        configValues.values().forEach((configValue -> configValue.fillSpec(spec)));
     }
 
     protected void initializeDefaultValues() {
+        spec.correct(configData);
         applyComment();
-        for (Map.Entry<List<String>, ConfigValue<?>> entry : configValues.entrySet()) {
-            List<String> path = entry.getKey();
-            ConfigValue<?> value = entry.getValue();
-            Object defaultValue = value.getDefault();
-            setConfigValue(path, defaultValue);
-        }
-    }
-
-    private void setConfigValue(List<String> path, Object value) {
-        Config current = configData;
-        for (int i = 0; i < path.size() - 1; i++) {
-            String segment = path.get(i);
-            if (!current.contains(segment)) {
-                current.add(segment, CommentedConfig.inMemory());
-            }
-            current = current.get(segment);
-        }
-
-        current.set(path.get(path.size() - 1), value);
     }
 
     public void load() {
-        configData.load();
-        for (Map.Entry<List<String>, ConfigValue<?>> entry : configValues.entrySet()) {
-            List<String> path = entry.getKey();
-            ConfigValue<?> value = entry.getValue();
-            if (configData.contains(path)) {
-                Object configValue = configData.get(path);
-                if (value.isValid(configValue)) {
-                    value.set(configValue);
-                } else {
-                    System.err.println("Invalid value for config path " + path + ": " + configValue);
-                    value.resetToDefault();
-                }
-            } else {
-                value.resetToDefault();
-            }
+        try {
+            configData.load();
+        } catch (Exception e) {
+            LOGGER.error("Config is corrupted or unreadable, regenerating defaults.", e);
+            configData.clear();
+            initializeDefaultValues();
+            save();
         }
     }
 
@@ -82,12 +74,8 @@ public class ModConfigSpec {
     }
 
     public void save() {
+        spec.correct(configData);
         applyComment();
-        for (Map.Entry<List<String>, ConfigValue<?>> entry : configValues.entrySet()) {
-            List<String> path = entry.getKey();
-            ConfigValue<?> value = entry.getValue();
-            setConfigValue(path, value.get());
-        }
         configData.save();
     }
 
@@ -98,5 +86,4 @@ public class ModConfigSpec {
     public void close() {
         configData.close();
     }
-
 }

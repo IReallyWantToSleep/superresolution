@@ -3,10 +3,7 @@ package io.homo.superresolution.common.minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 #if MC_VER < MC_1_21_4
@@ -16,7 +13,7 @@ import net.minecraft.client.Minecraft;
 import static org.lwjgl.opengl.GL43.*;
 
 #if MC_VER < MC_1_21_5
-public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuffer {
+public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuffer, IBindableFrameBuffer {
     private int colorAttachment1 = -1;
     private boolean stencilEnabled = false;
 

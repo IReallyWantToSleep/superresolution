@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.system;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
+import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
@@ -103,6 +104,16 @@ public interface IRenderSystem {
             int dstY1,
             int dstLevel
     );
+    /**
+     * 复制缓冲区
+     *
+     * @param src 源
+     * @param dst 目标
+     * @param srcOffset 源偏移量
+     * @param dstOffset 目标偏移量
+     * @param size      拷贝数据大小
+     */
+    void copyBuffer(IBuffer src,IBuffer dst,long srcOffset,long dstOffset,long size);
 
     /**
      * 执行绘制命令
