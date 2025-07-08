@@ -22,8 +22,8 @@ public class GlPipelineCopyJob extends GlPipelineJob {
     public void execute(GlPipelineJobDispatchResource resource) {
         RenderSystems.opengl().copyTexture(
                 source, dest,
-                0, 0, source.getWidth(), source.getHeight(), 1,
-                0, 0, source.getWidth(), source.getHeight(), 1
+                0, 0, source.getWidth(), source.getHeight(), 0,
+                0, 0, source.getWidth(), source.getHeight(), 0
         );
     }
 }

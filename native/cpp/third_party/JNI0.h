@@ -4,6 +4,8 @@
     #include "jni_win64.h"
 #elif defined(ON_ANDROID)
     #include <jni.h>
+#elif defined(ON_MACOS)
+    #include "jni_macarm64.h"
 #else
 #include "jni_win64.h"
 #endif

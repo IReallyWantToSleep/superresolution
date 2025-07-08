@@ -15,7 +15,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.fsr2.*;
+import io.homo.superresolution.fsr2.v221.*;
 import org.joml.Matrix4f;
 
 
