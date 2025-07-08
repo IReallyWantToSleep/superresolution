@@ -39,6 +39,7 @@ public class Config {
     private static final BooleanValue GENERATE_MOTION_VECTORS;
     private static final BooleanValue PAUSE_GAME_ON_GUI;
     private static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
+    private static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     private static final OSType CURRENT_OS_TYPE = new OS().type;
     private static final boolean compatMode = CURRENT_OS_TYPE == OSType.MACOS || CURRENT_OS_TYPE == OSType.ANDROID;
     private static final Runnable resolutionChangeCallback;
@@ -60,7 +61,7 @@ public class Config {
                 "upscale_ratio",
                 () -> 1.7f,
                 "Upscale ratio factor",
-                value -> value >- 0.1f && value <= 4.0f
+                value -> value > -0.1f && value <= 4.0f
         );
 
         UPSCALE_ALGO = builder.defineString(
@@ -130,6 +131,13 @@ public class Config {
                 () -> false,
                 "Generate motion vectors for advanced effects"
         );
+
+        ENABLE_COMPAT_SHADER_COMPILER = builder.defineBoolean(
+                "compat_shader_compiler",
+                () -> false,
+                "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
+        );
+
         SPECIAL = new SpecialConfigs(builder);
         Path configPath = Platform.currentPlatform
                 .getGameFolder()
@@ -315,6 +323,14 @@ public class Config {
 
     public static void setInjectPostChainBlackList(List<String> value) {
         INJECT_POST_CHAIN_BLACKLIST.set(value);
+    }
+
+    public static void setEnableCompatShaderCompiler(boolean value) {
+        ENABLE_COMPAT_SHADER_COMPILER.set(value);
+    }
+
+    public static boolean isEnableCompatShaderCompiler() {
+        return ENABLE_COMPAT_SHADER_COMPILER.get();
     }
 
     public static float getMinUpscaleRatio() {

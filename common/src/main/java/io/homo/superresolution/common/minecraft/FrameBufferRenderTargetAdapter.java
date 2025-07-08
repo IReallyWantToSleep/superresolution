@@ -2,7 +2,6 @@ package io.homo.superresolution.common.minecraft;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 
 
@@ -15,7 +14,8 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL46;
-
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlState;
 
 public class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IFrameBuffer frameBuffer;
@@ -82,8 +82,8 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         Gl.DSA.blitFramebuffer(
                 frameBuffer.handle(),
                 new GlState(GlState.STATE_DRAW_FBO).wFbo,
-                0,0, frameBuffer.getWidth(), frameBuffer.getHeight(),
-                0,0, frameBuffer.getWidth(), frameBuffer.getHeight(),
+                0, 0, frameBuffer.getWidth(), frameBuffer.getHeight(),
+                0, 0, frameBuffer.getWidth(), frameBuffer.getHeight(),
                 GL46.GL_COLOR_BUFFER_BIT, GL46.GL_NEAREST
         );
     }
@@ -121,6 +121,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 
 class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IBindableFrameBuffer frameBuffer;

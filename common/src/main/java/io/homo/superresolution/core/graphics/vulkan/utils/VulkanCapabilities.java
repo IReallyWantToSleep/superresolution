@@ -33,7 +33,7 @@ public class VulkanCapabilities {
 
             IntBuffer extensionCount = stack.ints(0);
             vkEnumerateInstanceExtensionProperties((String) null, extensionCount, null);
-            VkExtensionProperties.Buffer iExts = VkExtensionProperties.malloc(extensionCount.get(0), stack);
+            VkExtensionProperties.Buffer iExts = VkExtensionProperties.malloc(extensionCount.get(0));
             vkEnumerateInstanceExtensionProperties((String) null, extensionCount, iExts);
             instanceExtensions.clear();
             for (int i = 0; i < iExts.capacity(); ++i) {
@@ -42,7 +42,7 @@ public class VulkanCapabilities {
 
             extensionCount.rewind();
             vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extensionCount, null);
-            VkExtensionProperties.Buffer dExts = VkExtensionProperties.malloc(extensionCount.get(0), stack);
+            VkExtensionProperties.Buffer dExts = VkExtensionProperties.malloc(extensionCount.get(0));
             vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, extensionCount, dExts);
             deviceExtensions.clear();
             for (int i = 0; i < dExts.capacity(); ++i) {

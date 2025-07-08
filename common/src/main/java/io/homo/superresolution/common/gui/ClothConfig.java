@@ -151,6 +151,13 @@ public class ClothConfig {
                 .requireRestart()
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.literal("使用兼容性着色器编译器"),
+                        Config.isEnableCompatShaderCompiler())
+                .setTooltip(Component.literal("启用时使用兼容性着色器编译器编译着色器"))
+                .setSaveConsumer((Config::setEnableCompatShaderCompiler))
+                .requireRestart()
+                .build());
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.pause_game_on_gui"),
                         Config.isPauseGameOnGui())
                 .setSaveConsumer((Config::setPauseGameOnGui))

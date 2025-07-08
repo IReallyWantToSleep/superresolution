@@ -108,7 +108,7 @@ public class VulkanApplication {
 
     private void createInstance() {
         try (MemoryStack stack = stackPush()) {
-            VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
+            VkApplicationInfo appInfo = VkApplicationInfo.calloc()
                     .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
                     .apiVersion(DEFAULT_API_VERSION)
                     .pEngineName(memUTF8("Engine"))
@@ -116,7 +116,7 @@ public class VulkanApplication {
                     .pApplicationName(memUTF8("App"))
                     .applicationVersion(VK_MAKE_VERSION(1, 0, 0));
 
-            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
+            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc()
                     .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
                     .pApplicationInfo(appInfo)
                     .ppEnabledExtensionNames(asPointerBuffer(stack, instanceExtensions));

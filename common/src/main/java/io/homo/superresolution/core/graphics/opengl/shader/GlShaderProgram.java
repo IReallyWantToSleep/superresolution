@@ -1,5 +1,9 @@
 package io.homo.superresolution.core.graphics.opengl.shader;
 
+import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
+import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
+import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
@@ -14,6 +18,7 @@ import org.lwjgl.opengl.GL45;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static io.homo.superresolution.common.SuperResolution.LOGGER;
@@ -35,7 +40,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     public GlShaderProgram(ShaderDescription description) {
         this.description = description;
-        this.handle = Gl.glCreateProgram();
+        this.handle = glCreateProgram();
     }
 
     @Override
@@ -54,18 +59,29 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     }
 
     protected void checkProgram() {
-        if (GL20.glGetProgrami(handle, GL20.GL_LINK_STATUS) == GL20.GL_FALSE) {
-            String log = GL20.glGetProgramInfoLog(handle);
-            GL20.glDeleteProgram(handle);
+        if (glGetProgrami(handle, GL_LINK_STATUS) == GL_FALSE) {
+            String log = glGetProgramInfoLog(handle);
+            glDeleteProgram(handle);
             throw new RuntimeException("着色器程序链接状态不为GL_TRUE:\n" + log);
         }
     }
 
+    protected String preprocessShaderCode(String code) {
+        List<String> codeLines = List.of(code.split("\n"));
+        List<String> preprocessedCodeLines = new ArrayList<>();
+        for (String line : codeLines) {
+            if (line.trim().startsWith("#line")) continue;
+            if (line.trim().startsWith("#extension") && line.contains("GL_GOOGLE_include_directive")) continue;
+            preprocessedCodeLines.add(line);
+        }
+        return String.join("\n", preprocessedCodeLines);
+    }
+
     protected GlShader compileSingleShader(ShaderSource source) {
         int glShaderType = switch (source.getType()) {
-            case VERTEX -> GL45.GL_VERTEX_SHADER;
-            case COMPUTE -> GL45.GL_COMPUTE_SHADER;
-            case FRAGMENT -> GL45.GL_FRAGMENT_SHADER;
+            case VERTEX -> GL_VERTEX_SHADER;
+            case COMPUTE -> GL_COMPUTE_SHADER;
+            case FRAGMENT -> GL_FRAGMENT_SHADER;
         };
         Objects.requireNonNull(source, "ShaderSource cannot be null");
         GlShader shader = new GlShader(source.getType());
@@ -73,24 +89,67 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
             throw new RuntimeException("Failed to create shader object (Type: " + glShaderType + ")");
         }
         try {
-            ShaderCompiler.ShaderBinary binary = ShaderCompiler.getOpenGLShaderBinary(this, source.getType());
-            if (binary == null) {
-                throw new RuntimeException("SPIR-V binary not found for " + source.getType());
-            }
+            String sourceCode = source.getSource();
+            if (Config.isEnableCompatShaderCompiler()) {
+                GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
+                        source.getSource(),
+                        switch (source.getType()) {
+                            case VERTEX -> EShLanguage.EShLangVertex;
+                            case FRAGMENT -> EShLanguage.EShLangFragment;
+                            case COMPUTE -> EShLanguage.EShLangCompute;
+                        },
+                        EShSource.EShSourceGlsl,
+                        EShClient.EShClientOpenGL,
+                        EShTargetClientVersion.EShTargetOpenGL_450,
+                        EShTargetLanguage.EShTargetSpv,
+                        EShTargetLanguageVersion.EShTargetSpv_1_4,
+                        460,
+                        EProfile.ENoProfile,
+                        true,
+                        false
+                );
+                sourceCode = preprocessShaderCode(result.preprocessedCode());
+                if (result.error() != GlslangCompileShaderError.OK) {
+                    String errorDetails = String.format(
+                            "%s Shader SPIR-V编译失败\n类型: %s\n错误日志:\n%s",
+                            source.getType(),
+                            result.error().name(),
+                            result.log()
+                    );
+                    LOGGER.error(errorDetails);
+                    saveErrorArtifacts(source.getType(), sourceCode, result.log());
+                    throw new ShaderCompileException(errorDetails);
+                }
+                glShaderSource(shader.id(), sourceCode);
+                glCompileShader(shader.id());
+            } else {
+                ShaderCompiler.ShaderBinary binary = ShaderCompiler.getOpenGLShaderBinary(this, source.getType());
+                if (binary == null) {
+                    throw new RuntimeException("SPIR-V binary not found for " + source.getType());
+                }
 
-            glShaderBinary(new int[]{shader.id()}, binary.format(), binary.binary());
-            glSpecializeShader(shader.id(), "main", null, (int[]) null);
+                glShaderBinary(new int[]{shader.id()}, binary.format(), binary.binary());
+                glSpecializeShader(shader.id(), "main", null, (int[]) null);
+            }
 
             if (glGetShaderi(shader.id(), GL_COMPILE_STATUS) == GL_FALSE) {
                 String infoLog = glGetShaderInfoLog(shader.id());
-                String errorDetails = String.format(
-                        "%s Shader SPIR-V加载失败\n类型: %s\n错误日志:\n%s",
-                        source.getType(),
-                        source.getType().name(),
-                        infoLog
-                );
+                String errorDetails;
+                if (Config.isEnableCompatShaderCompiler()) {
+                    errorDetails = String.format(
+                            "%s Shader 编译失败\n错误日志:\n%s",
+                            source.getType().name(),
+                            infoLog
+                    );
+                } else {
+                    errorDetails = String.format(
+                            "%s Shader SPIR-V加载失败\n错误日志:\n%s",
+                            source.getType().name(),
+                            infoLog
+                    );
+                }
                 LOGGER.error(errorDetails);
-                saveErrorArtifacts(source.getType(), source.getSource(), infoLog);
+                saveErrorArtifacts(source.getType(), sourceCode, infoLog);
                 throw new ShaderCompileException(errorDetails);
             }
 
@@ -103,7 +162,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     }
 
     private void saveErrorArtifacts(ShaderType type, String sourceCode, String log) {
-        String time = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date());
+        String time = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String baseName = String.format("errorArtifact_%s.%s", type.name(), time);
         Path sourcePath = Path.of(baseName + ".glsl");
         Path logPath = Path.of(baseName + ".log");

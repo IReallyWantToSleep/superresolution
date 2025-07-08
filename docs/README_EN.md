@@ -37,7 +37,6 @@ Built-in super resolution algorithms in Minecraft to enhance performance/graphic
 * Linux x64
 * Currently unsupported on mobile devices (Android native libraries are provided, but features like compute shaders,
   DSA, and SpirV shader binaries may not function properly)
-* **Will never support** macOS
 
 ## GPU Requirements
 

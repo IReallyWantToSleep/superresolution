@@ -3,11 +3,11 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
-import net.minecraft.SharedConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +30,16 @@ public class NativeLibManager {
     static {
         OS os = new OS();
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
-            libs.add(new NativeLib("libSuperResolution+win64", "34d765f4e1d1a40e62bdedf769ca0054", 1));
+            libs.add(new NativeLib("libSuperResolution+win64", "c7da23fd64c4b1ae366289f17966164f", 1));
         }
         if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
             libs.add(new NativeLib("libSuperResolution+android", "fcd80219a1a9d2bb9088ce0dc7d68c93", 1));
         }
         if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
-            libs.add(new NativeLib("libSuperResolution+linux64", "1c298ac3dc643ad0a4ceaa576d8e34ca", 1));
+            libs.add(new NativeLib("libSuperResolution+linux64", "f2b7285e79cb0546871f1d831d54398d", 1));
+        }
+        if (os.type == OSType.MACOS && os.arch == Arch.AARCH64) {
+            libs.add(new NativeLib("libSuperResolution+macarm64", "b9ab19ee00a312ed69d069184bf4302f", 1));
         }
     }
 
@@ -77,7 +80,7 @@ public class NativeLibManager {
     }
 
     private static boolean checkLibMd5(String path, NativeLib lib) {
-        if (SharedConstants.IS_RUNNING_IN_IDE) return false;
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) return false;
         return lib.md5.equals(Md5CaculateUtil.getMD5(Paths.get(path, lib.name).toFile()));
     }
 
