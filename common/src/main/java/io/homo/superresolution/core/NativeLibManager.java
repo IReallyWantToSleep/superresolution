@@ -33,7 +33,7 @@ public class NativeLibManager {
             libs.add(new NativeLib("libSuperResolution+win64", "c7da23fd64c4b1ae366289f17966164f", 1));
         }
         if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
-            libs.add(new NativeLib("libSuperResolution+android", "fcd80219a1a9d2bb9088ce0dc7d68c93", 1));
+            libs.add(new NativeLib("libSuperResolution+android", "19bbb27dcadf4064ed6d27462b1e18b2", 1));
         }
         if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
             libs.add(new NativeLib("libSuperResolution+linux64", "f2b7285e79cb0546871f1d831d54398d", 1));
