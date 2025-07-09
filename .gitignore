@@ -154,3 +154,4 @@ build_jars
 /native/cpp/third_party/libs/android
 /native/cpp/third_party/libs/linux64
 /native/cpp/third_party/libs/win64
+/native/cpp/third_party/libs/macarm64
