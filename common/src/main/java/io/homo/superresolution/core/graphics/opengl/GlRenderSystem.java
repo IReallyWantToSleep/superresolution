@@ -179,6 +179,7 @@ public class GlRenderSystem implements IRenderSystem {
                 case POINTS -> GL11.GL_POINTS;
             };
             GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
+            if (drawObject.isOnce()) drawObject.destroy();
         }
     }
 

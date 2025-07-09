@@ -104,16 +104,17 @@ public interface IRenderSystem {
             int dstY1,
             int dstLevel
     );
+
     /**
      * 复制缓冲区
      *
-     * @param src 源
-     * @param dst 目标
+     * @param src       源
+     * @param dst       目标
      * @param srcOffset 源偏移量
      * @param dstOffset 目标偏移量
      * @param size      拷贝数据大小
      */
-    void copyBuffer(IBuffer src,IBuffer dst,long srcOffset,long dstOffset,long size);
+    void copyBuffer(IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size);
 
     /**
      * 执行绘制命令
@@ -125,6 +126,7 @@ public interface IRenderSystem {
      * @param vertexCount   要绘制的顶点数量
      */
     void draw(IShaderProgram<?> shaderProgram, IFrameBuffer frameBuffer, DrawObject drawObject, int firstVertex, int vertexCount);
+
 
     /**
      * 执行计算着色器任务。

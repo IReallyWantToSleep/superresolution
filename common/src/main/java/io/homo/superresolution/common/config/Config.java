@@ -43,6 +43,7 @@ public class Config {
     private static final BooleanValue PAUSE_GAME_ON_GUI;
     private static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     private static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
+    private static final BooleanValue ENABLE_DATASET_GENERATOR;
     private static final OSType CURRENT_OS_TYPE = new OS().type;
     private static final Runnable resolutionChangeCallback;
 
@@ -136,6 +137,12 @@ public class Config {
                 "compat_shader_compiler",
                 () -> RenderSystem.isOnRenderThread() && GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL,
                 "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
+        );
+
+        ENABLE_DATASET_GENERATOR = builder.defineBoolean(
+                "enable_dataset_generator",
+                () -> false,
+                ""
         );
 
         SPECIAL = new SpecialConfigs(builder);
@@ -333,6 +340,14 @@ public class Config {
         return ENABLE_COMPAT_SHADER_COMPILER.get();
     }
 
+    public static void setEnableDatasetGenerator(boolean value) {
+        ENABLE_DATASET_GENERATOR.set(value);
+    }
+
+    public static boolean isEnableDatasetGenerator() {
+        return ENABLE_DATASET_GENERATOR.get();
+    }
+
     public static float getMinUpscaleRatio() {
         int maxSize = 16384;
         if (Minecraft.getInstance().getWindow() == null) return 0.1f;
@@ -340,6 +355,4 @@ public class Config {
         double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
         return (float) Math.max(maxWidth, maxHeight);
     }
-
-
 }

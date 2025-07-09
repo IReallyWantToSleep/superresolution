@@ -6,6 +6,12 @@ import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
 import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJob;
@@ -18,6 +24,7 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.File;
@@ -31,7 +38,7 @@ import java.nio.file.Paths;
 import static org.lwjgl.opengl.GL33.*;
 
 public class DataSetGenerator {
-    public static final File OUTPUT_DIR = Paths.get("C:\\Users\\yyyyy\\AppData\\Local\\msrdataset").toFile();
+    public static final File OUTPUT_DIR = Paths.get(Minecraft.getInstance().gameDirectory.getAbsolutePath(), "msrDataset").toFile();
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
@@ -51,27 +58,25 @@ public class DataSetGenerator {
         LevelRenderEndEvent.EVENT.register(DataSetGenerator::onLevelEnd);
         tempFbo = GlFrameBuffer.create(
                 TextureFormat.RGBA8, null, 1, 1
-        );/*
-        copyShader = SRRenderSystem.current().createShaderProgram(
-                ShaderDescription.general(
-                                new ShaderSource(ShaderType.VERTEX, "/shader/depth_to_r16f.vert.glsl", true),
-                                new ShaderSource(ShaderType.FRAGMENT, "/shader/depth_to_r16f.frag.glsl", true)
+        );
+        copyShader = RenderSystems.current().device().createShaderProgram(
+                ShaderDescription.graphics(
+                                new ShaderSource(ShaderType.FRAGMENT, "/shader/depth_to_r16f.frag.glsl", true),
+                                new ShaderSource(ShaderType.VERTEX, "/shader/depth_to_r16f.vert.glsl", true)
                         )
                         .name("dataset_build_copy_depth_to_color")
+                        .uniformSamplerTexture("tex", 0)
                         .build()
         );
-        copyShader = GlGeneralShaderProgram.create()
-                .addShaderSource()
-                .addShaderSource()
-                .setShaderName("dataset_build_copy_depth_to_color")
-                .build()
-                .compileShader();
-        copyShader0 = GlGeneralShaderProgram.create()
-                .addShaderSource(new ShaderSource(ShaderType.VERTEX, "/shader/rg16f_to_rgb.vert.glsl", true))
-                .addShaderSource(new ShaderSource(ShaderType.FRAGMENT, "/shader/rg16f_to_rgb.frag.glsl", true))
-                .setShaderName("dataset_build_copy_rg16f_to_rgb")
-                .build()
-                .compileShader();*/
+        copyShader0 = RenderSystems.current().device().createShaderProgram(
+                ShaderDescription.graphics(
+                                new ShaderSource(ShaderType.FRAGMENT, "/shader/rg16f_to_rgb.frag.glsl", true),
+                                new ShaderSource(ShaderType.VERTEX, "/shader/rg16f_to_rgb.vert.glsl", true)
+                        )
+                        .name("dataset_build_copy_rg16f_to_rgb")
+                        .uniformSamplerTexture("tex", 0)
+                        .build()
+        );
     }
 
     private static void writeImage(ITexture texture, String path) {
@@ -141,40 +146,30 @@ public class DataSetGenerator {
                 MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.Color),
                 HR_RGB_IMAGE.getAbsolutePath()
         );
-
-        GlPipelineJob copyJob = GlPipelineJobBuilders.graphics(copyShader)
-                .resource(GlPipelineResourceDescription.createTextureResource(
-                        GlPipelineResourceType.Sampler2D,
-                        "depthTex",
-                        MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth),
-                        GlPipelineResourceAccess.READ,
-                        null,
-                        0
-                ))
+        PipelineJobBuilders
+                .graphics(copyShader)
                 .targetFramebuffer(tempFbo)
-                .build();
-        copyJob.schedule(GlPipelineJobDispatchResource.nothing());
-        copyJob.execute(GlPipelineJobDispatchResource.nothing());
-
+                .build()
+                .resource(
+                        "tex",
+                        PipelineJobResource.Texture.create(
+                                MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth)
+                        )
+                ).execute(RenderSystems.current());
         writeImage(
                 tempFbo.getTexture(FrameBufferAttachmentType.Color),
                 HR_DEPTH_IMAGE.getAbsolutePath()
         );
-
-        copyJob = GlPipelineJobBuilders.graphics(copyShader0)
-                .resource(GlPipelineResourceDescription.createTextureResource(
-                        GlPipelineResourceType.Sampler2D,
-                        "tex",
-                        AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color),
-                        GlPipelineResourceAccess.READ,
-                        null,
-                        0
-                ))
+        PipelineJobBuilders
+                .graphics(copyShader0)
                 .targetFramebuffer(tempFbo)
-                .build();
-        copyJob.schedule(GlPipelineJobDispatchResource.nothing());
-        copyJob.execute(GlPipelineJobDispatchResource.nothing());
-
+                .build()
+                .resource(
+                        "tex",
+                        PipelineJobResource.Texture.create(
+                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                        )
+                ).execute(RenderSystems.current());
         writeImage(
                 tempFbo.getTexture(FrameBufferAttachmentType.Color),
                 HR_MV_IMAGE.getAbsolutePath()

@@ -39,15 +39,15 @@ public class GlPipelineGraphicsJob extends GlPipelineJob {
                         GlState.STATE_DRAW_FBO |
                         GlState.STATE_READ_FBO
         )) {
-            try (DrawObject fullscreenQuad = DrawObject.fullscreenQuad(RenderSystems.current())) {
-                RenderSystems.current().draw(
-                        program,
-                        targetFrameBuffer,
-                        fullscreenQuad,
-                        0,
-                        DrawObject.fullscreenQuadVertexCount()
-                );
-            }
+
+            RenderSystems.current().draw(
+                    program,
+                    targetFrameBuffer,
+                    DrawObject.fullscreenQuad(RenderSystems.current()).once(),
+                    0,
+                    DrawObject.fullscreenQuadVertexCount()
+            );
+
         }
     }
 }
