@@ -11,6 +11,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.fsr2.Fsr2DeviceCapabilities;
 import io.homo.superresolution.fsr2.v221.*;
 
 import java.util.HashMap;
@@ -35,7 +36,10 @@ public class Fsr2AccumulatePipeline extends Fsr2BasePipeline {
     @Override
     public void init() {
         HashMap<String, String> shaderDefines = new HashMap<>();
-        shaderDefines.put("FFX_HALF", GraphicsCapabilities.detectGpuVendor() == GpuVendor.NVIDIA ? "0" : "1");
+        shaderDefines.put(
+                "FFX_HALF",
+                (!(GraphicsCapabilities.detectGpuVendor() == GpuVendor.NVIDIA) && Fsr2DeviceCapabilities.isFp16Supported()) ? "1" : "0"
+        );
         program = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2/ffx_fsr2_accumulate_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(shaderDefines))

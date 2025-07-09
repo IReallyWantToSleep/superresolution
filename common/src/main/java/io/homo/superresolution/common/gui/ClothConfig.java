@@ -94,7 +94,7 @@ public class ClothConfig {
                         return Optional.empty();
                     }
                     if (!((AlgorithmDescription<?>) algorithmType).getRequirement().check().support()) {
-                        return Optional.of(Component.literal("当前环境不支持该算法"));
+                        return Optional.of(Component.translatable("superresolution.screen.config.error.unsupported_algorithm"));
                     }
                     return Optional.empty();
                 }))
@@ -113,7 +113,7 @@ public class ClothConfig {
                 entryBuilder.startTextDescription(
                                 Component.translatable("superresolution.screen.config.warn.algorithm_incomplete")
                         ).setColor(ColorUtil.color(255, 255, 0, 0))
-                        //.setDisplayRequirement(Requirement.isValue(algorithmSelector/*AlgorithmDescriptions.NIS*/))
+                        .setDisplayRequirement(Requirement.isTrue(() -> false))
                         .build()
         );
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(
@@ -127,7 +127,12 @@ public class ClothConfig {
                             (Platform.currentPlatform.getMinecraftVersion().equals("1.21.4") && captureMode == CaptureMode.B) ||
                                     (Platform.currentPlatform.getMinecraftVersion().equals("1.21.5") && captureMode == CaptureMode.C)
                     ) {
-                        return Optional.of(Component.literal("当前的捕获方式在 %s 无法使用".formatted(Platform.currentPlatform.getMinecraftVersion())));
+                        return Optional.of(
+                                Component.translatable(
+                                        "superresolution.screen.config.error.capture_mode_unsupported",
+                                        Platform.currentPlatform.getMinecraftVersion()
+                                )
+                        );
                     } else {
                         return Optional.empty();
                     }
@@ -151,9 +156,9 @@ public class ClothConfig {
                 .requireRestart()
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
-                        Component.literal("使用兼容性着色器编译器"),
+                        Component.translatable("superresolution.screen.config.options.label.enable_compat_shader_compiler"),
                         Config.isEnableCompatShaderCompiler())
-                .setTooltip(Component.literal("启用时使用兼容性着色器编译器编译着色器"))
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_compat_shader_compiler"))
                 .setSaveConsumer((Config::setEnableCompatShaderCompiler))
                 .requireRestart()
                 .build());

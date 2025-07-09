@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.config;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.config.*;
 import io.homo.superresolution.api.config.values.list.StringListValue;
 import io.homo.superresolution.api.config.values.single.BooleanValue;
@@ -16,6 +17,8 @@ import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.core.graphics.GpuVendor;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
 
@@ -41,14 +44,11 @@ public class Config {
     private static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     private static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     private static final OSType CURRENT_OS_TYPE = new OS().type;
-    private static final boolean compatMode = CURRENT_OS_TYPE == OSType.MACOS || CURRENT_OS_TYPE == OSType.ANDROID;
     private static final Runnable resolutionChangeCallback;
 
     static {
         ModConfigSpecBuilder builder = new ModConfigSpecBuilder();
 
-        Supplier<Boolean> compatDefault = () -> compatMode;
-        Supplier<Boolean> nonCompatDefault = () -> !compatMode;
         Supplier<String> defaultAlgoSupplier = () -> getDefaultAlgorithm().codeName;
 
         ENABLE_UPSCALE = builder.defineBoolean(
@@ -110,19 +110,19 @@ public class Config {
 
         SKIP_INIT_VULKAN = builder.defineBoolean(
                 "debug/skip_init_vulkan",
-                compatDefault,
+                () -> !(CURRENT_OS_TYPE == OSType.ANDROID || CURRENT_OS_TYPE == OSType.MACOS),
                 "Skip Vulkan initialization (auto-set based on OS)"
         );
 
         ENABLE_RENDER_DOC = builder.defineBoolean(
                 "debug/enable_render_doc",
-                nonCompatDefault,
+                () -> CURRENT_OS_TYPE == OSType.WINDOWS && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable RenderDoc integration (auto-disabled on incompatible OS)"
         );
 
         ENABLE_IMGUI = builder.defineBoolean(
                 "debug/enable_imgui",
-                nonCompatDefault,
+                () -> CURRENT_OS_TYPE == OSType.WINDOWS && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable ImGui debug interface (auto-disabled on incompatible OS)"
         );
 
@@ -134,7 +134,7 @@ public class Config {
 
         ENABLE_COMPAT_SHADER_COMPILER = builder.defineBoolean(
                 "compat_shader_compiler",
-                () -> false,
+                () -> RenderSystem.isOnRenderThread() && GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL,
                 "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
         );
 

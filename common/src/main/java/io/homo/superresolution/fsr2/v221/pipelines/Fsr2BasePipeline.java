@@ -2,6 +2,7 @@ package io.homo.superresolution.fsr2.v221.pipelines;
 
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
+import io.homo.superresolution.fsr2.Fsr2DeviceCapabilities;
 import io.homo.superresolution.fsr2.v221.Fsr2Context;
 import io.homo.superresolution.fsr2.v221.Fsr2Dimensions;
 import io.homo.superresolution.fsr2.v221.Fsr2PipelineDispatchResource;
@@ -51,7 +52,7 @@ public abstract class Fsr2BasePipeline {
         defines.put("FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE", "2");
         defines.put("FFX_GLSL", bool(true));
         defines.put("FFX_GPU", bool(true));
-        defines.put("FFX_HALF", bool(GraphicsCapabilities.isFp16Supported()));
+        defines.put("FFX_HALF", bool(Fsr2DeviceCapabilities.isFp16Supported()));
         if (override != null) defines.putAll(override);
         return defines;
     }
