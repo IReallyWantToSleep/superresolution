@@ -11,6 +11,7 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.impl.Destroyable;
@@ -133,6 +134,10 @@ public final class SuperResolution implements Resizable, Destroyable {
         try (GlState ignored = new GlState()) {
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return;
+            if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL) {
+                Config.setEnableCompatShaderCompiler(true);
+                Config.SPEC.save();
+            }
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
             algorithmDescription = Config.getUpscaleAlgorithm();
