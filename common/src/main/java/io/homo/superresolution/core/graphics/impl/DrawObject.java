@@ -6,10 +6,11 @@ import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexArray;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.impl.Destroyable;
 
-public class DrawObject implements Destroyable, AutoCloseable {
+public class DrawObject implements Destroyable {
     private final IVertexBuffer vertexBuffer;
     private final IVertexArray vertexArray;
     private final PrimitiveType primitiveType;
+    private boolean once;
 
     public DrawObject(
             IVertexBuffer vertexBuffer,
@@ -56,13 +57,22 @@ public class DrawObject implements Destroyable, AutoCloseable {
         return vertexBuffer;
     }
 
+    public boolean isOnce() {
+        return once;
+    }
+
+
+    public DrawObject once() {
+        this.once = true;
+        return this;
+    }
+
     @Override
     public void destroy() {
         this.vertexBuffer.destroy();
         this.vertexArray.destroy();
     }
 
-    @Override
     public void close() {
         this.destroy();
     }

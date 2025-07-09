@@ -141,8 +141,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
             algorithmDescription = Config.getUpscaleAlgorithm();
-            /////////生成AI训练数据集
-            //if (Platform.currentPlatform.isDevelopmentEnvironment()) DataSetGenerator.init();
+            if (Config.isEnableDatasetGenerator()) DataSetGenerator.init();
         }
     }
 

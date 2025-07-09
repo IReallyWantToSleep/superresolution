@@ -62,7 +62,7 @@ public class PipelineGraphicsJob extends GpuComputeJob<PipelineGraphicsJob> impl
         renderSystem.draw(
                 program,
                 frameBuffer,
-                DrawObject.fullscreenQuad(renderSystem),
+                DrawObject.fullscreenQuad(renderSystem).once(),
                 0,
                 DrawObject.fullscreenQuadVertexCount()
         );

@@ -10,24 +10,28 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.system.MemoryUtil;
 
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 public class GlVertexBuffer implements IVertexBuffer {
     private final int id;
     private final int size;
     private final boolean dynamic;
+    private final ByteBuffer buffer;
 
-    public GlVertexBuffer(int id, int size, boolean dynamic) {
+    private GlVertexBuffer(int id, int size, boolean dynamic, ByteBuffer buffer) {
         this.id = id;
         this.size = size;
         this.dynamic = dynamic;
+        this.buffer = buffer;
     }
 
     public static GlVertexBuffer create(VertexBufferDescription description) {
         int bufferId = Gl.DSA.createBuffer();
         int usage = description.isDynamic() ? GL15.GL_DYNAMIC_DRAW : GL15.GL_STATIC_DRAW;
-        Gl.DSA.bufferData(bufferId, GL15.GL_ARRAY_BUFFER, MemoryUtil.memAlloc(description.getSizeInBytes()), usage);
-        return new GlVertexBuffer(bufferId, description.getSizeInBytes(), description.isDynamic());
+        ByteBuffer buffer = MemoryUtil.memAlloc(description.getSizeInBytes());
+        Gl.DSA.bufferData(bufferId, GL15.GL_ARRAY_BUFFER, buffer, usage);
+        return new GlVertexBuffer(bufferId, description.getSizeInBytes(), description.isDynamic(), buffer);
     }
 
 
@@ -57,5 +61,6 @@ public class GlVertexBuffer implements IVertexBuffer {
     @Override
     public void destroy() {
         Gl.DSA.deleteBuffer(id);
+        MemoryUtil.memFree(buffer);
     }
 }
