@@ -77,6 +77,8 @@ public class DataSetGenerator {
                         .uniformSamplerTexture("tex", 0)
                         .build()
         );
+        copyShader.compile();
+        copyShader0.compile();
     }
 
     private static void writeImage(ITexture texture, String path) {

@@ -65,8 +65,6 @@
                 }
             ],
             "local": [
-
-
             ]
         },
         "modmenu_version": "11.0.1"
@@ -106,6 +104,10 @@
                 {
                     "name": "sodium-options-api",
                     "version": "neoforge-1.21.1-1.0.10"
+                },
+                {
+                    "name": "simple-clouds",
+                    "version": "0.6.3+1.21"
                 }
             ],
             "local": [
