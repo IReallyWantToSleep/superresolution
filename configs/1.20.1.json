@@ -60,7 +60,6 @@
                 }
             ],
             "local": [
-
             ]
         },
         "modmenu_version": "7.2.2"
@@ -100,6 +99,10 @@
                 {
                     "name": "spark",
                     "version": "1.10.53-forge"
+                },
+                {
+                    "name": "simple-clouds",
+                    "version": "0.6.3+1.20.1-forge"
                 }
             ],
             "local": [

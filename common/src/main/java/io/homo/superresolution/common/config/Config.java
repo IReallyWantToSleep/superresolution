@@ -158,7 +158,7 @@ public class Config {
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()
             );
-            Minecraft.getInstance().levelRenderer.resize(
+            Minecraft.getInstance().gameRenderer.resize(
                     MinecraftRenderHandle.getScreenWidth(),
                     MinecraftRenderHandle.getScreenHeight()
             );

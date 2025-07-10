@@ -5,14 +5,15 @@
     "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
-        "embeddium.EmbeddiumOptionMixin",
-        "oculus.GlFramebufferMixin",
         "embeddium.DefaultChunkRendererMixin",
+        "embeddium.EmbeddiumOptionMixin",
         "embeddium.ShaderChunkRendererMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
+        "oculus.GlFramebufferMixin",
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
+        "simpleclouds.DefaultPipelineMixin",
+        "simpleclouds.ShaderSupportPipelineMixin"
     ],
     "mixins": [
-
     ],
     "injectors": {
         "defaultRequire": 1
