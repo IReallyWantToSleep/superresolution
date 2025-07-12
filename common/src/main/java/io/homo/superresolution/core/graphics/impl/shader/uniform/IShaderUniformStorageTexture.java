@@ -6,4 +6,8 @@ public interface IShaderUniformStorageTexture<SELF extends IShaderUniform> exten
     SELF setTexture(ITexture texture);
 
     ITexture texture();
+
+    default ShaderUniformType type() {
+        return ShaderUniformType.StorageTexture;
+    }
 }

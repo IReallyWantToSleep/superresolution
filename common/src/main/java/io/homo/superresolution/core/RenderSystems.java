@@ -1,6 +1,6 @@
 package io.homo.superresolution.core;
 
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 
@@ -10,7 +10,7 @@ public class RenderSystems {
 
     public static void init() {
         opengl = new GlRenderSystem();
-        if (!Config.isSkipInitVulkan()) {
+        if (!SuperResolutionConfig.isSkipInitVulkan()) {
             vulkan = new VkRenderSystem();
             //vulkan.initRenderSystem();
         }

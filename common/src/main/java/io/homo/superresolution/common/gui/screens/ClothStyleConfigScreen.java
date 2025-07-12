@@ -2,7 +2,7 @@ package io.homo.superresolution.common.gui.screens;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.gui.Rectangle;
 import io.homo.superresolution.common.gui.ScissorsHandler;
@@ -212,7 +212,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     }
 
     public boolean isPauseScreen() {
-        return Config.isPauseGameOnGui();
+        return SuperResolutionConfig.isPauseGameOnGui();
     }
 
     protected static class CategoryTextEntry extends AbstractConfigListEntry<Object> {

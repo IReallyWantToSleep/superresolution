@@ -3,80 +3,108 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
+import java.util.Objects;
+
 public class PipelineClearTextureJob implements IPipelineJob {
     protected float[] clearColor = null;
-    protected float clearDepth = -1;
-    protected int clearStencil = -1;
+    protected Float clearDepth = null;
+    protected Integer clearStencil = null;
     protected ITexture target = null;
 
-    /**
-     * 设置清除颜色
-     *
-     * @param r 红色分量 (0.0-1.0)
-     * @param g 绿色分量 (0.0-1.0)
-     * @param b 蓝色分量 (0.0-1.0)
-     * @param a 透明度分量 (0.0-1.0)
-     */
     public PipelineClearTextureJob clearColor(float r, float g, float b, float a) {
-        clearColor = new float[]{0, 0, 0, 0};
-        clearColor[0] = r;
-        clearColor[1] = g;
-        clearColor[2] = b;
-        clearColor[3] = a;
+        validateColorComponent(r);
+        validateColorComponent(g);
+        validateColorComponent(b);
+        validateColorComponent(a);
+        this.clearColor = new float[]{r, g, b, a};
         return this;
-
     }
 
-    /**
-     * 设置清除深度值
-     *
-     * @param depth 深度值 (0.0-1.0)
-     */
     public PipelineClearTextureJob clearDepth(float depth) {
+        if (depth < 0 || depth > 1) {
+            throw new IllegalArgumentException("深度值必须在[0,1]范围内");
+        }
         this.clearDepth = depth;
         return this;
-
     }
 
-    /**
-     * 设置清除模板值
-     *
-     * @param stencil 模板值 (0-255)
-     */
+
     public PipelineClearTextureJob clearStencil(int stencil) {
+        if (stencil < 0 || stencil > 255) {
+            throw new IllegalArgumentException("模板值必须在[0,255]范围内");
+        }
         this.clearStencil = stencil;
         return this;
-
     }
 
-    /**
-     * 设置清除目标
-     *
-     * @param target 清除目标对象
-     */
     public PipelineClearTextureJob clearTarget(ITexture target) {
-        this.target = target;
+        this.target = Objects.requireNonNull(target, "清除目标不能为null");
         return this;
     }
 
     @Override
     public void execute(IRenderSystem renderSystem) {
-        if (
-                clearColor != null &&
-                        clearColor.length == target.getTextureFormat().getChannelCount()
-        ) {
+        validateState();
+        boolean cleared = false;
+
+        if (clearColor != null) {
+            validateChannels(clearColor.length, target.getTextureFormat().getChannelCount());
             renderSystem.clearTextureRGBA(target, clearColor);
-        } else if (clearDepth >= 0 && clearDepth <= 1 && target.getTextureFormat().isDepth()) {
+            cleared = true;
+        }
+
+        if (clearDepth != null) {
+            validateDepthSupport();
             renderSystem.clearTextureDepth(target, clearDepth);
-        } else if (clearStencil >= 0 && clearStencil <= 255 && target.getTextureFormat().isStencil()) {
+            cleared = true;
+        }
+
+        if (clearStencil != null) {
+            validateStencilSupport();
             renderSystem.clearTextureStencil(target, clearStencil);
-        } else {
-            throw new RuntimeException();
+            cleared = true;
+        }
+
+        if (!cleared) {
+            throw new IllegalStateException("无有效的清除操作配置");
+        }
+    }
+
+    private void validateState() {
+        Objects.requireNonNull(target, "清除目标未设置");
+    }
+
+    private void validateColorComponent(float c) {
+        if (c < 0 || c > 1) {
+            throw new IllegalArgumentException("颜色分量必须在[0,1]范围内");
+        }
+    }
+
+    private void validateChannels(int actual, int expected) {
+        if (actual != expected) {
+            throw new IllegalStateException(
+                    String.format("颜色分量数(%d)与纹理通道数(%d)不匹配", actual, expected)
+            );
+        }
+    }
+
+    private void validateDepthSupport() {
+        if (!target.getTextureFormat().isDepth()) {
+            throw new UnsupportedOperationException("纹理不支持深度清除");
+        }
+    }
+
+    private void validateStencilSupport() {
+        if (!target.getTextureFormat().isStencil()) {
+            throw new UnsupportedOperationException("纹理不支持模板清除");
         }
     }
 
     @Override
     public void destroy() {
         clearColor = null;
+        clearDepth = null;
+        clearStencil = null;
+        target = null;
     }
 }

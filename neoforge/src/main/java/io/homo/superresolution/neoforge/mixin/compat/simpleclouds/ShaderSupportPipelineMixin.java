@@ -1,14 +1,14 @@
 package io.homo.superresolution.neoforge.mixin.compat.simpleclouds;
 
+import org.spongepowered.asm.mixin.Mixin;
+
+#if MC_VER == MC_1_21_1
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import dev.nonamecrackers2.simpleclouds.client.renderer.pipeline.ShaderSupportPipeline;
 import io.homo.superresolution.api.SuperResolutionAPI;
-import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
-import java.util.Objects;
 
 @Mixin(value = ShaderSupportPipeline.class, remap = false)
 public class ShaderSupportPipelineMixin {
@@ -37,3 +37,9 @@ public class ShaderSupportPipelineMixin {
         GlStateManager._viewport(0, 0, SuperResolutionAPI.getRenderWidth(), SuperResolutionAPI.getRenderHeight());
     }
 }
+#else
+import net.minecraft.client.Minecraft;
+@Mixin(value = Minecraft.class)
+public class ShaderSupportPipelineMixin {
+}
+#endif

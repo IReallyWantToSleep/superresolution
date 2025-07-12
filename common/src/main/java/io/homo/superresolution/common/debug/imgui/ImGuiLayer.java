@@ -3,7 +3,7 @@ package io.homo.superresolution.common.debug.imgui;
 import imgui.ImGui;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
@@ -157,7 +157,7 @@ public class ImGuiLayer {
                 0, 1, 1, 0);
 
 
-        if (Config.getUpscaleAlgorithm() == AlgorithmDescriptions.FSR2 && SuperResolution.getCurrentAlgorithm() instanceof FSR2) {
+        if (SuperResolutionConfig.getUpscaleAlgorithm() == AlgorithmDescriptions.FSR2 && SuperResolution.getCurrentAlgorithm() instanceof FSR2) {
             Fsr2Context context = ((FSR2) SuperResolution.getCurrentAlgorithm()).fsr2Context;
             for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
                 if (entry.getValue().getResource() == null || (entry.getValue().getResource() instanceof GlBuffer))

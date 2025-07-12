@@ -36,9 +36,11 @@ public abstract class ShaderUniforms<
         return description;
     }
 
-    public abstract B buffer(String name);
+    public abstract B uniformBuffer(String name);
 
     public abstract C samplerTexture(String name);
 
     public abstract D storageTexture(String name);
+
+    public abstract IShaderUniform<?, ?> get(String name);
 }

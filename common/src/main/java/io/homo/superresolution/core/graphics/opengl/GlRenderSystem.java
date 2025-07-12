@@ -164,7 +164,7 @@ public class GlRenderSystem implements IRenderSystem {
         )) {
             if (frameBuffer != null) {
                 if (frameBuffer instanceof GlFrameBuffer) {
-                    ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.Write, false);
+                    ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.All, true);
                 } else {
                     throw new OpenGLException("draw: 目标帧缓冲区不是由OpenGL创建的");
                 }

@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.config.special;
 
 import io.homo.superresolution.api.config.ModConfigSpecBuilder;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +22,6 @@ public abstract class SpecialConfig {
     protected abstract void buildDescriptions(Map<String, SpecialConfigDescription<?>> map);
 
     protected SpecialConfigs getSpecialConfigs() {
-        return Config.SPECIAL;
+        return SuperResolutionConfig.SPECIAL;
     }
 }

@@ -20,6 +20,7 @@ public class GlBlitRenderer {
                     .colorMask(true, true, true, false)
                     .depthTest(false)
                     .depthWrite(false)
+                    .cullFace(false)
                     .viewport(0, 0, viewWidth, viewHeight);
             var blitShader = GlBlitShader.getShader();
             blitShader.uniforms().samplerTexture("uTexture").set(
@@ -28,7 +29,7 @@ public class GlBlitRenderer {
             RenderSystems.current().draw(
                     blitShader,
                     null,
-                    fullscreenQuad,
+                    DrawObject.fullscreenQuad(RenderSystems.current()).once(),
                     0,
                     DrawObject.fullscreenQuadVertexCount()
             );

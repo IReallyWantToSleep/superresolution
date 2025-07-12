@@ -35,8 +35,8 @@ public class PipelineJobResource<RT> {
         this.resource = resource;
     }
 
-    public static class Texture extends PipelineJobResource<ITexture> {
-        protected Texture(
+    public static class SamplerTexture extends PipelineJobResource<ITexture> {
+        protected SamplerTexture(
                 PipelineResourceAccess access,
                 PipelineResourceType type,
                 ITexture resource
@@ -44,19 +44,19 @@ public class PipelineJobResource<RT> {
             super(access, type, resource);
         }
 
-        public static Texture create(
+        public static SamplerTexture create(
                 ITexture texture
         ) {
-            return new Texture(
+            return new SamplerTexture(
                     PipelineResourceAccess.Read,
-                    PipelineResourceType.Texture,
+                    PipelineResourceType.SamplerTexture,
                     texture
             );
         }
     }
 
-    public static class Image extends PipelineJobResource<ITexture> {
-        protected Image(
+    public static class StorageTexture extends PipelineJobResource<ITexture> {
+        protected StorageTexture(
                 PipelineResourceAccess access,
                 PipelineResourceType type,
                 ITexture resource
@@ -64,13 +64,13 @@ public class PipelineJobResource<RT> {
             super(access, type, resource);
         }
 
-        public static Image create(
+        public static StorageTexture create(
                 ITexture texture,
                 PipelineResourceAccess access
         ) {
-            return new Image(
+            return new StorageTexture(
                     access,
-                    PipelineResourceType.Texture,
+                    PipelineResourceType.StorageTexture,
                     texture
             );
         }

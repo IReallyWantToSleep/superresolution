@@ -1,6 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.shader;
 
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
@@ -12,8 +12,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL45;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -77,7 +75,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
         return String.join("\n", preprocessedCodeLines);
     }
 
-    protected GlShader compileSingleShader(ShaderSource source) {
+    protected GlShader compileSingleShader(ShaderSource source, boolean compat) {
         int glShaderType = switch (source.getType()) {
             case VERTEX -> GL_VERTEX_SHADER;
             case COMPUTE -> GL_COMPUTE_SHADER;
@@ -90,7 +88,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
         }
         try {
             String sourceCode = source.getSource();
-            if (Config.isEnableCompatShaderCompiler()) {
+            if (compat) {
                 GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                         source.getSource(),
                         switch (source.getType()) {
@@ -135,7 +133,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
             if (glGetShaderi(shader.id(), GL_COMPILE_STATUS) == GL_FALSE) {
                 String infoLog = glGetShaderInfoLog(shader.id());
                 String errorDetails;
-                if (Config.isEnableCompatShaderCompiler()) {
+                if (SuperResolutionConfig.isEnableCompatShaderCompiler()) {
                     errorDetails = String.format(
                             "%s Shader 编译失败\n错误日志:\n%s",
                             source.getType().name(),
@@ -194,6 +192,10 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     @Override
     public void compile() {
+        compile(SuperResolutionConfig.isEnableCompatShaderCompiler());
+    }
+
+    public void compile(boolean compat) {
         EnumMap<ShaderType, ShaderSource> shaderSources = description.sourceMap();
         validateShaderTypes();
         if (!ShaderCompiler.checkOpenGLProgramBinary(this)) {
@@ -202,7 +204,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
         List<GlShader> shaders = new ArrayList<>();
         try {
             shaderSources.forEach((type, source) -> {
-                GlShader shader = compileSingleShader(source);
+                GlShader shader = compileSingleShader(source, compat);
                 shaders.add(shader);
             });
             this.handle = glCreateProgram();

@@ -176,7 +176,6 @@ public class VulkanApplication {
             if (ENABLE_VALIDATION)
                 createInfo.ppEnabledLayerNames(validationLayers.getValidationLayersPointerBuffer(stack));
 
-            // 通过capabilities获取需要的特性
             if (capabilities.getDeviceFeatures() != null) {
                 createInfo.pEnabledFeatures(capabilities.getDeviceFeatures());
             }

@@ -1,7 +1,6 @@
 package io.homo.superresolution.common.gui;
 
-import io.homo.superresolution.common.config.Config;
-import io.homo.superresolution.common.config.ConfigFile;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.ClothConfigBuilder;
 import io.homo.superresolution.common.gui.screens.ClothStyleConfigScreen;
 import io.homo.superresolution.common.gui.screens.ClothStyleInfoScreen;
@@ -15,7 +14,7 @@ public class ConfigScreenBuilder {
     }
 
     public Screen buildConfigScreen(Screen parentScreen) {
-        Config.SPEC.load();
+        SuperResolutionConfig.SPEC.load();
         ClothConfigBuilder clothConfigBuilder = new ClothConfigBuilder();
         clothConfigBuilder.setGlobalized(true);
         clothConfigBuilder.setGlobalizedExpanded(true);

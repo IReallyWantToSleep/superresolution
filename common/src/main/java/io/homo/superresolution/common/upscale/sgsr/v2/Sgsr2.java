@@ -1,6 +1,6 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
@@ -87,7 +87,7 @@ public class Sgsr2 extends AbstractAlgorithm {
             if (variantInstance != null) {
                 variantInstance.destroy();
             }
-            variantInstance = switch (Config.SPECIAL.SGSR2.VARIANT.get()) {
+            variantInstance = switch (SuperResolutionConfig.SPECIAL.SGSR2.VARIANT.get()) {
                 case CS_2 -> new Sgsr2PassCompute();
                 case CS_3 -> new Sgsr3PassCompute();
                 case FS_2 -> new Sgsr2PassFragment();
@@ -98,8 +98,8 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     private boolean checkVariant() {
         if (variantInstance == null) return true;
-        if (Config.SPECIAL.SGSR2.VARIANT.get() != currentVariant) {
-            currentVariant = Config.SPECIAL.SGSR2.VARIANT.get();
+        if (SuperResolutionConfig.SPECIAL.SGSR2.VARIANT.get() != currentVariant) {
+            currentVariant = SuperResolutionConfig.SPECIAL.SGSR2.VARIANT.get();
             return true;
         }
         return false;

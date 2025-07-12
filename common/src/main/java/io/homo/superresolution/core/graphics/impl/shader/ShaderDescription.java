@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.impl.shader;
 
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformDescription;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformType;
 
@@ -72,7 +73,7 @@ public class ShaderDescription {
         }
 
         public Builder uniformBuffer(String name, int binding, int bufferSize) {
-            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.Buffer)
+            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.UniformBuffer)
                     .binding(binding)
                     .bufferSize(bufferSize)
                     .build());
@@ -84,9 +85,17 @@ public class ShaderDescription {
                     .build());
         }
 
+        public Builder uniformStorageTexture(String name, ShaderUniformAccess access, int binding) {
+            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.StorageTexture)
+                    .binding(binding)
+                    .access(access)
+                    .build());
+        }
+
         public Builder uniformStorageTexture(String name, int binding) {
             return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.StorageTexture)
                     .binding(binding)
+                    .access(ShaderUniformAccess.Both)
                     .build());
         }
 

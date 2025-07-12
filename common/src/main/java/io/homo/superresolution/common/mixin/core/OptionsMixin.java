@@ -1,6 +1,5 @@
 package io.homo.superresolution.common.mixin.core;
 
-import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.mixin.core.accessor.OptionInstanceAccessor;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.OptionInstance;

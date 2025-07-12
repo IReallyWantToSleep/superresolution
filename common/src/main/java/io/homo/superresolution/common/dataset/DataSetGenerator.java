@@ -13,12 +13,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJob;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobDispatchResource;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -154,7 +148,7 @@ public class DataSetGenerator {
                 .build()
                 .resource(
                         "tex",
-                        PipelineJobResource.Texture.create(
+                        PipelineJobResource.SamplerTexture.create(
                                 MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth)
                         )
                 ).execute(RenderSystems.current());
@@ -168,7 +162,7 @@ public class DataSetGenerator {
                 .build()
                 .resource(
                         "tex",
-                        PipelineJobResource.Texture.create(
+                        PipelineJobResource.SamplerTexture.create(
                                 AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
                         )
                 ).execute(RenderSystems.current());
