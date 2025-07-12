@@ -1,38 +1,35 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.math.Vector3i;
 
 public class FSR1 extends AbstractAlgorithm {
-    private GlShaderProgram fsr1EASUShader;
-    private GlShaderProgram fsr1RCASShader;
-    private GlPipeline fsrUpscalePipeline;
-    private GlTexture2D fsr1TempTexture;
-    private GlFrameBuffer outputFbo;
-    private GlTexture2D output;
+    private IShaderProgram<?> fsr1EASUShader;
+    private IShaderProgram<?> fsr1RCASShader;
+    private Pipeline fsrUpscalePipeline;
+    private ITexture fsr1TempTexture;
+    private IFrameBuffer outputFbo;
+    private ITexture output;
     private StructuredUniformBuffer fsr1UBOData;
     private IBuffer fsr1UBO;
 
@@ -53,8 +50,8 @@ public class FSR1 extends AbstractAlgorithm {
         );
         fsr1UBO.setBufferData(fsr1UBOData);
         initShader();
-        fsrUpscalePipeline = new GlPipeline();
-        fsr1TempTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
+        fsrUpscalePipeline = new Pipeline();
+        fsr1TempTexture = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getRenderWidth())
@@ -63,7 +60,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler().storage())
                         .build()
         );
-        output = (GlTexture2D) RenderSystems.current().device().createTexture(
+        output = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getScreenWidth())
@@ -78,45 +75,46 @@ public class FSR1 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
-        fsrUpscalePipeline.addJob("fsr1_easu",
-                GlPipelineJobBuilders.compute(fsr1EASUShader)
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Image2D,
-                                "temp",
-                                fsr1TempTexture,
-                                GlPipelineResourceAccess.WRITE,
-                                null,
-                                1
-                        ))
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "input",
-                                FrameBufferTextureAdapter.ofColor(input),
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                0
-                        ))
+        fsrUpscalePipeline.job("fsr1_easu",
+                PipelineJobBuilders.compute(fsr1EASUShader)
+                        .resource("inImage",
+                                PipelineJobResource.SamplerTexture.create(
+                                        input.getTexture(FrameBufferAttachmentType.Color)
+                                )
+                        )
+                        .resource("outImage",
+                                PipelineJobResource.StorageTexture.create(
+                                        fsr1TempTexture,
+                                        PipelineResourceAccess.Write
+                                )
+                        )
+                        .resource("fsr1_data",
+                                PipelineJobResource.UniformBuffer.create(
+                                        fsr1UBO
+                                )
+                        )
                         .workGroupSupplier(this::getWorkGroupSize)
                         .build()
         );
-        fsrUpscalePipeline.addJob("fsr1_rcas",
-                GlPipelineJobBuilders.compute(fsr1RCASShader)
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Image2D,
-                                "temp",
-                                fsr1TempTexture,
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                0
-                        ))
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Image2D,
-                                "output",
-                                output,
-                                GlPipelineResourceAccess.WRITE,
-                                null,
-                                1
-                        ))
+        fsrUpscalePipeline.job("fsr1_rcas",
+                PipelineJobBuilders.compute(fsr1RCASShader)
+                        .resource("inImage",
+                                PipelineJobResource.StorageTexture.create(
+                                        fsr1TempTexture,
+                                        PipelineResourceAccess.Read
+                                )
+                        )
+                        .resource("outImage",
+                                PipelineJobResource.StorageTexture.create(
+                                        output,
+                                        PipelineResourceAccess.Write
+                                )
+                        )
+                        .resource("fsr1_data",
+                                PipelineJobResource.UniformBuffer.create(
+                                        fsr1UBO
+                                )
+                        )
                         .workGroupSupplier(this::getWorkGroupSize)
                         .build()
         );
@@ -124,7 +122,7 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     public void initShader() {
-        int fp16 = Config.SPECIAL.FSR1.FP16.get() ? checkFP16Support() : 0;
+        int fp16 = SuperResolutionConfig.SPECIAL.FSR1.FP16.get() ? checkFP16Support() : 0;
         fsr1EASUShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
                         .name("FSR1_EASU")
@@ -132,9 +130,10 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_EASU", String.valueOf(1))
                         .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .uniformSamplerTexture("inImage", 0)
+                        .uniformStorageTexture("outImage", ShaderUniformAccess.Write, 1)
                         .build()
         );
-        fsr1EASUShader.compile();
         fsr1RCASShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
                         .name("FSR1_RCAS")
@@ -142,16 +141,28 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_RCAS", String.valueOf(1))
                         .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .uniformStorageTexture("inImage", ShaderUniformAccess.Read, 0)
+                        .uniformStorageTexture("outImage", ShaderUniformAccess.Write, 1)
                         .build()
         );
-        fsr1RCASShader.compile();
+        if (fp16 == 2) {
+            if (fsr1EASUShader instanceof GlShaderProgram) {
+                ((GlShaderProgram) fsr1EASUShader).compile(true);
+            }
+            if (fsr1RCASShader instanceof GlShaderProgram) {
+                ((GlShaderProgram) fsr1RCASShader).compile(true);
+            }
+        } else {
+            fsr1EASUShader.compile();
+            fsr1RCASShader.compile();
+        }
     }
 
-    private Vector3f getWorkGroupSize() {
+    private Vector3i getWorkGroupSize() {
         int workRegionDim = 16;
         int dispatchX = (MinecraftRenderHandle.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
         int dispatchY = (MinecraftRenderHandle.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
-        return new Vector3f(
+        return new Vector3i(
                 dispatchX,
                 dispatchY,
                 1
@@ -164,8 +175,8 @@ public class FSR1 extends AbstractAlgorithm {
         ) {
             return 1;
         }
-        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) { //glslang似乎有bug？GL_NV_gpu_shader5扩展无法使用
-            return 0;
+        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) {
+            return 2;
         }
         return 0;
     }
@@ -175,15 +186,10 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1UBOData.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
-        fsr1UBOData.setFloat("sharpness", Config.getSharpness());
+        fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
         fsr1UBOData.fillBuffer();
         fsr1UBO.upload();
-        fsr1RCASShader.uniforms().buffer("fsr1_data").set(fsr1UBO);
-        fsr1EASUShader.uniforms().buffer("fsr1_data").set(fsr1UBO);
-        fsrUpscalePipeline.scheduleJob("fsr1_easu");
-        fsrUpscalePipeline.executeJob("fsr1_easu");
-        fsrUpscalePipeline.scheduleJob("fsr1_rcas");
-        fsrUpscalePipeline.executeJob("fsr1_rcas");
+        fsrUpscalePipeline.execute(RenderSystems.opengl());
         return true;
     }
 

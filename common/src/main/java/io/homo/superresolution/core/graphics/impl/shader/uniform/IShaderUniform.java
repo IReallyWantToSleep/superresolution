@@ -10,4 +10,6 @@ public interface IShaderUniform<T, SELF extends IShaderUniform> extends Destroya
     int binding();
 
     ShaderUniformAccess access();
+
+    ShaderUniformType type();
 }

@@ -3,15 +3,13 @@ package io.homo.superresolution.common.mixin.core;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -122,7 +120,7 @@ public abstract class PostChainMixin {
             super_resolution$blackList = new ArrayList<>();
             super_resolution$blackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
             super_resolution$blackList.add("minecraft:shaders/post/blur.json");
-            super_resolution$blackList.addAll(Config.getInjectPostChainBlackList());
+            super_resolution$blackList.addAll(SuperResolutionConfig.getInjectPostChainBlackList());
         }
 
         return super_resolution$blackList.contains(name);

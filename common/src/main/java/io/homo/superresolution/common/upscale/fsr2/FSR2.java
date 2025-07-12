@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -122,7 +122,7 @@ public class FSR2 extends AbstractAlgorithm {
         );
 
         dispatchDescription.enableSharpening = true;
-        dispatchDescription.sharpness = 1 - Config.getSharpness();
+        dispatchDescription.sharpness = 1 - SuperResolutionConfig.getSharpness();
         dispatchDescription.frameTimeDelta = dispatchResource.frameTimeDelta();
         dispatchDescription.preExposure = 1.0f;
         dispatchDescription.reset = false;

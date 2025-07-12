@@ -2,8 +2,9 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
-import io.homo.superresolution.core.math.Vector4f;
 import io.homo.superresolution.core.math.Vector4i;
+
+import java.util.Objects;
 
 public class PipelineCopyTextureJob implements IPipelineJob {
     protected Vector4i sourceDimensions;
@@ -11,34 +12,59 @@ public class PipelineCopyTextureJob implements IPipelineJob {
     protected ITexture source;
     protected ITexture destination;
 
-    protected PipelineCopyTextureJob(
+    public PipelineCopyTextureJob(
             ITexture source,
             ITexture destination,
             Vector4i sourceDimensions,
             Vector4i destinationDimensions
     ) {
+        this.source = Objects.requireNonNull(source, "源纹理不能为null");
+        this.destination = Objects.requireNonNull(destination, "目标纹理不能为null");
+        validateDimensions(sourceDimensions, "源");
+        validateDimensions(destinationDimensions, "目标");
         this.sourceDimensions = sourceDimensions;
         this.destinationDimensions = destinationDimensions;
-        this.source = source;
-        this.destination = destination;
+        if (!source.getTextureFormat().equals(destination.getTextureFormat())) {
+            throw new IllegalArgumentException("纹理格式不兼容");
+        }
+    }
+
+    private void validateDimensions(Vector4i dim, String name) {
+        Objects.requireNonNull(dim, name + "维度不能为null");
+        if (dim.x < 0 || dim.y < 0 || dim.z <= 0 || dim.w <= 0) {
+            throw new IllegalArgumentException(name + "维度无效: " + dim);
+        }
     }
 
     @Override
     public void execute(IRenderSystem renderSystem) {
+        checkBounds(source, sourceDimensions, "源");
+        checkBounds(destination, destinationDimensions, "目标");
+
         renderSystem.copyTexture(
-                source,
-                destination,
+                source, destination,
                 sourceDimensions.x, sourceDimensions.y,
-                sourceDimensions.z, sourceDimensions.w,
-                0,
+                sourceDimensions.z, sourceDimensions.w, 0,
                 destinationDimensions.x, destinationDimensions.y,
-                destinationDimensions.z, destinationDimensions.w,
-                0
+                destinationDimensions.z, destinationDimensions.w, 0
         );
+    }
+
+    private void checkTextureFormat() {
+        if (source.getTextureFormat() != destination.getTextureFormat()) {
+            throw new IllegalArgumentException("源纹理与目标纹理格式不同 %s %s".formatted(source.getTextureFormat(), destination.getTextureFormat()));
+        }
+    }
+
+    private void checkBounds(ITexture tex, Vector4i dim, String name) {
+        if (dim.x + dim.z > tex.getWidth() || dim.y + dim.w > tex.getHeight()) {
+            throw new IllegalArgumentException(name + "复制区域超出纹理边界");
+        }
     }
 
     @Override
     public void destroy() {
-
+        source = null;
+        destination = null;
     }
 }

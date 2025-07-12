@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class Config {
+public class SuperResolutionConfig {
     public static final ModConfigSpec SPEC;
     public static final SpecialConfigs SPECIAL;
     private static final BooleanValue ENABLE_UPSCALE;

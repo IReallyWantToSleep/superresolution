@@ -220,7 +220,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
                     frameBufferId,
                     GL_DEPTH,
                     0,
-                    new float[]{1.0f} // 深度清除值
+                    new float[]{1.0f}
             );
         }
         if (depthStencilAttachment != null) {
@@ -228,8 +228,8 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
                     frameBufferId,
                     GL_DEPTH_STENCIL,
                     0,
-                    1.0f,  // 深度值
-                    0      // 模板值
+                    1.0f,
+                    0
             );
         }
     }

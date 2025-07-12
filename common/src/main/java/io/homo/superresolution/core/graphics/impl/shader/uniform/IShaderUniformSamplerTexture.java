@@ -6,4 +6,8 @@ public interface IShaderUniformSamplerTexture<SELF extends IShaderUniform> exten
     SELF setTexture(ITexture texture);
 
     ITexture texture();
+
+    default ShaderUniformType type() {
+        return ShaderUniformType.SamplerTexture;
+    }
 }

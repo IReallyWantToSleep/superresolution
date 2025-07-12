@@ -7,4 +7,8 @@ public interface IShaderUniformBuffer<B extends IBuffer, SELF extends IShaderUni
     SELF setBuffer(B buffer);
 
     B buffer();
+
+    default ShaderUniformType type() {
+        return ShaderUniformType.UniformBuffer;
+    }
 }

@@ -3,11 +3,10 @@ package io.homo.superresolution.common.gui;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.ConfigFile;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
-import io.homo.superresolution.common.config.Config;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
 import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
@@ -47,15 +46,15 @@ public class ClothConfig {
                             Component.translatable("superresolution.screen.config.warn.mobile_device"))
                     .setColor(ColorUtil.color(255, 255, 0, 0)).build());
         }
-        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), Config.isEnableUpscale())
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), SuperResolutionConfig.isEnableUpscale())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                 .setDefaultValue(true)
-                .setSaveConsumer(Config::setEnableUpscale)
+                .setSaveConsumer(SuperResolutionConfig::setEnableUpscale)
                 .build());
         commonCategory.addEntry(entryBuilder.startIntSlider(
                         Component.translatable("superresolution.screen.config.options.label.upscale_ratio"),
-                        getInt(Config.getUpscaleRatio()),
-                        getInt(Config.getMinUpscaleRatio()),
+                        getInt(SuperResolutionConfig.getUpscaleRatio()),
+                        getInt(SuperResolutionConfig.getMinUpscaleRatio()),
                         getInt(4.0f)
                 )
                 .setDefaultValue(getInt(1.7))
@@ -68,24 +67,24 @@ public class ClothConfig {
                             (int) ((1 / value) * 100) + "%"
                     ))});
                 }))
-                .setSaveConsumer((i) -> Config.setUpscaleRatio(getFloat(i)))
+                .setSaveConsumer((i) -> SuperResolutionConfig.setUpscaleRatio(getFloat(i)))
                 .build());
         commonCategory.addEntry(entryBuilder.startIntSlider(
                         Component.translatable("superresolution.screen.config.options.label.sharpness"),
-                        getInt(Config.getSharpness()),
+                        getInt(SuperResolutionConfig.getSharpness()),
                         getInt(0.0),
                         getInt(1.0)
                 )
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.sharpness"))
                 .setDefaultValue(getInt(0.55))
                 .setTextGetter((integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
-                .setSaveConsumer((i) -> Config.setSharpness(getFloat(i)))
+                .setSaveConsumer((i) -> SuperResolutionConfig.setSharpness(getFloat(i)))
                 .build());
 
         SelectionListEntry<Object> algorithmSelector = entryBuilder.startSelector(
                         Component.translatable("superresolution.screen.config.options.label.algo_type"),
                         AlgorithmRegistry.getAlgorithmMap().values().toArray(),
-                        Config.getUpscaleAlgorithm()
+                        SuperResolutionConfig.getUpscaleAlgorithm()
                 )
                 .setDefaultValue(AlgorithmDescriptions.FSR1)
                 .setNameProvider(((anEnum) -> Component.literal(((AlgorithmDescription<?>) anEnum).getBriefName())))
@@ -99,7 +98,7 @@ public class ClothConfig {
                     return Optional.empty();
                 }))
                 .setSaveConsumer((o -> {
-                    Config.setUpscaleAlgorithm((AlgorithmDescription<?>) o);
+                    SuperResolutionConfig.setUpscaleAlgorithm((AlgorithmDescription<?>) o);
                 })).build();
         commonCategory.addEntry(algorithmSelector);
         commonCategory.addEntry(
@@ -119,7 +118,7 @@ public class ClothConfig {
         EnumListEntry<CaptureMode> captureModeEnumSelector = entryBuilder.startEnumSelector(
                         Component.translatable("superresolution.screen.config.options.label.capture_mode"),
                         CaptureMode.class,
-                        Config.getCaptureMode()
+                        SuperResolutionConfig.getCaptureMode()
                 )
                 .setDefaultValue(CaptureMode.A)
                 .setErrorSupplier((captureMode -> {
@@ -138,54 +137,54 @@ public class ClothConfig {
                     }
                 }))
                 .setTooltipSupplier((captureMode) -> Optional.of(new Component[]{captureMode.get()}))
-                .setSaveConsumer(Config::setCaptureMode).build();
+                .setSaveConsumer(SuperResolutionConfig::setCaptureMode).build();
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.generate_motion_vectors"),
-                        Config.isGenerateMotionVectors()
+                        SuperResolutionConfig.isGenerateMotionVectors()
                 )
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
                 .setDefaultValue(false)
-                .setSaveConsumer(Config::setGenerateMotionVectors)
+                .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
                 .build());
         commonCategory.addEntry(captureModeEnumSelector);
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
-                        Config.isSkipInitVulkan())
+                        SuperResolutionConfig.isSkipInitVulkan())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))
-                .setSaveConsumer((Config::setSkipInitVulkan))
+                .setSaveConsumer((SuperResolutionConfig::setSkipInitVulkan))
                 .requireRestart()
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.enable_compat_shader_compiler"),
-                        Config.isEnableCompatShaderCompiler())
+                        SuperResolutionConfig.isEnableCompatShaderCompiler())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_compat_shader_compiler"))
-                .setSaveConsumer((Config::setEnableCompatShaderCompiler))
+                .setSaveConsumer((SuperResolutionConfig::setEnableCompatShaderCompiler))
                 .requireRestart()
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.pause_game_on_gui"),
-                        Config.isPauseGameOnGui())
-                .setSaveConsumer((Config::setPauseGameOnGui))
+                        SuperResolutionConfig.isPauseGameOnGui())
+                .setSaveConsumer((SuperResolutionConfig::setPauseGameOnGui))
                 .build());
         List<String> injectPostChainBlackList = new ArrayList<>();
         commonCategory.addEntry(entryBuilder.startStrList(
                         Component.translatable("superresolution.screen.config.options.label.inject_postChain_black_list"),
-                        Config.getInjectPostChainBlackList())
+                        SuperResolutionConfig.getInjectPostChainBlackList())
                 .setDefaultValue(injectPostChainBlackList)
                 .requireRestart()
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.inject_postChain_black_list"))
-                .setSaveConsumer((Config::setInjectPostChainBlackList))
+                .setSaveConsumer((SuperResolutionConfig::setInjectPostChainBlackList))
                 .build());
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),
                 true
         ));
-        for (String key : Config.SPECIAL.description.keySet()) {
+        for (String key : SuperResolutionConfig.SPECIAL.description.keySet()) {
             addSpecialConfig(builder, entryBuilder, key);
         }
         addDebug(builder, entryBuilder);
-        builder.setSavingRunnable(Config.SPEC::save);
+        builder.setSavingRunnable(SuperResolutionConfig.SPEC::save);
     }
 
     private static int getInt(float v) {
@@ -202,7 +201,7 @@ public class ClothConfig {
 
     @SuppressWarnings("unchecked")
     public static void addSpecialConfig(ConfigBuilder builder, ConfigEntryBuilder entryBuilder, String key) {
-        Pair<SpecialConfig, String> specialConfigDescription = Config.SPECIAL.description.get(key);
+        Pair<SpecialConfig, String> specialConfigDescription = SuperResolutionConfig.SPECIAL.description.get(key);
         Map<String, SpecialConfigDescription<?>> configDescriptions = specialConfigDescription.left().getDescriptions();
         Set<String> keys = configDescriptions.keySet();
         if (keys.isEmpty()) return;
@@ -257,26 +256,26 @@ public class ClothConfig {
         ConfigCategory debugCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.debug"));
         debugCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.debug_dump_shader"),
-                        Config.isDebugDumpShader())
+                        SuperResolutionConfig.isDebugDumpShader())
                 .setDefaultValue(false)
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.debug_dump_shader"))
-                .setSaveConsumer(Config::setDebugDumpShader)
+                .setSaveConsumer(SuperResolutionConfig::setDebugDumpShader)
                 .build());
 
         debugCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
-                        Config.isEnableRenderDoc())
+                        SuperResolutionConfig.isEnableRenderDoc())
                 .setDefaultValue(true)
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
-                .setSaveConsumer(Config::setEnableRenderDoc)
+                .setSaveConsumer(SuperResolutionConfig::setEnableRenderDoc)
                 .build());
 
         debugCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.enable_imgui"),
-                        Config.isEnableImgui())
+                        SuperResolutionConfig.isEnableImgui())
                 .setDefaultValue(true)
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
-                .setSaveConsumer(Config::setEnableImgui)
+                .setSaveConsumer(SuperResolutionConfig::setEnableImgui)
                 .build());
 
         ClothTextListEntry debugInfo = new ClothTextListEntry(

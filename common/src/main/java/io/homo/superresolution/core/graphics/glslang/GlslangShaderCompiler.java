@@ -80,7 +80,6 @@ public class GlslangShaderCompiler {
 
 
     public static void main(String[] args) {
-        // 检查并加载依赖库
         if (!NativeLibManager.check("I:\\super_resolution_moddev\\superresolution\\run")) {
             NativeLibManager.extract("I:\\super_resolution_moddev\\superresolution\\run");
         }

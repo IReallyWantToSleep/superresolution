@@ -5,7 +5,7 @@ import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.function.Consumer;
 
 public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
@@ -135,13 +134,13 @@ public final class SuperResolution implements Resizable, Destroyable {
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return;
             if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL) {
-                Config.setEnableCompatShaderCompiler(true);
-                Config.SPEC.save();
+                SuperResolutionConfig.setEnableCompatShaderCompiler(true);
+                SuperResolutionConfig.SPEC.save();
             }
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
-            algorithmDescription = Config.getUpscaleAlgorithm();
-            if (Config.isEnableDatasetGenerator()) DataSetGenerator.init();
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
         }
     }
 
@@ -150,7 +149,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return false;
             defaultAlgorithm.init();
-            algorithmDescription = Config.getUpscaleAlgorithm();
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
@@ -164,7 +163,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static AbstractAlgorithm getCurrentAlgorithm() {
-        if (Config.isEnableUpscale() && currentAlgorithm != null) {
+        if (SuperResolutionConfig.isEnableUpscale() && currentAlgorithm != null) {
             return currentAlgorithm;
         }
         return defaultAlgorithm;
@@ -176,7 +175,8 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (isInit)
             return;
         instance = this;
-        if (Platform.currentPlatform.isDevelopmentEnvironment() && Config.isEnableImgui()) new ImguiMain();
+        if (Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui())
+            new ImguiMain();
 
         isInit = true;
         this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());

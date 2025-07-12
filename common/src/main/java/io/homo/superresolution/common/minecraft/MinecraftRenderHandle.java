@@ -8,7 +8,7 @@ import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
@@ -21,6 +21,7 @@ import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -143,14 +144,14 @@ public class MinecraftRenderHandle {
     }
 
     private static boolean checkRenderWorldCallPos(CallType type) {
-        return switch (Config.getCaptureMode()) {
+        return switch (SuperResolutionConfig.getCaptureMode()) {
             case A, C -> type == CallType.GAME_RENDERER;
             case B -> type == CallType.LEVEL_RENDERER;
         };
     }
 
     private static boolean checkRenderHandCallPos() {
-        return switch (Config.getCaptureMode()) {
+        return switch (SuperResolutionConfig.getCaptureMode()) {
             case A, B -> false;
             case C -> true;
         } && !Platform.currentPlatform.iris().isShaderPackInUse();
@@ -240,14 +241,19 @@ public class MinecraftRenderHandle {
 
             }
             IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-            Gl.DSA.blitFramebuffer(
-                    outFbo.handle(),
-                    MinecraftRenderHandle.getOriginRenderTarget().handle(),
-                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                    0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
-                    GL46.GL_COLOR_BUFFER_BIT,
-                    GL46.GL_NEAREST
+            GlBlitRenderer.blitToScreen(
+                    outFbo.getTexture(FrameBufferAttachmentType.Color),
+                    MinecraftRenderHandle.getScreenWidth(),
+                    MinecraftRenderHandle.getScreenHeight()
             );
+            //Gl.DSA.blitFramebuffer(
+            //        outFbo.handle(),
+            //        MinecraftRenderHandle.getOriginRenderTarget().handle(),
+            //        0, 0, outFbo.getWidth(), outFbo.getHeight(),
+            //        0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
+            //        GL46.GL_COLOR_BUFFER_BIT,
+            //        GL46.GL_NEAREST
+            //);
 
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
@@ -256,7 +262,7 @@ public class MinecraftRenderHandle {
                 }
             }
             PerformanceInfo.end("upscale");
-            if (Config.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
+            if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                 blitHandRenderTarget();
             RenderSystems.current().finish();
         }
@@ -301,7 +307,7 @@ public class MinecraftRenderHandle {
     }
 
     public static float getScaleFactor() {
-        return Config.isEnableUpscale() ? Config.getRenderScaleFactor() : 1;
+        return SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getRenderScaleFactor() : 1;
     }
 
 

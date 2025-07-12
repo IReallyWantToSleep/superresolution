@@ -28,10 +28,10 @@ public class DrawObject implements Destroyable {
 
     public static DrawObject fullscreenQuad(IRenderSystem renderSystem) {
         float[] vertices = {
-                -1f, 1f, 0f, 0f,
-                1f, 1f, 1f, 0f,
-                -1f, -1f, 0f, 1f,
-                1f, -1f, 1f, 1f
+                -1f, 1f, 0f, 1f,
+                1f, 1f, 1f, 1f,
+                -1f, -1f, 0f, 0f,
+                1f, -1f, 1f, 0f
         };
         VertexBufferDescription desc = new VertexBufferDescription(vertices.length * Float.BYTES, false);
         IVertexBuffer vbo = renderSystem.device().createVertexBuffer(desc);

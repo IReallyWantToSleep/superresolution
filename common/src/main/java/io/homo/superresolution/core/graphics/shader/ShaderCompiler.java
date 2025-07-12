@@ -1,6 +1,6 @@
 package io.homo.superresolution.core.graphics.shader;
 
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.SuperResolutionNative;
@@ -79,7 +79,7 @@ public class ShaderCompiler {
 
                 LOGGER.info("保存SPIR-V，大小={} bytes, 路径={}", size, path);
 
-                if (Config.isDebugDumpShader()) {
+                if (SuperResolutionConfig.isDebugDumpShader()) {
                     try {
                         Path srcPath = Path.of(CACHE_DIR.toAbsolutePath().toString(),
                                 program.getDescription().shaderName() + "." + type.name().toLowerCase() + "." + apiTag + ".source.glsl");

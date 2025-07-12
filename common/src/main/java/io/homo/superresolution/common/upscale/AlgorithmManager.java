@@ -1,7 +1,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
-import io.homo.superresolution.common.config.Config;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
@@ -114,7 +114,7 @@ public class AlgorithmManager {
 
     public static void update() {
         getMotionVectorsFrameBuffer().clearFrameBuffer();
-        if (Config.isGenerateMotionVectors()) {
+        if (SuperResolutionConfig.isGenerateMotionVectors()) {
             MotionVectorsGenerator.update();
         }
         RenderSystems.current().finish();

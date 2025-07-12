@@ -28,7 +28,7 @@ public class PipelineCopyBufferJob implements IPipelineJob {
     /**
      * 设置拷贝源
      *
-     * @param source 源资源对象
+     * @param source 源Buffer
      */
     public PipelineCopyBufferJob source(IBuffer source) {
         this.source = source;
@@ -38,7 +38,7 @@ public class PipelineCopyBufferJob implements IPipelineJob {
     /**
      * 设置拷贝目标
      *
-     * @param destination 目标资源对象
+     * @param destination 目标Buffer
      */
     public PipelineCopyBufferJob destination(IBuffer destination) {
         this.destination = destination;
@@ -81,13 +81,34 @@ public class PipelineCopyBufferJob implements IPipelineJob {
 
     @Override
     public void execute(IRenderSystem renderSystem) {
-        renderSystem.copyBuffer(
-                source,
-                destination,
-                srcOffset,
-                dstOffset,
-                size
-        );
+        if (srcOffset == -1 && dstOffset == -1 && size == -1) {
+            if (source.getSize() == destination.getSize()) {
+                renderSystem.copyBuffer(
+                        source,
+                        destination,
+                        0,
+                        0,
+                        source.getSize()
+                );
+                return;
+            } else {
+                throw new RuntimeException("源Buffer与目标Buffer大小不匹配");
+            }
+        }
+        if (srcOffset >= 0 && dstOffset >= 0 && size >= 0) {
+            if (srcOffset + size > source.getSize() || dstOffset + size > destination.getSize()) {
+                throw new RuntimeException("Buffer空间不足");
+            }
+            renderSystem.copyBuffer(
+                    source,
+                    destination,
+                    srcOffset,
+                    dstOffset,
+                    size
+            );
+        } else {
+            throw new RuntimeException("Buffer复制范围错误 源偏移量 %s 目标偏移量 %s 大小 %s".formatted(srcOffset, dstOffset, size));
+        }
     }
 
     @Override

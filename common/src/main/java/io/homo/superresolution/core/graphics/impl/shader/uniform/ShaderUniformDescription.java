@@ -62,7 +62,7 @@ public class ShaderUniformDescription {
         }
 
         public Builder bufferSize(int size) {
-            if (type != ShaderUniformType.Buffer) {
+            if (type != ShaderUniformType.UniformBuffer) {
                 throw new IllegalArgumentException("Buffer size only applicable to uniform blocks");
             }
             this.bufferSize = size;

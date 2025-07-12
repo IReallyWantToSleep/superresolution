@@ -7,6 +7,8 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.math.Vector3i;
 import io.homo.superresolution.core.math.Vector4i;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public final class PipelineJobBuilders {
@@ -105,7 +107,7 @@ public final class PipelineJobBuilders {
         }
     }
 
-    public static class ComputeJobBuilder {
+    public static class ComputeJobBuilder extends GpuComputeJobBuilder<ComputeJobBuilder> {
         private final IShaderProgram<?> program;
         private Supplier<Vector3i> workGroupSizeSupplier = () -> new Vector3i(1, 1, 1);
 
@@ -128,11 +130,12 @@ public final class PipelineJobBuilders {
             PipelineComputeJob job = new PipelineComputeJob();
             job.computeProgram(program);
             job.workGroupSizeSupplier(workGroupSizeSupplier);
+            job.resources.putAll(resources);
             return job;
         }
     }
 
-    public static class GraphicsJobBuilder {
+    public static class GraphicsJobBuilder extends GpuComputeJobBuilder<GraphicsJobBuilder> {
         private final IShaderProgram<?> program;
         private IFrameBuffer targetFbo;
         private float[] viewport = null;
@@ -161,6 +164,7 @@ public final class PipelineJobBuilders {
             } else if (targetFbo != null) {
                 job.viewport(0, 0, targetFbo.getWidth(), targetFbo.getHeight());
             }
+            job.resources.putAll(resources);
             return job;
         }
     }
@@ -168,7 +172,7 @@ public final class PipelineJobBuilders {
     public static class CopyBufferJobBuilder {
         private IBuffer source;
         private IBuffer destination;
-        private long srcOffset = 0, dstOffset = 0, size = 0;
+        private long srcOffset = -1, dstOffset = -1, size = -1;
 
         public CopyBufferJobBuilder from(IBuffer source) {
             this.source = source;
@@ -189,6 +193,15 @@ public final class PipelineJobBuilders {
 
         public PipelineCopyBufferJob build() {
             return new PipelineCopyBufferJob(source, destination, srcOffset, dstOffset, size);
+        }
+    }
+
+    public static abstract class GpuComputeJobBuilder<SELF> {
+        protected Map<String, PipelineJobResource<?>> resources = new HashMap<>();
+
+        public SELF resource(String key, PipelineJobResource<?> resource) {
+            resources.put(key, resource);
+            return (SELF) this;
         }
     }
 }

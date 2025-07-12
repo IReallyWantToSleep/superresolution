@@ -20,7 +20,7 @@ public class GlShaderUniforms extends ShaderUniforms<
         super(program, description);
         description.shaderUniforms().values().forEach((uniformDescription) -> {
             uniformMap.put(uniformDescription.name(), switch (uniformDescription.type()) {
-                case Buffer ->
+                case UniformBuffer ->
                         new GlShaderUniformBuffer(uniformDescription.name(), uniformDescription.binding(), uniformDescription.access());
                 case SamplerTexture ->
                         new GlShaderUniformSamplerTexture(uniformDescription.name(), uniformDescription.binding(), uniformDescription.access());
@@ -31,18 +31,33 @@ public class GlShaderUniforms extends ShaderUniforms<
     }
 
     @Override
-    public GlShaderUniformBuffer buffer(String name) {
-        return (GlShaderUniformBuffer) uniformMap.get(name);
+    public GlShaderUniformBuffer uniformBuffer(String name) {
+        GlShaderBaseUniform<?, ?> uniform = uniformMap.get(name);
+        if (!(uniform instanceof GlShaderUniformBuffer)) {
+            throw new ClassCastException("Uniform " + name + " 不是UBO类型");
+        }
+        return (GlShaderUniformBuffer) uniform;
     }
 
-    @Override
     public GlShaderUniformSamplerTexture samplerTexture(String name) {
-        return (GlShaderUniformSamplerTexture) uniformMap.get(name);
+        GlShaderBaseUniform<?, ?> uniform = uniformMap.get(name);
+        if (!(uniform instanceof GlShaderUniformSamplerTexture)) {
+            throw new ClassCastException("Uniform " + name + " 不是采样纹理类型");
+        }
+        return (GlShaderUniformSamplerTexture) uniform;
+    }
+
+    public GlShaderUniformStorageTexture storageTexture(String name) {
+        GlShaderBaseUniform<?, ?> uniform = uniformMap.get(name);
+        if (!(uniform instanceof GlShaderUniformStorageTexture)) {
+            throw new ClassCastException("Uniform " + name + " 不是存储纹理类型");
+        }
+        return (GlShaderUniformStorageTexture) uniform;
     }
 
     @Override
-    public GlShaderUniformStorageTexture storageTexture(String name) {
-        return (GlShaderUniformStorageTexture) uniformMap.get(name);
+    public IShaderUniform<?, ?> get(String name) {
+        return uniformMap.get(name);
     }
 
     public Map<String, GlShaderBaseUniform<?, ?>> getUniformMap() {
