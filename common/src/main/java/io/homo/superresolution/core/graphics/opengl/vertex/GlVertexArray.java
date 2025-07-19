@@ -4,36 +4,79 @@ package io.homo.superresolution.core.graphics.opengl.vertex;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexArray;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexAttribute;
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlState;
 import org.lwjgl.opengl.GL45;
+
+import static org.lwjgl.opengl.GL41.*;
+
 
 public class GlVertexArray implements IVertexArray {
     private final int id;
 
     public GlVertexArray() {
-        this.id = GL45.glCreateVertexArrays();
+        this.id = Gl.DSA.createVertexArray();
     }
 
     @Override
     public void destroy() {
-        GL45.glDeleteVertexArrays(id);
+        Gl.DSA.deleteVertexArray(id);
     }
 
     @Override
     public void setAttributes(VertexAttribute[] attributes, IVertexBuffer vertexBuffer) {
-        int bindingIndex = 0;
-        GL45.glVertexArrayVertexBuffer(id, bindingIndex, vertexBuffer.handle(), 0, attributes[0].getStride());
+        if (Gl.isLegacy()) {
+            try (GlState ignored = new GlState(GlState.STATE_VERTEX_OPERATIONS | GlState.STATE_VBO)) {
+                glBindVertexArray(id);
+                glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.handle());
+                for (VertexAttribute attr : attributes) {
+                    int loc = attr.getLocation();
+                    int componentCount = attr.getComponentCount();
+                    int stride = attr.getStride();
+                    int offset = attr.getOffset();
 
-        for (VertexAttribute attr : attributes) {
-            int loc = attr.getLocation();
-            GL45.glVertexArrayAttribBinding(id, loc, bindingIndex);
-            switch (attr.getDataType()) {
-                case FLOAT ->
-                        GL45.glVertexArrayAttribFormat(id, loc, attr.getComponentCount(), GL45.GL_FLOAT, false, attr.getOffset());
-                case INTEGER ->
-                        GL45.glVertexArrayAttribIFormat(id, loc, attr.getComponentCount(), GL45.GL_INT, attr.getOffset());
+                    switch (attr.getDataType()) {
+                        case FLOAT:
+                            glVertexAttribPointer(
+                                    loc,
+                                    componentCount,
+                                    GL_FLOAT,
+                                    false,
+                                    stride,
+                                    offset
+                            );
+                            break;
+                        case INTEGER:
+                            glVertexAttribIPointer(
+                                    loc,
+                                    componentCount,
+                                    GL_INT,
+                                    stride,
+                                    offset
+                            );
+                            break;
+                    }
+                    glEnableVertexAttribArray(loc);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glBindVertexArray(0);
             }
-            GL45.glEnableVertexArrayAttrib(id, loc);
+        } else {
+            int bindingIndex = 0;
+            Gl.DSA.vertexArrayVertexBuffer(id, bindingIndex, vertexBuffer.handle(), 0, attributes[0].getStride());
+            for (VertexAttribute attr : attributes) {
+                int loc = attr.getLocation();
+                Gl.DSA.vertexArrayAttribBinding(id, loc, bindingIndex);
+                switch (attr.getDataType()) {
+                    case FLOAT ->
+                            Gl.DSA.vertexArrayAttribFormat(id, loc, attr.getComponentCount(), GL45.GL_FLOAT, false, attr.getOffset());
+                    case INTEGER ->
+                            Gl.DSA.vertexArrayAttribFormat(id, loc, attr.getComponentCount(), GL45.GL_INT, false, attr.getOffset());
+                }
+                Gl.DSA.enableVertexArrayAttrib(id, loc);
+            }
         }
+
     }
 
     @Override

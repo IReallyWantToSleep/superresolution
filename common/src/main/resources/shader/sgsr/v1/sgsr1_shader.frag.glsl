@@ -11,7 +11,18 @@
 precision mediump float;
 precision highp int;
 
-layout(set = 0, binding = 0) uniform UniformBlock
+
+
+#if SR_GL41_COMPAT
+layout(std140) uniform sgsr1_data {
+    vec2 renderSize;
+    vec2 renderSizeRcp;
+    float EdgeSharpness;
+    float EdgeThreshold;
+};
+uniform mediump sampler2D ps0;
+#else
+layout(set = 0, binding = 0) uniform sgsr1_data
 {
     vec2 renderSize;
     vec2 renderSizeRcp;
@@ -19,6 +30,8 @@ layout(set = 0, binding = 0) uniform UniformBlock
     float EdgeThreshold;
 };
 layout(set = 0, binding = 1) uniform mediump sampler2D ps0;
+#endif
+
 
 layout(location = 0) in mediump vec2 in_TEXCOORD0;
 layout(location = 0) out mediump vec4 out_Target0;

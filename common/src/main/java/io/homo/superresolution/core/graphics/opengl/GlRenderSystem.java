@@ -2,30 +2,24 @@ package io.homo.superresolution.core.graphics.opengl;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
-import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.impl.vertex.*;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformStorageTexture;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTextureView;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import org.lwjgl.opengl.*;
 
-import static io.homo.superresolution.core.graphics.opengl.Gl.glBindImageTexture;
-import static io.homo.superresolution.core.graphics.opengl.Gl.glBindTextureUnit;
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
 import static org.lwjgl.opengl.GL11.glFinish;
 import static org.lwjgl.opengl.GL15.*;
@@ -154,13 +148,7 @@ public class GlRenderSystem implements IRenderSystem {
             throw new OpenGLException("draw: 着色器程序为null");
         }
         try (GlState ig = new GlState(
-                GlState.STATE_TEXTURE_2D |
-                        GlState.STATE_ACTIVE_TEXTURE |
-                        GlState.STATE_TEXTURES |
-                        GlState.STATE_PROGRAM |
-                        GlState.STATE_VERTEX_OPERATIONS |
-                        GlState.STATE_DRAW_FBO |
-                        GlState.STATE_READ_FBO
+                GlState.STATE_ALL
         )) {
             if (frameBuffer != null) {
                 if (frameBuffer instanceof GlFrameBuffer) {
@@ -169,6 +157,13 @@ public class GlRenderSystem implements IRenderSystem {
                     throw new OpenGLException("draw: 目标帧缓冲区不是由OpenGL创建的");
                 }
             }
+            int[] saved2DBindings = new int[32];
+            int savedActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
+            for (int i = 0; i < 32; i++) {
+                glActiveTexture(GL_TEXTURE0 + i);
+                saved2DBindings[i] = glGetInteger(GL_TEXTURE_BINDING_2D);
+            }
+            glActiveTexture(savedActiveTexture);
             setupShaderProgram((GlShaderProgram) shaderProgram);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
             GL45.glBindVertexArray(drawObject.getVertexArray().handle());
@@ -180,6 +175,11 @@ public class GlRenderSystem implements IRenderSystem {
             };
             GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
             if (drawObject.isOnce()) drawObject.destroy();
+            for (int i = 0; i < 32; i++) {
+                glActiveTexture(GL_TEXTURE0 + i);
+                glBindTexture(GL_TEXTURE_2D, saved2DBindings[i]);
+            }
+            glActiveTexture(savedActiveTexture);
         }
     }
 
@@ -189,7 +189,7 @@ public class GlRenderSystem implements IRenderSystem {
             throw new OpenGLException("dispatchCompute: 着色器程序为null");
         }
         try (GlState state = new GlState(
-                GlState.STATE_TEXTURE_2D |
+                GlState.STATE_TEXTURE |
                         GlState.STATE_ACTIVE_TEXTURE |
                         GlState.STATE_TEXTURES |
                         GlState.STATE_PROGRAM
@@ -215,12 +215,24 @@ public class GlRenderSystem implements IRenderSystem {
         uniformMap.forEach((name, uniform) -> {
             if (uniform instanceof GlShaderUniformBuffer) {
                 if (((GlShaderUniformBuffer) uniform).buffer() != null) {
-                    Gl.DSA.bindBufferBase(GL45.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
+                    if (Gl.isLegacy()) {
+                        int blockIndex = GL31.glGetUniformBlockIndex(
+                                shaderProgram.handle(),
+                                uniform.name()
+                        );
+                        if (blockIndex == GL45.GL_INVALID_INDEX) {
+                            throw new RuntimeException("Uniform block '%s' not found".formatted(uniform.name()));
+                        }
+                        GL31.glUniformBlockBinding(shaderProgram.handle(), blockIndex, uniform.binding());
+                        GL31.glBindBufferBase(GL31.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
+                    } else {
+                        Gl.DSA.bindBufferBase(GL41.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
+                    }
                 }
             }
             if (uniform instanceof GlShaderUniformStorageTexture) {
                 if (((GlShaderUniformStorageTexture) uniform).texture() != null) {
-                    glBindImageTexture(
+                    Gl.DSA.bindImageTexture(
                             uniform.binding(),
                             ((GlShaderUniformStorageTexture) uniform).texture().handle(),
                             0,
@@ -237,7 +249,23 @@ public class GlRenderSystem implements IRenderSystem {
             }
             if (uniform instanceof GlShaderUniformSamplerTexture) {
                 if (((GlShaderUniformSamplerTexture) uniform).texture() != null) {
-                    glBindTextureUnit(uniform.binding(), ((GlShaderUniformSamplerTexture) uniform).texture().handle());
+                    /* GlState无法保存用glBindTextureUnit绑定的纹理单元 （你别说，还顺带兼容OpenGL4.1了）
+                       Gl.DSA.bindTextureUnit(
+                               uniform.binding(),
+                               ((GlShaderUniformSamplerTexture) uniform).texture().handle()
+                       );
+                    */
+                    ITexture texture = ((GlShaderUniformSamplerTexture) uniform).texture();
+                    GL30.glActiveTexture(GL30.GL_TEXTURE0 + uniform.binding());
+
+                    if (texture.getTextureType() == TextureType.Texture1D) {
+                        GL30.glBindTexture(GL_TEXTURE_1D, texture.handle());
+                    } else if (texture.getTextureType() == TextureType.Texture2D) {
+                        GL30.glBindTexture(GL_TEXTURE_2D, texture.handle());
+                    } else {
+                        GL30.glBindTexture(GL_TEXTURE_2D, texture.handle());
+                    }
+                    GL30.glUniform1i(GL30.glGetUniformLocation(shaderProgram.handle(), uniform.name()), uniform.binding());
                 }
             }
         });

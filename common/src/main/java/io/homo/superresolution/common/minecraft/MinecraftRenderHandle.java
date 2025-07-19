@@ -21,7 +21,6 @@ import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -241,19 +240,14 @@ public class MinecraftRenderHandle {
 
             }
             IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-            GlBlitRenderer.blitToScreen(
-                    outFbo.getTexture(FrameBufferAttachmentType.Color),
-                    MinecraftRenderHandle.getScreenWidth(),
-                    MinecraftRenderHandle.getScreenHeight()
+            Gl.DSA.blitFramebuffer(
+                    outFbo.handle(),
+                    MinecraftRenderHandle.getOriginRenderTarget().handle(),
+                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
+                    0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
+                    GL46.GL_COLOR_BUFFER_BIT,
+                    GL46.GL_NEAREST
             );
-            //Gl.DSA.blitFramebuffer(
-            //        outFbo.handle(),
-            //        MinecraftRenderHandle.getOriginRenderTarget().handle(),
-            //        0, 0, outFbo.getWidth(), outFbo.getHeight(),
-            //        0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
-            //        GL46.GL_COLOR_BUFFER_BIT,
-            //        GL46.GL_NEAREST
-            //);
 
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {

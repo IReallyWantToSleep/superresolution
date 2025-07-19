@@ -1,4 +1,4 @@
-#version 430
+#version 410
 precision mediump float;
 
 layout(location = 0) in vec2 aPosition;

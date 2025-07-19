@@ -10,6 +10,7 @@ import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.shader.ShaderCompileException;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
 import org.lwjgl.opengl.GL11;
@@ -169,7 +170,7 @@ public class ShaderCompiler {
                 clientVersion,
                 EShTargetLanguage.EShTargetSpv,
                 EShTargetLanguageVersion.EShTargetSpv_1_4,
-                460,
+                Gl.isLegacy() ? 410 : 460,
                 EProfile.ENoProfile,
                 true,
                 false

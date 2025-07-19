@@ -37,7 +37,7 @@ dependencies {
     //依赖的mod
     modImplementation "dev.architectury:architectury-fabric:$versionConfig.common.architecturyApiVersion"
     modImplementation "me.shedaniel.cloth:cloth-config-fabric:$versionConfig.common.clothConfigVersion"
-    modImplementation("com.terraformersmc:modmenu:$versionConfig.fabric.modmenuVersion")
+    modCompileOnly("com.terraformersmc:modmenu:$versionConfig.fabric.modmenuVersion")
 
     //依赖库
     implementation "io.github.spair:imgui-java-app:1.87.5"
@@ -61,13 +61,13 @@ dependencies {
         }
     }
     for (lib in versionConfig.fabric.dependencies.local) {
-        if (lib.isMod){
+        if (lib.isMod) {
             if (lib.compileOnly) {
                 modCompileOnly(files("../libs/" + lib.name + ".jar"))
             } else {
                 modImplementation(files("../libs/" + lib.name + ".jar"))
             }
-        }else{
+        } else {
             if (lib.compileOnly) {
                 compileOnly(files("../libs/" + lib.name + ".jar"))
             } else {

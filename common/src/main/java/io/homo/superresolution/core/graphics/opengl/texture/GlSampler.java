@@ -1,5 +1,7 @@
 package io.homo.superresolution.core.graphics.opengl.texture;
 
+import io.homo.superresolution.core.graphics.opengl.Gl;
+
 import static io.homo.superresolution.core.graphics.opengl.Gl.*;
 import static io.homo.superresolution.core.graphics.opengl.GlConst.*;
 
@@ -7,28 +9,28 @@ public class GlSampler {
     public final int id;
 
     protected GlSampler(SamplerType type) {
-        id = glGenSamplers();
+        id = DSA.createSampler();
         switch (type) {
             case LinearClamp -> {
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-                glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                DSA.samplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+                DSA.samplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             }
             case LinearRepeat -> {
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_R, GL_REPEAT);
-                glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_R, GL_REPEAT);
+                DSA.samplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                DSA.samplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             }
             case NearestClamp -> {
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                glSamplerParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-                glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                DSA.samplerParameteri(id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                DSA.samplerParameteri(id, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+                DSA.samplerParameteri(id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             }
         }
     }

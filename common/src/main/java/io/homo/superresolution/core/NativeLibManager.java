@@ -178,7 +178,10 @@ public class NativeLibManager {
             if (os.contains("windows")) {
                 return name + ".dll";
             }
-            return name + ".so";
+            if (os.contains("linux")) {
+                return name + ".so";
+            }
+            return name + ".dylib";
         }
     }
 }

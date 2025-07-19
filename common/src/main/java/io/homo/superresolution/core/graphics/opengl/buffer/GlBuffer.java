@@ -5,6 +5,7 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.graphics.opengl.Gl;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL45C;
 
 import static org.lwjgl.opengl.GL45.*;
@@ -20,7 +21,11 @@ public class GlBuffer implements IBuffer {
         this.size = description.size();
         this.usage = description.usage();
         this.glId = Gl.DSA.createBuffer();
-        GL45C.glNamedBufferData(this.glId, new int[]{}, getGlUsage());
+        if (Gl.isSupportDSA()) {
+            GL45C.glNamedBufferData(this.glId, new int[]{}, getGlUsage());
+        } else {
+            GL41.glBufferData(this.glId, new int[]{}, getGlUsage());
+        }
     }
 
     @Override

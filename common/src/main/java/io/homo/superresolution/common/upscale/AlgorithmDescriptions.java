@@ -13,6 +13,8 @@ import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 
 public class AlgorithmDescriptions {
     public static final AlgorithmDescription<None> NONE =
@@ -32,6 +34,8 @@ public class AlgorithmDescriptions {
                     Requirement.nothing()
                             .glMajorVersion(4)
                             .glMinorVersion(3)
+                            .isFalse(Gl::isLegacy)
+                            .isTrue(Gl::isSupportDSA)
             );
     public static final AlgorithmDescription<FSR2> FSR2 =
             new AlgorithmDescription<>(
@@ -43,6 +47,8 @@ public class AlgorithmDescriptions {
                             .requiredGlExtension("GL_KHR_shader_subgroup")
                             .glMajorVersion(4)
                             .glMinorVersion(5)
+                            .isFalse(Gl::isLegacy)
+                            .isTrue(Gl::isSupportDSA)
             );
     //public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
     //        new AlgorithmDescription<>(
@@ -64,7 +70,7 @@ public class AlgorithmDescriptions {
                     "Snapdragon™ Game Super Resolution 1",
                     Requirement.nothing()
                             .glMajorVersion(4)
-                            .glMinorVersion(3)
+                            .glMinorVersion(0)
             );
     public static final AlgorithmDescription<Sgsr2> SGSR2 =
             new AlgorithmDescription<>(
@@ -75,6 +81,8 @@ public class AlgorithmDescriptions {
                     Requirement.nothing()
                             .glMajorVersion(4)
                             .glMinorVersion(3)
+                            .isFalse(Gl::isLegacy)
+                            .isTrue(Gl::isSupportDSA)
             );
 
     public static void registryAlgorithms() {
