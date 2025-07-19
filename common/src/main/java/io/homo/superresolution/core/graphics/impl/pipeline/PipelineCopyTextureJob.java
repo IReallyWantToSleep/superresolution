@@ -20,8 +20,15 @@ public class PipelineCopyTextureJob implements IPipelineJob {
     ) {
         this.source = Objects.requireNonNull(source, "源纹理不能为null");
         this.destination = Objects.requireNonNull(destination, "目标纹理不能为null");
-        validateDimensions(sourceDimensions, "源");
-        validateDimensions(destinationDimensions, "目标");
+        if (sourceDimensions == null && destinationDimensions == null) {
+            if (source.getWidth() != destination.getWidth() || source.getHeight() != destination.getHeight()) {
+                throw new RuntimeException("复制区域未指定，默认复制全纹理，源纹理与目标纹理大小不同");
+            }
+        } else {
+            validateDimensions(sourceDimensions, "源");
+            validateDimensions(destinationDimensions, "目标");
+        }
+
         this.sourceDimensions = sourceDimensions;
         this.destinationDimensions = destinationDimensions;
         if (!source.getTextureFormat().equals(destination.getTextureFormat())) {
@@ -38,16 +45,29 @@ public class PipelineCopyTextureJob implements IPipelineJob {
 
     @Override
     public void execute(IRenderSystem renderSystem) {
-        checkBounds(source, sourceDimensions, "源");
-        checkBounds(destination, destinationDimensions, "目标");
+        if (sourceDimensions == null && destinationDimensions == null) {
+            if (source.getWidth() != destination.getWidth() || source.getHeight() != destination.getHeight()) {
+                throw new RuntimeException("复制区域未指定，默认复制全纹理，源纹理与目标纹理大小不同");
+            } else {
+                renderSystem.copyTexture(
+                        source, destination,
+                        0, 0, source.getWidth(), source.getHeight(), 0,
+                        0, 0, destination.getWidth(), destination.getHeight(), 0
+                );
 
-        renderSystem.copyTexture(
-                source, destination,
-                sourceDimensions.x, sourceDimensions.y,
-                sourceDimensions.z, sourceDimensions.w, 0,
-                destinationDimensions.x, destinationDimensions.y,
-                destinationDimensions.z, destinationDimensions.w, 0
-        );
+            }
+        } else {
+            checkBounds(source, sourceDimensions, "源");
+            checkBounds(destination, destinationDimensions, "目标");
+            renderSystem.copyTexture(
+                    source, destination,
+                    sourceDimensions.x, sourceDimensions.y,
+                    sourceDimensions.z, sourceDimensions.w, 0,
+                    destinationDimensions.x, destinationDimensions.y,
+                    destinationDimensions.z, destinationDimensions.w, 0
+            );
+        }
+
     }
 
     private void checkTextureFormat() {

@@ -65,8 +65,7 @@ public final class PipelineJobBuilders {
             if (source == null || destination == null) {
                 throw new IllegalStateException("Source and destination textures must be specified.");
             }
-            return new PipelineCopyTextureJob(source, destination, srcDimensions, dstDimensions) {
-            };
+            return new PipelineCopyTextureJob(source, destination, srcDimensions, dstDimensions);
         }
     }
 

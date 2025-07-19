@@ -64,30 +64,6 @@ public interface IGlDirectStateAccess {
 
     void bindSampler(int unit, int sampler);
 
-    void programUniform1i(int program, int location, int value);
-
-    void programUniform1f(int program, int location, float value);
-
-    void programUniform2f(int program, int location, float x, float y);
-
-    void programUniform3f(int program, int location, float x, float y, float z);
-
-    void programUniform4f(int program, int location, float x, float y, float z, float w);
-
-    void programUniform1iv(int program, int location, int[] values);
-
-    void programUniform1fv(int program, int location, float[] values);
-
-    void programUniformMatrix2fv(int program, int location, boolean transpose, float[] matrix);
-
-    void programUniformMatrix3fv(int program, int location, boolean transpose, float[] matrix);
-
-    void programUniformMatrix4fv(int program, int location, boolean transpose, float[] matrix);
-
-    default void programUniform1b(int program, int location, boolean value) {
-        programUniform1i(program, location, value ? GL45C.GL_TRUE : GL45C.GL_FALSE);
-    }
-
     /// 销毁部分
     void deleteTexture(int texture);
 
@@ -121,6 +97,4 @@ public interface IGlDirectStateAccess {
     void deleteBuffer(int buffer);
 
     void bindBufferBase(int target, int bindingPoint, int buffer);
-
-
 }

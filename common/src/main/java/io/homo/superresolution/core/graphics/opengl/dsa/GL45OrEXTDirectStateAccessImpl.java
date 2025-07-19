@@ -1,10 +1,11 @@
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
+import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GL45C;
 
 import java.nio.*;
 
-public class GL45DirectStateAccessImpl implements IGlDirectStateAccess {
+public class GL45OrEXTDirectStateAccessImpl implements IGlDirectStateAccess {
 
     @Override
     public void generateTextureMipmap(int texture) {
@@ -236,18 +237,22 @@ public class GL45DirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
-    public void enableVertexArrayAttrib(int vao, int index) {
-        GL45C.glEnableVertexArrayAttrib(vao, index);
-    }
-
-    @Override
     public void vertexArrayAttribFormat(int vao, int attribIndex, int size, int type, boolean normalized, int relativeOffset) {
-        GL45C.glVertexArrayAttribFormat(vao, attribIndex, size, type, normalized, relativeOffset);
+        if (type == GL45.GL_FLOAT) {
+            GL45C.glVertexArrayAttribFormat(vao, attribIndex, size, type, normalized, relativeOffset);
+        } else {
+            GL45C.glVertexArrayAttribIFormat(vao, attribIndex, size, type, relativeOffset);
+        }
     }
 
     @Override
     public void vertexArrayAttribBinding(int vao, int attribIndex, int bindingIndex) {
         GL45C.glVertexArrayAttribBinding(vao, attribIndex, bindingIndex);
+    }
+
+    @Override
+    public void enableVertexArrayAttrib(int vaobj, int index) {
+        GL45C.glEnableVertexArrayAttrib(vaobj, index);
     }
 
     @Override
@@ -258,61 +263,6 @@ public class GL45DirectStateAccessImpl implements IGlDirectStateAccess {
     @Override
     public void framebufferTexture(int framebuffer, int attachment, int texture, int level) {
         GL45C.glNamedFramebufferTexture(framebuffer, attachment, texture, level);
-    }
-
-    @Override
-    public void programUniform1i(int program, int location, int value) {
-        GL45C.glProgramUniform1i(program, location, value);
-    }
-
-    @Override
-    public void programUniform1f(int program, int location, float value) {
-        GL45C.glProgramUniform1f(program, location, value);
-    }
-
-    @Override
-    public void programUniform2f(int program, int location, float x, float y) {
-        GL45C.glProgramUniform2f(program, location, x, y);
-    }
-
-    @Override
-    public void programUniform3f(int program, int location, float x, float y, float z) {
-        GL45C.glProgramUniform3f(program, location, x, y, z);
-    }
-
-    @Override
-    public void programUniform4f(int program, int location, float x, float y, float z, float w) {
-        GL45C.glProgramUniform4f(program, location, x, y, z, w);
-    }
-
-    @Override
-    public void programUniform1iv(int program, int location, int[] values) {
-        GL45C.glProgramUniform1iv(program, location, values);
-    }
-
-    @Override
-    public void programUniform1fv(int program, int location, float[] values) {
-        GL45C.glProgramUniform1fv(program, location, values);
-    }
-
-    @Override
-    public void programUniformMatrix2fv(int program, int location, boolean transpose, float[] matrix) {
-        GL45C.glProgramUniformMatrix2fv(program, location, transpose, matrix);
-    }
-
-    @Override
-    public void programUniformMatrix3fv(int program, int location, boolean transpose, float[] matrix) {
-        GL45C.glProgramUniformMatrix3fv(program, location, transpose, matrix);
-    }
-
-    @Override
-    public void programUniformMatrix4fv(int program, int location, boolean transpose, float[] matrix) {
-        GL45C.glProgramUniformMatrix4fv(program, location, transpose, matrix);
-    }
-
-    @Override
-    public void programUniform1b(int program, int location, boolean value) {
-        GL45C.glProgramUniform1i(program, location, value ? 1 : 0);
     }
 
     @Override

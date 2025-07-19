@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.opengl.shader;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
@@ -12,6 +13,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
+import me.shedaniel.clothconfig2.api.Requirement;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -89,6 +91,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
         try {
             String sourceCode = source.getSource();
             if (compat) {
+                ShaderCompiler.LOGGER.info("使用兼容性着色器编译器编译着色器 {}", description.shaderName());
                 GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                         source.getSource(),
                         switch (source.getType()) {
@@ -101,15 +104,15 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
                         EShTargetClientVersion.EShTargetOpenGL_450,
                         EShTargetLanguage.EShTargetSpv,
                         EShTargetLanguageVersion.EShTargetSpv_1_4,
-                        460,
+                        Gl.isLegacy() ? 410 : 460,
                         EProfile.ENoProfile,
                         true,
                         false
                 );
                 sourceCode = preprocessShaderCode(result.preprocessedCode());
-                if (result.error() != GlslangCompileShaderError.OK) {
+                if (result.error() == GlslangCompileShaderError.PREPROCESS_ERROR) {
                     String errorDetails = String.format(
-                            "%s Shader SPIR-V编译失败\n类型: %s\n错误日志:\n%s",
+                            "%s Shader 预处理失败\n类型: %s\n错误日志:\n%s",
                             source.getType(),
                             result.error().name(),
                             result.log()
@@ -198,13 +201,18 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     public void compile(boolean compat) {
         EnumMap<ShaderType, ShaderSource> shaderSources = description.sourceMap();
         validateShaderTypes();
-        if (!ShaderCompiler.checkOpenGLProgramBinary(this)) {
-            ShaderCompiler.saveOpenGLProgramBinary(this);
+        if (!(SuperResolutionConfig.isEnableCompatShaderCompiler() || compat)) {
+            if (!ShaderCompiler.checkOpenGLProgramBinary(this)) {
+                ShaderCompiler.saveOpenGLProgramBinary(this);
+            }
         }
         List<GlShader> shaders = new ArrayList<>();
         try {
             shaderSources.forEach((type, source) -> {
-                GlShader shader = compileSingleShader(source, compat);
+                GlShader shader = compileSingleShader(
+                        source,
+                        SuperResolutionConfig.isEnableCompatShaderCompiler() || compat
+                );
                 shaders.add(shader);
             });
             this.handle = glCreateProgram();

@@ -4,7 +4,6 @@ import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.FileConfigBuilder;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.ConfigFile;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 
 import io.homo.superresolution.forge.compat.sodium.SodiumOptionScreen;

@@ -63,7 +63,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     private GlTextureView createMipView(int level) {
-        try (GlState ignored = new GlState(GlState.STATE_TEXTURE_2D | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
+        try (GlState ignored = new GlState(GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             if (level < 0 || level > this.mipmapLevel) {
                 throw new IllegalArgumentException("Invalid mip level: " + level);
             }
@@ -94,7 +94,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     private void initializeTexture() {
-        try (GlState ignored = new GlState(GlState.STATE_TEXTURE_2D | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
+        try (GlState ignored = new GlState(GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             configureTextureParameters();
             allocateTextureStorage();
             updateDebugLabel(getDebugLabel());
@@ -126,22 +126,6 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("Invalid texture dimensions: " + width + "x" + height);
         }
-    }
-
-    public void copyFromFBO(int srcFbo) {
-        glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
-        glBindTexture(GL_TEXTURE_2D, this.id);
-        Gl.DSA.copyTextureSubImage2D(
-                this.id,
-                0,
-                0,
-                0,
-                0,
-                0,
-                width,
-                height
-        );
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     public void copyFromTex(int srcTex) {

@@ -34,7 +34,6 @@ FfxFloat32x4 SpdLoadSourceImage(FfxFloat32x2 tex, FfxUInt32 slice)
     FfxFloat32x3 fRgb = SampleInputColor(fUv);
 
     fRgb /= PreExposure();
-   
     //compute log luma
     const FfxFloat32 fLogLuma = log(ffxMax(FSR2_EPSILON, RGBToLuma(fRgb)));
 

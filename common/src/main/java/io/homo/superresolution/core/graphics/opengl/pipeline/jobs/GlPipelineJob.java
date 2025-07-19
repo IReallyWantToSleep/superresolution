@@ -8,9 +8,9 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipeline
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
 import org.lwjgl.opengl.GL45;
 
-import static io.homo.superresolution.core.graphics.opengl.Gl.*;
-import static io.homo.superresolution.core.graphics.opengl.GlConst.*;
-import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL41.*;
+import static org.lwjgl.opengl.GL43.glBindImageTexture;
+import static org.lwjgl.opengl.GL45.glBindTextureUnit;
 
 
 public abstract class GlPipelineJob {

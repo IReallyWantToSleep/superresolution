@@ -1,4 +1,4 @@
-#version 430
+#version 410
 precision mediump float;
 //--insert--define--//
 #define MAX_LEVELS 8

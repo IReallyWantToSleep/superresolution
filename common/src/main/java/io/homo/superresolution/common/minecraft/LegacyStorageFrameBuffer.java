@@ -4,8 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 #if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
 #endif
@@ -165,7 +164,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
 
     @Override
     public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
-        return FrameBufferTextureAdapter.of(this, attachmentType);
+        return attachmentType == FrameBufferAttachmentType.Color ? new LegacyFrameBufferTextureAdapter(false, false) : new LegacyFrameBufferTextureAdapter(true, stencilEnabled);
     }
 
     @Override
@@ -191,6 +190,73 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     @Override
     public RenderTarget asMcRenderTarget() {
         return this;
+    }
+
+
+    class LegacyFrameBufferTextureAdapter implements ITexture {
+        private final boolean isDepth;
+        private final boolean isStencil;
+
+        private LegacyFrameBufferTextureAdapter(boolean isDepth, boolean isStencil) {
+            this.isDepth = isDepth;
+            this.isStencil = isStencil;
+        }
+
+        @Override
+        public TextureFormat getTextureFormat() {
+            if (isDepth && isStencil) {
+                return TextureFormat.DEPTH24_STENCIL8;
+            } else if (isDepth) {
+                return TextureFormat.DEPTH24;
+            } else {
+                return TextureFormat.RGBA8;
+            }
+        }
+
+        @Override
+        public TextureUsages getTextureUsages() {
+            return TextureUsages.create().attachmentColor().attachmentDepth().sampler().storage().copy();
+        }
+
+        @Override
+        public TextureType getTextureType() {
+            return TextureType.Texture2D;
+        }
+
+        @Override
+        public TextureFilterMode getTextureFilterMode() {
+            return TextureFilterMode.NEAREST;
+        }
+
+        @Override
+        public TextureWrapMode getTextureWrapMode() {
+            return TextureWrapMode.CLAMP_TO_EDGE;
+        }
+
+        @Override
+        public int getWidth() {
+            return width;
+        }
+
+        @Override
+        public int getHeight() {
+            return height;
+        }
+
+        @Override
+        public int handle() {
+            return isDepth ? depthBufferId : colorTextureId;
+        }
+
+        @Override
+        public void destroy() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void resize(int width, int height) {
+            throw new UnsupportedOperationException();
+        }
     }
 }
 #else

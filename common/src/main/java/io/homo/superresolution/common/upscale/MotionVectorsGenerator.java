@@ -5,6 +5,9 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
+import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -30,7 +33,7 @@ public class MotionVectorsGenerator {
     public static GlShaderProgram pass1Shader;
     public static GlShaderProgram pass2Shader;
     public static GlShaderProgram pass3Shader;
-    public static GlPipeline pipeline;
+    public static Pipeline pipeline;
     public static GlTexture2D currentFrameTexture;
     public static GlTexture2D previousFrameTexture;
     public static GlFrameBuffer gradFrameBuffer;
@@ -47,6 +50,7 @@ public class MotionVectorsGenerator {
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/preprocess.frag.glsl"))
                         .name("motion_vector_preprocess")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformSamplerTexture("tex_current", 1)
                         .build()
         );
         preprocessShader.compile();
@@ -57,6 +61,7 @@ public class MotionVectorsGenerator {
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass1.frag.glsl"))
                         .name("motion_vector_pass1")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformSamplerTexture("tex_current", 1)
                         .build()
         );
         pass1Shader.compile();
@@ -67,6 +72,8 @@ public class MotionVectorsGenerator {
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass2.frag.glsl"))
                         .name("motion_vector_pass2")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformSamplerTexture("tex_current", 1)
+                        .uniformSamplerTexture("tex_previous", 2)
                         .build()
         );
         pass2Shader.compile();
@@ -77,6 +84,8 @@ public class MotionVectorsGenerator {
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass3.frag.glsl"))
                         .name("motion_vector_pass3")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformSamplerTexture("grad_current", 1)
+                        .uniformSamplerTexture("delta_time", 2)
                         .build()
         );
         pass3Shader.compile();
@@ -95,9 +104,10 @@ public class MotionVectorsGenerator {
                         .usage(BufferUsage.UBO)
                         .build()
         );
+        ubo.setBufferData(structuredUniformBuffer);
         initShaders();
 
-        pipeline = new GlPipeline();
+        pipeline = new Pipeline();
         currentFrameTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
@@ -145,88 +155,84 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderHeight()
         );
 
-        // Setup pipeline jobs
-        pipeline.addJob("preprocess",
-                GlPipelineJobBuilders.graphics(preprocessShader)
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "tex_current",
-                                FrameBufferTextureAdapter.ofColor(MinecraftRenderHandle.getRenderTarget()),
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                1
-                        ))
+        pipeline.job("preprocess",
+                PipelineJobBuilders.graphics(preprocessShader)
+                        .resource("tex_current",
+                                PipelineJobResource.SamplerTexture.create(
+                                        FrameBufferTextureAdapter.ofColor(MinecraftRenderHandle.getRenderTarget())
+                                )
+                        )
                         .targetFramebuffer(preprocessFrameBuffer)
                         .build()
         );
 
-        pipeline.addJob("copy_preprocess_fbo_to_current_frame_texture",
-                GlPipelineJobBuilders.copy()
+        pipeline.job("copy_preprocess_fbo_to_current_frame_texture",
+                PipelineJobBuilders.copyTexture()
                         .from(FrameBufferTextureAdapter.ofColor(preprocessFrameBuffer))
                         .to(currentFrameTexture)
                         .build()
         );
 
-        pipeline.addJob("pass1",
-                GlPipelineJobBuilders.graphics(pass1Shader)
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "tex_current",
-                                currentFrameTexture,
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                1
-                        ))
+        pipeline.job("pass1",
+                PipelineJobBuilders.graphics(pass1Shader)
+                        .resource("tex_current",
+                                PipelineJobResource.SamplerTexture.create(
+                                        currentFrameTexture
+                                )
+                        )
+                        .resource("motion_vector_data",
+                                PipelineJobResource.UniformBuffer.create(
+                                        ubo
+                                )
+                        )
                         .targetFramebuffer(gradFrameBuffer)
                         .build()
         );
 
-        pipeline.addJob("pass2",
-                GlPipelineJobBuilders.graphics(pass2Shader)
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "tex_current",
-                                currentFrameTexture,
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                1
-                        ))
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "tex_previous",
-                                previousFrameTexture,
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                2
-                        ))
+        pipeline.job("pass2",
+                PipelineJobBuilders.graphics(pass2Shader)
+                        .resource("tex_current",
+                                PipelineJobResource.SamplerTexture.create(
+                                        currentFrameTexture
+                                )
+                        )
+                        .resource("tex_previous",
+                                PipelineJobResource.SamplerTexture.create(
+                                        previousFrameTexture
+                                )
+                        )
+                        .resource("motion_vector_data",
+                                PipelineJobResource.UniformBuffer.create(
+                                        ubo
+                                )
+                        )
                         .targetFramebuffer(deltaFrameBuffer)
                         .build()
         );
 
-        pipeline.addJob("pass3",
-                GlPipelineJobBuilders.graphics(pass3Shader)
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "grad_current",
-                                FrameBufferTextureAdapter.ofColor(gradFrameBuffer),
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                1
-                        ))
-                        .resource(GlPipelineResourceDescription.createTextureResource(
-                                GlPipelineResourceType.Sampler2D,
-                                "delta_time",
-                                FrameBufferTextureAdapter.ofColor(deltaFrameBuffer),
-                                GlPipelineResourceAccess.READ,
-                                null,
-                                2
-                        ))
+        pipeline.job("pass3",
+                PipelineJobBuilders.graphics(pass3Shader)
+                        .resource("grad_current",
+                                PipelineJobResource.SamplerTexture.create(
+                                        FrameBufferTextureAdapter.ofColor(gradFrameBuffer)
+                                )
+                        )
+                        .resource("delta_time",
+                                PipelineJobResource.SamplerTexture.create(
+                                        FrameBufferTextureAdapter.ofColor(deltaFrameBuffer)
+                                )
+                        )
+                        .resource("motion_vector_data",
+                                PipelineJobResource.UniformBuffer.create(
+                                        ubo
+                                )
+                        )
                         .targetFramebuffer(motionVectorsFrameBuffer)
                         .build()
         );
 
-        pipeline.addJob("copy_current_frame_texture_to_previous_frame_texture",
-                GlPipelineJobBuilders.copy()
+        pipeline.job("copy_current_frame_texture_to_previous_frame_texture",
+                PipelineJobBuilders.copyTexture()
                         .from(currentFrameTexture)
                         .to(previousFrameTexture)
                         .build()
@@ -253,24 +259,13 @@ public class MotionVectorsGenerator {
         structuredUniformBuffer.setFloat("min_value", 1e-6f);
         structuredUniformBuffer.setFloat("scale", 4f);
         structuredUniformBuffer.fillBuffer();
-
-        pipeline.scheduleJob("preprocess");
-        pipeline.executeJob("preprocess");
-
-        pipeline.scheduleJob("copy_preprocess_fbo_to_current_frame_texture");
-        pipeline.executeJob("copy_preprocess_fbo_to_current_frame_texture");
-
-        pipeline.scheduleJob("pass1");
-        pipeline.executeJob("pass1");
-
-        pipeline.scheduleJob("pass2");
-        pipeline.executeJob("pass2");
-
-        pipeline.scheduleJob("pass3");
-        pipeline.executeJob("pass3");
-
-        pipeline.scheduleJob("copy_current_frame_texture_to_previous_frame_texture");
-        pipeline.executeJob("copy_current_frame_texture_to_previous_frame_texture");
+        ubo.upload();
+        pipeline.executeJob(RenderSystems.opengl(), "preprocess");
+        pipeline.executeJob(RenderSystems.opengl(), "copy_preprocess_fbo_to_current_frame_texture");
+        pipeline.executeJob(RenderSystems.opengl(), "pass1");
+        pipeline.executeJob(RenderSystems.opengl(), "pass2");
+        pipeline.executeJob(RenderSystems.opengl(), "pass3");
+        pipeline.executeJob(RenderSystems.opengl(), "copy_current_frame_texture_to_previous_frame_texture");
     }
 
     public static void destroy() {

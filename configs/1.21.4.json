@@ -39,7 +39,8 @@
                 },
                 {
                     "name": "sodium-options-api",
-                    "version": "fabric-1.21.4-1.0.10"
+                    "version": "fabric-1.21.4-1.0.10",
+                    "compileOnly": true
                 }
             ],
             "local": []

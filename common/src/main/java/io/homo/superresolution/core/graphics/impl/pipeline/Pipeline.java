@@ -22,6 +22,11 @@ public class Pipeline {
         }
     }
 
+    public void executeJob(IRenderSystem renderSystem, String name) {
+        jobs.get(name).execute(renderSystem);
+    }
+
+
     public void destroy() {
         for (IPipelineJob job : jobs.values()) {
             job.destroy();

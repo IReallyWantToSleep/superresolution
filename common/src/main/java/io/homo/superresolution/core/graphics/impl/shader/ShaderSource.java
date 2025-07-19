@@ -1,5 +1,7 @@
 package io.homo.superresolution.core.graphics.impl.shader;
 
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 import io.homo.superresolution.core.utils.FileReadHelper;
 
 import java.util.*;
@@ -26,6 +28,11 @@ public class ShaderSource {
     }
 
     public static String addCustomDefines(String source, Map<String, String> defines) {
+        if (Gl.isLegacy()) {
+            ShaderCompiler.LOGGER.debug("添加SR_GL41_COMPAT定义");
+            defines.put("SR_GL41_COMPAT", "1");
+        }
+
         if (defines.isEmpty()) {
             return source;
         }

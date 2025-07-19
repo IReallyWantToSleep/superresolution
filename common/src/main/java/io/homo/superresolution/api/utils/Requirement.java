@@ -3,8 +3,10 @@ package io.homo.superresolution.api.utils;
 import io.homo.superresolution.common.platform.*;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
+import me.shedaniel.clothconfig2.api.ValueHolder;
 
 import java.util.*;
+import java.util.function.Supplier;
 
 public class Requirement {
     private final Set<String> requiredGlExtensions = new HashSet<>();
@@ -17,8 +19,10 @@ public class Requirement {
     private int vulkanPatchVersion = -1;
     private boolean requiresDevEnv = false;
     private boolean requiresVulkan = false;
+    private final List<Supplier<Boolean>> additionalChecks = new ArrayList<>();
 
     private Requirement() {
+
     }
 
     public static Requirement nothing() {
@@ -37,6 +41,16 @@ public class Requirement {
 
     public Requirement vulkanPatchVersion(int vulkanPatchVersion) {
         this.vulkanPatchVersion = vulkanPatchVersion;
+        return this;
+    }
+
+    public Requirement isTrue(Supplier<Boolean> dep) {
+        additionalChecks.add(Objects.requireNonNull(dep, "dep不能为null"));
+        return this;
+    }
+
+    public Requirement isFalse(Supplier<Boolean> dep) {
+        additionalChecks.add(() -> !Objects.requireNonNull(dep, "dep不能为null").get());
         return this;
     }
 
@@ -115,6 +129,17 @@ public class Requirement {
                 .allMatch(GraphicsCapabilities::hasVulkanDeviceExtension);
     }
 
+    private boolean checkAdditionalConditions() {
+        for (Supplier<Boolean> dep : additionalChecks) {
+            try {
+                if (!dep.get()) return false;
+            } catch (Exception e) {
+                return false; // 避免单个dep抛出异常导致影响全局
+            }
+        }
+        return true;
+    }
+
     public Requirement requireVulkanDeviceExtension(String extension) {
         this.requiredVulkanDeviceExtensions.add(extension);
         return this;
@@ -143,7 +168,8 @@ public class Requirement {
                 checkEnvironment(),
                 checkVulkanSupport(),
                 checkVulkanVersion(),
-                checkVulkanDeviceExtensions()
+                checkVulkanDeviceExtensions(),
+                checkAdditionalConditions()
         );
     }
 
@@ -223,11 +249,12 @@ public class Requirement {
             boolean environmentValid,
             boolean vulkanAvailable,
             boolean vulkanVersionMet,
-            boolean vulkanDeviceExtensionsMet
+            boolean vulkanDeviceExtensionsMet,
+            boolean additionalConditionsMet
     ) {
         public boolean support() {
             return osSupported && glVersionMet && glExtensionsPresent &&
-                    environmentValid && vulkanAvailable && vulkanVersionMet && vulkanDeviceExtensionsMet;
+                    environmentValid && vulkanAvailable && vulkanVersionMet && vulkanDeviceExtensionsMet && additionalConditionsMet;
         }
     }
 }

@@ -56,7 +56,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     }
 
     private GlTextureView createMipView(int level) {
-        try (GlState ignored = new GlState(GlState.STATE_TEXTURE_2D | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
+        try (GlState ignored = new GlState(GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             if (level < 0 || level > this.mipmapLevel) {
                 throw new IllegalArgumentException("Invalid mip level: " + level);
             }
@@ -86,7 +86,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     }
 
     private void initializeTexture() {
-        try (GlState ignored = new GlState(GlState.STATE_TEXTURE_2D | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
+        try (GlState ignored = new GlState(GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             configureTextureParameters();
             allocateTextureStorage();
             updateDebugLabel(getDebugLabel());

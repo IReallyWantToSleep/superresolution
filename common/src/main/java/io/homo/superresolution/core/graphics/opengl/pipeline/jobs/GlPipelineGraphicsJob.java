@@ -3,14 +3,8 @@ package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexAttribute;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
-import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 
 public class GlPipelineGraphicsJob extends GlPipelineJob {
     public IFrameBuffer targetFrameBuffer;
@@ -31,7 +25,7 @@ public class GlPipelineGraphicsJob extends GlPipelineJob {
     @Override
     public void execute(GlPipelineJobDispatchResource dispatchResource) {
         try (GlState ignored = new GlState(
-                GlState.STATE_TEXTURE_2D |
+                GlState.STATE_TEXTURE |
                         GlState.STATE_ACTIVE_TEXTURE |
                         GlState.STATE_TEXTURES |
                         GlState.STATE_PROGRAM |
