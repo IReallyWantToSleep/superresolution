@@ -3,26 +3,33 @@ package io.homo.superresolution.core.utils;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.win32.W32APIOptions;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
+
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
 
 public class MessageBox {
-    private static final boolean ON_WINDOWS = System.getProperty("os.name").toLowerCase().contains("windows");
+    private static void createMsgBox(String text, String caption, String type) {
+        TinyFileDialogs.tinyfd_messageBox(
+                caption,
+                text,
+                "ok",
+                type,
+                true
+        );
+    }
 
     public static void createError(String text, String caption) {
-        if (!ON_WINDOWS)
-            return;
-        User32.INSTANCE.MessageBoxW(0, text, caption, 0x00000010);
+        createMsgBox(text, caption, "error");
     }
 
     public static void createWarn(String text, String caption) {
-        if (!ON_WINDOWS)
-            return;
-        User32.INSTANCE.MessageBoxW(0, text, caption, 0x00000030);
+        createMsgBox(text, caption, "warning");
     }
 
     public static void createInfo(String text, String caption) {
-        if (!ON_WINDOWS)
-            return;
-        User32.INSTANCE.MessageBoxW(0, text, caption, 0x00000040);
+        createMsgBox(text, caption, "info");
     }
 
     public static void main(String[] args) {
@@ -30,11 +37,4 @@ public class MessageBox {
         createWarn("114514", "114514");
         createInfo("114514", "114514");
     }
-
-    private interface User32 extends Library {
-        User32 INSTANCE = Native.load("user32", User32.class, W32APIOptions.DEFAULT_OPTIONS);
-
-        int MessageBoxW(int hWnd, String lpText, String lpCaption, int uType);
-    }
-
 }

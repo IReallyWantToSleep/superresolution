@@ -39,10 +39,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
     private static final Requirement commonRequirement = Requirement.nothing()
-            .glMajorVersion(4).glMinorVersion(1)
-            //.requiredGlExtension("GL_ARB_gl_spirv")
-            //.requiredGlExtension("GL_ARB_direct_state_access")
-            .requiredGlExtension("GL_ARB_clear_texture");
+            .glMajorVersion(4).glMinorVersion(1);
     public static AbstractAlgorithm currentAlgorithm;
     public static None defaultAlgorithm = new None();
     public static boolean isInit;
@@ -113,7 +110,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                             GraphicsCapabilities.getGLVersion()[1]),
                     Component.translatable("superresolution.common_requirement.not_support.msg").getString()
             );
-            Minecraft.getInstance().destroy();
+            System.exit(1);
         }
 
         if (!commonRequirement.check().glExtensionsPresent()) {
@@ -125,7 +122,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                             .formatted(extensionStringBuilder.toString()),
                     Component.translatable("superresolution.common_requirement.not_support.msg").getString()
             );
-            Minecraft.getInstance().destroy();
+            System.exit(1);
         }
     }
 

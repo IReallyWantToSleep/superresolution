@@ -29,11 +29,11 @@ public class Gl {
     }
 
     public static boolean isLegacy() {
-        return true;//GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 3;
+        return GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 3;
     }
 
     public static boolean isSupportDSA() {
-        return false;//(GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] >= 5) || GraphicsCapabilities.hasGLExtension("GL_EXT_direct_state_access");
+        return (GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] >= 5) || GraphicsCapabilities.hasGLExtension("GL_EXT_direct_state_access");
     }
 
     public static void glBindSampler(int unit, int sampler) {
