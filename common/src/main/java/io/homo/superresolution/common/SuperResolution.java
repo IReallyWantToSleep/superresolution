@@ -86,7 +86,6 @@ public final class SuperResolution implements Resizable, Destroyable {
             interopManager = new GlVkInteropManager();
             initVulkan();
         }
-        RenderSystems.init();
         isPreInit = true;
     }
 
@@ -128,6 +127,8 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static void initRendering() {
         try (GlState ignored = new GlState()) {
+            RenderSystems.init();
+            
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return;
             if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL) {

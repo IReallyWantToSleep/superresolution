@@ -108,7 +108,7 @@ public class InfoBuilder {
     }
 
     private void addOsRequirement(Requirement req) {
-        addLine("superresolution.screen.info.text.req_os_name_and_os_arch");
+        addLine(Component.translatable("superresolution.screen.info.text.req_os_name_and_os_arch").getString());
         if (req.getSupportedOS().isEmpty()) {
             addIndentedLine(Component.translatable("superresolution.screen.text.any").getString());
         } else {
@@ -119,7 +119,7 @@ public class InfoBuilder {
     }
 
     private void addRequirementList(String headerKey, Iterable<String> extensions, List<String> missing) {
-        addLine(headerKey);
+        addLine(Component.translatable(headerKey).getString());
         if (!extensions.iterator().hasNext()) {
             addIndentedLine(Component.translatable("superresolution.screen.text.none").getString());
             return;
