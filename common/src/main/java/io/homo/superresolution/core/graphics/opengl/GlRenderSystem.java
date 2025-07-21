@@ -10,29 +10,25 @@ import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformStorageTexture;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTextureView;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import org.lwjgl.opengl.*;
 
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.glFinish;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL44.glClearTexImage;
+import static org.lwjgl.opengl.GL41.*;
 
 public class GlRenderSystem implements IRenderSystem {
     private GlRenderState renderState;
     private GlDevice device;
+    private boolean supportsARBClearTexture;
 
     @Override
     public void initRenderSystem() {
         this.renderState = new GlRenderState();
         this.device = new GlDevice();
+        supportsARBClearTexture = GL.getCapabilities().GL_ARB_clear_texture || GL.getCapabilities().OpenGL44;
     }
 
     @Override
@@ -48,36 +44,112 @@ public class GlRenderSystem implements IRenderSystem {
 
     @Override
     public void clearTextureRGBA(ITexture texture, float[] color) {
-        if (texture == null) {
-            throw new OpenGLException("clearTextureRGBA: 输入的纹理对象为null");
-        }
-        TextureFormat format = texture.getTextureFormat();
-        if (format.isInteger()) {
-            int[] intColor = new int[color.length];
-            for (int i = 0; i < color.length; i++) intColor[i] = (int) (color[i] * 255);
-            glClearTexImage(texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
+        if (texture == null) throw new OpenGLException("clearTextureRGBA: 输入的纹理对象为null");
+
+        if (supportsARBClearTexture) {
+            TextureFormat format = texture.getTextureFormat();
+            if (format.isInteger()) {
+                int[] intColor = new int[color.length];
+                for (int i = 0; i < color.length; i++) intColor[i] = (int) (color[i] * 255);
+                GL44.glClearTexImage(texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
+            } else {
+                GL44.glClearTexImage(texture.handle(), 0, format.gl(), GL_FLOAT, color);
+            }
         } else {
-            glClearTexImage(texture.handle(), 0, format.gl(), GL_FLOAT, color);
+            try (GlState state = new GlState(
+                    GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT | GlState.STATE_SCISSOR_TEST
+            )) {
+                int fbo = glGenFramebuffers();
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.handle(), 0);
+
+                int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+                if (status != GL_FRAMEBUFFER_COMPLETE) {
+                    glDeleteFramebuffers(fbo);
+                    throw new OpenGLException("clearTextureRGBA: FBO状态不完整, 状态码: " + status);
+                }
+
+                glViewport(0, 0, texture.getWidth(), texture.getHeight());
+                glEnable(GL_SCISSOR_TEST);
+                glScissor(0, 0, texture.getWidth(), texture.getHeight());
+
+                glClearColor(color[0], color[1], color[2], color[3]);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                glDeleteFramebuffers(fbo);
+            }
         }
     }
 
     @Override
     public void clearTextureDepth(ITexture texture, float depth) {
-        if (texture == null) {
-            throw new OpenGLException("clearTextureDepth: 输入的纹理对象为null");
+        if (texture == null) throw new OpenGLException("clearTextureDepth: 输入的纹理对象为null");
+
+        if (supportsARBClearTexture) {
+            float[] clearDepth = new float[]{depth};
+            GL44.glClearTexImage(texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
+        } else {
+            try (GlState state = new GlState(
+                    GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT | GlState.STATE_SCISSOR_TEST
+            )) {
+                int fbo = glGenFramebuffers();
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.handle(), 0);
+
+                int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+                if (status != GL_FRAMEBUFFER_COMPLETE) {
+                    glDeleteFramebuffers(fbo);
+                    throw new OpenGLException("clearTextureDepth: FBO状态不完整, 状态码: " + status);
+                }
+
+                glViewport(0, 0, texture.getWidth(), texture.getHeight());
+                glEnable(GL_SCISSOR_TEST);
+                glScissor(0, 0, texture.getWidth(), texture.getHeight());
+
+                glClearDepth(depth);
+                glClear(GL_DEPTH_BUFFER_BIT);
+
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                glDeleteFramebuffers(fbo);
+            }
         }
-        float[] clearDepth = new float[]{depth};
-        glClearTexImage(texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
     }
 
     @Override
     public void clearTextureStencil(ITexture texture, int stencil) {
-        if (texture == null) {
-            throw new OpenGLException("clearTextureStencil: 输入的纹理对象为null");
+        if (texture == null) throw new OpenGLException("clearTextureStencil: 输入的纹理对象为null");
+
+        if (supportsARBClearTexture) {
+            int[] clearStencil = new int[]{stencil};
+            GL44.glClearTexImage(texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
+        } else {
+            try (GlState state = new GlState(
+                    GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT | GlState.STATE_SCISSOR_TEST
+            )) {
+                int fbo = glGenFramebuffers();
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture.handle(), 0);
+
+                int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+                if (status != GL_FRAMEBUFFER_COMPLETE) {
+                    glDeleteFramebuffers(fbo);
+                    throw new OpenGLException("clearTextureStencil: FBO状态不完整, 状态码: " + status);
+                }
+
+                glViewport(0, 0, texture.getWidth(), texture.getHeight());
+                glEnable(GL_SCISSOR_TEST);
+                glScissor(0, 0, texture.getWidth(), texture.getHeight());
+
+                glClearStencil(stencil);
+                glClear(GL_STENCIL_BUFFER_BIT);
+
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+                glDeleteFramebuffers(fbo);
+            }
         }
-        int[] clearStencil = new int[]{stencil};
-        glClearTexImage(texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
     }
+
 
     @Override
     public void copyTexture(
