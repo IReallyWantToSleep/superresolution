@@ -1,32 +1,34 @@
 <div align="center"><img src="https://raw.githubusercontent.com/187J3X1-114514/superresolution/refs/heads/multi-version/common/src/main/resources/assets/super_resolution/logo.png" width="256"/></div>
-<div align="center"><img src="https://img.shields.io/github/forks/187J3X1-114514/superresolution"/>
+<div align="center">
+<img src="https://img.shields.io/github/forks/187J3X1-114514/superresolution"/>
 <img src="https://img.shields.io/github/stars/187J3X1-114514/superresolution"/>
 <img src="https://img.shields.io/github/license/187J3X1-114514/superresolution"/>
-<img src="https://img.shields.io/github/issues/187J3X1-114514/superresolution"/></div>
+<img src="https://img.shields.io/github/issues/187J3X1-114514/superresolution"/>
+</div>
 
 <div align="center">
 <h1>Super Resolution</h1>
-<span>English</span> <a href="../README.md">简体中文</a>
+<span>English</span> · <a href="README.md">简体中文</a>
 </div>
 
-----
+---
 
-Built-in super resolution algorithms in Minecraft to enhance performance/graphics quality.
+Built-in super-resolution algorithms for **Minecraft**, improving performance and visual quality.
 
 # Supported Algorithms
 
 * FSR1
-* FSR2 (Ported from C++ to Java, may have slight differences from the original)
+* FSR2 (ported from C++ v2.2.1 to Java, may slightly differ from upstream)
 * SGSR2
 * SGSR1
-* NIS (Under development)
+* NIS (under development)
 
 # Compatibility
 
-* Sodium - Works correctly
-* Iris - Works correctly
-* Distant Horizons - Works correctly
-* Embeddium - Works correctly
+* Sodium - Works fine
+* Iris - Works fine
+* Distant Horizons - Works fine
+* Embeddium - Works fine
 * OptiFine - Not tested
 
 # Requirements
@@ -35,27 +37,47 @@ Built-in super resolution algorithms in Minecraft to enhance performance/graphic
 
 * Windows 10/11 x64
 * Linux x64
-* Currently unsupported on mobile devices (Android native libraries are provided, but features like compute shaders,
-  DSA, and SpirV shader binaries may not function properly)
+* macOS Arm64 (planned)
+
+### About Android Devices
+
+Currently, running on Android is **not supported**.
+
+Native Android libraries are provided (but cannot be loaded correctly).
+In addition, compute shaders, DSA, and SpirV shader binaries often do not work correctly across various Android OpenGL
+translation layers. However, **SuperResolution can function without these features where possible**.
 
 ## GPU Requirements
 
-* OpenGL version >= 4.3
-* OpenGL extensions: `GL_ARB_direct_state_access`, `GL_ARB_gl_spirv`
-* Vulkan version >= 1.2 (Optional)
+### Recommended
+
+* OpenGL 4.3 or later
+* OpenGL extensions: `GL_ARB_direct_state_access`, `GL_ARB_gl_spirv`, `GL_ARB_clear_texture`
+* Vulkan 1.2 or later
+
+### Minimum
+
+* OpenGL 4.1 or later
 
 # Found an Issue?
 
-Report bugs, crashes, or request support for other game versions (only 1.18+; loaders limited to Forge, Fabric,
-NeoForge. Porting depends on difficulty) by opening an
-issue [here](https://github.com/187J3X1-114514/superresolution/issues).
+If you:
+
+* Discovered a bug
+* Encountered a game crash
+* Want support for other Minecraft versions
+
+*Note: Only 1.18 and above, loader support limited to Forge, Fabric, NeoForge. Ports depend on feasibility.*
+
+Please open an [issue here](https://github.com/187J3X1-114514/superresolution/issues).
 
 # Building
 
-First, compile the C++ native libraries by running the `native:buildNative` task.
-> Note: Windows requires MinGW and CMake. See full requirements [here](native/README.md).
+First, build the native C++ dependencies by running the `native:buildNative` task.
 
-Open your terminal and run the following. The built JARs will be in `build_jars`:
+> **Note:** Windows requires MinGW and CMake. For other requirements, see [here](native/README.md).
+
+Then open your terminal and run:
 
 ```shell
 git clone https://github.com/187J3X1-114514/superresolution
@@ -63,12 +85,15 @@ cd superresolution
 python script/buildAll.py
 ```
 
-# Potential Future Features
+The generated `build_jars` will contain your mod files.
 
-* Implementing Vulkan-OpenGL texture sharing (if achieved, will enable direct support for FSR3/DLSS)
+# Planned Features
+
+* Integrated ASR 2.3
+* Vulkan and OpenGL shared texture interoperability (if successful, would enable FSR3, DLSS support)
 
 ---
 
-## Stargazers Over Time
+## Stargazer History
 
 [![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)

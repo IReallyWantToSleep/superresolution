@@ -16,7 +16,7 @@
 # 支持的算法
 
 * FSR1
-* FSR2 (从C++移植到Java，可能与原版有略微不同)
+* FSR2 (基于C++版本2.2.1移植到Java，可能与原版有略微不同)
 * SGSR2
 * SGSR1
 * NIS (正在开发)
@@ -35,17 +35,31 @@
 
 * Windows 10/11 x64
 * Linux x64
-* 目前不支持在移动设备上运行，但提供安卓的本机库，安卓端的计算着色器，DSA，SpirV着色器二进制等功能工作不正常
+* 计划支持MacOS Arm64
+
+### 关于安卓设备
+
+目前不支持在安卓设备上运行，但提供安卓的本机库（无法正常加载）
+
+除此之外，安卓设备各个OpenGL转译层的计算着色器，DSA，SpirV着色器二进制等功能部分工作不正常，但SuperResolution可在不使用这部分功能的情况下正常工作
 
 ## 显卡要求
 
-* 支持OpenGL版本 >= 4.3
-* 支持OpenGL扩展 `GL_ARB_direct_state_access` `GL_ARB_gl_spirv`
-* 支持Vulkan版本 >= 1.2 (非必须)
+### 推荐
+
+* 支持OpenGL版本 4.3 及以上
+* 支持OpenGL扩展 `GL_ARB_direct_state_access` `GL_ARB_gl_spirv` `GL_ARB_clear_texture`
+* 支持Vulkan版本 >= 1.2
+
+### 最低
+
+* 支持OpenGL版本 4.1 及以上
 
 # 有问题？
 
-发现Bug，游戏崩溃，想要支持其他游戏版本（仅限1.18及以上，加载器仅限Forge,Fabric,NeoForge，视移植难度进行移植）
+* 发现Bug
+* 游戏崩溃
+* 想要支持其他游戏版本 _注：仅限1.18及以上，加载器仅限Forge,Fabric,NeoForge，视移植难度进行移植_
 
 在[这里](https://github.com/187J3X1-114514/superresolution/issues)打开一个issues
 
@@ -62,8 +76,9 @@ cd superresolution
 python script/buildAll.py
 ```
 
-# 可能会有的功能
+# 计划功能
 
+* 内置ASR 2.3
 * 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
 
 ---

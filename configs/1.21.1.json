@@ -107,7 +107,8 @@
                 },
                 {
                     "name": "simple-clouds",
-                    "version": "0.6.3+1.21"
+                    "version": "0.6.3+1.21",
+                    "compileOnly": true
                 }
             ],
             "local": [
