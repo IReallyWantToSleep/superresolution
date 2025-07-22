@@ -27,11 +27,12 @@ public class SGSR2SpecialConfig extends SpecialConfig {
                 new SpecialConfigDescription<>()
                         .setValue(getSpecialConfigs().SGSR2.VARIANT.get())
                         .setDefaultValue(SgsrVariant.CS_2)
-                        .setNameSupplier((variant) -> switch ((SgsrVariant) variant) {
+                        .setValueNameSupplier((variant) -> switch ((SgsrVariant) variant) {
                             case CS_2 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.cs_2"));
                             case CS_3 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.cs_3"));
                             case FS_2 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.fs_2"));
                         })
+                        .setName(Component.translatable("superresolution.screen.config.special.sgsr2.variant.name"))
                         .setTooltip(Component.translatable("superresolution.screen.config.special.sgsr2.variant.tooltip"))
                         .setKey("variant")
                         .setSaveConsumer((v) -> getSpecialConfigs().SGSR2.VARIANT.set(v))

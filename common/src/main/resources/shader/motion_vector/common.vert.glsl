@@ -1,6 +1,10 @@
 #version 410
 precision mediump float;
 
+#ifndef SR_GL41_COMPAT
+#extension GL_ARB_shading_language_420pack : enable
+#endif
+
 layout(location = 0) in vec2 aPosition;
 layout(location = 1) in vec2 aTexCoord;
 layout (location = 0) out vec2 uv;

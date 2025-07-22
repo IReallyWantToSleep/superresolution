@@ -1,15 +1,13 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.jobs;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3f;
 
 import java.util.function.Supplier;
 
-import static org.lwjgl.opengl.GL42.GL_ALL_BARRIER_BITS;
-import static org.lwjgl.opengl.GL42.glMemoryBarrier;
+import static org.lwjgl.opengl.GL42.*;
 
 public class GlPipelineComputeJob extends GlPipelineJob {
     private final GlShaderProgram program;
@@ -36,7 +34,7 @@ public class GlPipelineComputeJob extends GlPipelineJob {
     @Override
     public void schedule(GlPipelineJobDispatchResource dispatchResource) {
         try (GlState state = new GlState(GlState.STATE_PROGRAM)) {
-            Gl.glUseProgram(program.handle());
+            glUseProgram(program.handle());
             setupResource();
         }
     }

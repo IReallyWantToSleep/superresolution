@@ -217,34 +217,34 @@ public class ClothConfig {
                                         (Enum<?>) configDescription.getValue()
                                 )
                                 .setDefaultValue((Enum<?>) configDescription.getDefaultValue())
-                                .setSaveConsumer(configDescription.getSaveConsumer_())
-                                .setEnumNameProvider(configDescription.isNameIsSupplier() ? (anEnum -> configDescription.getNameSupplier().apply(anEnum).orElse(Component.empty())) : null);
+                                .setSaveConsumer(configDescription.getSaveConsumer())
+                                .setEnumNameProvider(configDescription.isValueNameIsSupplier() ? (anEnum -> configDescription.getValueNameSupplierAsObject().apply(anEnum).orElse(Component.empty())) : null);
                         case FLOAT -> entryBuilder.startIntSlider(
                                         configDescription.getName(),
                                         getInt((Float) configDescription.getValue()),
                                         getInt(configDescription.getValueRange().left()),
                                         getInt(configDescription.getValueRange().right())
                                 )
-                                .setTextGetter(configDescription.isNameIsSupplier() ? (integer -> configDescription.getNameSupplier().apply(integer).orElse(Component.empty())) : (integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
+                                .setTextGetter(configDescription.isValueNameIsSupplier() ? (integer -> configDescription.getValueNameSupplierAsObject().apply(integer).orElse(Component.empty())) : (integer -> Component.literal(String.format("%.2f", getFloat(integer)))))
                                 .setDefaultValue(getInt((Float) configDescription.getDefaultValue()))
-                                .setSaveConsumer((integer -> configDescription.getSaveConsumer().accept(integer)));
+                                .setSaveConsumer((integer -> configDescription.getSaveConsumerAsObject().accept(integer)));
                         case STRING -> entryBuilder.startStrField(
                                         configDescription.getName(),
                                         (String) configDescription.getValue()
                                 )
                                 .setDefaultValue((String) configDescription.getDefaultValue())
-                                .setSaveConsumer((Consumer<String>) configDescription.getSaveConsumer_());
+                                .setSaveConsumer((Consumer<String>) configDescription.getSaveConsumer());
                         case BOOLEAN -> entryBuilder.startBooleanToggle(
                                         configDescription.getName(),
                                         (Boolean) configDescription.getValue()
                                 )
-                                .setYesNoTextSupplier(configDescription.isNameIsSupplier() ? (aBoolean -> configDescription.getNameSupplier().apply(aBoolean).orElse(Component.empty())) : null)
+                                .setYesNoTextSupplier(configDescription.isValueNameIsSupplier() ? (aBoolean -> configDescription.getValueNameSupplierAsObject().apply(aBoolean).orElse(Component.empty())) : null)
                                 .setDefaultValue((Boolean) configDescription.getDefaultValue())
-                                .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer_());
+                                .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer());
                         case OBJECT -> null;
                     };
-            if (configDescription.getTooltip() != null) if (fieldBuilder != null) {
-                fieldBuilder.setTooltip(configDescription.getTooltip());
+            if (configDescription.getTooltip().isPresent()) if (fieldBuilder != null) {
+                fieldBuilder.setTooltip(configDescription.getTooltip().orElse(Component.empty()));
             }
             if (fieldBuilder != null) {
                 category.addEntry(fieldBuilder.build());

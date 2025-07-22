@@ -12,9 +12,9 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachm
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.fsr2.v221.Fsr2Context;
-import io.homo.superresolution.fsr2.v221.Fsr2PipelineResourceType;
-import io.homo.superresolution.fsr2.v221.Fsr2PipelineResources;
+import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
+import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResourceType;
+import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
 import net.minecraft.client.Minecraft;
 
 import java.util.Map;

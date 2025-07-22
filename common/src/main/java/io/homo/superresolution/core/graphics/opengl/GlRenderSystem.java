@@ -267,7 +267,7 @@ public class GlRenderSystem implements IRenderSystem {
                         GlState.STATE_PROGRAM
         )) {
             setupShaderProgram((GlShaderProgram) shaderProgram);
-            Gl.glDispatchCompute(x, y, z);
+            GL43.glDispatchCompute(x, y, z);
         }
     }
 
@@ -282,7 +282,7 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     private void setupShaderProgram(GlShaderProgram shaderProgram) {
-        Gl.glUseProgram(shaderProgram.handle());
+        GL30.glUseProgram(shaderProgram.handle());
         var uniformMap = shaderProgram.uniforms().getUniformMap();
         uniformMap.forEach((name, uniform) -> {
             if (uniform instanceof GlShaderUniformBuffer) {

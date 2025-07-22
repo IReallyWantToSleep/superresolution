@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.homo.superresolution.core.graphics.opengl.Gl.glSafeObjectLabel;
+import static io.homo.superresolution.core.graphics.opengl.Gl.setGlObjectLabel;
 import static org.lwjgl.opengl.GL45.*;
 
 public class GlTexture1D implements ITexture, IDebuggableObject {
@@ -189,7 +189,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        glSafeObjectLabel(GL_TEXTURE, handle(), getDebugLabel());
+        setGlObjectLabel(GL_TEXTURE, handle(), getDebugLabel());
     }
 
     public void generateMipmap() {

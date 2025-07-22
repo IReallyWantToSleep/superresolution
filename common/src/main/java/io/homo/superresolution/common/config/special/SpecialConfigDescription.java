@@ -5,39 +5,43 @@ import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.network.chat.Component;
 
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-@SuppressWarnings("unchecked")
 public class SpecialConfigDescription<T> {
     protected String key;
     protected ConfigSpecType type;
     protected T value;
     protected T defaultValue;
+
+    protected Function<T, Optional<Component>> valueName = (a) -> Optional.of(Component.empty());
     protected Function<T, Optional<Component>> name = (a) -> Optional.of(Component.empty());
-    protected Component tooltip = null;
+    protected Function<T, Optional<Component>> tooltipSupplier = (a) -> Optional.empty();
+
     protected Class<? extends Enum<?>> clazz = null;
     protected Pair<Float, Float> valueRange = null;
     protected Consumer<T> saveConsumer;
-    protected boolean nameIsSupplier = false;
+    protected boolean valueNameIsSupplier = false;
 
-    public boolean isNameIsSupplier() {
-        return nameIsSupplier;
+    public static <T> SpecialConfigDescription<T> of(String key, ConfigSpecType type, T defaultValue) {
+        return new SpecialConfigDescription<T>()
+                .setKey(key)
+                .setType(type)
+                .setDefaultValue(defaultValue)
+                .setValue(defaultValue);
     }
 
-    public Consumer<Object> getSaveConsumer() {
-        return (Consumer<Object>) saveConsumer;
+    public boolean isValueNameIsSupplier() {
+        return valueNameIsSupplier;
+    }
+
+    public Consumer<T> getSaveConsumer() {
+        return saveConsumer;
     }
 
     public SpecialConfigDescription<T> setSaveConsumer(Consumer<T> saveConsumer) {
         this.saveConsumer = saveConsumer;
         return this;
-    }
-
-    public Consumer<?> getSaveConsumer_() {
-        return saveConsumer;
     }
 
     public T getDefaultValue() {
@@ -49,12 +53,27 @@ public class SpecialConfigDescription<T> {
         return this;
     }
 
-    public Component getTooltip() {
-        return tooltip;
+    public Optional<Component> getTooltip() {
+        return tooltipSupplier.apply(getValue());
+    }
+
+    public SpecialConfigDescription<T> setTooltip(Function<T, Optional<Component>> tooltipSupplier) {
+        this.tooltipSupplier = tooltipSupplier;
+        return this;
     }
 
     public SpecialConfigDescription<T> setTooltip(Component tooltip) {
-        this.tooltip = tooltip;
+        this.tooltipSupplier = (a) -> Optional.ofNullable(tooltip);
+        return this;
+    }
+
+    public SpecialConfigDescription<T> setName(Function<T, Optional<Component>> name) {
+        this.name = name;
+        return this;
+    }
+
+    public SpecialConfigDescription<T> setName(Component name) {
+        this.name = (a) -> Optional.of(name);
         return this;
     }
 
@@ -80,21 +99,36 @@ public class SpecialConfigDescription<T> {
         return name.apply(getValue()).orElse(Component.empty());
     }
 
-    public SpecialConfigDescription<T> setName(Component name) {
-        nameIsSupplier = false;
-        this.name = (a) -> Optional.of(name);
+    public Component getValueName() {
+        return valueName.apply(getValue()).orElse(Component.empty());
+    }
+
+    public SpecialConfigDescription<T> setValueName(Component valueName) {
+        valueNameIsSupplier = false;
+        this.valueName = (a) -> Optional.of(valueName);
         return this;
     }
 
-    public Function<Object, Optional<Component>> getNameSupplier() {
-        return (Function<Object, Optional<Component>>) name;
-    }
-
-    public SpecialConfigDescription<T> setNameSupplier(Function<T, Optional<Component>> name) {
-        nameIsSupplier = true;
-        this.name = name;
+    public SpecialConfigDescription<T> setValueNameSupplier(Function<T, Optional<Component>> valueNameSupplier) {
+        valueNameIsSupplier = true;
+        this.valueName = valueNameSupplier;
         return this;
     }
+
+    public Function<T, Optional<Component>> getValueNameSupplier() {
+        return valueName;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Function<Object, Optional<Component>> getValueNameSupplierAsObject() {
+        return (Function<Object, Optional<Component>>) valueName;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Consumer<Object> getSaveConsumerAsObject() {
+        return (Consumer<Object>) saveConsumer;
+    }
+
 
     public String getKey() {
         return key;
@@ -122,5 +156,4 @@ public class SpecialConfigDescription<T> {
         this.value = value;
         return this;
     }
-
 }

@@ -1,6 +1,5 @@
 package io.homo.superresolution.fabric.mixin.core;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.fabric.SuperResolutionFabricClient;
 import net.minecraft.client.Minecraft;
@@ -16,7 +15,7 @@ public class MinecraftMixin {
     private void onStart(CallbackInfo ci) {
         if (!SuperResolution.isPreInit) return;
         SuperResolution.initRendering();
-        SuperResolution.createAlgo();
+        SuperResolution.createAlgorithm();
         SuperResolutionFabricClient.mod.init();
     }
 }

@@ -263,7 +263,7 @@ public class MinecraftRenderHandle {
         PerformanceInfo.end("world");
         frameTime = PerformanceInfo.getAsMillis("world");
         getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
-        Gl.glViewport(
+        glViewport(
                 0,
                 0,
                 getScreenWidth(),
