@@ -9,10 +9,9 @@ import io.homo.superresolution.core.utils.ColorUtil;
 
 #if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL30;
 #endif
 
-
-import static io.homo.superresolution.core.graphics.opengl.Gl.glBindFramebuffer;
 
 public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     public RenderTarget renderTarget;
@@ -85,7 +84,7 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     }
 
     public void unbind(FrameBufferBindPoint bindPoint) {
-        glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), 0);
+        GL30.glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), 0);
     }
 
     @Override

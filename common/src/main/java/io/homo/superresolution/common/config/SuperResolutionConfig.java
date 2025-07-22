@@ -223,11 +223,11 @@ public class SuperResolutionConfig {
             SuperResolution.currentAlgorithm.destroy();
         }
 
-        if (!SuperResolution.createAlgo()) {
+        if (!SuperResolution.createAlgorithm()) {
             UPSCALE_ALGO.set(currentAlgo.codeName);
             SuperResolution.algorithmDescription = currentAlgo;
 
-            if (!SuperResolution.createAlgo()) {
+            if (!SuperResolution.createAlgorithm()) {
                 SuperResolution.LOGGER.error(
                         "在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常",
                         newAlgo.displayName,

@@ -11,7 +11,9 @@
 precision mediump float;
 precision highp int;
 
-
+#ifndef SR_GL41_COMPAT
+#extension GL_ARB_shading_language_420pack : enable
+#endif
 
 #if SR_GL41_COMPAT
 layout(std140) uniform sgsr1_data {
@@ -22,14 +24,14 @@ layout(std140) uniform sgsr1_data {
 };
 uniform mediump sampler2D ps0;
 #else
-layout(set = 0, binding = 0) uniform sgsr1_data
+layout(binding = 0) uniform sgsr1_data
 {
     vec2 renderSize;
     vec2 renderSizeRcp;
     float EdgeSharpness;
     float EdgeThreshold;
 };
-layout(set = 0, binding = 1) uniform mediump sampler2D ps0;
+layout(binding = 1) uniform mediump sampler2D ps0;
 #endif
 
 

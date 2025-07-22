@@ -105,6 +105,8 @@
     "superresolution.screen.config.special.fsr1.fp16.tooltip": "启用后可以提升性能但会损失一点画质",
     "superresolution.screen.config.special.sgsr2.variant.name": "变体",
     "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 计算着色器/2通道 性能适中 效果适中\nCS_3 计算着色器/3通道 性能较差 效果最好\nFS_2 普通着色器/2通道 性能最好 效果较差",
+    "superresolution.screen.config.special.fsr2.version.name": "版本",
+    "superresolution.screen.config.special.fsr2.version.tooltip": "FSR2的版本，不同版本间会有一些区别。\n默认为2.3.3",
     "superresolution.enum.sgsrvariant.cs_2": "CS_2 (计算着色器/2通道)",
     "superresolution.enum.sgsrvariant.cs_3": "CS_3 (计算着色器/3通道)",
     "superresolution.enum.sgsrvariant.fs_2": "FS_2 (普通着色器/2通道)",

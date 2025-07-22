@@ -128,7 +128,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void initRendering() {
         try (GlState ignored = new GlState()) {
             RenderSystems.init();
-            
+
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return;
             if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL) {
@@ -142,7 +142,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         }
     }
 
-    public static boolean createAlgo() {
+    public static boolean createAlgorithm() {
         try (GlState ignored = new GlState()) {
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return false;
@@ -155,6 +155,37 @@ public final class SuperResolution implements Resizable, Destroyable {
             } catch (Exception e) {
                 SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
                 e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    public static boolean recreateAlgorithm() {
+        try (GlState ignored = new GlState()) {
+            if (minecraft == null) minecraft = Minecraft.getInstance();
+            if (!isPreInit) {
+                return false;
+            }
+
+            if (currentAlgorithm != null) {
+                currentAlgorithm.destroy();
+            }
+
+            try {
+                currentAlgorithm = algorithmDescription.createNewInstance();
+                currentAlgorithm.init();
+                currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+                AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
+                        currentAlgorithm,
+                        MinecraftRenderHandle.getScreenWidth(),
+                        MinecraftRenderHandle.getScreenHeight(),
+                        MinecraftRenderHandle.getRenderWidth(),
+                        MinecraftRenderHandle.getRenderHeight()
+                );
+
+                return true;
+            } catch (Exception e) {
+                LOGGER.error("初始化算法 {} 时失败：", algorithmDescription.getDisplayName(), e);
             }
         }
         return false;

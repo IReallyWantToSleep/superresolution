@@ -1,5 +1,9 @@
 #version 410 core
 
+#ifndef SR_GL41_COMPAT
+#extension GL_ARB_shading_language_420pack : enable
+#endif
+
 #if SR_GL41_COMPAT
 uniform sampler2D tex_current;
 uniform sampler2D tex_previous;

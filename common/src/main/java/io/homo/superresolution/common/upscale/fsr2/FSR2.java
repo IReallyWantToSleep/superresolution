@@ -15,7 +15,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.fsr2.v221.*;
+import io.homo.superresolution.thirdparty.fsr2.common.*;
 import org.joml.Matrix4f;
 
 
@@ -70,9 +70,9 @@ public class FSR2 extends AbstractAlgorithm {
                 .build()
         );
         fsr2Context = new Fsr2Context(
-                Fsr2ContextConfig.create(
-                        new Fsr2ContextFlags()
-                ),
+                Fsr2ContextConfig.create()
+                        .flags(new Fsr2ContextFlags())
+                        .version(SuperResolutionConfig.SPECIAL.FSR2.VERSION.get()),
                 new Fsr2Dimensions(
                         MinecraftRenderHandle.getRenderWidth(),
                         MinecraftRenderHandle.getRenderHeight(),

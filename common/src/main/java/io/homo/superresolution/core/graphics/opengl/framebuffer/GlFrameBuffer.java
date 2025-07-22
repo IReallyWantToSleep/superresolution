@@ -7,7 +7,6 @@ import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.minecraft.RenderTargetCache;
 import org.jetbrains.annotations.NotNull;
 
@@ -343,6 +342,6 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        Gl.glSafeObjectLabel(GL_FRAMEBUFFER, handle(), newLabel);
+        Gl.setGlObjectLabel(GL_FRAMEBUFFER, handle(), newLabel);
     }
 }

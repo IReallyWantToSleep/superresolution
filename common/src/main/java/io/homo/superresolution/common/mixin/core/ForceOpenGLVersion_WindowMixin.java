@@ -17,6 +17,9 @@ import static org.lwjgl.glfw.GLFW.*;
 public class ForceOpenGLVersion_WindowMixin {
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 5), remap = false)
     private void forceOpenGLVersion(int hint, int value) {
+        //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
+        //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
+
         glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
         glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
         glfwWindowHint(hint, value);

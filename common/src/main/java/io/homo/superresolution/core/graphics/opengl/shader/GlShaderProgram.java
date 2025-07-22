@@ -1,7 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.shader;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
@@ -13,7 +12,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
-import me.shedaniel.clothconfig2.api.Requirement;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,15 +20,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static io.homo.superresolution.common.SuperResolution.LOGGER;
-import static io.homo.superresolution.core.graphics.opengl.Gl.glAttachShader;
-import static io.homo.superresolution.core.graphics.opengl.Gl.glCreateProgram;
-import static io.homo.superresolution.core.graphics.opengl.Gl.glLinkProgram;
-import static io.homo.superresolution.core.graphics.opengl.Gl.glSafeObjectLabel;
-import static org.lwjgl.opengl.GL11.GL_FALSE;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL41.glShaderBinary;
-import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.opengl.GL46.glSpecializeShader;
+import static io.homo.superresolution.core.graphics.opengl.Gl.setGlObjectLabel;
+import static org.lwjgl.opengl.GL46.*;
 
 public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebuggableObject {
     private final ShaderDescription description;
@@ -55,7 +46,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        glSafeObjectLabel(GL_PROGRAM, handle, newLabel);
+        setGlObjectLabel(GL_PROGRAM, handle, newLabel);
     }
 
     protected void checkProgram() {
@@ -154,7 +145,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
                 throw new ShaderCompileException(errorDetails);
             }
 
-            glSafeObjectLabel(GL_SHADER, shader.id(), "Shader_" + source.getType());
+            setGlObjectLabel(GL_SHADER, shader.id(), "Shader_" + source.getType());
             return shader;
         } catch (Exception e) {
             shader.destroy();
@@ -236,7 +227,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     @Override
     public void destroy() {
         uniforms.destroy();
-        Gl.glDeleteProgram(this.handle);
+        glDeleteProgram(this.handle);
     }
 
     @Override
