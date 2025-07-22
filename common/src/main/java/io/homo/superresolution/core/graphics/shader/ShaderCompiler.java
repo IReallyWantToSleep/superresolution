@@ -302,14 +302,32 @@ public class ShaderCompiler {
         return getShaderBinaryWithApi(program, type, "ogl");
     }
 
-    public record ShaderBinary(ByteBuffer binary, int size, int format) implements AutoCloseable {
-        @Override
-        public void close() {
-            MemoryUtil.memFree(binary);
+    public static class ShaderBinary implements AutoCloseable {
+        private final ByteBuffer binary;
+        private final int size;
+        private final int format;
+        private volatile boolean closed = false;
+
+        public ShaderBinary(ByteBuffer binary, int size, int format) {
+            this.binary = binary;
+            this.size = size;
+            this.format = format;
         }
 
-        public boolean isValid() {
-            return binary != null && size > 0;
+        public ByteBuffer binary() { return binary; }
+        public int size() { return size; }
+        public int format() { return format; }
+
+        @Override
+        public void close() {
+            if (!closed) {
+                synchronized (this) {
+                    if (!closed) {
+                        MemoryUtil.memFree(binary);
+                        closed = true;
+                    }
+                }
+            }
         }
     }
 }

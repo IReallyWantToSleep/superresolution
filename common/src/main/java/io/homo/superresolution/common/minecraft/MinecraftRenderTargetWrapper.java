@@ -68,7 +68,7 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
 
     public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
         #if MC_VER > MC_1_21_4
-        glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), MinecraftRenderTargetUtil.getFboId(renderTarget));
+        org.lwjgl.opengl.GL30.glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), MinecraftRenderTargetUtil.getFboId(renderTarget));
         #else
         if (bindPoint == FrameBufferBindPoint.Read) {
             renderTarget.bindRead();
@@ -84,7 +84,7 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     }
 
     public void unbind(FrameBufferBindPoint bindPoint) {
-        GL30.glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), 0);
+        org.lwjgl.opengl.GL30.glBindFramebuffer(GlFrameBuffer.resolveBindTarget(bindPoint), 0);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
         #if MC_VER > MC_1_21_4
         return switch (attachmentType) {
             case Color -> MinecraftRenderTargetUtil.getColorTexId(renderTarget);
-            case AnyDepth , Depth , DepthStencil -> MinecraftRenderTargetUtil.getDepthTexId(renderTarget);
+            case AnyDepth, Depth, DepthStencil -> MinecraftRenderTargetUtil.getDepthTexId(renderTarget);
         };
         #else
         return switch (attachmentType) {
