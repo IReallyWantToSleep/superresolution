@@ -5,7 +5,6 @@ import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Dimensions;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2DispatchDescription;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.Buffer;
@@ -20,7 +19,7 @@ public class Fsr2CBSpd implements IBufferData {
     private int mips = 0;
 
     public Fsr2CBSpd() {
-        this.container = MemoryStack.stackCalloc((int) size());
+        this.container = MemoryUtil.memCalloc((int) size());
         this.container.order(ByteOrder.LITTLE_ENDIAN);
     }
 

@@ -18,6 +18,11 @@ public class PerformanceInfo {
         return usingTimeMap.get(name);
     }
 
+    public static long end(String name, long time) {
+        usingTimeMap.put(name, time);
+        return usingTimeMap.get(name);
+    }
+
     public static long getAsNano(String name) {
         if (usingTimeMap.get(name) == null) return -1L;
         return usingTimeMap.get(name);

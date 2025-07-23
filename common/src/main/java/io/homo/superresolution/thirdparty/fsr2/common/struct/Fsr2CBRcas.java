@@ -16,7 +16,7 @@ public class Fsr2CBRcas implements IBufferData {
     private final ByteBuffer container;
 
     public Fsr2CBRcas() {
-        this.container = MemoryStack.stackCalloc((int) size());
+        this.container = MemoryUtil.memCalloc((int) size());
         this.container.order(ByteOrder.LITTLE_ENDIAN);
     }
 

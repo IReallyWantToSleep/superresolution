@@ -115,13 +115,13 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
                 glShaderSource(shader.id(), sourceCode);
                 glCompileShader(shader.id());
             } else {
-                try (ShaderCompiler.ShaderBinary binary = ShaderCompiler.getOpenGLShaderBinary(this, source.getType())) {
-                    if (binary == null) {
-                        throw new RuntimeException("SPIR-V binary not found for " + source.getType());
-                    }
-                    glShaderBinary(new int[]{shader.id()}, binary.format(), binary.binary());
-                    glSpecializeShader(shader.id(), "main", null, (int[]) null);
+                ShaderCompiler.ShaderBinary binary = ShaderCompiler.getOpenGLShaderBinary(this, source.getType());
+                if (binary == null) {
+                    throw new RuntimeException("SPIR-V binary not found for " + source.getType());
                 }
+                glShaderBinary(new int[]{shader.id()}, binary.format(), binary.binary());
+                glSpecializeShader(shader.id(), "main", null, (int[]) null);
+                binary.close();
             }
 
             if (glGetShaderi(shader.id(), GL_COMPILE_STATUS) == GL_FALSE) {

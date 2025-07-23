@@ -1,7 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.pipeline.resource;
 
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
