@@ -37,7 +37,7 @@ public class Fsr2CBFSR2 implements IBufferData {
     private float viewSpaceToMetersFactor = 1.0f;
 
     public Fsr2CBFSR2() {
-        this.container = MemoryStack.stackCalloc((int) size());
+        this.container = MemoryUtil.memCalloc((int) size());
     }
 
     @Override

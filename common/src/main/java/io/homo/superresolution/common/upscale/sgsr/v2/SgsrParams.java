@@ -2,11 +2,8 @@ package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.math.Vector2f;
-
-import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.Buffer;
@@ -18,7 +15,7 @@ public class SgsrParams implements IBufferData {
     private Matrix4f prev_view_proj_matrix;
 
     public SgsrParams() {
-        this.container = MemoryStack.stackCalloc((int) size());
+        this.container = MemoryUtil.memCalloc((int) size());
     }
 
     private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {

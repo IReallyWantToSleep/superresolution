@@ -29,7 +29,7 @@ import static org.lwjgl.opengl.ARBGLSPIRV.GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
 
 public class ShaderCompiler {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-ShaderCompiler");
-    public static final Path CACHE_DIR = Path.of(Platform.currentPlatform.getGameFolder().toString(), "sr_shaderCache");
+    public static final Path CACHE_DIR = Path.of(/*Platform.currentPlatform.getGameFolder().toString()*/ "I:\\super_resolution_moddev\\superresolution\\runs\\neoforge\\", "sr_shaderCache");
 
     static {
         createCacheDir();
@@ -38,6 +38,27 @@ public class ShaderCompiler {
     // ========= Vulkan =========
     public static boolean saveVulkanProgramBinary(IShaderProgram<?> program) {
         return saveProgramBinaryWithApi(program, "vk");
+    }
+
+    public static boolean checkVulkanProgramBinary(IShaderProgram<?> program) {
+        return checkProgramBinaryWithApi(program, "vk");
+    }
+
+    public static ShaderBinary getVulkanShaderBinary(IShaderProgram<?> program, ShaderType type) {
+        return getShaderBinaryWithApi(program, type, "vk");
+    }
+
+    // ========= OpenGL =========
+    public static boolean saveOpenGLProgramBinary(IShaderProgram<?> program) {
+        return saveProgramBinaryWithApi(program, "ogl");
+    }
+
+    public static boolean checkOpenGLProgramBinary(IShaderProgram<?> program) {
+        return checkProgramBinaryWithApi(program, "ogl");
+    }
+
+    public static ShaderBinary getOpenGLShaderBinary(IShaderProgram<?> program, ShaderType type) {
+        return getShaderBinaryWithApi(program, type, "ogl");
     }
 
     private static boolean saveProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
@@ -236,10 +257,6 @@ public class ShaderCompiler {
         return Md5CaculateUtil.getMD5(identityBuilder.toString());
     }
 
-    public static boolean checkVulkanProgramBinary(IShaderProgram<?> program) {
-        return checkProgramBinaryWithApi(program, "vk");
-    }
-
     private static boolean checkProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
         createCacheDir();
 
@@ -258,10 +275,6 @@ public class ShaderCompiler {
         return true;
     }
 
-    public static ShaderBinary getVulkanShaderBinary(IShaderProgram<?> program, ShaderType type) {
-        return getShaderBinaryWithApi(program, type, "vk");
-    }
-
     private static ShaderBinary getShaderBinaryWithApi(IShaderProgram<?> program, ShaderType type, String apiTag) {
         createCacheDir();
 
@@ -277,29 +290,22 @@ public class ShaderCompiler {
         Path path = CACHE_DIR.resolve(filename);
         try {
             byte[] data = Files.readAllBytes(path);
-            ByteBuffer buffer = MemoryUtil.memAlloc(data.length);
+            if (data.length == 0 || data.length > 1024 * 1024 * 2) { // 最大2mb
+                LOGGER.error("SPIR-V缓存大小异常: {}", data.length);
+                return null;
+            }
+
+            ByteBuffer buffer;
+            buffer = MemoryUtil.memAlloc(data.length);
             buffer.put(data).flip();
             LOGGER.info("成功加载SPIR-V缓存文件: {}", filename);
-
             int format = isVulkan(apiTag) ? -1 : GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
             return new ShaderBinary(buffer, data.length, format);
+
         } catch (IOException e) {
-            LOGGER.error("加载SPIR-V失败: {}", filename);
+            LOGGER.error("加载SPIR-V失败: {}", filename, e);
             return null;
         }
-    }
-
-    // ========= OpenGL =========
-    public static boolean saveOpenGLProgramBinary(IShaderProgram<?> program) {
-        return saveProgramBinaryWithApi(program, "ogl");
-    }
-
-    public static boolean checkOpenGLProgramBinary(IShaderProgram<?> program) {
-        return checkProgramBinaryWithApi(program, "ogl");
-    }
-
-    public static ShaderBinary getOpenGLShaderBinary(IShaderProgram<?> program, ShaderType type) {
-        return getShaderBinaryWithApi(program, type, "ogl");
     }
 
     public static class ShaderBinary implements AutoCloseable {
@@ -314,15 +320,24 @@ public class ShaderCompiler {
             this.format = format;
         }
 
-        public ByteBuffer binary() { return binary; }
-        public int size() { return size; }
-        public int format() { return format; }
+        public ByteBuffer binary() {
+            return binary;
+        }
+
+        public int size() {
+            return size;
+        }
+
+        public int format() {
+            return format;
+        }
 
         @Override
         public void close() {
             if (!closed) {
                 synchronized (this) {
                     if (!closed) {
+                        LOGGER.info("释放着色器代码内存 {} bytes", size);
                         MemoryUtil.memFree(binary);
                         closed = true;
                     }

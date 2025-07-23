@@ -3,17 +3,13 @@ package io.homo.superresolution.common.minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.sun.jna.Pointer;
-import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
-import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
-import io.homo.superresolution.api.event.LevelRenderEndEvent;
-import io.homo.superresolution.api.event.LevelRenderStartEvent;
+import io.homo.superresolution.api.event.*;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
@@ -27,6 +23,7 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -50,6 +47,10 @@ public class MinecraftRenderHandle {
     private static boolean needCapture = false;
     private static boolean needCaptureVulkan = false;
     private static boolean needCaptureUpscale = false;
+
+    private static int[] timeQueryIds = new int[4]; // 0: world begin, 1: world end, 2: upscale begin, 3: upscale end
+    private static long startTime, endTime;
+    private static boolean queriesInitialized = false;
 
     public static void needCapture() {
         needCapture = true;
@@ -94,6 +95,11 @@ public class MinecraftRenderHandle {
                 getRenderWidth(),
                 getRenderHeight()
         );
+
+        if (!queriesInitialized) {
+            GL41.glGenQueries(timeQueryIds);
+            queriesInitialized = true;
+        }
     }
 
     public static void fixPostChain(PostChain postChain) {
@@ -162,7 +168,10 @@ public class MinecraftRenderHandle {
         if (SuperResolution.cachedWidth != getScreenWidth() || SuperResolution.cachedHeight != getScreenHeight()) {
             SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
         }
+
         PerformanceInfo.begin("world");
+        GL41.glQueryCounter(timeQueryIds[0], GL46.GL_TIMESTAMP); // world begin
+
         updateRenderTarget();
         updateRenderTargetSize();
         #if MC_VER > MC_1_21_4
@@ -173,7 +182,6 @@ public class MinecraftRenderHandle {
         getRenderTarget().bind(FrameBufferBindPoint.Write);
         SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         #endif
-        RenderSystems.current().finish();
         if (needCapture) {
             if (RenderDoc.renderdoc != null) {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
@@ -192,12 +200,10 @@ public class MinecraftRenderHandle {
         try (GlState ignored = new GlState()) {
             LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
         }
-        RenderSystems.current().finish();
     }
 
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
-        RenderSystems.current().finish();
         isRenderingWorld = false;
         frameCount++;
         #if MC_VER > MC_1_21_4
@@ -213,9 +219,10 @@ public class MinecraftRenderHandle {
             LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }
 
-        RenderSystems.current().finish();
         try (GlState ignored = new GlState()) {
             PerformanceInfo.begin("upscale");
+            GL41.glQueryCounter(timeQueryIds[2], GL46.GL_TIMESTAMP); // upscale begin
+
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
                     RenderDoc.renderdoc.StartFrameCapture.call(null, null);
@@ -255,12 +262,35 @@ public class MinecraftRenderHandle {
                     RenderDoc.renderdoc.EndFrameCapture.call(null, null);
                 }
             }
-            PerformanceInfo.end("upscale");
+
+            GL41.glQueryCounter(timeQueryIds[3], GL46.GL_TIMESTAMP);
+            int[] availableUpscale = {0};
+            do {
+                GL41.glGetQueryObjectiv(timeQueryIds[3], GL41.GL_QUERY_RESULT_AVAILABLE, availableUpscale);
+            } while (availableUpscale[0] == 0);
+            long[] upscaleBegin = {0};
+            long[] upscaleEnd = {0};
+            GL41.glGetQueryObjectui64v(timeQueryIds[2], GL41.GL_QUERY_RESULT, upscaleBegin);
+            GL41.glGetQueryObjectui64v(timeQueryIds[3], GL41.GL_QUERY_RESULT, upscaleEnd);
+            long upscaleTime = upscaleEnd[0] - upscaleBegin[0];
+            PerformanceInfo.end("upscale", upscaleTime);
             if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                 blitHandRenderTarget();
-            RenderSystems.current().finish();
         }
-        PerformanceInfo.end("world");
+        // world end
+        GL41.glQueryCounter(timeQueryIds[1], GL46.GL_TIMESTAMP); // world end
+        // 等待 world 查询可用
+        int[] availableWorld = {0};
+        do {
+            GL41.glGetQueryObjectiv(timeQueryIds[1], GL41.GL_QUERY_RESULT_AVAILABLE, availableWorld);
+        } while (availableWorld[0] == 0);
+        long[] worldBegin = {0};
+        long[] worldEnd = {0};
+        GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldBegin);
+        GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, worldEnd);
+        long worldTime = worldEnd[0] - worldBegin[0];
+        PerformanceInfo.end("world", worldTime);
+        
         frameTime = PerformanceInfo.getAsMillis("world");
         getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
         glViewport(
@@ -286,7 +316,6 @@ public class MinecraftRenderHandle {
                 }
             }
         }
-        RenderSystems.current().finish();
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {

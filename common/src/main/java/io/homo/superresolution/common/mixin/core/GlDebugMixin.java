@@ -17,11 +17,11 @@ public class GlDebugMixin {
 
     @Inject(method = "printDebugLog", at = @At("TAIL"))
     private static void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
-        LOGGER.error("OpenGL Error!");
-        for (StackTraceElement element : elements) {
-            LOGGER.error("    {}", element.toString());
-        }
+        //StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+        //LOGGER.error("OpenGL Error!");
+        //for (StackTraceElement element : elements) {
+        //    LOGGER.error("    {}", element.toString());
+        //}
     }
 }
 #else
