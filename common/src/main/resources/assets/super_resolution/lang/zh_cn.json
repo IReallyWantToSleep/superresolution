@@ -84,7 +84,10 @@
     "superresolution.screen.config.options.label.generate_motion_vectors": "生成运动矢量",
     "superresolution.screen.config.options.tooltip.generate_motion_vectors": "运动矢量可以提升部分算法（FSR2,SGSR2）的超分质量，但会损失性能",
     "superresolution.screen.debug.performance_info": "性能信息",
-    "superresolution.screen.debug.performance_data": "帧时间 %1$sms\n世界渲染用时 %2$sms\n升采样算法用时 %3$sms",
+    "superresolution.screen.info.title.performance_info": "性能信息",
+    "superresolution.screen.info.performance_info.frame_time": "帧时间 %1$sms",
+    "superresolution.screen.info.performance_info.world_time": "世界渲染用时 %1$sms",
+    "superresolution.screen.info.performance_info.upscale_time": "升采样算法用时 %1$sms",
     "superresolution.screen.config.warn.mobile_device": "警告：正在移动设备上运行，本模组对移动设备的支持不稳定，可能出现无法预料的错误",
     "superresolution.screen.config.warn.algorithm_unstable": "警告：当前所选算法不稳定",
     "superresolution.screen.config.warn.algorithm_incomplete": "警告：当前所选算法未完成，无法正常使用",
@@ -119,5 +122,6 @@
     "superresolution.screen.config.error.capture_mode_unsupported": "当前的捕获方式在 %s 无法使用",
     "superresolution.screen.config.options.label.enable_compat_shader_compiler": "使用兼容性着色器编译器",
     "superresolution.screen.config.options.tooltip.enable_compat_shader_compiler": "启用时使用兼容性着色器编译器编译着色器",
-    "superresolution.screen.info.text.requirement.additional_conditions": "额外依赖条件满足：%s"
+    "superresolution.screen.info.text.requirement.additional_conditions": "额外依赖条件满足：%s",
+    "superresolution.screen.debug.performance_data": "Frame time %1$sms\nWorld render time %2$sms\nUpscale algorithm time %3$sms"
 }

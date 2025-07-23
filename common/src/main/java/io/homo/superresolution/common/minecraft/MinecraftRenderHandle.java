@@ -219,6 +219,21 @@ public class MinecraftRenderHandle {
             LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }
 
+        GL41.glQueryCounter(timeQueryIds[1], GL46.GL_TIMESTAMP); // world end
+        int[] availableWorld = {0};
+        int count = 0;
+        do {
+            count++;
+            GL41.glGetQueryObjectiv(timeQueryIds[1], GL41.GL_QUERY_RESULT_AVAILABLE, availableWorld);
+            if (count > 500) break;
+        } while (availableWorld[0] == 0);
+        long[] worldBegin = {0};
+        long[] worldEnd = {0};
+        GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldBegin);
+        GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, worldEnd);
+        long worldTime = worldEnd[0] - worldBegin[0];
+        PerformanceInfo.end("world", worldTime);
+
         try (GlState ignored = new GlState()) {
             PerformanceInfo.begin("upscale");
             GL41.glQueryCounter(timeQueryIds[2], GL46.GL_TIMESTAMP); // upscale begin
@@ -262,11 +277,13 @@ public class MinecraftRenderHandle {
                     RenderDoc.renderdoc.EndFrameCapture.call(null, null);
                 }
             }
-
             GL41.glQueryCounter(timeQueryIds[3], GL46.GL_TIMESTAMP);
             int[] availableUpscale = {0};
+            count = 0;
             do {
+                count++;
                 GL41.glGetQueryObjectiv(timeQueryIds[3], GL41.GL_QUERY_RESULT_AVAILABLE, availableUpscale);
+                if (count > 500) break;
             } while (availableUpscale[0] == 0);
             long[] upscaleBegin = {0};
             long[] upscaleEnd = {0};
@@ -277,20 +294,7 @@ public class MinecraftRenderHandle {
             if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                 blitHandRenderTarget();
         }
-        // world end
-        GL41.glQueryCounter(timeQueryIds[1], GL46.GL_TIMESTAMP); // world end
-        // 等待 world 查询可用
-        int[] availableWorld = {0};
-        do {
-            GL41.glGetQueryObjectiv(timeQueryIds[1], GL41.GL_QUERY_RESULT_AVAILABLE, availableWorld);
-        } while (availableWorld[0] == 0);
-        long[] worldBegin = {0};
-        long[] worldEnd = {0};
-        GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldBegin);
-        GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, worldEnd);
-        long worldTime = worldEnd[0] - worldBegin[0];
-        PerformanceInfo.end("world", worldTime);
-        
+
         frameTime = PerformanceInfo.getAsMillis("world");
         getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
         glViewport(
