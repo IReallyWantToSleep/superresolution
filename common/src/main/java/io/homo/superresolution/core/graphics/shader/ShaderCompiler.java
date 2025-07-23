@@ -29,7 +29,7 @@ import static org.lwjgl.opengl.ARBGLSPIRV.GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
 
 public class ShaderCompiler {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-ShaderCompiler");
-    public static final Path CACHE_DIR = Path.of(/*Platform.currentPlatform.getGameFolder().toString()*/ "I:\\super_resolution_moddev\\superresolution\\runs\\neoforge\\", "sr_shaderCache");
+    public static final Path CACHE_DIR = Path.of(Platform.currentPlatform.getGameFolder().toString(), "sr_shaderCache");
 
     static {
         createCacheDir();
