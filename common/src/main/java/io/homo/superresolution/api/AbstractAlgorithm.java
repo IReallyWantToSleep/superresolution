@@ -5,6 +5,7 @@ import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.math.Vector2f;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     /**
@@ -101,5 +102,13 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      */
     public int getOutputTextureId() {
         return output.getTextureId(FrameBufferAttachmentType.Color);
+    }
+
+    public Vector2f getJitterOffset(
+            int frameCount,
+            Vector2f renderSize,
+            Vector2f screenSize
+    ) {
+        return new Vector2f(0);
     }
 }

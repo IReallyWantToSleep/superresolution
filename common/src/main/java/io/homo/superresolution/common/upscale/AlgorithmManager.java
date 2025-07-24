@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
@@ -75,6 +76,17 @@ public class AlgorithmManager {
             param.lastModelViewMatrix = param.currentModelViewMatrix;
         }
         param.currentModelViewMatrix = new Matrix4f(cur);
+    }
+
+    public static Vector2f getJitterOffset() {
+        if (SuperResolutionAPI.getCurrentAlgorithm() != null) {
+            return SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
+                    MinecraftRenderHandle.getFrameCount(),
+                    new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                    new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+            );
+        }
+        return new Vector2f(0);
     }
 
     public static DispatchResource getDispatchResource() {

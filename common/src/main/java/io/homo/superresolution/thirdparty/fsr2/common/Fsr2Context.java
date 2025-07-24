@@ -3,14 +3,22 @@ package io.homo.superresolution.thirdparty.fsr2.common;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.thirdparty.fsr2.common.struct.Fsr2CBFSR2;
 import io.homo.superresolution.thirdparty.fsr2.common.struct.Fsr2CBRcas;
 import io.homo.superresolution.thirdparty.fsr2.common.struct.Fsr2CBSpd;
 import io.homo.superresolution.thirdparty.fsr2.v221.*;
 import io.homo.superresolution.thirdparty.fsr2.v233.*;
+import org.lwjgl.opengl.GL41;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 
 public class Fsr2Context {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-FSR2");
@@ -91,6 +99,32 @@ public class Fsr2Context {
         depthClipPipeline.resize(dimensions);
         lockPipeline.resize(dimensions);
         reconstructPreviousDepthPipeline.resize(dimensions);
+
+        GlTexture2D maximumBiasTexture = ((GlTexture2D) resources.resource(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT).getResource());
+        if (maximumBiasTexture != null) {
+            float[] ffxFsr2MaximumBias = Fsr2MaximumBias.ffxFsr2MaximumBias;
+            int textureSize = maximumBiasTexture.getWidth() * maximumBiasTexture.getHeight();
+            ByteBuffer byteBuffer = MemoryUtil.memAlloc(textureSize * 2)
+                    .order(ByteOrder.nativeOrder());
+            ShortBuffer shortBuffer = byteBuffer.asShortBuffer();
+            for (float value : ffxFsr2MaximumBias) {
+                short converted = (short) Math.round(value / 2.0f * 32767.0f);
+                shortBuffer.put(converted);
+            }
+            shortBuffer.flip();
+            Gl.DSA.textureSubImage2D(
+                    maximumBiasTexture.handle(),
+                    0,
+                    0, 0,
+                    maximumBiasTexture.getWidth(),
+                    maximumBiasTexture.getHeight(),
+                    GL41.GL_RED,
+                    GL41.GL_SHORT,
+                    MemoryUtil.memAddress(shortBuffer)
+            );
+            RenderSystems.current().finish();
+            MemoryUtil.memFree(byteBuffer);
+        }
     }
 
     public void destroy() {

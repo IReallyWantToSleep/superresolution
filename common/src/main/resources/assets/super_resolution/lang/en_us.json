@@ -105,6 +105,8 @@
     "superresolution.screen.info.link.mcmod_homepage": "MC百科 Homepage",
     "superresolution.screen.config.special.fsr1.fp16.name": "Enable Half Precision (FP16)",
     "superresolution.screen.config.special.fsr1.fp16.tooltip": "Improves performance with slight quality loss when enabled",
+    "superresolution.screen.config.special.fsr2.fp16.name": "Enable Half Precision (FP16)",
+    "superresolution.screen.config.special.fsr2.fp16.tooltip": "Improves performance with slight quality loss when enabled",
     "superresolution.screen.config.special.sgsr2.variant.name": "Variant",
     "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 Compute Shader/2 Pass - Moderate performance/quality\nCS_3 Compute Shader/3 Pass - Lower performance/Best quality\nFS_2 Fragment Shader/2 Pass - Best performance/Lower quality",
     "superresolution.enum.sgsrvariant.cs_2": "CS_2 (Compute Shader/2 Pass)",

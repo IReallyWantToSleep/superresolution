@@ -211,7 +211,6 @@ public class MinecraftRenderHandle {
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
-        frameCount++;
         #if MC_VER > MC_1_21_4
         ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
                 ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
@@ -310,6 +309,7 @@ public class MinecraftRenderHandle {
                 }
             }
         }
+        frameCount++;
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {

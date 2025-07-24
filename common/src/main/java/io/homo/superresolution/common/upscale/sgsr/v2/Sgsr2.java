@@ -20,6 +20,7 @@ import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.math.Vector2f;
+import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import org.joml.Matrix4f;
 
 import java.util.function.Consumer;
@@ -87,7 +88,7 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsData.setVec2("displaySize", dispatchResource.screenSize());
         paramsData.setVec2("renderSizeRcp", dispatchResource.renderSize().divideInto(1));
         paramsData.setVec2("displaySizeRcp", dispatchResource.screenSize().divideInto(1));
-        paramsData.setVec2("jitterOffset", new Vector2f(0.0f));
+        paramsData.setVec2("jitterOffset", getJitterOffset(dispatchResource.frameCount(), dispatchResource.renderSize(), dispatchResource.screenSize()));
         /*
         glm::mat4 inv_view       = glm::inverse(current_view);
         glm::mat4 inv_proj       = glm::inverse(current_proj);
@@ -143,6 +144,25 @@ public class Sgsr2 extends AbstractAlgorithm {
         variantInstance.setOutput(output);
         variantInstance.dispatch(dispatchResource, this);
         return false;
+    }
+
+    @Override
+    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        //Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
+
+        return new Vector2f(
+                0,
+                0
+        );
+    }
+
+    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        //int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+        //return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
+        return new Vector2f(
+                0,
+                0
+        );
     }
 
     @Override

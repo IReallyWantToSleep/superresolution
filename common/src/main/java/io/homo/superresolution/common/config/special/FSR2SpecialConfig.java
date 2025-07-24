@@ -2,6 +2,7 @@ package io.homo.superresolution.common.config.special;
 
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.config.ModConfigSpecBuilder;
+import io.homo.superresolution.api.config.values.single.BooleanValue;
 import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
@@ -20,6 +21,11 @@ public class FSR2SpecialConfig extends SpecialConfig {
             Fsr2Version.class,
             () -> Fsr2Version.V233
     );
+    public BooleanValue FP16 = this.specBuilder.defineBoolean(
+            "special/fsr2/fp16",
+            () -> true,
+            ""
+    );
 
     public FSR2SpecialConfig(ModConfigSpecBuilder specBuilder) {
         super(specBuilder);
@@ -27,6 +33,22 @@ public class FSR2SpecialConfig extends SpecialConfig {
 
     @Override
     protected void buildDescriptions(Map<String, SpecialConfigDescription<?>> map) {
+        map.put(
+                "fp16",
+                new SpecialConfigDescription<Boolean>()
+                        .setValue(getSpecialConfigs().FSR2.FP16.get())
+                        .setKey("fp16")
+                        .setName(Component.translatable("superresolution.screen.config.special.fsr2.fp16.name"))
+                        .setTooltip(Component.translatable("superresolution.screen.config.special.fsr2.fp16.tooltip"))
+                        .setType(ConfigSpecType.BOOLEAN)
+                        .setSaveConsumer((v) -> {
+                            getSpecialConfigs().FSR2.FP16.set(v);
+                            if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR2) {
+                                SuperResolution.recreateAlgorithm();
+                            }
+                        })
+                        .setDefaultValue(true)
+        );
         map.put(
                 "version",
                 new SpecialConfigDescription<>()

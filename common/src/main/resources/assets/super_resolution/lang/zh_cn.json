@@ -108,6 +108,8 @@
     "superresolution.screen.info.link.mcmod_homepage": "MC百科主页",
     "superresolution.screen.config.special.fsr1.fp16.name": "启用半精度(FP16)",
     "superresolution.screen.config.special.fsr1.fp16.tooltip": "启用后可以提升性能但会损失一点画质",
+    "superresolution.screen.config.special.fsr2.fp16.name": "启用半精度(FP16)",
+    "superresolution.screen.config.special.fsr2.fp16.tooltip": "启用后可以提升性能但会损失一点画质",
     "superresolution.screen.config.special.sgsr2.variant.name": "变体",
     "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 计算着色器/2通道 性能适中 效果适中\nCS_3 计算着色器/3通道 性能较差 效果最好\nFS_2 普通着色器/2通道 性能最好 效果较差",
     "superresolution.screen.config.special.fsr2.version.name": "版本",
