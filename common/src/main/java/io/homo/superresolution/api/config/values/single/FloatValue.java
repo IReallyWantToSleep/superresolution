@@ -34,9 +34,12 @@ public class FloatValue extends ConfigValue<Float> {
 
     @Override
     protected Float convertType(Object value) {
-        if (value instanceof Float) return (Float) value;
-        if (value instanceof Number) return ((Number) value).floatValue();
-        if (value instanceof String) return Float.parseFloat((String) value);
-        throw new IllegalArgumentException("Cannot convert " + value + " to Float");
+        return switch (value) {
+            case Float v -> v;
+            case Double v -> v.floatValue();
+            case Number number -> number.floatValue();
+            case String s -> Float.parseFloat(s);
+            default -> throw new IllegalArgumentException("Cannot convert " + value + " to Float");
+        };
     }
 }
