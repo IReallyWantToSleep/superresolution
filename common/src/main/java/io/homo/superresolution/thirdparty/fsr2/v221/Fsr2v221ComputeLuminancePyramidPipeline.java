@@ -94,6 +94,7 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_COLOR)
                         .binding(0)
                         .access(GlPipelineResourceAccess.READ)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
         jobBuilder.resource(

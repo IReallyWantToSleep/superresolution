@@ -16,35 +16,34 @@ vec2 decodeVelocityFromTexture(vec2 ev) {
     return dv;
 }
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout (binding = 1) uniform highp sampler2D InputColor;
-layout (binding = 2) uniform highp sampler2D InputDepth;
-layout (binding = 3) uniform highp sampler2D InputVelocity;
-layout (binding = 0, rgba16f) uniform writeonly mediump image2D MotionDepthClipAlphaBuffer;
-layout (binding = 1, r32ui) uniform writeonly highp uimage2D YCoCgColor;
+layout(binding = 1) uniform highp sampler2D InputColor;
+layout(binding = 2) uniform highp sampler2D InputDepth;
+layout(binding = 3) uniform highp sampler2D InputVelocity;
+layout(binding = 0, rgba16f) uniform writeonly mediump image2D MotionDepthClipAlphaBuffer;
+layout(binding = 1, r32ui) uniform writeonly highp uimage2D YCoCgColor;
 
-layout (binding = 0) uniform Params
+layout(binding = 0) uniform Params
 {
-    uvec2 renderSize;
-    uvec2 displaySize;
-    vec2 ViewportSizeInverse;
-    vec2 displaySizeRcp;
-    vec2 jitterOffset;
-    vec4 clipToPrevClip[4];
-    float preExposure;
-    float cameraFovAngleHor;
-    float cameraNear;
-    float MinLerpContribution;
-    uint bSameCamera;
-    uint reset;
+    vec2 renderSize; /**< Render size                                                                             	*/
+    vec2 displaySize; /**< Display size                                                                            	*/
+    vec2 renderSizeRcp; /**< 1.0 / renderSize                                                                        	*/
+    vec2 displaySizeRcp; /**< 1.0 / displaySize                                                                       	*/
+    vec2 jitterOffset; /**< Ranges from [-0.5, 0.5], calculated using the Halton sequence                       	*/
+    vec4 clipToPrevClip[4]; /**< Convert current clip space position to previous clip scape position*                    	*/
+    float preExposure; /**< Exposure for tone mapping**                                                             	*/
+    float cameraFovAngleHor; /**< Horizontal camera FOV***                                                                  	*/
+    float cameraNear; /**< Near plane of the camera                                                                	*/
+    float minLerpContribution; /**< Fixed interpolation scale; used in 2-pass method only                                   	*/
+    uint bSameCamera; /**< Indicates if it's the same camera from the previous frame; used in 2-pass method only****	*/
+    uint reset; /**< If accumulation should be reset -- eg last scene != current scene as in a camera cut      */
 } params;
-
 
 void main()
 {
     mediump float Exposure_co_rcp = params.preExposure;
-    vec2 ViewportSizeInverse = params.ViewportSizeInverse.xy;
+    vec2 ViewportSizeInverse = params.displaySizeRcp.xy;
     uvec2 InputPos = gl_GlobalInvocationID.xy;
 
     vec2 gatherCoord = vec2(gl_GlobalInvocationID.xy) * ViewportSizeInverse;
@@ -100,9 +99,9 @@ void main()
         #ifdef REQUEST_NDC_Y_UP
         vec2 ScreenPos = vec2(2.0f * ViewportUV.x - 1.0f, 1.0f - 2.0f * ViewportUV.y);
         #else
-         vec2 ScreenPos = vec2(2.0f * ViewportUV - 1.0f);
+        vec2 ScreenPos = vec2(2.0f * ViewportUV - 1.0f);
         #endif
-        vec3 Position = vec3(ScreenPos, topLeftMax9);    //this_clip
+        vec3 Position = vec3(ScreenPos, topLeftMax9); //this_clip
         vec4 PreClip = params.clipToPrevClip[3] + ((params.clipToPrevClip[2] * Position.z) + ((params.clipToPrevClip[1] * ScreenPos.y) + (params.clipToPrevClip[0] * ScreenPos.x)));
         vec2 PreScreen = PreClip.xy / PreClip.w;
         motion = Position.xy - PreScreen;

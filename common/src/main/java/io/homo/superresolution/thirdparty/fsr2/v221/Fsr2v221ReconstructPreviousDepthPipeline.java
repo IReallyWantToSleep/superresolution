@@ -7,6 +7,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobB
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
@@ -80,6 +81,7 @@ public class Fsr2v221ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_COLOR)
                         .binding(9)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );
@@ -98,6 +100,7 @@ public class Fsr2v221ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                                         Fsr2PipelineResourceType.LUMA_HISTORY_1
                         )
                         .binding(11)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );
@@ -116,6 +119,7 @@ public class Fsr2v221ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                                         Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1
                         )
                         .binding(1)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.BOTH)
                         .getResourceDescription(context)
         );
@@ -131,6 +135,7 @@ public class Fsr2v221ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR)
                         .binding(3)
                         .access(GlPipelineResourceAccess.BOTH)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -141,6 +146,7 @@ public class Fsr2v221ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                                         Fsr2PipelineResourceType.LUMA_HISTORY_2
                         )
                         .binding(4)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.BOTH)
                         .getResourceDescription(context)
         );

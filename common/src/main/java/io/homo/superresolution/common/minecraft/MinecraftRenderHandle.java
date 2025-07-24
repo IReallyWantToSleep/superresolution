@@ -23,11 +23,14 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 #endif
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -48,7 +51,7 @@ public class MinecraftRenderHandle {
     private static boolean needCaptureVulkan = false;
     private static boolean needCaptureUpscale = false;
 
-    private static int[] timeQueryIds = new int[4]; // 0: world begin, 1: world end, 2: upscale begin, 3: upscale end
+    private static int[] timeQueryIds = new int[2]; // 0: world begin, 1: world end, 2: upscale begin, 3: upscale end
     private static long startTime, endTime;
     private static boolean queriesInitialized = false;
 
@@ -169,8 +172,11 @@ public class MinecraftRenderHandle {
             SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
         }
 
-        PerformanceInfo.begin("world");
-        GL41.glQueryCounter(timeQueryIds[0], GL46.GL_TIMESTAMP); // world begin
+
+        if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+            PerformanceInfo.begin("world");
+            GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[0]);
+        }
 
         updateRenderTarget();
         updateRenderTargetSize();
@@ -218,25 +224,17 @@ public class MinecraftRenderHandle {
         try (GlState ignored = new GlState()) {
             LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }
-
-        GL41.glQueryCounter(timeQueryIds[1], GL46.GL_TIMESTAMP); // world end
-        int[] availableWorld = {0};
-        int count = 0;
-        do {
-            count++;
-            GL41.glGetQueryObjectiv(timeQueryIds[1], GL41.GL_QUERY_RESULT_AVAILABLE, availableWorld);
-            if (count > 500) break;
-        } while (availableWorld[0] == 0);
-        long[] worldBegin = {0};
-        long[] worldEnd = {0};
-        GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldBegin);
-        GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, worldEnd);
-        long worldTime = worldEnd[0] - worldBegin[0];
-        PerformanceInfo.end("world", worldTime);
-
+        if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+            GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
+            long[] worldTime = {0};
+            GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldTime);
+            PerformanceInfo.end("world", worldTime[0]);
+        }
         try (GlState ignored = new GlState()) {
-            PerformanceInfo.begin("upscale");
-            GL41.glQueryCounter(timeQueryIds[2], GL46.GL_TIMESTAMP); // upscale begin
+            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+                PerformanceInfo.begin("upscale");
+                GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[1]);
+            }
 
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
@@ -277,20 +275,12 @@ public class MinecraftRenderHandle {
                     RenderDoc.renderdoc.EndFrameCapture.call(null, null);
                 }
             }
-            GL41.glQueryCounter(timeQueryIds[3], GL46.GL_TIMESTAMP);
-            int[] availableUpscale = {0};
-            count = 0;
-            do {
-                count++;
-                GL41.glGetQueryObjectiv(timeQueryIds[3], GL41.GL_QUERY_RESULT_AVAILABLE, availableUpscale);
-                if (count > 500) break;
-            } while (availableUpscale[0] == 0);
-            long[] upscaleBegin = {0};
-            long[] upscaleEnd = {0};
-            GL41.glGetQueryObjectui64v(timeQueryIds[2], GL41.GL_QUERY_RESULT, upscaleBegin);
-            GL41.glGetQueryObjectui64v(timeQueryIds[3], GL41.GL_QUERY_RESULT, upscaleEnd);
-            long upscaleTime = upscaleEnd[0] - upscaleBegin[0];
-            PerformanceInfo.end("upscale", upscaleTime);
+            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+                GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
+                long[] upscaleTime = {0};
+                GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, upscaleTime);
+                PerformanceInfo.end("upscale", upscaleTime[0]);
+            }
             if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                 blitHandRenderTarget();
         }
@@ -437,4 +427,5 @@ public class MinecraftRenderHandle {
         setClientRenderTarget(getRenderTarget().asMcRenderTarget());
         GlStates.pop("hand").restore();
     }
+
 }

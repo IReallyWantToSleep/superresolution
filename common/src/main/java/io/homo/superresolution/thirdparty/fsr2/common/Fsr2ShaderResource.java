@@ -6,6 +6,7 @@ import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -16,6 +17,17 @@ public class Fsr2ShaderResource {
     public Supplier<Fsr2PipelineResources.Fsr2ResourceEntry> resourceEntry = null;
     public Supplier<Fsr2PipelineResourceType> resourceType = null;
     public String resourceName;
+
+    public GlSampler sampler() {
+        return sampler;
+    }
+
+    public Fsr2ShaderResource sampler(GlSampler sampler) {
+        this.sampler = sampler;
+        return this;
+    }
+
+    public GlSampler sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
 
 
     public GlPipelineResourceAccess access() {

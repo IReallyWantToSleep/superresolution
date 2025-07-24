@@ -4,6 +4,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
 import org.spongepowered.asm.mixin.Shadow;
@@ -34,7 +35,7 @@ public abstract class GameRendererMixin {
         }
     }
 
-    @Inject(at = @At(value = "HEAD"), method = "renderLevel")
+    @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
             MinecraftRenderHandle.onRenderWorldBegin(CallType.GAME_RENDERER);

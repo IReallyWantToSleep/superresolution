@@ -26,19 +26,18 @@ layout(binding = 5, r32ui) uniform writeonly highp uimage2D LumaHistory;
 
 layout(std140, binding = 0) uniform Params
 {
-    uvec2 renderSize;
-    uvec2 displaySize;
-    vec2 InViewportSizeInverse;
-    vec2 displaySizeRcp;
-    vec2 jitterOffset;
-    vec2 padding1;
-    vec4 clipToPrevClip[4];
-    float preExposure;
-    float cameraFovAngleHor;
-    float cameraNear;
-    float MinLerpContribution;
-    uint bSameCamera;
-    uint reset;
+    vec2 renderSize; /**< Render size                                                                             	*/
+    vec2 displaySize; /**< Display size                                                                            	*/
+    vec2 renderSizeRcp; /**< 1.0 / renderSize                                                                        	*/
+    vec2 displaySizeRcp; /**< 1.0 / displaySize                                                                       	*/
+    vec2 jitterOffset; /**< Ranges from [-0.5, 0.5], calculated using the Halton sequence                       	*/
+    vec4 clipToPrevClip[4]; /**< Convert current clip space position to previous clip scape position*                    	*/
+    float preExposure; /**< Exposure for tone mapping**                                                             	*/
+    float cameraFovAngleHor; /**< Horizontal camera FOV***                                                                  	*/
+    float cameraNear; /**< Near plane of the camera                                                                	*/
+    float minLerpContribution; /**< Fixed interpolation scale; used in 2-pass method only                                   	*/
+    uint bSameCamera; /**< Indicates if it's the same camera from the previous frame; used in 2-pass method only****	*/
+    uint reset; /**< If accumulation should be reset -- eg last scene != current scene as in a camera cut      */
 } params;
 
 void main()
@@ -53,8 +52,8 @@ void main()
     uvec4 InputInfo_ViewportMin = uvec4(0, 0, 0, 0); ////TODO
     uvec2 InputPos = InputInfo_ViewportMin.xy + gl_GlobalInvocationID.xy;
 
-    vec2 ViewportUV = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) * params.InViewportSizeInverse;
-    vec2 gatherCoord = ViewportUV + 0.5f * params.InViewportSizeInverse;
+    vec2 ViewportUV = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) * params.renderSizeRcp;
+    vec2 gatherCoord = ViewportUV + 0.5f * params.renderSizeRcp;
     uint luma_reference32 = textureGather(YCoCgColor, gatherCoord).w;
     float luma_reference = DecodeColorY(luma_reference32);
 

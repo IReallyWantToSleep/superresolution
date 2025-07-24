@@ -167,6 +167,15 @@ public class ClothConfig {
                         SuperResolutionConfig.isPauseGameOnGui())
                 .setSaveConsumer((SuperResolutionConfig::setPauseGameOnGui))
                 .build());
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.enable_detailed_profiling"),
+                        SuperResolutionConfig.isEnableDetailedProfiling()
+                )
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_detailed_profiling"))
+                .setDefaultValue(false)
+                .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
+                .build());
+
         List<String> injectPostChainBlackList = new ArrayList<>();
         commonCategory.addEntry(entryBuilder.startStrList(
                         Component.translatable("superresolution.screen.config.options.label.inject_postChain_black_list"),
@@ -462,11 +471,11 @@ public class ClothConfig {
                                             .setScale(3, RoundingMode.HALF_UP)
                             ).getString() + "\n" +
                                     Component.translatable("superresolution.screen.info.performance_info.world_time",
-                                            Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                                            Minecraft.getInstance().level != null && SuperResolutionConfig.isEnableDetailedProfiling() ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
                                                     .setScale(3, RoundingMode.HALF_UP) : "?"
                                     ).getString() + "\n" +
                                     Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                            Minecraft.getInstance().level != null ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                            Minecraft.getInstance().level != null && SuperResolutionConfig.isEnableDetailedProfiling() ? BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
                                                     .setScale(3, RoundingMode.HALF_UP) : "?"
                                     ).getString();
                     return Component.literal(stringBuilder);
@@ -496,59 +505,59 @@ public class ClothConfig {
             chart.push(PerformanceInfo.getAsMillis("runTick"), 1000);
         });
         frameTimeChart.setDisplayRange(0, 100);
-
-        ClothChartEntry worldTimeChart = new ClothChartEntry(
-                Component.translatable("superresolution.screen.info.performance_info.world_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
-                                .setScale(3, RoundingMode.HALF_UP)
-                ).getString(),
-                Component.translatable("superresolution.screen.info.performance_info.world_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
-                                .setScale(3, RoundingMode.HALF_UP)
-                ),
-                null
-        );
-        worldTimeChart.setRenderCallback((chart) -> {
-            if (Minecraft.getInstance().level != null) {
-                chart.setName(
-                        Component.translatable("superresolution.screen.info.performance_info.world_time",
-                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
-                                        .setScale(3, RoundingMode.HALF_UP)
-                        ).getString()
-                );
-                chart.push(PerformanceInfo.getAsMillis("world"), 1000);
-            }
-        });
-        worldTimeChart.setDisplayRange(0, 80);
-
-        ClothChartEntry upscaleTimeChart = new ClothChartEntry(
-                Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
-                                .setScale(3, RoundingMode.HALF_UP)
-                ).getString(),
-                Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
-                                .setScale(3, RoundingMode.HALF_UP)
-                ),
-                null
-        );
-        upscaleTimeChart.setRenderCallback((chart) -> {
-            if (Minecraft.getInstance().level != null) {
-                chart.setName(
-                        Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
-                                        .setScale(3, RoundingMode.HALF_UP)
-                        ).getString()
-                );
-                chart.push(PerformanceInfo.getAsMillis("upscale"), 1000);
-            }
-        });
-        upscaleTimeChart.setDisplayRange(0, 40);
-
         performanceInfoCategory.addEntry(debugInfo);
         performanceInfoCategory.addEntry(frameTimeChart);
-        performanceInfoCategory.addEntry(worldTimeChart);
-        performanceInfoCategory.addEntry(upscaleTimeChart);
+        if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+            ClothChartEntry worldTimeChart = new ClothChartEntry(
+                    Component.translatable("superresolution.screen.info.performance_info.world_time",
+                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                                    .setScale(3, RoundingMode.HALF_UP)
+                    ).getString(),
+                    Component.translatable("superresolution.screen.info.performance_info.world_time",
+                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                                    .setScale(3, RoundingMode.HALF_UP)
+                    ),
+                    null
+            );
+            worldTimeChart.setRenderCallback((chart) -> {
+                if (Minecraft.getInstance().level != null) {
+                    chart.setName(
+                            Component.translatable("superresolution.screen.info.performance_info.world_time",
+                                    BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                                            .setScale(3, RoundingMode.HALF_UP)
+                            ).getString()
+                    );
+                    chart.push(PerformanceInfo.getAsMillis("world"), 1000);
+                }
+            });
+            worldTimeChart.setDisplayRange(0, 80);
+
+            ClothChartEntry upscaleTimeChart = new ClothChartEntry(
+                    Component.translatable("superresolution.screen.info.performance_info.upscale_time",
+                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                    .setScale(3, RoundingMode.HALF_UP)
+                    ).getString(),
+                    Component.translatable("superresolution.screen.info.performance_info.upscale_time",
+                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                    .setScale(3, RoundingMode.HALF_UP)
+                    ),
+                    null
+            );
+            upscaleTimeChart.setRenderCallback((chart) -> {
+                if (Minecraft.getInstance().level != null) {
+                    chart.setName(
+                            Component.translatable("superresolution.screen.info.performance_info.upscale_time",
+                                    BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                            .setScale(3, RoundingMode.HALF_UP)
+                            ).getString()
+                    );
+                    chart.push(PerformanceInfo.getAsMillis("upscale"), 1000);
+                }
+            });
+            upscaleTimeChart.setDisplayRange(0, 40);
+            performanceInfoCategory.addEntry(worldTimeChart);
+            performanceInfoCategory.addEntry(upscaleTimeChart);
+        }
     }
 
     private static ClickEvent createURLClickEvent(String url) {

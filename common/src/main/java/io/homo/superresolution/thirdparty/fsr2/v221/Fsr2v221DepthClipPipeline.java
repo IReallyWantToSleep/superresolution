@@ -7,6 +7,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobB
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
@@ -107,6 +108,8 @@ public class Fsr2v221DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR)
                         .binding(5)
                         .access(GlPipelineResourceAccess.READ)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
+
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -117,6 +120,7 @@ public class Fsr2v221DepthClipPipeline extends Fsr2Pipeline {
                                         Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2
                         )
                         .binding(6)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );
@@ -131,6 +135,8 @@ public class Fsr2v221DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_COLOR)
                         .binding(8)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
+
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );
@@ -153,11 +159,14 @@ public class Fsr2v221DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS)
                         .binding(1)
                         .access(GlPipelineResourceAccess.BOTH)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
+
                         .binding(2)
                         .access(GlPipelineResourceAccess.BOTH)
                         .getResourceDescription(context)

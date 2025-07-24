@@ -29,34 +29,34 @@ vec3 DecodeColor(uint sample32)
     return samplecolor;
 }
 
-layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-layout (binding = 7) uniform highp sampler2D PrevHistoryOutput;
-layout (binding = 8) uniform highp sampler2D MotionDepthClipAlphaBuffer;
-layout (binding = 9) uniform highp usampler2D YCoCgColor;
-layout (binding = 0, rgba16f) uniform writeonly mediump image2D SceneColorOutput;
-layout (binding = 1, rgba16f) uniform writeonly mediump image2D HistoryOutput;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(binding = 7) uniform highp sampler2D PrevHistoryOutput;
+layout(binding = 8) uniform highp sampler2D MotionDepthClipAlphaBuffer;
+layout(binding = 9) uniform highp usampler2D YCoCgColor;
+layout(binding = 0, rgba16f) uniform writeonly mediump image2D SceneColorOutput;
+layout(binding = 1, rgba16f) uniform writeonly mediump image2D HistoryOutput;
 
-layout (binding = 0) uniform Params
+layout(binding = 0) uniform Params
 {
-    uvec2 renderSize;
-    uvec2 displaySize;
-    vec2 renderSizeRcp;
-    vec2 displaySizeRcp;
-    vec2 jitterOffset;
-    vec4 clipToPrevClip[4];
-    float preExposure;
-    float cameraFovAngleHor;
-    float cameraNear;
-    float MinLerpContribution;
-    uint sameCameraFrmNum;
-    uint reset;
+    vec2 renderSize; /**< Render size                                                                             	*/
+    vec2 displaySize; /**< Display size                                                                            	*/
+    vec2 renderSizeRcp; /**< 1.0 / renderSize                                                                        	*/
+    vec2 displaySizeRcp; /**< 1.0 / displaySize                                                                       	*/
+    vec2 jitterOffset; /**< Ranges from [-0.5, 0.5], calculated using the Halton sequence                       	*/
+    vec4 clipToPrevClip[4]; /**< Convert current clip space position to previous clip scape position*                    	*/
+    float preExposure; /**< Exposure for tone mapping**                                                             	*/
+    float cameraFovAngleHor; /**< Horizontal camera FOV***                                                                  	*/
+    float cameraNear; /**< Near plane of the camera                                                                	*/
+    float minLerpContribution; /**< Fixed interpolation scale; used in 2-pass method only                                   	*/
+    uint bSameCamera; /**< Indicates if it's the same camera from the previous frame; used in 2-pass method only****	*/
+    uint reset; /**< If accumulation should be reset -- eg last scene != current scene as in a camera cut      */
 } params;
 
 void main()
 {
-    float Biasmax_viewportXScale = min(float(params.displaySize.x) / float(params.renderSize.x), 1.99);  //Biasmax_viewportXScale
+    float Biasmax_viewportXScale = min(float(params.displaySize.x) / float(params.renderSize.x), 1.99); //Biasmax_viewportXScale
     float scalefactor = min(20.0, pow((float(params.displaySize.x) / float(params.renderSize.x)) * (float(params.displaySize.y) / float(params.renderSize.y)), 3.0));
-    float f2 = params.preExposure;            //1.0;   //preExposure
+    float f2 = params.preExposure; //1.0;   //preExposure
     vec2 HistoryInfoViewportSizeInverse = params.displaySizeRcp;
     vec2 HistoryInfoViewportSize = vec2(params.displaySize);
     vec2 InputJitter = params.jitterOffset;
@@ -114,9 +114,9 @@ void main()
     uvec2 topRight;
     uvec2 bottomLeft;
 
-    uint sameCameraFrmNum = params.sameCameraFrmNum;
+    uint bSameCamera = params.bSameCamera;
 
-    if (sameCameraFrmNum != 0u)
+    if (bSameCamera != 0u)
     {
         topRight = textureGather(YCoCgColor, gatherCoord + vec2(params.renderSizeRcp.x, 0.0)).yz;
         bottomLeft = textureGather(YCoCgColor, gatherCoord + vec2(0.0, params.renderSizeRcp.y)).xy;
@@ -206,7 +206,7 @@ void main()
         rectboxweight += boxweight;
     }
 
-    if (sameCameraFrmNum != 0u)
+    if (bSameCamera != 0u)
     {
         {
             vec3 samplecolor = DecodeColor(btmRight);
@@ -296,7 +296,7 @@ void main()
     rectboxmin = max(rectboxmin, boxmin);
 
     vec3 clampedcolor = clamp(HistoryColor, rectboxmin, rectboxmax);
-    float startLerpValue = params.MinLerpContribution; //params.MinLerpContribution; //MinLerpContribution;
+    float startLerpValue = params.minLerpContribution; //params.MinLerpContribution; //MinLerpContribution;
     if ((abs(mda.x) + abs(mda.y)) > 0.000001) startLerpValue = 0.0;
     float lerpcontribution = (any(greaterThan(rectboxmin, HistoryColor)) || any(greaterThan(HistoryColor, rectboxmax))) ? startLerpValue : 1.0f;
 
@@ -314,9 +314,9 @@ void main()
     ////ycocg to rgb
     float x_z = Upsampledcw.x - Upsampledcw.z;
     Upsampledcw.xyz = vec3(
-    clamp(x_z + Upsampledcw.y, 0.0, 1.0),
-    clamp(Upsampledcw.x + Upsampledcw.z, 0.0, 1.0),
-    clamp(x_z - Upsampledcw.y, 0.0, 1.0));
+            clamp(x_z + Upsampledcw.y, 0.0, 1.0),
+            clamp(Upsampledcw.x + Upsampledcw.z, 0.0, 1.0),
+            clamp(x_z - Upsampledcw.y, 0.0, 1.0));
 
     float compMax = max(Upsampledcw.x, Upsampledcw.y);
     compMax = clamp(max(compMax, Upsampledcw.z), 0.0f, 1.0f);
@@ -325,5 +325,4 @@ void main()
     if (ColorMax > 4000.0f) scale = ColorMax;
     Upsampledcw.xyz = Upsampledcw.xyz * scale;
     imageStore(SceneColorOutput, ivec2(gl_GlobalInvocationID.xy), Upsampledcw);
-
 }

@@ -117,7 +117,6 @@ public class AlgorithmManager {
         if (SuperResolutionConfig.isGenerateMotionVectors()) {
             MotionVectorsGenerator.update();
         }
-        RenderSystems.current().finish();
     }
 
     public static class AlgorithmParam {

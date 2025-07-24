@@ -7,6 +7,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobB
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
@@ -80,6 +81,7 @@ public class Fsr2v221RCASPipeline extends Fsr2Pipeline {
                                         Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR_2
                         )
                         .binding(1)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );

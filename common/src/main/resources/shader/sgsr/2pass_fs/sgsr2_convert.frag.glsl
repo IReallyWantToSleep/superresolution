@@ -19,17 +19,19 @@ layout(set = 0, binding = 2) uniform mediump sampler2D InputVelocity;
 
 layout(std140, set = 0, binding = 0) uniform Params
 {
-    vec4                 clipToPrevClip[4];
-    vec2                 renderSize;
-    vec2                 outputSize;
-    vec2                 renderSizeRcp;
-    vec2                 outputSizeRcp;
-    vec2                 jitterOffset;
-    vec2                 scaleRatio;
-    float                cameraFovAngleHor;
-    float                minLerpContribution;
-    float                reset;
-    uint                 bSameCamera;
+vec2     renderSize;             /**< Render size                                                                             	*/
+vec2     displaySize;            /**< Display size                                                                            	*/
+vec2     renderSizeRcp;          /**< 1.0 / renderSize                                                                        	*/
+vec2     displaySizeRcp;         /**< 1.0 / displaySize                                                                       	*/
+vec2     jitterOffset;           /**< Ranges from [-0.5, 0.5], calculated using the Halton sequence                       	*/
+vec4     clipToPrevClip[4];      /**< Convert current clip space position to previous clip scape position*                    	*/
+float    preExposure;            /**< Exposure for tone mapping**                                                             	*/
+float    cameraFovAngleHor;      /**< Horizontal camera FOV***                                                                  	*/
+float    cameraNear;             /**< Near plane of the camera                                                                	*/
+float    minLerpContribution;    /**< Fixed interpolation scale; used in 2-pass method only                                   	*/
+uint     bSameCamera;            /**< Indicates if it's the same camera from the previous frame; used in 2-pass method only****	*/
+uint     reset;                  /**< If accumulation should be reset -- eg last scene != current scene as in a camera cut      */
+
 } params;
 
 vec2 decodeVelocityFromTexture(vec2 ev) {

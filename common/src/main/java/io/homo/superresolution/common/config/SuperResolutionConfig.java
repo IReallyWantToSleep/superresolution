@@ -44,6 +44,7 @@ public class SuperResolutionConfig {
     private static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     private static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     private static final BooleanValue ENABLE_DATASET_GENERATOR;
+    private static final BooleanValue ENABLE_DETAILED_PROFILING;
     private static final OSType CURRENT_OS_TYPE = new OS().type;
     private static final Runnable resolutionChangeCallback;
 
@@ -147,6 +148,11 @@ public class SuperResolutionConfig {
                 "enable_dataset_generator",
                 () -> false,
                 ""
+        );
+        ENABLE_DETAILED_PROFILING = builder.defineBoolean(
+                "debug/enable_detailed_profiling",
+                () -> false,
+                "Enable more detailed performance profiling for advanced analysis."
         );
 
         SPECIAL = new SpecialConfigs(builder);
@@ -350,6 +356,14 @@ public class SuperResolutionConfig {
 
     public static boolean isEnableDatasetGenerator() {
         return ENABLE_DATASET_GENERATOR.get();
+    }
+
+    public static boolean isEnableDetailedProfiling() {
+        return ENABLE_DETAILED_PROFILING.get();
+    }
+
+    public static void setEnableDetailedProfiling(boolean value) {
+        ENABLE_DETAILED_PROFILING.set(value);
     }
 
     public static float getMinUpscaleRatio() {

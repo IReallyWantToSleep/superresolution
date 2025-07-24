@@ -35,10 +35,7 @@ public class Sgsr1 extends AbstractAlgorithm {
     public void init() {
         input = MinecraftRenderHandle.getRenderTarget();
         buffer = UniformStructBuilder.start()
-                .vec2Entry("renderSize")
-                .vec2Entry("renderSizeRcp")
-                .floatEntry("EdgeThreshold")
-                .floatEntry("EdgeSharpness")
+                .vec4Entry("ViewportInfo")
                 .build();
         ubo = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
@@ -96,10 +93,14 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        buffer.setVec2("renderSize", dispatchResource.renderWidth(), dispatchResource.renderHeight());
-        buffer.setVec2("renderSizeRcp", 1.0f / dispatchResource.renderWidth(), 1.0f / dispatchResource.renderHeight());
-        buffer.setFloat("EdgeThreshold", 8f / 255f);
-        buffer.setFloat("EdgeSharpness", 1 + SuperResolutionConfig.getSharpness());
+        buffer.setVec4(
+                "ViewportInfo",
+                1.0f / dispatchResource.renderWidth(),
+                1.0f / dispatchResource.renderHeight(),
+                dispatchResource.renderWidth(),
+                dispatchResource.renderHeight()
+
+        );
         buffer.fillBuffer();
         ubo.upload();
         outputFbo.clearFrameBuffer();

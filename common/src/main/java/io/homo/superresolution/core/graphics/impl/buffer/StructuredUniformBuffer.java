@@ -78,6 +78,7 @@ public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
         return this;
     }
 
+
     public StructuredUniformBuffer setInt(String name, int value) {
         Entry entry = entries.get(name);
         if (entry instanceof IntEntry) {
@@ -146,6 +147,16 @@ public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
             ((Mat4Entry) entry).setValue(value);
         } else {
             throw new IllegalArgumentException("Entry '" + name + "' is not a mat4");
+        }
+        return this;
+    }
+
+    public StructuredUniformBuffer setUint(String name, int value) {
+        Entry entry = entries.get(name);
+        if (entry instanceof UintEntry) {
+            ((UintEntry) entry).setValue(value);
+        } else {
+            throw new IllegalArgumentException("Entry '" + name + "' is not a uint");
         }
         return this;
     }
@@ -299,6 +310,23 @@ public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
         @Override
         public void update(ByteBuffer buffer) {
             value.get(offset, buffer);
+        }
+    }
+
+    static class UintEntry extends Entry {
+        private int value;
+
+        public UintEntry(int offset) {
+            super(offset);
+        }
+
+        public void setValue(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public void update(ByteBuffer buffer) {
+            buffer.putInt(offset, value);
         }
     }
 }
