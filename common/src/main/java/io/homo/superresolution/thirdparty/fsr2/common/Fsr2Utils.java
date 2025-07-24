@@ -1,6 +1,9 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 
+import io.homo.superresolution.core.math.Vector2f;
+
+import static java.lang.Math.floor;
 import static java.lang.Math.pow;
 
 public class Fsr2Utils {
@@ -70,5 +73,28 @@ public class Fsr2Utils {
         con[2] = 0;
         con[3] = 0;
 
+    }
+
+    public static float halton(int index, int base) {
+        float f = 1.0f, result = 0.0f;
+
+        for (int currentIndex = index; currentIndex > 0; ) {
+            f /= (float) base;
+            result = result + f * (float) (currentIndex % base);
+            currentIndex = (int) (floor((float) (currentIndex) / (float) (base)));
+        }
+
+        return result;
+    }
+
+    public static Vector2f ffxFsr2GetJitterOffset(int index, int phaseCount) {
+        if (!(phaseCount > 0)) {
+            throw new RuntimeException();
+        }
+
+        float x = halton((index % phaseCount) + 1, 2) - 0.5f;
+        float y = halton((index % phaseCount) + 1, 3) - 0.5f;
+
+        return new Vector2f(x, y);
     }
 }

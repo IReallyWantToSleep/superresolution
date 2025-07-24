@@ -114,7 +114,13 @@ public class FSR2 extends AbstractAlgorithm {
         );
         dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.Color));
         dispatchDescription.setOutput(this.output);
-        dispatchDescription.setJitterOffset(new Vector2f(0));
+        dispatchDescription.setJitterOffset(
+                getOriginJitterOffset(
+                        dispatchResource.frameCount(),
+                        dispatchResource.renderSize(),
+                        dispatchResource.screenSize()
+                )
+        );
         dispatchDescription.setExposure(exposureTexture);
         dispatchDescription.setRenderSize(new Vector2f(
                 dispatchResource.renderWidth(),
@@ -146,4 +152,22 @@ public class FSR2 extends AbstractAlgorithm {
         return output.handle();
     }
 
+    @Override
+    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
+
+        return new Vector2f(
+                0,
+                0
+        );
+    }
+
+    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        //int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+        //return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
+        return new Vector2f(
+                0,
+                0
+        );
+    }
 }

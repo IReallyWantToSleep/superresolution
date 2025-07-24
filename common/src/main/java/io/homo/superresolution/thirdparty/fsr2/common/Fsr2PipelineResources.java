@@ -151,7 +151,7 @@ public class Fsr2PipelineResources {
                         new Vector2f(1), TextureFormat.R8, 1, "FSR2_DefaultReactiviyMask"));
         addResourceDescription(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT,
                 new Fsr2ResourceCreateDescription(
-                        new Vector2f(16, 16), TextureFormat.R16_SNORM, 2, "FSR2_MaximumUpsampleBias"));
+                        new Vector2f(Fsr2MaximumBias.FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH, Fsr2MaximumBias.FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT), TextureFormat.R16_SNORM, 2, "FSR2_MaximumUpsampleBias"));
         addResourceDescription(Fsr2PipelineResourceType.INTERNAL_DEFAULT_EXPOSURE,
                 new Fsr2ResourceCreateDescription(
                         new Vector2f(1), TextureFormat.RG32F, 1, "FSR2_DefaultExposure"));

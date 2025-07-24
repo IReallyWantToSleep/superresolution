@@ -1,5 +1,6 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 
 public class Fsr2DeviceCapabilities {
@@ -16,6 +17,6 @@ public class Fsr2DeviceCapabilities {
             fp16Supported = detectFp16Support();
             initialized = true;
         }
-        return fp16Supported;
+        return fp16Supported && SuperResolutionConfig.SPECIAL.FSR2.FP16.get();
     }
 }

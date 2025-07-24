@@ -43,5 +43,4 @@ public class MinecraftMixin {
     private void onExit(CallbackInfo ci) {
         SuperResolution.getInstance().destroy();
     }
-
 }
