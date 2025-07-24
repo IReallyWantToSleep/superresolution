@@ -28,7 +28,7 @@ public class FloatValue extends ConfigValue<Float> {
         spec.define(
                 path,
                 defaultSupplier,
-                (Object obj) -> validator.test((Float) obj)
+                (Object obj) -> validator.test(convertType(obj))
         );
     }
 

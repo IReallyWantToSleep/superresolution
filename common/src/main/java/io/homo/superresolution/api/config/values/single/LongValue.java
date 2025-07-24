@@ -28,7 +28,7 @@ public class LongValue extends ConfigValue<Long> {
         spec.define(
                 path,
                 defaultSupplier,
-                (Object obj) -> validator.test((Long) obj)
+                (Object obj) -> validator.test(convertType(obj))
         );
     }
 
