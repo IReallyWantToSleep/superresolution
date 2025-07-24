@@ -28,7 +28,7 @@ public class IntValue extends ConfigValue<Integer> {
         spec.define(
                 path,
                 defaultSupplier,
-                (Object obj) -> validator.test((Integer) obj)
+                (Object obj) -> validator.test(convertType(obj))
         );
     }
 

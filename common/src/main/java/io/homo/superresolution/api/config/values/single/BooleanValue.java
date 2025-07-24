@@ -28,7 +28,7 @@ public class BooleanValue extends ConfigValue<Boolean> {
         spec.define(
                 path,
                 defaultSupplier,
-                (Object obj) -> validator.test((Boolean) obj)
+                (Object obj) -> validator.test(convertType(obj))
         );
     }
 

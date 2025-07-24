@@ -28,7 +28,7 @@ public class DoubleValue extends ConfigValue<Double> {
         spec.define(
                 path,
                 defaultSupplier,
-                (Object obj) -> validator.test((Double) obj)
+                (Object obj) -> validator.test(convertType(obj))
         );
     }
 

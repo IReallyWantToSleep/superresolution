@@ -25,7 +25,7 @@ public class StringValue extends ConfigValue<String> {
         spec.define(
                 path,
                 defaultSupplier,
-                (Object obj) -> validator.test((String) obj)
+                (Object obj) -> validator.test(convertType(obj))
         );
     }
 
