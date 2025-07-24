@@ -34,6 +34,7 @@ public class DoubleValue extends ConfigValue<Double> {
 
     @Override
     protected Double convertType(Object value) {
+        if (value instanceof Float) return ((Float) value).doubleValue();
         if (value instanceof Double) return (Double) value;
         if (value instanceof Number) return ((Number) value).doubleValue();
         if (value instanceof String) return Double.parseDouble((String) value);
