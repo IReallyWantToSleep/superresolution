@@ -10,6 +10,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobB
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
@@ -76,6 +77,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS)
                         .binding(14)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(GlPipelineResourceAccess.READ)
                         .getResourceDescription(context)
         );

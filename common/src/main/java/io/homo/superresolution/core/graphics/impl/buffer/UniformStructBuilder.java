@@ -60,6 +60,12 @@ public class UniformStructBuilder {
         return this;
     }
 
+        public UniformStructBuilder uintEntry(String name) {
+        addEntry(name, new StructuredUniformBuffer.UintEntry(currentOffset));
+        currentOffset += 4;
+        return this;
+    }
+
     private void addEntry(String name, StructuredUniformBuffer.Entry entry) {
         if (entries.containsKey(name)) {
             throw new IllegalArgumentException("Duplicate entry name: " + name);

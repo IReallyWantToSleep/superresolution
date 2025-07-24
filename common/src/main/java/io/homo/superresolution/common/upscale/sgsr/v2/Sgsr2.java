@@ -4,8 +4,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
-import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
@@ -20,14 +19,18 @@ import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
 import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Matrix4f;
 
 import java.util.function.Consumer;
 
 public class Sgsr2 extends AbstractAlgorithm {
     private AbstractSgsrVariant variantInstance;
     private SgsrVariant currentVariant;
-    private SgsrParams params;
+    private StructuredUniformBuffer paramsData;
     private GlBuffer paramsUbo;
+
+    private int sameFrameNum = 0;
 
     @Override
     public void init() {
@@ -45,21 +48,99 @@ public class Sgsr2 extends AbstractAlgorithm {
         ));
         output = output_;
         this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
-        params = new SgsrParams();
+        paramsData = UniformStructBuilder.start()
+                .vec2Entry("renderSize")
+                .vec2Entry("displaySize")
+                .vec2Entry("renderSizeRcp")
+                .vec2Entry("displaySizeRcp")
+                .vec2Entry("jitterOffset")
+                .mat4Entry("clipToPrevClip")
+                .floatEntry("preExposure")
+                .floatEntry("cameraFovAngleHor")
+                .floatEntry("cameraNear")
+                .floatEntry("minLerpContribution")
+                .uintEntry("bSameCamera")
+                .uintEntry("reset")
+                .build();
         paramsUbo = RenderSystems.current().device().createBuffer(BufferDescription.create()
                 .usage(BufferUsage.UBO)
-                .size(params.size())
+                .size(paramsData.size())
                 .build()
         );
-        paramsUbo.setBufferData(params);
+        paramsUbo.setBufferData(paramsData);
+    }
+
+    protected void updateParams(DispatchResource dispatchResource) {
+        Matrix4f currentViewMatrix = new Matrix4f(dispatchResource.viewMatrix());
+        Matrix4f currentProjectionMatrix = new Matrix4f(dispatchResource.projectionMatrix());
+        Matrix4f currentViewProjectionMatrix = currentViewMatrix.mul(currentProjectionMatrix, new Matrix4f());
+
+        Matrix4f previousViewMatrix = new Matrix4f(dispatchResource.lastViewMatrix());
+        Matrix4f previousProjectionMatrix = new Matrix4f(dispatchResource.lastProjectionMatrix());
+        Matrix4f previousViewProjectionMatrix = previousViewMatrix.mul(previousProjectionMatrix, new Matrix4f());
+
+        Matrix4f invertViewMatrix = new Matrix4f(dispatchResource.viewMatrix()).invert();
+        Matrix4f invertProjectionMatrix = new Matrix4f(dispatchResource.projectionMatrix()).invert();
+        Matrix4f invertViewProjectionMatrix = invertViewMatrix.mul(invertProjectionMatrix, new Matrix4f());
+
+        paramsData.setVec2("renderSize", dispatchResource.renderSize());
+        paramsData.setVec2("displaySize", dispatchResource.screenSize());
+        paramsData.setVec2("renderSizeRcp", dispatchResource.renderSize().divideInto(1));
+        paramsData.setVec2("displaySizeRcp", dispatchResource.screenSize().divideInto(1));
+        paramsData.setVec2("jitterOffset", new Vector2f(0.0f));
+        /*
+        glm::mat4 inv_view       = glm::inverse(current_view);
+        glm::mat4 inv_proj       = glm::inverse(current_proj);
+        glm::mat4 inv_vp         = inv_view * inv_proj;
+        glm::mat4 clipToPrevClip = (previous_view_proj * inv_vp);
+        */
+
+        Matrix4f clipToPrevClipMat = previousViewProjectionMatrix.mul(invertViewProjectionMatrix, new Matrix4f());
+
+        paramsData.setMat4("clipToPrevClip", clipToPrevClipMat);
+        paramsData.setFloat("preExposure", 1.0f);
+        paramsData.setFloat("cameraFovAngleHor", dispatchResource.horizontalFov());
+        paramsData.setFloat("cameraNear", dispatchResource.cameraNear());
+
+        boolean isCameraStill = isCameraStill(
+                currentViewProjectionMatrix,
+                previousViewProjectionMatrix,
+                0.00001f
+        );
+        double minLerpContribution = 0.0;
+        if (isCameraStill) {
+            sameFrameNum += 1;
+            if (sameFrameNum > 5) {
+                minLerpContribution = 0.3;
+            }
+            if (sameFrameNum == 0xFFFF) {
+                sameFrameNum = 1;
+            }
+        } else {
+            sameFrameNum = 0;
+        }
+        paramsData.setFloat("minLerpContribution", (float) minLerpContribution);
+        paramsData.setUint("bSameCamera", isCameraStill ? 1 : 0);
+        paramsData.setUint("reset", 0);
+        paramsData.fillBuffer();
+        paramsUbo.upload();
+    }
+
+    private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
+        float diff = 0;
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < 4; c++) {
+                diff += Math.abs(currentMVP.get(r, c) - prevMVP.get(r, c));
+            }
+        }
+        return diff < threshold;
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
         initVariant();
+        updateParams(dispatchResource);
         variantInstance.setOutput(output);
-        params.updateData(dispatchResource);
-        paramsUbo.upload();
         variantInstance.dispatch(dispatchResource, this);
         return false;
     }
@@ -67,7 +148,7 @@ public class Sgsr2 extends AbstractAlgorithm {
     @Override
     public void destroy() {
         safeVariantInstance(Destroyable::destroy);
-        params.free();
+        paramsData.free();
         paramsUbo.destroy();
     }
 

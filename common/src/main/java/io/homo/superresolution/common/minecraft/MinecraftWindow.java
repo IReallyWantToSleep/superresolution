@@ -31,4 +31,24 @@ public class MinecraftWindow {
     public static int getWindowHeight() {
         return getWindowSize()[1];
     }
+
+    public static int[] getWindowSourceSize() {
+        int[] sizeX = new int[]{1};
+        int[] sizeY = new int[]{1};
+        if (hasWindow()) {
+            GLFW.glfwGetWindowSize(getWindowHandle(), sizeX, sizeY);
+        }
+        return new int[]{
+                sizeX[0],
+                sizeY[0]
+        };
+    }
+
+    public static int getWindowSourceWidth() {
+        return getWindowSourceSize()[0];
+    }
+
+    public static int getWindowSourceHeight() {
+        return getWindowSourceSize()[1];
+    }
 }

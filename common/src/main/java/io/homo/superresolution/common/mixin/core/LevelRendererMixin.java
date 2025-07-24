@@ -2,6 +2,7 @@ package io.homo.superresolution.common.mixin.core;
 
 #if MC_VER > MC_1_20_4
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import net.minecraft.client.DeltaTracker;
 #else
 
@@ -16,7 +17,6 @@ import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 #endif
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -27,8 +27,8 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.PostChain;
 import org.joml.Matrix4f;
-import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -36,6 +36,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
+    @Unique
+    private static boolean superresolution$windowIsHide = false;
 
     #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
@@ -71,9 +73,13 @@ public abstract class LevelRendererMixin {
     }
     #endif
 
-    @Inject(at = @At(value = "HEAD"), method = "renderLevel")
+    @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
+            if (MinecraftWindow.getWindowSourceWidth() < 1 || MinecraftWindow.getWindowSourceHeight() < 1) {
+                superresolution$windowIsHide = true;
+                ci.cancel();
+            }
             MinecraftRenderHandle.onRenderWorldBegin(CallType.LEVEL_RENDERER);
         }
     }

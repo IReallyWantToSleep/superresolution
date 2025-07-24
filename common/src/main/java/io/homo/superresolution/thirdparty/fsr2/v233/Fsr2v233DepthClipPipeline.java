@@ -8,6 +8,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobB
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
@@ -153,6 +154,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS)
                         .binding(1)
                         .access(GlPipelineResourceAccess.BOTH)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
