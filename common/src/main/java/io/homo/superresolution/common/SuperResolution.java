@@ -135,6 +135,11 @@ public final class SuperResolution implements Resizable, Destroyable {
                 SuperResolutionConfig.setEnableCompatShaderCompiler(true);
                 SuperResolutionConfig.SPEC.save();
             }
+
+            LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());
+            LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
+
+
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
