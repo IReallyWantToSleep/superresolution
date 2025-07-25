@@ -1,8 +1,9 @@
 package io.homo.superresolution.common.mixin.core;
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
+
 #if MC_VER > MC_1_20_4
 
-import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import net.minecraft.client.DeltaTracker;
 #else
 
