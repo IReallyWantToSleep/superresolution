@@ -22,6 +22,7 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3i;
+import org.lwjgl.opengl.GL41;
 
 public class Sgsr1 extends AbstractAlgorithm {
     private IShaderProgram<?> sgsrShader;
@@ -104,11 +105,13 @@ public class Sgsr1 extends AbstractAlgorithm {
         buffer.fillBuffer();
         ubo.upload();
         outputFbo.clearFrameBuffer();
-        RenderSystems.current().renderState().save()
-                .depthTest(false)
-                .cullFace(false);
+        GL41.glDisable(GL41.GL_DEPTH_TEST);
+        GL41.glDisable(GL41.GL_CULL_FACE);
+
         pipeline.execute(RenderSystems.opengl());
-        RenderSystems.current().renderState().restore();
+        
+        GL41.glEnable(GL41.GL_DEPTH_TEST);
+        GL41.glEnable(GL41.GL_CULL_FACE);
         return true;
     }
 

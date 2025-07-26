@@ -37,7 +37,7 @@ public class PipelineGraphicsJob extends GpuComputeJob<PipelineGraphicsJob> impl
         Objects.requireNonNull(frameBuffer, "帧缓冲区未设置");
 
         setupProgramResources(program);
-        renderSystem.renderState().save();
+        float[] lastViewport = renderSystem.renderState().viewport();
 
         if (isViewportValid()) {
             renderSystem.renderState().viewport(
@@ -57,7 +57,9 @@ public class PipelineGraphicsJob extends GpuComputeJob<PipelineGraphicsJob> impl
                 DrawObject.fullscreenQuadVertexCount()
         );
 
-        renderSystem.renderState().restore();
+        renderSystem.renderState().viewport(
+                lastViewport[0], lastViewport[1], lastViewport[2], lastViewport[3]
+        );
     }
 
     private boolean isViewportValid() {

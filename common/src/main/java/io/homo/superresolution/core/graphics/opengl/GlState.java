@@ -248,13 +248,13 @@ public class GlState implements AutoCloseable {
         }
 
         if ((stateMask & STATE_TEXTURES) != 0 && this.textures2D != null && this.textures1D != null) {
-            int originalActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
+            // int originalActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
             for (int i = 0; i < MAX_TEXTURES; i++) {
                 glActiveTexture(GL_TEXTURE0 + i);
-                glBindTexture(GL_TEXTURE_2D, this.textures2D[i]);
-                glBindTexture(GL_TEXTURE_1D, this.textures1D[i]);
+                if (this.textures2D[i] != 0) glBindTexture(GL_TEXTURE_2D, this.textures2D[i]);
+                if (this.textures1D[i] != 0) glBindTexture(GL_TEXTURE_1D, this.textures1D[i]);
             }
-            glActiveTexture(originalActiveTexture);
+            //glActiveTexture(originalActiveTexture);
         }
 
         if ((stateMask & STATE_ACTIVE_TEXTURE) != 0) {
@@ -348,6 +348,7 @@ public class GlState implements AutoCloseable {
             glBindBuffer(GL_PIXEL_PACK_BUFFER, this.pixelPackBuffer);
         }
         if ((stateMask & STATE_PIXEL_UNPACK_BUFFER) != 0) {
+
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, this.pixelUnpackBuffer);
         }
         if ((stateMask & STATE_TRANSFORM_FEEDBACK_BUFFER) != 0) {

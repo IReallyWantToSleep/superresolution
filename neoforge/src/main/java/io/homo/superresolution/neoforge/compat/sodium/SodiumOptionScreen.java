@@ -10,7 +10,7 @@ import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsSto
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
-#if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5
+#if MC_VER != MC_1_20_4
 import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 import toni.sodiumoptionsapi.api.OptionIdentifier;
 import toni.sodiumoptionsapi.util.IOptionGroupIdAccessor;
@@ -18,7 +18,7 @@ import toni.sodiumoptionsapi.util.IOptionGroupIdAccessor;
 
 public class SodiumOptionScreen {
     public static void register() {
-        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5
+        #if MC_VER != MC_1_20_4
         OptionGUIConstruction.EVENT.register((pages) -> pages.add(
                         new OptionPage(
                                 Component.translatable("superresolution.screen.config.name"), ImmutableList.of(

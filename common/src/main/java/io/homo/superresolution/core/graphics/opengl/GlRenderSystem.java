@@ -7,6 +7,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderBaseUniform;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformStorageTexture;
@@ -15,7 +16,11 @@ import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import org.lwjgl.opengl.*;
+
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL44;
+
+import java.util.Map;
 
 import static org.lwjgl.opengl.GL41.*;
 
@@ -180,16 +185,16 @@ public class GlRenderSystem implements IRenderSystem {
 
         switch (src.getTextureType()) {
             case Texture1D:
-                GL45.glCopyImageSubData(
-                        src.handle(), GL11.GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
-                        dst.handle(), GL11.GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
+                GL44.glCopyImageSubData(
+                        src.handle(), GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
+                        dst.handle(), GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
                         srcX1 - srcX0, 1, 1
                 );
                 break;
             case Texture2D:
-                GL45.glCopyImageSubData(
-                        src.handle(), GL11.GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
-                        dst.handle(), GL11.GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
+                GL44.glCopyImageSubData(
+                        src.handle(), GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
+                        dst.handle(), GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
                         srcX1 - srcX0, srcY1 - srcY0, 1
                 );
                 break;
@@ -199,7 +204,7 @@ public class GlRenderSystem implements IRenderSystem {
 
     @Override
     public void copyBuffer(IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size) {
-        GL46.glCopyBufferSubData(
+        glCopyBufferSubData(
                 src.handle(),
                 dst.handle(),
                 srcOffset,
@@ -207,6 +212,7 @@ public class GlRenderSystem implements IRenderSystem {
                 size
         );
     }
+
 
     @Override
     public void draw(
@@ -229,29 +235,17 @@ public class GlRenderSystem implements IRenderSystem {
                     throw new OpenGLException("draw: 目标帧缓冲区不是由OpenGL创建的");
                 }
             }
-            int[] saved2DBindings = new int[32];
-            int savedActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
-            for (int i = 0; i < 32; i++) {
-                glActiveTexture(GL_TEXTURE0 + i);
-                saved2DBindings[i] = glGetInteger(GL_TEXTURE_BINDING_2D);
-            }
-            glActiveTexture(savedActiveTexture);
             setupShaderProgram((GlShaderProgram) shaderProgram);
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
-            GL45.glBindVertexArray(drawObject.getVertexArray().handle());
+            glBindBuffer(GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
+            glBindVertexArray(drawObject.getVertexArray().handle());
             int glPrimitive = switch (drawObject.getPrimitiveType()) {
-                case TRIANGLES -> GL11.GL_TRIANGLES;
-                case TRIANGLE_STRIP -> GL11.GL_TRIANGLE_STRIP;
-                case LINES -> GL11.GL_LINES;
-                case POINTS -> GL11.GL_POINTS;
+                case TRIANGLES -> GL_TRIANGLES;
+                case TRIANGLE_STRIP -> GL_TRIANGLE_STRIP;
+                case LINES -> GL_LINES;
+                case POINTS -> GL_POINTS;
             };
-            GL11.glDrawArrays(glPrimitive, firstVertex, vertexCount);
+            glDrawArrays(glPrimitive, firstVertex, vertexCount);
             if (drawObject.isOnce()) drawObject.destroy();
-            for (int i = 0; i < 32; i++) {
-                glActiveTexture(GL_TEXTURE0 + i);
-                glBindTexture(GL_TEXTURE_2D, saved2DBindings[i]);
-            }
-            glActiveTexture(savedActiveTexture);
         }
     }
 
@@ -267,7 +261,7 @@ public class GlRenderSystem implements IRenderSystem {
                         GlState.STATE_PROGRAM
         )) {
             setupShaderProgram((GlShaderProgram) shaderProgram);
-            GL43.glDispatchCompute(x, y, z);
+            GL44.glDispatchCompute(x, y, z);
         }
     }
 
@@ -282,23 +276,24 @@ public class GlRenderSystem implements IRenderSystem {
     }
 
     private void setupShaderProgram(GlShaderProgram shaderProgram) {
-        GL30.glUseProgram(shaderProgram.handle());
-        var uniformMap = shaderProgram.uniforms().getUniformMap();
+        glUseProgram(shaderProgram.handle());
+
+        Map<String, GlShaderBaseUniform<?, ?>> uniformMap = shaderProgram.uniforms().getUniformMap();
         uniformMap.forEach((name, uniform) -> {
             if (uniform instanceof GlShaderUniformBuffer) {
                 if (((GlShaderUniformBuffer) uniform).buffer() != null) {
                     if (Gl.isLegacy()) {
-                        int blockIndex = GL31.glGetUniformBlockIndex(
+                        int blockIndex = glGetUniformBlockIndex(
                                 shaderProgram.handle(),
                                 uniform.name()
                         );
-                        if (blockIndex == GL45.GL_INVALID_INDEX) {
+                        if (blockIndex == GL_INVALID_INDEX) {
                             throw new RuntimeException("Uniform block '%s' not found".formatted(uniform.name()));
                         }
-                        GL31.glUniformBlockBinding(shaderProgram.handle(), blockIndex, uniform.binding());
-                        GL31.glBindBufferBase(GL31.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
+                        glUniformBlockBinding(shaderProgram.handle(), blockIndex, uniform.binding());
+                        glBindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
                     } else {
-                        Gl.DSA.bindBufferBase(GL41.GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
+                        Gl.DSA.bindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), ((GlShaderUniformBuffer) uniform).buffer().handle());
                     }
                 }
             }
@@ -328,16 +323,16 @@ public class GlRenderSystem implements IRenderSystem {
                        );
                     */
                     ITexture texture = ((GlShaderUniformSamplerTexture) uniform).texture();
-                    GL30.glActiveTexture(GL30.GL_TEXTURE0 + uniform.binding());
+                    glActiveTexture(GL_TEXTURE0 + uniform.binding());
 
                     if (texture.getTextureType() == TextureType.Texture1D) {
-                        GL30.glBindTexture(GL_TEXTURE_1D, texture.handle());
+                        glBindTexture(GL_TEXTURE_1D, texture.handle());
                     } else if (texture.getTextureType() == TextureType.Texture2D) {
-                        GL30.glBindTexture(GL_TEXTURE_2D, texture.handle());
+                        glBindTexture(GL_TEXTURE_2D, texture.handle());
                     } else {
-                        GL30.glBindTexture(GL_TEXTURE_2D, texture.handle());
+                        glBindTexture(GL_TEXTURE_2D, texture.handle());
                     }
-                    GL30.glUniform1i(GL30.glGetUniformLocation(shaderProgram.handle(), uniform.name()), uniform.binding());
+                    glUniform1i(glGetUniformLocation(shaderProgram.handle(), uniform.name()), uniform.binding());
                 }
             }
         });

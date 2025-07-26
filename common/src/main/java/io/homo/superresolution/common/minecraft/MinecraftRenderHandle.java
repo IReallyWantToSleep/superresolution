@@ -229,18 +229,20 @@ public class MinecraftRenderHandle {
             GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldTime);
             PerformanceInfo.end("world", worldTime[0]);
         }
+
         try (GlState ignored = new GlState()) {
             if (SuperResolutionConfig.isEnableDetailedProfiling()) {
                 PerformanceInfo.begin("upscale");
                 GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[1]);
             }
-
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
                     RenderDoc.renderdoc.StartFrameCapture.call(null, null);
                 }
             }
+
             AlgorithmManager.update();
+
             try (GlState ignored_ = new GlState()) {
                 DispatchResource dispatchResource = AlgorithmManager.getDispatchResource();
                 if (SuperResolution.currentAlgorithm != null) {
