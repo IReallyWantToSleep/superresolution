@@ -20,3 +20,4 @@ class VersionConfig {
         return new VersionConfig(json)
     }
 }
+

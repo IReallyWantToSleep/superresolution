@@ -25,59 +25,103 @@ public class GlRenderState implements IRenderState {
     private BlendFactor blendDstFactor = BlendFactor.ZERO;
     private DepthFunc depthFunc = DepthFunc.LESS;
 
+
+    public void updateFromOpenGL() {
+        depthTest = GL11.glGetBoolean(GL11.GL_DEPTH_TEST);
+        depthWrite = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        blend = GL11.glGetBoolean(GL11.GL_BLEND);
+        cullFace = GL11.glGetBoolean(GL11.GL_CULL_FACE);
+        stencilTest = GL11.glGetBoolean(GL11.GL_STENCIL_TEST);
+        int[] colorMask = new int[4];
+        GL11.glGetIntegerv(GL11.GL_COLOR_WRITEMASK, colorMask);
+        colorMaskR = colorMask[0] == 1;
+        colorMaskG = colorMask[1] == 1;
+        colorMaskB = colorMask[2] == 1;
+        colorMaskA = colorMask[3] == 1;
+        int srcRGB = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
+        int dstRGB = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
+        blendSrcFactor = fromGlBlendFactor(srcRGB);
+        blendDstFactor = fromGlBlendFactor(dstRGB);
+        int depthFuncValue = GL11.glGetInteger(GL11.GL_DEPTH_FUNC);
+        depthFunc = fromGlDepthFunc(depthFuncValue);
+        int[] viewportInt = new int[4];
+        GL11.glGetIntegerv(GL11.GL_VIEWPORT, viewportInt);
+        viewport[0] = viewportInt[0];
+        viewport[1] = viewportInt[1];
+        viewport[2] = viewportInt[2];
+        viewport[3] = viewportInt[3];
+    }
+
+
+    private BlendFactor fromGlBlendFactor(int glFactor) {
+        return switch (glFactor) {
+            case GL11.GL_ZERO -> BlendFactor.ZERO;
+            case GL11.GL_ONE -> BlendFactor.ONE;
+            case GL11.GL_SRC_COLOR -> BlendFactor.SRC_COLOR;
+            case GL11.GL_ONE_MINUS_SRC_COLOR -> BlendFactor.ONE_MINUS_SRC_COLOR;
+            case GL11.GL_DST_COLOR -> BlendFactor.DST_COLOR;
+            case GL11.GL_ONE_MINUS_DST_COLOR -> BlendFactor.ONE_MINUS_DST_COLOR;
+            case GL11.GL_SRC_ALPHA -> BlendFactor.SRC_ALPHA;
+            case GL11.GL_ONE_MINUS_SRC_ALPHA -> BlendFactor.ONE_MINUS_SRC_ALPHA;
+            case GL11.GL_DST_ALPHA -> BlendFactor.DST_ALPHA;
+            case GL11.GL_ONE_MINUS_DST_ALPHA -> BlendFactor.ONE_MINUS_DST_ALPHA;
+            default -> BlendFactor.ONE;
+        };
+    }
+
+
+    private DepthFunc fromGlDepthFunc(int glFunc) {
+        return switch (glFunc) {
+            case GL11.GL_NEVER -> DepthFunc.NEVER;
+            case GL11.GL_LESS -> DepthFunc.LESS;
+            case GL11.GL_EQUAL -> DepthFunc.EQUAL;
+            case GL11.GL_LEQUAL -> DepthFunc.LESS_EQUAL;
+            case GL11.GL_GREATER -> DepthFunc.GREATER;
+            case GL11.GL_NOTEQUAL -> DepthFunc.NOT_EQUAL;
+            case GL11.GL_GEQUAL -> DepthFunc.GREATER_EQUAL;
+            case GL11.GL_ALWAYS -> DepthFunc.ALWAYS;
+            default -> DepthFunc.LESS;
+        };
+    }
+
     private int toGlBlendFactor(BlendFactor bf) {
-        switch (bf) {
-            case ZERO:
-                return GL11.GL_ZERO;
-            case ONE:
-                return GL11.GL_ONE;
-            case SRC_COLOR:
-                return GL11.GL_SRC_COLOR;
-            case ONE_MINUS_SRC_COLOR:
-                return GL11.GL_ONE_MINUS_SRC_COLOR;
-            case DST_COLOR:
-                return GL11.GL_DST_COLOR;
-            case ONE_MINUS_DST_COLOR:
-                return GL11.GL_ONE_MINUS_DST_COLOR;
-            case SRC_ALPHA:
-                return GL11.GL_SRC_ALPHA;
-            case ONE_MINUS_SRC_ALPHA:
-                return GL11.GL_ONE_MINUS_SRC_ALPHA;
-            case DST_ALPHA:
-                return GL11.GL_DST_ALPHA;
-            case ONE_MINUS_DST_ALPHA:
-                return GL11.GL_ONE_MINUS_DST_ALPHA;
-            default:
-                return GL11.GL_ONE;
-        }
+        return switch (bf) {
+            case ZERO -> GL11.GL_ZERO;
+            case ONE -> GL11.GL_ONE;
+            case SRC_COLOR -> GL11.GL_SRC_COLOR;
+            case ONE_MINUS_SRC_COLOR -> GL11.GL_ONE_MINUS_SRC_COLOR;
+            case DST_COLOR -> GL11.GL_DST_COLOR;
+            case ONE_MINUS_DST_COLOR -> GL11.GL_ONE_MINUS_DST_COLOR;
+            case SRC_ALPHA -> GL11.GL_SRC_ALPHA;
+            case ONE_MINUS_SRC_ALPHA -> GL11.GL_ONE_MINUS_SRC_ALPHA;
+            case DST_ALPHA -> GL11.GL_DST_ALPHA;
+            case ONE_MINUS_DST_ALPHA -> GL11.GL_ONE_MINUS_DST_ALPHA;
+            default -> GL11.GL_ONE;
+        };
     }
 
     private int toGlDepthFunc(DepthFunc func) {
-        switch (func) {
-            case NEVER:
-                return GL11.GL_NEVER;
-            case LESS:
-                return GL11.GL_LESS;
-            case EQUAL:
-                return GL11.GL_EQUAL;
-            case LESS_EQUAL:
-                return GL11.GL_LEQUAL;
-            case GREATER:
-                return GL11.GL_GREATER;
-            case NOT_EQUAL:
-                return GL11.GL_NOTEQUAL;
-            case GREATER_EQUAL:
-                return GL11.GL_GEQUAL;
-            case ALWAYS:
-                return GL11.GL_ALWAYS;
-            default:
-                return GL11.GL_LESS;
-        }
+        return switch (func) {
+            case NEVER -> GL11.GL_NEVER;
+            case LESS -> GL11.GL_LESS;
+            case EQUAL -> GL11.GL_EQUAL;
+            case LESS_EQUAL -> GL11.GL_LEQUAL;
+            case GREATER -> GL11.GL_GREATER;
+            case NOT_EQUAL -> GL11.GL_NOTEQUAL;
+            case GREATER_EQUAL -> GL11.GL_GEQUAL;
+            case ALWAYS -> GL11.GL_ALWAYS;
+            default -> GL11.GL_LESS;
+        };
     }
 
     @Override
     public float[] viewport() {
-        return viewport.clone();
+
+        int[] viewportInt = new int[4];
+        GL11.glGetIntegerv(GL11.GL_VIEWPORT, viewportInt);
+        return new float[]{
+                viewportInt[0], viewportInt[1], viewportInt[2], viewportInt[3]
+        };
     }
 
     @Override
@@ -92,63 +136,78 @@ public class GlRenderState implements IRenderState {
 
     @Override
     public boolean depthTest() {
-        return depthTest;
+        return GL11.glGetBoolean(GL11.GL_DEPTH_TEST);
     }
 
     @Override
     public boolean depthWrite() {
-        return depthWrite;
+        return GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
     }
 
     @Override
     public boolean blend() {
-        return blend;
+        return GL11.glGetBoolean(GL11.GL_BLEND);
     }
 
     @Override
     public boolean cullFace() {
-        return cullFace;
+        return GL11.glGetBoolean(GL11.GL_CULL_FACE);
     }
 
     @Override
     public boolean stencilTest() {
-        return stencilTest;
+        return GL11.glGetBoolean(GL11.GL_STENCIL_TEST);
     }
 
     @Override
     public boolean colorMaskR() {
-        return colorMaskR;
+        int[] mask = new int[4];
+        GL11.glGetIntegerv(GL11.GL_COLOR_WRITEMASK, mask);
+        return mask[0] == 1;
     }
 
     @Override
     public boolean colorMaskG() {
-        return colorMaskG;
+        int[] mask = new int[4];
+        GL11.glGetIntegerv(GL11.GL_COLOR_WRITEMASK, mask);
+        return mask[1] == 1;
     }
 
     @Override
     public boolean colorMaskB() {
-        return colorMaskB;
+        int[] mask = new int[4];
+        GL11.glGetIntegerv(GL11.GL_COLOR_WRITEMASK, mask);
+        return mask[2] == 1;
     }
 
     @Override
     public boolean colorMaskA() {
-        return colorMaskA;
+        int[] mask = new int[4];
+        GL11.glGetIntegerv(GL11.GL_COLOR_WRITEMASK, mask);
+        return mask[3] == 1;
     }
 
     @Override
     public BlendFactor blendSrcFactor() {
-        return blendSrcFactor;
+
+        int srcFactor = GL11.glGetInteger(GL14.GL_BLEND_SRC_RGB);
+        return fromGlBlendFactor(srcFactor);
     }
 
     @Override
     public BlendFactor blendDstFactor() {
-        return blendDstFactor;
+
+        int dstFactor = GL11.glGetInteger(GL14.GL_BLEND_DST_RGB);
+        return fromGlBlendFactor(dstFactor);
     }
 
     @Override
     public DepthFunc depthFunc() {
-        return depthFunc;
+
+        int depthFuncValue = GL11.glGetInteger(GL11.GL_DEPTH_FUNC);
+        return fromGlDepthFunc(depthFuncValue);
     }
+
 
     @Override
     public IRenderState depthTest(boolean enable) {
@@ -272,6 +331,37 @@ public class GlRenderState implements IRenderState {
             this.blendSrcFactor(snap.blendSrcFactor);
             this.blendDstFactor(snap.blendDstFactor);
             this.depthFunc(snap.depthFunc);
+        }
+    }
+
+
+    private static class StateSnapshot {
+        public final boolean depthTest;
+        public final boolean depthWrite;
+        public final boolean blend;
+        public final boolean cullFace;
+        public final boolean stencilTest;
+        public final boolean colorMaskR;
+        public final boolean colorMaskG;
+        public final boolean colorMaskB;
+        public final boolean colorMaskA;
+        public final BlendFactor blendSrcFactor;
+        public final BlendFactor blendDstFactor;
+        public final DepthFunc depthFunc;
+
+        public StateSnapshot(GlRenderState state) {
+            this.depthTest = state.depthTest;
+            this.depthWrite = state.depthWrite;
+            this.blend = state.blend;
+            this.cullFace = state.cullFace;
+            this.stencilTest = state.stencilTest;
+            this.colorMaskR = state.colorMaskR;
+            this.colorMaskG = state.colorMaskG;
+            this.colorMaskB = state.colorMaskB;
+            this.colorMaskA = state.colorMaskA;
+            this.blendSrcFactor = state.blendSrcFactor;
+            this.blendDstFactor = state.blendDstFactor;
+            this.depthFunc = state.depthFunc;
         }
     }
 }
