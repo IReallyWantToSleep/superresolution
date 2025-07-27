@@ -1,18 +1,18 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
 public class Fsr2ShaderResource {
-    public GlPipelineResourceAccess access = GlPipelineResourceAccess.READ;
+    public PipelineResourceAccess access = PipelineResourceAccess.Read;
     public int binding = -1;
     public Supplier<Fsr2PipelineResources.Fsr2ResourceEntry> resourceEntry = null;
     public Supplier<Fsr2PipelineResourceType> resourceType = null;
@@ -30,11 +30,11 @@ public class Fsr2ShaderResource {
     public GlSampler sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
 
 
-    public GlPipelineResourceAccess access() {
+    public PipelineResourceAccess access() {
         return access;
     }
 
-    public Fsr2ShaderResource access(GlPipelineResourceAccess access) {
+    public Fsr2ShaderResource access(PipelineResourceAccess access) {
         this.access = access;
         return this;
     }
@@ -74,13 +74,13 @@ public class Fsr2ShaderResource {
         return this;
     }
 
-    public GlPipelineResourceDescription getResourceDescription(Fsr2Context context) {
+    public PipelineJobResource<?> getResourceDescription(Fsr2Context context) {
         if (this.resourceType != null) {
             this.resourceEntry = () -> context.resources.resource(resourceType.get());
         }
         Fsr2PipelineResourceType resourceType = context.resources.resourceEntriesMap().get(resourceEntry.get());
         if (resourceType == null) throw new RuntimeException();
-        String name = resourceName != null ? resourceName : access == GlPipelineResourceAccess.READ ? resourceType.srvShaderName() : resourceType.uavShaderName();
+        String name = resourceName != null ? resourceName : access == PipelineResourceAccess.Read ? resourceType.srvShaderName() : resourceType.uavShaderName();
         if (name == null) {
             name = "RESOURCE+" + UUID.randomUUID() + "+" + binding;
         } else if (resourceName == null) {
@@ -88,37 +88,35 @@ public class Fsr2ShaderResource {
         }
         if (resourceEntry.get().type() == Fsr2PipelineResources.Fsr2ResourceType.UBO) {
             return
-                    GlPipelineResourceDescription.createUBOResource(
-                            name,
-                            (GlBuffer) resourceEntry.get().getResource(),
-                            binding
-                    );
+                    PipelineJobResource.UniformBuffer.create((GlBuffer) resourceEntry.get().getResource());
         } else {
-            return
-                    GlPipelineResourceDescription.createTextureResource(
-                            access != GlPipelineResourceAccess.READ ? GlPipelineResourceType.Image2D : GlPipelineResourceType.Sampler2D,
-                            name,
-                            TextureSupplier.of(() -> {
-                                ITexture texture = (ITexture) resourceEntry.get().getResource();
-                                if (texture == null) {
-                                    Fsr2Context.LOGGER.error("%s %s".formatted(resourceEntry.get().type().name(), resourceEntry.get().getDescription().label));
-                                    return RenderSystems.current().device().createTexture(
-                                            TextureDescription.create()
-                                                    .width(1)
-                                                    .height(1)
-                                                    .type(TextureType.Texture2D)
-                                                    .format(TextureFormat.RGBA8)
-                                                    .usages(TextureUsages.create().storage().sampler())
-                                                    .build()
-                                    );
-                                }
-                                return texture;
-                            }),
-                            access,
-                            null,
-                            binding
+            ITexture textureSupplier = TextureSupplier.of(() -> {
+                ITexture texture = (ITexture) resourceEntry.get().getResource();
+                if (texture == null) {
+                    if (resourceType == Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5) {
+                        if (context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource() != null) {
+                            GlTexture2D texture2D = ((GlTexture2D) context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource());
+                            return texture2D.getMipView(Math.min(texture2D.getMipmapLevel(), 5));
+                        }
+                    }
+                    Fsr2Context.LOGGER.error("%s %s".formatted(resourceEntry.get().type().name(), resourceEntry.get().getDescription().label));
+                    return RenderSystems.current().device().createTexture(
+                            TextureDescription.create()
+                                    .width(1)
+                                    .height(1)
+                                    .type(TextureType.Texture2D)
+                                    .format(TextureFormat.RGBA8)
+                                    .usages(TextureUsages.create().storage().sampler())
+                                    .build()
                     );
-
+                }
+                return texture;
+            });
+            if (access != PipelineResourceAccess.Read) {
+                return PipelineJobResource.StorageTexture.create(textureSupplier, access);
+            } else {
+                return PipelineJobResource.SamplerTexture.create(textureSupplier);
+            }
         }
     }
 }

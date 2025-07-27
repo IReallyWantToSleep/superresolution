@@ -1,18 +1,17 @@
 package io.homo.superresolution.core.graphics.opengl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.minecraft.RenderTargetCache;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.minecraft.RenderTargetCache;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-
-import io.homo.superresolution.core.graphics.opengl.Gl;
 
 import static org.lwjgl.opengl.GL30.*;
 

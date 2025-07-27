@@ -8,11 +8,6 @@ import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAcces
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;

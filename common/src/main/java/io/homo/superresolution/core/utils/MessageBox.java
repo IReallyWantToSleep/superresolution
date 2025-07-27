@@ -1,13 +1,6 @@
 package io.homo.superresolution.core.utils;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.win32.W32APIOptions;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
-
-import java.awt.*;
-import java.io.IOException;
-import java.net.URI;
 
 public class MessageBox {
     private static void createMsgBox(String text, String caption, String type) {

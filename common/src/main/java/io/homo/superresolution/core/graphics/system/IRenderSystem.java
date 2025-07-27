@@ -5,13 +5,7 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
-import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexAttribute;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 
 public interface IRenderSystem {
     /**

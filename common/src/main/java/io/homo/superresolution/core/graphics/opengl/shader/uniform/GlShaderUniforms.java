@@ -1,7 +1,8 @@
 package io.homo.superresolution.core.graphics.opengl.shader.uniform;
 
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.*;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.IShaderUniform;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniforms;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.impl.Destroyable;
 

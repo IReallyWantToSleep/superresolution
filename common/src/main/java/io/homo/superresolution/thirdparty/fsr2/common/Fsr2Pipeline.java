@@ -1,13 +1,13 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public abstract class Fsr2Pipeline {
     protected final Fsr2Context context;
-    public GlPipeline pipeline = new GlPipeline();
+    public Pipeline pipeline = new Pipeline();
 
     public Fsr2Pipeline(Fsr2Context context) {
         this.context = context;

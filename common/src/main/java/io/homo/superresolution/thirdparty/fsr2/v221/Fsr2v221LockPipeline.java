@@ -1,14 +1,15 @@
 package io.homo.superresolution.thirdparty.fsr2.v221;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.math.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
 import java.util.HashMap;
@@ -37,6 +38,10 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
                 ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2v221/ffx_fsr2_lock_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_lock")
+                        .uniformBuffer("cbFSR2", 3, (int) context.fsr2ConstantsUBO.getSize())
+                        .uniformSamplerTexture("r_lock_input_luma", 0)
+                        .uniformStorageTexture("rw_new_locks", ShaderUniformAccess.Both, 1)
+                        .uniformStorageTexture("rw_reconstructed_previous_nearest_depth", ShaderUniformAccess.Both, 2)
                         .build()
         );
         program.compile();
@@ -44,45 +49,44 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
 
     @Override
     public void execute(Fsr2PipelineDispatchResource dispatchResource) {
-        GlPipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                GlPipelineJobBuilders.compute(program)
-                        .workGroupSupplier(() -> new Vector3f(
-                                (context.dimensions.renderWidth() + (7f)) / 8f,
-                                (context.dimensions.renderHeight() + (7f)) / 8f,
+        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
+                PipelineJobBuilders.compute(program)
+                        .workGroupSupplier(() -> new Vector3i(
+                                (context.dimensions.renderWidth() + (7)) / 8,
+                                (context.dimensions.renderHeight() + (7)) / 8,
                                 1
                         ));
 
         jobBuilder.resource(
-                GlPipelineResourceDescription.createUBOResource(
-                        "cbFSR2",
-                        context.fsr2ConstantsUBO,
-                        3
-                )
+                "cbFSR2",
+                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
         jobBuilder.resource(
+                Fsr2PipelineResourceType.LOCK_INPUT_LUMA.srvShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.LOCK_INPUT_LUMA)
                         .binding(0)
-                        .access(GlPipelineResourceAccess.READ)
+                        .access(PipelineResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
+                Fsr2PipelineResourceType.NEW_LOCKS.uavShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.NEW_LOCKS)
                         .binding(1)
-                        .access(GlPipelineResourceAccess.BOTH)
+                        .access(PipelineResourceAccess.Both)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
+                Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH.uavShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH)
                         .binding(2)
-                        .access(GlPipelineResourceAccess.BOTH)
+                        .access(PipelineResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.addJob("fsr2_lock", jobBuilder.build());
-        pipeline.scheduleJobs();
-        pipeline.executeJobs();
+        pipeline.job("fsr2_lock", jobBuilder.build());
+        pipeline.execute(RenderSystems.current());
     }
 
 }

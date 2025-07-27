@@ -1,7 +1,5 @@
 package io.homo.superresolution.core.graphics.impl.shader.uniform;
 
-import io.homo.superresolution.core.impl.Destroyable;
-
 public enum ShaderUniformAccess {
     /**
      * 只读

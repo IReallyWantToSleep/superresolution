@@ -15,11 +15,6 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipeline;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
@@ -27,6 +22,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTexture
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import org.lwjgl.opengl.GL41;
 
 public class MotionVectorsGenerator {
     public static GlShaderProgram preprocessShader;
@@ -260,12 +256,16 @@ public class MotionVectorsGenerator {
         structuredUniformBuffer.setFloat("scale", 4f);
         structuredUniformBuffer.fillBuffer();
         ubo.upload();
+        GL41.glDisable(GL41.GL_DEPTH_TEST);
+        GL41.glDisable(GL41.GL_CULL_FACE);
         pipeline.executeJob(RenderSystems.opengl(), "preprocess");
         pipeline.executeJob(RenderSystems.opengl(), "copy_preprocess_fbo_to_current_frame_texture");
         pipeline.executeJob(RenderSystems.opengl(), "pass1");
         pipeline.executeJob(RenderSystems.opengl(), "pass2");
         pipeline.executeJob(RenderSystems.opengl(), "pass3");
         pipeline.executeJob(RenderSystems.opengl(), "copy_current_frame_texture_to_previous_frame_texture");
+        GL41.glEnable(GL41.GL_DEPTH_TEST);
+        GL41.glEnable(GL41.GL_CULL_FACE);
     }
 
     public static void destroy() {

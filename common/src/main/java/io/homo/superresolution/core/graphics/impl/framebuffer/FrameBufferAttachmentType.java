@@ -1,7 +1,5 @@
 package io.homo.superresolution.core.graphics.impl.framebuffer;
 
-import org.lwjgl.system.MemoryUtil;
-
 public enum FrameBufferAttachmentType {
     Color(),
     AnyDepth(),

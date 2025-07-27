@@ -1,8 +1,8 @@
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
-import static org.lwjgl.opengl.GL41.*;
-
 import java.nio.*;
+
+import static org.lwjgl.opengl.GL41.*;
 
 public class GL41DirectStateAccessImpl implements IGlDirectStateAccess {
     @Override

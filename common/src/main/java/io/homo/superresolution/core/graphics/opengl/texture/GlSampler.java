@@ -1,8 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.texture;
 
-import io.homo.superresolution.core.graphics.opengl.Gl;
-
-import static io.homo.superresolution.core.graphics.opengl.Gl.*;
+import static io.homo.superresolution.core.graphics.opengl.Gl.DSA;
 import static io.homo.superresolution.core.graphics.opengl.GlConst.*;
 
 public class GlSampler {
