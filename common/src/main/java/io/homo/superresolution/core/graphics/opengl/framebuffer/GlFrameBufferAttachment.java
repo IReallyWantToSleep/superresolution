@@ -1,7 +1,7 @@
 package io.homo.superresolution.core.graphics.opengl.framebuffer;
 
-import io.homo.superresolution.core.graphics.opengl.GlConst;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.GlConst;
 
 public class GlFrameBufferAttachment {
     public FrameBufferAttachmentType type;

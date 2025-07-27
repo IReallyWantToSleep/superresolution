@@ -5,7 +5,6 @@ import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Dimensions;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2DispatchDescription;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.Buffer;

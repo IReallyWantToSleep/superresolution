@@ -2,9 +2,9 @@ package io.homo.superresolution.core.graphics.impl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.graphics.impl.GpuObject;
-import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.impl.Destroyable;
 
 /**
  * 帧缓冲区

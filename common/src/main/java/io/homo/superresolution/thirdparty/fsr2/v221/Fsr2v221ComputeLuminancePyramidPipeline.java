@@ -1,17 +1,17 @@
 package io.homo.superresolution.thirdparty.fsr2.v221;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.opengl.pipeline.jobs.GlPipelineJobBuilders;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceAccess;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.resource.GlPipelineResourceType;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.math.Vector3f;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.math.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
 import java.util.HashMap;
@@ -41,6 +41,12 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                 ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2v221/ffx_fsr2_compute_luminance_pyramid_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(shaderDefines))
                         .name("fsr2_compute_luminance_pyramid")
+                        .uniformBuffer("cbFSR2", 5, (int) context.fsr2ConstantsUBO.getSize())
+                        .uniformBuffer("cbSPD", 6, (int) context.fsr2SpdConstantsUBO.getSize())
+                        .uniformSamplerTexture("r_input_color_jittered", 0)
+                        .uniformStorageTexture("rw_spd_global_atomic", ShaderUniformAccess.Both, 1)
+                        .uniformStorageTexture("rw_img_mip_5", ShaderUniformAccess.Both, 3)
+                        .uniformStorageTexture("rw_auto_exposure", ShaderUniformAccess.Both, 4)
                         .build()
         );
         program.compile();
@@ -49,8 +55,8 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
 
     @Override
     public void execute(Fsr2PipelineDispatchResource dispatchResource) {
-        GlPipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                GlPipelineJobBuilders.compute(program)
+        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
+                PipelineJobBuilders.compute(program)
                         .workGroupSupplier(() -> {
                             int[] dispatchThreadGroupCountXY = new int[2];
                             int[] rectInfo = new int[]{
@@ -67,7 +73,7 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                             int endIndexY = (rectInfo[1] + rectInfo[3] - 1) / 64;
                             dispatchThreadGroupCountXY[0] = endIndexX + 1 - workGroupOffset[0];
                             dispatchThreadGroupCountXY[1] = endIndexY + 1 - workGroupOffset[1];
-                            return new Vector3f(
+                            return new Vector3i(
                                     dispatchThreadGroupCountXY[0],
                                     dispatchThreadGroupCountXY[1],
                                     1
@@ -75,63 +81,59 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         });
 
         jobBuilder.resource(
-                GlPipelineResourceDescription.createUBOResource(
-                        "cbFSR2",
-                        context.fsr2ConstantsUBO,
-                        5
-                )
+                "cbFSR2",
+                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
         jobBuilder.resource(
-                GlPipelineResourceDescription.createUBOResource(
-                        "cbSPD",
-                        context.fsr2SpdConstantsUBO,
-                        6
-                )
+                "cbSPD",
+                PipelineJobResource.UniformBuffer.create(context.fsr2SpdConstantsUBO)
         );
 
         jobBuilder.resource(
+                Fsr2PipelineResourceType.INPUT_COLOR.srvShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_COLOR)
                         .binding(0)
-                        .access(GlPipelineResourceAccess.READ)
+                        .access(PipelineResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
+                Fsr2PipelineResourceType.SPD_ATOMIC_COUNT.uavShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.SPD_ATOMIC_COUNT)
                         .binding(1)
-                        .access(GlPipelineResourceAccess.BOTH)
+                        .access(PipelineResourceAccess.Both)
                         .getResourceDescription(context)
         );
         //jobBuilder.resource(
+        //        Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_SHADING_CHANGE.uavShaderName(),
         //        new Fsr2ShaderResource()
         //                .resourceType(Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_SHADING_CHANGE)
         //                .binding(2)
-        //                .access(GlPipelineResourceAccess.BOTH)
+        //                .access(PipelineResourceAccess.Both)
         //                .getResourceDescription(context)
         //);
         GlTexture2D texture2D = ((GlTexture2D) context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource());
         jobBuilder.resource(
-                GlPipelineResourceDescription.createTextureResource(
-                        GlPipelineResourceType.Image2D,
-                        Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5.uavShaderName(),
-                        texture2D.getMipView(Math.min(5, texture2D.getMipmapLevel())),
-                        GlPipelineResourceAccess.BOTH,
-                        GlSampler.create(GlSampler.SamplerType.LinearClamp),
-                        3
-                )
+                Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5.uavShaderName(),
+                new Fsr2ShaderResource()
+                        .resourceType(Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5)
+                        .binding(3)
+                        .access(PipelineResourceAccess.Both)
+                        .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
+                        .getResourceDescription(context)
         );
         jobBuilder.resource(
+                Fsr2PipelineResourceType.AUTO_EXPOSURE.uavShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.AUTO_EXPOSURE)
                         .binding(4)
-                        .access(GlPipelineResourceAccess.BOTH)
+                        .access(PipelineResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.addJob("fsr2_compute_luminance_pyramid", jobBuilder.build());
-        pipeline.scheduleJobs();
-        pipeline.executeJobs();
+        pipeline.job("fsr2_compute_luminance_pyramid", jobBuilder.build());
+        pipeline.execute(RenderSystems.current());
     }
 
 }

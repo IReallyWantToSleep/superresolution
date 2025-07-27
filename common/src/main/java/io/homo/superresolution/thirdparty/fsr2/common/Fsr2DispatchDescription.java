@@ -1,7 +1,7 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
-import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.math.Vector2f;
 
 public class Fsr2DispatchDescription {
     public ITexture color;

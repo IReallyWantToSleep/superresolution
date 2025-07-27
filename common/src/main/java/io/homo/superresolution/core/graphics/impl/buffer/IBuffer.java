@@ -1,7 +1,6 @@
 package io.homo.superresolution.core.graphics.impl.buffer;
 
 import io.homo.superresolution.core.graphics.impl.GpuObject;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.impl.Destroyable;
 
 

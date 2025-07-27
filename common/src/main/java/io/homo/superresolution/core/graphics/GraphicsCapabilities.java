@@ -2,9 +2,9 @@ package io.homo.superresolution.core.graphics;
 
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
 import io.homo.superresolution.core.graphics.vulkan.VulkanApplication;
+import io.homo.superresolution.core.impl.Pair;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;

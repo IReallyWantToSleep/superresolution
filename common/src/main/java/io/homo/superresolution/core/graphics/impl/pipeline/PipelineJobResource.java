@@ -3,20 +3,28 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsage;
+
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class PipelineJobResource<RT> {
     protected final PipelineResourceAccess access;
     protected final PipelineResourceType type;
-    protected RT resource;
+    protected Supplier<Optional<RT>> resource;
+    private final Predicate<RT> validator;
 
     public PipelineJobResource(
             PipelineResourceAccess access,
             PipelineResourceType type,
-            RT resource
+            Supplier<Optional<RT>> resource,
+            Predicate<RT> validator
     ) {
         this.access = access;
         this.type = type;
-        this.resource = resource;
+        this.validator = validator != null ? validator : rt -> true;
+        this.resource = () -> resource.get().filter(this.validator);
     }
 
     public PipelineResourceAccess getAccess() {
@@ -27,31 +35,39 @@ public class PipelineJobResource<RT> {
         return type;
     }
 
-    public RT getResource() {
-        return resource;
+    public Optional<RT> getResource() {
+        if (!validator.test(resource.get().orElse(null))) {
+            throw new IllegalArgumentException("Invalid resource provided for " + this.getClass().getSimpleName());
+        }
+        return resource.get();
     }
 
     public void setResource(RT resource) {
-        this.resource = resource;
+        if (!validator.test(resource)) {
+            throw new IllegalArgumentException("Invalid resource provided for " + this.getClass().getSimpleName());
+        }
+        this.resource = () -> Optional.of(resource);
     }
 
     public static class SamplerTexture extends PipelineJobResource<ITexture> {
         protected SamplerTexture(
                 PipelineResourceAccess access,
                 PipelineResourceType type,
-                ITexture resource
+                Supplier<Optional<ITexture>> resource
         ) {
-            super(access, type, resource);
+            super(access, type, resource, texture -> texture == null || texture.getTextureUsages().getUsages().contains(TextureUsage.Sampler));
         }
 
-        public static SamplerTexture create(
-                ITexture texture
-        ) {
+        public static SamplerTexture create(Supplier<Optional<ITexture>> texture) {
             return new SamplerTexture(
                     PipelineResourceAccess.Read,
                     PipelineResourceType.SamplerTexture,
                     texture
             );
+        }
+
+        public static SamplerTexture create(ITexture texture) {
+            return create(() -> Optional.of(texture));
         }
     }
 
@@ -59,13 +75,13 @@ public class PipelineJobResource<RT> {
         protected StorageTexture(
                 PipelineResourceAccess access,
                 PipelineResourceType type,
-                ITexture resource
+                Supplier<Optional<ITexture>> resource
         ) {
-            super(access, type, resource);
+            super(access, type, resource, texture -> texture == null || texture.getTextureUsages().getUsages().contains(TextureUsage.Storage));
         }
 
         public static StorageTexture create(
-                ITexture texture,
+                Supplier<Optional<ITexture>> texture,
                 PipelineResourceAccess access
         ) {
             return new StorageTexture(
@@ -74,26 +90,37 @@ public class PipelineJobResource<RT> {
                     texture
             );
         }
+
+        public static StorageTexture create(
+                ITexture texture,
+                PipelineResourceAccess access
+        ) {
+            return create(() -> Optional.of(texture), access);
+        }
     }
 
     public static class UniformBuffer extends PipelineJobResource<IBuffer> {
         protected UniformBuffer(
                 PipelineResourceAccess access,
                 PipelineResourceType type,
-                IBuffer resource
+                Supplier<Optional<IBuffer>> resource
         ) {
-            super(access, type, resource);
+            super(access, type, resource, buffer -> buffer == null || buffer.getUsage() == BufferUsage.UBO);
         }
 
-        public static UniformBuffer create(
-                IBuffer ubo
-        ) {
-            if (ubo.getUsage() != BufferUsage.UBO) throw new RuntimeException();
+        public static UniformBuffer create(Supplier<Optional<IBuffer>> ubo) {
             return new UniformBuffer(
                     PipelineResourceAccess.Read,
                     PipelineResourceType.UniformBuffer,
                     ubo
             );
+        }
+
+        public static UniformBuffer create(IBuffer ubo) {
+            if (ubo.getUsage() != BufferUsage.UBO) {
+                throw new IllegalArgumentException("Buffer must have UBO usage");
+            }
+            return create(() -> Optional.of(ubo));
         }
     }
 }

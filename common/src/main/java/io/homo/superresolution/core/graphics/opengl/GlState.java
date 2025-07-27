@@ -108,6 +108,7 @@ public class GlState implements AutoCloseable {
 
 
     public void saveState() {
+        
         int originalActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
 
         if ((stateMask & STATE_PROGRAM) != 0) {

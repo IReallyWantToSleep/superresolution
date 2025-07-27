@@ -3,9 +3,6 @@ package io.homo.superresolution.core.graphics.opengl.texture;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
-import static org.lwjgl.opengl.GL11.glDeleteTextures;
-import static org.lwjgl.opengl.GL11.glGenTextures;
-
 public class GlTextureView implements ITexture {
     private final ITexture parent;
     private final int type;

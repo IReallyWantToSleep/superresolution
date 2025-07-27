@@ -1,7 +1,5 @@
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
-import org.lwjgl.opengl.GL45C;
-
 import java.nio.Buffer;
 
 public interface IGlDirectStateAccess {

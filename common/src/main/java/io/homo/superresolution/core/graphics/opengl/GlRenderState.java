@@ -3,7 +3,6 @@ package io.homo.superresolution.core.graphics.opengl;
 import io.homo.superresolution.core.graphics.impl.BlendFactor;
 import io.homo.superresolution.core.graphics.impl.DepthFunc;
 import io.homo.superresolution.core.graphics.system.IRenderState;
-
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
 

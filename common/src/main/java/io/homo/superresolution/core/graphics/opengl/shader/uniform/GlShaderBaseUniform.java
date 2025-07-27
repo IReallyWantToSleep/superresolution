@@ -1,10 +1,7 @@
 package io.homo.superresolution.core.graphics.opengl.shader.uniform;
 
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.IShaderUniform;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
-import io.homo.superresolution.core.graphics.opengl.OpenGLException;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 
 public abstract class GlShaderBaseUniform<T, SELF extends IShaderUniform<?, ?>> implements IShaderUniform<T, SELF> {
     private final String name;

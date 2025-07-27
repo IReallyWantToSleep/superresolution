@@ -1,9 +1,9 @@
 package io.homo.superresolution.core.graphics.opengl.texture;
 
+import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;

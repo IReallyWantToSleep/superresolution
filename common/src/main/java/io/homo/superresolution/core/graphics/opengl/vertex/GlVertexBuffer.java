@@ -4,10 +4,7 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL45;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;

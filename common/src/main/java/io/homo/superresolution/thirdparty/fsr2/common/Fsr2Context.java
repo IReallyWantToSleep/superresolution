@@ -63,34 +63,6 @@ public class Fsr2Context {
                 dimensions.screenWidth(),
                 dimensions.screenHeight()
         );
-        switch (config.getVersion()) {
-            case V221 -> {
-                accumulatePipeline = new Fsr2v221AccumulatePipeline(this);
-                rcasPipeline = new Fsr2v221RCASPipeline(this);
-                accumulateSharpenPipeline = new Fsr2v221AccumulateSharpenPipeline(this);
-                computeLuminancePyramidPipeline = new Fsr2v221ComputeLuminancePyramidPipeline(this);
-                depthClipPipeline = new Fsr2v221DepthClipPipeline(this);
-                lockPipeline = new Fsr2v221LockPipeline(this);
-                reconstructPreviousDepthPipeline = new Fsr2v221ReconstructPreviousDepthPipeline(this);
-
-            }
-            case V233 -> {
-                accumulatePipeline = new Fsr2v233AccumulatePipeline(this);
-                rcasPipeline = new Fsr2v233RCASPipeline(this);
-                accumulateSharpenPipeline = new Fsr2v233AccumulateSharpenPipeline(this);
-                computeLuminancePyramidPipeline = new Fsr2v233ComputeLuminancePyramidPipeline(this);
-                depthClipPipeline = new Fsr2v233DepthClipPipeline(this);
-                lockPipeline = new Fsr2v233LockPipeline(this);
-                reconstructPreviousDepthPipeline = new Fsr2v233ReconstructPreviousDepthPipeline(this);
-            }
-        }
-        accumulatePipeline.init();
-        rcasPipeline.init();
-        accumulateSharpenPipeline.init();
-        computeLuminancePyramidPipeline.init();
-        depthClipPipeline.init();
-        lockPipeline.init();
-        reconstructPreviousDepthPipeline.init();
 
         accumulatePipeline.resize(dimensions);
         rcasPipeline.resize(dimensions);
@@ -176,6 +148,35 @@ public class Fsr2Context {
                 dimensions.screenHeight()
         );
 
+        switch (config.getVersion()) {
+            case V221 -> {
+                accumulatePipeline = new Fsr2v221AccumulatePipeline(this);
+                rcasPipeline = new Fsr2v221RCASPipeline(this);
+                accumulateSharpenPipeline = new Fsr2v221AccumulateSharpenPipeline(this);
+                computeLuminancePyramidPipeline = new Fsr2v221ComputeLuminancePyramidPipeline(this);
+                depthClipPipeline = new Fsr2v221DepthClipPipeline(this);
+                lockPipeline = new Fsr2v221LockPipeline(this);
+                reconstructPreviousDepthPipeline = new Fsr2v221ReconstructPreviousDepthPipeline(this);
+
+            }
+            case V233 -> {
+                accumulatePipeline = new Fsr2v233AccumulatePipeline(this);
+                rcasPipeline = new Fsr2v233RCASPipeline(this);
+                accumulateSharpenPipeline = new Fsr2v233AccumulateSharpenPipeline(this);
+                computeLuminancePyramidPipeline = new Fsr2v233ComputeLuminancePyramidPipeline(this);
+                depthClipPipeline = new Fsr2v233DepthClipPipeline(this);
+                lockPipeline = new Fsr2v233LockPipeline(this);
+                reconstructPreviousDepthPipeline = new Fsr2v233ReconstructPreviousDepthPipeline(this);
+            }
+        }
+        accumulatePipeline.init();
+        rcasPipeline.init();
+        accumulateSharpenPipeline.init();
+        computeLuminancePyramidPipeline.init();
+        depthClipPipeline.init();
+        lockPipeline.init();
+        reconstructPreviousDepthPipeline.init();
+        
         resize(this.dimensions);
     }
 
