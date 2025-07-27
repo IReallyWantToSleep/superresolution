@@ -16,6 +16,7 @@ public class SpecialConfigs {
     public transient Map<String, Pair<SpecialConfig, String>> description = new HashMap<>();
 
     public SpecialConfigs(ModConfigSpecBuilder builder) {
+        builder.comment("special", "Algorithm special configuration");
         FSR1 = new FSR1SpecialConfig(builder);
         FSR2 = new FSR2SpecialConfig(builder);
         SGSR2 = new SGSR2SpecialConfig(builder);

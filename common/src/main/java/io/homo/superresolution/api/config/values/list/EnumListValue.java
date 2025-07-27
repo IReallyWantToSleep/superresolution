@@ -22,6 +22,8 @@ public class EnumListValue<T extends Enum<T>> extends ListValue<T> {
                 defaultSupplier,
                 comment,
                 obj -> {
+                    if (obj == null) return null;
+
                     if (obj instanceof String) {
                         try {
                             return Enum.valueOf(enumClass, (String) obj);

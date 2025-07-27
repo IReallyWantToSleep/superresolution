@@ -34,7 +34,7 @@ public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
         spec.define(
                 path,
                 defaultSupplier,
-                Objects::nonNull
+                (Object obj) -> isValid(convertType(obj))
         );
     }
 
@@ -43,6 +43,6 @@ public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
         if (enumClass.isInstance(value)) return enumClass.cast(value);
         if (value instanceof String)
             return Enum.valueOf(enumClass, (String) value);
-        throw new IllegalArgumentException("Cannot convert " + value + " to enum " + enumClass);
+        return null;
     }
 }

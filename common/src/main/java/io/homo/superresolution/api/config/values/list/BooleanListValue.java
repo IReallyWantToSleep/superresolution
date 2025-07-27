@@ -19,6 +19,7 @@ public class BooleanListValue extends ListValue<Boolean> {
                 defaultSupplier,
                 comment,
                 obj -> {
+                    if (obj == null) return null;
                     if (obj instanceof Number) return ((Number) obj).intValue() == 1;
                     if (obj instanceof String) return Boolean.parseBoolean((String) obj);
                     if (obj instanceof Boolean) return (Boolean) obj;

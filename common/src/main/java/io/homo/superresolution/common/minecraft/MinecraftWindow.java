@@ -16,7 +16,7 @@ public class MinecraftWindow {
         int[] sizeX = new int[]{1};
         int[] sizeY = new int[]{1};
         if (hasWindow()) {
-            GLFW.glfwGetWindowSize(getWindowHandle(), sizeX, sizeY);
+            GLFW.glfwGetFramebufferSize(getWindowHandle(), sizeX, sizeY);
         }
         return new int[]{
                 Math.max(sizeX[0], 1),
@@ -36,7 +36,7 @@ public class MinecraftWindow {
         int[] sizeX = new int[]{1};
         int[] sizeY = new int[]{1};
         if (hasWindow()) {
-            GLFW.glfwGetWindowSize(getWindowHandle(), sizeX, sizeY);
+            GLFW.glfwGetFramebufferSize(getWindowHandle(), sizeX, sizeY);
         }
         return new int[]{
                 sizeX[0],

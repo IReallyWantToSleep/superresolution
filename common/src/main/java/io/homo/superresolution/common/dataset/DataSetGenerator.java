@@ -32,7 +32,7 @@ import java.nio.file.Paths;
 import static org.lwjgl.opengl.GL33.*;
 
 public class DataSetGenerator {
-    public static final File OUTPUT_DIR = Paths.get(Minecraft.getInstance().gameDirectory.getAbsolutePath(), "msrDataset").toFile();
+    public static final File OUTPUT_DIR = Paths.get("G:/", "msrDataset").toFile();
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,

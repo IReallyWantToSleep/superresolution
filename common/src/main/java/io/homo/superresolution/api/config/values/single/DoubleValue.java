@@ -17,6 +17,7 @@ public class DoubleValue extends ConfigValue<Double> {
 
     @Override
     public boolean isValid(Object value) {
+        if (value == null) return false;
         if (value instanceof Number) {
             return validator.test(((Number) value).doubleValue());
         }
@@ -38,6 +39,6 @@ public class DoubleValue extends ConfigValue<Double> {
         if (value instanceof Double) return (Double) value;
         if (value instanceof Number) return ((Number) value).doubleValue();
         if (value instanceof String) return Double.parseDouble((String) value);
-        throw new IllegalArgumentException("Cannot convert " + value + " to Double");
+        return null;
     }
 }

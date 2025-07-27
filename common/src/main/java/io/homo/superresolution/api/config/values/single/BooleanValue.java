@@ -17,6 +17,7 @@ public class BooleanValue extends ConfigValue<Boolean> {
 
     @Override
     public boolean isValid(Object value) {
+        if (value == null) return false;
         if (value instanceof Boolean) {
             return validator.test((Boolean) value);
         }
@@ -38,6 +39,6 @@ public class BooleanValue extends ConfigValue<Boolean> {
         if (value instanceof Number) return ((Number) value).intValue() == 1;
         if (value instanceof String) return Boolean.parseBoolean((String) value);
         if (value instanceof Boolean) return (Boolean) value;
-        throw new IllegalArgumentException("Cannot convert " + value + " to Boolean");
+        return null;
     }
 }
