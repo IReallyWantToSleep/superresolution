@@ -5,6 +5,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.math.Vector2f;
 import net.minecraft.client.Camera;
@@ -40,6 +41,9 @@ public abstract class GameRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
+            if (MinecraftWindow.getWindowSourceWidth() < 1 || MinecraftWindow.getWindowSourceHeight() < 1) {
+                ci.cancel();
+            }
             MinecraftRenderHandle.onRenderWorldBegin(CallType.GAME_RENDERER);
         }
     }
@@ -67,6 +71,7 @@ public abstract class GameRendererMixin {
             MinecraftRenderHandle.onRenderHandBegin();
         }
     }
+
 
     @Inject(at = @At(value = "RETURN"), method = "renderItemInHand")
     private void onRenderHandEnd(CallbackInfo ci) {
@@ -109,4 +114,6 @@ public abstract class GameRendererMixin {
         }
         return instance.getProjectionMatrix(fov);
     }
+
+
 }
