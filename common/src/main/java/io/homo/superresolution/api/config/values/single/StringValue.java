@@ -17,6 +17,7 @@ public class StringValue extends ConfigValue<String> {
 
     @Override
     public boolean isValid(Object value) {
+        if (value == null) return false;
         return value instanceof String && validator.test((String) value);
     }
 
@@ -31,6 +32,7 @@ public class StringValue extends ConfigValue<String> {
 
     @Override
     protected String convertType(Object value) {
+        if (value == null) return null;
         return value.toString();
     }
 }

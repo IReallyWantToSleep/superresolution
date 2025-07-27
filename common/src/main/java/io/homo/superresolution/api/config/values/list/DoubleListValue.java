@@ -19,6 +19,8 @@ public class DoubleListValue extends ListValue<Double> {
                 defaultSupplier,
                 comment,
                 obj -> {
+                    if (obj == null) return null;
+
                     if (obj instanceof Number) return ((Number) obj).doubleValue();
                     if (obj instanceof String) return Double.parseDouble((String) obj);
                     throw new IllegalArgumentException("Cannot convert to Float: " + obj);

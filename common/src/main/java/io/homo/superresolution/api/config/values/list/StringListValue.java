@@ -18,7 +18,11 @@ public class StringListValue extends ListValue<String> {
                 path,
                 defaultSupplier,
                 comment,
-                obj -> obj.toString(),
+                obj -> {
+                    if (obj == null) return null;
+
+                    return obj.toString();
+                },
                 elementValidator
         );
     }

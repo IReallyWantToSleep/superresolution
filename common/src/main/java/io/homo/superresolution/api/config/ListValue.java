@@ -26,12 +26,14 @@ public class ListValue<E> extends ConfigValue<List<E>> {
 
     @Override
     public boolean isValid(Object value) {
+        if (value == null) return false;
         if (!(value instanceof List<?> list)) return false;
 
         for (Object element : list) {
+            if (element == null) return false;
             try {
                 E converted = elementConverter.apply(element);
-                if (!elementValidator.test(converted)) {
+                if (converted == null || !elementValidator.test(converted)) {
                     return false;
                 }
             } catch (Exception e) {
@@ -52,8 +54,10 @@ public class ListValue<E> extends ConfigValue<List<E>> {
     @Override
     @SuppressWarnings("unchecked")
     protected List<E> convertType(Object value) {
+        if (value == null) return getDefault();
         if (value instanceof List) {
             return ((List<?>) value).stream()
+                    .filter(e -> e != null)
                     .map(elementConverter)
                     .filter(elementValidator)
                     .collect(Collectors.toList());

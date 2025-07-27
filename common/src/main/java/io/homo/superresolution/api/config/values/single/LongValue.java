@@ -17,6 +17,7 @@ public class LongValue extends ConfigValue<Long> {
 
     @Override
     public boolean isValid(Object value) {
+        if (value == null) return false;
         if (value instanceof Number) {
             return validator.test(((Number) value).longValue());
         }
@@ -38,6 +39,6 @@ public class LongValue extends ConfigValue<Long> {
         if (value instanceof Long) return (Long) value;
         if (value instanceof Number) return ((Number) value).longValue();
         if (value instanceof String) return Long.parseLong((String) value);
-        throw new IllegalArgumentException("Cannot convert " + value + " to Long");
+        return null;
     }
 }

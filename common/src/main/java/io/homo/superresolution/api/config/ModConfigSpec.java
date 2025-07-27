@@ -59,6 +59,9 @@ public class ModConfigSpec {
     public void load() {
         try {
             configData.load();
+            if (spec.correct(configData) > 0) {
+                configData.save();
+            }
         } catch (Exception e) {
             LOGGER.error("Config is corrupted or unreadable, regenerating defaults.", e);
             configData.clear();

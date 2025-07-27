@@ -19,6 +19,8 @@ public class IntListValue extends ListValue<Integer> {
                 defaultSupplier,
                 comment,
                 obj -> {
+                    if (obj == null) return null;
+
                     if (obj instanceof Number) return ((Number) obj).intValue();
                     if (obj instanceof String) return Integer.parseInt((String) obj);
                     throw new IllegalArgumentException("Cannot convert to Integer: " + obj);
