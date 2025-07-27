@@ -77,10 +77,6 @@ public abstract class LevelRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            if (MinecraftWindow.getWindowSourceWidth() < 1 || MinecraftWindow.getWindowSourceHeight() < 1) {
-                superresolution$windowIsHide = true;
-                ci.cancel();
-            }
             MinecraftRenderHandle.onRenderWorldBegin(CallType.LEVEL_RENDERER);
         }
     }
