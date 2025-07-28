@@ -21,7 +21,7 @@
         "mod_artifact_minecraft_ver": "1.21.4"
     },
     "fabric": {
-        "loader_version": "0.16.10",
+        "loader_version": "0.16.14",
         "api_version": "0.118.0+1.21.4",
         "dependencies": {
             "modrinth": [

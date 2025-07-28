@@ -136,11 +136,18 @@ public class SuperResolutionConfig {
 
         ENABLE_COMPAT_SHADER_COMPILER = builder.defineBoolean(
                 "compat_shader_compiler",
-                () -> RenderSystem.isOnRenderThread() ? (
-                        GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL ||
-                                !GraphicsCapabilities.hasGLExtension("GL_ARB_gl_spirv") ||
-                                (GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 2)
-                ) : false,
+                () -> {
+                    try {
+                        if (GL.getCapabilities() == null) return false;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                    return RenderSystem.isOnRenderThread() ? (
+                            GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL ||
+                                    !GraphicsCapabilities.hasGLExtension("GL_ARB_gl_spirv") ||
+                                    (GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 2)
+                    ) : false;
+                },
                 "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
         );
 
