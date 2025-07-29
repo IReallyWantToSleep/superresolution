@@ -1,10 +1,13 @@
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
+import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL45C;
+
 import java.nio.*;
 
 import static org.lwjgl.opengl.GL41.*;
 
-public class GL41DirectStateAccessImpl implements IGlDirectStateAccess {
+public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
     @Override
     public void generateTextureMipmap(int texture) {
         int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
@@ -33,6 +36,17 @@ public class GL41DirectStateAccessImpl implements IGlDirectStateAccess {
     @Override
     public int createTextureView(int srcTexture, int target, int internalFormat,
                                  int minLevel, int numLevels, int minLayer, int numLayers) {
+        int viewId = GL43.glGenTextures();
+        GL43.glTextureView(
+                viewId,
+                target,
+                srcTexture,
+                internalFormat,
+                minLevel,
+                numLevels,
+                minLayer,
+                numLayers
+        );
         throw new UnsupportedOperationException("glTextureView not available in OpenGL 4.1");
     }
 
@@ -167,8 +181,15 @@ public class GL41DirectStateAccessImpl implements IGlDirectStateAccess {
     @Override
     public void bindImageTexture(int unit, int texture, int level, boolean layered,
                                  int layer, int access, int format) {
-        throw new UnsupportedOperationException(
-                "bindImageTexture not available in OpenGL 4.1.");
+        GL43.glBindImageTexture(
+                unit,
+                texture,
+                level,
+                layered,
+                layer,
+                access,
+                format
+        );
     }
 
     @Override

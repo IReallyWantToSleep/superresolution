@@ -131,9 +131,11 @@ public final class SuperResolution implements Resizable, Destroyable {
 
             if (minecraft == null) minecraft = Minecraft.getInstance();
             if (!isPreInit) return;
-            if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL) {
-                SuperResolutionConfig.setEnableCompatShaderCompiler(true);
-                SuperResolutionConfig.SPEC.save();
+            if (SuperResolutionConfig.isEnableCompatShaderCompiler() == SuperResolutionConfig.ENABLE_COMPAT_SHADER_COMPILER.getDefault()) {
+                if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL) {
+                    SuperResolutionConfig.setEnableCompatShaderCompiler(true);
+                    SuperResolutionConfig.SPEC.save();
+                }
             }
 
             LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());

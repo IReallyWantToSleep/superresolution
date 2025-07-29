@@ -1,7 +1,8 @@
 package io.homo.superresolution.core.graphics.opengl;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.core.graphics.opengl.dsa.GL41DirectStateAccessImpl;
+import io.homo.superresolution.core.graphics.opengl.dsa.CompatDirectStateAccessImpl;
 import io.homo.superresolution.core.graphics.opengl.dsa.GL45OrEXTDirectStateAccessImpl;
 import io.homo.superresolution.core.graphics.opengl.dsa.IGlDirectStateAccess;
 import org.apache.commons.lang3.StringUtils;
@@ -16,8 +17,10 @@ public class Gl {
 
     static {
         if (!isSupportDSA()) {
-            DSA = new GL41DirectStateAccessImpl();
+            SuperResolution.LOGGER.info("不支持DSA 使用 CompatDirectStateAccessImpl");
+            DSA = new CompatDirectStateAccessImpl();
         } else {
+            SuperResolution.LOGGER.info("支持DSA 使用 GL45OrEXTDirectStateAccessImpl");
             DSA = new GL45OrEXTDirectStateAccessImpl();
         }
     }
@@ -31,7 +34,7 @@ public class Gl {
     }
 
     public static boolean isSupportDSA() {
-        return (GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] >= 5) || GraphicsCapabilities.hasGLExtension("GL_EXT_direct_state_access");
+        return GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] >= 5;
     }
 
     private static int glGetInteger(int pname) {
