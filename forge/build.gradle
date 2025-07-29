@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev.legacyforge'
 }
 base {
-    archivesName = "super_resolution-forge-${minecraft_version}"
+    archivesName = "super_resolution-forge-${versionConfig.common.modArtifactMinecraftVer}"
 }
 
 repositories {
@@ -27,35 +27,35 @@ repositories {
 }
 
 legacyForge {
-    version = "${minecraft_version}-${versionConfig.forge.loaderVersion}"
+    version = "${versionConfig.common.minecraftVersion}-${versionConfig.forge.loaderVersion}"
     runs {
         configureEach {
             additionalRuntimeClasspathConfiguration.dependencies.add(
                     dependencies.create(
-                            group :"io.github.spair",
+                            group: "io.github.spair",
                             name: "imgui-java-app",
                             version: "1.87.5"
                     )
             )
             additionalRuntimeClasspathConfiguration.dependencies.add(
                     dependencies.create(
-                            group : "io.github.spair",
-                            name : "imgui-java-binding",
-                            version : "1.87.5"
+                            group: "io.github.spair",
+                            name: "imgui-java-binding",
+                            version: "1.87.5"
                     )
             )
             additionalRuntimeClasspathConfiguration.dependencies.add(
                     dependencies.create(
-                            group : "io.github.spair",
-                            name : "imgui-java-lwjgl3",
-                            version : "1.87.5"
+                            group: "io.github.spair",
+                            name: "imgui-java-lwjgl3",
+                            version: "1.87.5"
                     )
             )
             additionalRuntimeClasspathConfiguration.dependencies.add(
                     dependencies.create(
-                            group : "org.lwjgl",
-                            name : "lwjgl-vulkan",
-                            version : "$versionConfig.common.lwjglVersion"
+                            group: "org.lwjgl",
+                            name: "lwjgl-vulkan",
+                            version: "$versionConfig.common.lwjglVersion"
                     )
             )
         }
@@ -99,16 +99,16 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb"
 
     for (lib in versionConfig.forge.dependencies.modrinth) {
-        modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${rootProject.minecraft_version}")
+        modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${versionConfig.common.minecraftVersion}")
     }
     for (lib in versionConfig.forge.dependencies.local) {
-        if (lib.isMod){
+        if (lib.isMod) {
             if (lib.compileOnly) {
                 modCompileOnly(files("../libs/" + lib.name + ".jar"))
             } else {
                 modImplementation(files("../libs/" + lib.name + ".jar"))
             }
-        }else{
+        } else {
             if (lib.compileOnly) {
                 compileOnly(files("../libs/" + lib.name + ".jar"))
             } else {
