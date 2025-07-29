@@ -4,14 +4,14 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        maven{url 'https://maven.neoforged.net'}
-        maven {url "https://maven.fabricmc.net/"}
+        maven { url 'https://maven.neoforged.net' }
+        maven { url "https://maven.fabricmc.net/" }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         maven { url "https://maven.shedaniel.me/" }
-        maven {url "https://libraries.minecraft.net"}
-        maven {url 'https://repo.spongepowered.org/repository/maven-public'}
-        maven {url 'https://maven.parchmentmc.org/'}
+        maven { url "https://libraries.minecraft.net" }
+        maven { url 'https://repo.spongepowered.org/repository/maven-public' }
+        maven { url 'https://maven.parchmentmc.org/' }
     }
 }
 
@@ -24,10 +24,12 @@ include('native')
 gradle.ext.set(
         "versionConfigSrc",
         new JsonSlurper().parse(
-                new File("$rootDir/configs/" + "$minecraft_version" + ".json")
+                new File("$rootDir/configs/" + "$minecraft_version_config" + ".json")
         )
 )
-println("❇️ 当前Minecraft版本 $minecraft_version")
+rootProject.properties.put("minecraft_version", gradle.ext.versionConfigSrc.common.minecraft_version)
+gradle.ext.set("minecraft_version", gradle.ext.versionConfigSrc.common.minecraft_version)
+println("❇️ 当前Minecraft版本 $gradle.ext.versionConfigSrc.common.minecraft_version")
 for (loader in gradle.ext.versionConfigSrc.common.platforms) {
     def loaderName = loader.strip()
     if (loaderName.isEmpty() || loaderName.isBlank()) continue

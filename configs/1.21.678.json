@@ -1,0 +1,69 @@
+{
+    "common": {
+        "java_version": 21,
+        "minecraft_version": "1.21.6",
+        "parchment_version": "1.21.6:2025.06.29",
+        "platforms": [
+            "fabric",
+            "neoforge"
+        ],
+        "lwjgl_version": "3.3.3",
+        "architectury_api_version": "17.0.6",
+        "neoforge": {
+            "minecraft_version_range": "[1.21.6,1.21.8)"
+        },
+        "fabric": {
+            "minecraft_version_range": [
+                "~1.21.6",
+                "~1.21.7",
+                "~1.21.8"
+            ]
+        },
+        "cloth_config_version": "19.0.147",
+        "mod_artifact_minecraft_ver": "1.21.6~1.21.8",
+        "neoform_version": "1.21.6-20250617.151856"
+    },
+    "fabric": {
+        "loader_version": "0.16.14",
+        "api_version": "0.128.2+1.21.6",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.6-1.8.4+fabric"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.9.0+1.21.6-fabric"
+                },
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.6-0.6.13-fabric"
+                }
+            ],
+            "local": []
+        },
+        "modmenu_version": "15.0.0-beta.3"
+    },
+    "neoforge": {
+        "loader_version": "21.6.20-beta",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.6-0.6.13-neoforge"
+                },
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.6-1.8.4+neoforge"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.9.1+1.21.7-neoforge"
+                }
+            ],
+            "local": [
+            ]
+        }
+    }
+}

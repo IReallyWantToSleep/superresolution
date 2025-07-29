@@ -9,13 +9,13 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-#if MC_VER != MC_1_20_4
+#if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
 import toni.sodiumoptionsapi.gui.SodiumOptionsTabFrame;
 import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.Tab;
 #endif
 import java.util.Objects;
 
-#if MC_VER != MC_1_20_4
+#if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
 @Mixin(value = SodiumOptionsTabFrame.class, remap = false)
 public class SodiumOptionsTabFrameMixin {
     @Shadow

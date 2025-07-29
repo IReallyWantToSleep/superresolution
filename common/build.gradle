@@ -1,8 +1,7 @@
-
 plugins {
 }
 
-def isNewVersion = minecraft_version > '1.20.1'
+def isNewVersion = versionConfig.common.minecraftVersion > '1.20.1'
 if (isNewVersion) {
     plugins.apply('net.neoforged.moddev')
 } else {
@@ -29,18 +28,18 @@ if (isNewVersion) {
 
 repositories {
     mavenCentral()
-    maven{url 'https://maven.neoforged.net'}
+    maven { url 'https://maven.neoforged.net' }
     maven { url 'https://maven.aliyun.com/repository/central' }
     maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-    maven {url "https://maven.architectury.dev/"}
-    maven {url "https://maven.nucleoid.xyz/"}
+    maven { url "https://maven.architectury.dev/" }
+    maven { url "https://maven.nucleoid.xyz/" }
     maven { url "https://maven.shedaniel.me/" }
-    maven {url "https://maven.neoforged.net/releases"}
-    maven {url "https://libraries.minecraft.net"}
-    maven {url "https://maven.fabricmc.net/"}
-    maven {url 'https://repo.spongepowered.org/repository/maven-public'}
-    maven {url 'https://maven.parchmentmc.org/'}
-    maven {url 'https://maven.blamejared.com'}
+    maven { url "https://maven.neoforged.net/releases" }
+    maven { url "https://libraries.minecraft.net" }
+    maven { url "https://maven.fabricmc.net/" }
+    maven { url 'https://repo.spongepowered.org/repository/maven-public' }
+    maven { url 'https://maven.parchmentmc.org/' }
+    maven { url 'https://maven.blamejared.com' }
 }
 
 dependencies {
@@ -52,10 +51,10 @@ dependencies {
     compileOnly 'com.electronwill.night-config:toml:3.6.0'
     compileOnly 'com.electronwill.night-config:core:3.6.0'
     // 没这玩意MixinPlugin会报错找不到ClassNode
-    if (minecraft_version <="1.21.1"){
+    if (versionConfig.common.minecraftVersion <= "1.21.1") {
         compileOnly 'org.ow2.asm:asm:9.7.1'
         compileOnly 'org.ow2.asm:asm-tree:9.7.1'
-    }else{
+    } else {
         compileOnly 'org.ow2.asm:asm:9.6'
         compileOnly 'org.ow2.asm:asm-tree:9.6'
     }

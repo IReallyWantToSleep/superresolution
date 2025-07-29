@@ -27,7 +27,7 @@ repositories {
 
 dependencies {
 
-    minecraft "com.mojang:minecraft:${minecraft_version}"
+    minecraft "com.mojang:minecraft:${versionConfig.common.minecraftVersion}"
     mappings loom.layered {
         officialMojangMappings()
         parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
@@ -53,7 +53,7 @@ dependencies {
 
     //额外库/模组
     for (lib in versionConfig.fabric.dependencies.modrinth) {
-        def depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${rootProject.minecraft_version}"
+        def depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${versionConfig.common.minecraftVersion}"
         if (lib.compileOnly) {
             modCompileOnly(depName)
         } else {

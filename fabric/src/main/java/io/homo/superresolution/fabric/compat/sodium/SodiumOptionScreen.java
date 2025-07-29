@@ -18,12 +18,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
 
-#if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5
+#if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5 && MC_VER < MC_1_21_6
 import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 #endif
 public class SodiumOptionScreen {
     public static void register() {
-        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5
+        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_21_5 && MC_VER < MC_1_21_6
         OptionGUIConstruction.EVENT.register((pages) -> pages.add(
                         new OptionPage(
                                 Component.translatable("superresolution.screen.config.name"), ImmutableList.of(

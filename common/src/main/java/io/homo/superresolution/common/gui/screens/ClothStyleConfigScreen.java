@@ -34,7 +34,11 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class ClothStyleConfigScreen extends AbstractConfigScreen {
+    #if MC_VER < MC_1_21_6
     protected static final PanoramaRenderer panorama = new PanoramaRenderer(TitleScreen.CUBE_MAP);
+    #else
+    protected final PanoramaRenderer panorama = Minecraft.getInstance().gameRenderer.getPanorama();
+    #endif
     protected final LinkedHashMap<Component, List<AbstractConfigEntry<?>>> categorizedEntries = Maps.newLinkedHashMap();
     public ClothListWidget listWidget;
     protected Button cancelButton, exitButton, saveButton;
@@ -158,7 +162,11 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         if (Minecraft.getInstance().level == null) {
             #if MC_VER >= MC_1_21_1
-            panorama.render(graphics, width, height, 1.0f, delta);
+            #if MC_VER < MC_1_21_6
+               panorama.render(graphics, width, height, 1.0f, delta);
+            #else
+            panorama.render(graphics, width, height, true);
+            #endif
             #else
             panorama.render(Minecraft.getInstance().getDeltaFrameTime(), 1.0f);
             #endif

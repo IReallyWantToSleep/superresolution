@@ -17,6 +17,19 @@ public class GpuTextureAdapter extends GlTexture {
     private IFrameBuffer frameBuffer;
 
     GpuTextureAdapter(ITexture texture) {
+        #if MC_VER > MC_1_21_5
+        super(GpuTexture.USAGE_COPY_DST & GpuTexture.USAGE_COPY_SRC & GpuTexture.USAGE_TEXTURE_BINDING & GpuTexture.USAGE_RENDER_ATTACHMENT,
+                texture.handle() + "--" + texture.getTextureFormat(),
+                texture.getTextureFormat() == TextureFormat.RGBA8 ?
+                        com.mojang.blaze3d.textures.TextureFormat.RGBA8 :
+                        com.mojang.blaze3d.textures.TextureFormat.DEPTH32,
+                texture.getWidth(),
+                texture.getHeight(),
+                1,
+                1,
+                texture.handle()
+        );
+        #else
         super(texture.handle() + "--" + texture.getTextureFormat(),
                 texture.getTextureFormat() == TextureFormat.RGBA8 ?
                         com.mojang.blaze3d.textures.TextureFormat.RGBA8 :
@@ -26,6 +39,7 @@ public class GpuTextureAdapter extends GlTexture {
                 1,
                 texture.handle()
         );
+        #endif
         this.texture = texture;
     }
 

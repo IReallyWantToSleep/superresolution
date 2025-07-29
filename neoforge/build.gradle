@@ -107,7 +107,7 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8"
 
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
-        def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${rootProject.minecraft_version}"
+        def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${versionConfig.common.minecraftVersion}"
         if (lib.compileOnly) {
             compileOnly(depName)
         } else {
