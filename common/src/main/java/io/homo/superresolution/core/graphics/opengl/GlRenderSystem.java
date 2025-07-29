@@ -17,6 +17,7 @@ import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUnifo
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL44;
 
 import java.util.Map;
@@ -184,14 +185,14 @@ public class GlRenderSystem implements IRenderSystem {
 
         switch (src.getTextureType()) {
             case Texture1D:
-                GL44.glCopyImageSubData(
+                GL43.glCopyImageSubData(
                         src.handle(), GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
                         dst.handle(), GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
                         srcX1 - srcX0, 1, 1
                 );
                 break;
             case Texture2D:
-                GL44.glCopyImageSubData(
+                GL43.glCopyImageSubData(
                         src.handle(), GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
                         dst.handle(), GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
                         srcX1 - srcX0, srcY1 - srcY0, 1
@@ -260,7 +261,7 @@ public class GlRenderSystem implements IRenderSystem {
                         GlState.STATE_PROGRAM
         )) {
             setupShaderProgram((GlShaderProgram) shaderProgram);
-            GL44.glDispatchCompute(x, y, z);
+            GL43.glDispatchCompute(x, y, z);
         }
     }
 
