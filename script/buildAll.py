@@ -167,7 +167,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     print(f"\n开始构建 {len(version_configs)} 个版本:")
-    call_gradle_task("native:buildWin")
+    #call_gradle_task("native:buildWin")
     for version, config in version_configs.items():
         try :
             if config["skip_build"]:
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         if not call_gradle_task("clean"):
             print(f"清理环境失败，跳过清理")
         
-        build_args = f"-Pminecraft_version={config['common']['minecraft_version']}"
+        build_args = f"-Pminecraft_version_config={version}"
         if not call_gradle_task("build", build_args):
             print(f"构建 {version} 失败")
             continue

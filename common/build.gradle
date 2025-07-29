@@ -18,7 +18,7 @@ if (isNewVersion) {
     }
 } else {
     legacyForge {
-        mcpVersion = "${minecraft_version}"
+        mcpVersion = "${versionConfig.common.minecraftVersion}"
         parchment {
             minecraftVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[0]
             mappingsVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[1]
