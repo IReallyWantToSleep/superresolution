@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL45C;
 
@@ -8,6 +9,8 @@ import java.nio.*;
 import static org.lwjgl.opengl.GL41.*;
 
 public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
+    private final boolean gl43 = GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] >= 3;
+
     @Override
     public void generateTextureMipmap(int texture) {
         int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
@@ -231,21 +234,31 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
                                  int width, int height) {
         int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
         glBindTexture(GL_TEXTURE_2D, target);
-        for (int level = 0; level < levels; level++) {
-            int levelWidth = Math.max(1, width >> level);
-            int levelHeight = Math.max(1, height >> level);
-
-            glTexImage2D(
+        if (gl43) {
+            GL43.glTexStorage2D(
                     GL_TEXTURE_2D,
-                    level,
+                    levels,
                     internalFormat,
-                    levelWidth,
-                    levelHeight,
-                    0,
-                    getFormatFromInternal(internalFormat),
-                    getTypeFromInternal(internalFormat),
-                    (ByteBuffer) null
+                    width,
+                    height
             );
+        } else {
+            for (int level = 0; level < levels; level++) {
+                int levelWidth = Math.max(1, width >> level);
+                int levelHeight = Math.max(1, height >> level);
+
+                glTexImage2D(
+                        GL_TEXTURE_2D,
+                        level,
+                        internalFormat,
+                        levelWidth,
+                        levelHeight,
+                        0,
+                        getFormatFromInternal(internalFormat),
+                        getTypeFromInternal(internalFormat),
+                        (ByteBuffer) null
+                );
+            }
         }
         glBindTexture(GL_TEXTURE_2D, prevTex);
     }
@@ -264,18 +277,27 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
                                  int width) {
         int prevTex = glGetInteger(GL_TEXTURE_BINDING_1D);
         glBindTexture(GL_TEXTURE_1D, target);
-        for (int level = 0; level < levels; level++) {
-            int levelWidth = Math.max(1, width >> level);
-            glTexImage1D(
-                    target,
-                    level,
+        if (gl43) {
+            GL43.glTexStorage1D(
+                    GL_TEXTURE_1D,
+                    levels,
                     internalFormat,
-                    levelWidth,
-                    0,
-                    getFormatFromInternal(internalFormat),
-                    getTypeFromInternal(internalFormat),
-                    (ByteBuffer) null
+                    width
             );
+        } else {
+            for (int level = 0; level < levels; level++) {
+                int levelWidth = Math.max(1, width >> level);
+                glTexImage1D(
+                        target,
+                        level,
+                        internalFormat,
+                        levelWidth,
+                        0,
+                        getFormatFromInternal(internalFormat),
+                        getTypeFromInternal(internalFormat),
+                        (ByteBuffer) null
+                );
+            }
         }
         glBindTexture(GL_TEXTURE_1D, prevTex);
     }
@@ -379,22 +401,44 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
 
     private static int getFormatFromInternal(int internalFormat) {
         return switch (internalFormat) {
-            case GL_RGBA8, GL_RGBA16F, GL_RGBA32F -> GL_RGBA;
-            case GL_RGB8, GL_RGB16F, GL_RGB32F -> GL_RGB;
-            case GL_RG8, GL_RG16F, GL_RG32F -> GL_RG;
-            case GL_R8, GL_R16F, GL_R32F -> GL_RED;
+            case GL_R8, GL_R8_SNORM, GL_R16, GL_R16_SNORM, GL_R16F, GL_R32F, GL_R8I, GL_R8UI, GL_R16I, GL_R16UI,
+                 GL_R32I, GL_R32UI -> GL_RED;
+            case GL_RG8, GL_RG8_SNORM, GL_RG16, GL_RG16_SNORM, GL_RG16F, GL_RG32F, GL_RG8I, GL_RG8UI, GL_RG16I,
+                 GL_RG16UI, GL_RG32I, GL_RG32UI -> GL_RG;
+            case GL_RGB8, GL_SRGB8, GL_RGB8_SNORM, GL_RGB16, GL_RGB16_SNORM, GL_RGB16F, GL_RGB32F, GL_R11F_G11F_B10F,
+                 GL_RGB8I, GL_RGB8UI, GL_RGB16I, GL_RGB16UI, GL_RGB32I, GL_RGB32UI -> GL_RGB;
+            case GL_RGBA8, GL_SRGB8_ALPHA8, GL_RGBA8_SNORM, GL_RGBA16, GL_RGBA16_SNORM, GL_RGBA16F, GL_RGBA32F,
+                 GL_RGBA8I, GL_RGBA8UI, GL_RGBA16I, GL_RGBA16UI, GL_RGBA32I, GL_RGBA32UI -> GL_RGBA;
             case GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT32F -> GL_DEPTH_COMPONENT;
-            default -> throw new IllegalArgumentException("Unsupported internal format: " + internalFormat);
+            case GL_DEPTH24_STENCIL8, GL_DEPTH32F_STENCIL8 -> GL_DEPTH_STENCIL;
+            case GL_COMPRESSED_RED, GL_COMPRESSED_RG, GL_COMPRESSED_RGB, GL_COMPRESSED_RGBA, GL_COMPRESSED_SRGB,
+                 GL_COMPRESSED_SRGB_ALPHA ->
+                    throw new IllegalArgumentException("Compressed formats require direct DSA");
+            default -> throw new IllegalArgumentException("Unsupported internal format: 0x" +
+                    Integer.toHexString(internalFormat));
         };
     }
 
     private static int getTypeFromInternal(int internalFormat) {
         return switch (internalFormat) {
-            case GL_RGBA8, GL_RGB8, GL_RG8, GL_R8 -> GL_UNSIGNED_BYTE;
-            case GL_RGBA16F, GL_RGB16F, GL_RG16F, GL_R16F -> GL_HALF_FLOAT;
-            case GL_RGBA32F, GL_RGB32F, GL_RG32F, GL_R32F, GL_DEPTH_COMPONENT32F -> GL_FLOAT;
-            case GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT24 -> GL_UNSIGNED_INT;
-            default -> throw new IllegalArgumentException("Unsupported internal format: " + internalFormat);
+            case GL_R8, GL_RG8, GL_RGB8, GL_RGBA8, GL_SRGB8, GL_SRGB8_ALPHA8 -> GL_UNSIGNED_BYTE;
+            case GL_R8_SNORM, GL_RG8_SNORM, GL_RGB8_SNORM, GL_RGBA8_SNORM -> GL_BYTE;
+            case GL_R16, GL_RG16, GL_RGB16, GL_RGBA16 -> GL_UNSIGNED_SHORT;
+            case GL_R16_SNORM, GL_RG16_SNORM, GL_RGB16_SNORM, GL_RGBA16_SNORM -> GL_SHORT;
+            case GL_R16F, GL_RG16F, GL_RGB16F, GL_RGBA16F -> GL_HALF_FLOAT;
+            case GL_R32F, GL_RG32F, GL_RGB32F, GL_RGBA32F -> GL_FLOAT;
+            case GL_R11F_G11F_B10F -> GL_UNSIGNED_INT_10F_11F_11F_REV;
+            case GL_R8UI, GL_RG8UI, GL_RGB8UI, GL_RGBA8UI -> GL_UNSIGNED_BYTE;
+            case GL_R8I, GL_RG8I, GL_RGB8I, GL_RGBA8I -> GL_BYTE;
+            case GL_R16UI, GL_RG16UI, GL_RGB16UI, GL_RGBA16UI -> GL_UNSIGNED_SHORT;
+            case GL_R16I, GL_RG16I, GL_RGB16I, GL_RGBA16I -> GL_SHORT;
+            case GL_R32UI, GL_RG32UI, GL_RGB32UI, GL_RGBA32UI -> GL_UNSIGNED_INT;
+            case GL_R32I, GL_RG32I, GL_RGB32I, GL_RGBA32I -> GL_INT;
+            case GL_DEPTH_COMPONENT16 -> GL_UNSIGNED_SHORT;
+            case GL_DEPTH_COMPONENT24, GL_DEPTH24_STENCIL8 -> GL_UNSIGNED_INT;
+            case GL_DEPTH_COMPONENT32F, GL_DEPTH32F_STENCIL8 -> GL_FLOAT;
+            default -> throw new IllegalArgumentException("Unsupported internal format: 0x" +
+                    Integer.toHexString(internalFormat));
         };
     }
 }
