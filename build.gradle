@@ -1,6 +1,6 @@
 plugins {
     id 'fabric-loom' version '1.10-SNAPSHOT' apply false
-    id 'net.neoforged.moddev' version '2.0.96' apply false
+    id 'net.neoforged.moddev' version '2.0.105' apply false
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id 'multiversion'
     id 'multiversion-neoform'
@@ -22,20 +22,20 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven{url 'https://maven.neoforged.net'}
+        maven { url 'https://maven.neoforged.net' }
         maven { url 'https://maven.aliyun.com/repository/central' }
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        maven {url "https://maven.architectury.dev/"}
-        maven {url "https://maven.nucleoid.xyz/"}
+        maven { url "https://maven.architectury.dev/" }
+        maven { url "https://maven.nucleoid.xyz/" }
         maven { url "https://maven.shedaniel.me/" }
-        maven {url "https://maven.neoforged.net/releases"}
-        maven {url "https://libraries.minecraft.net"}
-        maven {url "https://maven.fabricmc.net/"}
-        maven {url 'https://repo.spongepowered.org/repository/maven-public'}
-        maven {url 'https://maven.parchmentmc.org/'}
-        maven {url 'https://maven.blamejared.com'}
+        maven { url "https://maven.neoforged.net/releases" }
+        maven { url "https://libraries.minecraft.net" }
+        maven { url "https://maven.fabricmc.net/" }
+        maven { url 'https://repo.spongepowered.org/repository/maven-public' }
+        maven { url 'https://maven.parchmentmc.org/' }
+        maven { url 'https://maven.blamejared.com' }
     }
-    dependencies{
+    dependencies {
         annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.manifold_version}")
         configurations.configureEach {
             resolutionStrategy {

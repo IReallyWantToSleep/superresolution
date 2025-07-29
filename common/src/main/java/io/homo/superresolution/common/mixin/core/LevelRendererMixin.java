@@ -69,7 +69,7 @@ public abstract class LevelRendererMixin {
         AlgorithmManager.setMatrix(projectionMatrix, poseStack.last().pose());
     }
     #elif MC_VER == MC_1_21_6
-    private void renderLevel_MC_1_21_6(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f frustumMatrix, Matrix4f projectionMatrix, GpuBufferSlice fogBuffer, Vector4f fogColor, boolean renderSky, CallbackInfo ci) {
+    private void renderLevel_MC_1_21_6(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f frustumMatrix, Matrix4f projectionMatrix, GpuBufferSlice fogBuffer, org.joml.Vector4f fogColor, boolean renderSky, CallbackInfo ci) {
         AlgorithmManager.setMatrix(projectionMatrix, frustumMatrix);
     }
     #endif

@@ -4,7 +4,7 @@ plugins {
 }
 
 base {
-    archivesName = "${mod_id}-${project.name}-${minecraft_version}"
+    archivesName = "${mod_id}-${project.name}-${getCurrentVersionConfig().common.modArtifactMinecraftVer}"
 }
 
 java {
@@ -15,15 +15,15 @@ java {
 
 repositories {
     mavenCentral()
-    maven{url 'https://maven.neoforged.net'}
+    maven { url 'https://maven.neoforged.net' }
     maven { url 'https://maven.aliyun.com/repository/central' }
     maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-    maven {url "https://maven.architectury.dev/"}
-    maven {url "https://maven.nucleoid.xyz/"}
+    maven { url "https://maven.architectury.dev/" }
+    maven { url "https://maven.nucleoid.xyz/" }
     maven { url "https://maven.shedaniel.me/" }
-    maven {url "https://maven.neoforged.net/releases"}
-    maven {url "https://libraries.minecraft.net"}
-    maven {url "https://maven.fabricmc.net/"}
+    maven { url "https://maven.neoforged.net/releases" }
+    maven { url "https://libraries.minecraft.net" }
+    maven { url "https://maven.fabricmc.net/" }
     exclusiveContent {
         forRepository {
             maven {
@@ -36,9 +36,9 @@ repositories {
     exclusiveContent {
         forRepositories(
                 maven {
-            name = 'ParchmentMC'
-            url = 'https://maven.parchmentmc.org/'
-        },
+                    name = 'ParchmentMC'
+                    url = 'https://maven.parchmentmc.org/'
+                },
                 maven {
                     name = "NeoForge"
                     url = 'https://maven.neoforged.net/releases'

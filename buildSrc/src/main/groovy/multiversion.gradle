@@ -17,10 +17,10 @@ static def fetchAllReleaseVersions() {
         return manifest.versions
                 .findAll { it.type == 'release' }
                 .collect { it.id }
-    }catch (Exception e){
+    } catch (Exception e) {
         println("⚠️ Minecraft版本信息获取失败，使用默认版本列表")
         return [
-                '1.21.7', '1.21.6', '1.21.5', '1.21.4',
+                '1.21.8', '1.21.7', '1.21.6', '1.21.5', '1.21.4',
                 '1.21.3', '1.21.2', '1.21.1', '1.21',
                 '1.20.6', '1.20.5', '1.20.4', '1.20.3',
                 '1.20.2', '1.20.1', '1.20', '1.19.4',
@@ -47,17 +47,19 @@ static def fetchAllReleaseVersions() {
         ]
     }
 }
+
 static int toVersionCode(String verStr) {
     int a = Integer.parseInt(verStr.split("\\.")[0])
     int b = Integer.parseInt(verStr.split("\\.")[1])
     int c = verStr.split("\\.").length > 2 ? Integer.parseInt(verStr.split("\\.")[2]) : 0
     return (a * 10000000) + (b * 1000) + (c * 1)
 }
+
 def versionConfigVar = null
 
-try{
+try {
     versionConfigVar = VersionConfig.loadFromFile(new File(getVersionConfigPath().toString()))
-} catch (Exception e){
+} catch (Exception e) {
     println("❌️ 无法解析版本配置")
     e.printStackTrace()
     throw new GradleException("无法解析版本配置 ${getVersionConfigPath().toString()}");
@@ -79,17 +81,18 @@ def writeDefines() {
     println("❇️ 成功写入定义文件")
 }
 
-def getVersionConfigPath(){
+def getVersionConfigPath() {
     return Paths.get(
             rootDir.toString(),
             "configs",
-            "${minecraft_version}.json"
+            "${minecraft_version_config}.json"
     )
 }
 
-def getCurrentVersionConfig(){
+def getCurrentVersionConfig() {
     return project.versionConfig
 }
+
 ext.getVersionConfigPath = this.&getVersionConfigPath
 ext.writeDefines = this.&writeDefines
 ext.getCurrentVersionConfig = this.&getCurrentVersionConfig

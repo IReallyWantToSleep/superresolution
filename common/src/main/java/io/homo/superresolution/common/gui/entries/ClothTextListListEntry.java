@@ -16,12 +16,14 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3x2fc;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -130,6 +132,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
 
         if (canExpand && showExpandButton) {
+            #if MC_VER < MC_1_21_6
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             graphics.pose().pushPose();
             float center = 4.5f;
@@ -141,6 +144,20 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             graphics.blit(CONFIG_TEX, (int) -center, (int) -center, 33, isHovered ? 18 : 0, 9, 9);
             #endif
             graphics.pose().popPose();
+            #else
+            graphics.pose().pushMatrix();
+            float center = 4.5f;
+            graphics.pose().translate(x - 8 + center + entryWidth - 7, y + 5 + center);
+            graphics.pose().rotate(Axis.ZP.rotationDegrees(90 + (float) (180 * rotatingAnimator.value())).angle());
+
+
+            #if MC_VER > MC_1_21_1
+            graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CONFIG_TEX, (int) -center, (int) -center, 33f, isHovered ? 18f : 0f, 9, 9, 256, 256);
+            #else
+            graphics.blit(CONFIG_TEX, (int) -center, (int) -center, 33, isHovered ? 18 : 0, 9, 9);
+            #endif
+            graphics.pose().popMatrix();
+            #endif
         }
         graphics.fillGradient(x, y, x + sideWidth, y + entryHeight, ColorUtil.color(255, 255, 255, 255), ColorUtil.color(255, 255, 255, 255));
 
@@ -291,6 +308,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
             saveRectangle = new Rectangle(x, y, line.width(font), lineHeight);
             int yOffset = 0;
             for (FormattedCharSequence text : splitLines) {
+                #if MC_VER < MC_1_21_6
                 graphics.pose().pushPose();
                 graphics.pose().translate(x + (line.center ? -7 : 0), y + yOffset, 0);
                 graphics.pose().scale(line.scale.x, line.scale.y, 1.0f);
@@ -313,6 +331,30 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                 }
                 yOffset = yOffset + line.height(font);
                 graphics.pose().popPose();
+                #else
+                graphics.pose().pushMatrix();
+                graphics.pose().translate(x + (line.center ? -7 : 0), y + yOffset);
+                graphics.pose().scale(line.scale.x, line.scale.y);
+                if (line.center) {
+                    graphics.drawCenteredString(
+                            font,
+                            text,
+                            (int) ((entryWidth + 7) * 0.5 / line.scale.x),
+                            0,
+                            line.color
+                    );
+                } else {
+                    graphics.drawString(
+                            font,
+                            text,
+                            (int) (entryWidth * line.left),
+                            0,
+                            line.color, false
+                    );
+                }
+                yOffset = yOffset + line.height(font);
+                graphics.pose().popMatrix();
+                #endif
             }
             return lineHeight;
         }
