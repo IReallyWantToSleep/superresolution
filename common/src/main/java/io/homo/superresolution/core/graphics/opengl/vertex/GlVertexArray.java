@@ -25,7 +25,7 @@ public class GlVertexArray implements IVertexArray {
 
     @Override
     public void setAttributes(VertexAttribute[] attributes, IVertexBuffer vertexBuffer) {
-        if (Gl.isSupportDSA()) {
+        if (!Gl.isSupportDSA()) {
             try (GlState ignored = new GlState(GlState.STATE_VERTEX_OPERATIONS | GlState.STATE_VBO)) {
                 glBindVertexArray(id);
                 glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.handle());
