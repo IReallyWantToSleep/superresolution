@@ -41,9 +41,11 @@ public abstract class GameRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
+            #if MC_VER < MC_1_21_1
             if (MinecraftWindow.getWindowSourceWidth() < 1 || MinecraftWindow.getWindowSourceHeight() < 1) {
                 ci.cancel();
             }
+            #endif
             MinecraftRenderHandle.onRenderWorldBegin(CallType.GAME_RENDERER);
         }
     }

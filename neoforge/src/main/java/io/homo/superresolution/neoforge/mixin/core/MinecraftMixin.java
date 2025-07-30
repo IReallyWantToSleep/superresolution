@@ -15,7 +15,7 @@ public class MinecraftMixin {
         SuperResolution.initRendering();
     }
 
-    @Inject(at = @At(value = "TAIL"), method = "onGameLoadFinished")
+    @Inject(at = @At(value = "HEAD"), method = "onGameLoadFinished")
     private void onLoadFinished(CallbackInfo ci) {
         SuperResolution.createAlgorithm();
         SuperResolutionNeoForge.mod.init();
