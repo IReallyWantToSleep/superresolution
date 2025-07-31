@@ -348,7 +348,8 @@ public class ClothConfig {
         String[] contributors = {
                 "187J3X1 - 核心开发+造饼大王",
                 "异世界美西螈 - 测试反馈+吉祥物+大饼规划者",
-                "yu - 绘制图标"
+                "yu - 绘制图标",
+                "Enaium"
         };
         Map<String, String> libraries = new LinkedHashMap<>() {{
             put("Cloth Config", "https://github.com/shedaniel/cloth-config");

@@ -37,7 +37,7 @@ for file in files:
     print(
         uploader.upload_file(
             file_path=file,
-            mc_version=info["mc_version"],
+            mc_version=', '.join(info["mc_versions"]),
             platform_ids=[1],
             api_ids=[utils.to_mcmod_api_string(info["loader"])],
             tag_names=["client"],
