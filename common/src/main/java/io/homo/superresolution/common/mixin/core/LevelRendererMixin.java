@@ -2,7 +2,7 @@ package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 
-#if MC_VER > MC_1_20_4
+#if MC_VER > MC_1_20_6
 
 import net.minecraft.client.DeltaTracker;
 #else
@@ -47,7 +47,6 @@ public abstract class LevelRendererMixin {
     }
     #endif
 
-    @Inject(at = @At(value = "HEAD"), method = "renderLevel")
     #if MC_VER == MC_1_21_1
     private void renderLevel_MC_1_21_1(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
         AlgorithmManager.setMatrix(projectionMatrix, frustumMatrix);

@@ -1,6 +1,6 @@
 package io.homo.superresolution.fabric.mixin.compat.sodium;
 
-#if MC_VER > MC_1_20_4
+#if MC_VER > MC_1_20_6
 
 import io.homo.superresolution.common.platform.Platform;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-#if MC_VER > MC_1_20_4
+#if MC_VER > MC_1_20_6
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
