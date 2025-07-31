@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 
 public class ClothTextListListEntry extends TooltipListEntry<Object> implements InfoBuilder.LineContainer {
     public static final int DISABLED_COLOR;
-    #if MC_VER > MC_1_20_4
+    #if MC_VER > MC_1_20_6
     protected static final ResourceLocation CONFIG_TEX = ResourceLocation.fromNamespaceAndPath("cloth-config2", "textures/gui/cloth_config.png");
     #else
     protected static final ResourceLocation CONFIG_TEX = new ResourceLocation("cloth-config2", "textures/gui/cloth_config.png");

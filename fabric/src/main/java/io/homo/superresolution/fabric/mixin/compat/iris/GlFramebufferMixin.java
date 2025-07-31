@@ -4,7 +4,7 @@ import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.texture.DepthBufferFormat;
-#if MC_VER > MC_1_20_4
+#if MC_VER > MC_1_20_6
 import net.irisshaders.iris.pbr.TextureInfoCache;
 #else
 import net.irisshaders.iris.texture.TextureInfoCache;

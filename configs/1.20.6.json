@@ -1,0 +1,45 @@
+{
+    "common": {
+        "java_version": 21,
+        "minecraft_version": "1.20.6",
+        "parchment_version": "1.20.6:2024.06.16",
+        "neoform_version": "1.20.6-20240627.102356",
+        "platforms": [
+            "fabric"
+        ],
+        "lwjgl_version": "3.3.3",
+        "architectury_api_version": "12.1.4",
+        "forge": {
+            "minecraft_version_range": "1.20.6"
+        },
+        "fabric": {
+            "minecraft_version_range": [
+                "~1.20.6"
+            ]
+        },
+        "cloth_config_version": "13.0.138",
+        "mod_artifact_minecraft_ver": "1.20.6"
+    },
+    "fabric": {
+        "loader_version": "0.16.14",
+        "api_version": "0.100.8+1.20.6",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "iris",
+                    "version": "1.7.2+1.20.6"
+                },
+                {
+                    "name": "sodium",
+                    "version": "mc1.20.6-0.5.11"
+                },
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.20.6-1.7.3"
+                }
+            ],
+            "local": []
+        },
+        "modmenu_version": "9.2.0"
+    }
+}
