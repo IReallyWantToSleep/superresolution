@@ -36,7 +36,7 @@ class MCMODModUploader:
             (
                 "0",
                 (
-                    os.path.basename(file_path),
+                    str(os.path.basename(file_path)).replace("~","-"),
                     open(file_path, "rb"),
                     (
                         "application/java-archive"
