@@ -161,7 +161,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         if (Minecraft.getInstance().level == null) {
-            #if MC_VER >= MC_1_21_1
+            #if MC_VER >= MC_1_20_6
             #if MC_VER < MC_1_21_6
                panorama.render(graphics, width, height, 1.0f, delta);
             #else
