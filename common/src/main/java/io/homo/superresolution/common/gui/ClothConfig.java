@@ -125,7 +125,10 @@ public class ClothConfig {
                 .setErrorSupplier((captureMode -> {
                     if (
                             (Platform.currentPlatform.getMinecraftVersion().equals("1.21.4") && captureMode == CaptureMode.B) ||
-                                    (Platform.currentPlatform.getMinecraftVersion().equals("1.21.5") && captureMode == CaptureMode.C)
+                                    (Platform.currentPlatform.getMinecraftVersion().equals("1.21.5") && captureMode == CaptureMode.C) ||
+                                    (Platform.currentPlatform.getMinecraftVersion().equals("1.21.6") && captureMode == CaptureMode.C) ||
+                                    (Platform.currentPlatform.getMinecraftVersion().equals("1.21.7") && captureMode == CaptureMode.C) ||
+                                    (Platform.currentPlatform.getMinecraftVersion().equals("1.21.8") && captureMode == CaptureMode.C)
                     ) {
                         return Optional.of(
                                 Component.translatable(

@@ -45,8 +45,8 @@ class ModrinthUploader {
     }
 
     static List<String> parseVersionRange(String versionRange) {
-        if (versionRange.contains("~")) {
-            def parts = versionRange.split("~")
+        if (versionRange.contains("..")) {
+            def parts = versionRange.split("\\Q..\\E")
             if (parts.length != 2) throw new IllegalArgumentException("版本范围格式错误: " + versionRange)
             def from = parts[0]
             def to = parts[1]
@@ -117,6 +117,12 @@ class ModrinthUploader {
                         ProjectVersion.ProjectDependencyType.REQUIRED
                 )
         ]
+        String versionRangeDisplay
+        if (gameVersions.size() > 1) {
+            versionRangeDisplay = gameVersions.first() + '~' + gameVersions.last()
+        } else {
+            versionRangeDisplay = gameVersions.first()
+        }
 
         CreateVersion.CreateVersionRequest createVersionRequest = CreateVersion.CreateVersionRequest.builder()
                 .projectId("Hf3Qz2H3")
@@ -126,8 +132,8 @@ class ModrinthUploader {
                 .gameVersions(gameVersions)
                 .loaders([loader])
                 .versionType(versionType)
-                .versionNumber("${mcVersionPart}-${modVersion}-${loader}")
-                .name("Super Resolution $modVersion for $loaderName $gameVersions")
+                .versionNumber("${gameVersions.first()}-${modVersion}-${loader}")
+                .name("Super Resolution $modVersion for $loaderName $versionRangeDisplay")
                 .changelog(changelog.replaceAll("\r\n", "\n"))
                 .build()
         System.out.println("Super Resolution $modVersion for $loaderName $gameVersions")

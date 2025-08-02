@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.impl.framebuffer;
 
+import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 
 public class FrameBufferTextureAdapter implements ITexture {
@@ -36,21 +37,33 @@ public class FrameBufferTextureAdapter implements ITexture {
 
     @Override
     public TextureUsages getTextureUsages() {
+        if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
+            return TextureUsages.create().storage().sampler().attachmentDepth().attachmentColor();
+        }
         return frameBuffer.getTexture(attachmentType).getTextureUsages();
     }
 
     @Override
     public TextureType getTextureType() {
+        if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
+            return TextureType.Texture2D;
+        }
         return frameBuffer.getTexture(attachmentType).getTextureType();
     }
 
     @Override
     public TextureFilterMode getTextureFilterMode() {
+        if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
+            return TextureFilterMode.NEAREST;
+        }
         return frameBuffer.getTexture(attachmentType).getTextureFilterMode();
     }
 
     @Override
     public TextureWrapMode getTextureWrapMode() {
+        if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
+            return TextureWrapMode.CLAMP_TO_EDGE;
+        }
         return frameBuffer.getTexture(attachmentType).getTextureWrapMode();
     }
 

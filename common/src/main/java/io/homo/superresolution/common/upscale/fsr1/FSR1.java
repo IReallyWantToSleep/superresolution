@@ -79,7 +79,7 @@ public class FSR1 extends AbstractAlgorithm {
                 PipelineJobBuilders.compute(fsr1EASUShader)
                         .resource("inImage",
                                 PipelineJobResource.SamplerTexture.create(
-                                        input.getTexture(FrameBufferAttachmentType.Color)
+                                        TextureSupplier.of(() -> getInputFrameBuffer().getTexture(FrameBufferAttachmentType.Color))
                                 )
                         )
                         .resource("outImage",

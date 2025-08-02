@@ -14,20 +14,18 @@ import static io.homo.superresolution.core.graphics.opengl.Gl.setGlObjectLabel;
 import static org.lwjgl.opengl.GL45.*;
 
 public class GlTexture1D implements ITexture, IDebuggableObject {
-    public static final int AUTO_MIPMAP_LEVEL = 0;
-    private static final int MAX_MIPMAP_LEVELS = 16;
     private static final int DEFAULT_ALIGNMENT = 4;
     private final TextureFormat format;
     private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
-    private final int requestedLevel;
     private int id;
     private TextureUsages usages = null;
     private TextureType type = null;
     private TextureFilterMode filterMode = null;
     private TextureWrapMode wrapMode = null;
+    private TextureMipmapSettings mipmapSettings;
+
     private int width;
-    private int mipmapLevel;
-    private boolean mipmapEnabled;
+    private int currentMipmapLevel;
 
 
     protected GlTexture1D(TextureDescription description) {
@@ -42,8 +40,8 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         if (type != TextureType.Texture1D) {
             throw new RuntimeException();
         }
-        this.requestedLevel = description.getMipmapSettings().getLevels();
-        configureMipmap(requestedLevel);
+        this.mipmapSettings = description.getMipmapSettings();
+        configureMipmap();
         initializeTexture();
     }
 
@@ -57,7 +55,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     private GlTextureView createMipView(int level) {
         try (GlState ignored = new GlState(GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
-            if (level < 0 || level > this.mipmapLevel) {
+            if (level < 0 || level > this.currentMipmapLevel) {
                 throw new IllegalArgumentException("Invalid mip level: " + level);
             }
             return GlTextureView.create(
@@ -72,16 +70,16 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     }
 
     private void configureTextureParameters() {
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER, filterMode.gl());
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, filterMode.gl());
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_S, wrapMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_T, wrapMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_BASE_LEVEL, 0);
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, mipmapLevel);
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, currentMipmapLevel);
     }
 
     private void allocateTextureStorage() {
-        int levels = mipmapEnabled ? (mipmapLevel + 1) : 1;
+        int levels = mipmapSettings.isEnabled() ? (currentMipmapLevel + 1) : 1;
         Gl.DSA.textureStorage1D(this.id, levels, format.gl(), width);
     }
 
@@ -155,17 +153,12 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         return wrapMode;
     }
 
-    public void configureMipmap(int requestedLevel) {
-        this.mipmapEnabled = requestedLevel >= 0;
-        this.mipmapLevel = calculateActualMipLevel(requestedLevel);
-    }
-
-    private int calculateActualMipLevel(int requestedLevel) {
-        if (!mipmapEnabled) return 0;
-        if (requestedLevel == AUTO_MIPMAP_LEVEL) {
-            return calculateMaxMipLevel();
+    public void configureMipmap() {
+        if (mipmapSettings.isAutoGenerate()) {
+            this.currentMipmapLevel = calculateMaxMipLevel();
+            return;
         }
-        return Math.min(requestedLevel, MAX_MIPMAP_LEVELS);
+        this.currentMipmapLevel = Math.min(mipmapSettings.getLevels(), calculateMaxMipLevel());
     }
 
     private int calculateMaxMipLevel() {
@@ -208,7 +201,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         this.width = width;
         Gl.DSA.deleteTexture(this.id);
         this.id = Gl.DSA.createTexture1D();
-        configureMipmap(requestedLevel);
+        configureMipmap();
         initializeTexture();
     }
 }

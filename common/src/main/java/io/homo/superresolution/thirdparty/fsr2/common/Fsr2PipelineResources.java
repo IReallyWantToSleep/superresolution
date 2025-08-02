@@ -177,11 +177,19 @@ public class Fsr2PipelineResources {
                 new Fsr2ResourceCreateDescription(
                         new Vector2f(renderWidth, renderHeight), TextureFormat.R11G11B10F, 2, "FSR2_PrevPostAlpha1"));
 
+        Fsr2Context.LOGGER.info("开始初始化纹理");
         Set<Map.Entry<Fsr2PipelineResourceType, Fsr2ResourceCreateDescription>> entries = new HashSet<>(resourceCreateDescriptions.entrySet());
         for (Map.Entry<Fsr2PipelineResourceType, Fsr2ResourceCreateDescription> entry : entries) {
             final Fsr2PipelineResourceType type = entry.getKey();
             final Fsr2ResourceCreateDescription desc = entry.getValue();
             final Fsr2ResourceEntry resourceEntry = resources.get(type);
+            Fsr2Context.LOGGER.info(
+                    "创建纹理 {} Size:{}x{} Format:{}",
+                    desc.label,
+                    desc.size != null ? desc.size.x : "null",
+                    desc.size != null ? desc.size.y : "null",
+                    desc.format != null ? desc.format : "null"
+            );
 
             if (desc.size == null || desc.format == null) {
                 continue;
@@ -201,15 +209,15 @@ public class Fsr2PipelineResources {
                                                 TextureMipmapSettings.auto() :
                                                 desc.mipCount == -1 ?
                                                         TextureMipmapSettings.disabled() :
-                                                        TextureMipmapSettings.manual(desc.mipCount, true)
+                                                        TextureMipmapSettings.manual(desc.mipCount)
                                 )
                                 .format(desc.format)
                                 .filterMode(
                                         desc.mipCount == 0 ?
-                                                TextureFilterMode.LINEAR_MIPMAP_LINEAR :
+                                                TextureFilterMode.LINEAR :
                                                 desc.mipCount == -1 ?
                                                         TextureFilterMode.NEAREST :
-                                                        TextureFilterMode.LINEAR_MIPMAP_LINEAR
+                                                        TextureFilterMode.LINEAR
                                 ).build()
                 );
 
@@ -226,15 +234,15 @@ public class Fsr2PipelineResources {
                                                 TextureMipmapSettings.auto() :
                                                 desc.mipCount == -1 ?
                                                         TextureMipmapSettings.disabled() :
-                                                        TextureMipmapSettings.manual(desc.mipCount, true)
+                                                        TextureMipmapSettings.manual(desc.mipCount)
                                 )
                                 .format(desc.format)
                                 .filterMode(
                                         desc.mipCount == 0 ?
-                                                TextureFilterMode.LINEAR_MIPMAP_LINEAR :
+                                                TextureFilterMode.LINEAR :
                                                 desc.mipCount == -1 ?
                                                         TextureFilterMode.NEAREST :
-                                                        TextureFilterMode.LINEAR_MIPMAP_LINEAR
+                                                        TextureFilterMode.LINEAR
                                 )
                                 .build()
                 );

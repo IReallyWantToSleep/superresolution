@@ -1,6 +1,7 @@
 package io.homo.superresolution.neoforge.mixin.compat.iris;
 
 
+import com.mojang.blaze3d.opengl.GlTexture;
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
@@ -73,7 +74,7 @@ public abstract class GlFramebufferMixin extends GlResource {
             );
         }
 
-        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(((com.mojang.blaze3d.opengl.GlTexture)texture).glId()).getInternalFormat());
+        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(((com.mojang.blaze3d.opengl.GlTexture) texture).glId()).getInternalFormat());
     }
     #endif
 

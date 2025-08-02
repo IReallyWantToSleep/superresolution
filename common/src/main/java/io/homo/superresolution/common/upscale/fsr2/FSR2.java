@@ -4,15 +4,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
@@ -45,8 +42,6 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        input = MinecraftRenderHandle.getRenderTarget();
-
         output = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(MinecraftRenderHandle.getScreenWidth())
@@ -106,6 +101,7 @@ public class FSR2 extends AbstractAlgorithm {
         float m11 = projectionMatrix.m11();
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
+        this.input = getInputFrameBuffer();
         dispatchDescription.setColor(this.input.getTexture(FrameBufferAttachmentType.Color));
         dispatchDescription.setDepth(
                 this.input.getTexture(FrameBufferAttachmentType.Depth) == null ?

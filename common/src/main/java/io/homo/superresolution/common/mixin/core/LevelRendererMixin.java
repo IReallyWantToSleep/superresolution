@@ -47,6 +47,8 @@ public abstract class LevelRendererMixin {
     }
     #endif
 
+
+    @Inject(method = "renderLevel", at = @At("HEAD"))
     #if MC_VER == MC_1_21_1
     private void renderLevel_MC_1_21_1(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
         AlgorithmManager.setMatrix(projectionMatrix, frustumMatrix);
@@ -66,6 +68,10 @@ public abstract class LevelRendererMixin {
     #elif MC_VER == MC_1_20_4
     private void renderLevel_MC_1_20_4(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
         AlgorithmManager.setMatrix(projectionMatrix, poseStack.last().pose());
+    }
+    #elif MC_VER == MC_1_20_6
+    private void renderLevel_MC_1_20_6(float partialTick, long nanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
+        AlgorithmManager.setMatrix(projectionMatrix, frustumMatrix);
     }
     #elif MC_VER == MC_1_21_6
     private void renderLevel_MC_1_21_6(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f frustumMatrix, Matrix4f projectionMatrix, GpuBufferSlice fogBuffer, org.joml.Vector4f fogColor, boolean renderSky, CallbackInfo ci) {

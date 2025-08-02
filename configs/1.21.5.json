@@ -32,7 +32,7 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.8.10+1.21.5-fabric"
+                    "version": "1.8.11+1.21.5-fabric"
                 },
                 {
                     "name": "sodium",
@@ -42,6 +42,10 @@
                     "name": "sodium-options-api",
                     "version": "fabric-1.21.5-1.0.11",
                     "compileOnly": true
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.3.4-b-1.21.5"
                 }
             ],
             "local": []
@@ -54,7 +58,7 @@
             "modrinth": [
                 {
                     "name": "iris",
-                    "version": "1.8.10+1.21.5-neoforge"
+                    "version": "1.8.11+1.21.5-neoforge"
                 },
                 {
                     "name": "sodium",
@@ -67,6 +71,10 @@
                 {
                     "name": "sodium-options-api",
                     "version": "neoforge-1.21.5-1.0.11"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.3.4-b-1.21.5"
                 }
             ],
             "local": [

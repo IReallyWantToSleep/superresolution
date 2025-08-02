@@ -9,10 +9,10 @@
         "reesessodiumoptions.TabFrameMixin",
         "simpleclouds.DefaultPipelineMixin",
         "sodium.SodiumOptionsGUIMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
+        "simpleclouds.ShaderSupportPipelineMixin"
     ],
     "mixins": [
-        "simpleclouds.ShaderSupportPipelineMixin"
     ],
     "injectors": {
         "defaultRequire": 1
