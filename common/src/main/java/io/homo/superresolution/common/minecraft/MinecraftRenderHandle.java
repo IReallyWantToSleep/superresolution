@@ -75,10 +75,12 @@ public class MinecraftRenderHandle {
     }
 
     public static IBindableFrameBuffer getOriginRenderTarget() {
+        if (originRenderTarget == null) MinecraftRenderHandle.init();
         return originRenderTarget;
     }
 
     public static IBindableFrameBuffer getRenderTarget() {
+        if (renderTarget == null) MinecraftRenderHandle.init();
         return renderTarget;
     }
 

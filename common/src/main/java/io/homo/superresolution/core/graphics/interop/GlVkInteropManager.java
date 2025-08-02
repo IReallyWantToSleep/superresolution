@@ -57,7 +57,7 @@ public class GlVkInteropManager implements Destroyable {
         } catch (VulkanException vkException) {
             VulkanApplication.LOGGER.error("Vulkan初始化失败，已禁用Vulkan，错误 {}", vkException.getMessage());
             vkException.printStackTrace();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             VulkanApplication.LOGGER.error("Vulkan初始化失败，发生未知错误，已禁用Vulkan，错误 {}", e.getMessage());
             e.printStackTrace();
         }

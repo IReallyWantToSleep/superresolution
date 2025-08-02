@@ -108,7 +108,7 @@ public class VulkanApplication {
 
     private void createInstance() {
         try (MemoryStack stack = stackPush()) {
-            VkApplicationInfo appInfo = VkApplicationInfo.calloc()
+            VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
                     .apiVersion(DEFAULT_API_VERSION)
                     .pEngineName(memUTF8("Engine"))
@@ -116,7 +116,7 @@ public class VulkanApplication {
                     .pApplicationName(memUTF8("App"))
                     .applicationVersion(VK_MAKE_VERSION(1, 0, 0));
 
-            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc()
+            VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
                     .pApplicationInfo(appInfo)
                     .ppEnabledExtensionNames(asPointerBuffer(stack, instanceExtensions));
@@ -149,7 +149,7 @@ public class VulkanApplication {
 
     private void createLogicalDeviceWithCapabilities() {
         try (MemoryStack stack = stackPush()) {
-            int graphicsFamilyIndex = findGraphicsQueueFamilyIndex();
+            int graphicsFamilyIndex = findGraphicsQueueFamilyIndex(stack);
             if (graphicsFamilyIndex == -1) throw new RuntimeException("No suitable queue family found");
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(1, stack);
@@ -186,20 +186,20 @@ public class VulkanApplication {
         }
     }
 
-    private int findGraphicsQueueFamilyIndex() {
-        try (MemoryStack stack = stackPush()) {
-            IntBuffer queueFamilyCount = stack.ints(0);
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, queueFamilyCount, null);
-            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount.get(0), stack);
+    private int findGraphicsQueueFamilyIndex(MemoryStack stack) {
 
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, queueFamilyCount, queueFamilies);
-            for (int i = 0; i < queueFamilies.capacity(); i++) {
-                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                    return i;
-                }
+        IntBuffer queueFamilyCount = stack.ints(0);
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, queueFamilyCount, null);
+        VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount.get(0), stack);
+
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, queueFamilyCount, queueFamilies);
+        for (int i = 0; i < queueFamilies.capacity(); i++) {
+            if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
+                return i;
             }
-            return -1;
         }
+        return -1;
+
     }
 
     public void destroy() {

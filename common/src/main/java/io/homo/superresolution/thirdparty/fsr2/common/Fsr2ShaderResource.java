@@ -91,9 +91,13 @@ public class Fsr2ShaderResource {
                     PipelineJobResource.UniformBuffer.create((GlBuffer) resourceEntry.get().getResource());
         } else {
             ITexture textureSupplier = TextureSupplier.of(() -> {
+                if (this.resourceType != null) {
+                    this.resourceEntry = () -> context.resources.resource(this.resourceType.get());
+                }
+                Fsr2PipelineResourceType _resourceType = context.resources.resourceEntriesMap().get(resourceEntry.get());
                 ITexture texture = (ITexture) resourceEntry.get().getResource();
                 if (texture == null) {
-                    if (resourceType == Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5) {
+                    if (_resourceType == Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5) {
                         if (context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource() != null) {
                             GlTexture2D texture2D = ((GlTexture2D) context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource());
                             return texture2D.getMipView(Math.min(texture2D.getMipmapLevel(), 5));

@@ -332,35 +332,4 @@ public class GlRenderState implements IRenderState {
             this.depthFunc(snap.depthFunc);
         }
     }
-
-
-    private static class StateSnapshot {
-        public final boolean depthTest;
-        public final boolean depthWrite;
-        public final boolean blend;
-        public final boolean cullFace;
-        public final boolean stencilTest;
-        public final boolean colorMaskR;
-        public final boolean colorMaskG;
-        public final boolean colorMaskB;
-        public final boolean colorMaskA;
-        public final BlendFactor blendSrcFactor;
-        public final BlendFactor blendDstFactor;
-        public final DepthFunc depthFunc;
-
-        public StateSnapshot(GlRenderState state) {
-            this.depthTest = state.depthTest;
-            this.depthWrite = state.depthWrite;
-            this.blend = state.blend;
-            this.cullFace = state.cullFace;
-            this.stencilTest = state.stencilTest;
-            this.colorMaskR = state.colorMaskR;
-            this.colorMaskG = state.colorMaskG;
-            this.colorMaskB = state.colorMaskB;
-            this.colorMaskA = state.colorMaskA;
-            this.blendSrcFactor = state.blendSrcFactor;
-            this.blendDstFactor = state.blendDstFactor;
-            this.depthFunc = state.depthFunc;
-        }
-    }
 }

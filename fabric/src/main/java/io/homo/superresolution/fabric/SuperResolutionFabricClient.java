@@ -8,14 +8,9 @@ import io.homo.superresolution.fabric.compat.sodium.SodiumOptionScreen;
 import net.fabricmc.api.ClientModInitializer;
 
 public final class SuperResolutionFabricClient implements ClientModInitializer {
-    public static SuperResolution mod;
-
     @Override
     public void onInitializeClient() {
-        SuperResolutionConfig.SPEC.load();
         if (Platform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableRenderDoc()) RenderDoc.init();
-        SuperResolution.preInit();
-        mod = new SuperResolution();
         if (io.homo.superresolution.common.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
