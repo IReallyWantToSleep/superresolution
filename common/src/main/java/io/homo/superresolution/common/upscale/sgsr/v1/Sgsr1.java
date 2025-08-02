@@ -34,7 +34,6 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        input = MinecraftRenderHandle.getRenderTarget();
         buffer = UniformStructBuilder.start()
                 .vec4Entry("ViewportInfo")
                 .build();
@@ -76,7 +75,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 PipelineJobBuilders.graphics(sgsrShader)
                         .resource("ps0",
                                 PipelineJobResource.SamplerTexture.create(
-                                        input.getTexture(FrameBufferAttachmentType.Color)
+                                        TextureSupplier.of(() -> getInputFrameBuffer().getTexture(FrameBufferAttachmentType.Color))
                                 )
 
                         )
@@ -109,7 +108,7 @@ public class Sgsr1 extends AbstractAlgorithm {
         GL41.glDisable(GL41.GL_CULL_FACE);
 
         pipeline.execute(RenderSystems.opengl());
-        
+
         GL41.glEnable(GL41.GL_DEPTH_TEST);
         GL41.glEnable(GL41.GL_CULL_FACE);
         return true;

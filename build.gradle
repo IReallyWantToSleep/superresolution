@@ -80,7 +80,9 @@ tasks.register("uploadToModrinth") {
         def jarsDir = file("${projectDir}/build_jars")
         println("将要上传的文件：")
         jarsDir.eachFile { file ->
-            println(file.absolutePath)
+            if (file.name.startsWith("super") && file.name.endsWith(".jar")) {
+                println(file.absolutePath)
+            }
         }
 
         confirm = getConsoleInput("是否继续？(Y/N): ").trim().toLowerCase()
@@ -89,14 +91,19 @@ tasks.register("uploadToModrinth") {
             return
         }
         jarsDir.eachFile { file ->
-            def notSucceed = true
-            while (notSucceed) {
-                try {
-                    ModrinthUploader.uploadFile(file, latestChangelog.join("\n"))
-                    notSucceed = false
-                } catch (Exception e) {
-                    e.printStackTrace()
-                    println "上传失败，重试"
+            if (file.name.startsWith("super") && file.name.endsWith(".jar")) {
+                def notSucceed = true
+                while (notSucceed) {
+                    try {
+                        ModrinthUploader.uploadFile(file, latestChangelog.join("\n"))
+                        notSucceed = false
+                    } catch (Exception e) {
+                        e.printStackTrace()
+                        confirm = getConsoleInput("上传失败，是否重试？(Y/N): ").trim().toLowerCase()
+                        if (!confirm.startsWith("y")) {
+                            notSucceed = false
+                        }
+                    }
                 }
             }
         }

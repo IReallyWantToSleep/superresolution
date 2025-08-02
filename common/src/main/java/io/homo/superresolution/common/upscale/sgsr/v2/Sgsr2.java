@@ -35,7 +35,6 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        input = MinecraftRenderHandle.getRenderTarget();
         GlFrameBuffer output_ = new GlFrameBuffer();
         output_.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,

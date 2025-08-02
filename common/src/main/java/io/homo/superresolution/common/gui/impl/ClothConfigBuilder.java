@@ -25,8 +25,10 @@ public class ClothConfigBuilder implements ConfigBuilder {
     private boolean doesConfirmSave = true;
     private boolean transparentBackground = true;
     private boolean enableSearch = true;
-    #if MC_VER > MC_1_20_4
-    private ResourceLocation defaultBackground = new ResourceLocation("textures/block/dirt.png");
+    #if MC_VER > MC_1_20_6
+    private ResourceLocation defaultBackground = ResourceLocation.withDefaultNamespace("textures/block/dirt.png");
+    #elif MC_VER == MC_1_20_6
+    private ResourceLocation defaultBackground = Screen.MENU_BACKGROUND;
     #else
     private ResourceLocation defaultBackground = Screen.BACKGROUND_LOCATION;
     #endif

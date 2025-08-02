@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.minecraft;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.sun.jna.Pointer;
 import io.homo.superresolution.api.event.*;
@@ -11,6 +12,7 @@ import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
@@ -37,6 +39,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 
 public class MinecraftRenderHandle {
     private static final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
@@ -83,10 +86,19 @@ public class MinecraftRenderHandle {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
-        #if MC_VER > MC_1_21_4
+        #if MC_VER > MC_1_21_5
+        renderTarget = new io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper(
+                new TextureTarget(
+                        "SuperrResolution-ScaledRenderTarget",
+                        getRenderWidth(),
+                        getRenderHeight(),
+                        true
+                )
+        );
+        #elif MC_VER > MC_1_21_4
         renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
                 io.homo.superresolution.core.graphics.impl.texture.TextureFormat.RGBA8,
-                io.homo.superresolution.core.graphics.impl.texture.TextureFormat.DEPTH24_STENCIL8,
+                TextureFormat.DEPTH24_STENCIL8,
                 getRenderWidth(),
                 getRenderHeight()
         );
@@ -180,14 +192,17 @@ public class MinecraftRenderHandle {
 
         updateRenderTarget();
         updateRenderTargetSize();
-        #if MC_VER > MC_1_21_4
+        #if MC_VER == MC_1_21_5
         getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
-        SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
+        #elif MC_VER > MC_1_21_5
+        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
+        getRenderTarget().bind(FrameBufferBindPoint.Write);
         #else
         setClientRenderTarget(getRenderTarget().asMcRenderTarget());
         getRenderTarget().bind(FrameBufferBindPoint.Write);
-        SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
         #endif
+        SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
+
         if (needCapture) {
             if (RenderDoc.renderdoc != null) {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
@@ -211,7 +226,7 @@ public class MinecraftRenderHandle {
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
-        #if MC_VER > MC_1_21_4
+        #if MC_VER == MC_1_21_5
         ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
                 ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
         );
@@ -220,6 +235,7 @@ public class MinecraftRenderHandle {
         setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
         getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
+
         try (GlState ignored = new GlState()) {
             LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }

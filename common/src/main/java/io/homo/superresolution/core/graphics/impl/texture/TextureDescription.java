@@ -132,8 +132,8 @@ public class TextureDescription {
             return this;
         }
 
-        public Builder mipmapsManual(int levels, boolean autoGenerate) {
-            description.mipmapSettings = TextureMipmapSettings.manual(levels, autoGenerate);
+        public Builder mipmapsManual(int levels) {
+            description.mipmapSettings = TextureMipmapSettings.manual(levels);
             return this;
         }
 
@@ -141,10 +141,6 @@ public class TextureDescription {
             if (description.usages.getUsages().contains(TextureUsage.AttachmentDepth) &&
                     !description.format.name().toUpperCase().startsWith("DEPTH")) {
                 throw new IllegalStateException("Depth attachment requires a depth texture format");
-            }
-            if (description.mipmapSettings.isEnabled() &&
-                    !description.filterMode.name().toUpperCase().contains("MIPMAP")) {
-                throw new IllegalStateException("Mipmap enabled but filter mode doesn't support mipmapping");
             }
             return description;
         }

@@ -51,6 +51,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static int framebufferHeight = 0;
     public static int cachedWidth;
     public static int cachedHeight;
+    public static Thread renderThread;
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
     public final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
@@ -126,6 +127,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void initRendering() {
+        renderThread = Thread.currentThread();
         try (GlState ignored = new GlState()) {
             RenderSystems.init();
 

@@ -84,6 +84,10 @@ public class Fsr2Context {
                 shortBuffer.put(converted);
             }
             shortBuffer.flip();
+            if (ffxFsr2MaximumBias.length != textureSize) {
+                LOGGER.error("MaximumBias数据大小与纹理大小不匹配");
+                return;
+            }
             Gl.DSA.textureSubImage2D(
                     maximumBiasTexture.handle(),
                     0,
@@ -92,7 +96,7 @@ public class Fsr2Context {
                     maximumBiasTexture.getHeight(),
                     GL41.GL_RED,
                     GL41.GL_SHORT,
-                    MemoryUtil.memAddress(shortBuffer)
+                    MemoryUtil.memAddress(byteBuffer)
             );
             RenderSystems.current().finish();
             MemoryUtil.memFree(byteBuffer);
@@ -176,7 +180,7 @@ public class Fsr2Context {
         depthClipPipeline.init();
         lockPipeline.init();
         reconstructPreviousDepthPipeline.init();
-        
+
         resize(this.dimensions);
     }
 

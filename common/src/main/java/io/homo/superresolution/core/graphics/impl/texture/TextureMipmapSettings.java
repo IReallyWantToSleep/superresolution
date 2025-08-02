@@ -4,28 +4,26 @@ public class TextureMipmapSettings {
     private final boolean enabled;
     private final int levels;
     private final boolean autoGenerate;
-    private final boolean autoResolve;
 
-    private TextureMipmapSettings(boolean enabled, int levels, boolean autoGenerate, boolean autoResolve) {
+    private TextureMipmapSettings(boolean enabled, int levels, boolean autoGenerate) {
         this.enabled = enabled;
         this.levels = levels;
         this.autoGenerate = autoGenerate;
-        this.autoResolve = autoResolve;
     }
 
     public static TextureMipmapSettings disabled() {
-        return new TextureMipmapSettings(false, 1, false, false);
+        return new TextureMipmapSettings(false, 1, false);
     }
 
     public static TextureMipmapSettings auto() {
-        return new TextureMipmapSettings(true, -1, true, true);
+        return new TextureMipmapSettings(true, -1, true);
     }
 
-    public static TextureMipmapSettings manual(int levels, boolean autoGenerate) {
+    public static TextureMipmapSettings manual(int levels) {
         if (levels < 1) {
             throw new IllegalArgumentException("Mipmap levels must be at least 1");
         }
-        return new TextureMipmapSettings(true, levels, autoGenerate, false);
+        return new TextureMipmapSettings(true, levels, false);
     }
 
     public boolean isEnabled() {
@@ -38,10 +36,6 @@ public class TextureMipmapSettings {
 
     public boolean isAutoGenerate() {
         return autoGenerate;
-    }
-
-    public boolean isAutoResolve() {
-        return autoResolve;
     }
 
     public int resolveLevels(int width, int height) {

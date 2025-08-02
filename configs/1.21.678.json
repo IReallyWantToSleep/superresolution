@@ -39,6 +39,10 @@
                 {
                     "name": "sodium",
                     "version": "mc1.21.6-0.6.13-fabric"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.3.4-b-1.21.6"
                 }
             ],
             "local": []
@@ -60,6 +64,10 @@
                 {
                     "name": "iris",
                     "version": "1.9.1+1.21.7-neoforge"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.3.4-b-1.21.6"
                 }
             ],
             "local": [

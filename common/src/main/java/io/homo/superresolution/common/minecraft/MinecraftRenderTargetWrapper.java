@@ -137,7 +137,11 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
 
     @Override
     public TextureFormat getDepthTextureFormat() {
-        return TextureFormat.DEPTH24;
+        #if MC_VER > MC_1_21_5
+        return TextureFormat.DEPTH32F;
+        #else
+        return TextureFormat.DEPTH32F;
+        #endif
     }
 
 
