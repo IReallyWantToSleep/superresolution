@@ -1,7 +1,5 @@
 package io.homo.superresolution.neoforge.mixin.compat.iris;
 
-
-import com.mojang.blaze3d.opengl.GlTexture;
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
