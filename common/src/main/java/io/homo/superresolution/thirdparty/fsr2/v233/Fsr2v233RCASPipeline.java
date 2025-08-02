@@ -46,10 +46,6 @@ public class Fsr2v233RCASPipeline extends Fsr2Pipeline {
                         .build()
         );
         program.compile();
-    }
-
-    @Override
-    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
         PipelineJobBuilders.ComputeJobBuilder jobBuilder =
                 PipelineJobBuilders.compute(program)
                         .workGroupSupplier(() -> new Vector3i(
@@ -97,6 +93,11 @@ public class Fsr2v233RCASPipeline extends Fsr2Pipeline {
                         .getResourceDescription(context)
         );
         pipeline.job("fsr2_rcas", jobBuilder.build());
+    }
+
+    @Override
+    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
+
         pipeline.execute(RenderSystems.current());
     }
 

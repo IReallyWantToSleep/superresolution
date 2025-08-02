@@ -72,6 +72,21 @@ public interface IRenderState {
 
     void restore();
 
+    default void apply(StateSnapshot snapshot) {
+        this.depthTest(snapshot.depthTest);
+        this.depthWrite(snapshot.depthWrite);
+        this.blend(snapshot.blend);
+        this.cullFace(snapshot.cullFace);
+        this.stencilTest(snapshot.stencilTest);
+        this.colorMaskR(snapshot.colorMaskR);
+        this.colorMaskG(snapshot.colorMaskG);
+        this.colorMaskB(snapshot.colorMaskB);
+        this.colorMaskA(snapshot.colorMaskA);
+        this.blendSrcFactor(snapshot.blendSrcFactor);
+        this.blendDstFactor(snapshot.blendDstFactor);
+        this.depthFunc(snapshot.depthFunc);
+    }
+
     class StateSnapshot {
         public final boolean depthTest;
         public final boolean depthWrite;

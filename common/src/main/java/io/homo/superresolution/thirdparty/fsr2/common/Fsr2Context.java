@@ -71,23 +71,8 @@ public class Fsr2Context {
         depthClipPipeline.resize(dimensions);
         lockPipeline.resize(dimensions);
         reconstructPreviousDepthPipeline.resize(dimensions);
-
         GlTexture2D maximumBiasTexture = ((GlTexture2D) resources.resource(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT).getResource());
         if (maximumBiasTexture != null) {
-            float[] ffxFsr2MaximumBias = Fsr2MaximumBias.ffxFsr2MaximumBias;
-            int textureSize = maximumBiasTexture.getWidth() * maximumBiasTexture.getHeight();
-            ByteBuffer byteBuffer = MemoryUtil.memAlloc(textureSize * 2)
-                    .order(ByteOrder.nativeOrder());
-            ShortBuffer shortBuffer = byteBuffer.asShortBuffer();
-            for (float value : ffxFsr2MaximumBias) {
-                short converted = (short) Math.round(value / 2.0f * 32767.0f);
-                shortBuffer.put(converted);
-            }
-            shortBuffer.flip();
-            if (ffxFsr2MaximumBias.length != textureSize) {
-                LOGGER.error("MaximumBias数据大小与纹理大小不匹配");
-                return;
-            }
             Gl.DSA.textureSubImage2D(
                     maximumBiasTexture.handle(),
                     0,
@@ -96,10 +81,10 @@ public class Fsr2Context {
                     maximumBiasTexture.getHeight(),
                     GL41.GL_RED,
                     GL41.GL_SHORT,
-                    MemoryUtil.memAddress(byteBuffer)
+                    MemoryUtil.memAddress(Fsr2MaximumBias.ffxFsr2MaximumBias)
             );
             RenderSystems.current().finish();
-            MemoryUtil.memFree(byteBuffer);
+
         }
     }
 

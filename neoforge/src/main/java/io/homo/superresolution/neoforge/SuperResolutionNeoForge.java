@@ -13,15 +13,12 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 @Mod(value = SuperResolution.MOD_ID, dist = Dist.CLIENT)
 public final class SuperResolutionNeoForge {
-    public static SuperResolution mod;
-
     public SuperResolutionNeoForge(ModContainer container) {
         SuperResolutionConfig.SPEC.load();
         ModLoadingContext.get().registerExtensionPoint(IConfigScreenFactory.class, () -> (mc, screen) -> ConfigScreenBuilder.create().buildConfigScreen(screen));
-        mod = new SuperResolution();
-        SuperResolution.preInit();
         if (io.homo.superresolution.common.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
+        SuperResolution.registerEvents();
     }
 }

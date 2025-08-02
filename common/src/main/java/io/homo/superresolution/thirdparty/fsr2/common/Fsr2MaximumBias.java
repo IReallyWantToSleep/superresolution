@@ -1,9 +1,15 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
+import org.lwjgl.system.MemoryUtil;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
+
 public class Fsr2MaximumBias {
     public static int FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH = 16;
     public static int FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT = 16;
-    public static float[] ffxFsr2MaximumBias = {
+    public static float[] ffxFsr2MaximumBiasData = {
             2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 1.876f, 1.809f, 1.772f, 1.753f, 1.748f,
             2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 1.869f, 1.801f, 1.764f, 1.745f, 1.739f,
             2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 1.976f, 1.841f, 1.774f, 1.737f, 1.716f, 1.71f,
@@ -22,4 +28,20 @@ public class Fsr2MaximumBias {
             1.748f, 1.739f, 1.71f, 1.641f, 1.533f, 1.449f, 1.405f, 1.379f, 1.362f, 1.35f, 1.34f, 1.332f, 1.327f, 1.323f, 1.32f, 1.319f,
 
     };
+
+    public static ByteBuffer ffxFsr2MaximumBias;
+
+    static {
+        int textureSize = FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH * FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT;
+        ffxFsr2MaximumBias = MemoryUtil.memAlloc(textureSize * 2)
+                .order(ByteOrder.nativeOrder());
+        ShortBuffer shortBuffer = ffxFsr2MaximumBias.asShortBuffer();
+        for (float value : ffxFsr2MaximumBiasData) {
+            short converted = (short) Math.round(value / 2.0f * 32767.0f);
+            shortBuffer.put(converted);
+        }
+        shortBuffer.flip();
+        ffxFsr2MaximumBias.position(textureSize * 2);
+        ffxFsr2MaximumBias.flip();
+    }
 }

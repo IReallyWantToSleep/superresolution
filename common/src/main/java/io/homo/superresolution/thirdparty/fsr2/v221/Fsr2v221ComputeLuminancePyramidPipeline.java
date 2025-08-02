@@ -50,11 +50,6 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .build()
         );
         program.compile();
-
-    }
-
-    @Override
-    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
         PipelineJobBuilders.ComputeJobBuilder jobBuilder =
                 PipelineJobBuilders.compute(program)
                         .workGroupSupplier(() -> {
@@ -133,6 +128,11 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .getResourceDescription(context)
         );
         pipeline.job("fsr2_compute_luminance_pyramid", jobBuilder.build());
+    }
+
+    @Override
+    public void execute(Fsr2PipelineDispatchResource dispatchResource) {
+
         pipeline.execute(RenderSystems.current());
     }
 

@@ -1,6 +1,7 @@
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
@@ -61,16 +62,39 @@ public final class SuperResolution implements Resizable, Destroyable {
             "Super Resolution"
     );
 
-    public SuperResolution() {
-        if (minecraft == null) minecraft = Minecraft.getInstance();
-        KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
+    public static void registerEvents() {
+        ClientLifecycleEvent.CLIENT_SETUP.register(
+                (minecraft) -> {
+
+                    KeyMappingRegistry.register(SuperResolution.getInstance().OPENGUI_KEYMAPPING);
+                }
+        );
+        ClientLifecycleEvent.CLIENT_STARTED.register(
+                (minecraft) -> {
+                    instance = new SuperResolution();
+                    SuperResolution.preInit();
+                    SuperResolution.initRendering();
+                    SuperResolution.createAlgorithm();
+                    SuperResolution.getInstance().init();
+                }
+        );
+        ClientLifecycleEvent.CLIENT_STOPPING.register(
+                (minecraft) -> {
+                    SuperResolution.getInstance().destroy();
+                }
+        );
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
-            while (OPENGUI_KEYMAPPING.consumeClick()) {
+            while (SuperResolution.getInstance().OPENGUI_KEYMAPPING.consumeClick()) {
                 minecraft.setScreen(
                         ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
                 );
             }
         });
+    }
+
+    public SuperResolution() {
+        instance = this;
+        if (minecraft == null) minecraft = Minecraft.getInstance();
     }
 
     public static void preInit() {
@@ -83,10 +107,6 @@ public final class SuperResolution implements Resizable, Destroyable {
         }
         NativeLibManager.load(gameDir.getAbsolutePath());
         GlslangShaderCompiler.init();
-        if (new OS().type == OSType.WINDOWS) {
-            interopManager = new GlVkInteropManager();
-            initVulkan();
-        }
         isPreInit = true;
     }
 
@@ -145,6 +165,11 @@ public final class SuperResolution implements Resizable, Destroyable {
 
 
             MinecraftRenderHandle.init();
+
+            if (new OS().type == OSType.WINDOWS) {
+                interopManager = new GlVkInteropManager();
+                initVulkan();
+            }
             AlgorithmManager.init();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
@@ -212,7 +237,6 @@ public final class SuperResolution implements Resizable, Destroyable {
 
         if (isInit)
             return;
-        instance = this;
         if (Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui())
             new ImguiMain();
 
