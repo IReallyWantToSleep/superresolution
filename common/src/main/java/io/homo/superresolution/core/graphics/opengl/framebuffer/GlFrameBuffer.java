@@ -161,7 +161,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         Gl.DSA.framebufferTexture(
                 this.frameBufferId,
                 attachment.type.attachmentId(),
-                attachment.texture.handle(),
+                (int) attachment.texture.handle(),
                 0
         );
         attachments.add(attachment);
@@ -272,7 +272,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
-        return switch (attachmentType) {
+        return (int) switch (attachmentType) {
             case Color -> colorAttachment != null ? colorAttachment.texture.handle() : -1;
             case Depth -> depthAttachment != null ? depthAttachment.texture.handle() : -1;
             case DepthStencil -> depthStencilAttachment != null ? depthStencilAttachment.texture.handle() : -1;
@@ -341,6 +341,6 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        Gl.setGlObjectLabel(GL_FRAMEBUFFER, handle(), newLabel);
+        Gl.setGlObjectLabel(GL_FRAMEBUFFER, (int) handle(), newLabel);
     }
 }

@@ -281,8 +281,8 @@ public class MinecraftRenderHandle {
             }
             IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
             Gl.DSA.blitFramebuffer(
-                    outFbo.handle(),
-                    MinecraftRenderHandle.getOriginRenderTarget().handle(),
+                    (int) outFbo.handle(),
+                    (int) MinecraftRenderHandle.getOriginRenderTarget().handle(),
                     0, 0, outFbo.getWidth(), outFbo.getHeight(),
                     0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
                     GL46.GL_COLOR_BUFFER_BIT,

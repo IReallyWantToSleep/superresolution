@@ -211,7 +211,7 @@ public class DataSetGenerator {
                 texture.getWidth(),
                 texture.getHeight()
         );
-        glBindFramebuffer(GL_FRAMEBUFFER, temp.handle());
+        glBindFramebuffer(GL_FRAMEBUFFER, (int) temp.handle());
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
         int pixelFormat = getGLPixelFormat(texture.getTextureFormat());

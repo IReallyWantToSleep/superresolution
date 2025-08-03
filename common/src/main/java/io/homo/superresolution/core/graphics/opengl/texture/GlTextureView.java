@@ -34,7 +34,7 @@ public class GlTextureView implements ITexture {
             throw new IllegalStateException("Parent texture is not initialized");
         }
         int viewId = Gl.DSA.createTextureView(
-                parent.handle(),
+                (int) parent.handle(),
                 type,
                 parent.getTextureFormat().gl(),
                 minLevel,

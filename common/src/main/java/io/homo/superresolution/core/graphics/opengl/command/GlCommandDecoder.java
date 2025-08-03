@@ -65,11 +65,11 @@ public class GlCommandDecoder implements ICommandDecoder {
                 int[] intColor = new int[color.length];
                 for (int i = 0; i < color.length; i++) intColor[i] = (int) (color[i] * 255);
                 putGlCommand(commandBuffer, () -> {
-                    GL44.glClearTexImage(texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
+                    GL44.glClearTexImage((int) texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
                 });
             } else {
                 putGlCommand(commandBuffer, () -> {
-                    GL44.glClearTexImage(texture.handle(), 0, format.gl(), GL_FLOAT, color);
+                    GL44.glClearTexImage((int) texture.handle(), 0, format.gl(), GL_FLOAT, color);
                 });
             }
         } else {
@@ -79,7 +79,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                 )) {
                     int fbo = glGenFramebuffers();
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-                    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture.handle(), 0);
+                    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, (int) texture.handle(), 0);
 
                     int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
                     if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -108,7 +108,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         if (RenderSystems.opengl().supportsARBClearTexture) {
             putGlCommand(commandBuffer, () -> {
                 float[] clearDepth = new float[]{depth};
-                GL44.glClearTexImage(texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
+                GL44.glClearTexImage((int) texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
             });
         } else {
             putGlCommand(commandBuffer, () -> {
@@ -117,7 +117,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                 )) {
                     int fbo = glGenFramebuffers();
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-                    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture.handle(), 0);
+                    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, (int) texture.handle(), 0);
 
                     int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
                     if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -146,7 +146,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         if (RenderSystems.opengl().supportsARBClearTexture) {
             putGlCommand(commandBuffer, () -> {
                 int[] clearStencil = new int[]{stencil};
-                GL44.glClearTexImage(texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
+                GL44.glClearTexImage((int) texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
             });
         } else {
             putGlCommand(commandBuffer, () -> {
@@ -155,7 +155,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                 )) {
                     int fbo = glGenFramebuffers();
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-                    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, texture.handle(), 0);
+                    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, (int) texture.handle(), 0);
 
                     int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
                     if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -208,16 +208,16 @@ public class GlCommandDecoder implements ICommandDecoder {
         switch (src.getTextureType()) {
             case Texture1D:
                 putGlCommand(commandBuffer, () -> glCopyImageSubData(
-                                src.handle(), GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
-                                dst.handle(), GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
+                                (int) src.handle(), GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
+                                (int) dst.handle(), GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
                                 srcX1 - srcX0, 1, 1
                         )
                 );
                 break;
             case Texture2D:
                 putGlCommand(commandBuffer, () -> glCopyImageSubData(
-                        src.handle(), GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
-                        dst.handle(), GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
+                        (int) src.handle(), GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
+                        (int) dst.handle(), GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
                         srcX1 - srcX0, srcY1 - srcY0, 1
                 ));
                 break;
@@ -234,8 +234,8 @@ public class GlCommandDecoder implements ICommandDecoder {
             long size
     ) {
         putGlCommand(commandBuffer, () -> glCopyBufferSubData(
-                src.handle(),
-                dst.handle(),
+                (int) src.handle(),
+                (int) dst.handle(),
                 srcOffset,
                 dstOffset,
                 size
@@ -273,8 +273,8 @@ public class GlCommandDecoder implements ICommandDecoder {
                     }
                 }
                 setupShaderProgram(shaderProgram, resourcesSnapshot);
-                glBindBuffer(GL_ARRAY_BUFFER, drawObject.getVertexBuffer().handle());
-                glBindVertexArray(drawObject.getVertexArray().handle());
+                glBindBuffer(GL_ARRAY_BUFFER, (int) drawObject.getVertexBuffer().handle());
+                glBindVertexArray((int) drawObject.getVertexArray().handle());
                 int glPrimitive = switch (drawObject.getPrimitiveType()) {
                     case TRIANGLES -> GL_TRIANGLES;
                     case TRIANGLE_STRIP -> GL_TRIANGLE_STRIP;
@@ -329,27 +329,27 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     private void setupShaderProgram(IShaderProgram<?> shaderProgram, List<ResourcesBindingSnapshot> resourcesBindingSnapshots) {
-        glUseProgram(shaderProgram.handle());
+        glUseProgram((int) shaderProgram.handle());
         resourcesBindingSnapshots.forEach((uniform) -> {
             switch (uniform.resourcesType()) {
                 case UniformBuffer -> {
                     if (Gl.isLegacy()) {
                         int blockIndex = glGetUniformBlockIndex(
-                                shaderProgram.handle(),
+                                (int) shaderProgram.handle(),
                                 uniform.name()
                         );
                         if (blockIndex == GL_INVALID_INDEX) {
                             throw new RuntimeException("Uniform block '%s' not found".formatted(uniform.name()));
                         }
-                        glUniformBlockBinding(shaderProgram.handle(), blockIndex, uniform.binding());
-                        glBindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), uniform.object().handle());
+                        glUniformBlockBinding((int) shaderProgram.handle(), blockIndex, uniform.binding());
+                        glBindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), (int) uniform.object().handle());
                     } else {
-                        Gl.DSA.bindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), uniform.object().handle());
+                        Gl.DSA.bindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), (int) uniform.object().handle());
                     }
                 }
                 case StorageTexture -> Gl.DSA.bindImageTexture(
                         uniform.binding(),
-                        uniform.object().handle(),
+                        (int) uniform.object().handle(),
                         0,
                         false,
                         0,
@@ -365,13 +365,13 @@ public class GlCommandDecoder implements ICommandDecoder {
                     glActiveTexture(GL_TEXTURE0 + uniform.binding());
 
                     if (texture.getTextureType() == TextureType.Texture1D) {
-                        glBindTexture(GL_TEXTURE_1D, texture.handle());
+                        glBindTexture(GL_TEXTURE_1D, (int) texture.handle());
                     } else if (texture.getTextureType() == TextureType.Texture2D) {
-                        glBindTexture(GL_TEXTURE_2D, texture.handle());
+                        glBindTexture(GL_TEXTURE_2D, (int) texture.handle());
                     } else {
-                        glBindTexture(GL_TEXTURE_2D, texture.handle());
+                        glBindTexture(GL_TEXTURE_2D, (int) texture.handle());
                     }
-                    glUniform1i(glGetUniformLocation(shaderProgram.handle(), uniform.name()), uniform.binding());
+                    glUniform1i(glGetUniformLocation((int) shaderProgram.handle(), uniform.name()), uniform.binding());
                 }
 
             }
