@@ -146,7 +146,7 @@ class FrameBufferRenderTargetAdapter extends RenderTarget {
         this.height = frameBuffer.getHeight();
         this.viewWidth = frameBuffer.getWidth();
         this.viewHeight = frameBuffer.getHeight();
-        this.frameBufferId = frameBuffer.handle();
+        this.frameBufferId = Math.toIntExact(frameBuffer.handle());
         this.colorTextureId = frameBuffer.getTextureId(FrameBufferAttachmentType.Color);
         this.depthBufferId = frameBuffer.getTextureId(FrameBufferAttachmentType.DepthStencil) == -1 ? frameBuffer.getTextureId(FrameBufferAttachmentType.Depth) : frameBuffer.getTextureId(FrameBufferAttachmentType.DepthStencil);
     }

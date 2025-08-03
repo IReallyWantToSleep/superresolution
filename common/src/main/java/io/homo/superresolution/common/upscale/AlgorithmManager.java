@@ -86,7 +86,6 @@ public class AlgorithmManager {
                     new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
                     new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
             );
-            SuperResolution.LOGGER.info("getJitterOffset {} {}", jitter.x, jitter.y);
             return jitter;
         }
         return new Vector2f(0);
@@ -96,7 +95,6 @@ public class AlgorithmManager {
     public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
         proj.m20(proj.m20() + jitter.x);
         proj.m21(proj.m21() + jitter.y);
-        SuperResolution.LOGGER.info("applyJitterOffset {} {}", jitter.x, jitter.y);
         return proj;
     }
 
