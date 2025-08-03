@@ -173,7 +173,7 @@ public class Fsr2Context {
                     data[dataIndex] = converted;
                 }
                 int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
-                glBindTexture(GL_TEXTURE_2D, maximumBiasTexture.handle());
+                glBindTexture(GL_TEXTURE_2D, (int) maximumBiasTexture.handle());
                 glTexSubImage2D(
                         GL_TEXTURE_2D,
                         0,

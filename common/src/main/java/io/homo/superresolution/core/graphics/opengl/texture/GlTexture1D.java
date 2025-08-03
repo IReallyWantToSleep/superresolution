@@ -182,7 +182,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        setGlObjectLabel(GL_TEXTURE, handle(), getDebugLabel());
+        setGlObjectLabel(GL_TEXTURE, (int) handle(), getDebugLabel());
     }
 
     public void generateMipmap() {

@@ -68,7 +68,7 @@ public class BlurRenderer {
         }
         GlTexture2D dst = blurTempTexture;
         ITexture src = MinecraftRenderHandle.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color);
-        dst.copyFromTex(src.handle());
+        dst.copyFromTex((int) src.handle());
         dst.generateMipmap();
     }
 

@@ -28,7 +28,7 @@ public class GlVertexArray implements IVertexArray {
         if (!Gl.isSupportDSA()) {
             try (GlState ignored = new GlState(GlState.STATE_VERTEX_OPERATIONS | GlState.STATE_VBO)) {
                 glBindVertexArray(id);
-                glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer.handle());
+                glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
                 for (VertexAttribute attr : attributes) {
                     int loc = attr.getLocation();
                     int componentCount = attr.getComponentCount();
@@ -63,7 +63,7 @@ public class GlVertexArray implements IVertexArray {
             }
         } else {
             int bindingIndex = 0;
-            Gl.DSA.vertexArrayVertexBuffer(id, bindingIndex, vertexBuffer.handle(), 0, attributes[0].getStride());
+            Gl.DSA.vertexArrayVertexBuffer(id, bindingIndex, (int) vertexBuffer.handle(), 0, attributes[0].getStride());
             for (VertexAttribute attr : attributes) {
                 int loc = attr.getLocation();
                 Gl.DSA.vertexArrayAttribBinding(id, loc, bindingIndex);

@@ -80,7 +80,7 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
     public void blitToScreen() {
         updateState();
         Gl.DSA.blitFramebuffer(
-                frameBuffer.handle(),
+                (int) frameBuffer.handle(),
                 new GlState(GlState.STATE_DRAW_FBO).wFbo,
                 0, 0, frameBuffer.getWidth(), frameBuffer.getHeight(),
                 0, 0, frameBuffer.getWidth(), frameBuffer.getHeight(),

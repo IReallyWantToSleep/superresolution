@@ -27,7 +27,7 @@ public class GpuTextureAdapter extends GlTexture {
                 texture.getHeight(),
                 1,
                 1,
-                texture.handle()
+                (int) texture.handle()
         );
         #else
         super(texture.handle() + "--" + texture.getTextureFormat(),
@@ -63,7 +63,7 @@ public class GpuTextureAdapter extends GlTexture {
     }
 
     public int getFbo(DirectStateAccess directStateAccess, @Nullable GpuTexture gpuTexture) {
-        return frameBuffer != null ? frameBuffer.handle() : -1;
+        return Math.toIntExact(frameBuffer != null ? frameBuffer.handle() : -1);
     }
 
     public void flushModeChanges() {
@@ -71,7 +71,7 @@ public class GpuTextureAdapter extends GlTexture {
     }
 
     public int glId() {
-        return this.texture.handle();
+        return Math.toIntExact(this.texture.handle());
     }
 
     public void setAddressMode(AddressMode addressMode, AddressMode addressMode2) {

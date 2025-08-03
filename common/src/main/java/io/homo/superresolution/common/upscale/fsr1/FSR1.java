@@ -231,6 +231,6 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        return output.handle();
+        return Math.toIntExact(output.handle());
     }
 }
