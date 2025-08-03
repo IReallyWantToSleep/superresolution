@@ -168,7 +168,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return this.frameBufferId;
     }
 
@@ -244,7 +244,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
         }
 
         @Override
-        public int handle() {
+        public long handle() {
             return isDepth ? depthBufferId : colorTextureId;
         }
 

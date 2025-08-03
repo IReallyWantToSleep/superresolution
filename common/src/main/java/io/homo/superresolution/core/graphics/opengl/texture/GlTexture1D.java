@@ -124,7 +124,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return id;
     }
 

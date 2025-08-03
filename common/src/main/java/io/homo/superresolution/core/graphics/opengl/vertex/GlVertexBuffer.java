@@ -33,7 +33,7 @@ public class GlVertexBuffer implements IVertexBuffer {
 
 
     @Override
-    public int handle() {
+    public long handle() {
         return id;
     }
 

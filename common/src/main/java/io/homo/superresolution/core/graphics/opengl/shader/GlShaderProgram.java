@@ -35,7 +35,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return handle;
     }
 

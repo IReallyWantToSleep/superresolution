@@ -80,7 +80,7 @@ public class GlVertexArray implements IVertexArray {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return id;
     }
 }

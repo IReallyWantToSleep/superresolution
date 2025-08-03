@@ -324,7 +324,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return frameBufferId;
     }
 
