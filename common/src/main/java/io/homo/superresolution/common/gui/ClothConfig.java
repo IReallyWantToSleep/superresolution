@@ -14,11 +14,11 @@ import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.utils.ColorUtil;
@@ -310,7 +310,7 @@ public class ClothConfig {
         ).setTop(4).setBottom(7);
         InfoBuilder.of(glExtInfoEntry).addGlExt();
         ClothTextListListEntry vkExtInfoEntry = null;
-        if (GlVkInteropManager.isSupportVulkan()) {
+        if (RenderSystems.isSupportVulkan()) {
             vkExtInfoEntry = new ClothTextListListEntry(
                     Component.translatable("superresolution.screen.info.button.label.vulkan_ext_info").append(" ").append(
                             Component.translatable("superresolution.screen.info.text.vulkan_ext_count").getString()
@@ -324,7 +324,7 @@ public class ClothConfig {
 
         envInfoCategory.addEntry(envInfoEntry);
         envInfoCategory.addEntry(glExtInfoEntry);
-        if (GlVkInteropManager.isSupportVulkan()) envInfoCategory.addEntry(vkExtInfoEntry);
+        if (RenderSystems.isSupportVulkan()) envInfoCategory.addEntry(vkExtInfoEntry);
         ConfigCategory algoInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.text.algo_support_status"));
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
             if (algorithmDescription.equals(AlgorithmDescriptions.NONE)) continue;

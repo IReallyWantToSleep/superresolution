@@ -1,9 +1,8 @@
 package io.homo.superresolution.api.utils;
 
 import io.homo.superresolution.common.platform.*;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
-import me.shedaniel.clothconfig2.api.ValueHolder;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -200,7 +199,7 @@ public class Requirement {
     }
 
     private boolean checkVulkanSupport() {
-        return !requiresVulkan || (GlVkInteropManager.isSupportVulkan());
+        return !requiresVulkan || (RenderSystems.isSupportVulkan());
     }
 
     public List<String> getMissingGlExtensions() {

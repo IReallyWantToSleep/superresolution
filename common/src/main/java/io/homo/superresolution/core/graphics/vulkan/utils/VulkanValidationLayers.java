@@ -1,6 +1,5 @@
 package io.homo.superresolution.core.graphics.vulkan.utils;
 
-import io.homo.superresolution.core.graphics.vulkan.VulkanApplication;
 import io.homo.superresolution.core.impl.Destroyable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -25,11 +24,11 @@ public class VulkanValidationLayers implements Destroyable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VulkanValidationLayers.class);
     private static final Set<String> REQUIRED_LAYERS = Collections.singleton("VK_LAYER_KHRONOS_VALIDATION");
 
-    private final VulkanApplication application;
+    private final VkInstance instance;
     private long debugMessenger;
 
-    public VulkanValidationLayers(VulkanApplication application) {
-        this.application = application;
+    public VulkanValidationLayers(VkInstance instance) {
+        this.instance = instance;
     }
 
     public static boolean checkValidationLayerSupport() {
@@ -52,7 +51,7 @@ public class VulkanValidationLayers implements Destroyable {
             populateDebugMessengerCreateInfo(createInfo);
 
             LongBuffer pDebugMessenger = stack.mallocLong(1);
-            VK_CHECK(createDebugUtilsMessengerEXT(application.getInstance(), createInfo, pDebugMessenger), "Failed to set up debug messenger");
+            VK_CHECK(createDebugUtilsMessengerEXT(instance, createInfo, pDebugMessenger), "Failed to set up debug messenger");
             debugMessenger = pDebugMessenger.get(0);
         }
     }
@@ -92,7 +91,7 @@ public class VulkanValidationLayers implements Destroyable {
     @Override
     public void destroy() {
         if (debugMessenger != NULL) {
-            destroyDebugUtilsMessengerEXT(application.getInstance(), debugMessenger);
+            destroyDebugUtilsMessengerEXT(instance, debugMessenger);
         }
     }
 

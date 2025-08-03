@@ -19,7 +19,6 @@ import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.platform.*;
-import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -47,7 +46,6 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static boolean isPreInit;
     public static boolean gameIsLoad = false;
     public static AlgorithmDescription<?> algorithmDescription;
-    public static GlVkInteropManager interopManager;
     public static int framebufferWidth = 0;
     public static int framebufferHeight = 0;
     public static int cachedWidth;
@@ -115,10 +113,6 @@ public final class SuperResolution implements Resizable, Destroyable {
         isPreInit = true;
     }
 
-    public static void initVulkan() {
-        interopManager.init();
-    }
-
     public static SuperResolution getInstance() {
         return instance;
     }
@@ -170,11 +164,6 @@ public final class SuperResolution implements Resizable, Destroyable {
 
 
             MinecraftRenderHandle.init();
-
-            if (new OS().type == OSType.WINDOWS) {
-                interopManager = new GlVkInteropManager();
-                initVulkan();
-            }
             AlgorithmManager.init();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
@@ -266,9 +255,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void destroy() {
-        if (interopManager != null) {
-            interopManager.destroy();
-        }
+        RenderSystems.destroy();
         if (currentAlgorithm != null)
             currentAlgorithm.destroy();
         AlgorithmManager.destroy();
