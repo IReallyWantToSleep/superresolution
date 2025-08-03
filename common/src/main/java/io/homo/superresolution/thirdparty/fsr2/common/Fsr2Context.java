@@ -166,6 +166,12 @@ public class Fsr2Context {
         if (!maximumBiasTextureUploaded) {
             GlTexture2D maximumBiasTexture = ((GlTexture2D) resources.resource(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT).getResource());
             if (maximumBiasTexture != null) {
+                int textureSize = Fsr2MaximumBias.FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH * Fsr2MaximumBias.FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT;
+                short[] data = new short[textureSize];
+                for (int dataIndex = 0; dataIndex < data.length; dataIndex++) {
+                    short converted = (short) Math.round(Fsr2MaximumBias.ffxFsr2MaximumBiasData[dataIndex] / 2.0f * 32767.0f);
+                    data[dataIndex] = converted;
+                }
                 int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
                 glBindTexture(GL_TEXTURE_2D, maximumBiasTexture.handle());
                 glTexSubImage2D(
@@ -177,7 +183,7 @@ public class Fsr2Context {
                         maximumBiasTexture.getHeight(),
                         GL41.GL_RED,
                         GL41.GL_SHORT,
-                        Fsr2MaximumBias.ffxFsr2MaximumBias
+                        data
                 );
                 glBindTexture(GL_TEXTURE_2D, prevTex);
                 maximumBiasTextureUploaded = true;

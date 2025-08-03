@@ -457,7 +457,8 @@ public class ClothConfig {
                             .withStyle(Style.EMPTY
                                     .withColor(ColorUtil.color(255, 150, 150, 150))
                                     .withClickEvent(createURLClickEvent(url))
-                            ))
+                            )
+                    )
             );
         });
         projectInfoCategory.addEntry(webLinksEntry);
