@@ -7,11 +7,7 @@ import static java.lang.Math.floor;
 import static java.lang.Math.pow;
 
 public class Fsr2Utils {
-    public static int ffxFsr2GetJitterPhaseCount(float renderWidth, float displayWidth) {
-        float basePhaseCount = 8.0f;
-        float jitterPhaseCount = (float) (basePhaseCount * pow((displayWidth / renderWidth), 2.0f));
-        return (int) jitterPhaseCount;
-    }
+
 
     public static void spdSetup(int[] dispatchThreadGroupCountXY,
                                 int[] workGroupOffset,
@@ -85,6 +81,12 @@ public class Fsr2Utils {
         }
 
         return result;
+    }
+
+    public static int ffxFsr2GetJitterPhaseCount(float renderWidth, float displayWidth) {
+        float basePhaseCount = 8.0f;
+        float jitterPhaseCount = (float) (basePhaseCount * pow((displayWidth / renderWidth), 2.0f));
+        return (int) jitterPhaseCount;
     }
 
     public static Vector2f ffxFsr2GetJitterOffset(int index, int phaseCount) {

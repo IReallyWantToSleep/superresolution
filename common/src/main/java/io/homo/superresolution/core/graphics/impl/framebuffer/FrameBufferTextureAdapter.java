@@ -68,6 +68,14 @@ public class FrameBufferTextureAdapter implements ITexture {
     }
 
     @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
+            return TextureMipmapSettings.disabled();
+        }
+        return frameBuffer.getTexture(attachmentType).getMipmapSettings();
+    }
+
+    @Override
     public int getWidth() {
         return frameBuffer.getWidth();
     }

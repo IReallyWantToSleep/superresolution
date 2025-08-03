@@ -192,6 +192,12 @@ public class GL45OrEXTDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
+    public void textureParameterf(int texture, int pname, float value) {
+        GL45C.glTextureParameterf(texture, pname, value);
+
+    }
+
+    @Override
     public void textureStorage2D(int texture, int levels, int internalFormat, int width, int height) {
         GL45C.glTextureStorage2D(texture, levels, internalFormat, width, height);
     }

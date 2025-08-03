@@ -1,15 +1,20 @@
 package io.homo.superresolution.common.mixin.core;
 
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.math.Vector2f;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.renderer.LevelRenderer;
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -29,6 +34,10 @@ public abstract class GameRendererMixin {
 
     #else
     protected abstract float getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
+
+    @Shadow
+    @Final
+    private Minecraft minecraft;
 
     #endif
     @Inject(method = "resize", at = @At(value = "HEAD"))
@@ -97,6 +106,7 @@ public abstract class GameRendererMixin {
     }
     #endif
 
+
     #if MC_VER > MC_1_21_1
     @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix(F)Lorg/joml/Matrix4f;", ordinal = 0))
     public Matrix4f applyJitterToProjectionMatrix(GameRenderer instance, float fov)
@@ -106,16 +116,41 @@ public abstract class GameRendererMixin {
     #endif {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null) {
             Vector2f currentJitter = AlgorithmManager.getJitterOffset();
-            Matrix4f projectionMatrix = new Matrix4f(instance.getProjectionMatrix(fov));
-            projectionMatrix.mul(new Matrix4f().translation(
-                    currentJitter.x,
-                    currentJitter.y,
-                    0.0f
-            ));
-            return projectionMatrix;
+            return AlgorithmManager.applyJitterOffset(instance.getProjectionMatrix(fov), currentJitter);
         }
         return instance.getProjectionMatrix(fov);
     }
 
-
+    /*
+    #if MC_VER > MC_1_21_1
+    @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/Camera;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Vector4f;Z)V"))
+    public void applyJitterToProjectionMatrix(
+            LevelRenderer instance,
+            GraphicsResourceAllocator graphicsResourceAllocator,
+            DeltaTracker deltaTracker,
+            boolean renderBlockOutline,
+            Camera camera,
+            Matrix4f frustumMatrix,
+            Matrix4f projectionMatrix,
+            GpuBufferSlice fogBuffer,
+            Vector4f fogColor,
+            boolean renderSky
+    )
+     #else
+    @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix(D)Lorg/joml/Matrix4f;", ordinal = 0))
+    public Matrix4f applyJitterToProjectionMatrix(GameRenderer instance, double fov)
+    #endif {
+        Vector2f currentJitter = AlgorithmManager.getJitterOffset();
+        this.minecraft.levelRenderer.renderLevel(
+                graphicsResourceAllocator,
+                deltaTracker,
+                renderBlockOutline,
+                camera,
+                frustumMatrix,
+                AlgorithmManager.applyJitterOffset(projectionMatrix, currentJitter),
+                fogBuffer,
+                fogColor,
+                renderSky
+        );
+    }*/
 }

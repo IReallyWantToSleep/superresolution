@@ -3,12 +3,28 @@ package io.homo.superresolution.core.graphics.impl.texture;
 public class TextureMipmapSettings {
     private final boolean enabled;
     private final int levels;
+
+    public float getBias() {
+        return bias;
+    }
+
+    public TextureMipmapSettings bias(float bias) {
+        this.bias = bias;
+        return this;
+    }
+
+    private float bias;
     private final boolean autoGenerate;
 
-    private TextureMipmapSettings(boolean enabled, int levels, boolean autoGenerate) {
+    private TextureMipmapSettings(boolean enabled, int levels, boolean autoGenerate, float bias) {
         this.enabled = enabled;
         this.levels = levels;
         this.autoGenerate = autoGenerate;
+        this.bias = bias;
+    }
+
+    private TextureMipmapSettings(boolean enabled, int levels, boolean autoGenerate) {
+        this(enabled, levels, autoGenerate, 0);
     }
 
     public static TextureMipmapSettings disabled() {

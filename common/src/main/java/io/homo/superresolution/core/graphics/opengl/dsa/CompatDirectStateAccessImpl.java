@@ -230,6 +230,14 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
+    public void textureParameterf(int texture, int pname, float value) {
+        int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameterf(GL_TEXTURE_2D, pname, value);
+        glBindTexture(GL_TEXTURE_2D, prevTex);
+    }
+
+    @Override
     public void textureStorage2D(int target, int levels, int internalFormat,
                                  int width, int height) {
         int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);

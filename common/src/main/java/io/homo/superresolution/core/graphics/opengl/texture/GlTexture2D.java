@@ -24,6 +24,11 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     private TextureType type = null;
     private TextureFilterMode filterMode = null;
     private TextureWrapMode wrapMode = null;
+
+    public TextureMipmapSettings getMipmapSettings() {
+        return mipmapSettings;
+    }
+
     private TextureMipmapSettings mipmapSettings;
 
     private int id;
@@ -86,6 +91,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_T, wrapMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_BASE_LEVEL, 0);
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, currentMipmapLevel);
+        Gl.DSA.textureParameterf(this.id, GL_TEXTURE_LOD_BIAS, mipmapSettings.getBias());
     }
 
     private void allocateTextureStorage() {

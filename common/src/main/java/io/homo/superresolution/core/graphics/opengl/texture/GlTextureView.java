@@ -109,6 +109,11 @@ public class GlTextureView implements ITexture {
     }
 
     @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        return parent.getMipmapSettings();
+    }
+
+    @Override
     public int getWidth() {
         return parent.getWidth();
     }

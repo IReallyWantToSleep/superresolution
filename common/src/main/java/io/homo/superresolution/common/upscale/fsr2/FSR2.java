@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
@@ -21,6 +22,7 @@ public class FSR2 extends AbstractAlgorithm {
     private GlFrameBuffer outputFbo;
     private GlTexture2D output;
     private GlTexture2D exposureTexture;
+    private GlTexture2D inputTexture;
 
     public FSR2() {
         super();
@@ -31,7 +33,11 @@ public class FSR2 extends AbstractAlgorithm {
         RenderSystem.assertOnRenderThread();
         this.output.resize(width, height);
         outputFbo.resizeFrameBuffer(width, height);
-
+        inputTexture.getMipmapSettings().bias((float) (Math.log((double) MinecraftRenderHandle.getRenderWidth() / MinecraftRenderHandle.getScreenWidth()) / Math.log(2) - 1f));
+        inputTexture.resize(
+                MinecraftRenderHandle.getRenderWidth(),
+                MinecraftRenderHandle.getRenderHeight()
+        );
         fsr2Context.resize(new Fsr2Dimensions(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
@@ -62,6 +68,15 @@ public class FSR2 extends AbstractAlgorithm {
                 .height(1)
                 .format(TextureFormat.RGBA8)
                 .usages(TextureUsages.create().sampler().storage().sampler())
+                .build()
+        );
+        inputTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .width(MinecraftRenderHandle.getRenderWidth())
+                .height(MinecraftRenderHandle.getRenderHeight())
+                .format(TextureFormat.RGBA8)
+                .mipmapsAuto()
+                .usages(TextureUsages.create().sampler().storage())
                 .build()
         );
         fsr2Context = new Fsr2Context(
@@ -111,12 +126,43 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.Color));
         dispatchDescription.setOutput(this.output);
         dispatchDescription.setJitterOffset(
+                new Vector2f(0)
+                /*
                 getOriginJitterOffset(
                         dispatchResource.frameCount(),
                         dispatchResource.renderSize(),
                         dispatchResource.screenSize()
                 )
+                */
         );
+        /*
+        SuperResolution.LOGGER.info(
+                "FSR2 {} {}", getJitterOffset(
+                        dispatchResource.frameCount(),
+                        dispatchResource.renderSize(),
+                        dispatchResource.screenSize()
+                ).x,
+                getJitterOffset(
+                        dispatchResource.frameCount(),
+                        dispatchResource.renderSize(),
+                        dispatchResource.screenSize()
+                ).y
+
+        );
+        SuperResolution.LOGGER.info(
+                "FSR2OG {} {}", getOriginJitterOffset(
+                        dispatchResource.frameCount(),
+                        dispatchResource.renderSize(),
+                        dispatchResource.screenSize()
+                ).x,
+                getOriginJitterOffset(
+                        dispatchResource.frameCount(),
+                        dispatchResource.renderSize(),
+                        dispatchResource.screenSize()
+                ).y
+
+        );
+        */
         dispatchDescription.setExposure(exposureTexture);
         dispatchDescription.setRenderSize(new Vector2f(
                 dispatchResource.renderWidth(),
@@ -153,20 +199,20 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        return new Vector2f(0);
+        /*
         Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-
         return new Vector2f(
-                0,
-                0
-        );
+                2 * originJitter.x / renderSize.x,
+                -2 * originJitter.y / renderSize.y
+        );*/
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        //int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        //return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
-        return new Vector2f(
-                0,
-                0
-        );
+        return new Vector2f(0);
+        /*
+        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount).multiply(2);
+        */
     }
 }

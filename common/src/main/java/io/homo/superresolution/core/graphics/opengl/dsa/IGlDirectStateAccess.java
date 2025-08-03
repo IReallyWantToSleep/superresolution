@@ -17,6 +17,8 @@ public interface IGlDirectStateAccess {
 
     void textureParameteri(int texture, int pname, int value);
 
+    void textureParameterf(int texture, int pname, float value);
+
     void textureStorage2D(int texture, int levels, int internalFormat, int width, int height);
 
     void textureSubImage2D(int texture, int level, int xoffset, int yoffset, int width, int height, int format, int type, long pixels);
