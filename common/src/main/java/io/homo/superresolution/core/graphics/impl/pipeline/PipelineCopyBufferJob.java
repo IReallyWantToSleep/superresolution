@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
 public class PipelineCopyBufferJob implements IPipelineJob {
@@ -79,10 +80,11 @@ public class PipelineCopyBufferJob implements IPipelineJob {
     }
 
     @Override
-    public void execute(IRenderSystem renderSystem) {
+    public void execute(ICommandBuffer commandBuffer) {
         if (srcOffset == -1 && dstOffset == -1 && size == -1) {
             if (source.getSize() == destination.getSize()) {
-                renderSystem.copyBuffer(
+                commandBuffer.getEncoder().copyBuffer(
+                        commandBuffer,
                         source,
                         destination,
                         0,
@@ -98,7 +100,8 @@ public class PipelineCopyBufferJob implements IPipelineJob {
             if (srcOffset + size > source.getSize() || dstOffset + size > destination.getSize()) {
                 throw new RuntimeException("Buffer空间不足");
             }
-            renderSystem.copyBuffer(
+            commandBuffer.getEncoder().copyBuffer(
+                    commandBuffer,
                     source,
                     destination,
                     srcOffset,

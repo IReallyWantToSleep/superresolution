@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
@@ -45,8 +46,12 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     @Override
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         swapHistoryOutput();
-        sgsrPipeline.executeJob(RenderSystems.opengl(), "convert");
-        sgsrPipeline.executeJob(RenderSystems.opengl(), "upscale");
+        RenderSystems.opengl().device().commendEncoder().begin();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().commendEncoder().getCommandBuffer();
+        sgsrPipeline.executeJob(commandBuffer, "convert");
+        sgsrPipeline.executeJob(commandBuffer, "upscale");
+        RenderSystems.opengl().device().commendEncoder().end();
+        RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
     }
 
     @Override

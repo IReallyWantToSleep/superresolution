@@ -1,14 +1,16 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
 public interface IPipelineJob {
     /**
-     * 执行作业
+     * 把作业提交到命令缓冲区
      *
-     * @param renderSystem 执行作业的渲染系统
+     * @param commandBuffer 目标命令缓冲区
      */
-    void execute(IRenderSystem renderSystem);
+    void execute(ICommandBuffer commandBuffer);
 
     /**
      * 销毁作业资源

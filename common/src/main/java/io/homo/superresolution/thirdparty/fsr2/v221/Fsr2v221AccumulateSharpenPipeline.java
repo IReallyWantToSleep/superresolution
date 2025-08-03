@@ -265,8 +265,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
 
     @Override
     public void execute(Fsr2PipelineDispatchResource dispatchResource) {
-
-        pipeline.execute(RenderSystems.current());
+        pipeline.execute(dispatchResource.commandBuffer());
     }
 
 }

@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.impl;
 
 
+import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexArray;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
@@ -26,7 +27,7 @@ public class DrawObject implements Destroyable {
         return 4;
     }
 
-    public static DrawObject fullscreenQuad(IRenderSystem renderSystem) {
+    public static DrawObject fullscreenQuad(IDevice device) {
         float[] vertices = {
                 -1f, 1f, 0f, 1f,
                 1f, 1f, 1f, 1f,
@@ -34,7 +35,7 @@ public class DrawObject implements Destroyable {
                 1f, -1f, 1f, 0f
         };
         VertexBufferDescription desc = new VertexBufferDescription(vertices.length * Float.BYTES, false);
-        IVertexBuffer vbo = renderSystem.device().createVertexBuffer(desc);
+        IVertexBuffer vbo = device.createVertexBuffer(desc);
         vbo.updateData(vertices, 0, vertices.length);
         VertexAttribute[] attributes = new VertexAttribute[]{
                 new VertexAttribute(0, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 0),

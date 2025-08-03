@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
@@ -43,25 +44,25 @@ public class PipelineClearTextureJob implements IPipelineJob {
     }
 
     @Override
-    public void execute(IRenderSystem renderSystem) {
+    public void execute(ICommandBuffer commandBuffer) {
         validateState();
         boolean cleared = false;
 
         if (clearColor != null) {
             validateChannels(clearColor.length, target.getTextureFormat().getChannelCount());
-            renderSystem.clearTextureRGBA(target, clearColor);
+            commandBuffer.getEncoder().clearTextureRGBA(commandBuffer, target, clearColor);
             cleared = true;
         }
 
         if (clearDepth != null) {
             validateDepthSupport();
-            renderSystem.clearTextureDepth(target, clearDepth);
+            commandBuffer.getEncoder().clearTextureDepth(commandBuffer, target, clearDepth);
             cleared = true;
         }
 
         if (clearStencil != null) {
             validateStencilSupport();
-            renderSystem.clearTextureStencil(target, clearStencil);
+            commandBuffer.getEncoder().clearTextureStencil(commandBuffer, target, clearStencil);
             cleared = true;
         }
 

@@ -201,7 +201,8 @@ public class Fsr2Context {
                 resources,
                 config,
                 dimensions,
-                dispatchDescription
+                dispatchDescription,
+                dispatchDescription.commandBuffer
         );
 
         computeLuminancePyramidPipeline.execute(pipelineDispatchResource);

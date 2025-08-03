@@ -1,6 +1,7 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.DrawObject;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
@@ -11,7 +12,6 @@ public class PipelineGraphicsJob extends GpuComputeJob<PipelineGraphicsJob> impl
     protected final float[] viewport = new float[]{-1, -1, -1, -1};
     protected IFrameBuffer frameBuffer;
     protected IShaderProgram<?> program = null;
-    private static DrawObject cachedFullscreenQuad;
 
     public PipelineGraphicsJob viewport(float x, float y, float width, float height) {
         this.viewport[0] = x;
@@ -32,32 +32,29 @@ public class PipelineGraphicsJob extends GpuComputeJob<PipelineGraphicsJob> impl
     }
 
     @Override
-    public void execute(IRenderSystem renderSystem) {
+    public void execute(ICommandBuffer commandBuffer) {
         Objects.requireNonNull(program, "图形着色器未设置");
         Objects.requireNonNull(frameBuffer, "帧缓冲区未设置");
 
         setupProgramResources(program);
-        float[] lastViewport = renderSystem.renderState().viewport();
+        float[] lastViewport = commandBuffer.getEncoder().renderState().viewport();
 
         if (isViewportValid()) {
-            renderSystem.renderState().viewport(
+            commandBuffer.getEncoder().renderState().viewport(
                     viewport[0], viewport[1], viewport[2], viewport[3]
             );
         }
 
-        if (cachedFullscreenQuad == null) {
-            cachedFullscreenQuad = DrawObject.fullscreenQuad(renderSystem);
-        }
-
-        renderSystem.draw(
+        commandBuffer.getEncoder().draw(
+                commandBuffer,
                 program,
                 frameBuffer,
-                DrawObject.fullscreenQuad(renderSystem).once(),
+                DrawObject.fullscreenQuad(commandBuffer.getDevice()).once(),
                 0,
                 DrawObject.fullscreenQuadVertexCount()
         );
 
-        renderSystem.renderState().viewport(
+        commandBuffer.getEncoder().renderState().viewport(
                 lastViewport[0], lastViewport[1], lastViewport[2], lastViewport[3]
         );
     }

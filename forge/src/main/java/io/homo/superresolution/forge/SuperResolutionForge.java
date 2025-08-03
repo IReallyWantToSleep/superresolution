@@ -17,7 +17,6 @@ import net.minecraftforge.fml.IExtensionPoint;
 
 @Mod(value = SuperResolution.MOD_ID)
 public final class SuperResolutionForge {
-    public static SuperResolution mod;
 
     public SuperResolutionForge() {
         SuperResolutionConfig.SPEC.load();
@@ -26,7 +25,7 @@ public final class SuperResolutionForge {
         if (io.homo.superresolution.common.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
-        SuperResolution.preInit();
-        mod = new SuperResolution();
+        SuperResolution.registerKeyMapping();
+        SuperResolution.registerEvents();
     }
 }

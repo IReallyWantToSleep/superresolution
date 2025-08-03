@@ -106,9 +106,14 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputFbo.clearFrameBuffer();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);
-
-        pipeline.execute(RenderSystems.opengl());
-
+        RenderSystems.current().device().commendEncoder().begin();
+        pipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
+        RenderSystems.current().device().submitCommandBuffer(
+                RenderSystems.current()
+                        .device()
+                        .commendEncoder()
+                        .end()
+        );
         GL41.glEnable(GL41.GL_DEPTH_TEST);
         GL41.glEnable(GL41.GL_CULL_FACE);
         return true;
