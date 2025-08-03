@@ -86,7 +86,7 @@ public class ClothChartEntry extends TooltipListEntry<Object> {
         super.render(graphics, index, y, x, entryWidth, entryHeight, mouseX, mouseY, isHovered, delta);
         Font font = Minecraft.getInstance().font;
 
-        graphics.drawCenteredString(font, name, x + entryWidth / 2, y + 2, 0xFFFFFF);
+        graphics.drawCenteredString(font, name, x + entryWidth / 2, y + 2, ColorUtil.color(255, 255, 255, 255));
 
         if (!data.isEmpty()) {
             float avg = sum / data.size();
