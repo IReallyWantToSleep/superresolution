@@ -14,7 +14,7 @@ public class TextureSupplier implements ITexture {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return supplier.get().handle();
     }
 

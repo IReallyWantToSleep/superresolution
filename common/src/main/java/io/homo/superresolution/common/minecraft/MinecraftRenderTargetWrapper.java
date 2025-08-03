@@ -112,7 +112,7 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         #if MC_VER > MC_1_21_4
         return MinecraftRenderTargetUtil.getFboId(renderTarget);
         #else

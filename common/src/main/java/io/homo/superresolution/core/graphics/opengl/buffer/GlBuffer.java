@@ -57,7 +57,7 @@ public class GlBuffer implements IBuffer {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return glId;
     }
 

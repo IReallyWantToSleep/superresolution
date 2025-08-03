@@ -79,7 +79,7 @@ public class GlTextureView implements ITexture {
     }
 
     @Override
-    public int handle() {
+    public long handle() {
         return id;
     }
 

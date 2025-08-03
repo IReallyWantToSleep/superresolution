@@ -16,6 +16,7 @@ import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandDecoder;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandEncoder;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandManager;
+import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkDevice;
@@ -57,7 +58,11 @@ public class VulkanDevice implements IDevice {
 
     @Override
     public ITexture createTexture(TextureDescription description) {
-        return null;
+        return new VulkanTexture(this, description);
+    }
+
+    public ITexture createTextureFromHandle(TextureDescription description, long memory) {
+        return new VulkanTexture(this, description, memory);
     }
 
     @Override

@@ -26,7 +26,7 @@ public class FrameBufferTextureAdapter implements ITexture {
 
 
     @Override
-    public int handle() {
+    public long handle() {
         return frameBuffer.getTextureId(attachmentType);
     }
 
