@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.math.Vector4i;
@@ -44,12 +45,13 @@ public class PipelineCopyTextureJob implements IPipelineJob {
     }
 
     @Override
-    public void execute(IRenderSystem renderSystem) {
+    public void execute(ICommandBuffer commandBuffer) {
         if (sourceDimensions == null && destinationDimensions == null) {
             if (source.getWidth() != destination.getWidth() || source.getHeight() != destination.getHeight()) {
                 throw new RuntimeException("复制区域未指定，默认复制全纹理，源纹理与目标纹理大小不同");
             } else {
-                renderSystem.copyTexture(
+                commandBuffer.getEncoder().copyTexture(
+                        commandBuffer,
                         source, destination,
                         0, 0, source.getWidth(), source.getHeight(), 0,
                         0, 0, destination.getWidth(), destination.getHeight(), 0
@@ -59,7 +61,8 @@ public class PipelineCopyTextureJob implements IPipelineJob {
         } else {
             checkBounds(source, sourceDimensions, "源");
             checkBounds(destination, destinationDimensions, "目标");
-            renderSystem.copyTexture(
+            commandBuffer.getEncoder().copyTexture(
+                    commandBuffer,
                     source, destination,
                     sourceDimensions.x, sourceDimensions.y,
                     sourceDimensions.z, sourceDimensions.w, 0,

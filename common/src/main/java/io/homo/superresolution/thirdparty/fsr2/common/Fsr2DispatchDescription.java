@@ -1,5 +1,6 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.math.Vector2f;
 
@@ -24,6 +25,17 @@ public class Fsr2DispatchDescription {
     public float cameraFovAngleVertical;
     public float viewSpaceToMetersFactor;
     public boolean deviceDepthNegativeOneToOne;
+
+    public ICommandBuffer commandBuffer() {
+        return commandBuffer;
+    }
+
+    public Fsr2DispatchDescription setCommandBuffer(ICommandBuffer commandBuffer) {
+        this.commandBuffer = commandBuffer;
+        return this;
+    }
+
+    public ICommandBuffer commandBuffer;
 
     public static Fsr2DispatchDescription create() {
         return new Fsr2DispatchDescription();

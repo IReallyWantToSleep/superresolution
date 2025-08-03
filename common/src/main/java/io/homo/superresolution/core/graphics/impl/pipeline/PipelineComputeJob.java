@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.math.Vector3i;
@@ -30,7 +31,7 @@ public class PipelineComputeJob extends GpuComputeJob<PipelineComputeJob> implem
     }
 
     @Override
-    public void execute(IRenderSystem renderSystem) {
+    public void execute(ICommandBuffer commandBuffer) {
         Objects.requireNonNull(workGroupSizeSupplier, "工作组大小提供器未设置");
         Objects.requireNonNull(program, "计算着色器未设置");
 
@@ -41,7 +42,7 @@ public class PipelineComputeJob extends GpuComputeJob<PipelineComputeJob> implem
             throw new IllegalStateException("无效的工作组大小: " + workGroup);
         }
 
-        renderSystem.dispatchCompute(program, workGroup.x, workGroup.y, workGroup.z);
+        commandBuffer.getEncoder().dispatchCompute(commandBuffer, program, workGroup.x, workGroup.y, workGroup.z);
     }
 
     @Override

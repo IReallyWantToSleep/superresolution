@@ -25,6 +25,7 @@ public class GraphicsCapabilities {
     private static final ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
     private static Set<String> glExtensions = null;
     private static GpuVendor gpuVendor = null;
+    private static int[] glVersion = new int[]{-1, -1};
 
     public static void init() {
     }
@@ -53,12 +54,14 @@ public class GraphicsCapabilities {
     }
 
     private static int[] detectGLVersion() {
-        int[] version = new int[2];
+        if (glVersion[0] != -1 && glVersion[1] != -1) {
+            return glVersion;
+        }
         int major = glGetInteger(GL_MAJOR_VERSION);
         int minor = glGetInteger(GL_MINOR_VERSION);
-        version[0] = major;
-        version[1] = minor;
-        return version;
+        glVersion[0] = major;
+        glVersion[1] = minor;
+        return glVersion;
     }
 
     public static void detectSupportedVersions() {

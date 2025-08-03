@@ -68,9 +68,7 @@ public interface IRenderState {
 
     IRenderState depthFunc(DepthFunc func);
 
-    IRenderState save();
-
-    void restore();
+    StateSnapshot get();
 
     default void apply(StateSnapshot snapshot) {
         this.depthTest(snapshot.depthTest);

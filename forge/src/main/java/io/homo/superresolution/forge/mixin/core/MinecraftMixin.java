@@ -12,9 +12,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MinecraftMixin {
     @Inject(at = @At(value = "RETURN"), method = "<init>")
     private void onInitDone(CallbackInfo ci) {
+        /*
         if (!SuperResolution.isPreInit) return;
         SuperResolution.initRendering();
         SuperResolution.createAlgorithm();
-        SuperResolutionForge.mod.init();
+        SuperResolutionForge.mod.init();*/
     }
 }

@@ -309,27 +309,7 @@ public class GlRenderState implements IRenderState {
     }
 
     @Override
-    public IRenderState save() {
-        snapshotStack.push(new StateSnapshot(this));
-        return this;
-    }
-
-    @Override
-    public void restore() {
-        if (!snapshotStack.isEmpty()) {
-            StateSnapshot snap = snapshotStack.pop();
-            this.depthTest(snap.depthTest);
-            this.depthWrite(snap.depthWrite);
-            this.blend(snap.blend);
-            this.cullFace(snap.cullFace);
-            this.stencilTest(snap.stencilTest);
-            this.colorMaskR(snap.colorMaskR);
-            this.colorMaskG(snap.colorMaskG);
-            this.colorMaskB(snap.colorMaskB);
-            this.colorMaskA(snap.colorMaskA);
-            this.blendSrcFactor(snap.blendSrcFactor);
-            this.blendDstFactor(snap.blendDstFactor);
-            this.depthFunc(snap.depthFunc);
-        }
+    public StateSnapshot get() {
+        return new StateSnapshot(this);
     }
 }

@@ -2,6 +2,9 @@ package io.homo.superresolution.core.graphics.impl.device;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
+import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -41,5 +44,11 @@ public interface IDevice {
      * @return 新创建的缓冲区对象
      */
     IBuffer createBuffer(BufferDescription description);
+
+    ICommandEncoder commendEncoder();
+
+    ICommandDecoder commandDecoder();
+
+    void submitCommandBuffer(ICommandBuffer commandBuffer);
 
 }

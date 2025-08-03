@@ -25,10 +25,6 @@ public class Gl {
         }
     }
 
-    public static int[] getVersion() {
-        return new int[]{glGetInteger(GL_MAJOR_VERSION), glGetInteger(GL_MINOR_VERSION)};
-    }
-
     public static boolean isLegacy() {
         return GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 3;
     }

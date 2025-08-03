@@ -7,6 +7,7 @@ import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
@@ -18,7 +19,6 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.File;
@@ -142,6 +142,11 @@ public class DataSetGenerator {
                 MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.Color),
                 HR_RGB_IMAGE.getAbsolutePath()
         );
+        RenderSystems.current().device().commendEncoder().begin();
+        ICommandBuffer commandBuffer = RenderSystems.current()
+                .device()
+                .commendEncoder()
+                .getCommandBuffer();
         PipelineJobBuilders
                 .graphics(copyShader)
                 .targetFramebuffer(tempFbo)
@@ -151,11 +156,17 @@ public class DataSetGenerator {
                         PipelineJobResource.SamplerTexture.create(
                                 MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth)
                         )
-                ).execute(RenderSystems.current());
+                ).execute(commandBuffer);
+        RenderSystems.current().device().submitCommandBuffer(RenderSystems.current().device().commendEncoder().end());
         writeImage(
                 tempFbo.getTexture(FrameBufferAttachmentType.Color),
                 HR_DEPTH_IMAGE.getAbsolutePath()
         );
+        RenderSystems.current().device().commendEncoder().begin();
+        commandBuffer = RenderSystems.current()
+                .device()
+                .commendEncoder()
+                .getCommandBuffer();
         PipelineJobBuilders
                 .graphics(copyShader0)
                 .targetFramebuffer(tempFbo)
@@ -165,7 +176,8 @@ public class DataSetGenerator {
                         PipelineJobResource.SamplerTexture.create(
                                 AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
                         )
-                ).execute(RenderSystems.current());
+                ).execute(commandBuffer);
+        RenderSystems.current().device().submitCommandBuffer(RenderSystems.current().device().commendEncoder().end());
         writeImage(
                 tempFbo.getTexture(FrameBufferAttachmentType.Color),
                 HR_MV_IMAGE.getAbsolutePath()

@@ -183,13 +183,20 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
+        RenderSystems.current().device().commendEncoder().begin();
         fsr1UBOData.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
         fsr1UBOData.fillBuffer();
         fsr1UBO.upload();
-        fsrUpscalePipeline.execute(RenderSystems.opengl());
+        fsrUpscalePipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
+        RenderSystems.current().device().submitCommandBuffer(
+                RenderSystems.current()
+                        .device()
+                        .commendEncoder()
+                        .end()
+        );
         return true;
     }
 

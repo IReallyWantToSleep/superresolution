@@ -55,23 +55,28 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static Thread renderThread;
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
-    public final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
+    public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F6,
             "Super Resolution"
     );
+    private static boolean registeredKeyMapping = false;
+
+    public static void registerKeyMapping() {
+        if (!registeredKeyMapping) {
+            KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
+        }
+        registeredKeyMapping = true;
+    }
 
     public static void registerEvents() {
         ClientLifecycleEvent.CLIENT_SETUP.register(
-                (minecraft) -> {
-                    instance = new SuperResolution();
-                    KeyMappingRegistry.register(SuperResolution.getInstance().OPENGUI_KEYMAPPING);
-                }
+                (minecraft) -> registerKeyMapping()
         );
         ClientLifecycleEvent.CLIENT_STARTED.register(
                 (minecraft) -> {
-
+                    instance = new SuperResolution();
                     SuperResolution.preInit();
                     SuperResolution.initRendering();
                     SuperResolution.createAlgorithm();
