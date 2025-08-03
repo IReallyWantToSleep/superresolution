@@ -9,6 +9,7 @@ import io.homo.superresolution.core.utils.ColorUtil;
 import me.shedaniel.clothconfig2.api.animator.ValueAnimator;
 import me.shedaniel.clothconfig2.gui.AbstractConfigScreen;
 import me.shedaniel.clothconfig2.gui.entries.TooltipListEntry;
+import me.shedaniel.math.Color;
 import me.shedaniel.math.Rectangle;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -339,7 +340,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                             text,
                             (int) ((entryWidth + 7) * 0.5 / line.scale.x),
                             0,
-                            line.color
+                            ColorUtil.color(255, 255, 255, 255)
                     );
                 } else {
                     graphics.drawString(
@@ -347,7 +348,8 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
                             text,
                             (int) (entryWidth * line.left),
                             0,
-                            line.color, false
+                            ColorUtil.color(255, 255, 255, 255),
+                            false
                     );
                 }
                 yOffset = yOffset + line.height(font);
