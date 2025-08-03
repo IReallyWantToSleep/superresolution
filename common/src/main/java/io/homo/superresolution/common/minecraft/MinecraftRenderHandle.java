@@ -11,6 +11,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
@@ -212,9 +213,9 @@ public class MinecraftRenderHandle {
         }
         if (needCaptureVulkan) {
             if (RenderDoc.renderdoc != null) {
-                if (SuperResolution.interopManager.vulkanApp != null) {
+                if (RenderSystems.vulkan() != null) {
                     RenderDoc.renderdoc.StartFrameCapture.call(
-                            new Pointer(SuperResolution.interopManager.vulkanApp.getInstance().address()),
+                            new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
                             null
                     );
                 }
@@ -320,10 +321,10 @@ public class MinecraftRenderHandle {
         }
         if (needCaptureVulkan) {
             if (RenderDoc.renderdoc != null) {
-                if (SuperResolution.interopManager.vulkanApp != null) {
+                if (RenderSystems.vulkan() != null) {
                     needCaptureVulkan = false;
                     RenderDoc.renderdoc.EndFrameCapture.call(
-                            Pointer.createConstant(SuperResolution.interopManager.vulkanApp.getInstance().address()),
+                            Pointer.createConstant(RenderSystems.vulkan().getVulkanInstance().address()),
                             null
                     );
                 }

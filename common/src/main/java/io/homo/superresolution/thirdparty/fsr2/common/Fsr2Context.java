@@ -20,6 +20,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glTexSubImage2D;
+
 public class Fsr2Context {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-FSR2");
 
@@ -43,6 +48,7 @@ public class Fsr2Context {
     public Fsr2CBRcas fsr2RcasConstants = new Fsr2CBRcas();
     public GlBuffer fsr2RcasConstantsUBO;
     private int frameIndex = 0;
+    private boolean maximumBiasTextureUploaded = false;
 
     public Fsr2Context(
             Fsr2ContextConfig config,
@@ -71,21 +77,7 @@ public class Fsr2Context {
         depthClipPipeline.resize(dimensions);
         lockPipeline.resize(dimensions);
         reconstructPreviousDepthPipeline.resize(dimensions);
-        GlTexture2D maximumBiasTexture = ((GlTexture2D) resources.resource(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT).getResource());
-        if (maximumBiasTexture != null) {
-            Gl.DSA.textureSubImage2D(
-                    maximumBiasTexture.handle(),
-                    0,
-                    0, 0,
-                    maximumBiasTexture.getWidth(),
-                    maximumBiasTexture.getHeight(),
-                    GL41.GL_RED,
-                    GL41.GL_SHORT,
-                    MemoryUtil.memAddress(Fsr2MaximumBias.ffxFsr2MaximumBias)
-            );
-            RenderSystems.current().finish();
-
-        }
+        maximumBiasTextureUploaded = false;
     }
 
     public void destroy() {
@@ -167,9 +159,31 @@ public class Fsr2Context {
         reconstructPreviousDepthPipeline.init();
 
         resize(this.dimensions);
+        maximumBiasTextureUploaded = false;
     }
 
     public void dispatch(Fsr2DispatchDescription dispatchDescription) {
+        if (!maximumBiasTextureUploaded) {
+            GlTexture2D maximumBiasTexture = ((GlTexture2D) resources.resource(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT).getResource());
+            if (maximumBiasTexture != null) {
+                int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
+                glBindTexture(GL_TEXTURE_2D, maximumBiasTexture.handle());
+                glTexSubImage2D(
+                        GL_TEXTURE_2D,
+                        0,
+                        0,
+                        0,
+                        maximumBiasTexture.getWidth(),
+                        maximumBiasTexture.getHeight(),
+                        GL41.GL_RED,
+                        GL41.GL_SHORT,
+                        Fsr2MaximumBias.ffxFsr2MaximumBias
+                );
+                glBindTexture(GL_TEXTURE_2D, prevTex);
+                maximumBiasTextureUploaded = true;
+            }
+        }
+
         resources.resource(Fsr2PipelineResourceType.INPUT_COLOR).setResource(dispatchDescription.color);
         resources.resource(Fsr2PipelineResourceType.INPUT_MOTION_VECTORS).setResource(dispatchDescription.motionVectors);
         resources.resource(Fsr2PipelineResourceType.INPUT_DEPTH).setResource(dispatchDescription.depth);

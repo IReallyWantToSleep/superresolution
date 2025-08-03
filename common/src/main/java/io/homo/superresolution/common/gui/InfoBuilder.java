@@ -7,9 +7,9 @@ import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.NativeLibManager;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.core.graphics.interop.GlVkInteropManager;
 import io.homo.superresolution.core.utils.ColorUtil;
 import net.minecraft.network.chat.Component;
 
@@ -53,7 +53,7 @@ public class InfoBuilder {
         addLine("superresolution.screen.info.text.opengl_version",
                 GraphicsCapabilities.getGLVersion()[0], GraphicsCapabilities.getGLVersion()[1]);
         addLine("superresolution.screen.info.text.vulkan_available",
-                getYesNo(GlVkInteropManager.isSupportVulkan()));
+                getYesNo(RenderSystems.isSupportVulkan()));
         addLine("superresolution.screen.info.text.vulkan_version",
                 GraphicsCapabilities.getVulkanVersion()[0],
                 GraphicsCapabilities.getVulkanVersion()[1],
