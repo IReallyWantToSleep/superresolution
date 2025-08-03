@@ -234,6 +234,11 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
         }
 
         @Override
+        public TextureMipmapSettings getMipmapSettings() {
+            return TextureMipmapSettings.disabled();
+        }
+
+        @Override
         public int getWidth() {
             return width;
         }

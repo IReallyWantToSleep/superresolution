@@ -1,7 +1,5 @@
 package io.homo.superresolution.common.mixin.core;
 
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
@@ -10,7 +8,6 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.math.Vector2f;
 import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
@@ -51,7 +48,7 @@ public abstract class GameRendererMixin {
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
             #if MC_VER < MC_1_20_6
-            if (MinecraftWindow.getWindowSourceWidth() < 1 || MinecraftWindow.getWindowSourceHeight() < 1) {
+            if (io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceWidth() < 1 || io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceHeight() < 1) {
                 ci.cancel();
             }
             #endif
@@ -126,13 +123,13 @@ public abstract class GameRendererMixin {
     @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderLevel(Lcom/mojang/blaze3d/resource/GraphicsResourceAllocator;Lnet/minecraft/client/DeltaTracker;ZLnet/minecraft/client/Camera;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lorg/joml/Vector4f;Z)V"))
     public void applyJitterToProjectionMatrix(
             LevelRenderer instance,
-            GraphicsResourceAllocator graphicsResourceAllocator,
-            DeltaTracker deltaTracker,
+            com.mojang.blaze3d.resource.GraphicsResourceAllocator graphicsResourceAllocator,
+            net.minecraft.client.DeltaTracker deltaTracker,
             boolean renderBlockOutline,
             Camera camera,
             Matrix4f frustumMatrix,
             Matrix4f projectionMatrix,
-            GpuBufferSlice fogBuffer,
+            com.mojang.blaze3d.buffers.GpuBufferSlice fogBuffer,
             Vector4f fogColor,
             boolean renderSky
     )
