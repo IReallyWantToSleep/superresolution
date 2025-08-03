@@ -15,6 +15,9 @@ public interface ITexture extends Destroyable, Resizable, GpuObject {
 
     TextureWrapMode getTextureWrapMode();
 
+    TextureMipmapSettings getMipmapSettings();
+
+
     int getWidth();
 
     int getHeight();

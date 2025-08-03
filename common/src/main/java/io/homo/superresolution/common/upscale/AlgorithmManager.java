@@ -2,6 +2,7 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.math.Vector2f;
@@ -80,13 +81,23 @@ public class AlgorithmManager {
 
     public static Vector2f getJitterOffset() {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null) {
-            return SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
+            Vector2f jitter = SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
                     MinecraftRenderHandle.getFrameCount(),
                     new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
                     new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
             );
+            SuperResolution.LOGGER.info("getJitterOffset {} {}", jitter.x, jitter.y);
+            return jitter;
         }
         return new Vector2f(0);
+    }
+
+
+    public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
+        proj.m20(proj.m20() + jitter.x);
+        proj.m21(proj.m21() + jitter.y);
+        SuperResolution.LOGGER.info("applyJitterOffset {} {}", jitter.x, jitter.y);
+        return proj;
     }
 
     public static DispatchResource getDispatchResource() {

@@ -183,6 +183,7 @@ public class MinecraftRenderHandle {
     public static void onRenderWorldBegin(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = true;
+        //SuperResolution.LOGGER.info("renderBegin");
         if (SuperResolution.cachedWidth != getScreenWidth() || SuperResolution.cachedHeight != getScreenHeight()) {
             SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
         }
@@ -330,6 +331,8 @@ public class MinecraftRenderHandle {
                 }
             }
         }
+        //SuperResolution.LOGGER.info("renderEnd");
+
         frameCount++;
     }
 

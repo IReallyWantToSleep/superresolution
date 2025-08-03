@@ -8,11 +8,12 @@
         "iris.GlFramebufferMixin",
         "reesessodiumoptions.TabFrameMixin",
         "simpleclouds.DefaultPipelineMixin",
+        "simpleclouds.ShaderSupportPipelineMixin",
         "sodium.SodiumOptionsGUIMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
-        "simpleclouds.ShaderSupportPipelineMixin"
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "mixins": [
+        "iris.IrisRenderingPipelineMixin"
     ],
     "injectors": {
         "defaultRequire": 1

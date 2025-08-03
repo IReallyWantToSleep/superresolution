@@ -69,6 +69,11 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         }
     }
 
+    @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        return mipmapSettings;
+    }
+
     private void configureTextureParameters() {
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
@@ -76,6 +81,7 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_T, wrapMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_BASE_LEVEL, 0);
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, currentMipmapLevel);
+        Gl.DSA.textureParameterf(this.id, GL_TEXTURE_LOD_BIAS, mipmapSettings.getBias());
     }
 
     private void allocateTextureStorage() {

@@ -27,8 +27,14 @@ public class VulkanTexture implements ITexture {
     private int width;
     private int height;
 
+
     public VulkanTexture(VulkanDevice device, TextureDescription description) {
         this(device, description, false, -1);
+    }
+
+    @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        return description.getMipmapSettings();
     }
 
     public VulkanTexture(VulkanDevice device, TextureDescription description, long memoryHandle) {

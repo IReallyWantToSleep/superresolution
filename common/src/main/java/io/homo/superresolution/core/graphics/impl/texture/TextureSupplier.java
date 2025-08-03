@@ -44,6 +44,11 @@ public class TextureSupplier implements ITexture {
     }
 
     @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        return supplier.get().getMipmapSettings();
+    }
+
+    @Override
     public int getWidth() {
         return supplier.get().getWidth();
     }
