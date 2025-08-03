@@ -91,7 +91,7 @@ public class ClothChartEntry extends TooltipListEntry<Object> {
         if (!data.isEmpty()) {
             float avg = sum / data.size();
             String stats = String.format("AVG: %.2f MAX: %.2f MIN: %.2f", avg, max, min);
-            graphics.drawCenteredString(font, stats, x + entryWidth / 2, y + 12, 0xAAAAAA);
+            graphics.drawCenteredString(font, stats, x + entryWidth / 2, y + 12, ColorUtil.color(255, 255, 255, 255));
 
             int chartHeight = entryHeight - 24;
             int chartY = y + 24;
