@@ -161,6 +161,7 @@ public class Fsr2Context {
         resize(this.dimensions);
         maximumBiasTextureUploaded = false;
     }
+    
 
     public void dispatch(Fsr2DispatchDescription dispatchDescription) {
         if (!maximumBiasTextureUploaded) {

@@ -1,0 +1,103 @@
+#pragma once
+
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+    typedef struct
+    {
+        uint32_t x;
+        uint32_t y;
+    } SRVectorUint2;
+
+    typedef struct
+    {
+        float x;
+        float y;
+    } SRVectorFloat2;
+
+    typedef enum SRTextureResourceUsage
+    {
+
+        SR_RESOURCE_USAGE_READ_ONLY = 0,
+        SR_RESOURCE_USAGE_RENDERTARGET = (1 << 0),
+        SR_RESOURCE_USAGE_UAV = (1 << 1),
+        SR_RESOURCE_USAGE_DEPTHTARGET = (1 << 2),
+        SR_RESOURCE_USAGE_INDIRECT = (1 << 3),
+        SR_RESOURCE_USAGE_ARRAYVIEW = (1 << 4),
+        SR_RESOURCE_USAGE_STENCILTARGET = (1 << 5),
+        SR_RESOURCE_USAGE_DCC_RENDERTARGET = (1 << 15),
+    } SRResourceUsage;
+
+    typedef enum SRTextureResourceStates
+    {
+        SR_RESOURCE_STATE_COMMON = (1 << 0),
+        SR_RESOURCE_STATE_UNORDERED_ACCESS = (1 << 1),
+        SR_RESOURCE_STATE_COMPUTE_READ = (1 << 2),
+        SR_RESOURCE_STATE_PIXEL_READ = (1 << 3),
+        SR_RESOURCE_STATE_PIXEL_COMPUTE_READ = (SR_RESOURCE_STATE_PIXEL_READ | SR_RESOURCE_STATE_COMPUTE_READ),
+        SR_RESOURCE_STATE_COPY_SRC = (1 << 4),
+        SR_RESOURCE_STATE_COPY_DEST = (1 << 5),
+        SR_RESOURCE_STATE_GENERIC_READ = (SR_RESOURCE_STATE_COPY_SRC | SR_RESOURCE_STATE_COMPUTE_READ),
+        SR_RESOURCE_STATE_INDIRECT_ARGUMENT = (1 << 6),
+        SR_RESOURCE_STATE_PRESENT = (1 << 7),
+        SR_RESOURCE_STATE_RENDER_TARGET = (1 << 8),
+        SR_RESOURCE_STATE_DEPTH_ATTACHEMENT = (1 << 9),
+    } SRResourceStates;
+
+    typedef enum SRSurfaceFormat
+    {
+
+        SR_SURFACE_FORMAT_UNKNOWN,
+        SR_SURFACE_FORMAT_R32G32B32A32_TYPELESS,
+        SR_SURFACE_FORMAT_R32G32B32A32_UINT,
+        SR_SURFACE_FORMAT_R32G32B32A32_FLOAT,
+        SR_SURFACE_FORMAT_R16G16B16A16_FLOAT,
+        SR_SURFACE_FORMAT_R32G32B32_FLOAT,
+        SR_SURFACE_FORMAT_R32G32_FLOAT,
+        SR_SURFACE_FORMAT_R8_UINT,
+        SR_SURFACE_FORMAT_R32_UINT,
+        SR_SURFACE_FORMAT_R8G8B8A8_TYPELESS,
+        SR_SURFACE_FORMAT_R8G8B8A8_UNORM,
+        SR_SURFACE_FORMAT_R8G8B8A8_SNORM,
+        SR_SURFACE_FORMAT_R8G8B8A8_SRGB,
+        SR_SURFACE_FORMAT_B8G8R8A8_TYPELESS,
+        SR_SURFACE_FORMAT_B8G8R8A8_UNORM,
+        SR_SURFACE_FORMAT_B8G8R8A8_SRGB,
+        SR_SURFACE_FORMAT_R11G11B10_FLOAT,
+        SR_SURFACE_FORMAT_R10G10B10A2_UNORM,
+        SR_SURFACE_FORMAT_R16G16_FLOAT,
+        SR_SURFACE_FORMAT_R16G16_UINT,
+        SR_SURFACE_FORMAT_R16G16_SINT,
+        SR_SURFACE_FORMAT_R16_FLOAT,
+        SR_SURFACE_FORMAT_R16_UINT,
+        SR_SURFACE_FORMAT_R16_UNORM,
+        SR_SURFACE_FORMAT_R16_SNORM,
+        SR_SURFACE_FORMAT_R8_UNORM,
+        SR_SURFACE_FORMAT_R8G8_UNORM,
+        SR_SURFACE_FORMAT_R8G8_UINT,
+        SR_SURFACE_FORMAT_R32_FLOAT,
+        SR_SURFACE_FORMAT_R9G9B9E5_SHAREDEXP,
+        SR_SURFACE_FORMAT_R16G16B16A16_TYPELESS,
+        SR_SURFACE_FORMAT_R32G32_TYPELESS,
+        SR_SURFACE_FORMAT_R10G10B10A2_TYPELESS,
+        SR_SURFACE_FORMAT_R16G16_TYPELESS,
+        SR_SURFACE_FORMAT_R16_TYPELESS,
+        SR_SURFACE_FORMAT_R8_TYPELESS,
+        SR_SURFACE_FORMAT_R8G8_TYPELESS,
+        SR_SURFACE_FORMAT_R32_TYPELESS,
+    } SRSurfaceFormat;
+
+    typedef struct SRTextureResourceDescription
+    {
+        SRSurfaceFormat format;
+        uint32_t width;
+        uint32_t height;
+        uint32_t mipmapCount;
+        SRResourceUsage usage;
+    } SRTextureResourceDescription;
+
+#ifdef __cplusplus
+}
+#endif

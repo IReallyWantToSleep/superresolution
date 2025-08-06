@@ -47,12 +47,14 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         this.filterMode = description.getFilterMode();
         this.wrapMode = description.getWrapMode();
         this.mipmapSettings = description.getMipmapSettings();
-        configureMipmap();
-        initializeTexture();
+
     }
 
     public static GlTexture2D create(TextureDescription description) {
-        return new GlTexture2D(description);
+        GlTexture2D texture2D = new GlTexture2D(description);
+        texture2D.configureMipmap();
+        texture2D.initializeTexture();
+        return texture2D;
     }
 
     public static void blitToScreen(int srcWidth, int srcHeight, int viewWidth, int viewHeight, ITexture texture) {
@@ -84,7 +86,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         }
     }
 
-    private void configureTextureParameters() {
+    protected void configureTextureParameters() {
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_S, wrapMode.gl());
@@ -94,12 +96,12 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         Gl.DSA.textureParameterf(this.id, GL_TEXTURE_LOD_BIAS, mipmapSettings.getBias());
     }
 
-    private void allocateTextureStorage() {
+    protected void allocateTextureStorage() {
         int levels = mipmapSettings.isEnabled() ? (currentMipmapLevel + 1) : 1;
         Gl.DSA.textureStorage2D(this.id, levels, format.gl(), width, height);
     }
 
-    private void initializeTexture() {
+    protected void initializeTexture() {
         try (GlState ignored = new GlState(GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES)) {
             configureTextureParameters();
             allocateTextureStorage();

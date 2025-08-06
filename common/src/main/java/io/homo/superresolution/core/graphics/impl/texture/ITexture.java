@@ -17,6 +17,18 @@ public interface ITexture extends Destroyable, Resizable, GpuObject {
 
     TextureMipmapSettings getMipmapSettings();
 
+    default TextureDescription getTextureDescription() {
+        return TextureDescription.create()
+                .filterMode(getTextureFilterMode())
+                .format(getTextureFormat())
+                .size(getWidth(), getHeight())
+                .type(getTextureType())
+                .wrapMode(getTextureWrapMode())
+                .mipmapSettings(getMipmapSettings())
+                .usages(getTextureUsages())
+                .build();
+    }
+
 
     int getWidth();
 

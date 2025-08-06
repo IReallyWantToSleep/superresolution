@@ -24,6 +24,7 @@ repositories {
         }
     }
 }
+String renderdocPath = Paths.get(rootProject.projectDir.getAbsolutePath(), "renderdoc").toString();
 
 dependencies {
 
@@ -50,6 +51,8 @@ dependencies {
     include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     include(implementation('com.electronwill.night-config:toml:3.6.0'))
     include(implementation('com.electronwill.night-config:core:3.6.0'))
+
+    implementation(files(Paths.get(renderdocPath, "render-nurse.jar").toString()))
 
     //额外库/模组
     for (lib in versionConfig.fabric.dependencies.modrinth) {
@@ -78,13 +81,19 @@ dependencies {
 }
 
 loom {
-
     mixin {
         defaultRefmapName.set("${mod_id}.refmap.json")
     }
     runs {
         client {
             client()
+
+            vmArgs.add("-XX:+CreateMinidumpOnCrash")
+            //vmArgs.add("-javaagent:" + Paths.get(renderdocPath, "render-nurse.jar"))
+            vmArgs.add("--enable-preview")
+            vmArgs.add("--enable-native-access=ALL-UNNAMED")
+
+            vmArgs.add("-Dneoforge.rendernurse.renderdoc.library=" + Paths.get(renderdocPath, "renderdoc.dll"))
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
             runDir('../runs/fabric')

@@ -5,7 +5,5 @@ layout(location = 0) out float outTex;
 
 void main() {
     float depth = texture(tex, vTexCoord).r;
-    depth -= 0.995;
-    depth = 0.005/depth;
     outTex = depth;
 }

@@ -1,7 +1,28 @@
 cmake_minimum_required(VERSION 3.15)
 project(SuperResolution)
 
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+option(SR_FSR "启用以支持FSR" ON)
+option(SR_XESS "启用以支持XESS" OFF)
+option(SR_DLSS "启用以支持DLSS" OFF)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "构建类型" FORCE)
+endif()
+
+if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Release"))
+    message(FATAL_ERROR "只支持 Debug 或 Release 构建类型)")
+endif()
+
+message(STATUS "构建类型: ${CMAKE_BUILD_TYPE}")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(SR_BUILD_TYPE "debug")
+else()
+    set(SR_BUILD_TYPE "release")
+endif()
+
 
 if(NOT DEFINED SRLIB_VERSION)
     string(TIMESTAMP COMPILE_TIME "%Y%m%d_%H%M%S")
@@ -10,76 +31,46 @@ endif()
 add_definitions(-DSRLIB_VERSION="${SRLIB_VERSION}")
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    add_definitions(-DON_LINUX64 -DFFX_GCC)
     set(LIB_PLATFORM "linux64")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    add_definitions(-DON_WIN64)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
     set(LIB_PLATFORM "win64")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
-    add_definitions(-DON_ANDROID)
     set(LIB_PLATFORM "android")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-    add_definitions(-DON_MACOS)
     set(LIB_PLATFORM "macosarm64")
 else()
-    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+    message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
 
-link_directories(${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM})
 
-if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -static-libgcc -static-libstdc++ -O3")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -static-libgcc -O3")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static")
-else()
+foreach(OUTPUTCONFIG DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} "${PROJECT_SOURCE_DIR}/output/bin")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} "${PROJECT_SOURCE_DIR}/output/lib")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} "${PROJECT_SOURCE_DIR}/output/lib")
+endforeach()
+
+
+if(NOT WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -O3")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O3")
 endif()
 
 include_directories(
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/third_party
 )
 
-aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
+add_subdirectory("SRNativeMain")
 
-add_library(lib_shared SHARED ${ALL_SRC})
-set_target_properties(lib_shared PROPERTIES OUTPUT_NAME "SuperResolution+${LIB_PLATFORM}")
-
-target_link_libraries(lib_shared
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libGenericCodeGen.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libglslang-default-resource-limits.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libglslang.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libMachineIndependent.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libOSDependent.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPIRV-Tools-diff.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPIRV-Tools-lint.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPIRV-Tools-opt.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPIRV-Tools-reduce.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPIRV-Tools.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPIRV.a
-    ${PROJECT_SOURCE_DIR}/third_party/libs/${LIB_PLATFORM}/libSPVRemapper.a
-)
-
-if(WIN32)
-    target_link_libraries(lib_shared
-        -lstdc++fs
-        -lucrt
-        -lmsvcrt
-        -lkernel32
-        -luser32
-        -lgdi32
-        -ladvapi32
-    )
-elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    target_link_libraries(lib_shared -lstdc++fs -pthread -ldl)
+if(SR_FSR)
+    add_subdirectory("SRNativeFSR")
 endif()
 
-# ---- Output directories ----
-set_target_properties(lib_shared PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
-)
+if(SR_XESS)
+    add_subdirectory("SRNativeXeSS")
+endif()
+
+if(SR_DLSS)
+    add_subdirectory("SRNativeDLSS")
+endif()

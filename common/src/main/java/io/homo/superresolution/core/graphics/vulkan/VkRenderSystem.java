@@ -18,7 +18,10 @@ import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memUTF8;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
@@ -72,8 +75,9 @@ public class VkRenderSystem implements IRenderSystem {
 
     @Override
     public void initRenderSystem() {
-        validationLayers = new VulkanValidationLayers(instance);
         createInstance();
+
+        validationLayers = new VulkanValidationLayers(instance);
         if (ENABLE_VALIDATION) validationLayers.setupDebugMessenger();
         VkPhysicalDevice physicalDevice = selectPhysicalDevice();
         capabilities.init(instance, physicalDevice);
@@ -120,9 +124,11 @@ public class VkRenderSystem implements IRenderSystem {
                     .ppEnabledExtensionNames(asPointerBuffer(stack, instanceExtensions));
 
             if (ENABLE_VALIDATION) {
-                createInfo.ppEnabledLayerNames(validationLayers.getValidationLayersPointerBuffer(stack));
+                createInfo.ppEnabledLayerNames(
+                        VulkanValidationLayers.getValidationLayersPointerBuffer(stack)
+                );
                 VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-                validationLayers.populateDebugMessengerCreateInfo(debugCreateInfo);
+                VulkanValidationLayers.populateDebugMessengerCreateInfo(debugCreateInfo);
                 createInfo.pNext(debugCreateInfo.address());
             }
 
@@ -165,8 +171,20 @@ public class VkRenderSystem implements IRenderSystem {
                     LOGGER.warn("扩展 {} 不被当前物理设备支持，已跳过", ext);
                 }
             }
+            VkPhysicalDeviceVulkan12Features features12 = VkPhysicalDeviceVulkan12Features.calloc()
+                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
 
+            VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc()
+                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
+                    .pNext(features12);
+
+            vkGetPhysicalDeviceFeatures2(physicalDevice, features2);
+
+            if (features12.shaderFloat16()) {
+                features12.shaderFloat16(true);
+            }
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
+                    .pNext(features12)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
                     .pQueueCreateInfos(queueCreateInfos)
                     .ppEnabledExtensionNames(asPointerBuffer(stack, enableDeviceExts));
