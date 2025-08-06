@@ -14,6 +14,7 @@ import static org.lwjgl.vulkan.KHRExternalMemoryWin32.VK_KHR_EXTERNAL_MEMORY_WIN
 import static org.lwjgl.vulkan.KHRExternalSemaphore.VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRExternalSemaphoreCapabilities.VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRExternalSemaphoreWin32.VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRGetMemoryRequirements2.VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
 
 public class RenderSystems {
     private static VkRenderSystem vulkan;
@@ -60,7 +61,8 @@ public class RenderSystems {
                 .addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)
-                .addDeviceExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
+                .addDeviceExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME)
+                .addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
         try {
             vulkan.initRenderSystem();
             return;

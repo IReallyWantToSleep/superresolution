@@ -12,22 +12,6 @@ repositories {
 dependencies {
 }
 
-static def isLib(String name) {
-    return name.endsWith(".so") || name.endsWith(".dylib") || name.endsWith(".dll")
-}
-
-tasks.register('configureCMakeWin', Exec) {
-    workingDir file(projectDir.path + "/cpp")
-    commandLine "cmake", ".", "-B", "build", "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++"
-
-    doFirst {
-        delete "${projectDir}/cpp/build"
-        delete "${projectDir}/cpp/bin"
-        mkdir "${projectDir}/cpp/build"
-        println("❇️ 执行命令 ${commandLine.join(" ")}")
-    }
-}
-
 tasks.named('clean') {
     doFirst {
         delete "${projectDir}/cpp/build"
@@ -35,94 +19,9 @@ tasks.named('clean') {
     }
 }
 
-tasks.register('buildCMakeWin', Exec) {
-    dependsOn configureCMakeWin
-    workingDir file(projectDir.path + "/cpp")
-    commandLine 'cmake', '--build', 'build'
-    doFirst {
-        println("❇️ 执行命令 ${commandLine.join(" ")}")
-    }
-}
-
-tasks.register('buildWin') {
-    dependsOn configureCMakeWin
-    dependsOn buildCMakeWin
-    finalizedBy copyNativeLib
-    doLast {
-        println "✅️ 本机库构建完成"
-    }
-}
-
 tasks.register('copyNativeLib', Copy) {
-    from("${projectDir}/cpp/bin") {
-        include "libSuperResolution*.so", "libSuperResolution*.dll", "libSuperResolution*.dylib"
+    from("${projectDir}/cpp/output/bin") {
+        include "*.so", "*.dll", "*.dylib"
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
-
-tasks.register('printLibMd5') {
-    dependsOn copyNativeLib
-    doLast {
-        def libDir = file("${projectDir}/../common/src/main/resources/lib/")
-        if (!libDir.exists()) {
-            println "❌️ 目录不存在: ${libDir.path}"
-            return
-        }
-        libDir.eachFile { file ->
-            if (file.isFile() && file.name.startsWith("libSuperResolution") && isLib(file.name)) {
-                def md5 = calculateMD5(file)
-                println "${file.name}: ${md5}"
-            }
-        }
-    }
-}
-
-def calculateMD5(File file) {
-    def md = java.security.MessageDigest.getInstance('MD5')
-    file.withInputStream { is ->
-        byte[] buffer = new byte[8192]
-        int read
-        while ((read = is.read(buffer)) != -1) {
-            md.update(buffer, 0, read)
-        }
-    }
-    return md.digest().encodeHex().toString()
-}
-
-tasks.register('updateNativeLibMd5') {
-    dependsOn copyNativeLib
-    doLast {
-        def libDir = file("${projectDir}/../common/src/main/resources/lib/")
-        def md5Map = [:]
-        libDir.eachFile { file ->
-            if (file.isFile() && file.name.startsWith("libSuperResolution") && isLib(file.name)) {
-                def baseName = file.name.replaceFirst(~/\.[^.]+$/, '')
-                def md5 = calculateMD5(file)
-                md5Map[baseName] = md5
-                println "❇️ 计算MD5: ${baseName} -> ${md5}"
-            }
-        }
-
-        def javaFile = file("${projectDir}/../common/src/main/java/io/homo/superresolution/core/NativeLibManager.java")
-        if (!javaFile.exists()) {
-            throw new GradleException("❌️ 找不到NativeLibManager.java文件: ${javaFile.path}")
-        }
-
-        def content = javaFile.text
-
-        md5Map.each { baseName, newMd5 ->
-            def escapedBaseName = java.util.regex.Pattern.quote(baseName)
-            def pattern = /(libs\.add\s*\(\s*new NativeLib\s*\(\s*"${escapedBaseName}"\s*,\s*")([^"]*)("\s*)(,\s*\d+)?(\s*\)\s*\);)/
-
-            content = content.replaceAll(pattern) { fullMatch, prefix, oldMd5, md5Suffix, optionalArg, closingBrace ->
-                println "❇️ 更新库 ${baseName}: 旧MD5 ${oldMd5} → 新MD5 ${newMd5}"
-                "${prefix}${newMd5}${md5Suffix}${optionalArg ?: ''}${closingBrace}"
-            }
-        }
-
-        javaFile.write(content, 'UTF-8')
-        println "✅️ 已更新NativeLibManager中的MD5值"
-    }
-}
-
-copyNativeLib.finalizedBy printLibMd5, updateNativeLibMd5

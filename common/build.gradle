@@ -84,3 +84,27 @@ artifacts {
     commonJava sourceSets.main.java.sourceDirectories.singleFile
     commonResources sourceSets.main.resources.sourceDirectories.singleFile
 }
+
+tasks.register("genJNIHeader", Exec) {
+    workingDir(rootProject.projectDir)
+    def outputDir = file("../native/cpp/SRNativeMain/include").absolutePath
+    def sourceFile = file("../common/src/main/java/io/homo/superresolution/core/SuperResolutionNative.java").absolutePath
+    def sourceDirs = sourceSets.main.java.srcDirs.join(File.pathSeparator)
+    def classpath = configurations.compileClasspath.asPath
+    commandLine(
+            "javac",
+            "-h", outputDir,
+            "-sourcepath", sourceDirs,
+            "-classpath", classpath,
+            "-encoding", "UTF-8",
+            sourceFile
+    )
+
+    doLast {
+        delete(fileTree(
+                dir: file("../common/src/main/java").absolutePath,
+                includes: ["**/*.class"],
+                excludes: ["**/*.java"]
+        ))
+    }
+}

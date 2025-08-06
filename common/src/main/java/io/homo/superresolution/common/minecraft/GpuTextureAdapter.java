@@ -37,7 +37,7 @@ public class GpuTextureAdapter extends GlTexture {
                 texture.getWidth(),
                 texture.getHeight(),
                 1,
-                texture.handle()
+                (int) texture.handle()
         );
         #endif
         this.texture = texture;

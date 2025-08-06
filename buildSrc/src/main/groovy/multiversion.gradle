@@ -12,6 +12,7 @@ static def fetchAllReleaseVersions() {
     try {
         def url = 'https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json'
         def connection = new URL(url).openConnection()
+        connection.setReadTimeout(300)
         def manifest = new JsonSlurper().parse(connection.getInputStream())
         println("✅️️ Minecraft版本信息获取成功")
         def versions = manifest.versions

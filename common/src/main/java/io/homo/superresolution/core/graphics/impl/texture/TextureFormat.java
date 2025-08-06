@@ -165,6 +165,23 @@ public enum TextureFormat {
         return dataType == DataType.UNSIGNED_NORMALIZED || dataType == DataType.SIGNED_NORMALIZED;
     }
 
+    public int getBytesPerPixel() {
+        return switch (this) {
+            case RGBA8 -> 4;
+            case RGB8 -> 3;
+            case RG8 -> 2;
+            case R8 -> 1;
+            case R16_SNORM, R16F -> 2;
+            case RG16F -> 4;
+            case RG32F -> 8;
+            case R32F, R32UI -> 4;
+            case RGBA16F -> 8;
+            case R11G11B10F -> 4;
+            case DEPTH32F -> 4;
+            case DEPTH24, DEPTH24_STENCIL8 -> 4;
+        };
+    }
+
     public int getChannelCount() {
         return components.size();
     }

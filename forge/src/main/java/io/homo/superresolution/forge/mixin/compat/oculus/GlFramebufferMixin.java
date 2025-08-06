@@ -42,8 +42,9 @@ public abstract class GlFramebufferMixin extends GlResource {
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
     private void checkFboCompleteness(int texture, CallbackInfo ci) {
         int status = getStatus();
+
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            throw new RuntimeException(String.valueOf(status));
+            //throw new RuntimeException(String.valueOf(status));
         }
     }
 

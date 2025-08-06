@@ -30,6 +30,7 @@ public class FrameBufferTextureAdapter implements ITexture {
         return frameBuffer.getTextureId(attachmentType);
     }
 
+
     @Override
     public TextureFormat getTextureFormat() {
         return attachmentType.equals(FrameBufferAttachmentType.Color) ? frameBuffer.getColorTextureFormat() : frameBuffer.getDepthTextureFormat();

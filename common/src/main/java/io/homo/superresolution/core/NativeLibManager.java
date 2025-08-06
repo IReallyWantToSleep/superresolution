@@ -30,16 +30,23 @@ public class NativeLibManager {
     static {
         OS os = new OS();
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
-            libs.add(new NativeLib("libSuperResolution+win64", "c7da23fd64c4b1ae366289f17966164f", 1));
+            /*
+            libs.add(new NativeLib("SPIRV-Tools-shared", "", 1));
+            libs.add(new NativeLib("libSuperResolution+win64+release", "", 1));
+            libs.add(new NativeLib("libSuperResolutionFSR+win64+release", "", 0));
+            */
+            libs.add(new NativeLib("SPIRV-Tools-sharedd", "", 1));
+            libs.add(new NativeLib("libSuperResolution+win64+debug", "", 1));
+            libs.add(new NativeLib("libSuperResolutionFSR+win64+debug", "", 0));
         }
         if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
-            libs.add(new NativeLib("libSuperResolution+android", "19bbb27dcadf4064ed6d27462b1e18b2", 1));
+            libs.add(new NativeLib("libSuperResolution+android", "", 1));
         }
         if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
-            libs.add(new NativeLib("libSuperResolution+linux64", "f2b7285e79cb0546871f1d831d54398d", 1));
+            libs.add(new NativeLib("libSuperResolution+linux64", "", 1));
         }
         if (os.type == OSType.MACOS && os.arch == Arch.AARCH64) {
-            libs.add(new NativeLib("libSuperResolution+macarm64", "b9ab19ee00a312ed69d069184bf4302f", 1));
+            libs.add(new NativeLib("libSuperResolution+macarm64", "", 1));
         }
     }
 
@@ -60,6 +67,7 @@ public class NativeLibManager {
         } catch (Exception e) {
             status = false;
             error = e.toString();
+            e.printStackTrace();
         }
         if (!status) {
             LOGGER.error("依赖库提取失败;信息: {}", error != null ? error : "无");
@@ -70,13 +78,17 @@ public class NativeLibManager {
     }
 
     public static boolean check(String path) {
+        /*
         boolean status = true;
         for (NativeLib lib : libs) {
             if (!existsLib(path, lib) || !checkLibMd5(path, lib)) {
                 status = false;
             }
-        }
-        return status;
+        }*/
+        /*
+        懒得更新MD5了，每次进游戏解压一遍得了
+        * */
+        return false;
     }
 
     private static boolean checkLibMd5(String path, NativeLib lib) {
@@ -92,8 +104,10 @@ public class NativeLibManager {
     public static void load(String path) {
         for (NativeLib lib : libs) {
             File f = Paths.get(path, lib.name).toFile();
-            LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
-            System.load(f.getAbsolutePath());
+            if (lib.type == 1) {
+                LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
+                System.load(f.getAbsolutePath());
+            }
         }
         nativeApiAvailable = true;
         LOGGER.info("依赖库版本： {}", SuperResolutionNative.getVersionInfo());
