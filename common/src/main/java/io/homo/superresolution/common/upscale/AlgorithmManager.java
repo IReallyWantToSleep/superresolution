@@ -46,11 +46,11 @@ public class AlgorithmManager {
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
         Matrix4f viewMatrix = new Matrix4f()
                 .lookAt(
-                        (float) camera.getPosition().x, (float) camera.getPosition().y, (float) camera.getPosition().z, // 相机位置
-                        (float) (camera.getPosition().x + camera.getLookVector().x),                        // 目标点（前向方向）
+                        (float) camera.getPosition().x, (float) camera.getPosition().y, (float) camera.getPosition().z,
+                        (float) (camera.getPosition().x + camera.getLookVector().x),
                         (float) (camera.getPosition().y + camera.getLookVector().y),
                         (float) (camera.getPosition().z + camera.getLookVector().z),
-                        camera.getUpVector().x, camera.getUpVector().y, camera.getUpVector().z                                         // 上向量
+                        camera.getUpVector().x, camera.getUpVector().y, camera.getUpVector().z
                 );
         if (param.lastViewMatrix == null) {
             param.lastViewMatrix = viewMatrix;

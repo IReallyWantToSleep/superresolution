@@ -27,6 +27,16 @@ public interface ICommandEncoder {
 
     void copyTexture(ICommandBuffer commandBuffer, ITexture src, ITexture dst, int srcX0, int srcY0, int srcX1, int srcY1, int srcLevel, int dstX0, int dstY0, int dstX1, int dstY1, int dstLevel);
 
+    default void copyTexture(ITexture src, ITexture dst) {
+        copyTexture(
+                src,
+                dst,
+                0, 0, src.getWidth(), src.getHeight(), 0,
+                0, 0, dst.getWidth(), dst.getHeight(), 0
+        );
+    }
+
+
     void copyBuffer(IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size);
 
     void copyBuffer(ICommandBuffer commandBuffer, IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size);

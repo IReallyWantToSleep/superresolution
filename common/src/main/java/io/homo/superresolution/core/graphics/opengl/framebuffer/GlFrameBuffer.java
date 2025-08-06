@@ -234,13 +234,15 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public void resizeFrameBuffer(int width, int height) {
+        if (width < 1 || height < 1) {
+            throw new RuntimeException("%s %s".formatted(width, height));
+        }
+        
         for (GlFrameBufferAttachment attachment : attachments) {
             attachment.texture.resize(width, height);
         }
         Gl.DSA.deleteFramebuffer(frameBufferId);
-        if (width < 1 || height < 1) {
-            throw new RuntimeException("%s %s".formatted(width, height));
-        }
+
         this.frameBufferId = Gl.DSA.createFramebuffer();
         this.width = width;
         this.height = height;

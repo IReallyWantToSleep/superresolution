@@ -133,7 +133,7 @@ public class Requirement {
             try {
                 if (!dep.get()) return false;
             } catch (Exception e) {
-                return false; // 避免单个dep抛出异常导致影响全局
+                return false;
             }
         }
         return true;

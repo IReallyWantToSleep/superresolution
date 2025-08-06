@@ -3,6 +3,7 @@ package io.homo.superresolution.core.graphics.vulkan.texture;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 import org.slf4j.Logger;
@@ -21,15 +22,22 @@ public class VulkanTexture implements ITexture {
     private final TextureDescription description;
     private final boolean isExternal;
     private final long memoryHandle;
+    private final boolean exportable;
+    private long exportedHandle = -1;
     private long image;
     private long imageMemory;
     private long imageView;
     private int width;
     private int height;
 
+    public long getMemorySize() {
+        return memorySize;
+    }
+
+    private long memorySize;
 
     public VulkanTexture(VulkanDevice device, TextureDescription description) {
-        this(device, description, false, -1);
+        this(device, description, false, -1, false);
     }
 
     @Override
@@ -38,16 +46,21 @@ public class VulkanTexture implements ITexture {
     }
 
     public VulkanTexture(VulkanDevice device, TextureDescription description, long memoryHandle) {
-        this(device, description, true, memoryHandle);
+        this(device, description, true, memoryHandle, false);
     }
 
-    private VulkanTexture(VulkanDevice device, TextureDescription description, boolean isExternal, long memoryHandle) {
+    public VulkanDevice getDevice() {
+        return device;
+    }
+
+    public VulkanTexture(VulkanDevice device, TextureDescription description, boolean isExternal, long memoryHandle, boolean exportable) {
         this.device = device;
         this.description = description;
         this.width = description.getWidth();
         this.height = description.getHeight();
         this.isExternal = isExternal;
         this.memoryHandle = memoryHandle;
+        this.exportable = exportable;
 
         try (MemoryStack stack = stackPush()) {
             createImage(stack);
@@ -55,9 +68,29 @@ public class VulkanTexture implements ITexture {
                 importMemoryFromHandle(stack);
             } else {
                 allocateMemory(stack);
+                if (exportable) {
+                    exportMemoryHandle(stack);
+                }
             }
             createImageView(stack);
         }
+    }
+
+    private void exportMemoryHandle(MemoryStack stack) {
+        if (!device.getVkDevice().getCapabilities().VK_KHR_external_memory_win32) {
+            throw new VulkanException("Win32 external memory not supported");
+        }
+
+        VkMemoryGetWin32HandleInfoKHR getHandleInfo = VkMemoryGetWin32HandleInfoKHR.calloc(stack)
+                .sType(VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR)
+                .memory(imageMemory)
+                .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+
+        PointerBuffer pHandle = stack.mallocPointer(1);
+        VK_CHECK(KHRExternalMemoryWin32.vkGetMemoryWin32HandleKHR(
+                device.getVkDevice(), getHandleInfo, pHandle), "Failed to export memory handle");
+
+        exportedHandle = pHandle.get(0);
     }
 
     private void createImage(MemoryStack stack) {
@@ -76,12 +109,12 @@ public class VulkanTexture implements ITexture {
         imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
         imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 
-        if (isExternal) {
+        if (isExternal || exportable) {
             VkExternalMemoryImageCreateInfo extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
                     .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
 
-            imageInfo.pNext(extInfo.address());
+            imageInfo.pNext(extInfo);
         }
 
         LongBuffer pImage = stack.mallocLong(1);
@@ -119,20 +152,29 @@ public class VulkanTexture implements ITexture {
     private void allocateMemory(MemoryStack stack) {
         VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
         vkGetImageMemoryRequirements(device.getVkDevice(), image, memRequirements);
-
+        this.memorySize = memRequirements.size();
         VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack);
         allocInfo.sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-        allocInfo.allocationSize(memRequirements.size());
+        allocInfo.allocationSize(memorySize);
         allocInfo.memoryTypeIndex(findMemoryType(
                 memRequirements.memoryTypeBits(),
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
+        if (exportable) {
+            VkExportMemoryAllocateInfo exportInfo = VkExportMemoryAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO)
+                    .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+            allocInfo.pNext(exportInfo);
+        }
+
         LongBuffer pMemory = stack.mallocLong(1);
-        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory), "Failed to allocate image memory");
+        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
+                "Failed to allocate image memory");
         imageMemory = pMemory.get(0);
 
         vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0);
     }
+
 
     private void importMemoryFromHandle(MemoryStack stack) {
         VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
@@ -145,7 +187,7 @@ public class VulkanTexture implements ITexture {
 
         VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
-                .pNext(importInfo.address())
+                .pNext(importInfo)
                 .allocationSize(memRequirements.size())
                 .memoryTypeIndex(findMemoryType(
                         memRequirements.memoryTypeBits(),
@@ -192,7 +234,6 @@ public class VulkanTexture implements ITexture {
                 .levelCount(description.getMipmapSettings().getLevels())
                 .baseArrayLayer(0)
                 .layerCount(1);
-
         LongBuffer pImageView = stack.mallocLong(1);
         VK_CHECK(vkCreateImageView(device.getVkDevice(), viewInfo, null, pImageView), "Failed to create image view");
         imageView = pImageView.get(0);
@@ -260,6 +301,16 @@ public class VulkanTexture implements ITexture {
         }
     }
 
+    public long getExportedMemoryHandle() {
+        if (!exportable) {
+            throw new VulkanException("Texture is not exportable");
+        }
+        if (exportedHandle == -1) {
+            throw new VulkanException("Memory handle not exported");
+        }
+        return exportedHandle;
+    }
+
     @Override
     public void resize(int newWidth, int newHeight) {
         if (newWidth == width && newHeight == height) return;
@@ -293,9 +344,9 @@ public class VulkanTexture implements ITexture {
     }
 
     public long getMemoryHandle() {
-        if (!isExternal) {
-            throw new VulkanException("Texture does not have external memory");
+        if (isExternal) {
+            return memoryHandle;
         }
-        return memoryHandle;
+        throw new VulkanException("Texture does not have external memory");
     }
 }
