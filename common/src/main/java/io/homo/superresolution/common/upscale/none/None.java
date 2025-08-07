@@ -9,8 +9,6 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 public class None extends AbstractAlgorithm {
     @Override
     public void init() {
-        input = null;
-        output = null;
     }
 
     @Override
@@ -30,11 +28,6 @@ public class None extends AbstractAlgorithm {
 
     public int getOutputTextureId() {
         return MinecraftRenderHandle.getRenderTarget().getTextureId(FrameBufferAttachmentType.Color);
-    }
-
-    @Override
-    public IFrameBuffer getInputFrameBuffer() {
-        return MinecraftRenderHandle.getRenderTarget();
     }
 
     @Override

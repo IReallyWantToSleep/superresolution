@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
+import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
@@ -30,13 +31,14 @@ public class Sgsr2 extends AbstractAlgorithm {
     private SgsrVariant currentVariant;
     private StructuredUniformBuffer paramsData;
     private GlBuffer paramsUbo;
+    private GlFrameBuffer output;
 
     private int sameFrameNum = 0;
 
     @Override
     public void init() {
-        GlFrameBuffer output_ = new GlFrameBuffer();
-        output_.addAttachment(new GlFrameBufferAttachment(
+        GlFrameBuffer output = new GlFrameBuffer();
+        output.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 RenderSystems.current().device().createTexture(TextureDescription.create()
                         .type(TextureType.Texture2D)
@@ -46,7 +48,6 @@ public class Sgsr2 extends AbstractAlgorithm {
                         .format(TextureFormat.RGBA8)
                         .build())
         ));
-        output = output_;
         this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
         paramsData = UniformStructBuilder.start()
                 .vec2Entry("renderSize")
@@ -138,6 +139,8 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
+        super.dispatch(dispatchResource);
+
         initVariant();
         updateParams(dispatchResource);
         variantInstance.setOutput(output);
@@ -179,7 +182,7 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        return super.getOutputFrameBuffer();
+        return output;
     }
 
     private void initVariant() {
@@ -211,5 +214,9 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     public GlBuffer getParams() {
         return paramsUbo;
+    }
+
+    public InputResourceSet getInputResourceSet() {
+        return resources;
     }
 }

@@ -1,10 +1,13 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -98,7 +101,11 @@ public class AlgorithmManager {
         return proj;
     }
 
-    public static DispatchResource getDispatchResource() {
+    public static DispatchResource getDispatchResource(
+            ITexture color,
+            ITexture depth,
+            ITexture motionVectors
+    ) {
         return new DispatchResource(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
@@ -124,7 +131,11 @@ public class AlgorithmManager {
                 param.lastModelViewProjectionMatrix,
                 param.lastViewMatrix,
 
-                (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer()
+                new InputResourceSet(
+                        color,
+                        depth,
+                        motionVectors == null ? getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) : motionVectors
+                )
         );
     }
 

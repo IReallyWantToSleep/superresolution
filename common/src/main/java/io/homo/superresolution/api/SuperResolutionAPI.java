@@ -41,10 +41,6 @@ public class SuperResolutionAPI {
         return SuperResolution.currentAlgorithm;
     }
 
-    public static DispatchResource getAlgorithmDispatchResource() {
-        return AlgorithmManager.getDispatchResource();
-    }
-
     public static void debugRenderdocCapture() {
         MinecraftRenderHandle.needCapture();
     }

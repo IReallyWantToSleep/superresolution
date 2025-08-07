@@ -111,19 +111,15 @@ public class FSR2 extends AbstractAlgorithm {
     }
 
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
+        super.dispatch(dispatchResource);
         if (fsr2Context == null) return false;
         Matrix4f projectionMatrix = dispatchResource.projectionMatrix();
         float m11 = projectionMatrix.m11();
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
-        this.input = getInputFrameBuffer();
-        dispatchDescription.setColor(this.input.getTexture(FrameBufferAttachmentType.Color));
-        dispatchDescription.setDepth(
-                this.input.getTexture(FrameBufferAttachmentType.Depth) == null ?
-                        this.input.getTexture(FrameBufferAttachmentType.DepthStencil) :
-                        this.input.getTexture(FrameBufferAttachmentType.Depth)
-        );
-        dispatchDescription.setMotionVectors(dispatchResource.motionVectors().getTexture(FrameBufferAttachmentType.Color));
+        dispatchDescription.setColor(resources.colorTexture());
+        dispatchDescription.setDepth(resources.depthTexture());
+        dispatchDescription.setMotionVectors(resources.motionVectorsTexture());
         dispatchDescription.setOutput(this.output);
         dispatchDescription.setJitterOffset(
                 new Vector2f(0)

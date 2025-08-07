@@ -23,6 +23,8 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3i;
 
+import java.util.Optional;
+
 public class FSR1 extends AbstractAlgorithm {
     private IShaderProgram<?> fsr1EASUShader;
     private IShaderProgram<?> fsr1RCASShader;
@@ -35,7 +37,6 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        input = MinecraftRenderHandle.getRenderTarget();
         fsr1UBOData = UniformStructBuilder.start()
                 .vec2Entry("renderViewportSize")
                 .vec2Entry("containerTextureSize")
@@ -79,7 +80,7 @@ public class FSR1 extends AbstractAlgorithm {
                 PipelineJobBuilders.compute(fsr1EASUShader)
                         .resource("inImage",
                                 PipelineJobResource.SamplerTexture.create(
-                                        TextureSupplier.of(() -> getInputFrameBuffer().getTexture(FrameBufferAttachmentType.Color))
+                                        () -> Optional.ofNullable(resources.colorTexture())
                                 )
                         )
                         .resource("outImage",
@@ -183,6 +184,8 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
+        super.dispatch(dispatchResource);
+
         RenderSystems.current().device().commendEncoder().begin();
         fsr1UBOData.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
@@ -222,11 +225,6 @@ public class FSR1 extends AbstractAlgorithm {
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
         return outputFbo;
-    }
-
-    @Override
-    public int getInputTextureId() {
-        return super.getInputTextureId();
     }
 
     @Override

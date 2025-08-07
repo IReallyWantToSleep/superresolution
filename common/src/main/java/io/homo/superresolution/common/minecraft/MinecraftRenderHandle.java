@@ -24,6 +24,7 @@ import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.lwjgl.BufferUtils;
@@ -194,20 +195,19 @@ public class MinecraftRenderHandle {
             PerformanceInfo.begin("world");
             GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[0]);
         }
-
-        updateRenderTarget();
-        updateRenderTargetSize();
+        if (!isShaderPackCompat()) {
+            updateRenderTarget();
+            updateRenderTargetSize();
         #if MC_VER == MC_1_21_5
         getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
         #elif MC_VER > MC_1_21_5
         setClientRenderTarget(getRenderTarget().asMcRenderTarget());
         getRenderTarget().bind(FrameBufferBindPoint.Write);
         #else
-        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
-        getRenderTarget().bind(FrameBufferBindPoint.Write);
+            setClientRenderTarget(getRenderTarget().asMcRenderTarget());
+            getRenderTarget().bind(FrameBufferBindPoint.Write);
         #endif
-        SuperResolution.getCurrentAlgorithm().setInputFrameBuffer(getRenderTarget());
-
+        }
         if (needCapture) {
             if (RenderDoc.renderdoc != null) {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
@@ -221,16 +221,17 @@ public class MinecraftRenderHandle {
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
+        if (!isShaderPackCompat()) {
         #if MC_VER == MC_1_21_5
         ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
                 ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
         );
         getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());
         #else
-        setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
+            setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif
-        getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
-
+            getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
+        }
         try (GlState ignored = new GlState()) {
             LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }
@@ -253,55 +254,59 @@ public class MinecraftRenderHandle {
             }
 
             AlgorithmManager.update();
-
-            try (GlState ignored_ = new GlState()) {
-                DispatchResource dispatchResource = AlgorithmManager.getDispatchResource();
-                if (SuperResolution.currentAlgorithm != null) {
-                    AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
-                            SuperResolution.currentAlgorithm,
-                            dispatchResource
+            if (!isShaderPackCompat()) {
+                try (GlState ignored_ = new GlState()) {
+                    DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
+                            getRenderTarget().getTexture(FrameBufferAttachmentType.Color),
+                            getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth),
+                            null
                     );
-                }
-                if (needCaptureVulkan) {
-                    if (RenderDoc.renderdoc != null) {
-                        if (RenderSystems.vulkan() != null) {
-                            RenderDoc.renderdoc.StartFrameCapture.call(
-                                    new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                                    null
-                            );
+                    if (SuperResolution.currentAlgorithm != null) {
+                        AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
+                                SuperResolution.currentAlgorithm,
+                                dispatchResource
+                        );
+                    }
+                    if (needCaptureVulkan) {
+                        if (RenderDoc.renderdoc != null) {
+                            if (RenderSystems.vulkan() != null) {
+                                RenderDoc.renderdoc.StartFrameCapture.call(
+                                        new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
+                                        null
+                                );
+                            }
                         }
                     }
-                }
-                SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
-                if (needCaptureVulkan) {
-                    if (RenderDoc.renderdoc != null) {
-                        if (RenderSystems.vulkan() != null) {
-                            needCaptureVulkan = false;
-                            RenderDoc.renderdoc.EndFrameCapture.call(
-                                    new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                                    null
-                            );
+                    SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+                    if (needCaptureVulkan) {
+                        if (RenderDoc.renderdoc != null) {
+                            if (RenderSystems.vulkan() != null) {
+                                needCaptureVulkan = false;
+                                RenderDoc.renderdoc.EndFrameCapture.call(
+                                        new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
+                                        null
+                                );
+                            }
                         }
                     }
-                }
-                if (SuperResolution.currentAlgorithm != null) {
-                    AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
-                            SuperResolution.currentAlgorithm,
-                            SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
-                    );
-                }
+                    if (SuperResolution.currentAlgorithm != null) {
+                        AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
+                                SuperResolution.currentAlgorithm,
+                                SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                        );
+                    }
 
+                }
+                IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+                Gl.DSA.blitFramebuffer(
+                        (int) outFbo.handle(),
+                        (int) MinecraftRenderHandle.getOriginRenderTarget().handle(),
+                        0, 0, outFbo.getWidth(), outFbo.getHeight(),
+                        0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
+                        GL46.GL_COLOR_BUFFER_BIT,
+                        GL46.GL_NEAREST
+                );
             }
-            IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-            Gl.DSA.blitFramebuffer(
-                    (int) outFbo.handle(),
-                    (int) MinecraftRenderHandle.getOriginRenderTarget().handle(),
-                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                    0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
-                    GL46.GL_COLOR_BUFFER_BIT,
-                    GL46.GL_NEAREST
-            );
-
             if (needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
                     needCaptureUpscale = false;
@@ -314,18 +319,20 @@ public class MinecraftRenderHandle {
                 GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, upscaleTime);
                 PerformanceInfo.end("upscale", upscaleTime[0]);
             }
-            if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
+            if (!isShaderPackCompat() && SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                 blitHandRenderTarget();
         }
 
         frameTime = PerformanceInfo.getAsMillis("world");
-        getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
-        glViewport(
-                0,
-                0,
-                getScreenWidth(),
-                getScreenHeight()
-        );
+        if (!isShaderPackCompat()) {
+            getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
+            glViewport(
+                    0,
+                    0,
+                    getScreenWidth(),
+                    getScreenHeight()
+            );
+        }
         if (needCapture) {
             if (RenderDoc.renderdoc != null) {
                 needCapture = false;
@@ -454,4 +461,7 @@ public class MinecraftRenderHandle {
         GlStates.pop("hand").restore();
     }
 
+    public static boolean isShaderPackCompat() {
+        return ShaderCompatUpscaleDispatcher.getCurrentShaderPackConfig().isPresent();
+    }
 }
