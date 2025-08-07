@@ -198,7 +198,7 @@ public class FfxFSR extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        //if (true) return true;
+        super.dispatch(dispatchResource);
 
         if (context == null || context.nativePtr < 1) {
             return false;

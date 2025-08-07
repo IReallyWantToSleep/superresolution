@@ -49,8 +49,8 @@ neoForge {
     runs {
         configureEach {
             jvmArguments.add("-XX:+CreateMinidumpOnCrash")
-            jvmArguments.add("-Dorg.lwjgl.util.Debug=true")
-            jvmArguments.add("-Dorg.lwjgl.util.DebugAllocator=true")
+            //jvmArguments.add("-Dorg.lwjgl.util.Debug=true")
+            //jvmArguments.add("-Dorg.lwjgl.util.DebugAllocator=true")
 
             systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
             ideName = "NeoForge ${it.name.capitalize()} (${project.path})"

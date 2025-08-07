@@ -1,3 +1,6 @@
+import multiversion.BasePlatformConfig
+import multiversion.Dependency
+
 plugins {
 }
 
@@ -40,6 +43,27 @@ repositories {
     maven { url 'https://repo.spongepowered.org/repository/maven-public' }
     maven { url 'https://maven.parchmentmc.org/' }
     maven { url 'https://maven.blamejared.com' }
+
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+static Dependency findIris(BasePlatformConfig config) {
+    if (config.dependencies) {
+        if (config.dependencies.modrinth) {
+            for (var dep : config.dependencies.modrinth) {
+                if (dep.name.trim() == "iris" || dep.name.trim() == "oculus") {
+                    return dep
+                }
+            }
+        }
+    }
+    return null;
 }
 
 dependencies {
@@ -66,6 +90,29 @@ dependencies {
     } else {
         modCompileOnly "dev.architectury:architectury-forge:$versionConfig.common.architecturyApiVersion"
         modCompileOnly "me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion"
+    }
+
+    //搜索Iris依赖
+    Dependency irisDependency = null;
+    String irisPlatform = null;
+
+    if (versionConfig.neoforge && irisDependency == null) {
+        irisDependency = findIris(versionConfig.neoforge);
+        irisPlatform = "neoforge"
+    }
+
+    if (versionConfig.forge && irisDependency == null) {
+        irisDependency = findIris(versionConfig.forge);
+        irisPlatform = "forge"
+    }
+
+    if (versionConfig.fabric && irisDependency == null) {
+        irisDependency = findIris(versionConfig.fabric);
+        irisPlatform = "fabric"
+    }
+
+    if (irisDependency != null) {
+        compileOnly "maven.modrinth:${irisDependency.name}:${irisDependency.version}-${irisPlatform},${versionConfig.common.minecraftVersion}"
     }
 }
 

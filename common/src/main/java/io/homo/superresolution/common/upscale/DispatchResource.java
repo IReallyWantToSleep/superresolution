@@ -1,5 +1,7 @@
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import org.joml.Matrix4f;
@@ -31,7 +33,6 @@ public record DispatchResource(
         Matrix4f lastProjectionMatrix,
         Matrix4f lastModelViewProjectionMatrix,
         Matrix4f lastViewMatrix,
-
-        GlFrameBuffer motionVectors
+        InputResourceSet resources
 ) {
 }

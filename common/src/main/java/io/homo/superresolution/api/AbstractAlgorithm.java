@@ -8,15 +8,7 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.math.Vector2f;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
-    /**
-     * 输入帧缓冲区
-     */
-    protected IFrameBuffer input;
-
-    /**
-     * 输出帧缓冲区
-     */
-    protected IFrameBuffer output;
+    protected InputResourceSet resources;
 
     public AbstractAlgorithm() {
 
@@ -33,7 +25,10 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * @param dispatchResource 运行算法所需资源。
      * @return 如果运行成功返回true，否则返回false。
      */
-    public abstract boolean dispatch(DispatchResource dispatchResource);
+    public boolean dispatch(DispatchResource dispatchResource) {
+        this.resources = dispatchResource.resources();
+        return true;
+    }
 
     /**
      * 销毁算法，释放资源。
@@ -51,49 +46,11 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     public abstract void resize(int width, int height);
 
     /**
-     * 获取输入帧缓冲区。
-     *
-     * @return 输入帧缓冲区。
-     */
-    public IFrameBuffer getInputFrameBuffer() {
-        return input;
-    }
-
-    /**
-     * 设置输入帧缓冲区。
-     *
-     * @param input 输入帧缓冲区。
-     */
-    public void setInputFrameBuffer(IFrameBuffer input) {
-        this.input = input;
-    }
-
-    /**
      * 获取输出帧缓冲区。
      *
      * @return 输出帧缓冲区。
      */
-    public IFrameBuffer getOutputFrameBuffer() {
-        return output;
-    }
-
-    /**
-     * 设置输出帧缓冲区。
-     *
-     * @param output 输出帧缓冲区。
-     */
-    public void setOutputFrameBuffer(IFrameBuffer output) {
-        this.output = output;
-    }
-
-    /**
-     * 获取输入帧缓冲区的颜色纹理ID。
-     *
-     * @return 输入帧缓冲区的颜色纹理ID。
-     */
-    public int getInputTextureId() {
-        return input.getTextureId(FrameBufferAttachmentType.Color);
-    }
+    public abstract IFrameBuffer getOutputFrameBuffer();
 
     /**
      * 获取输出帧缓冲区的颜色纹理ID。
@@ -101,7 +58,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * @return 输出帧缓冲区的颜色纹理ID。
      */
     public int getOutputTextureId() {
-        return output.getTextureId(FrameBufferAttachmentType.Color);
+        return getOutputFrameBuffer().getTextureId(FrameBufferAttachmentType.Color);
     }
 
     public Vector2f getJitterOffset(

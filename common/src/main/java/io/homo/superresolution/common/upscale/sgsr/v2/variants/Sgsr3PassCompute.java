@@ -20,6 +20,8 @@ import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
 
+import java.util.Optional;
+
 public class Sgsr3PassCompute extends AbstractSgsrVariant {
     private GlShaderProgram activateShader;
     private GlShaderProgram convertShader;
@@ -157,23 +159,22 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                 PipelineJobBuilders.compute(convertShader)
                         .resource("InputOpaqueColor",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())
                                 )
                         )
                         .resource("InputColor",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())
                                 )
                         )
                         .resource("InputDepth",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofDepth(sgsr.getInputFrameBuffer())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().depthTexture())
                                 )
                         )
                         .resource("InputVelocity",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(
-                                                AlgorithmManager.getDispatchResource().motionVectors())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().motionVectorsTexture())
                                 )
                         )
                         .resource("YCoCgColor",

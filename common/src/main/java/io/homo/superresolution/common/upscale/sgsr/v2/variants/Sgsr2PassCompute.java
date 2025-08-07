@@ -22,6 +22,8 @@ import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
 import io.homo.superresolution.core.math.Vector3i;
 
+import java.util.Optional;
+
 public class Sgsr2PassCompute extends AbstractSgsrVariant {
     private GlShaderProgram convertShader;
     private GlShaderProgram upscaleShader;
@@ -123,18 +125,17 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 PipelineJobBuilders.compute(convertShader)
                         .resource("InputColor",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(sgsr.getInputFrameBuffer())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())
                                 )
                         )
                         .resource("InputDepth",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofDepth(sgsr.getInputFrameBuffer())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().depthTexture())
                                 )
                         )
                         .resource("InputVelocity",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(
-                                                AlgorithmManager.getDispatchResource().motionVectors())
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().motionVectorsTexture())
                                 )
                         )
                         .resource("MotionDepthClipAlphaBuffer",

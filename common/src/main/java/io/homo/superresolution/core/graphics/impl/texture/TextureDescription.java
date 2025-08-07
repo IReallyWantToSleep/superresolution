@@ -7,7 +7,7 @@ public class TextureDescription {
     private int height;
     private TextureFormat format;
     private TextureType type;
-    private TextureUsages usages;
+    private TextureUsages usages = TextureUsages.create();
     private TextureFilterMode filterMode = TextureFilterMode.NEAREST;
     private TextureWrapMode wrapMode = TextureWrapMode.CLAMP_TO_EDGE;
     private TextureMipmapSettings mipmapSettings = TextureMipmapSettings.disabled();

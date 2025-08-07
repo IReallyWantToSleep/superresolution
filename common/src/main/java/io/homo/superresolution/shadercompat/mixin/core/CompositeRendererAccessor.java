@@ -1,0 +1,12 @@
+package io.homo.superresolution.shadercompat.mixin.core;
+
+import net.irisshaders.iris.pipeline.CompositeRenderer;
+import net.irisshaders.iris.targets.RenderTargets;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+@Mixin(CompositeRenderer.class)
+public interface CompositeRendererAccessor {
+    @Accessor(value = "renderTargets")
+    RenderTargets getRenderTargets();
+}

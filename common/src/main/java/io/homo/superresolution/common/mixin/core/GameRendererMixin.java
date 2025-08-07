@@ -47,11 +47,7 @@ public abstract class GameRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            #if MC_VER < MC_1_20_6
-            if (io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceWidth() < 1 || io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceHeight() < 1) {
-                ci.cancel();
-            }
-            #endif
+
             MinecraftRenderHandle.onRenderWorldBegin(CallType.GAME_RENDERER);
         }
     }
@@ -63,8 +59,13 @@ public abstract class GameRendererMixin {
         }
     }
 
-    @Inject(at = @At(value = "HEAD"), method = "render")
+    @Inject(at = @At(value = "HEAD"), method = "render", cancellable = true)
     private void onRenderBegin(CallbackInfo ci) {
+        #if MC_VER < MC_1_20_6
+        if (io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceWidth() < 1 || io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceHeight() < 1) {
+            ci.cancel();
+        }
+        #endif
         PerformanceInfo.begin("gameRenderer");
     }
 

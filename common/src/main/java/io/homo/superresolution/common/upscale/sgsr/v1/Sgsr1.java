@@ -24,6 +24,8 @@ import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3i;
 import org.lwjgl.opengl.GL41;
 
+import java.util.Optional;
+
 public class Sgsr1 extends AbstractAlgorithm {
     private IShaderProgram<?> sgsrShader;
     private Pipeline pipeline;
@@ -75,7 +77,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 PipelineJobBuilders.graphics(sgsrShader)
                         .resource("ps0",
                                 PipelineJobResource.SamplerTexture.create(
-                                        TextureSupplier.of(() -> getInputFrameBuffer().getTexture(FrameBufferAttachmentType.Color))
+                                        () -> Optional.ofNullable(resources.depthTexture())
                                 )
 
                         )
@@ -93,6 +95,8 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
+        super.dispatch(dispatchResource);
+
         buffer.setVec4(
                 "ViewportInfo",
                 1.0f / dispatchResource.renderWidth(),
