@@ -8,6 +8,10 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.math.Vector2f;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
+    protected InputResourceSet getResources() {
+        return resources;
+    }
+
     protected InputResourceSet resources;
 
     public AbstractAlgorithm() {

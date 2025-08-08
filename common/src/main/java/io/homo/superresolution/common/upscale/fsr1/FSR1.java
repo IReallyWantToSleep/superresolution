@@ -4,10 +4,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.pipeline.*;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
@@ -79,9 +76,7 @@ public class FSR1 extends AbstractAlgorithm {
         fsrUpscalePipeline.job("fsr1_easu",
                 PipelineJobBuilders.compute(fsr1EASUShader)
                         .resource("inImage",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(resources.colorTexture())
-                                )
+                                PipelineJobResource.SamplerTexture.create(() -> Optional.ofNullable(getResources().colorTexture()))
                         )
                         .resource("outImage",
                                 PipelineJobResource.StorageTexture.create(
@@ -193,6 +188,13 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
         fsr1UBOData.fillBuffer();
         fsr1UBO.upload();
+        PipelineComputeJob easuJob = (PipelineComputeJob) fsrUpscalePipeline.job("fsr1_easu");
+        PipelineJobResource.SamplerTexture inImageResource =
+                (PipelineJobResource.SamplerTexture) easuJob.resource("inImage");
+
+        if (inImageResource != null && getResources().colorTexture() != null) {
+            inImageResource.setResource(getResources().colorTexture());
+        }
         fsrUpscalePipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
         RenderSystems.current().device().submitCommandBuffer(
                 RenderSystems.current()

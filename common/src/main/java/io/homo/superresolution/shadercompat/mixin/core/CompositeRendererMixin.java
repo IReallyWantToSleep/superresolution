@@ -2,6 +2,7 @@ package io.homo.superresolution.shadercompat.mixin.core;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
@@ -23,10 +24,11 @@ public class CompositeRendererMixin {
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION
     )
     public void dispatchUpscale(CallbackInfo ci, RenderTarget main, int passIndex) {
+        if (!MinecraftRenderHandle.isShaderPackCompat()) return;
         if (Iris.getPipelineManager().getPipeline().isPresent()) {
             if (this.equals(((IrisRenderingPipelineAccessor) Iris.getPipelineManager().getPipeline().get()).getCompositeRenderer())) {
                 if (ShaderCompatUpscaleDispatcher.getCurrentShaderPackConfig().isPresent()) {
-                    if (ShaderCompatUpscaleDispatcher.getCurrentConfig().enabled) {
+                    if (ShaderCompatUpscaleDispatcher.getCurrentConfig() != null && ShaderCompatUpscaleDispatcher.getCurrentConfig().enabled) {
                         String indexStr = ShaderCompatUpscaleDispatcher.getCurrentConfig().beforeUpscaleShaderName.replace("composite", "");
                         int index = 0;
                         if (!(indexStr.isBlank())) {
