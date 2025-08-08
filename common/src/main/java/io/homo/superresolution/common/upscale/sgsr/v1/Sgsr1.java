@@ -77,9 +77,8 @@ public class Sgsr1 extends AbstractAlgorithm {
                 PipelineJobBuilders.graphics(sgsrShader)
                         .resource("ps0",
                                 PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(resources.depthTexture())
+                                        () -> Optional.ofNullable(getResources().colorTexture())
                                 )
-
                         )
                         .resource("sgsr1_data",
                                 PipelineJobResource.UniformBuffer.create(

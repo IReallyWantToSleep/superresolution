@@ -24,7 +24,13 @@ public class PipelineJobResource<RT> {
         this.access = access;
         this.type = type;
         this.validator = validator != null ? validator : rt -> true;
-        this.resource = () -> resource.get().filter(this.validator);
+        this.resource = () -> {
+            if (!this.validator.test(resource.get().orElse(null))) {
+                throw new IllegalArgumentException("Invalid resource provided for " + this.getClass().getSimpleName());
+            } else {
+                return resource.get();
+            }
+        };
     }
 
     public PipelineResourceAccess getAccess() {

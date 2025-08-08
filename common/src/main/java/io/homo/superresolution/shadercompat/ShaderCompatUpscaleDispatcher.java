@@ -48,12 +48,11 @@ public class ShaderCompatUpscaleDispatcher {
     public static Map<String, Object> debugInfo = new HashMap<>();
 
     public static SRShaderCompatConfig.UpscaleConfig getCurrentConfig() {
-        return Optional.of(
+        return Optional.ofNullable(
                 shaderCompatConfig.getWorldConfigs().get(
                         ((ShaderPackAccessor) Iris.getCurrentPack().get())
                                 .getDimensionMap()
-                                .get(Iris.getCurrentDimension()
-                                )
+                                .get(Iris.getCurrentDimension())
                 )
         ).orElse(
                 shaderCompatConfig.getWorldConfigs().get("world0")
@@ -114,6 +113,7 @@ public class ShaderCompatUpscaleDispatcher {
                             .height(MinecraftRenderHandle.getRenderHeight())
                             .type(TextureType.Texture2D)
                             .mipmapsDisabled()
+                            .usages(TextureUsages.create().sampler())
                             .format(getIrisTextureFormatByName(compositeRenderer, currentConfig.inputTextures.get("color").src))
                             .build()
             );
@@ -125,6 +125,7 @@ public class ShaderCompatUpscaleDispatcher {
                             .height(MinecraftRenderHandle.getRenderHeight())
                             .type(TextureType.Texture2D)
                             .mipmapsDisabled()
+                            .usages(TextureUsages.create().sampler())
                             .format(getIrisTextureFormatByName(compositeRenderer, currentConfig.inputTextures.get("color").src))
                             .build()
             );
@@ -140,17 +141,17 @@ public class ShaderCompatUpscaleDispatcher {
         }
         glCopyImageSubData(
                 (int) getIrisTextureByName(compositeRenderer, currentConfig.inputTextures.get("color").src), GL_TEXTURE_2D,
-                1, 0, 0, 0,
+                0, 0, 0, 0,
                 (int) colorTexture.handle(), GL_TEXTURE_2D,
-                1, 0, 0, 0,
+                0, 0, 0, 0,
                 switch (currentConfig.inputTextures.get("color").region.get(2)) {
                     case -1, 0 -> MinecraftRenderHandle.getRenderWidth();
                     case -2 -> MinecraftRenderHandle.getScreenWidth();
                     default -> currentConfig.inputTextures.get("color").region.get(2);
                 },
                 switch (currentConfig.inputTextures.get("color").region.get(3)) {
-                    case -1, 0 -> MinecraftRenderHandle.getRenderWidth();
-                    case -2 -> MinecraftRenderHandle.getScreenWidth();
+                    case -1, 0 -> MinecraftRenderHandle.getRenderHeight();
+                    case -2 -> MinecraftRenderHandle.getScreenHeight();
                     default -> currentConfig.inputTextures.get("color").region.get(3);
                 },
                 1
@@ -167,8 +168,8 @@ public class ShaderCompatUpscaleDispatcher {
         Gl.DSA.blitFramebuffer(
                 (int) outFbo.handle(),
                 GL33.glGetInteger(GL33.GL_DRAW_FRAMEBUFFER_BINDING),
-                0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                0, 0, MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(),
+                0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
+                0, 0, MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(),
                 GL46.GL_COLOR_BUFFER_BIT,
                 GL46.GL_NEAREST
         );

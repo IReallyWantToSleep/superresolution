@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
@@ -39,16 +40,19 @@ public class IrisMixin {
             Path shaderPackConfigTxt,
             Path shaderPackPath
     ) {
-        Path srConfigPath = shaderPackPath.resolve("superresolution.properties");
-        if (srConfigPath.toFile().isFile()) {
-            try {
-                String srConfigContext = Files.readString(srConfigPath, StandardCharsets.ISO_8859_1);
-                ShaderCompatUpscaleDispatcher.setShaderCompatConfig(SRShaderCompatConfig.load(srConfigContext));
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-                SuperResolution.LOGGER.info("加载 {} 光影包中的superresolution.properties时发生错误", name);
-            }
+
+        try {
+            Path srConfigPath = shaderPackPath.resolve("superresolution.properties");
+            String srConfigContext = Files.readString(srConfigPath, StandardCharsets.ISO_8859_1);
+            ShaderCompatUpscaleDispatcher.setShaderCompatConfig(SRShaderCompatConfig.load(srConfigContext));
+            return;
+        } catch (NoSuchFileException ignored) {
+
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+            SuperResolution.LOGGER.info("加载 {} 光影包中的superresolution.properties时发生错误", name);
         }
+        ShaderCompatUpscaleDispatcher.setShaderCompatConfig(null);
 
     }
 }

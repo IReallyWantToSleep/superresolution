@@ -3,7 +3,7 @@ package io.homo.superresolution.core.graphics.opengl;
 import static org.lwjgl.opengl.GL45.*;
 
 /**
- * OpenGL的状态机我跟你没完！
+ * OpenGL的状态机我CNM
  */
 public class GlState implements AutoCloseable {
     public static final long STATE_PROGRAM = 1L << 0;
@@ -108,7 +108,7 @@ public class GlState implements AutoCloseable {
 
 
     public void saveState() {
-        
+
         int originalActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
 
         if ((stateMask & STATE_PROGRAM) != 0) {
