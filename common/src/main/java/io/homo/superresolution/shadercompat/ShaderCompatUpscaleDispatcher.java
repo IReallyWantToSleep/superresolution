@@ -247,69 +247,6 @@ public class ShaderCompatUpscaleDispatcher {
         return -1;
     }
 
-    static class _FrameBuffer implements IFrameBuffer {
-        public _FrameBuffer(ITexture texture) {
-            this.texture = texture;
-        }
-
-        public final ITexture texture;
-
-        @Override
-        public int getWidth() {
-            return texture.getWidth();
-        }
-
-        @Override
-        public int getHeight() {
-            return texture.getWidth();
-        }
-
-        @Override
-        public void clearFrameBuffer() {
-
-        }
-
-        @Override
-        public void resizeFrameBuffer(int width, int height) {
-
-        }
-
-        @Override
-        public int getTextureId(FrameBufferAttachmentType attachmentType) {
-            return Math.toIntExact(texture.handle());
-        }
-
-        @Override
-        public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
-            return texture;
-        }
-
-        @Override
-        public void setClearColorRGBA(float red, float green, float blue, float alpha) {
-
-        }
-
-        @Override
-        public TextureFormat getColorTextureFormat() {
-            return texture.getTextureFormat();
-        }
-
-        @Override
-        public TextureFormat getDepthTextureFormat() {
-            return texture.getTextureFormat();
-        }
-
-        @Override
-        public long handle() {
-            return texture.handle();
-        }
-
-        @Override
-        public void destroy() {
-
-        }
-    }
-
     static class _Texture implements ITexture {
         private final Supplier<TextureFormat> textureFormatSupplier;
         private final Supplier<Integer> widthSupplier;
