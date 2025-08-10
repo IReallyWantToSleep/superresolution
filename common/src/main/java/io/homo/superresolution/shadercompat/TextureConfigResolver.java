@@ -35,6 +35,8 @@ public class TextureConfigResolver {
         }
 
         public void updateTexture() {
+            if (sourceTexture == null) return;
+            
             int width = resolveRegionValue(region.get(2), true);
             int height = resolveRegionValue(region.get(3), false);
 
@@ -60,7 +62,7 @@ public class TextureConfigResolver {
             }
         }
 
-        private void createInternalTexture(int width, int height) {
+        public void createInternalTexture(int width, int height) {
             internalTexture = GlTexture2D.create(
                     TextureDescription.create()
                             .width(width)
@@ -73,7 +75,7 @@ public class TextureConfigResolver {
             );
         }
 
-        private int resolveRegionValue(int value, boolean isWidth) {
+        public int resolveRegionValue(int value, boolean isWidth) {
             if (value == -1) return isWidth ?
                     MinecraftRenderHandle.getRenderWidth() :
                     MinecraftRenderHandle.getRenderHeight();
@@ -83,7 +85,7 @@ public class TextureConfigResolver {
             return value;
         }
 
-        private void copyTextureRegion(
+        public void copyTextureRegion(
                 ITexture src, int srcX, int srcY, int srcWidth, int srcHeight,
                 ITexture dest, int destX, int destY
         ) {

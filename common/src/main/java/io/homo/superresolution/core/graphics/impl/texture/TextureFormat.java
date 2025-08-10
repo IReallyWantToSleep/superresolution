@@ -85,6 +85,11 @@ public enum TextureFormat {
             DataType.UNSIGNED_NORMALIZED,
             TextureComponent.Depth
     ),
+    DEPTH32(
+            GL_DEPTH_COMPONENT32, VK_FORMAT_D32_SFLOAT,
+            DataType.UNSIGNED_NORMALIZED,
+            TextureComponent.Depth
+    ),
     R16_SNORM(
             GL_R16_SNORM, VK_FORMAT_R16_SNORM,
             DataType.SIGNED_NORMALIZED,
@@ -177,7 +182,7 @@ public enum TextureFormat {
             case R32F, R32UI -> 4;
             case RGBA16F -> 8;
             case R11G11B10F -> 4;
-            case DEPTH32F -> 4;
+            case DEPTH32F, DEPTH32 -> 4;
             case DEPTH24, DEPTH24_STENCIL8 -> 4;
         };
     }

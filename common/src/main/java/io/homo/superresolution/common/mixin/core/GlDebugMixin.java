@@ -33,6 +33,7 @@ public class GlDebugMixin {
 import com.mojang.blaze3d.opengl.GlDebug;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
