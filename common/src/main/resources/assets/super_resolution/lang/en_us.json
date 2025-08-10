@@ -83,6 +83,8 @@
     "superresolution.screen.config.options.tooltip.enable_renderdoc": "Development environment only. Enable RenderDoc integration",
     "superresolution.screen.config.options.label.enable_imgui": "Enable Imgui",
     "superresolution.screen.config.options.tooltip.enable_imgui": "Development environment only. Enable debug interface",
+    "superresolution.screen.config.options.label.enable_debug": "Enable Debug",
+    "superresolution.screen.config.options.tooltip.enable_debug": "Enable Debug",
     "superresolution.screen.debug.performance_info": "Performance Information",
     "superresolution.screen.info.title.performance_info": "Performance Information",
     "superresolution.screen.info.performance_info.frame_time": "Frame time %1$sms",

@@ -5,6 +5,7 @@ import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
+import io.homo.superresolution.api.event.ConfigChangedEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
@@ -236,6 +237,16 @@ public final class SuperResolution implements Resizable, Destroyable {
 
         isInit = true;
         this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+
+        ConfigChangedEvent.EVENT.register(() -> {
+            try {
+                if (MinecraftRenderHandle.isShaderPackCompat()) {
+                    Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
+                    irisApiClazz.getMethod("reload").invoke(null);
+                }
+            } catch (Throwable ignored) {
+            }
+        });
     }
 
     public void resize(int width, int height) {

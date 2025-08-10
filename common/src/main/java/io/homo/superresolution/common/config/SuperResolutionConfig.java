@@ -45,6 +45,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     public static final BooleanValue ENABLE_DATASET_GENERATOR;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
+    public static final BooleanValue ENABLE_DEBUG;
     public static final OSType CURRENT_OS_TYPE = new OS().type;
     public static final Runnable resolutionChangeCallback;
 
@@ -126,6 +127,12 @@ public class SuperResolutionConfig {
                 "debug/enable_imgui",
                 () -> CURRENT_OS_TYPE == OSType.WINDOWS && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable ImGui debug interface (auto-disabled on incompatible OS)"
+        );
+
+        ENABLE_DEBUG = builder.defineBoolean(
+                "debug/enable_debug",
+                () -> false,
+                "Enable debug mode"
         );
 
         GENERATE_MOTION_VECTORS = builder.defineBoolean(
@@ -371,6 +378,14 @@ public class SuperResolutionConfig {
 
     public static void setEnableDetailedProfiling(boolean value) {
         ENABLE_DETAILED_PROFILING.set(value);
+    }
+
+    public static boolean isEnableDebug() {
+        return ENABLE_DEBUG.get();
+    }
+
+    public static void setEnableDebug(boolean value) {
+        ENABLE_DEBUG.set(value);
     }
 
     public static float getMinUpscaleRatio() {

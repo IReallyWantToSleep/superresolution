@@ -272,6 +272,14 @@ public class ClothConfig {
     public static void addDebug(ConfigBuilder builder, ConfigEntryBuilder entryBuilder) {
         ConfigCategory debugCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.debug"));
         debugCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.enable_debug"),
+                        SuperResolutionConfig.isEnableDebug()
+                )
+                .setDefaultValue(false)
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_debug"))
+                .setSaveConsumer(SuperResolutionConfig::setEnableDebug)
+                .build());
+        debugCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.debug_dump_shader"),
                         SuperResolutionConfig.isDebugDumpShader())
                 .setDefaultValue(false)
@@ -297,7 +305,11 @@ public class ClothConfig {
     }
 
     public static void addInfos(ConfigBuilder builder) {
+        ConfigCategory performanceInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.title.performance_info"));
+        ConfigCategory algoInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.text.algo_support_status"));
         ConfigCategory envInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.title.env_info"));
+        ConfigCategory projectInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.title.project_info"));
+
         ClothTextListListEntry envInfoEntry = new ClothTextListListEntry(
                 Component.empty(),
                 null,
@@ -329,7 +341,7 @@ public class ClothConfig {
         envInfoCategory.addEntry(envInfoEntry);
         envInfoCategory.addEntry(glExtInfoEntry);
         if (RenderSystems.isSupportVulkan()) envInfoCategory.addEntry(vkExtInfoEntry);
-        ConfigCategory algoInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.text.algo_support_status"));
+
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
             if (algorithmDescription.equals(AlgorithmDescriptions.NONE)) continue;
             ClothTextListListEntry algoInfoEntry = new ClothTextListListEntry(
@@ -344,28 +356,31 @@ public class ClothConfig {
             InfoBuilder.of(algoInfoEntry).addAlgoInfo(algorithmDescription);
             algoInfoCategory.addEntry(algoInfoEntry);
         }
-        ConfigCategory projectInfoCategory = builder.getOrCreateCategory(
-                Component.translatable("superresolution.screen.info.title.project_info")
-        );
+
         ClothTextListListEntry contributorsEntry = new ClothTextListListEntry(
                 Component.translatable("superresolution.screen.info.text.contributors"),
                 null,
                 true
         ).setTop(4).setBottom(7);
         String[] contributors = {
-                "187J3X1 - 核心开发+造饼大王",
-                "异世界美西螈 - 测试反馈+吉祥物+大饼规划者",
-                "yu - 绘制图标",
-                "Enaium"
+                "187J3X1",
+                "异世界美西螈",
+                "yu",
+                "Enaium",
+                "rrtt217",
+                "qwertyuiop"
         };
         Map<String, String> libraries = new LinkedHashMap<>() {{
             put("Cloth Config", "https://github.com/shedaniel/cloth-config");
             put("Architectury API", "https://github.com/architectury/architectury-api");
+            put("Night Config", "https://github.com/TheElectronWill/night-config");
             put("SpongePowered Mixin", "https://github.com/SpongePowered/Mixin");
+            put("Manifold", "https://github.com/manifold-systems/manifold");
             put("Dear ImGui", "https://github.com/ocornut/imgui");
             put("Snapdragon™ Game Super Resolution 2(1)", "https://github.com/SnapdragonStudios/snapdragon-gsr");
             put("FidelityFX Super Resolution 1.0", "https://github.com/GPUOpen-Effects/FidelityFX-FSR");
             put("FidelityFX Super Resolution 2.2", "https://github.com/GPUOpen-Effects/FidelityFX-FSR2");
+            put("AMD FidelityFX™ SDK", "https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK");
             put("NVIDIA Image Scaling SDK v1.0.3", "https://github.com/NVIDIAGameWorks/NVIDIAImageScaling");
             put("Java OpenGL Math Library(JOML)", "https://github.com/JOML-CI/JOML");
             put("RenderDoc", "https://github.com/baldurk/renderdoc");
@@ -388,6 +403,10 @@ public class ClothConfig {
             put(
                     Component.translatable("superresolution.screen.info.link.mcmod_homepage").getString(),
                     "https://www.mcmod.cn/class/17888.html"
+            );
+            put(
+                    "Modrinth",
+                    "https://modrinth.com/mod/superresolution"
             );
         }};
         ClothTextListListEntry webLinksEntry = new ClothTextListListEntry(
@@ -469,7 +488,6 @@ public class ClothConfig {
         projectInfoCategory.addEntry(contributorsEntry);
         projectInfoCategory.addEntry(librariesEntry);
 
-        ConfigCategory performanceInfoCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.info.title.performance_info"));
         ClothTextListEntry debugInfo = new ClothTextListEntry(
                 Component.translatable("superresolution.screen.debug.performance_info"),
                 () -> {

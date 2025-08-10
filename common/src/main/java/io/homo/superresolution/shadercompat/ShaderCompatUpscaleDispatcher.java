@@ -4,21 +4,15 @@ package io.homo.superresolution.shadercompat;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
-import net.irisshaders.iris.targets.RenderTargets;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GL46;
@@ -26,28 +20,31 @@ import org.lwjgl.opengl.GL46;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 
 public class ShaderCompatUpscaleDispatcher {
     protected static SRShaderCompatConfig shaderCompatConfig;
-    private static GlTexture2D colorTexture;
     public static Map<String, Object> debugInfo = new HashMap<>();
 
+    private static TextureConfigResolver.TextureInfo colorTexture;
+    private static TextureConfigResolver.TextureInfo depthTexture;
+    private static TextureConfigResolver.TextureInfo motionVectorsTexture;
+
+    private static SRShaderCompatConfig.InputTextureConfig lastColorConfig;
+    private static SRShaderCompatConfig.InputTextureConfig lastDepthConfig;
+    private static SRShaderCompatConfig.InputTextureConfig lastMotionConfig;
+
     public static SRShaderCompatConfig.UpscaleConfig getCurrentConfig() {
-        return Optional.ofNullable(
-                shaderCompatConfig.getWorldConfigs().get(
-                        ((ShaderPackAccessor) Iris.getCurrentPack().get())
-                                .getDimensionMap()
-                                .get(Iris.getCurrentDimension())
-                )
-        ).orElse(
-                shaderCompatConfig.getWorldConfigs().get("world0")
-        );
+        if (shaderCompatConfig == null || shaderCompatConfig.sr == null || !shaderCompatConfig.sr.enabled) {
+            return null;
+        }
+        String currentWorldId = ((ShaderPackAccessor) Iris.getCurrentPack().get())
+                .getDimensionMap()
+                .get(Iris.getCurrentDimension());
+        return shaderCompatConfig.getUpscaleConfigForWorld(currentWorldId);
     }
+
 
     public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer) {
         SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig();
@@ -77,84 +74,55 @@ public class ShaderCompatUpscaleDispatcher {
                 param.lastViewMatrix,
 
                 new InputResourceSet(
-                        colorTexture,
-                        null,
-                        currentConfig.inputTextures.get("motion_vectors") != null &&
-                                currentConfig.inputTextures.get("motion_vectors").enabled ?
-                                new _Texture(
-                                        () -> TextureFormat.RG16F,
-                                        MinecraftRenderHandle::getRenderWidth,
-                                        MinecraftRenderHandle::getRenderHeight,
-                                        () -> (long) getIrisTextureByName(compositeRenderer, currentConfig.inputTextures.get("motion_vectors").src)
-                                ) :
-                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                        colorTexture.getInternalTexture(),
+                        depthTexture.getInternalTexture(),
+                        motionVectorsTexture.getInternalTexture()
                 )
 
         );
     }
 
+    private static boolean configEquals(SRShaderCompatConfig.InputTextureConfig c1,
+                                        SRShaderCompatConfig.InputTextureConfig c2) {
+        if (c1 == c2) return true;
+        if (c1 == null || c2 == null) return false;
+
+        return c1.enabled == c2.enabled &&
+                c1.src.equals(c2.src) &&
+                c1.region.equals(c2.region);
+    }
+
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
         SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig();
 
-        if (colorTexture == null) {
-            colorTexture = GlTexture2D.create(
-                    TextureDescription.create()
-                            .width(MinecraftRenderHandle.getRenderWidth())
-                            .height(MinecraftRenderHandle.getRenderHeight())
-                            .type(TextureType.Texture2D)
-                            .mipmapsDisabled()
-                            .usages(TextureUsages.create().sampler())
-                            .format(getIrisTextureFormatByName(compositeRenderer, currentConfig.inputTextures.get("color").src))
-                            .build()
-            );
-        } else if (getIrisTextureFormatByName(compositeRenderer, currentConfig.inputTextures.get("color").src) != colorTexture.getTextureFormat()) {
-            colorTexture.destroy();
-            colorTexture = GlTexture2D.create(
-                    TextureDescription.create()
-                            .width(MinecraftRenderHandle.getRenderWidth())
-                            .height(MinecraftRenderHandle.getRenderHeight())
-                            .type(TextureType.Texture2D)
-                            .mipmapsDisabled()
-                            .usages(TextureUsages.create().sampler())
-                            .format(getIrisTextureFormatByName(compositeRenderer, currentConfig.inputTextures.get("color").src))
-                            .build()
-            );
+        SRShaderCompatConfig.InputTextureConfig colorConfig = currentConfig.input_textures.get("color");
+        SRShaderCompatConfig.InputTextureConfig depthConfig = currentConfig.input_textures.get("depth");
+        SRShaderCompatConfig.InputTextureConfig motionConfig = currentConfig.input_textures.get("motion_vectors");
+
+        if (colorTexture == null || !configEquals(colorConfig, lastColorConfig)) {
+            if (colorTexture != null) colorTexture.getInternalTexture().destroy();
+            colorTexture = TextureConfigResolver.createForInput(compositeRenderer, colorConfig);
+            lastColorConfig = colorConfig;
         }
-        if (
-                colorTexture.getWidth() != MinecraftRenderHandle.getRenderWidth() ||
-                        colorTexture.getHeight() != MinecraftRenderHandle.getRenderHeight()
-        ) {
-            colorTexture.resize(
-                    MinecraftRenderHandle.getRenderWidth(),
-                    MinecraftRenderHandle.getRenderHeight()
-            );
+        if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig)) {
+            if (depthTexture != null) depthTexture.getInternalTexture().destroy();
+            depthTexture = TextureConfigResolver.createForInput(compositeRenderer, depthConfig);
+            lastDepthConfig = depthConfig;
         }
-        glCopyImageSubData(
-                (int) getIrisTextureByName(compositeRenderer, currentConfig.inputTextures.get("color").src), GL_TEXTURE_2D,
-                0, 0, 0, 0,
-                (int) colorTexture.handle(), GL_TEXTURE_2D,
-                0, 0, 0, 0,
-                switch (currentConfig.inputTextures.get("color").region.get(2)) {
-                    case -1, 0 -> MinecraftRenderHandle.getRenderWidth();
-                    case -2 -> MinecraftRenderHandle.getScreenWidth();
-                    default -> currentConfig.inputTextures.get("color").region.get(2);
-                },
-                switch (currentConfig.inputTextures.get("color").region.get(3)) {
-                    case -1, 0 -> MinecraftRenderHandle.getRenderHeight();
-                    case -2 -> MinecraftRenderHandle.getScreenHeight();
-                    default -> currentConfig.inputTextures.get("color").region.get(3);
-                },
-                1
-        );
+        if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig)) {
+            if (motionVectorsTexture != null) motionVectorsTexture.getInternalTexture().destroy();
+            motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
+            lastMotionConfig = motionConfig;
+        }
+        colorTexture.updateTexture();
+        depthTexture.updateTexture();
+        motionVectorsTexture.updateTexture();
 
         try (GlState ignored_ = new GlState()) {
             DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
-            debugInfo.put("color", dispatchResource.resources().colorTexture().handle());
-            debugInfo.put("colora", colorTexture.handle());
             SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
         }
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        debugInfo.put("out", outFbo.getTextureId(FrameBufferAttachmentType.Color));
         Gl.DSA.blitFramebuffer(
                 (int) outFbo.handle(),
                 GL33.glGetInteger(GL33.GL_DRAW_FRAMEBUFFER_BINDING),
@@ -173,243 +141,5 @@ public class ShaderCompatUpscaleDispatcher {
 
     public static void setShaderCompatConfig(SRShaderCompatConfig shaderCompatConfig) {
         ShaderCompatUpscaleDispatcher.shaderCompatConfig = shaderCompatConfig;
-    }
-
-    public static RenderTargets getCompositeRendererRenderTargets(CompositeRenderer renderer) {
-        return ((CompositeRendererAccessor) renderer).getRenderTargets();
-    }
-
-    #if MC_VER < MC_1_21_6
-
-    public static TextureFormat getIrisTextureFormatByName(CompositeRenderer renderer, String name) {
-        if (name.startsWith("colortex")) {
-            try {
-                int index = Integer.parseInt(name.replace("colortex", ""));
-                return TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getInternalFormat().getGlFormat());
-
-            } catch (NumberFormatException e) {
-                return TextureFormat.RGBA8;
-            }
-        } else if (name.startsWith("alttex")) {
-            try {
-                int index = Integer.parseInt(name.replace("alttex", ""));
-                return TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getInternalFormat().getGlFormat());
-            } catch (NumberFormatException e) {
-                return TextureFormat.RGBA8;
-            }
-        } else if (name.equals("depthtex")) {
-            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
-                            GL_TEXTURE_2D,
-                            ((CompositeRendererAccessor) renderer)
-                                    .getRenderTargets()
-                                    .getDepthTexture()
-                    )
-            );
-        } else if (name.equals("noHandDepthtex")) {
-            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
-                            GL_TEXTURE_2D,
-                            ((CompositeRendererAccessor) renderer)
-                                    .getRenderTargets()
-                                    .getDepthTextureNoHand()
-                                    .getTextureId()
-                    )
-            );
-        } else if (name.equals("noTranslucentDepthtex")) {
-            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
-                            GL_TEXTURE_2D,
-                            ((CompositeRendererAccessor) renderer)
-                                    .getRenderTargets()
-                                    .getDepthTextureNoTranslucents()
-                                    .getTextureId()
-                    )
-            );
-        }
-        return TextureFormat.RGBA8;
-    }
-
-
-    public static int getIrisTextureByName(CompositeRenderer renderer, String name) {
-        if (name.startsWith("colortex")) {
-            try {
-                int index = Integer.parseInt(name.replace("colortex", ""));
-                return getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getMainTexture();
-
-            } catch (NumberFormatException e) {
-                return -1;
-            }
-        } else if (name.startsWith("alttex")) {
-            try {
-                int index = Integer.parseInt(name.replace("alttex", ""));
-                return getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getAltTexture();
-            } catch (NumberFormatException e) {
-                return -1;
-            }
-        } else if (name.equals("depthtex")) {
-            return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTexture();
-        } else if (name.equals("noHandDepthtex")) {
-            return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoHand().getTextureId();
-        } else if (name.equals("noTranslucentDepthtex")) {
-            return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoTranslucents().getTextureId();
-        }
-        return -1;
-    }
-    #else
-    public static TextureFormat getIrisTextureFormatByName(CompositeRenderer renderer, String name) {
-        if (name.startsWith("colortex")) {
-            try {
-                int index = Integer.parseInt(name.replace("colortex", ""));
-                return TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getInternalFormat().getGlFormat());
-
-            } catch (NumberFormatException e) {
-                return TextureFormat.RGBA8;
-            }
-        } else if (name.startsWith("alttex")) {
-            try {
-                int index = Integer.parseInt(name.replace("alttex", ""));
-                return TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getInternalFormat().getGlFormat());
-            } catch (NumberFormatException e) {
-                return TextureFormat.RGBA8;
-            }
-        } else if (name.equals("depthtex")) {
-            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
-                            GL_TEXTURE_2D,
-                            ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
-                                    .getRenderTargets()
-                                    .getDepthTexture()).glId()
-                    )
-            );
-        } else if (name.equals("noHandDepthtex")) {
-            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
-                            GL_TEXTURE_2D,
-                            ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
-                                    .getRenderTargets()
-                                    .getDepthTextureNoHand()
-                            ).glId()
-                    )
-            );
-        } else if (name.equals("noTranslucentDepthtex")) {
-            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
-                            GL_TEXTURE_2D,
-                            ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
-                                    .getRenderTargets()
-                                    .getDepthTextureNoTranslucents())
-                                    .glId()
-                    )
-            );
-        }
-        return TextureFormat.RGBA8;
-    }
-
-
-    public static int getIrisTextureByName(CompositeRenderer renderer, String name) {
-        if (name.startsWith("colortex")) {
-            try {
-                int index = Integer.parseInt(name.replace("colortex", ""));
-                return getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getMainTexture();
-
-            } catch (NumberFormatException e) {
-                return -1;
-            }
-        } else if (name.startsWith("alttex")) {
-            try {
-                int index = Integer.parseInt(name.replace("alttex", ""));
-                return getCompositeRendererRenderTargets(renderer).getOrCreate(
-                        index
-                ).getAltTexture();
-            } catch (NumberFormatException e) {
-                return -1;
-            }
-        } else if (name.equals("depthtex")) {
-            return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTexture()).glId();
-        } else if (name.equals("noHandDepthtex")) {
-            return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoHand()).glId();
-        } else if (name.equals("noTranslucentDepthtex")) {
-            return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoTranslucents()).glId();
-        }
-        return -1;
-    }
-        #endif
-
-    static class _Texture implements ITexture {
-        private final Supplier<TextureFormat> textureFormatSupplier;
-        private final Supplier<Integer> widthSupplier;
-        private final Supplier<Integer> heightSupplier;
-        private final Supplier<Long> handleSupplier;
-
-        public _Texture(Supplier<TextureFormat> textureFormatSupplier, Supplier<Integer> widthSupplier, Supplier<Integer> heightSupplier, Supplier<Long> handleSupplier) {
-            this.textureFormatSupplier = textureFormatSupplier;
-            this.widthSupplier = widthSupplier;
-            this.heightSupplier = heightSupplier;
-            this.handleSupplier = handleSupplier;
-        }
-
-        @Override
-        public TextureFormat getTextureFormat() {
-            return textureFormatSupplier.get();
-        }
-
-        @Override
-        public TextureUsages getTextureUsages() {
-            return TextureUsages.create();
-        }
-
-        @Override
-        public TextureType getTextureType() {
-            return TextureType.Texture2D;
-        }
-
-        @Override
-        public TextureFilterMode getTextureFilterMode() {
-            return TextureFilterMode.NEAREST;
-        }
-
-        @Override
-        public TextureWrapMode getTextureWrapMode() {
-            return TextureWrapMode.CLAMP_TO_EDGE;
-        }
-
-        @Override
-        public TextureMipmapSettings getMipmapSettings() {
-            return TextureMipmapSettings.disabled();
-        }
-
-        @Override
-        public int getWidth() {
-            return widthSupplier.get();
-        }
-
-        @Override
-        public int getHeight() {
-            return heightSupplier.get();
-        }
-
-        @Override
-        public long handle() {
-            return handleSupplier.get();
-        }
-
-        @Override
-        public void destroy() {
-
-        }
-
-        @Override
-        public void resize(int width, int height) {
-
-        }
     }
 }

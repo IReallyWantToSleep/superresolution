@@ -5,6 +5,7 @@ import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
 import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
 import io.homo.superresolution.core.graphics.impl.command.commands.GpuCommand;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 
@@ -45,9 +46,11 @@ public class GlCommandBuffer implements ICommandBuffer {
     @Override
     public void submit(IDevice device) {
         try (GlState state = new GlState(GlState.STATE_ALL)) {
+            GlDebug.pushGroup(GlDebug.nextCommandBufferId(), "GlCommandBuffer");
             for (Runnable call : glCalls) {
                 call.run();
             }
+            GlDebug.popGroup();
         }
     }
 

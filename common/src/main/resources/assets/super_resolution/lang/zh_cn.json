@@ -102,6 +102,8 @@
     "superresolution.screen.config.options.label.pause_game_on_gui": "打开配置界面时暂停游戏",
     "superresolution.screen.config.options.label.enable_detailed_profiling": "启用更详细的性能分析",
     "superresolution.screen.config.options.tooltip.enable_detailed_profiling": "启用更详细的 GPU 性能分析以用于瓶颈分析。",
+    "superresolution.screen.config.options.label.enable_debug": "启用调试",
+    "superresolution.screen.config.options.tooltip.enable_debug": "启用调试",
     "superresolution.screen.info.link.official_website": "官方网站",
     "superresolution.screen.info.link.github_repo": "GitHub仓库",
     "superresolution.screen.info.link.issue_tracker": "问题追踪",
