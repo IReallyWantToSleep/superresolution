@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.Mixin;
  * iris甚至没有检测fbo状态（）
  * 修复方法：直接移除上次附加的深度纹理
  */
+import io.homo.superresolution.common.SuperResolution;
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
@@ -44,7 +45,7 @@ public abstract class GlFramebufferMixin extends GlResource {
         int status = getStatus();
 
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            //throw new RuntimeException(String.valueOf(status));
+            SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
         }
     }
 

@@ -13,7 +13,6 @@ import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
@@ -24,10 +23,8 @@ import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
@@ -38,6 +35,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -201,8 +199,8 @@ public class MinecraftRenderHandle {
         #if MC_VER == MC_1_21_5
         getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
         #elif MC_VER > MC_1_21_5
-        setClientRenderTarget(getRenderTarget().asMcRenderTarget());
-        getRenderTarget().bind(FrameBufferBindPoint.Write);
+            setClientRenderTarget(getRenderTarget().asMcRenderTarget());
+            getRenderTarget().bind(FrameBufferBindPoint.Write);
         #else
             setClientRenderTarget(getRenderTarget().asMcRenderTarget());
             getRenderTarget().bind(FrameBufferBindPoint.Write);
@@ -462,6 +460,11 @@ public class MinecraftRenderHandle {
     }
 
     public static boolean isShaderPackCompat() {
-        return ShaderCompatUpscaleDispatcher.getCurrentShaderPackConfig().isPresent();
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher");
+            return ((Optional<?>) irisApiClazz.getMethod("getCurrentShaderPackConfig").invoke(null)).isPresent();
+        } catch (Throwable e) {
+            return false;
+        }
     }
 }

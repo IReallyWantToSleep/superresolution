@@ -43,3 +43,5 @@ config = "super_resolution.mixins.json"
 config = "super_resolution-forge.mixins.json"
 [[mixins]]
 config = "super_resolution-forge-compat.mixins.json"
+[[mixins]]
+config = "super_resolution.shadercompat.mixins.json"

@@ -1,5 +1,6 @@
 package io.homo.superresolution.neoforge.mixin.compat.iris;
 
+import io.homo.superresolution.common.SuperResolution;
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
@@ -31,7 +32,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     private void checkFboCompleteness(int texture, CallbackInfo ci) {
         int status = getStatus();
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            throw new RuntimeException(String.valueOf(status));
+            SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
         }
     }
 
@@ -55,7 +56,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     private void checkFboCompleteness(com.mojang.blaze3d.textures.GpuTexture texture, CallbackInfo ci) {
         int status = getStatus();
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            throw new RuntimeException(String.valueOf(status));
+            SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
         }
     }
 

@@ -12,19 +12,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ViewportUniforms.class)
 public class ViewportUniformsMixin {
-    @Inject(method = "addViewportUniforms", at = @At("RETURN"))
+    @Inject(method = "addViewportUniforms", at = @At("RETURN"), remap = false)
     private static void addUniforms(UniformHolder uniforms, CallbackInfo ci) {
-        if (!MinecraftRenderHandle.isShaderPackCompat()) return;
+        if (!MinecraftRenderHandle.isShaderPackCompat() || !SuperResolutionConfig.isEnableUpscale()) return;
 
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
                 "SRRenderScale",
-                SuperResolutionConfig::getRenderScaleFactor
+                () -> SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getRenderScaleFactor() : 1
         );
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
                 "SRRadio",
-                SuperResolutionConfig::getUpscaleRatio
+                () -> SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getUpscaleRatio() : 1
         );
     }
 }

@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.event.ConfigChangedEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
@@ -197,7 +198,10 @@ public class ClothConfig {
             addSpecialConfig(builder, entryBuilder, key);
         }
         addDebug(builder, entryBuilder);
-        builder.setSavingRunnable(SuperResolutionConfig.SPEC::save);
+        builder.setSavingRunnable(() -> {
+            SuperResolutionConfig.SPEC.save();
+            ConfigChangedEvent.EVENT.invoker().onConfigReload();
+        });
     }
 
     private static int getInt(float v) {

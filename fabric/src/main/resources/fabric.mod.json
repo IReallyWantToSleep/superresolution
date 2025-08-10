@@ -1,47 +1,47 @@
 {
-    "schemaVersion": 1,
-    "id": "super_resolution",
-    "version": "${version}",
-    "name": "Super Resolution",
-    "description": "喵",
-    "authors": [
-        "187J3X1"
+  "schemaVersion": 1,
+  "id": "super_resolution",
+  "version": "${version}",
+  "name": "Super Resolution",
+  "description": "喵",
+  "authors": [
+    "187J3X1"
+  ],
+  "contact": {
+    "homepage": "https://github.com/187J3X1-114514/superresolution",
+    "issues": "https://github.com/187J3X1-114514/superresolution/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/super_resolution/logo.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "io.homo.superresolution.fabric.SuperResolutionFabric"
     ],
-    "contact": {
-        "homepage": "https://github.com/187J3X1-114514/superresolution",
-        "issues": "https://github.com/187J3X1-114514/superresolution/issues"
-    },
-    "license": "MIT",
-    "icon": "assets/super_resolution/logo.png",
-    "environment": "client",
-    "entrypoints": {
-        "main": [
-            "io.homo.superresolution.fabric.SuperResolutionFabric"
-        ],
-        "client": [
-            "io.homo.superresolution.fabric.SuperResolutionFabricClient"
-        ],
-        "modmenu": [
-            "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
-        ]
-    },
-    "mixins": [
-        "super_resolution.mixins.json",
-        "super_resolution-fabric.mixins.json",
-        "super_resolution-fabric-compat.mixins.json",
-        "super_resolution.shadercompat.mixins.json"
+    "client": [
+      "io.homo.superresolution.fabric.SuperResolutionFabricClient"
     ],
-    "depends": {
-        "fabricloader": "*",
-        "minecraft": "{versionRange}",
-        "java": ">=${javaVersion}",
-        "architectury": "*",
-        "fabric-api": "*",
-        "cloth-config": "*"
-    },
-    "suggests": {
-    },
-    "breaks": {
-        "resolutioncontrol": "*"
-    }
+    "modmenu": [
+      "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
+    ]
+  },
+  "mixins": [
+    "super_resolution.mixins.json",
+    "super_resolution-fabric.mixins.json",
+    "super_resolution-fabric-compat.mixins.json",
+    "super_resolution.shadercompat.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "*",
+    "minecraft": "{versionRange}",
+    "java": ">=${javaVersion}",
+    "architectury": "*",
+    "fabric-api": "*",
+    "cloth-config": "*"
+  },
+  "suggests": {
+  },
+  "breaks": {
+    "resolutioncontrol": "*"
+  }
 }
