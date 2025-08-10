@@ -25,7 +25,6 @@ public class SRShaderCompatConfig {
     }
 
     public static class UpscaleConfig {
-        public boolean enabled;
         public String before_upscale_shader_name;
         public Map<String, InputTextureConfig> input_textures;
         public Map<String, OutputTextureConfig> output_textures;
@@ -50,12 +49,13 @@ public class SRShaderCompatConfig {
         }
     }
 
-    public UpscaleConfig getUpscaleConfigForWorld(String worldId) {
+    public WorldConfig getUpscaleConfigForWorld(String worldId) {
         if (sr == null || sr.worlds == null) return null;
+        worldId = worldId.replace("world", "");
         WorldConfig wc = sr.worlds.get(worldId);
         if (wc != null && wc.upscale_config != null) {
-            return wc.upscale_config;
+            return wc;
         }
-        return sr.worlds.get("*") != null ? sr.worlds.get("*").upscale_config : null;
+        return sr.worlds.get("*") != null ? sr.worlds.get("*") : null;
     }
 }

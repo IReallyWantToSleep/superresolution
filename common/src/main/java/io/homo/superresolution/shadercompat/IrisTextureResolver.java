@@ -18,6 +18,7 @@ public class IrisTextureResolver {
 
     public static OnlyNameTexture getIrisTexture(CompositeRenderer renderer, String name) {
         int id = getIrisTextureByName(renderer, name);
+        if (id < 1) return null;
         return new OnlyNameTexture(
                 () -> TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, id)),
                 () -> GlTextureInfoGetter.getWidth(GL_TEXTURE_2D, id),
