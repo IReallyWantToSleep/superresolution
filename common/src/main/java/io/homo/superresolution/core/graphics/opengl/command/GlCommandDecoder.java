@@ -16,10 +16,7 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformTy
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.GlDevice;
-import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.OpenGLException;
+import io.homo.superresolution.core.graphics.opengl.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderBaseUniform;
@@ -33,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static io.homo.superresolution.core.graphics.opengl.GlDebug.*;
 import static org.lwjgl.opengl.GL43.*;
 
 public class GlCommandDecoder implements ICommandDecoder {
@@ -59,25 +57,43 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void clearTextureRGBA(ICommandBuffer commandBuffer, ITexture texture, float[] color) {
         if (texture == null) throw new OpenGLException("clearTextureRGBA: 输入的纹理对象为null");
 
+        final int debugId = nextClearId();
+        final String debugName = "clearTextureRGBA: " + texture.getTextureFormat();
+
         if (RenderSystems.opengl().supportsARBClearTexture) {
             TextureFormat format = texture.getTextureFormat();
             if (format.isInteger()) {
                 int[] intColor = new int[color.length];
                 for (int i = 0; i < color.length; i++) intColor[i] = (int) (color[i] * 255);
                 putGlCommand(commandBuffer, () -> {
-                    GL44.glClearTexImage((int) texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
+                    pushGroup(debugId, debugName);
+                    try {
+                        GL44.glClearTexImage((int) texture.handle(), 0, format.gl(), GL_UNSIGNED_INT, intColor);
+
+                    } finally {
+                        popGroup();
+                    }
                 });
             } else {
                 putGlCommand(commandBuffer, () -> {
-                    GL44.glClearTexImage((int) texture.handle(), 0, format.gl(), GL_FLOAT, color);
+                    pushGroup(debugId, debugName);
+                    try {
+                        GL44.glClearTexImage((int) texture.handle(), 0, format.gl(), GL_FLOAT, color);
+
+                    } finally {
+                        popGroup();
+                    }
                 });
             }
         } else {
             putGlCommand(commandBuffer, () -> {
+                pushGroup(debugId, debugName);
                 try (GlState state = new GlState(
                         GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT | GlState.STATE_SCISSOR_TEST
                 )) {
                     int fbo = glGenFramebuffers();
+
+
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
                     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, (int) texture.handle(), 0);
 
@@ -96,6 +112,8 @@ public class GlCommandDecoder implements ICommandDecoder {
 
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
                     glDeleteFramebuffers(fbo);
+                } finally {
+                    popGroup();
                 }
             });
         }
@@ -105,17 +123,29 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void clearTextureDepth(ICommandBuffer commandBuffer, ITexture texture, float depth) {
         if (texture == null) throw new OpenGLException("clearTextureDepth: 输入的纹理对象为null");
 
+        final int debugId = nextClearId();
+        final String debugName = "clearTextureDepth";
+
         if (RenderSystems.opengl().supportsARBClearTexture) {
             putGlCommand(commandBuffer, () -> {
-                float[] clearDepth = new float[]{depth};
-                GL44.glClearTexImage((int) texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
+                pushGroup(debugId, debugName);
+                try {
+                    float[] clearDepth = new float[]{depth};
+                    GL44.glClearTexImage((int) texture.handle(), 0, GL_DEPTH_COMPONENT, GL_FLOAT, clearDepth);
+
+                } finally {
+                    popGroup();
+                }
             });
         } else {
             putGlCommand(commandBuffer, () -> {
+                pushGroup(debugId, debugName);
                 try (GlState state = new GlState(
                         GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT | GlState.STATE_SCISSOR_TEST
                 )) {
                     int fbo = glGenFramebuffers();
+
+
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
                     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, (int) texture.handle(), 0);
 
@@ -134,6 +164,8 @@ public class GlCommandDecoder implements ICommandDecoder {
 
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
                     glDeleteFramebuffers(fbo);
+                } finally {
+                    popGroup();
                 }
             });
         }
@@ -143,17 +175,29 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void clearTextureStencil(ICommandBuffer commandBuffer, ITexture texture, int stencil) {
         if (texture == null) throw new OpenGLException("clearTextureStencil: 输入的纹理对象为null");
 
+        final int debugId = nextClearId();
+        final String debugName = "clearTextureStencil";
+
         if (RenderSystems.opengl().supportsARBClearTexture) {
             putGlCommand(commandBuffer, () -> {
-                int[] clearStencil = new int[]{stencil};
-                GL44.glClearTexImage((int) texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
+                pushGroup(debugId, debugName);
+                try {
+                    int[] clearStencil = new int[]{stencil};
+                    GL44.glClearTexImage((int) texture.handle(), 0, GL_STENCIL_INDEX, GL_UNSIGNED_INT, clearStencil);
+
+                } finally {
+                    popGroup();
+                }
             });
         } else {
             putGlCommand(commandBuffer, () -> {
+                pushGroup(debugId, debugName);
                 try (GlState state = new GlState(
                         GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT | GlState.STATE_SCISSOR_TEST
                 )) {
                     int fbo = glGenFramebuffers();
+
+
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
                     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, (int) texture.handle(), 0);
 
@@ -172,6 +216,8 @@ public class GlCommandDecoder implements ICommandDecoder {
 
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
                     glDeleteFramebuffers(fbo);
+                } finally {
+                    popGroup();
                 }
             });
         }
@@ -205,22 +251,43 @@ public class GlCommandDecoder implements ICommandDecoder {
                     src.getTextureType() + " -> " + dst.getTextureType());
         }
 
+        final int debugId = nextCopyId();
+        final String debugName = String.format("copyTexture: %s -> %s",
+                src.getTextureFormat(), dst.getTextureFormat());
+
         switch (src.getTextureType()) {
             case Texture1D:
-                putGlCommand(commandBuffer, () -> glCopyImageSubData(
+                putGlCommand(commandBuffer, () -> {
+                    pushGroup(debugId, debugName);
+                    try {
+                        glCopyImageSubData(
                                 (int) src.handle(), GL_TEXTURE_1D, srcLevel, srcX0, 0, 0,
                                 (int) dst.handle(), GL_TEXTURE_1D, dstLevel, dstX0, 0, 0,
                                 srcX1 - srcX0, 1, 1
-                        )
-                );
+                        );
+
+                    } finally {
+                        popGroup();
+                    }
+                });
                 break;
             case Texture2D:
-                putGlCommand(commandBuffer, () -> glCopyImageSubData(
-                        (int) src.handle(), GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
-                        (int) dst.handle(), GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
-                        srcX1 - srcX0, srcY1 - srcY0, 1
-                ));
+                putGlCommand(commandBuffer, () -> {
+                    pushGroup(debugId, debugName);
+                    try {
+                        glCopyImageSubData(
+                                (int) src.handle(), GL_TEXTURE_2D, srcLevel, srcX0, srcY0, 0,
+                                (int) dst.handle(), GL_TEXTURE_2D, dstLevel, dstX0, dstY0, 0,
+                                srcX1 - srcX0, srcY1 - srcY0, 1
+                        );
+
+                    } finally {
+                        popGroup();
+                    }
+                });
                 break;
+            default:
+                throw new UnsupportedOperationException("Unsupported texture type: " + src.getTextureType());
         }
     }
 
@@ -233,13 +300,24 @@ public class GlCommandDecoder implements ICommandDecoder {
             long dstOffset,
             long size
     ) {
-        putGlCommand(commandBuffer, () -> glCopyBufferSubData(
-                (int) src.handle(),
-                (int) dst.handle(),
-                srcOffset,
-                dstOffset,
-                size
-        ));
+        final int debugId = nextCopyId();
+        final String debugName = String.format("copyBuffer: %d bytes", size);
+
+        putGlCommand(commandBuffer, () -> {
+            pushGroup(debugId, debugName);
+            try {
+                glCopyBufferSubData(
+                        (int) src.handle(),
+                        (int) dst.handle(),
+                        srcOffset,
+                        dstOffset,
+                        size
+                );
+
+            } finally {
+                popGroup();
+            }
+        });
     }
 
     @Override
@@ -261,10 +339,17 @@ public class GlCommandDecoder implements ICommandDecoder {
         if (shaderProgram == null) {
             throw new OpenGLException("draw: 着色器程序为null");
         }
+
+        final int debugId = nextDrawId();
+        final String debugName = String.format("draw: %s (%d verts)",
+                drawObject.getPrimitiveType(), vertexCount);
+
         List<ResourcesBindingSnapshot> resourcesSnapshot = createResourcesBindingSnapshot((GlShaderProgram) shaderProgram);
 
         putGlCommand(commandBuffer, () -> {
+            pushGroup(debugId, debugName);
             try (GlState ig = new GlState(GlState.STATE_ALL)) {
+
                 if (frameBuffer != null) {
                     if (frameBuffer instanceof GlFrameBuffer) {
                         ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.All, true);
@@ -275,6 +360,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                 setupShaderProgram(shaderProgram, resourcesSnapshot);
                 glBindBuffer(GL_ARRAY_BUFFER, (int) drawObject.getVertexBuffer().handle());
                 glBindVertexArray((int) drawObject.getVertexArray().handle());
+
                 int glPrimitive = switch (drawObject.getPrimitiveType()) {
                     case TRIANGLES -> GL_TRIANGLES;
                     case TRIANGLE_STRIP -> GL_TRIANGLE_STRIP;
@@ -285,6 +371,8 @@ public class GlCommandDecoder implements ICommandDecoder {
                 if (drawObject.isOnce()) {
                     drawObject.destroy();
                 }
+            } finally {
+                popGroup();
             }
         });
     }
@@ -389,9 +477,14 @@ public class GlCommandDecoder implements ICommandDecoder {
         if (shaderProgram == null) {
             throw new OpenGLException("dispatchCompute: 着色器程序为null");
         }
+
+        final int debugId = nextComputeId();
+        final String debugName = String.format("dispatchCompute: %dx%dx%d", x, y, z);
+
         List<ResourcesBindingSnapshot> resourcesSnapshot = createResourcesBindingSnapshot((GlShaderProgram) shaderProgram);
 
         putGlCommand(commandBuffer, () -> {
+            pushGroup(debugId, debugName);
             try (GlState state = new GlState(
                     GlState.STATE_TEXTURE |
                             GlState.STATE_ACTIVE_TEXTURE |
@@ -401,13 +494,21 @@ public class GlCommandDecoder implements ICommandDecoder {
                 setupShaderProgram(shaderProgram, resourcesSnapshot);
                 glDispatchCompute(x, y, z);
                 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            } finally {
+                popGroup();
             }
         });
     }
 
     @Override
     public void applyRenderState(ICommandBuffer commandBuffer, IRenderState.StateSnapshot stateSnapshot) {
-        putGlCommand(commandBuffer, () -> commandEncoder.renderState().apply(stateSnapshot));
+        final int debugId = nextStateId();
+        final String debugName = "applyRenderState";
+        putGlCommand(commandBuffer, () -> {
+            pushGroup(debugId, debugName);
+            commandEncoder.renderState().apply(stateSnapshot);
+            popGroup();
+        });
     }
 
     @Override

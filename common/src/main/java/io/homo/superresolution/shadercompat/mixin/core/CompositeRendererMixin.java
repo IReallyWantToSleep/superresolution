@@ -43,7 +43,7 @@ public class CompositeRendererMixin {
             if (this.equals(((IrisRenderingPipelineAccessor) Iris.getPipelineManager().getPipeline().get()).getCompositeRenderer())) {
                 if (ShaderCompatUpscaleDispatcher.getCurrentShaderPackConfig().isPresent()) {
                     if (ShaderCompatUpscaleDispatcher.getCurrentConfig() != null && ShaderCompatUpscaleDispatcher.getCurrentConfig().enabled) {
-                        String indexStr = ShaderCompatUpscaleDispatcher.getCurrentConfig().beforeUpscaleShaderName.replace("composite", "");
+                        String indexStr = ShaderCompatUpscaleDispatcher.getCurrentConfig().before_upscale_shader_name.replace("composite", "");
                         int index = 0;
                         if (!(indexStr.isBlank())) {
                             index = Integer.parseInt(indexStr);
@@ -57,7 +57,7 @@ public class CompositeRendererMixin {
         }
     }
     #else
-    #if MC_VER > MC_1_21_5
+    #if MC_VER > MC_1_21_4
     public void dispatchUpscale(
             CallbackInfo ci,
             RenderTarget main,
@@ -75,7 +75,7 @@ public class CompositeRendererMixin {
             if (this.equals(((IrisRenderingPipelineAccessor) Iris.getPipelineManager().getPipeline().get()).getCompositeRenderer())) {
                 if (ShaderCompatUpscaleDispatcher.getCurrentShaderPackConfig().isPresent()) {
                     if (ShaderCompatUpscaleDispatcher.getCurrentConfig() != null && ShaderCompatUpscaleDispatcher.getCurrentConfig().enabled) {
-                        String indexStr = ShaderCompatUpscaleDispatcher.getCurrentConfig().beforeUpscaleShaderName.replace("composite", "");
+                        String indexStr = ShaderCompatUpscaleDispatcher.getCurrentConfig().before_upscale_shader_name.replace("composite", "");
                         int index = 0;
                         if (!(indexStr.isBlank())) {
                             index = Integer.parseInt(indexStr);

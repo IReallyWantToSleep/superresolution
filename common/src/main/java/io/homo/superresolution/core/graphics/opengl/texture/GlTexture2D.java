@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.homo.superresolution.core.graphics.opengl.Gl.setGlObjectLabel;
+import static io.homo.superresolution.core.graphics.opengl.GlDebug.objectLabel;
 import static org.lwjgl.opengl.GL43.*;
 
 public class GlTexture2D implements ITexture, IDebuggableObject {
@@ -204,7 +204,7 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        setGlObjectLabel(GL_TEXTURE, (int) handle(), getDebugLabel());
+        objectLabel(GL_TEXTURE, (int) handle(), getDebugLabel());
     }
 
     public void generateMipmap() {

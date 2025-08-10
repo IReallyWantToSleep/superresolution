@@ -9,6 +9,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoi
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -237,7 +238,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         if (width < 1 || height < 1) {
             throw new RuntimeException("%s %s".formatted(width, height));
         }
-        
+
         for (GlFrameBufferAttachment attachment : attachments) {
             attachment.texture.resize(width, height);
         }
@@ -343,6 +344,6 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        Gl.setGlObjectLabel(GL_FRAMEBUFFER, (int) handle(), newLabel);
+        GlDebug.objectLabel(GL_FRAMEBUFFER, (int) handle(), newLabel);
     }
 }

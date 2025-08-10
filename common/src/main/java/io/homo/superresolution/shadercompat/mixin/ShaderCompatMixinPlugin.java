@@ -1,6 +1,7 @@
 package io.homo.superresolution.shadercompat.mixin;
 
 import io.homo.superresolution.api.event.ConfigChangedEvent;
+import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.platform.Platform;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -12,14 +13,6 @@ import java.util.Set;
 public class ShaderCompatMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String s) {
-        ConfigChangedEvent.EVENT.register(() -> {
-            try {
-                Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
-                irisApiClazz.getMethod("reload").invoke(null);
-            } catch (Throwable ignored) {
-
-            }
-        });
     }
 
     @Override

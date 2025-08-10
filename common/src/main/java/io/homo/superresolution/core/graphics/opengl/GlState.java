@@ -103,7 +103,10 @@ public class GlState implements AutoCloseable {
 
     public GlState(long stateMask) {
         this.stateMask = stateMask;
+        GlDebug.pushGroup(GlDebug.nextStateId(), "GlSaveState");
         this.saveState();
+        GlDebug.popGroup();
+
     }
 
 
@@ -241,6 +244,8 @@ public class GlState implements AutoCloseable {
     }
 
     public void restore() {
+        GlDebug.pushGroup(GlDebug.nextStateId(), "GlRestoreState");
+
         if ((stateMask & STATE_DRAW_FBO) != 0) {
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, this.wFbo);
         }
@@ -367,6 +372,7 @@ public class GlState implements AutoCloseable {
         if ((stateMask & STATE_SHADER_STORAGE_BUFFER) != 0) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, this.shaderStorageBuffer);
         }
+        GlDebug.popGroup();
     }
 
     private void setGlCap(int cap, boolean enabled) {

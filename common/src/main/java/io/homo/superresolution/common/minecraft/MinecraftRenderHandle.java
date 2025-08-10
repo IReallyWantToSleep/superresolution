@@ -13,6 +13,7 @@ import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
@@ -101,7 +102,7 @@ public class MinecraftRenderHandle {
         #elif MC_VER > MC_1_21_4
         renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
                 io.homo.superresolution.core.graphics.impl.texture.TextureFormat.RGBA8,
-                TextureFormat.DEPTH24_STENCIL8,
+                io.homo.superresolution.core.graphics.impl.texture.TextureFormat.DEPTH24_STENCIL8,
                 getRenderWidth(),
                 getRenderHeight()
         );
@@ -197,7 +198,7 @@ public class MinecraftRenderHandle {
             updateRenderTarget();
             updateRenderTargetSize();
         #if MC_VER == MC_1_21_5
-        getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
+            getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
         #elif MC_VER > MC_1_21_5
             setClientRenderTarget(getRenderTarget().asMcRenderTarget());
             getRenderTarget().bind(FrameBufferBindPoint.Write);
@@ -221,10 +222,10 @@ public class MinecraftRenderHandle {
         isRenderingWorld = false;
         if (!isShaderPackCompat()) {
         #if MC_VER == MC_1_21_5
-        ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
-                ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
-        );
-        getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());
+            ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
+                    ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
+            );
+            getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());
         #else
             setClientRenderTarget(getOriginRenderTarget().asMcRenderTarget());
         #endif

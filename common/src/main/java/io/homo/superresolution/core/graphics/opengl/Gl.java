@@ -5,12 +5,7 @@ import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.opengl.dsa.CompatDirectStateAccessImpl;
 import io.homo.superresolution.core.graphics.opengl.dsa.GL45OrEXTDirectStateAccessImpl;
 import io.homo.superresolution.core.graphics.opengl.dsa.IGlDirectStateAccess;
-import org.apache.commons.lang3.StringUtils;
 import org.lwjgl.opengl.GL11C;
-import org.lwjgl.opengl.KHRDebug;
-
-import static io.homo.superresolution.core.graphics.opengl.GlConst.GL_MAJOR_VERSION;
-import static io.homo.superresolution.core.graphics.opengl.GlConst.GL_MINOR_VERSION;
 
 public class Gl {
     public static final IGlDirectStateAccess DSA;
@@ -37,9 +32,4 @@ public class Gl {
         return GL11C.glGetInteger(pname);
     }
 
-    public static void setGlObjectLabel(int type, int id, String label) {
-        if (GraphicsCapabilities.hasGLExtension("GL_KHR_debug")) {
-            KHRDebug.glObjectLabel(type, id, StringUtils.abbreviate(label, 255));
-        }
-    }
 }

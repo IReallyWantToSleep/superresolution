@@ -20,7 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static io.homo.superresolution.common.SuperResolution.LOGGER;
-import static io.homo.superresolution.core.graphics.opengl.Gl.setGlObjectLabel;
+import static io.homo.superresolution.core.graphics.opengl.GlDebug.objectLabel;
 import static org.lwjgl.opengl.GL46.*;
 
 public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebuggableObject {
@@ -46,7 +46,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     @Override
     public void updateDebugLabel(String newLabel) {
-        setGlObjectLabel(GL_PROGRAM, handle, newLabel);
+        objectLabel(GL_PROGRAM, handle, newLabel);
     }
 
     protected void checkProgram() {
@@ -145,7 +145,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
                 throw new ShaderCompileException(errorDetails);
             }
 
-            setGlObjectLabel(GL_SHADER, shader.id(), "Shader_" + source.getType());
+            objectLabel(GL_SHADER, shader.id(), "Shader_" + source.getType());
             return shader;
         } catch (Exception e) {
             shader.destroy();
