@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 
-@Mixin(FeatureFlags.class)
+@Mixin(value = FeatureFlags.class, remap = false)
 @Unique
 public abstract class FeatureFlagsMixin {
-    @Shadow
+    @Shadow(remap = false)
     @Final
     @Mutable
     private static FeatureFlags[] $VALUES;

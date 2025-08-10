@@ -24,14 +24,17 @@ import java.util.Properties;
 
 @Mixin(Iris.class)
 public class IrisMixin {
+    #if MC_VER == MC_1_20_1
+
     @Inject(
             method = "loadExternalShaderpack",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V"
+                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;)V"
 
             ),
-            locals = LocalCapture.CAPTURE_FAILEXCEPTION
+            locals = LocalCapture.CAPTURE_FAILEXCEPTION,
+            remap = false
     )
     private static void loadSRShaderCompatConfig(
             String name,
@@ -45,6 +48,7 @@ public class IrisMixin {
             Path srConfigPath = shaderPackPath.resolve("superresolution.properties");
             String srConfigContext = Files.readString(srConfigPath, StandardCharsets.ISO_8859_1);
             ShaderCompatUpscaleDispatcher.setShaderCompatConfig(SRShaderCompatConfig.load(srConfigContext));
+            SuperResolution.LOGGER.info("光影包 {} 支持超分辨率功能", name);
             return;
         } catch (NoSuchFileException ignored) {
 
@@ -55,4 +59,40 @@ public class IrisMixin {
         ShaderCompatUpscaleDispatcher.setShaderCompatConfig(null);
 
     }
+    #else
+
+    @Inject(
+            method = "loadExternalShaderpack",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V"
+
+            ),
+            locals = LocalCapture.CAPTURE_FAILEXCEPTION,
+            remap = false
+    )
+    private static void loadSRShaderCompatConfig(
+            String name,
+            CallbackInfoReturnable<Boolean> cir,
+            Path shaderPackRoot,
+            Path shaderPackConfigTxt,
+            Path shaderPackPath
+    ) {
+
+        try {
+            Path srConfigPath = shaderPackPath.resolve("superresolution.properties");
+            String srConfigContext = Files.readString(srConfigPath, StandardCharsets.ISO_8859_1);
+            ShaderCompatUpscaleDispatcher.setShaderCompatConfig(SRShaderCompatConfig.load(srConfigContext));
+            SuperResolution.LOGGER.info("光影包 {} 支持超分辨率功能", name);
+            return;
+        } catch (NoSuchFileException ignored) {
+
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+            SuperResolution.LOGGER.info("加载 {} 光影包中的superresolution.properties时发生错误", name);
+        }
+        ShaderCompatUpscaleDispatcher.setShaderCompatConfig(null);
+
+    }
+    #endif
 }

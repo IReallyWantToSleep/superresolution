@@ -1,32 +1,22 @@
 package io.homo.superresolution.shadercompat;
 
 
-import com.sun.jna.Pointer;
 import io.homo.superresolution.api.InputResourceSet;
-import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
-import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.api.v0.IrisApi;
-import net.irisshaders.iris.gl.texture.GlTexture;
-import net.irisshaders.iris.pbr.TextureInfoCache;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.irisshaders.iris.targets.RenderTargets;
 import net.minecraft.client.Minecraft;
@@ -176,7 +166,9 @@ public class ShaderCompatUpscaleDispatcher {
     }
 
     public static Optional<SRShaderCompatConfig> getCurrentShaderPackConfig() {
-        return Optional.ofNullable(IrisApi.getInstance().isShaderPackInUse() ? shaderCompatConfig : null);
+        return Optional.ofNullable(
+                IrisApi.getInstance().isShaderPackInUse() ? shaderCompatConfig : null
+        );
     }
 
     public static void setShaderCompatConfig(SRShaderCompatConfig shaderCompatConfig) {
@@ -186,6 +178,8 @@ public class ShaderCompatUpscaleDispatcher {
     public static RenderTargets getCompositeRendererRenderTargets(CompositeRenderer renderer) {
         return ((CompositeRendererAccessor) renderer).getRenderTargets();
     }
+
+    #if MC_VER < MC_1_21_6
 
     public static TextureFormat getIrisTextureFormatByName(CompositeRenderer renderer, String name) {
         if (name.startsWith("colortex")) {
@@ -208,14 +202,35 @@ public class ShaderCompatUpscaleDispatcher {
                 return TextureFormat.RGBA8;
             }
         } else if (name.equals("depthtex")) {
-            return TextureFormat.fromGl(TextureInfoCache.INSTANCE.getInfo(((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTexture()).getInternalFormat());
+            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
+                            GL_TEXTURE_2D,
+                            ((CompositeRendererAccessor) renderer)
+                                    .getRenderTargets()
+                                    .getDepthTexture()
+                    )
+            );
         } else if (name.equals("noHandDepthtex")) {
-            return TextureFormat.fromGl(TextureInfoCache.INSTANCE.getInfo(((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoHand().getTextureId()).getInternalFormat());
+            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
+                            GL_TEXTURE_2D,
+                            ((CompositeRendererAccessor) renderer)
+                                    .getRenderTargets()
+                                    .getDepthTextureNoHand()
+                                    .getTextureId()
+                    )
+            );
         } else if (name.equals("noTranslucentDepthtex")) {
-            return TextureFormat.fromGl(TextureInfoCache.INSTANCE.getInfo(((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoTranslucents().getTextureId()).getInternalFormat());
+            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
+                            GL_TEXTURE_2D,
+                            ((CompositeRendererAccessor) renderer)
+                                    .getRenderTargets()
+                                    .getDepthTextureNoTranslucents()
+                                    .getTextureId()
+                    )
+            );
         }
         return TextureFormat.RGBA8;
     }
+
 
     public static int getIrisTextureByName(CompositeRenderer renderer, String name) {
         if (name.startsWith("colortex")) {
@@ -246,6 +261,88 @@ public class ShaderCompatUpscaleDispatcher {
         }
         return -1;
     }
+    #else
+    public static TextureFormat getIrisTextureFormatByName(CompositeRenderer renderer, String name) {
+        if (name.startsWith("colortex")) {
+            try {
+                int index = Integer.parseInt(name.replace("colortex", ""));
+                return TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer).getOrCreate(
+                        index
+                ).getInternalFormat().getGlFormat());
+
+            } catch (NumberFormatException e) {
+                return TextureFormat.RGBA8;
+            }
+        } else if (name.startsWith("alttex")) {
+            try {
+                int index = Integer.parseInt(name.replace("alttex", ""));
+                return TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer).getOrCreate(
+                        index
+                ).getInternalFormat().getGlFormat());
+            } catch (NumberFormatException e) {
+                return TextureFormat.RGBA8;
+            }
+        } else if (name.equals("depthtex")) {
+            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
+                            GL_TEXTURE_2D,
+                            ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
+                                    .getRenderTargets()
+                                    .getDepthTexture()).glId()
+                    )
+            );
+        } else if (name.equals("noHandDepthtex")) {
+            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
+                            GL_TEXTURE_2D,
+                            ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
+                                    .getRenderTargets()
+                                    .getDepthTextureNoHand()
+                            ).glId()
+                    )
+            );
+        } else if (name.equals("noTranslucentDepthtex")) {
+            return TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(
+                            GL_TEXTURE_2D,
+                            ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
+                                    .getRenderTargets()
+                                    .getDepthTextureNoTranslucents())
+                                    .glId()
+                    )
+            );
+        }
+        return TextureFormat.RGBA8;
+    }
+
+
+    public static int getIrisTextureByName(CompositeRenderer renderer, String name) {
+        if (name.startsWith("colortex")) {
+            try {
+                int index = Integer.parseInt(name.replace("colortex", ""));
+                return getCompositeRendererRenderTargets(renderer).getOrCreate(
+                        index
+                ).getMainTexture();
+
+            } catch (NumberFormatException e) {
+                return -1;
+            }
+        } else if (name.startsWith("alttex")) {
+            try {
+                int index = Integer.parseInt(name.replace("alttex", ""));
+                return getCompositeRendererRenderTargets(renderer).getOrCreate(
+                        index
+                ).getAltTexture();
+            } catch (NumberFormatException e) {
+                return -1;
+            }
+        } else if (name.equals("depthtex")) {
+            return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTexture()).glId();
+        } else if (name.equals("noHandDepthtex")) {
+            return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoHand()).glId();
+        } else if (name.equals("noTranslucentDepthtex")) {
+            return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoTranslucents()).glId();
+        }
+        return -1;
+    }
+        #endif
 
     static class _Texture implements ITexture {
         private final Supplier<TextureFormat> textureFormatSupplier;

@@ -81,6 +81,8 @@ mixin {
     config 'super_resolution.mixins.json'
     config 'super_resolution-forge.mixins.json'
     config 'super_resolution-forge-compat.mixins.json'
+    config 'super_resolution.shadercompat.mixins.json'
+
 }
 
 sourceSets.main.resources.srcDir 'src/generated/resources'
@@ -99,7 +101,11 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb"
 
     for (lib in versionConfig.forge.dependencies.modrinth) {
-        modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${versionConfig.common.minecraftVersion}")
+        if (lib.compileOnly) {
+            modCompileOnly("maven.modrinth:${lib.name}:${lib.version}-forge,${versionConfig.common.minecraftVersion}")
+        } else {
+            modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${versionConfig.common.minecraftVersion}")
+        }
     }
     for (lib in versionConfig.forge.dependencies.local) {
         if (lib.isMod) {
@@ -137,6 +143,6 @@ processResources {
 
 jar {
     manifest.attributes([
-            "MixinConfigs": "super_resolution.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json"
+            "MixinConfigs": "super_resolution.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json,super_resolution.shadercompat.mixins.json"
     ])
 }

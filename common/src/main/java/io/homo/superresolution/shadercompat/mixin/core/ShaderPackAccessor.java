@@ -9,6 +9,6 @@ import java.util.Map;
 
 @Mixin(ShaderPack.class)
 public interface ShaderPackAccessor {
-    @Accessor
+    @Accessor(remap = false)
     Map<NamespacedId, String> getDimensionMap();
 }
