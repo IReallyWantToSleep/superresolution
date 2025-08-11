@@ -8,7 +8,7 @@
     if (FfxErrorCode _rc = (_expr); _rc != FFX_OK) \
     return (SRReturnCode)SR_RETURN_CODE_ERROR
 
-FfxResource SRTextureResourceToFfxResource(SRTextureResource *srTex)
+FfxResource SRTextureResourceToFfxResource(const SRTextureResource *srTex)
 {
     FfxResourceDescription desc = {};
     desc.format = static_cast<FfxSurfaceFormat>(srTex->desc.format);

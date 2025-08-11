@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class NativeLibManager {
@@ -26,27 +27,37 @@ public class NativeLibManager {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-NativeLib");
     private final static ArrayList<NativeLib> libs = new ArrayList<>();
     private static boolean nativeApiAvailable;
+    public static final NativeLib LIB_SUPER_RESOLUTION;
+    public static final NativeLib LIB_SUPER_RESOLUTION_FSR;
 
     static {
         OS os = new OS();
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
-            /*
+            LIB_SUPER_RESOLUTION = new NativeLib("libSuperResolution+win64+release", "", 1);
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib("libSuperResolutionFSR+win64+release", "", 0);
+
             libs.add(new NativeLib("SPIRV-Tools-shared", "", 1));
-            libs.add(new NativeLib("libSuperResolution+win64+release", "", 1));
-            libs.add(new NativeLib("libSuperResolutionFSR+win64+release", "", 0));
-            */
-            libs.add(new NativeLib("SPIRV-Tools-sharedd", "", 1));
-            libs.add(new NativeLib("libSuperResolution+win64+debug", "", 1));
-            libs.add(new NativeLib("libSuperResolutionFSR+win64+debug", "", 0));
-        }
-        if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
-            libs.add(new NativeLib("libSuperResolution+android", "", 1));
-        }
-        if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
-            libs.add(new NativeLib("libSuperResolution+linux64", "", 1));
-        }
-        if (os.type == OSType.MACOS && os.arch == Arch.AARCH64) {
-            libs.add(new NativeLib("libSuperResolution+macarm64", "", 1));
+            libs.add(LIB_SUPER_RESOLUTION);
+            libs.add(LIB_SUPER_RESOLUTION_FSR);
+        } else if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
+            LIB_SUPER_RESOLUTION = new NativeLib("libSuperResolution+android", "", 1);
+            LIB_SUPER_RESOLUTION_FSR = null;
+
+            libs.add(LIB_SUPER_RESOLUTION);
+        } else if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
+            LIB_SUPER_RESOLUTION = new NativeLib("libSuperResolution+linux64+release", "", 1);
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib("libSuperResolutionFSR+linux64+release", "", 0);
+
+            libs.add(LIB_SUPER_RESOLUTION);
+            libs.add(LIB_SUPER_RESOLUTION_FSR);
+        } else if (os.type == OSType.MACOS && os.arch == Arch.AARCH64) {
+            LIB_SUPER_RESOLUTION = new NativeLib("libSuperResolution+macarm64", "", 1);
+            LIB_SUPER_RESOLUTION_FSR = null;
+
+            libs.add(LIB_SUPER_RESOLUTION);
+        } else {
+            LIB_SUPER_RESOLUTION = null;
+            LIB_SUPER_RESOLUTION_FSR = null;
         }
     }
 
@@ -196,6 +207,10 @@ public class NativeLibManager {
                 return name + ".so";
             }
             return name + ".dylib";
+        }
+
+        public Path getTargetPath(Path root) {
+            return Path.of(root.toString(), formatLibName(this.name));
         }
     }
 }

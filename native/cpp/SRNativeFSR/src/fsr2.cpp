@@ -7,9 +7,9 @@
 #include "sr/fsr/sr_provider.h"
 struct SRFsr2PrivateData
 {
-    FfxInterface *interface;
+    FfxInterface *ffxInterface;
     FfxFsr2Context *context;
-    void* scratchBuffer;
+    void *scratchBuffer;
 };
 #ifdef __cplusplus
 extern "C"
@@ -26,11 +26,11 @@ extern "C"
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
         size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->phyDevice), 1);
         void *scratchBuffer = calloc(1, scratchBufferSize);
-        FfxInterface interface = *new FfxInterface();
-        SRFSR_CHECK(ffxGetInterfaceVK(&interface, device, scratchBuffer, scratchBufferSize, 1));
+        FfxInterface ffxInterface = *new FfxInterface();
+        SRFSR_CHECK(ffxGetInterfaceVK(&ffxInterface, device, scratchBuffer, scratchBufferSize, 1));
         FfxFsr2ContextDescription fsrContexDesc = {};
         fsrContexDesc.flags = FFX_FSR2_ENABLE_DEBUG_CHECKING;
-        fsrContexDesc.backendInterface = interface;
+        fsrContexDesc.backendInterface = ffxInterface;
         fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
         fsrContexDesc.displaySize = {desc->upscaledSize.x, desc->upscaledSize.y};
         fsrContexDesc.fpMessage = desc->messageCallback ? reinterpret_cast<FfxFsr2Message>(desc->messageCallback) : nullptr;
@@ -43,7 +43,7 @@ extern "C"
         }
         SRFsr2PrivateData *privateData = new SRFsr2PrivateData();
         privateData->context = fsr2Context;
-        privateData->interface = &interface;
+        privateData->ffxInterface = &ffxInterface;
         privateData->scratchBuffer = scratchBuffer;
 
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
@@ -57,8 +57,8 @@ extern "C"
         ffxFsr2ContextDestroy(privateData->context);
         free(privateData->scratchBuffer);
         delete privateData->context;
-        //delete privateData->interface;
-        //delete privateData;
+        // delete privateData->interface;
+        // delete privateData;
         context->userContext = nullptr;
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
@@ -88,23 +88,24 @@ extern "C"
     SR_API SRReturnCode srFfxFsr2DispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc)
     {
         FfxFsr2Context *fsr2Context = ((SRFsr2PrivateData *)context->userContext)->context;
+
         FfxFsr2DispatchDescription dispatchDesc = *new FfxFsr2DispatchDescription();
         dispatchDesc.commandList = ffxGetCommandListVK((VkCommandBuffer)(desc->commandList));
 
-        if (const_cast<SRTextureResource *>(&(desc->color)) != nullptr)
-            dispatchDesc.color = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->color)));
-        if (const_cast<SRTextureResource *>(&(desc->depth)) != nullptr)
-            dispatchDesc.depth = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->depth)));
-        if (const_cast<SRTextureResource *>(&(desc->motionVectors)) != nullptr)
-            dispatchDesc.motionVectors = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->motionVectors)));
-        if (const_cast<SRTextureResource *>(&(desc->exposure)) != nullptr)
-            dispatchDesc.exposure = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->exposure)));
-        if (const_cast<SRTextureResource *>(&(desc->reactive)) != nullptr)
-            dispatchDesc.reactive = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->reactive)));
-        if (const_cast<SRTextureResource *>(&(desc->transparencyAndComposition)) != nullptr)
-            dispatchDesc.transparencyAndComposition = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->transparencyAndComposition)));
-        if (const_cast<SRTextureResource *>(&(desc->output)) != nullptr)
-            dispatchDesc.output = SRTextureResourceToFfxResource(const_cast<SRTextureResource *>(&(desc->output)));
+        if (desc->color.exist)
+            dispatchDesc.color = SRTextureResourceToFfxResource(&desc->color);
+        if (desc->depth.exist)
+            dispatchDesc.depth = SRTextureResourceToFfxResource(&desc->depth);
+        if (desc->motionVectors.exist)
+            dispatchDesc.motionVectors = SRTextureResourceToFfxResource(&desc->motionVectors);
+        if (desc->exposure.exist)
+            dispatchDesc.exposure = SRTextureResourceToFfxResource(&desc->exposure);
+        if (desc->reactive.exist)
+            dispatchDesc.reactive = SRTextureResourceToFfxResource(&desc->reactive);
+        if (desc->transparencyAndComposition.exist)
+            dispatchDesc.transparencyAndComposition = SRTextureResourceToFfxResource(&desc->transparencyAndComposition);
+        if (desc->output.exist)
+            dispatchDesc.output = SRTextureResourceToFfxResource(&desc->output);
 
         dispatchDesc.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};
         dispatchDesc.motionVectorScale = {desc->motionVectorScale.x, desc->motionVectorScale.y};

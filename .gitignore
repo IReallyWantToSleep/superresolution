@@ -157,3 +157,4 @@ build_jars
 /native/cpp/SRNativeMain/libraries/macarm64
 
 *.pdb
+/native/cpp/output/

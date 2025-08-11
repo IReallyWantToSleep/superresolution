@@ -119,8 +119,18 @@ public abstract class PostChainMixin {
     private boolean super_resolution$onBlackList() {
         if (super_resolution$blackList == null) {
             super_resolution$blackList = new ArrayList<>();
+
             super_resolution$blackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
             super_resolution$blackList.add("minecraft:shaders/post/blur.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/achromatomaly.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/achromatopsia.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/deuteranomaly.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/deuteranopia.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/protanomaly.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/protanopia.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/tritanomaly.json");
+            super_resolution$blackList.add("colorblindness:shaders/post/tritanopia.json");
+            
             super_resolution$blackList.addAll(SuperResolutionConfig.getInjectPostChainBlackList());
         }
 
