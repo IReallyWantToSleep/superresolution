@@ -6,6 +6,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -26,7 +27,9 @@ import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.math.Vector2i;
 import io.homo.superresolution.srapi.*;
+import net.minecraft.client.Minecraft;
 
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class FfxFSR extends AbstractAlgorithm {
@@ -55,14 +58,17 @@ public class FfxFSR extends AbstractAlgorithm {
 
     private GlFrameBuffer outputFrameBuffer;
 
-    public void updateFsr() {
+    public boolean updateFsr() {
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return false;
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
+        if (!(lib.toFile().isFile() && lib.toFile().canRead())) return false;
         if (context != null) {
             if (context.nativePtr > 0) {
                 SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
             }
         }
         SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
-                "G:/super_resolution_moddev/superresolution/common/src/main/resources/lib/libSuperResolutionFSR+win64+debug.dll",
+                lib.toAbsolutePath().toString(),
                 "srGetFfxFSRUpscaleProviders",
                 "srGetFfxFSRUpscaleProvidersCount"
         );
@@ -84,6 +90,7 @@ public class FfxFSR extends AbstractAlgorithm {
         SuperResolution.LOGGER.info(String.valueOf(code.value));
         SuperResolution.LOGGER.info(String.valueOf(context.nativePtr));
         SuperResolution.LOGGER.info(String.valueOf(provider.nativePtr));
+        return true;
     }
 
     protected void destroySharedTexture() {
@@ -170,7 +177,9 @@ public class FfxFSR extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        updateFsr();
+        if (!updateFsr()) {
+            throw new RuntimeException();
+        }
         createSharedTexture();
         copyShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.graphics(

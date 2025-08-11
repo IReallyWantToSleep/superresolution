@@ -23,7 +23,7 @@ public class ViewportUniformsMixin {
         );
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
-                "SRRadio",
+                "SRRatio",
                 () -> SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getUpscaleRatio() : 1
         );
     }

@@ -102,6 +102,11 @@ public enum TextureFormat {
             TextureComponent.R,
             TextureComponent.G,
             TextureComponent.B
+    ),
+    DEPTH_COMPONENT(
+            GL_DEPTH_COMPONENT, VK_FORMAT_D16_UNORM,
+            DataType.UNSIGNED_NORMALIZED,
+            TextureComponent.Depth
     );
 
     private static final Map<Integer, TextureFormat> GL_TO_FORMAT;
@@ -182,7 +187,7 @@ public enum TextureFormat {
             case R32F, R32UI -> 4;
             case RGBA16F -> 8;
             case R11G11B10F -> 4;
-            case DEPTH32F, DEPTH32 -> 4;
+            case DEPTH32F, DEPTH32, DEPTH_COMPONENT -> 4;
             case DEPTH24, DEPTH24_STENCIL8 -> 4;
         };
     }

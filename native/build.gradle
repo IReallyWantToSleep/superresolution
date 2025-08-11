@@ -15,11 +15,16 @@ dependencies {
 tasks.named('clean') {
     doFirst {
         delete "${projectDir}/cpp/build"
-        delete "${projectDir}/cpp/bin"
+        delete "${projectDir}/cpp/output"
     }
 }
 
 tasks.register('copyNativeLib', Copy) {
+    from("${projectDir}/cpp/output/lib") {
+        include "*.so", "*.dll", "*.dylib"
+    }
+    into "${projectDir}/../common/src/main/resources/lib/"
+
     from("${projectDir}/cpp/output/bin") {
         include "*.so", "*.dll", "*.dylib"
     }

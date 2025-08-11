@@ -76,8 +76,10 @@ extern "C"
 
     typedef struct SRTextureResource
     {
+        bool exist;
         SRTextureResourceDescription desc;
         void *handle;
+
     } SRTextureResource;
 
     typedef struct SRDispatchUpscaleDesc
