@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ViewportUniformsMixin {
     @Inject(method = "addViewportUniforms", at = @At("RETURN"), remap = false)
     private static void addUniforms(UniformHolder uniforms, CallbackInfo ci) {
-        if (!MinecraftRenderHandle.isShaderPackCompat() || !SuperResolutionConfig.isEnableUpscale()) return;
+        //if (!MinecraftRenderHandle.isShaderPackCompat() || !SuperResolutionConfig.isEnableUpscale()) return;
 
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,

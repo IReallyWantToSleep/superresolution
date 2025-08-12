@@ -2,19 +2,16 @@ package io.homo.superresolution.core.graphics.vulkan.texture;
 
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.LongBuffer;
 import java.util.Set;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.vulkan.KHRExternalMemoryWin32.*;
 import static org.lwjgl.vulkan.VK11.*;
 
 public class VulkanTexture implements ITexture {
@@ -77,20 +74,7 @@ public class VulkanTexture implements ITexture {
     }
 
     private void exportMemoryHandle(MemoryStack stack) {
-        if (!device.getVkDevice().getCapabilities().VK_KHR_external_memory_win32) {
-            throw new VulkanException("Win32 external memory not supported");
-        }
-
-        VkMemoryGetWin32HandleInfoKHR getHandleInfo = VkMemoryGetWin32HandleInfoKHR.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR)
-                .memory(imageMemory)
-                .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
-
-        PointerBuffer pHandle = stack.mallocPointer(1);
-        VK_CHECK(KHRExternalMemoryWin32.vkGetMemoryWin32HandleKHR(
-                device.getVkDevice(), getHandleInfo, pHandle), "Failed to export memory handle");
-
-        exportedHandle = pHandle.get(0);
+        exportedHandle = VulkanInterop.IMPL.vkGetMemoryHandle(stack, device.getVkDevice(), imageMemory);
     }
 
     private void createImage(MemoryStack stack) {
@@ -153,18 +137,16 @@ public class VulkanTexture implements ITexture {
         VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
         vkGetImageMemoryRequirements(device.getVkDevice(), image, memRequirements);
         this.memorySize = memRequirements.size();
-        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack);
-        allocInfo.sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-        allocInfo.allocationSize(memorySize);
-        allocInfo.memoryTypeIndex(findMemoryType(
-                memRequirements.memoryTypeBits(),
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+
+        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
+                .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
+                .allocationSize(memorySize)
+                .memoryTypeIndex(findMemoryType(
+                        memRequirements.memoryTypeBits(),
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
         if (exportable) {
-            VkExportMemoryAllocateInfo exportInfo = VkExportMemoryAllocateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO)
-                    .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
-            allocInfo.pNext(exportInfo);
+            allocInfo.pNext(VulkanInterop.IMPL.createVkExportMemoryAllocateInfo(stack).address());
         }
 
         LongBuffer pMemory = stack.mallocLong(1);
@@ -180,25 +162,22 @@ public class VulkanTexture implements ITexture {
         VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
         vkGetImageMemoryRequirements(device.getVkDevice(), image, memRequirements);
 
-        VkImportMemoryWin32HandleInfoKHR importInfo = VkImportMemoryWin32HandleInfoKHR.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR)
-                .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT)
-                .handle(memoryHandle);
-
         VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
-                .pNext(importInfo)
+                .pNext(VulkanInterop.IMPL.createVkImportMemoryInfo(stack, memoryHandle).address())
                 .allocationSize(memRequirements.size())
                 .memoryTypeIndex(findMemoryType(
                         memRequirements.memoryTypeBits(),
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
         LongBuffer pMemory = stack.mallocLong(1);
-        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory), "Failed to import external memory");
+        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
+                "Failed to import external memory");
         imageMemory = pMemory.get(0);
-        VK_CHECK(vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0), "Failed to bind imported memory to image");
-
+        VK_CHECK(vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0),
+                "Failed to bind imported memory to image");
     }
+
 
     private int findMemoryType(int typeFilter, int properties) {
         try (MemoryStack stack = stackPush()) {

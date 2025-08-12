@@ -22,11 +22,13 @@ tasks.named('clean') {
 tasks.register('copyNativeLib', Copy) {
     from("${projectDir}/cpp/output/lib") {
         include "*.so", "*.dll", "*.dylib"
+        duplicatesStrategy DuplicatesStrategy.INCLUDE
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 
     from("${projectDir}/cpp/output/bin") {
         include "*.so", "*.dll", "*.dylib"
+        duplicatesStrategy DuplicatesStrategy.INCLUDE
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }

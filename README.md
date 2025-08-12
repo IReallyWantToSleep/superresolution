@@ -16,10 +16,14 @@
 # 支持的算法
 
 * FSR1
-* FSR2 (基于C++版本2.2.1移植到Java，可能与原版有略微不同)
+* FSR2 (基于C++版本2.2.1(2.3.2)移植到Java，可能与原版有略微不同)
 * SGSR2
 * SGSR1
-* NIS (正在开发)
+* NIS ~~(正在开发)~~
+
+# 其它功能
+
+* 光影包内的超分辨率支持，[文档](docs/SuperResolutionShaderCompatDocsZh.md)
 
 # 兼容性
 

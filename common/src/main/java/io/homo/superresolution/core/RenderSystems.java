@@ -1,9 +1,13 @@
 package io.homo.superresolution.core;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
+import org.lwjgl.vulkan.KHRExternalMemoryFd;
+import org.lwjgl.vulkan.KHRExternalSemaphoreFd;
 import org.lwjgl.vulkan.VK;
 
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
@@ -59,10 +63,17 @@ public class RenderSystems {
                 .addInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
-                .addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
-                .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)
+
                 .addDeviceExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+        if (Platform.currentPlatform.getOS().type == OSType.WINDOWS) {
+            vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
+                    .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
+        }
+        if (Platform.currentPlatform.getOS().type == OSType.LINUX) {
+            vulkan.addDeviceExtension(KHRExternalMemoryFd.VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME)
+                    .addDeviceExtension(KHRExternalSemaphoreFd.VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+        }
         try {
             vulkan.initRenderSystem();
             return;

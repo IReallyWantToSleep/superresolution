@@ -16,7 +16,7 @@ import java.util.ArrayList;
 public class StandardMacrosMixin {
     @Inject(method = "createStandardEnvironmentDefines", at = @At("TAIL"), cancellable = true, remap = false)
     private static void addSRDefines(CallbackInfoReturnable<ImmutableList<StringPair>> cir) {
-        if (!MinecraftRenderHandle.isShaderPackCompat() || !SuperResolutionConfig.isEnableUpscale()) return;
+        //if (!MinecraftRenderHandle.isShaderPackCompat() || !SuperResolutionConfig.isEnableUpscale()) return;
         var defines = new ArrayList<>(cir.getReturnValue());
         defines.add(new StringPair("SRMOD_ENABLED", "1"));
         cir.setReturnValue(ImmutableList.copyOf(defines));

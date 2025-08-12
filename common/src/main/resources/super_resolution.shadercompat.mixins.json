@@ -5,7 +5,6 @@
     "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
-        "core.FeatureFlagsMixin",
         "core.CompositeRendererAccessor",
         "core.CompositeRendererMixin",
         "core.IrisMixin",
@@ -16,6 +15,7 @@
         "core.ViewportUniformsMixin"
     ],
     "mixins": [
+        "core.ShaderPackMinix"
     ],
     "injectors": {
         "defaultRequire": 1
