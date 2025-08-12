@@ -1,18 +1,13 @@
 package io.homo.superresolution.core.graphics.vulkan.semaphore;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import org.lwjgl.PointerBuffer;
+import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkExportSemaphoreCreateInfo;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
-import org.lwjgl.vulkan.VkSemaphoreGetWin32HandleInfoKHR;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.opengl.EXTSemaphore.*;
-import static org.lwjgl.opengl.EXTSemaphoreWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT;
-import static org.lwjgl.opengl.EXTSemaphoreWin32.glImportSemaphoreWin32HandleEXT;
-import static org.lwjgl.vulkan.KHRExternalSemaphoreWin32.*;
 import static org.lwjgl.vulkan.VK11.*;
 
 public class VkGlInteropSemaphore {
@@ -30,12 +25,9 @@ public class VkGlInteropSemaphore {
 
     public static VkGlInteropSemaphore create(VulkanDevice vulkanDevice) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkExportSemaphoreCreateInfo exportSemaphoreCreateInfo = VkExportSemaphoreCreateInfo.calloc(stack);
-            exportSemaphoreCreateInfo.sType(VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO);
-            exportSemaphoreCreateInfo.handleTypes(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
             VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack);
             semaphoreCreateInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-            semaphoreCreateInfo.pNext(exportSemaphoreCreateInfo);
+            semaphoreCreateInfo.pNext(VulkanInterop.IMPL.createVkExportSemaphoreCreateInfo(stack).address());
             long[] pVkSemaphore = new long[]{0};
             VK_CHECK(vkCreateSemaphore(
                     vulkanDevice.getVkDevice(),
@@ -43,21 +35,15 @@ public class VkGlInteropSemaphore {
                     null,
                     pVkSemaphore
             ));
-            VkSemaphoreGetWin32HandleInfoKHR semaphoreGetInfo = VkSemaphoreGetWin32HandleInfoKHR.calloc(stack);
-            semaphoreGetInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR);
-            semaphoreGetInfo.handleType(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT);
-            semaphoreGetInfo.semaphore(pVkSemaphore[0]);
-
-            PointerBuffer pExpSemaphore = stack.mallocPointer(1);
-            VK_CHECK(vkGetSemaphoreWin32HandleKHR(
+            long pExpSemaphore = VulkanInterop.IMPL.vkGetSemaphoreHandleKHR(
+                    stack,
                     vulkanDevice.getVkDevice(),
-                    semaphoreGetInfo,
-                    pExpSemaphore
-            ));
+                    VulkanInterop.IMPL.createVkSemaphoreGetHandleInfoKHR(stack, pVkSemaphore[0])
+            );
 
             int pGlSemaphores = glGenSemaphoresEXT();
-            glImportSemaphoreWin32HandleEXT(pGlSemaphores, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, pExpSemaphore.get());
-            return new VkGlInteropSemaphore(pVkSemaphore[0], pGlSemaphores, pExpSemaphore.get(), vulkanDevice);
+            VulkanInterop.IMPL.glImportSemaphoreHandleEXT(stack, pGlSemaphores, pExpSemaphore);
+            return new VkGlInteropSemaphore(pVkSemaphore[0], pGlSemaphores, pExpSemaphore, vulkanDevice);
         }
     }
 

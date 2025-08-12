@@ -33,10 +33,10 @@ public class NativeLibManager {
     static {
         OS os = new OS();
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
-            LIB_SUPER_RESOLUTION = new NativeLib("libSuperResolution+win64+release", "", 1);
-            LIB_SUPER_RESOLUTION_FSR = new NativeLib("libSuperResolutionFSR+win64+release", "", 0);
+            LIB_SUPER_RESOLUTION = new NativeLib("libSuperResolution+win64+debug", "", 1);
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib("libSuperResolutionFSR+win64+debug", "", 0);
 
-            libs.add(new NativeLib("SPIRV-Tools-shared", "", 1));
+            libs.add(new NativeLib("SPIRV-Tools-sharedd", "", 1));
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
         } else if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
@@ -210,7 +210,7 @@ public class NativeLibManager {
         }
 
         public Path getTargetPath(Path root) {
-            return Path.of(root.toString(), formatLibName(this.name));
+            return Path.of(root.toString(), this.name);
         }
     }
 }

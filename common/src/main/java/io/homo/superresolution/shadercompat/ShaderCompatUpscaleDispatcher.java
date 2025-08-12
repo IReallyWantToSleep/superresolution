@@ -3,7 +3,10 @@ package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.DrawObject;
@@ -16,14 +19,17 @@ import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import io.homo.superresolution.core.math.Vector2f;
+import io.homo.superresolution.shadercompat.mixin.SRCompatShaderPack;
 import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL46;
 
 import java.util.HashMap;
@@ -32,8 +38,10 @@ import java.util.Optional;
 
 import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 
+/**
+ * 狗屎一坨，以至于我不得不写注释
+ */
 public class ShaderCompatUpscaleDispatcher {
-    protected static SRShaderCompatConfig shaderCompatConfig;
     public static Map<String, Object> debugInfo = new HashMap<>();
 
     private static TextureConfigResolver.TextureInfo colorTexture;
@@ -50,13 +58,15 @@ public class ShaderCompatUpscaleDispatcher {
     private static GlFrameBuffer copyDstFrameBuffer;
 
     public static SRShaderCompatConfig.WorldConfig getCurrentConfig() {
-        if (shaderCompatConfig == null || shaderCompatConfig.sr == null || !shaderCompatConfig.sr.enabled) {
+        if (!IrisShaderPipelineHandle.shouldApplySuperResolutionChanges()) {
             return null;
         }
         String currentWorldId = ((ShaderPackAccessor) Iris.getCurrentPack().get())
                 .getDimensionMap()
                 .get(Iris.getCurrentDimension());
-        return shaderCompatConfig.getUpscaleConfigForWorld(currentWorldId);
+        return IrisShaderPipelineHandle.getCurrentShaderPack().isPresent() ?
+                ((SRCompatShaderPack) IrisShaderPipelineHandle.getCurrentShaderPack().get())
+                        .superresolution$getSuperResolutionComaptConfig().getUpscaleConfigForWorld(currentWorldId) : null;
     }
 
 
@@ -118,67 +128,137 @@ public class ShaderCompatUpscaleDispatcher {
     }
 
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
-        if (copyProgram == null) {
-            copyProgram = RenderSystems.opengl().device().createShaderProgram(
-                    ShaderDescription.graphics(
-                                    new ShaderSource(ShaderType.FRAGMENT, "/shader/copy.frag.glsl", true),
-                                    new ShaderSource(ShaderType.VERTEX, "/shader/copy.vert.glsl", true)
-                            )
-                            .addDefine("COPY_CHANCEL", "4")
-                            .addDefine("COPY_SRC_CHANCEL0", "0").addDefine("COPY_DST_CHANCEL0", "0")
-                            .addDefine("COPY_SRC_CHANCEL1", "1").addDefine("COPY_DST_CHANCEL1", "1")
-                            .addDefine("COPY_SRC_CHANCEL2", "2").addDefine("COPY_DST_CHANCEL2", "2")
-                            .addDefine("COPY_SRC_CHANCEL3", "3").addDefine("COPY_DST_CHANCEL3", "3")
-                            .uniformSamplerTexture("tex", 0)
-                            .build()
-            );
-            copyProgram.compile();
+        if (!SuperResolutionConfig.isEnableUpscale()) return;
+        /*
+          检查用于复制纹理的着色器是否可用，不可用就初始化
+         */
+        {
+            if (copyProgram == null) {
+                copyProgram = RenderSystems.opengl().device().createShaderProgram(
+                        ShaderDescription.graphics(
+                                        new ShaderSource(ShaderType.FRAGMENT, "/shader/copy.frag.glsl", true),
+                                        new ShaderSource(ShaderType.VERTEX, "/shader/copy.vert.glsl", true)
+                                )
+                                .addDefine("COPY_CHANCEL", "4")
+                                .addDefine("COPY_SRC_CHANCEL0", "0").addDefine("COPY_DST_CHANCEL0", "0")
+                                .addDefine("COPY_SRC_CHANCEL1", "1").addDefine("COPY_DST_CHANCEL1", "1")
+                                .addDefine("COPY_SRC_CHANCEL2", "2").addDefine("COPY_DST_CHANCEL2", "2")
+                                .addDefine("COPY_SRC_CHANCEL3", "3").addDefine("COPY_DST_CHANCEL3", "3")
+                                .uniformSamplerTexture("tex", 0)
+                                .build()
+                );
+                copyProgram.compile();
+            }
         }
 
-        SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig().upscale_config;
+        /*
+        检查+初始化超分输入配置
+        createForInput使用getIrisTexture方法会从Iris拿到纹理然后从纹理ID创建超分自己的ITexture对象
+        updateTexture内部会把Iris纹理复制到内部纹理，便于读写（其实只有读）
+         */
+        SRShaderCompatConfig.InputTextureConfig colorConfig;
+        SRShaderCompatConfig.InputTextureConfig depthConfig;
+        SRShaderCompatConfig.InputTextureConfig motionConfig;
+        SRShaderCompatConfig.OutputTextureConfig outputConfig;
+        {
+            SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig().upscale_config;
+            colorConfig = currentConfig.input_textures.get("color");
+            depthConfig = currentConfig.input_textures.get("depth");
+            motionConfig = currentConfig.input_textures.get("motion_vectors");
+            outputConfig = currentConfig.output_textures.get("upscaled_color");
 
-        SRShaderCompatConfig.InputTextureConfig colorConfig = currentConfig.input_textures.get("color");
-        SRShaderCompatConfig.InputTextureConfig depthConfig = currentConfig.input_textures.get("depth");
-        SRShaderCompatConfig.InputTextureConfig motionConfig = currentConfig.input_textures.get("motion_vectors");
-        SRShaderCompatConfig.OutputTextureConfig outputConfig = currentConfig.output_textures.get("upscaled_color");
+            if (colorTexture == null || !configEquals(colorConfig, lastColorConfig)) {
+                if (colorTexture != null) colorTexture.getInternalTexture().destroy();
+                colorTexture = TextureConfigResolver.createForInput(compositeRenderer, colorConfig);
+                lastColorConfig = colorConfig;
+            }
+            if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig)) {
+                if (depthTexture != null) depthTexture.getInternalTexture().destroy();
+                depthTexture = TextureConfigResolver.createForInput(compositeRenderer, depthConfig);
+                lastDepthConfig = depthConfig;
+            }
+            if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig)) {
+                if (motionVectorsTexture != null) motionVectorsTexture.getInternalTexture().destroy();
+                motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
+                lastMotionConfig = motionConfig;
+            }
+            if (outputTexture == null || !configEquals(outputConfig, lastOutputConfig)) {
+                if (outputTexture != null) outputTexture.getInternalTexture().destroy();
+                outputTexture = TextureConfigResolver.createForOutput(compositeRenderer, outputConfig);
+                lastOutputConfig = outputConfig;
+            }
+            colorTexture.updateTexture();
+            depthTexture.updateTexture();
+            motionVectorsTexture.updateTexture();
+        }
 
-        if (colorTexture == null || !configEquals(colorConfig, lastColorConfig)) {
-            if (colorTexture != null) colorTexture.getInternalTexture().destroy();
-            colorTexture = TextureConfigResolver.createForInput(compositeRenderer, colorConfig);
-            lastColorConfig = colorConfig;
+        /*
+        升采样阶段开始
+         */
+        {
+            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+                PerformanceInfo.begin("upscale");
+                GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, MinecraftRenderHandle.timeQueryIds[1]);
+            }
+            if (MinecraftRenderHandle.needCaptureUpscale) {
+                if (RenderDoc.renderdoc != null) {
+                    RenderDoc.renderdoc.StartFrameCapture.call(null, null);
+                }
+            }
         }
-        if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig)) {
-            if (depthTexture != null) depthTexture.getInternalTexture().destroy();
-            depthTexture = TextureConfigResolver.createForInput(compositeRenderer, depthConfig);
-            lastDepthConfig = depthConfig;
-        }
-        if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig)) {
-            if (motionVectorsTexture != null) motionVectorsTexture.getInternalTexture().destroy();
-            motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
-            lastMotionConfig = motionConfig;
-        }
-        if (outputTexture == null || !configEquals(outputConfig, lastOutputConfig)) {
-            if (outputTexture != null) outputTexture.getInternalTexture().destroy();
-            outputTexture = TextureConfigResolver.createForOutput(compositeRenderer, outputConfig);
-            lastOutputConfig = outputConfig;
-        }
-        colorTexture.updateTexture();
-        depthTexture.updateTexture();
-        motionVectorsTexture.updateTexture();
 
+        AlgorithmManager.update();
+        try (GlState ignored_ = new GlState()) {
+            DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
+            SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+        }
+
+        /*
+        升采样阶段结束
+         */
+        {
+            if (MinecraftRenderHandle.needCaptureUpscale) {
+                if (RenderDoc.renderdoc != null) {
+                    MinecraftRenderHandle.needCaptureUpscale = false;
+                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+                }
+            }
+            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+                GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
+                long[] upscaleTime = {0};
+                GL41.glGetQueryObjectui64v(MinecraftRenderHandle.timeQueryIds[1], GL41.GL_QUERY_RESULT, upscaleTime);
+                PerformanceInfo.end("upscale", upscaleTime[0]);
+            }
+        }
+        //TODO:实现一个统一的复制接口，这坨乱死了
+        IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
         if (copyDstFrameBuffer != null) {
             copyDstFrameBuffer.destroy();
+        }
+
+        if (outputConfig.target.startsWith("colortex")) {
+            copyDstFrameBuffer = GlFrameBuffer.create(
+                    IrisTextureResolver.getIrisTexture(compositeRenderer, outputConfig.target),
+                    null
+            );
+            Gl.DSA.blitFramebuffer(
+                    (int) outFbo.handle(),
+                    (int) copyDstFrameBuffer.handle(),
+                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
+                    outputConfig.region.get(0),
+                    outputConfig.region.get(1),
+                    outputTexture.resolveRegionValue(outputConfig.region.get(2), true),
+                    outputTexture.resolveRegionValue(outputConfig.region.get(3), false),
+                    GL46.GL_COLOR_BUFFER_BIT,
+                    GL46.GL_NEAREST
+            );
+            return;
         }
         copyDstFrameBuffer = GlFrameBuffer.create(
                 outputTexture.getSourceTexture(),
                 null
         );
 
-        try (GlState ignored_ = new GlState()) {
-            DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
-            SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
-        }
-        IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
 
         IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commendEncoder().renderState().get();
 
@@ -202,15 +282,6 @@ public class ShaderCompatUpscaleDispatcher {
                 .renderState()
                 .apply(stateSnapshot);
         RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commendEncoder().end());
-    }
 
-    public static Optional<SRShaderCompatConfig> getCurrentShaderPackConfig() {
-        return Optional.ofNullable(
-                IrisApi.getInstance().isShaderPackInUse() ? shaderCompatConfig : null
-        );
-    }
-
-    public static void setShaderCompatConfig(SRShaderCompatConfig shaderCompatConfig) {
-        ShaderCompatUpscaleDispatcher.shaderCompatConfig = shaderCompatConfig;
     }
 }

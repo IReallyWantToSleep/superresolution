@@ -239,6 +239,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
 
         ConfigChangedEvent.EVENT.register(() -> {
+            //TODO:Iris.reload应该只在切换是否启用超分时调用
             try {
                 if (MinecraftRenderHandle.isShaderPackCompat()) {
                     Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");

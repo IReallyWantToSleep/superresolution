@@ -17,7 +17,7 @@ import java.nio.file.Path;
 
 @Mixin(Iris.class)
 public class IrisMixin {
-
+/*
     #if MC_VER == MC_1_20_1
     @Inject(
             method = "loadExternalShaderpack",
@@ -60,5 +60,5 @@ public class IrisMixin {
             SuperResolution.LOGGER.warn("加载 {} 光影包中的 superresolution.json 时发生错误", name);
         }
         ShaderCompatUpscaleDispatcher.setShaderCompatConfig(null);
-    }
+    }*/
 }

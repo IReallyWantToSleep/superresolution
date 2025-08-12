@@ -2,6 +2,7 @@ package io.homo.superresolution.core.graphics.opengl.texture;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
 
@@ -41,11 +42,12 @@ public class GlImportableTexture2D extends GlTexture2D {
                     sourceTexture.getMipmapSettings().getLevels(),
                     sourceTexture.getTextureFormat()
             );
+
             int[] memoryObjects = new int[1];
             glCreateMemoryObjectsEXT(memoryObjects);
             glMemoryObject = memoryObjects[0];
 
-            glImportMemoryWin32HandleEXT(glMemoryObject, size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, handle);
+            VulkanInterop.IMPL.glImportMemoryEXT(glMemoryObject, size, handle);
 
             glBindTexture(GL_TEXTURE_2D, (int) this.handle());
             glTextureStorageMem2DEXT((int) this.handle(),

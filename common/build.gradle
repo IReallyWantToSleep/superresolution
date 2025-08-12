@@ -155,3 +155,7 @@ tasks.register("genJNIHeader", Exec) {
         ))
     }
 }
+
+processResources {
+
+}
