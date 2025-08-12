@@ -27,17 +27,11 @@ public class IrisTextureResolver {
         );
     }
 
-    public static TextureFormat getIrisTextureFormatByName(CompositeRenderer renderer, String name) {
-        return resolveTexture(renderer, name,
-                texId -> TextureFormat.fromGl(getCompositeRendererRenderTargets(renderer)
-                        .getOrCreate(texId).getInternalFormat().getGlFormat()),
-                depthId -> TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, depthId)),
-                TextureFormat.RGBA8
-        );
-    }
-
     public static int getIrisTextureByName(CompositeRenderer renderer, String name) {
         return resolveTexture(renderer, name,
+                texId -> getCompositeRendererRenderTargets(renderer)
+                        .getOrCreate(texId)
+                        .getAltTexture(),
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId)
                         .getMainTexture(),
@@ -53,13 +47,14 @@ public class IrisTextureResolver {
     private static <T> T resolveTexture(
             CompositeRenderer renderer,
             String name,
+            Function<Integer, T> colorResolver,
             Function<Integer, T> colorAltResolver,
             Function<Integer, T> depthResolver,
             T defaultValue
     ) {
         try {
             if (name.startsWith(COLOR_PREFIX)) {
-                return colorAltResolver.apply(Integer.parseInt(name.substring(COLOR_PREFIX.length())));
+                return colorResolver.apply(Integer.parseInt(name.substring(COLOR_PREFIX.length())));
             } else if (name.startsWith(ALT_PREFIX)) {
                 return colorAltResolver.apply(Integer.parseInt(name.substring(ALT_PREFIX.length())));
             } else if (name.equals(DEPTH_TEX)) {
@@ -78,9 +73,11 @@ public class IrisTextureResolver {
     private static int getDepthTexId(CompositeRenderer renderer) {
         return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTexture();
     }
+
     private static int getNoHandDepthTexId(CompositeRenderer renderer) {
         return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoHand().getTextureId();
     }
+
     private static int getNoTranslucentDepthTexId(CompositeRenderer renderer) {
         return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoTranslucents().getTextureId();
     }

@@ -51,7 +51,13 @@ public class ClothConfig {
         commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), SuperResolutionConfig.isEnableUpscale())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                 .setDefaultValue(true)
-                .setSaveConsumer(SuperResolutionConfig::setEnableUpscale)
+                .setSaveConsumer((newValue) -> {
+                    boolean oldValue = SuperResolutionConfig.isEnableUpscale();
+                    SuperResolutionConfig.setEnableUpscale(newValue);
+                    if (oldValue != newValue) {
+                        SuperResolution.irisApiReloadShader();
+                    }
+                })
                 .build());
         commonCategory.addEntry(entryBuilder.startIntSlider(
                         Component.translatable("superresolution.screen.config.options.label.upscale_ratio"),

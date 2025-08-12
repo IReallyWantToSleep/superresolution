@@ -227,6 +227,14 @@ public final class SuperResolution implements Resizable, Destroyable {
         return defaultAlgorithm;
     }
 
+    public static void irisApiReloadShader() {
+        try {
+            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
+            irisApiClazz.getMethod("reload").invoke(null);
+        } catch (Throwable ignored) {
+        }
+    }
+
     public void init() {
         if (minecraft == null) minecraft = Minecraft.getInstance();
 
@@ -237,17 +245,6 @@ public final class SuperResolution implements Resizable, Destroyable {
 
         isInit = true;
         this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
-
-        ConfigChangedEvent.EVENT.register(() -> {
-            //TODO:Iris.reload应该只在切换是否启用超分时调用
-            try {
-                if (MinecraftRenderHandle.isShaderPackCompat()) {
-                    Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
-                    irisApiClazz.getMethod("reload").invoke(null);
-                }
-            } catch (Throwable ignored) {
-            }
-        });
     }
 
     public void resize(int width, int height) {
@@ -271,5 +268,14 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (currentAlgorithm != null)
             currentAlgorithm.destroy();
         AlgorithmManager.destroy();
+    }
+
+    public static boolean isShaderPackCompat() {
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
+            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChanges").invoke(null);
+        } catch (Throwable e) {
+            return false;
+        }
     }
 }

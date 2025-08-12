@@ -36,7 +36,7 @@ public class TextureConfigResolver {
 
         public void updateTexture() {
             if (sourceTexture == null) return;
-            
+
             int width = resolveRegionValue(region.get(2), true);
             int height = resolveRegionValue(region.get(3), false);
 
@@ -102,10 +102,5 @@ public class TextureConfigResolver {
     public static TextureInfo createForInput(CompositeRenderer renderer, SRShaderCompatConfig.InputTextureConfig config) {
         ITexture source = IrisTextureResolver.getIrisTexture(renderer, config.src);
         return new TextureInfo(source, config.region, false);
-    }
-
-    public static TextureInfo createForOutput(CompositeRenderer renderer, SRShaderCompatConfig.OutputTextureConfig config) {
-        ITexture source = IrisTextureResolver.getIrisTexture(renderer, config.target);
-        return new TextureInfo(source, config.region, true);
     }
 }
