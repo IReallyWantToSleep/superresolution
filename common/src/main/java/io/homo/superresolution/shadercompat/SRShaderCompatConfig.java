@@ -21,7 +21,7 @@ public class SRShaderCompatConfig {
     }
 
     public static class OutputTextureConfig extends TextureConfig {
-        public String target;
+        public List<String> target;
     }
 
     public static class UpscaleConfig {

@@ -1,6 +1,4 @@
-package io.homo.superresolution.shadercompat.mixin;
-
-import io.homo.superresolution.shadercompat.SRShaderCompatConfig;
+package io.homo.superresolution.shadercompat;
 
 public interface SRCompatShaderPack {
     SRShaderCompatConfig superresolution$getSuperResolutionComaptConfig();

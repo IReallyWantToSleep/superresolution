@@ -36,7 +36,7 @@ iris.features.optional = SR_UPSCALE
           "output_textures": {
             "<输出纹理名称>": {
               "enabled": true/false,
-              "target": "<目标纹理源>",
+              "target": ["<目标纹理源>","<目标纹理源>"],
               "region": [X, Y, W, H]
             }
           }
@@ -90,7 +90,7 @@ iris.features.optional = SR_UPSCALE
 | 键名        | 说明                              | 示例            |
 | --------- | ------------------------------- | ------------- |
 | `enabled` | 是否启用该输出纹理                       | `true`        |
-| `target`  | 输出目标纹理源，支持：`colortexX`、`alttexX`                         | `colortex0`   |
+| `target`  | 输出目标纹理源数组，支持：`colortexX`、`alttexX`                         | `colortex0`   |
 | `region`  | 输出区域数组 `[X, Y, W, H]`，负值含义同输入区域 | `[0,0,-2,-2]` |
 
 ---
@@ -156,7 +156,7 @@ iris.features.optional = SR_UPSCALE
           "output_textures": {
             "upscaled_color": {
               "enabled": true,
-              "target": "colortex0",
+              "target": ["colortex0","colortex5"],
               "region": [0, 0, -2, -2]
             }
           }

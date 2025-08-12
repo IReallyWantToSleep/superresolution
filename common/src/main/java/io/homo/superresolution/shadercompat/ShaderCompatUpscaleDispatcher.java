@@ -2,6 +2,8 @@ package io.homo.superresolution.shadercompat;
 
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
+import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.PerformanceInfo;
@@ -9,32 +11,33 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.shadercompat.mixin.SRCompatShaderPack;
 import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
-import net.irisshaders.iris.api.v0.IrisApi;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL46;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 
@@ -47,12 +50,10 @@ public class ShaderCompatUpscaleDispatcher {
     private static TextureConfigResolver.TextureInfo colorTexture;
     private static TextureConfigResolver.TextureInfo depthTexture;
     private static TextureConfigResolver.TextureInfo motionVectorsTexture;
-    private static TextureConfigResolver.TextureInfo outputTexture;
 
     private static SRShaderCompatConfig.InputTextureConfig lastColorConfig;
     private static SRShaderCompatConfig.InputTextureConfig lastDepthConfig;
     private static SRShaderCompatConfig.InputTextureConfig lastMotionConfig;
-    private static SRShaderCompatConfig.OutputTextureConfig lastOutputConfig;
 
     private static GlShaderProgram copyProgram;
     private static GlFrameBuffer copyDstFrameBuffer;
@@ -71,7 +72,6 @@ public class ShaderCompatUpscaleDispatcher {
 
 
     public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer) {
-        SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig().upscale_config;
         return new DispatchResource(
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight(),
@@ -129,6 +129,8 @@ public class ShaderCompatUpscaleDispatcher {
 
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
         if (!SuperResolutionConfig.isEnableUpscale()) return;
+        if (getCurrentConfig() == null) return;
+        SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig().upscale_config;
         /*
           检查用于复制纹理的着色器是否可用，不可用就初始化
          */
@@ -161,7 +163,6 @@ public class ShaderCompatUpscaleDispatcher {
         SRShaderCompatConfig.InputTextureConfig motionConfig;
         SRShaderCompatConfig.OutputTextureConfig outputConfig;
         {
-            SRShaderCompatConfig.UpscaleConfig currentConfig = getCurrentConfig().upscale_config;
             colorConfig = currentConfig.input_textures.get("color");
             depthConfig = currentConfig.input_textures.get("depth");
             motionConfig = currentConfig.input_textures.get("motion_vectors");
@@ -182,11 +183,6 @@ public class ShaderCompatUpscaleDispatcher {
                 motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
                 lastMotionConfig = motionConfig;
             }
-            if (outputTexture == null || !configEquals(outputConfig, lastOutputConfig)) {
-                if (outputTexture != null) outputTexture.getInternalTexture().destroy();
-                outputTexture = TextureConfigResolver.createForOutput(compositeRenderer, outputConfig);
-                lastOutputConfig = outputConfig;
-            }
             colorTexture.updateTexture();
             depthTexture.updateTexture();
             motionVectorsTexture.updateTexture();
@@ -206,11 +202,22 @@ public class ShaderCompatUpscaleDispatcher {
                 }
             }
         }
-
         AlgorithmManager.update();
+        DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
+        if (SuperResolution.currentAlgorithm != null) {
+            AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
+                    SuperResolution.currentAlgorithm,
+                    dispatchResource
+            );
+        }
         try (GlState ignored_ = new GlState()) {
-            DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
             SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+        }
+        if (SuperResolution.currentAlgorithm != null) {
+            AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
+                    SuperResolution.currentAlgorithm,
+                    SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+            );
         }
 
         /*
@@ -230,58 +237,17 @@ public class ShaderCompatUpscaleDispatcher {
                 PerformanceInfo.end("upscale", upscaleTime[0]);
             }
         }
-        //TODO:实现一个统一的复制接口，这坨乱死了
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        if (copyDstFrameBuffer != null) {
-            copyDstFrameBuffer.destroy();
-        }
-
-        if (outputConfig.target.startsWith("colortex")) {
-            copyDstFrameBuffer = GlFrameBuffer.create(
-                    IrisTextureResolver.getIrisTexture(compositeRenderer, outputConfig.target),
-                    null
+        for (String targetName : currentConfig.output_textures.get("upscaled_color").target) {
+            GlTextureCopier.copy(
+                    CopyOperation.create()
+                            .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
+                            .dst(IrisTextureResolver.getIrisTexture(compositeRenderer, targetName))
+                            .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
+                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                            .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                            .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
             );
-            Gl.DSA.blitFramebuffer(
-                    (int) outFbo.handle(),
-                    (int) copyDstFrameBuffer.handle(),
-                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                    outputConfig.region.get(0),
-                    outputConfig.region.get(1),
-                    outputTexture.resolveRegionValue(outputConfig.region.get(2), true),
-                    outputTexture.resolveRegionValue(outputConfig.region.get(3), false),
-                    GL46.GL_COLOR_BUFFER_BIT,
-                    GL46.GL_NEAREST
-            );
-            return;
         }
-        copyDstFrameBuffer = GlFrameBuffer.create(
-                outputTexture.getSourceTexture(),
-                null
-        );
-
-
-        IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commendEncoder().renderState().get();
-
-        RenderSystems.opengl().device().commendEncoder()
-                .begin()
-                .renderState()
-                .colorMask(true, true, true, false)
-                .depthTest(false)
-                .depthWrite(false)
-                .cullFace(false);
-        copyProgram.uniforms().samplerTexture("tex").set(outFbo.getTexture(FrameBufferAttachmentType.Color));
-        RenderSystems.opengl().device().commendEncoder()
-                .draw(
-                        copyProgram,
-                        copyDstFrameBuffer,
-                        DrawObject.fullscreenQuad(RenderSystems.opengl().device()).once(),
-                        0,
-                        DrawObject.fullscreenQuadVertexCount()
-                );
-        RenderSystems.opengl().device().commendEncoder()
-                .renderState()
-                .apply(stateSnapshot);
-        RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commendEncoder().end());
-
     }
 }

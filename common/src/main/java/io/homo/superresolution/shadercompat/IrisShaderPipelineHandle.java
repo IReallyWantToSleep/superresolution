@@ -1,8 +1,6 @@
 package io.homo.superresolution.shadercompat;
 
 import com.google.common.collect.ImmutableList;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.shadercompat.mixin.SRCompatShaderPack;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.IrisRenderingPipelineAccessor;
 import net.irisshaders.iris.Iris;
@@ -10,6 +8,7 @@ import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.irisshaders.iris.shaderpack.ShaderPack;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 
 /**
@@ -21,8 +20,10 @@ public class IrisShaderPipelineHandle {
      */
     public static String getCompositePassName(Object obj) {
         try {
-            Class<?> passClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer.Pass");
-            return (String) passClazz.getDeclaredField("name").get(obj);
+            Class<?> passClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$Pass");
+            Field nameField = passClazz.getDeclaredField("name");
+            nameField.setAccessible(true);
+            return (String) nameField.get(obj);
         } catch (Throwable throwable) {
             throwable.printStackTrace();
             return null;

@@ -37,7 +37,7 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        GlFrameBuffer output = new GlFrameBuffer();
+        this.output = new GlFrameBuffer();
         output.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 RenderSystems.current().device().createTexture(TextureDescription.create()
