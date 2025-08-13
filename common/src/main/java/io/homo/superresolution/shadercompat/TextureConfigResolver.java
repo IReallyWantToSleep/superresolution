@@ -8,6 +8,7 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL43.glCopyImageSubData;
@@ -15,19 +16,19 @@ import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 public class TextureConfigResolver {
 
     public static class TextureInfo {
-        private final ITexture sourceTexture;
+        private final Supplier<ITexture> sourceTextureSupplier;
         private final List<Integer> region;
         private final boolean isOutput;
         private GlTexture2D internalTexture;
 
-        public TextureInfo(ITexture sourceTexture, List<Integer> region, boolean isOutput) {
-            this.sourceTexture = sourceTexture;
+        public TextureInfo(Supplier<ITexture> sourceTextureSupplier, List<Integer> region, boolean isOutput) {
+            this.sourceTextureSupplier = sourceTextureSupplier;
             this.region = region;
             this.isOutput = isOutput;
         }
 
         public ITexture getSourceTexture() {
-            return sourceTexture;
+            return sourceTextureSupplier.get();
         }
 
         public ITexture getInternalTexture() {
@@ -35,6 +36,7 @@ public class TextureConfigResolver {
         }
 
         public void updateTexture() {
+            ITexture sourceTexture = sourceTextureSupplier.get();
             if (sourceTexture == null) return;
 
             int width = resolveRegionValue(region.get(2), true);
@@ -63,6 +65,8 @@ public class TextureConfigResolver {
         }
 
         public void createInternalTexture(int width, int height) {
+            ITexture sourceTexture = sourceTextureSupplier.get();
+            if (sourceTexture == null) return;
             internalTexture = GlTexture2D.create(
                     TextureDescription.create()
                             .width(width)
@@ -100,7 +104,6 @@ public class TextureConfigResolver {
     }
 
     public static TextureInfo createForInput(CompositeRenderer renderer, SRShaderCompatConfig.InputTextureConfig config) {
-        ITexture source = IrisTextureResolver.getIrisTexture(renderer, config.src);
-        return new TextureInfo(source, config.region, false);
+        return new TextureInfo(() -> IrisTextureResolver.getIrisTexture(renderer, config.src), config.region, false);
     }
 }

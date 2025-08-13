@@ -15,7 +15,8 @@
         "core.ViewportUniformsMixin"
     ],
     "mixins": [
-        "core.ShaderPackMinix"
+        "core.RenderTargetsAccessor",
+        "core.ShaderPackMixin"
     ],
     "injectors": {
         "defaultRequire": 1

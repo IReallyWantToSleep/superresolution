@@ -327,13 +327,13 @@ public class MinecraftRenderHandle {
         frameTime = PerformanceInfo.getAsMillis("world");
         if (!SuperResolution.isShaderPackCompat()) {
             getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
-            glViewport(
-                    0,
-                    0,
-                    getScreenWidth(),
-                    getScreenHeight()
-            );
         }
+        glViewport(
+                0,
+                0,
+                getScreenWidth(),
+                getScreenHeight()
+        );
         if (needCapture) {
             if (RenderDoc.renderdoc != null) {
                 needCapture = false;
