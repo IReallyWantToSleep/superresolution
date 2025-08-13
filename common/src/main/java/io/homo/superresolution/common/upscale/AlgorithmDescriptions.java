@@ -100,7 +100,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(NONE);
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
-        AlgorithmRegistry.registry(FSR);
+        //AlgorithmRegistry.registry(FSR);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         AlgorithmRegisterEvent.EVENT.invoker().onAlgorithmRegister();

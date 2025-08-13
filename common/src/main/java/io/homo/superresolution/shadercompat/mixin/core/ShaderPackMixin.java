@@ -2,6 +2,7 @@ package io.homo.superresolution.shadercompat.mixin.core;
 
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.shadercompat.SRShaderCompatConfig;
 import io.homo.superresolution.shadercompat.SRCompatShaderPack;
 import net.irisshaders.iris.shaderpack.ShaderPack;
@@ -9,18 +10,22 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 
-@Mixin(value = ShaderPack.class)
-public class ShaderPackMinix implements SRCompatShaderPack {
+@Mixin(value = ShaderPack.class, remap = false)
+public class ShaderPackMixin implements SRCompatShaderPack {
     @Unique
     private SRShaderCompatConfig superresolution$config;
 
+    #if MC_VER > MC_1_20_1
     @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V", at = @At("RETURN"))
     private void loadSuperResolutionComaptConfig(
             Path root,
@@ -28,7 +33,16 @@ public class ShaderPackMinix implements SRCompatShaderPack {
             ImmutableList<?> environmentDefines,
             boolean isZip,
             CallbackInfo ci
-    ) {
+    )
+    #else
+    @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;)V", at = @At("RETURN"))
+    private void loadSuperResolutionComaptConfig(
+            Path root,
+            Map<?, ?> changedConfigs,
+            ImmutableList<?> environmentDefines,
+            CallbackInfo ci
+    )
+    #endif {
         try {
             Path srConfigPath = root.resolve("superresolution.json");
             if (Files.exists(srConfigPath)) {
@@ -46,11 +60,11 @@ public class ShaderPackMinix implements SRCompatShaderPack {
 
     @Unique
     public SRShaderCompatConfig superresolution$getSuperResolutionComaptConfig() {
-        return superresolution$config;
+        return SuperResolutionConfig.isForceDisableShaderCompat() ? null : superresolution$config;
     }
 
     @Unique
     public boolean superresolution$isSupportsSuperResolution() {
-        return superresolution$config != null && superresolution$config.sr.enabled;
+        return !SuperResolutionConfig.isForceDisableShaderCompat() && superresolution$config != null && superresolution$config.sr.enabled;
     }
 }

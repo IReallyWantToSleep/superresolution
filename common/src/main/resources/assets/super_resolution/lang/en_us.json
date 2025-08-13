@@ -127,5 +127,9 @@
     "superresolution.screen.config.options.label.enable_compat_shader_compiler": "Use compatible shader compiler",
     "superresolution.screen.config.options.tooltip.enable_compat_shader_compiler": "Enables compiling shaders using a compatibility shader compiler for wider hardware support.",
     "superresolution.screen.info.text.requirement.additional_conditions": "Additional Conditions Met: %s",
+    "superresolution.screen.config.options.label.disable_upscale_on_vanilla": "Disable Super Resolution When Shaders Are Off",
+    "superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla": "Automatically disable Super Resolution when shaders are turned off",
+    "superresolution.screen.config.options.label.force_disable_shader_compat": "Force Disable Shader Pack Compatibility",
+    "superresolution.screen.config.options.tooltip.force_disable_shader_compat": "When enabled, the mod will ignore the shader pack’s Super Resolution compatibility config and perform scaling in normal mode",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

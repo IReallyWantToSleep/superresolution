@@ -57,6 +57,7 @@ public class ShaderCompatUpscaleDispatcher {
 
     private static GlShaderProgram copyProgram;
     private static GlFrameBuffer copyDstFrameBuffer;
+    private static CompositeRenderer cachedCompositeRenderer;
 
     public static SRShaderCompatConfig.WorldConfig getCurrentConfig() {
         if (!IrisShaderPipelineHandle.shouldApplySuperResolutionChanges()) {
@@ -152,6 +153,12 @@ public class ShaderCompatUpscaleDispatcher {
                 copyProgram.compile();
             }
         }
+        boolean needUpdate = false;
+
+        if (!compositeRenderer.equals(cachedCompositeRenderer)) {
+            cachedCompositeRenderer = compositeRenderer;
+            needUpdate = true;
+        }
 
         /*
         检查+初始化超分输入配置
@@ -168,17 +175,17 @@ public class ShaderCompatUpscaleDispatcher {
             motionConfig = currentConfig.input_textures.get("motion_vectors");
             outputConfig = currentConfig.output_textures.get("upscaled_color");
 
-            if (colorTexture == null || !configEquals(colorConfig, lastColorConfig)) {
+            if (colorTexture == null || !configEquals(colorConfig, lastColorConfig) || needUpdate) {
                 if (colorTexture != null) colorTexture.getInternalTexture().destroy();
                 colorTexture = TextureConfigResolver.createForInput(compositeRenderer, colorConfig);
                 lastColorConfig = colorConfig;
             }
-            if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig)) {
+            if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig) || needUpdate) {
                 if (depthTexture != null) depthTexture.getInternalTexture().destroy();
                 depthTexture = TextureConfigResolver.createForInput(compositeRenderer, depthConfig);
                 lastDepthConfig = depthConfig;
             }
-            if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig)) {
+            if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig) || needUpdate) {
                 if (motionVectorsTexture != null) motionVectorsTexture.getInternalTexture().destroy();
                 motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
                 lastMotionConfig = motionConfig;

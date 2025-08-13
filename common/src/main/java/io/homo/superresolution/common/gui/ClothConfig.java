@@ -48,7 +48,7 @@ public class ClothConfig {
                             Component.translatable("superresolution.screen.config.warn.mobile_device"))
                     .setColor(ColorUtil.color(255, 255, 0, 0)).build());
         }
-        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), SuperResolutionConfig.isEnableUpscale())
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), SuperResolutionConfig.isEnableUpscaleOriginal())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                 .setDefaultValue(true)
                 .setSaveConsumer((newValue) -> {
@@ -58,6 +58,11 @@ public class ClothConfig {
                         SuperResolution.irisApiReloadShader();
                     }
                 })
+                .build());
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.disable_upscale_on_vanilla"), SuperResolutionConfig.isDisableUpscaleOnVanilla())
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla"))
+                .setDefaultValue(false)
+                .setSaveConsumer(SuperResolutionConfig::setDisableUpscaleOnVanilla)
                 .build());
         commonCategory.addEntry(entryBuilder.startIntSlider(
                         Component.translatable("superresolution.screen.config.options.label.upscale_ratio"),
@@ -184,6 +189,14 @@ public class ClothConfig {
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_detailed_profiling"))
                 .setDefaultValue(false)
                 .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
+                .build());
+        commonCategory.addEntry(entryBuilder.startBooleanToggle(
+                        Component.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
+                        SuperResolutionConfig.isForceDisableShaderCompat()
+                )
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
+                .setDefaultValue(false)
+                .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
                 .build());
 
         List<String> injectPostChainBlackList = new ArrayList<>();

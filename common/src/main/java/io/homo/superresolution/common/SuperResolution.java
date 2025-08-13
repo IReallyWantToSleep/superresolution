@@ -235,6 +235,16 @@ public final class SuperResolution implements Resizable, Destroyable {
         }
     }
 
+    public static boolean irisApiIsShaderPackInUse() {
+        try {
+            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            Object irisApiInstance = irisApiClazz.getMethod("getInstance").invoke(null);
+            return (boolean) irisApiClazz.getMethod("isShaderPackInUse").invoke(irisApiInstance);
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
     public void init() {
         if (minecraft == null) minecraft = Minecraft.getInstance();
 

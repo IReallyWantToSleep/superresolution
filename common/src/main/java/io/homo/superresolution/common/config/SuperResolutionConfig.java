@@ -46,6 +46,8 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_DATASET_GENERATOR;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
     public static final BooleanValue ENABLE_DEBUG;
+    public static final BooleanValue DISABLE_UPSCALE_ON_VANILLA;
+    public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final OSType CURRENT_OS_TYPE = new OS().type;
     public static final Runnable resolutionChangeCallback;
 
@@ -168,6 +170,16 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Enable more detailed performance profiling for advanced analysis."
         );
+        FORCE_DISABLE_SHADER_COMPAT = builder.defineBoolean(
+                "force_disable_shader_compat",
+                () -> false,
+                "Force disable shader pack compatibility mode."
+        );
+        DISABLE_UPSCALE_ON_VANILLA = builder.defineBoolean(
+                "disable_upscale_on_vanilla",
+                () -> false,
+                "Disable Super Resolution when using vanilla rendering."
+        );
 
         SPECIAL = new SpecialConfigs(builder);
         Path configPath = Platform.currentPlatform
@@ -264,8 +276,14 @@ public class SuperResolutionConfig {
         }
     }
 
-    public static boolean isEnableUpscale() {
+    public static boolean isEnableUpscaleOriginal() {
         return ENABLE_UPSCALE.get();
+    }
+
+    public static boolean isEnableUpscale() {
+        if (SuperResolutionConfig.isDisableUpscaleOnVanilla())
+            return isEnableUpscaleOriginal() && SuperResolution.irisApiIsShaderPackInUse();
+        return isEnableUpscaleOriginal();
     }
 
     public static void setEnableUpscale(boolean value) {
@@ -386,6 +404,22 @@ public class SuperResolutionConfig {
 
     public static void setEnableDebug(boolean value) {
         ENABLE_DEBUG.set(value);
+    }
+
+    public static boolean isForceDisableShaderCompat() {
+        return FORCE_DISABLE_SHADER_COMPAT.get();
+    }
+
+    public static void setForceDisableShaderCompat(boolean value) {
+        FORCE_DISABLE_SHADER_COMPAT.set(value);
+    }
+
+    public static boolean isDisableUpscaleOnVanilla() {
+        return DISABLE_UPSCALE_ON_VANILLA.get();
+    }
+
+    public static void setDisableUpscaleOnVanilla(boolean value) {
+        DISABLE_UPSCALE_ON_VANILLA.set(value);
     }
 
     public static float getMinUpscaleRatio() {
