@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(SuperResolutionNativeMain)
-message(STATUS "生成FSR模块")
+message(STATUS "生成FSR OpenGL模块")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,7 +20,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 else()
     message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
-find_package(Vulkan REQUIRED)
+find_package(OpenGL REQUIRED)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
@@ -33,28 +33,24 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
-add_library(SR_FSR_LIB SHARED ${ALL_SRC})
+add_library(SR_FSRGL_LIB SHARED ${ALL_SRC})
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    set_target_properties(SR_FSR_LIB PROPERTIES OUTPUT_NAME "SuperResolutionFSR+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
+    set_target_properties(SR_FSRGL_LIB PROPERTIES OUTPUT_NAME "SuperResolutionFSRGL+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    set_target_properties(SR_FSR_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionFSR+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
+    set_target_properties(SR_FSRGL_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionFSRGL+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
 endif()
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_link_libraries(SR_FSR_LIB
+    target_link_libraries(SR_FSRGL_LIB
         SR_MAIN_LIB
-        ffx_backend_vk_x64d
-        ffx_fsr1_x64d
-        ffx_fsr2_x64d
-        ffx_fsr3upscaler_x64d
+        ffx_fsr2_api_gl_x64d
+        ffx_fsr2_api_x64d
         ${Vulkan_LIBRARIES}
     )
 else()
-    target_link_libraries(SR_FSR_LIB
+    target_link_libraries(SR_FSRGL_LIB
         SR_MAIN_LIB
-        ffx_backend_vk_x64
-        ffx_fsr1_x64
-        ffx_fsr2_x64
-        ffx_fsr3upscaler_x64
+        ffx_fsr2_api_gl_x64d
+        ffx_fsr2_api_x64d
         ${Vulkan_LIBRARIES}
     )
 endif()
