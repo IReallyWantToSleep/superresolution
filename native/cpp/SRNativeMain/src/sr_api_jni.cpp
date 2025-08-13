@@ -5,7 +5,7 @@
 #include "utils.h"
 #include <string>
 #include <iostream>
-
+#include "sr/sr_modules.h"
 static JNIEnv *g_envForCallback = nullptr;
 
 void sr_message_callback_bridge(SRMsgType type, const wchar_t *message)
@@ -114,6 +114,34 @@ void *java_vkGetDeviceProcAddr(void *device, const char *name)
     return reinterpret_cast<void *>(jlongValue);
 }
 
+void *java_glfwGetProcAddress(void *device, const char *name)
+{
+
+    if (!g_envForCallback)
+    {
+        std::cout << "g_envForCallback is null!!!!!!!!!!!!!!" << std::endl;
+        return nullptr;
+    };
+
+    jclass cpp_helper = g_envForCallback->FindClass(JAVA_CPPHELPER_CLASS);
+    jmethodID methodID = g_envForCallback->GetStaticMethodID(
+        cpp_helper,
+        "CPP_glfwGetProcAddress",
+        "(Ljava/lang/String;)J");
+
+    if (!methodID)
+    {
+        std::cout << "methodID is null!!!!!!!!!!!!!!" << std::endl;
+        return nullptr;
+    }
+
+    jstring jmsg = g_envForCallback->NewStringUTF(name);
+    jlong jlongValue = g_envForCallback->CallStaticLongMethod(cpp_helper, methodID, jmsg);
+    g_envForCallback->DeleteLocalRef(jmsg);
+
+    return reinterpret_cast<void *>(jlongValue);
+}
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -140,7 +168,7 @@ extern "C"
         desc.device = (VkDevice)device;
         desc.phyDevice = (VkPhysicalDevice)phyDevice;
         desc.flags = static_cast<uint32_t>(flags);
-        desc.deviceProcAddr = java_vkGetDeviceProcAddr;
+        desc.deviceProcAddr =  reinterpret_cast<SRUpscaleProvider *>(provider)->providerId == SR_MODULES_FSR2OGL_ID ? java_glfwGetProcAddress : java_vkGetDeviceProcAddr;
         desc.messageCallback = sr_message_callback_bridge;
 
         SRUpscaleContext *context = new SRUpscaleContext();
