@@ -20,8 +20,8 @@ public class SRCreateUpscaleContextDesc {
     }
 
     public SRCreateUpscaleContextDesc(VkDevice device, VkPhysicalDevice phyDevice, Vector2i upscaledSize, Vector2i renderSize, int flags) {
-        this.device = device.address();
-        this.phyDevice = phyDevice.address();
+        if (device != null) this.device = device.address();
+        if (phyDevice != null) this.phyDevice = phyDevice.address();
         this.upscaledSize = upscaledSize;
         this.renderSize = renderSize;
         this.flags = flags;

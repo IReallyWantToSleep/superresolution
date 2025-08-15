@@ -1,9 +1,14 @@
 package io.homo.superresolution.core.graphics.impl.shader;
 
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 import io.homo.superresolution.core.utils.FileReadHelper;
+import net.minecraft.client.Minecraft;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class ShaderSource {
@@ -89,7 +94,34 @@ public class ShaderSource {
     }
 
     public void updateSource() {
-        cachedSource = addCustomDefines(isFilePath ? String.join("\n", FileReadHelper.readText(source)) : source, shaderDefines);
+        String shaderSource = source;
+        if (isFilePath) {
+            if (!Platform.currentPlatform.isDevelopmentEnvironment()) {
+                shaderSource = String.join("\n", FileReadHelper.readText(source));
+            }
+            Path commonProjectPath = Path.of(Minecraft.getInstance().gameDirectory.getAbsolutePath())
+                    .getParent()
+                    .getParent()
+                    .getParent()
+                    .resolve("common")
+                    .resolve("src")
+                    .resolve("main")
+                    .resolve("resources");
+            Path shaderPath = Path.of(commonProjectPath.toAbsolutePath().toString(), source);
+            if (shaderPath.toFile().exists()) {
+                try {
+                    shaderSource = Files.readString(shaderPath);
+                    SuperResolution.LOGGER.info("加载Shader {}", shaderPath);
+
+                } catch (Throwable e) {
+                    shaderSource = String.join("\n", FileReadHelper.readText(source));
+                }
+            } else {
+                shaderSource = String.join("\n", FileReadHelper.readText(source));
+            }
+        }
+
+        cachedSource = addCustomDefines(shaderSource, shaderDefines);
     }
 
     public String getSource() {

@@ -426,7 +426,7 @@ extern "C"
         env->ReleaseStringUTFChars(getProvidersFuncName, funcName);
         env->ReleaseStringUTFChars(getProvidersCountFuncName, countName);
 
-        return srLoadUpscaleProvidersFromLibrary(wLibPath, funcNameStr, countNameStr, nullptr);
+        return srLoadUpscaleProvidersFromLibrary(wLibPath, funcNameStr, countNameStr, sr_message_callback_bridge);
     }
 
 #ifdef __cplusplus

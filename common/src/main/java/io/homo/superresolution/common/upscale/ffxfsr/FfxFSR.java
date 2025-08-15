@@ -59,8 +59,8 @@ public class FfxFSR extends AbstractAlgorithm {
     private GlFrameBuffer outputFrameBuffer;
 
     public boolean updateFsr() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return false;
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL == null) return false;
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) return false;
         if (context != null) {
             if (context.nativePtr > 0) {
@@ -73,7 +73,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000002);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000006);
         this.context = new SRUpscaleContext(0);
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
@@ -253,7 +253,7 @@ public class FfxFSR extends AbstractAlgorithm {
         desc.setPreExposure(1.0f);
         desc.setCameraNear(dispatchResource.cameraNear());
         desc.setCameraFar(dispatchResource.cameraFar());
-        desc.setCameraFovAngleVertical(dispatchResource.verticalFov());
+        desc.setCameraFovAngleVertical((float) Math.toRadians(dispatchResource.verticalFov()));
         desc.setViewSpaceToMetersFactor(0.0f);
         desc.setReset(false);
         desc.setFlags(0);

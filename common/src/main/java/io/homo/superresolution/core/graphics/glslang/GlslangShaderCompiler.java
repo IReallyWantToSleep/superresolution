@@ -80,9 +80,7 @@ public class GlslangShaderCompiler {
 
 
     public static void main(String[] args) {
-        if (!NativeLibManager.check("I:\\super_resolution_moddev\\superresolution\\run")) {
-            NativeLibManager.extract("I:\\super_resolution_moddev\\superresolution\\run");
-        }
+        NativeLibManager.extract("I:\\super_resolution_moddev\\superresolution\\run");
         NativeLibManager.load("I:\\super_resolution_moddev\\superresolution\\run");
         init();
         Map<String, String> defines = new HashMap<>();

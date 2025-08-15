@@ -264,6 +264,8 @@ public class ShaderCompiler {
     private static boolean checkProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
         createCacheDir();
 
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) return false;
+
         String hash = getShaderProgramMd5(program, apiTag);
         for (ShaderType type : program.getDescription().sourceMap().keySet()) {
             Path path = CACHE_DIR.resolve(

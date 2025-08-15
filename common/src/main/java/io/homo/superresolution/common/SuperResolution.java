@@ -106,9 +106,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         File gameDir = Platform.currentPlatform.getGameFolder().toFile();
         if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
-        if (!NativeLibManager.check(gameDir.getAbsolutePath())) {
-            NativeLibManager.extract(gameDir.getAbsolutePath());
-        }
+        NativeLibManager.extract(gameDir.getAbsolutePath());
         NativeLibManager.load(gameDir.getAbsolutePath());
         GlslangShaderCompiler.init();
         isPreInit = true;

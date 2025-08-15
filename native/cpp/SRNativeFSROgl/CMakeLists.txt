@@ -49,8 +49,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 else()
     target_link_libraries(SR_FSRGL_LIB
         SR_MAIN_LIB
-        ffx_fsr2_api_gl_x64d
-        ffx_fsr2_api_x64d
+        ffx_fsr2_api_gl_x64
+        ffx_fsr2_api_x64
         ${Vulkan_LIBRARIES}
     )
 endif()

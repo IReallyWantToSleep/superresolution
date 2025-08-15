@@ -48,7 +48,7 @@
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.0-b-1.21.1"
+                    "version": "2.3.4-b-1.21.1"
                 },
                 {
                     "name": "spark",
@@ -95,7 +95,7 @@
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.0-b-1.21.1"
+                    "version": "2.3.4-b-1.21.1"
                 },
                 {
                     "name": "iris",
