@@ -10,8 +10,8 @@ static void ensureInitialized()
 {
     if (!g_initialized)
     {
-        g_providers[1].providerId = SR_MODULES_FSR2OGL_ID;
-        g_providers[1].callbacks = srGetFfxFSR2OglUpscaleCallbacks();
+        g_providers[0].providerId = SR_MODULES_FSR2OGL_ID;
+        g_providers[0].callbacks = srGetFfxFSR2OglUpscaleCallbacks();
         g_initialized = true;
     }
 }

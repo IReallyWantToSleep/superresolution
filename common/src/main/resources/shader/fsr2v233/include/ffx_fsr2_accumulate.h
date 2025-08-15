@@ -249,14 +249,14 @@ void Accumulate(FfxInt32x2 iPxHrPos)
     LockState lockState = { FFX_FALSE , FFX_FALSE };
     if (params.bIsExistingSample && !params.bIsResetFrame) {
         ReprojectHistoryColor(params, fHistoryColor, fTemporalReactiveFactor, bInMotionLastFrame);
-        lockState = ReprojectHistoryLockStatus(params, fLockStatus);
+        //lockState = ReprojectHistoryLockStatus(params, fLockStatus);
     }
 
     FfxFloat32 fThisFrameReactiveFactor = ffxMax(params.fDilatedReactiveFactor, fTemporalReactiveFactor);
 
     FfxFloat32 fLuminanceDiff = 0.0f;
     FfxFloat32 fLockContributionThisFrame = 0.0f;
-    UpdateLockStatus(params, fThisFrameReactiveFactor, lockState, fLockStatus, fLockContributionThisFrame, fLuminanceDiff);
+    //UpdateLockStatus(params, fThisFrameReactiveFactor, lockState, fLockStatus, fLockContributionThisFrame, fLuminanceDiff);
 
     // Load upsampled input color
     RectificationBox clippingBox;
@@ -278,7 +278,7 @@ void Accumulate(FfxInt32x2 iPxHrPos)
 
     fHistoryColor = UnprepareRgb(fHistoryColor, Exposure());
 
-    FinalizeLockStatus(params, fLockStatus, fUpsampledColorAndWeight.w);
+    //FinalizeLockStatus(params, fLockStatus, fUpsampledColorAndWeight.w);
 
     // Get new temporal reactive factor
     fTemporalReactiveFactor = ComputeTemporalReactiveFactor(params, fThisFrameReactiveFactor);
@@ -286,9 +286,9 @@ void Accumulate(FfxInt32x2 iPxHrPos)
     StoreInternalColorAndWeight(iPxHrPos, FfxFloat32x4(fHistoryColor, fTemporalReactiveFactor));
 
     // Output final color when RCAS is disabled
-#if FFX_FSR2_OPTION_APPLY_SHARPENING == 0
+//#if FFX_FSR2_OPTION_APPLY_SHARPENING == 0
     WriteUpscaledOutput(iPxHrPos, fHistoryColor);
-#endif
+//#endif
     StoreNewLocks(iPxHrPos, 0);
 }
 

@@ -5,6 +5,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
+import io.homo.superresolution.common.upscale.ffxfsr.FfxFSROgl;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
@@ -61,6 +62,15 @@ public class AlgorithmDescriptions {
                             .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
                             .requireVulkan(true)
             );
+    public static final AlgorithmDescription<FfxFSROgl> FSROgl =
+            new AlgorithmDescription<>(
+                    FfxFSROgl.class,
+                    "FSR OpenGL",
+                    "fsr_gl",
+                    "AMD FidelityFX Super Resolution OpenGL",
+                    Requirement.nothing()
+                            .glVersion(4, 5)
+            );
     //public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
     //        new AlgorithmDescription<>(
     //                NVIDIAImageScaling.class,
@@ -100,7 +110,8 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(NONE);
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
-        //AlgorithmRegistry.registry(FSR);
+        AlgorithmRegistry.registry(FSR);
+        AlgorithmRegistry.registry(FSROgl);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         AlgorithmRegisterEvent.EVENT.invoker().onAlgorithmRegister();

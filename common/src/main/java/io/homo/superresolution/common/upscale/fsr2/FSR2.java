@@ -165,7 +165,7 @@ public class FSR2 extends AbstractAlgorithm {
                 dispatchResource.renderHeight())
         );
 
-        dispatchDescription.enableSharpening = true;
+        dispatchDescription.enableSharpening = false;
         dispatchDescription.sharpness = 1 - SuperResolutionConfig.getSharpness();
         dispatchDescription.frameTimeDelta = dispatchResource.frameTimeDelta();
         dispatchDescription.preExposure = 1.0f;

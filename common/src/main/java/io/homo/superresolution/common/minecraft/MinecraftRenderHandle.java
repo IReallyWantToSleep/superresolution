@@ -324,7 +324,7 @@ public class MinecraftRenderHandle {
             }
         }
 
-        frameTime = PerformanceInfo.getAsMillis("world");
+        frameTime = PerformanceInfo.getAsMillis("gameRenderer");
         if (!SuperResolution.isShaderPackCompat()) {
             getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
         }
