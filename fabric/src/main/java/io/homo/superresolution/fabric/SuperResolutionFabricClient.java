@@ -10,7 +10,6 @@ import net.fabricmc.api.ClientModInitializer;
 public final class SuperResolutionFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        if (Platform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableRenderDoc()) RenderDoc.init();
         if (io.homo.superresolution.common.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }

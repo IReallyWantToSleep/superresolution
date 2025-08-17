@@ -89,4 +89,7 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
     default RenderTarget asMcRenderTarget() {
         throw new UnsupportedOperationException("Minecraft render target conversion not implemented");
     }
+
+    default void label(String label) {
+    }
 }

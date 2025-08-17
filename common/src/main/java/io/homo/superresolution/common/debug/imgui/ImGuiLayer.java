@@ -10,181 +10,136 @@ import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
+import io.homo.superresolution.common.upscale.OpticalFlowMotionVectorsGenerator;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResourceType;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
 import net.minecraft.client.Minecraft;
+import org.joml.Matrix4f;
 
 import java.util.Map;
 
 public class ImGuiLayer {
+
+    private static final int PREVIEW_WIDTH = 500;
+
     public float[] blurPhi = new float[1];
     public float[] blurM = new float[1];
 
-
     public void imgui() {
-        int width = 500;
-        float height = (((float) width) / MinecraftRenderHandle.getScreenWidth()) * MinecraftRenderHandle.getScreenHeight();
+        float previewHeight = ((float) PREVIEW_WIDTH / MinecraftRenderHandle.getScreenWidth()) * MinecraftRenderHandle.getScreenHeight();
+
         ImGui.begin("DEBUG");
-        if (ImGui.button("Capture")) {
-            SuperResolutionAPI.debugRenderdocCapture();
-        }
-        if (ImGui.button("CaptureUpscale")) {
-            SuperResolutionAPI.debugRenderdocCaptureUpscale();
-
-        }
-        if (ImGui.button("CaptureVulkan")) {
-            SuperResolutionAPI.debugRenderdocCaptureVulkan();
-
-        }
-        if (ImGui.button("TriggerCapture")) {
-            SuperResolutionAPI.debugRenderdocTriggerCapture();
-        }
-        ImGui.sliderFloat("blurPhi", blurPhi, 0, 16);
-        ImGui.sliderFloat("blurM", blurM, 0, 1);
+        drawCaptureButtons();
         if (!SuperResolution.gameIsLoad || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null) {
             ImGui.end();
             return;
         }
+        drawProjectionMatrix();
+        drawDebugTextures(previewHeight);
+        drawFsr2Resources(previewHeight);
 
-        if (AlgorithmManager.param.currentProjectionMatrix != null) {
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m00()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m01()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m02()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m03())
-            ));
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m10()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m11()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m12()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m13())
-            ));
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m20()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m21()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m22()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m23())
-            ));
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m30()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m31()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m32()),
-                    String.valueOf(AlgorithmManager.param.currentProjectionMatrix.m33())
-            ));
-        }
-        if (AlgorithmManager.param.currentModelViewProjectionMatrix != null) {
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m00()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m01()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m02()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m03())
-            ));
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m10()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m11()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m12()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m13())
-            ));
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m20()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m21()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m22()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m23())
-            ));
-            ImGui.text("%s %s %s %s".formatted(
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m30()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m31()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m32()),
-                    String.valueOf(AlgorithmManager.param.currentModelViewProjectionMatrix.m33())
-            ));
-        }
-        if (ShaderCompatUpscaleDispatcher.debugInfo.containsKey("out")) {
-            ImGui.text("out " + MinecraftRenderHandle.getScreenWidth() + " " + MinecraftRenderHandle.getScreenHeight());
-            ImGui.image((Integer) ShaderCompatUpscaleDispatcher.debugInfo.get("out"),
-                    width,
-                    height,
-                    0, 1, 1, 0);
-        }
-
-        if (ShaderCompatUpscaleDispatcher.debugInfo.containsKey("color")) {
-            ImGui.text("color " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-            ImGui.image((Long) ShaderCompatUpscaleDispatcher.debugInfo.get("color"),
-                    width,
-                    height,
-                    0, 1, 1, 0);
-        }
-
-
-        if (ShaderCompatUpscaleDispatcher.debugInfo.containsKey("colora")) {
-            ImGui.text("colorA " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-            ImGui.image((Long) ShaderCompatUpscaleDispatcher.debugInfo.get("colora"),
-                    width,
-                    height,
-                    0, 1, 1, 0);
-        }
-
-
-        ImGui.text("outFramebuffer " + MinecraftRenderHandle.getScreenWidth() + " " + MinecraftRenderHandle.getScreenHeight());
-        ImGui.image(SuperResolution.currentAlgorithm.getOutputTextureId(),
-                width,
-                height,
-                0, 1, 1, 0);
-
-
-        ImGui.text("MainRenderTarget " + MinecraftRenderHandle.getScreenWidth() + " " + MinecraftRenderHandle.getScreenHeight());
-        ImGui.image(MinecraftRenderHandle.getOriginRenderTarget().handle(),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("mv " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-        ImGui.image(AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("mv grad " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-        ImGui.image(MotionVectorsGenerator.gradFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("mv delta " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-        ImGui.image(MotionVectorsGenerator.deltaFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("mv c " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-        ImGui.image(MotionVectorsGenerator.currentFrameTexture.handle(),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("mv pt " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-        ImGui.image(MotionVectorsGenerator.previousFrameTexture.handle(),
-                width,
-                height,
-                0, 1, 1, 0);
-        ImGui.text("mv pf " + MinecraftRenderHandle.getRenderWidth() + " " + MinecraftRenderHandle.getRenderHeight());
-        ImGui.image(MotionVectorsGenerator.preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                width,
-                height,
-                0, 1, 1, 0);
-
-
-        if (SuperResolutionConfig.getUpscaleAlgorithm() == AlgorithmDescriptions.FSR2 && SuperResolution.getCurrentAlgorithm() instanceof FSR2) {
-            Fsr2Context context = ((FSR2) SuperResolution.getCurrentAlgorithm()).fsr2Context;
-            for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
-                if (entry.getValue().getResource() == null || (entry.getValue().getResource() instanceof GlBuffer))
-                    continue;
-                ITexture texture = (ITexture) entry.getValue().getResource();
-                ImGui.text(entry.getValue().getDescription().label + " " + texture.getWidth() + " " + texture.getHeight());
-                ImGui.image(texture.handle(),
-                        width,
-                        height,
-                        0, 1, 1, 0);
-            }
-        }
         ImGui.end();
+    }
+
+
+    private void drawCaptureButtons() {
+        if (ImGui.button("Capture")) SuperResolutionAPI.debugRenderdocCapture();
+        if (ImGui.button("CaptureUpscale")) SuperResolutionAPI.debugRenderdocCaptureUpscale();
+        if (ImGui.button("CaptureVulkan")) SuperResolutionAPI.debugRenderdocCaptureVulkan();
+        if (ImGui.button("TriggerCapture")) SuperResolutionAPI.debugRenderdocTriggerCapture();
+    }
+
+
+    private void drawProjectionMatrix() {
+        Matrix4f m = AlgorithmManager.param.currentProjectionMatrix;
+        if (m == null) return;
+
+        float[] values = new float[16];
+        m.get(values);
+        for (int row = 0; row < 4; row++) {
+            ImGui.text(String.format("%f %f %f %f",
+                    values[row * 4], values[row * 4 + 1],
+                    values[row * 4 + 2], values[row * 4 + 3]));
+        }
+    }
+
+    private void drawDebugTextures(float height) {
+        drawImageIfExists("out", ShaderCompatUpscaleDispatcher.debugInfo.get("out"),
+                MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(), height);
+
+        drawImageIfExists("color", ShaderCompatUpscaleDispatcher.debugInfo.get("color"),
+                MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+
+        drawImageIfExists("colorA", ShaderCompatUpscaleDispatcher.debugInfo.get("colora"),
+                MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+
+        drawImage("outFramebuffer", SuperResolution.currentAlgorithm.getOutputTextureId(),
+                MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(), height);
+
+        if (MinecraftRenderHandle.colorTexture != null) {
+            drawImage("colorTexture", (int) MinecraftRenderHandle.colorTexture.handle(),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        }
+        if (MinecraftRenderHandle.depthTexture != null) {
+            drawImage("depthTexture", (int) MinecraftRenderHandle.depthTexture.handle(),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        }
+
+        drawImage("MainRenderTarget", (int) MinecraftRenderHandle.getOriginRenderTarget().handle(),
+                MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(), height);
+
+        drawImage("mv", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
+                MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+
+        if (OpticalFlowMotionVectorsGenerator.gradFrameBuffer != null) {
+            drawImage("mv grad", OpticalFlowMotionVectorsGenerator.gradFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        }
+        if (OpticalFlowMotionVectorsGenerator.deltaFrameBuffer != null) {
+            drawImage("mv delta", OpticalFlowMotionVectorsGenerator.deltaFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        }
+
+        if (OpticalFlowMotionVectorsGenerator.currentFrameTexture != null)
+            drawImage("mv c", (int) OpticalFlowMotionVectorsGenerator.currentFrameTexture.handle(),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        if (OpticalFlowMotionVectorsGenerator.previousFrameTexture != null)
+            drawImage("mv pt", (int) OpticalFlowMotionVectorsGenerator.previousFrameTexture.handle(),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        if (OpticalFlowMotionVectorsGenerator.preprocessFrameBuffer != null)
+            drawImage("mv pf", OpticalFlowMotionVectorsGenerator.preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
+                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+    }
+
+    private void drawFsr2Resources(float height) {
+        if (SuperResolutionConfig.getUpscaleAlgorithm() != AlgorithmDescriptions.FSR2
+                || !(SuperResolution.getCurrentAlgorithm() instanceof FSR2 fsr2)) return;
+
+        Fsr2Context context = fsr2.fsr2Context;
+        for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
+            if (entry.getValue().getResource() == null || entry.getValue().getResource() instanceof GlBuffer) continue;
+
+            ITexture texture = (ITexture) entry.getValue().getResource();
+            drawImage(entry.getValue().getDescription().label, (int) texture.handle(),
+                    texture.getWidth(), texture.getHeight(), height);
+        }
+    }
+
+
+    private void drawImage(String label, int textureId, int texWidth, int texHeight, float previewHeight) {
+        ImGui.text(label + " " + texWidth + " " + texHeight);
+        ImGui.image(textureId, PREVIEW_WIDTH, previewHeight, 0, 1, 1, 0);
+    }
+
+    private void drawImageIfExists(String label, Object handle, int texWidth, int texHeight, float previewHeight) {
+        if (handle == null) return;
+        if (handle instanceof Integer id) {
+            drawImage(label, id, texWidth, texHeight, previewHeight);
+        } else if (handle instanceof Long id) {
+            drawImage(label, (int) (long) id, texWidth, texHeight, previewHeight);
+        }
     }
 }

@@ -2,6 +2,7 @@ package io.homo.superresolution.shadercompat.mixin.core;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.shadercompat.IrisShaderPipelineHandle;
 import io.homo.superresolution.shadercompat.SRCompatShaderPack;
 import net.irisshaders.iris.gl.uniform.UniformHolder;
@@ -57,7 +58,13 @@ public class ViewportUniformsMixin {
                 "SROriginalViewportSizeI",
                 () -> new Vector2i(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
         );
-
-
+        uniforms.uniform2f(
+                UniformUpdateFrequency.PER_FRAME,
+                "SRJitterOffset",
+                () -> {
+                    io.homo.superresolution.core.math.Vector2f jitterOffset = AlgorithmManager.getJitterOffset();
+                    return new Vector2f(jitterOffset.x, jitterOffset.y);
+                }
+        );
     }
 }

@@ -423,6 +423,7 @@ public class SuperResolutionConfig {
     }
 
     public static float getMinUpscaleRatio() {
+        if (SuperResolution.isShaderPackCompatSuperResolution()) return 1.0f;
         int maxSize = 16384;
         if (Minecraft.getInstance().getWindow() == null) return 0.1f;
         double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());

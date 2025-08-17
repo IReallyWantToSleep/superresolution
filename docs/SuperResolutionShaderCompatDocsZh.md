@@ -148,7 +148,9 @@
                     "output_textures": {
                         "upscaled_color": {
                             "enabled": true,
-                            "target": "colortex0",
+                            "target": [
+                                "colortex0"
+                            ],
                             "region": [
                                 0,
                                 0,
@@ -277,7 +279,7 @@ SRMOD_ENABLED
 ## 注意事项
 
 * SR配置读取无容错，配置错误会导致SR跳过配置加载，回退普通模式，错误信息见游戏日志。
-* SR检测到光影包声明 Feature `SR_UPSCALE`
+* SR检测到光影包存在兼容配置文件并且无错误
   时，不会更改游戏帧缓冲区大小，此时需要光影手动变换视图，可以参考[Photon Shader的实现](https://github.com/sixthsurge/photon/blob/iris-stable/shaders/program/gbuffers_all_solid.vsh#L152-L157)。
 * SR未来或将支持抖动（Jitter）功能，建议相关代码预留对应支持。预计通过 uniform 向着色器传递抖动数据，并可通过配置文件进行开启和关闭。
 
@@ -285,4 +287,4 @@ SRMOD_ENABLED
 
 ## 参考链接
 
-* [Photon Shader](https://github.com/sixthsurge/photon)
+* 经过修改的[Photon Shader](https://github.com/187J3X1-114514/photon-sr)，支持SR模组。

@@ -12,8 +12,14 @@ public class TextureDescription {
     private TextureWrapMode wrapMode = TextureWrapMode.CLAMP_TO_EDGE;
     private TextureMipmapSettings mipmapSettings = TextureMipmapSettings.disabled();
 
+    private String label;
+
 
     private TextureDescription() {
+    }
+
+    public String getLabel() {
+        return label;
     }
 
     public static TextureDescription.Builder create() {
@@ -129,6 +135,12 @@ public class TextureDescription {
 
         public Builder mipmapsAuto() {
             description.mipmapSettings = TextureMipmapSettings.auto();
+            return this;
+        }
+
+
+        public Builder label(String label) {
+            description.label = label;
             return this;
         }
 

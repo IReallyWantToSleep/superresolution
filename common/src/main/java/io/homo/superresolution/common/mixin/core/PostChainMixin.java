@@ -48,6 +48,7 @@ public abstract class PostChainMixin {
             TextureManager textureManager, net.minecraft.server.packs.resources.ResourceProvider resourceProvider, RenderTarget screenTarget, ResourceLocation resourceLocation, CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
         if (super_resolution$onBlackList()) return;
+        if (SuperResolution.isShaderPackCompatSuperResolution()) return;
 
         if (!screenTarget.equals(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -72,6 +73,7 @@ public abstract class PostChainMixin {
             CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
         if (super_resolution$onBlackList()) return;
+        if (SuperResolution.isShaderPackCompatSuperResolution()) return;
 
         if (!screenTarget.equals(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -99,7 +101,7 @@ public abstract class PostChainMixin {
     @Inject(method = "resize", at = @At("HEAD"), cancellable = true)
     public void onResize(int width, int height, CallbackInfo ci) {
         if (super_resolution$onBlackList()) return;
-
+        if (SuperResolution.isShaderPackCompatSuperResolution()) return;
         if (
                 width != MinecraftRenderHandle.getRenderWidth() ||
                         height != MinecraftRenderHandle.getRenderHeight()
@@ -112,6 +114,10 @@ public abstract class PostChainMixin {
     @Inject(method = "process", at = @At("HEAD"))
     public void onProcess(float partialTicks, CallbackInfo ci) {
         if (super_resolution$onBlackList()) return;
+        if (SuperResolution.isShaderPackCompatSuperResolution()) {
+            ((PostChainAccessor) this).setScreenTarget(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget());
+            return;
+        }
         MinecraftRenderHandle.fixPostChain((PostChain) (Object) this);
     }
 
@@ -130,7 +136,7 @@ public abstract class PostChainMixin {
             super_resolution$blackList.add("colorblindness:shaders/post/protanopia.json");
             super_resolution$blackList.add("colorblindness:shaders/post/tritanomaly.json");
             super_resolution$blackList.add("colorblindness:shaders/post/tritanopia.json");
-            
+
             super_resolution$blackList.addAll(SuperResolutionConfig.getInjectPostChainBlackList());
         }
 

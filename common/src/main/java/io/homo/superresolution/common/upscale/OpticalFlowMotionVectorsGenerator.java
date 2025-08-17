@@ -25,7 +25,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import org.lwjgl.opengl.GL41;
 
-public class MotionVectorsGenerator {
+public class OpticalFlowMotionVectorsGenerator {
     public static GlShaderProgram preprocessShader;
     public static GlShaderProgram pass1Shader;
     public static GlShaderProgram pass2Shader;
@@ -112,6 +112,7 @@ public class MotionVectorsGenerator {
                         .height(MinecraftRenderHandle.getRenderHeight())
                         .format(TextureFormat.R32F)
                         .usages(TextureUsages.create().sampler().storage())
+                        .label("SRMotionVectorsGenerator-currentFrameTexture")
                         .build()
         );
 
@@ -122,6 +123,7 @@ public class MotionVectorsGenerator {
                         .height(MinecraftRenderHandle.getRenderHeight())
                         .format(TextureFormat.R32F)
                         .usages(TextureUsages.create().sampler().storage())
+                        .label("SRMotionVectorsGenerator-previousFrameTexture")
                         .build()
         );
         motionVectorsFrameBuffer = GlFrameBuffer.create(
@@ -130,6 +132,7 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight()
         );
+        motionVectorsFrameBuffer.label("SRMotionVectorsGenerator-MotionVectorsFrameBuffer");
 
         gradFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RG32F,
@@ -137,6 +140,7 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight()
         );
+        gradFrameBuffer.label("SRMotionVectorsGenerator-GradFrameBuffer");
 
         deltaFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.R32F,
@@ -144,7 +148,7 @@ public class MotionVectorsGenerator {
                 MinecraftRenderHandle.getRenderWidth(),
                 MinecraftRenderHandle.getRenderHeight()
         );
-
+        gradFrameBuffer.label("SRMotionVectorsGenerator-PreprocessFrameBuffer");
         preprocessFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.R32F,
                 null,

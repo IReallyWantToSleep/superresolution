@@ -15,6 +15,7 @@
         "core.ViewportUniformsMixin"
     ],
     "mixins": [
+        "core.CapturedRenderingStateMixin",
         "core.RenderTargetsAccessor",
         "core.ShaderPackMixin"
     ],

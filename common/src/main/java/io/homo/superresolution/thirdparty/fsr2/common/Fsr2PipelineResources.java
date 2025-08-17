@@ -218,7 +218,9 @@ public class Fsr2PipelineResources {
                                                 desc.mipCount == -1 ?
                                                         TextureFilterMode.NEAREST :
                                                         TextureFilterMode.LINEAR
-                                ).build()
+                                )
+                                .label(desc.label)
+                                .build()
                 );
 
                 resourceEntry.setResource(tex);
@@ -244,6 +246,7 @@ public class Fsr2PipelineResources {
                                                         TextureFilterMode.NEAREST :
                                                         TextureFilterMode.LINEAR
                                 )
+                                .label(desc.label)
                                 .build()
                 );
                 resourceEntry.setResource(tex);

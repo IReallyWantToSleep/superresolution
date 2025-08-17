@@ -3,9 +3,7 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.math.Vector2f;
@@ -19,7 +17,7 @@ public class AlgorithmManager {
     public static AlgorithmParam param = new AlgorithmParam();
 
     public static GlFrameBuffer getMotionVectorsFrameBuffer() {
-        return (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer();
+        return (GlFrameBuffer) OpticalFlowMotionVectorsGenerator.getMotionVectorsFrameBuffer();
     }
 
     public static void destroy() {
@@ -27,18 +25,19 @@ public class AlgorithmManager {
     }
 
     public static void resize(int width, int height) {
-        MotionVectorsGenerator.resize();
+        OpticalFlowMotionVectorsGenerator.resize();
     }
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
         return type.getRequirement().check().support();
     }
 
-    public static void setMatrix(Matrix4f proj, Matrix4f view) {
-        setViewMatrix(view);
+    public static void setMatrixVanilla(Matrix4f proj, Matrix4f modelView) {
+
+        setModelViewMatrix(modelView);
         setProjectionMatrix(proj);
         Matrix4f curViewProjectionMatrix = new Matrix4f(proj);
-        curViewProjectionMatrix.mul(view);
+        curViewProjectionMatrix.mul(modelView);
         if (param.lastModelViewProjectionMatrix == null) {
             param.lastModelViewProjectionMatrix = curViewProjectionMatrix;
         } else {
@@ -73,7 +72,7 @@ public class AlgorithmManager {
         param.currentProjectionMatrix = new Matrix4f(cur);
     }
 
-    private static void setViewMatrix(Matrix4f cur) {
+    private static void setModelViewMatrix(Matrix4f cur) {
         if (param.lastModelViewMatrix == null) {
             param.lastModelViewMatrix = new Matrix4f(cur);
         } else {
@@ -89,17 +88,21 @@ public class AlgorithmManager {
                     new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
                     new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
             );
-            return jitter;
+            return jitter.divide(new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()));
         }
         return new Vector2f(0);
     }
 
 
     public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
-        proj.m20(proj.m20() + jitter.x);
-        proj.m21(proj.m21() + jitter.y);
+        float jx_ndc = (2.0f * jitter.x) / MinecraftRenderHandle.getRenderWidth();
+        float jy_ndc = (2.0f * jitter.y) / MinecraftRenderHandle.getRenderHeight();
+        proj.m20(proj.m20() + jx_ndc);
+        proj.m21(proj.m21() + jy_ndc);
+
         return proj;
     }
+
 
     public static DispatchResource getDispatchResource(
             ITexture color,
@@ -140,14 +143,13 @@ public class AlgorithmManager {
     }
 
     public static void init() {
-
-        MotionVectorsGenerator.init();
+        OpticalFlowMotionVectorsGenerator.init();
     }
 
     public static void update() {
         getMotionVectorsFrameBuffer().clearFrameBuffer();
         if (SuperResolutionConfig.isGenerateMotionVectors()) {
-            MotionVectorsGenerator.update();
+            OpticalFlowMotionVectorsGenerator.update();
         }
     }
 

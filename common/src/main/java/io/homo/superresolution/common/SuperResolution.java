@@ -5,7 +5,6 @@ import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
-import io.homo.superresolution.api.event.ConfigChangedEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
@@ -278,10 +277,20 @@ public final class SuperResolution implements Resizable, Destroyable {
         AlgorithmManager.destroy();
     }
 
-    public static boolean isShaderPackCompat() {
+    public static boolean isShaderPackCompatSuperResolution() {
         try {
             Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
             return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChanges").invoke(null);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+
+    public static boolean isShaderPackCompatSuperResolutionJitter() {
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
+            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChangesJitter").invoke(null);
         } catch (Throwable e) {
             return false;
         }

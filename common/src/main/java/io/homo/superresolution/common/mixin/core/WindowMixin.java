@@ -1,6 +1,5 @@
 package io.homo.superresolution.common.mixin.core;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
@@ -22,32 +21,32 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getScreenWidth", cancellable = true)
     private void getScreenWidth(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
     @Inject(at = @At("RETURN"), method = "getScreenHeight", cancellable = true)
     private void getScreenHeight(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
     @Inject(at = @At("RETURN"), method = "getGuiScaledWidth", cancellable = true)
     private void getGuiScaledWidth(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
     @Inject(at = @At("RETURN"), method = "getGuiScaledHeight", cancellable = true)
     private void getGuiScaledHeight(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
 
     @Inject(at = @At("RETURN"), method = "getWidth", cancellable = true)
     private void getFramebufferWidth(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValue())));
     }
 
@@ -58,7 +57,7 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getHeight", cancellable = true)
     private void getFramebufferHeight(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValue())));
     }
 
@@ -72,13 +71,13 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getGuiScale", cancellable = true)
     private void getScaleFactor(CallbackInfoReturnable<Double> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue(ci.getReturnValue() * MinecraftRenderHandle.getCurrentScaleFactor());
     }
     #else
     @Inject(at = @At("RETURN"), method = "getGuiScale", cancellable = true)
     private void getScaleFactor(CallbackInfoReturnable<Integer> ci) {
-        if (!SuperResolution.isShaderPackCompat())
+        if (!SuperResolution.isShaderPackCompatSuperResolution())
             ci.setReturnValue((int) (ci.getReturnValue() * MinecraftRenderHandle.getCurrentScaleFactor()));
     }
     #endif

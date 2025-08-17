@@ -3,7 +3,6 @@ package io.homo.superresolution.common.upscale.fsr1;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.pipeline.*;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
@@ -56,6 +55,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .height(MinecraftRenderHandle.getRenderHeight())
                         .format(TextureFormat.RGBA8)
                         .usages(TextureUsages.create().sampler().storage())
+                        .label("Fsr1TempTexture")
                         .build()
         );
         output = RenderSystems.current().device().createTexture(
@@ -65,6 +65,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .height(MinecraftRenderHandle.getScreenHeight())
                         .format(TextureFormat.RGBA8)
                         .usages(TextureUsages.create().sampler().storage())
+                        .label("Fsr1OutputTexture")
                         .build()
         );
         outputFbo = GlFrameBuffer.create(
@@ -73,6 +74,7 @@ public class FSR1 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
+        outputFbo.label("Fsr1OutputFbo");
         fsrUpscalePipeline.job("fsr1_easu",
                 PipelineJobBuilders.compute(fsr1EASUShader)
                         .resource("inImage",

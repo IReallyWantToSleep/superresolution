@@ -15,15 +15,9 @@ import static org.lwjgl.opengl.GL45.*;
 
 public class GlTexture1D implements ITexture, IDebuggableObject {
     private static final int DEFAULT_ALIGNMENT = 4;
-    private final TextureFormat format;
     private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
     private int id;
-    private TextureUsages usages = null;
-    private TextureType type = null;
-    private TextureFilterMode filterMode = null;
-    private TextureWrapMode wrapMode = null;
-    private TextureMipmapSettings mipmapSettings;
-
+    private final TextureDescription description;
     private int width;
     private int currentMipmapLevel;
 
@@ -31,16 +25,11 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     protected GlTexture1D(TextureDescription description) {
         validateDimensions(description.getWidth());
         this.id = Gl.DSA.createTexture1D();
-        this.format = description.getFormat();
+        this.description = description;
         this.width = description.getWidth();
-        this.usages = description.getUsages();
-        this.type = description.getType();
-        this.filterMode = description.getFilterMode();
-        this.wrapMode = description.getWrapMode();
-        if (type != TextureType.Texture1D) {
+        if (description.getType() != TextureType.Texture1D) {
             throw new RuntimeException();
         }
-        this.mipmapSettings = description.getMipmapSettings();
         configureMipmap();
         initializeTexture();
     }
@@ -71,22 +60,22 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     @Override
     public TextureMipmapSettings getMipmapSettings() {
-        return mipmapSettings;
+        return description.getMipmapSettings();
     }
 
     private void configureTextureParameters() {
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, mipmapSettings.isEnabled() ? filterMode == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : filterMode.gl());
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_S, wrapMode.gl());
-        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_T, wrapMode.gl());
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MIN_FILTER, description.getMipmapSettings().isEnabled() ? description.getFilterMode() == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : description.getFilterMode().gl());
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAG_FILTER, description.getMipmapSettings().isEnabled() ? description.getFilterMode() == TextureFilterMode.LINEAR ? GL_LINEAR_MIPMAP_NEAREST : GL_NEAREST_MIPMAP_NEAREST : description.getFilterMode().gl());
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_S, description.getWrapMode().gl());
+        Gl.DSA.textureParameteri(this.id, GL_TEXTURE_WRAP_T, description.getWrapMode().gl());
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_BASE_LEVEL, 0);
         Gl.DSA.textureParameteri(this.id, GL_TEXTURE_MAX_LEVEL, currentMipmapLevel);
-        Gl.DSA.textureParameterf(this.id, GL_TEXTURE_LOD_BIAS, mipmapSettings.getBias());
+        Gl.DSA.textureParameterf(this.id, GL_TEXTURE_LOD_BIAS, description.getMipmapSettings().getBias());
     }
 
     private void allocateTextureStorage() {
-        int levels = mipmapSettings.isEnabled() ? (currentMipmapLevel + 1) : 1;
-        Gl.DSA.textureStorage1D(this.id, levels, format.gl(), width);
+        int levels = description.getMipmapSettings().isEnabled() ? (currentMipmapLevel + 1) : 1;
+        Gl.DSA.textureStorage1D(this.id, levels, description.getFormat().gl(), width);
     }
 
     private void initializeTexture() {
@@ -136,35 +125,35 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
 
     @Override
     public TextureFormat getTextureFormat() {
-        return format;
+        return description.getFormat();
     }
 
     @Override
     public TextureUsages getTextureUsages() {
-        return usages;
+        return description.getUsages();
     }
 
     @Override
     public TextureType getTextureType() {
-        return type;
+        return description.getType();
     }
 
     @Override
     public TextureFilterMode getTextureFilterMode() {
-        return filterMode;
+        return description.getFilterMode();
     }
 
     @Override
     public TextureWrapMode getTextureWrapMode() {
-        return wrapMode;
+        return description.getWrapMode();
     }
 
     public void configureMipmap() {
-        if (mipmapSettings.isAutoGenerate()) {
+        if (description.getMipmapSettings().isAutoGenerate()) {
             this.currentMipmapLevel = calculateMaxMipLevel();
             return;
         }
-        this.currentMipmapLevel = Math.min(mipmapSettings.getLevels(), calculateMaxMipLevel());
+        this.currentMipmapLevel = Math.min(description.getMipmapSettings().getLevels(), calculateMaxMipLevel());
     }
 
     private int calculateMaxMipLevel() {
@@ -209,5 +198,9 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         this.id = Gl.DSA.createTexture1D();
         configureMipmap();
         initializeTexture();
+    }
+    
+    public TextureDescription getTextureDescription() {
+        return description;
     }
 }

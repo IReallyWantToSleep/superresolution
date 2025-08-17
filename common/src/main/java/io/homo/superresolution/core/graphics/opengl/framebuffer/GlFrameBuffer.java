@@ -27,6 +27,12 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     private int width;
     private int height;
 
+    public void label(String label) {
+        this.label = label;
+    }
+
+    private String label;
+
     public GlFrameBuffer() {
 
     }
@@ -333,7 +339,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public String getDebugLabel() {
-        return "FrameBuffer-%s|Color-%s|Depth-%s|DepthStencil-%s"
+        return label != null ? label : "FrameBuffer-%s|Color-%s|Depth-%s|DepthStencil-%s"
                 .formatted(
                         handle(),
                         colorAttachment != null ? colorAttachment.texture.string() : "None",
