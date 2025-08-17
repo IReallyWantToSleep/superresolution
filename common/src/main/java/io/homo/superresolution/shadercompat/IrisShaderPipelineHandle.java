@@ -92,6 +92,15 @@ public class IrisShaderPipelineHandle {
 
     public static boolean shouldApplySuperResolutionChanges() {
         return !SuperResolutionConfig.isForceDisableShaderCompat() && IrisApi.getInstance().isShaderPackInUse() && getCurrentShaderPack().isPresent() &&
-                ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution();
+                ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution()
+                && ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$getSuperResolutionComaptConfig() != null
+                && ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$getSuperResolutionComaptConfig().sr.enabled;
+    }
+
+    public static boolean shouldApplySuperResolutionChangesJitter() {
+        return !SuperResolutionConfig.isForceDisableShaderCompat() && IrisApi.getInstance().isShaderPackInUse() && getCurrentShaderPack().isPresent() &&
+                ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution()
+                && ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$getSuperResolutionComaptConfig() != null
+                && ((SRCompatShaderPack) getCurrentShaderPack().get()).superresolution$getSuperResolutionComaptConfig().sr_jitter.enabled;
     }
 }

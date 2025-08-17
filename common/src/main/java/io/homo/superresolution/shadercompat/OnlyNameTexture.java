@@ -24,7 +24,7 @@ public class OnlyNameTexture implements ITexture {
 
     @Override
     public TextureUsages getTextureUsages() {
-        return TextureUsages.create();
+        return TextureUsages.create().sampler().storage();
     }
 
     @Override

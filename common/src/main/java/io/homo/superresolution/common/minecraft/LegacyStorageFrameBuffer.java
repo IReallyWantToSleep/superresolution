@@ -6,6 +6,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 #if MC_VER < MC_1_21_4
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import net.minecraft.client.Minecraft;
 #endif
 
@@ -15,6 +17,7 @@ import static org.lwjgl.opengl.GL43.*;
 public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuffer, IBindableFrameBuffer {
     private int colorAttachment1 = -1;
     private boolean stencilEnabled = false;
+    private String label;
 
     public LegacyStorageFrameBuffer(boolean useDepth) {
         super(useDepth);
@@ -39,6 +42,10 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
             this.colorTextureId = TextureUtil.generateTextureId();
             this.depthBufferId = TextureUtil.generateTextureId();
             this.colorAttachment1 = TextureUtil.generateTextureId();
+            if (label == null) label = "SRLegacyStorageFrameBuffer";
+            GlDebug.objectLabel(GL_FRAMEBUFFER, frameBufferId, label);
+            GlDebug.objectLabel(GL_TEXTURE, colorTextureId, label + "-ColorTexture");
+            GlDebug.objectLabel(GL_TEXTURE, depthBufferId, label + "-DepthTexture");
 
             glBindFramebuffer(GL_FRAMEBUFFER, this.frameBufferId);
             //depth
@@ -262,6 +269,11 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
         public void resize(int width, int height) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Override
+    public void label(String label) {
+        this.label = label;
     }
 }
 #else

@@ -4,6 +4,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -42,5 +43,15 @@ public class MinecraftMixin {
     @Inject(at = @At(value = "HEAD"), method = "destroy")
     private void onExit(CallbackInfo ci) {
         SuperResolution.getInstance().destroy();
+    }
+
+    @Inject(method = "resizeDisplay", at = @At(value = "HEAD"), cancellable = true)
+    private void onResize(CallbackInfo ci) {
+        if (
+                io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceWidth() <= 1 ||
+                        io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceHeight() <= 1
+        ) {
+            ci.cancel();
+        }
     }
 }

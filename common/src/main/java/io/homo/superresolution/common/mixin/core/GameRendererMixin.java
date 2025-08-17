@@ -105,6 +105,7 @@ public abstract class GameRendererMixin {
     #endif
 
 
+    /*
     #if MC_VER > MC_1_21_1
     @Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getProjectionMatrix(F)Lorg/joml/Matrix4f;", ordinal = 0))
     public Matrix4f applyJitterToProjectionMatrix(GameRenderer instance, float fov)
@@ -117,7 +118,7 @@ public abstract class GameRendererMixin {
             return AlgorithmManager.applyJitterOffset(instance.getProjectionMatrix(fov), currentJitter);
         }
         return instance.getProjectionMatrix(fov);
-    }
+    }*/
 
     /*
     #if MC_VER > MC_1_21_1

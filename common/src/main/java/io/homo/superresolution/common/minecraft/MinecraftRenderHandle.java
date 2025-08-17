@@ -1,7 +1,6 @@
 package io.homo.superresolution.common.minecraft;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.sun.jna.Pointer;
 import io.homo.superresolution.api.event.*;
@@ -12,14 +11,26 @@ import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.CopyOperation;
+import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -30,18 +41,13 @@ import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
-import org.lwjgl.vulkan.VK10;
 #endif
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 
 //TODO:编写一个通用接口，合并MinecraftRenderHandle与ShaderCompatUpscaleDispatcher
 public class MinecraftRenderHandle {
@@ -49,17 +55,24 @@ public class MinecraftRenderHandle {
     private static final Map<IBindableFrameBuffer, RenderTarget> renderTargetMap = new HashMap<>();
     public static boolean isRenderingWorld = false;
     public static float frameTime;
+    public static boolean needCapture = false;
+    public static boolean needCaptureVulkan = false;
+    public static boolean needCaptureUpscale = false;
+    public static int[] timeQueryIds = new int[2]; // 0: world begin, 1: world end, 2: upscale begin, 3: upscale end
     private static int frameCount = 0;
     private static Minecraft minecraft;
     private static IBindableFrameBuffer originRenderTarget;
     private static IBindableFrameBuffer renderTarget;
-    public static boolean needCapture = false;
-    public static boolean needCaptureVulkan = false;
-    public static boolean needCaptureUpscale = false;
-
-    public static int[] timeQueryIds = new int[2]; // 0: world begin, 1: world end, 2: upscale begin, 3: upscale end
     private static long startTime, endTime;
     private static boolean queriesInitialized = false;
+    public static ITexture colorTexture;
+    public static ITexture depthTexture;
+    private static IFrameBuffer preprocessDepthFrameBuffer;
+    private static Pipeline depthPreprocessPipeline;
+    private static IShaderProgram<?> depthPreprocessShader;
+    private static IBufferData depthPreprocessConfigData;
+    private static IBuffer depthPreprocessConfigUBO;
+
 
     public static void needCapture() {
         needCapture = true;
@@ -93,7 +106,7 @@ public class MinecraftRenderHandle {
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
         #if MC_VER > MC_1_21_5
         renderTarget = new io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper(
-                new TextureTarget(
+                new com.mojang.blaze3d.pipeline.TextureTarget(
                         "SuperrResolution-ScaledRenderTarget",
                         getRenderWidth(),
                         getRenderHeight(),
@@ -110,10 +123,75 @@ public class MinecraftRenderHandle {
         #else
         renderTarget = new LegacyStorageFrameBuffer(true);
         #endif
+        renderTarget.label("SRMainRenderTarget");
         renderTarget.setClearColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
         renderTarget.resizeFrameBuffer(
                 getRenderWidth(),
                 getRenderHeight()
+        );
+        colorTexture = RenderSystems.current().device().createTexture(
+                TextureDescription.create()
+                        .label("SRMainColorTexture")
+                        .format(TextureFormat.RGBA8)
+                        .type(TextureType.Texture2D)
+                        .usages(TextureUsages.create().storage().sampler())
+                        .mipmapsDisabled()
+                        .wrapMode(TextureWrapMode.CLAMP_TO_EDGE)
+                        .size(
+                                getRenderWidth(),
+                                getRenderHeight()
+                        )
+                        .build()
+        );
+        depthTexture = RenderSystems.current().device().createTexture(
+                TextureDescription.create()
+                        .label("SRMainDepthTexture")
+                        .mipmapsDisabled()
+                        .format(TextureFormat.R32F)
+                        .usages(TextureUsages.create().storage().sampler())
+                        .type(TextureType.Texture2D)
+                        .wrapMode(TextureWrapMode.CLAMP_TO_EDGE)
+                        .size(
+                                getRenderWidth(),
+                                getRenderHeight()
+                        )
+                        .build()
+        );
+        preprocessDepthFrameBuffer = GlFrameBuffer.create(
+                depthTexture,
+                null
+        );
+        depthPreprocessConfigData = UniformStructBuilder.start()
+                .floatEntry("near")
+                .floatEntry("far")
+                .build();
+        depthPreprocessConfigUBO = RenderSystems.current().device().createBuffer(
+                BufferDescription.create()
+                        .size(depthPreprocessConfigData.size())
+                        .usage(BufferUsage.UBO)
+                        .build()
+        );
+        depthPreprocessConfigUBO.setBufferData(depthPreprocessConfigData);
+
+        depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
+                ShaderDescription.graphics(
+                                new ShaderSource(ShaderType.FRAGMENT, "/shader/preprocess_depth.frag.glsl", true),
+                                new ShaderSource(ShaderType.VERTEX, "/shader/preprocess_depth.vert.glsl", true)
+                        )
+                        .name("SRPreprocessDepthShader")
+                        .uniformBuffer("camera_config", 0, (int) depthPreprocessConfigData.size())
+                        .uniformSamplerTexture("tex", 0)
+                        .build()
+        );
+        depthPreprocessShader.compile();
+        depthPreprocessPipeline = new Pipeline();
+        depthPreprocessPipeline.job(
+                "preprocessDepth",
+                PipelineJobBuilders.graphics(depthPreprocessShader)
+                        .targetFramebuffer(preprocessDepthFrameBuffer)
+                        .resource("tex", PipelineJobResource.SamplerTexture.create(getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth)))
+                        .resource("camera_config", PipelineJobResource.UniformBuffer.create(depthPreprocessConfigUBO))
+                        .build()
         );
 
         if (!queriesInitialized) {
@@ -124,9 +202,8 @@ public class MinecraftRenderHandle {
 
     public static void fixPostChain(PostChain postChain) {
         #if MC_VER < MC_1_21_4
-        postChain.getName();
-        int renderWidth = getRenderWidth();
-        int renderHeight = getRenderHeight();
+        int renderWidth = SuperResolution.isShaderPackCompatSuperResolution() ? getScreenWidth() : getRenderWidth();
+        int renderHeight = SuperResolution.isShaderPackCompatSuperResolution() ? getScreenHeight() : getRenderHeight();
         for (RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
             if (renderTarget.width != renderWidth ||
                     renderTarget.height != renderHeight ||
@@ -159,8 +236,8 @@ public class MinecraftRenderHandle {
     public static void resize() {
         int screenWidth = getScreenWidth();
         int screenHeight = getScreenHeight();
-        int renderWidth = getRenderWidth();
-        int renderHeight = getRenderHeight();
+        int renderWidth = SuperResolution.isShaderPackCompatSuperResolution() ? getScreenWidth() : getRenderWidth();
+        int renderHeight = SuperResolution.isShaderPackCompatSuperResolution() ? getScreenHeight() : getRenderHeight();
         callOnRenderTargets((renderTarget) -> resizeRenderTarget(renderTarget, renderWidth, renderHeight), false);
     }
 
@@ -195,9 +272,10 @@ public class MinecraftRenderHandle {
             PerformanceInfo.begin("world");
             GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[0]);
         }
-        if (!SuperResolution.isShaderPackCompat()) {
-            updateRenderTarget();
-            updateRenderTargetSize();
+        updateRenderTarget();
+        updateRenderTargetSize();
+        if (!SuperResolution.isShaderPackCompatSuperResolution()) {
+
         #if MC_VER == MC_1_21_5
             getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
         #elif MC_VER > MC_1_21_5
@@ -213,15 +291,17 @@ public class MinecraftRenderHandle {
                 RenderDoc.renderdoc.StartFrameCapture.call(null, null);
             }
         }
-        try (GlState ignored = new GlState()) {
-            LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
+        if (LevelRenderStartEvent.EVENT.hasEvent()) {
+            try (GlState ignored = new GlState()) {
+                LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
+            }
         }
     }
 
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
-        if (!SuperResolution.isShaderPackCompat()) {
+        if (!SuperResolution.isShaderPackCompatSuperResolution()) {
         #if MC_VER == MC_1_21_5
             ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
                     ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
@@ -232,8 +312,10 @@ public class MinecraftRenderHandle {
         #endif
             getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         }
-        try (GlState ignored = new GlState()) {
-            LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
+        if (LevelRenderEndEvent.EVENT.hasEvent()) {
+            try (GlState ignored = new GlState()) {
+                LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
+            }
         }
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
@@ -242,7 +324,8 @@ public class MinecraftRenderHandle {
             PerformanceInfo.end("world", worldTime[0]);
         }
 
-        if (!SuperResolution.isShaderPackCompat()) {
+        if (!SuperResolution.isShaderPackCompatSuperResolution()) {
+            GlDebug.pushGroup(64108435, "SRUpscale");
             try (GlState ignored = new GlState()) {
                 if (SuperResolutionConfig.isEnableDetailedProfiling()) {
                     PerformanceInfo.begin("upscale");
@@ -255,13 +338,36 @@ public class MinecraftRenderHandle {
                 }
 
                 AlgorithmManager.update();
-                try (GlState ignored_ = new GlState()) {
-                    DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
-                            getRenderTarget().getTexture(FrameBufferAttachmentType.Color),
-                            getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth),
-                            null
+                {
+                    GlTextureCopier.copy(
+                            CopyOperation.create()
+                                    .src(getRenderTarget().getTexture(FrameBufferAttachmentType.Color))
+                                    .dst(colorTexture)
+                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                                    .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                                    .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
                     );
-                    if (SuperResolution.currentAlgorithm != null) {
+                    ((StructuredUniformBuffer) (depthPreprocessConfigData)).setFloat(
+                            "near", 0.05f
+                    );
+                    ((StructuredUniformBuffer) (depthPreprocessConfigData)).setFloat(
+                            "far", Minecraft.getInstance().gameRenderer.getDepthFar()
+                    );
+                    ((StructuredUniformBuffer) (depthPreprocessConfigData)).fillBuffer();
+                    depthPreprocessConfigUBO.upload();
+                    GL41.glDisable(GL41.GL_DEPTH_TEST);
+                    GL41.glDisable(GL41.GL_CULL_FACE);
+                    RenderSystems.current().device().commendEncoder().begin();
+                    depthPreprocessPipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
+                    RenderSystems.current().device().commendEncoder().end().submit(RenderSystems.current().device());
+                    GL41.glEnable(GL41.GL_DEPTH_TEST);
+                    GL41.glEnable(GL41.GL_CULL_FACE);
+                    DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
+                            colorTexture,
+                            depthTexture,
+                            AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                    );
+                    if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchEvent.EVENT.hasEvent()) {
                         AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
                                 SuperResolution.currentAlgorithm,
                                 dispatchResource
@@ -289,7 +395,7 @@ public class MinecraftRenderHandle {
                             }
                         }
                     }
-                    if (SuperResolution.currentAlgorithm != null) {
+                    if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchFinishEvent.EVENT.hasEvent()) {
                         AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
                                 SuperResolution.currentAlgorithm,
                                 SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
@@ -322,10 +428,11 @@ public class MinecraftRenderHandle {
                 if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
                     blitHandRenderTarget();
             }
+            GlDebug.popGroup();
         }
 
         frameTime = PerformanceInfo.getAsMillis("gameRenderer");
-        if (!SuperResolution.isShaderPackCompat()) {
+        if (!SuperResolution.isShaderPackCompatSuperResolution()) {
             getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
         }
         glViewport(
@@ -412,8 +519,8 @@ public class MinecraftRenderHandle {
     }
 
     public static void updateRenderTargetSize() {
-        int renderWidth = getRenderWidth();
-        int renderHeight = getRenderHeight();
+        int renderWidth = SuperResolution.isShaderPackCompatSuperResolution() ? getScreenWidth() : getRenderWidth();
+        int renderHeight = SuperResolution.isShaderPackCompatSuperResolution() ? getScreenHeight() : getRenderHeight();
         int screenWidth = getScreenWidth();
         int screenHeight = getScreenHeight();
         callOnRenderTargets(
@@ -431,6 +538,26 @@ public class MinecraftRenderHandle {
             handRenderTarget.resizeFrameBuffer(
                     screenWidth,
                     screenHeight
+            );
+        }
+
+        if (colorTexture.getWidth() != renderWidth || colorTexture.getHeight() != renderHeight) {
+            colorTexture.resize(
+                    renderWidth,
+                    renderHeight
+            );
+        }
+        if (depthTexture.getWidth() != renderWidth || depthTexture.getHeight() != renderHeight) {
+            depthTexture.resize(
+                    renderWidth,
+                    renderHeight
+            );
+        }
+
+        if (preprocessDepthFrameBuffer.getWidth() != renderWidth || preprocessDepthFrameBuffer.getHeight() != renderHeight) {
+            preprocessDepthFrameBuffer.resizeFrameBuffer(
+                    renderWidth,
+                    renderHeight
             );
         }
     }

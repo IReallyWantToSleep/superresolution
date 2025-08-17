@@ -348,7 +348,13 @@ public class GlCommandDecoder implements ICommandDecoder {
 
         putGlCommand(commandBuffer, () -> {
             pushGroup(debugId, debugName);
-            try (GlState ig = new GlState(GlState.STATE_ALL)) {
+            try (GlState ig = new GlState(
+                    GlState.STATE_DRAW_FBO |
+                            GlState.STATE_ACTIVE_TEXTURE |
+                            GlState.STATE_TEXTURES |
+                            GlState.STATE_PROGRAM |
+                            GlState.STATE_VERTEX_OPERATIONS
+            )) {
 
                 if (frameBuffer != null) {
                     if (frameBuffer instanceof GlFrameBuffer) {

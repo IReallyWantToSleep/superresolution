@@ -35,7 +35,7 @@ public interface ITexture extends Destroyable, Resizable, GpuObject {
     int getHeight();
 
     default String string() {
-        return "ITexture{" +
+        return getTextureDescription().getLabel() != null ? getTextureDescription().getLabel() : "ITexture{" +
                 "id=" + handle() +
                 "format=" + getTextureFormat() +
                 "width=" + getWidth() +

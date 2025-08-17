@@ -46,6 +46,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                         .height(MinecraftRenderHandle.getRenderHeight())
                         .usages(TextureUsages.create().sampler().storage().sampler())
                         .format(TextureFormat.RGBA8)
+                        .label("Sgsr2Output")
                         .build())
         ));
         this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());

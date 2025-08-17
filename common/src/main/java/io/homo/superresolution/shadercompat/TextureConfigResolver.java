@@ -20,11 +20,13 @@ public class TextureConfigResolver {
         private final List<Integer> region;
         private final boolean isOutput;
         private GlTexture2D internalTexture;
+        private String name;
 
-        public TextureInfo(Supplier<ITexture> sourceTextureSupplier, List<Integer> region, boolean isOutput) {
+        public TextureInfo(Supplier<ITexture> sourceTextureSupplier, List<Integer> region, boolean isOutput, String name) {
             this.sourceTextureSupplier = sourceTextureSupplier;
             this.region = region;
             this.isOutput = isOutput;
+            this.name = name;
         }
 
         public ITexture getSourceTexture() {
@@ -75,6 +77,7 @@ public class TextureConfigResolver {
                             .mipmapsDisabled()
                             .usages(TextureUsages.create().sampler())
                             .format(sourceTexture.getTextureFormat())
+                            .label("SRIrisCompatInternalTexture-%s".formatted(this.name))
                             .build()
             );
         }
@@ -104,6 +107,12 @@ public class TextureConfigResolver {
     }
 
     public static TextureInfo createForInput(CompositeRenderer renderer, SRShaderCompatConfig.InputTextureConfig config) {
-        return new TextureInfo(() -> IrisTextureResolver.getIrisTexture(renderer, config.src), config.region, false);
+        return new TextureInfo(
+                () -> IrisTextureResolver.getIrisTexture(
+                        renderer, config.src
+                ), config.region,
+                false,
+                config.src
+        );
     }
 }

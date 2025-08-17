@@ -31,4 +31,8 @@ public class Event<T> {
         T[] listenersArray = listeners.toArray((T[]) Array.newInstance(listenerType, 0));
         invoker = invokerFactory.apply(listenersArray);
     }
+
+    public boolean hasEvent() {
+        return !listeners.isEmpty();
+    }
 }

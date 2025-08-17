@@ -53,6 +53,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .height(MinecraftRenderHandle.getScreenHeight())
                         .format(TextureFormat.RGBA8)
                         .usages(TextureUsages.create().sampler().storage().attachmentColor())
+                        .label("Sgsr1Output")
                         .build()
         );
         outputFbo = GlFrameBuffer.create(
@@ -61,6 +62,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 MinecraftRenderHandle.getScreenWidth(),
                 MinecraftRenderHandle.getScreenHeight()
         );
+        outputFbo.label("Sgsr1OutputFbo");
         sgsrShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/sgsr/v1/sgsr1_shader.vert.glsl"))

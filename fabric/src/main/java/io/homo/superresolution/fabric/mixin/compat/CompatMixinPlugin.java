@@ -1,7 +1,10 @@
 package io.homo.superresolution.fabric.mixin.compat;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.fabric.platform.FabricPlatform;
+import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -19,6 +22,9 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
     public void onLoad(String s) {
         Platform.currentPlatform = new FabricPlatform();
         Platform.currentPlatform.init();
+        if (FabricLoader.getInstance().isDevelopmentEnvironment() /*&& SuperResolutionConfig.isEnableRenderDoc()*/)
+            RenderDoc.init();
+
     }
 
     public String getRefMapperConfig() {

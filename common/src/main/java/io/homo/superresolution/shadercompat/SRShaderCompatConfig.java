@@ -24,7 +24,7 @@ public class SRShaderCompatConfig {
         public List<String> target;
     }
 
-    public static class UpscaleConfig {
+    public static class WorldUpscaleConfig {
         public String before_upscale_shader_name;
         public Map<String, InputTextureConfig> input_textures;
         public Map<String, OutputTextureConfig> output_textures;
@@ -32,15 +32,25 @@ public class SRShaderCompatConfig {
 
     public static class WorldConfig {
         public boolean enabled;
-        public UpscaleConfig upscale_config;
+        public WorldUpscaleConfig upscale_config;
     }
 
-    public static class RootConfig {
+    public static class UpscaleConfig {
         public boolean enabled;
         public Map<String, WorldConfig> worlds;
     }
 
-    public RootConfig sr;
+    public static class WorldUpscaleJitterConfig {
+        public boolean enabled;
+    }
+
+    public static class UpscaleJitterConfig {
+        public boolean enabled;
+        public Map<String, WorldUpscaleJitterConfig> worlds;
+    }
+
+    public UpscaleConfig sr;
+    public UpscaleJitterConfig sr_jitter;
 
     public static SRShaderCompatConfig loadFromJson(File file) throws IOException {
         try (FileReader reader = new FileReader(file)) {
@@ -57,5 +67,15 @@ public class SRShaderCompatConfig {
             return wc;
         }
         return sr.worlds.get("*") != null ? sr.worlds.get("*") : null;
+    }
+
+    public WorldUpscaleJitterConfig getUpscaleJitterConfigForWorld(String worldId) {
+        if (sr_jitter == null || sr_jitter.worlds == null) return null;
+        worldId = worldId.replace("world", "");
+        WorldUpscaleJitterConfig wc = sr_jitter.worlds.get(worldId);
+        if (wc != null) {
+            return wc;
+        }
+        return sr_jitter.worlds.get("*") != null ? sr_jitter.worlds.get("*") : null;
     }
 }

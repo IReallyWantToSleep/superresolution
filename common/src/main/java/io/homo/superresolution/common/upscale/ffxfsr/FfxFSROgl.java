@@ -81,6 +81,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
                         .filterMode(TextureFilterMode.LINEAR)
                         .format(TextureFormat.RGBA8)
                         .size(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+                        .label("SRFSR2-Output")
                         .build()
         );
         this.outputColorFrameBuffer = GlFrameBuffer.create(this.outputColorGlTexture, null);

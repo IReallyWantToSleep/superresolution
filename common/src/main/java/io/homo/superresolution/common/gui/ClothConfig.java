@@ -54,6 +54,7 @@ public class ClothConfig {
                 .setSaveConsumer((newValue) -> {
                     boolean oldValue = SuperResolutionConfig.isEnableUpscale();
                     SuperResolutionConfig.setEnableUpscale(newValue);
+                    if (!SuperResolution.isShaderPackCompatSuperResolution()) return;
                     if (oldValue != newValue) {
                         SuperResolution.irisApiReloadShader();
                     }
@@ -196,7 +197,11 @@ public class ClothConfig {
                 )
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
                 .setDefaultValue(false)
-                .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
+                .setSaveConsumer((newValue) -> {
+                    SuperResolutionConfig.setForceDisableShaderCompat(newValue);
+                    if (!SuperResolution.isShaderPackCompatSuperResolution()) return;
+                    SuperResolution.irisApiReloadShader();
+                })
                 .build());
 
         List<String> injectPostChainBlackList = new ArrayList<>();

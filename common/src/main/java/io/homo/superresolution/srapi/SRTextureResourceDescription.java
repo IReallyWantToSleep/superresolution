@@ -34,7 +34,7 @@ public class SRTextureResourceDescription {
         this.format = switch (texture.getTextureFormat()) {
             case RGBA8 -> SRSurfaceFormat.R8G8B8A8_UNORM;
             case RGBA16F -> SRSurfaceFormat.R16G16B16A16_FLOAT;
-            case RGB8 -> SRSurfaceFormat.UNKNOWN;
+            case RGB8, RGB16F -> SRSurfaceFormat.UNKNOWN;
             case RG16F -> SRSurfaceFormat.R16G16_FLOAT;
             case RG32F -> SRSurfaceFormat.R32G32_FLOAT;
             case RG8 -> SRSurfaceFormat.R8G8_UNORM;
@@ -47,6 +47,7 @@ public class SRTextureResourceDescription {
             case DEPTH24_STENCIL8, DEPTH24, DEPTH_COMPONENT -> SRSurfaceFormat.UNKNOWN;
             case R16_SNORM -> SRSurfaceFormat.R16_SNORM;
             case R11G11B10F -> SRSurfaceFormat.R11G11B10_FLOAT;
+            case RGBA16 -> SRSurfaceFormat.R16G16B16A16_TYPELESS;
         };
 
         this.width = texture.getWidth();

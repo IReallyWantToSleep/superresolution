@@ -186,8 +186,8 @@ public class DataSetGenerator {
 
     private static int getGLPixelFormat(TextureFormat format) {
         return switch (format) {
-            case RGBA8, RGBA16F -> GL_RGBA;
-            case RGB8, R11G11B10F -> GL_RGB;
+            case RGBA8, RGBA16F, RGBA16 -> GL_RGBA;
+            case RGB8, R11G11B10F, RGB16F -> GL_RGB;
             case RG8, RG16F, RG32F -> GL_RG;
             case R8, R16F, R32F, R32UI, R16_SNORM, DEPTH32F, DEPTH24_STENCIL8, DEPTH24, DEPTH32, DEPTH_COMPONENT ->
                     GL_RED;
@@ -196,8 +196,8 @@ public class DataSetGenerator {
 
     private static int getGLPixelType(TextureFormat format) {
         return switch (format) {
-            case RGBA16F, RG16F, R16F, R16_SNORM -> GL_HALF_FLOAT;
-            case RGBA8, RGB8, RG8, R8, DEPTH24, DEPTH32, DEPTH_COMPONENT -> GL_UNSIGNED_BYTE;
+            case RGBA16F, RG16F, R16F, R16_SNORM, RGB16F -> GL_HALF_FLOAT;
+            case RGBA8, RGB8, RG8, R8, DEPTH24, DEPTH32, DEPTH_COMPONENT, RGBA16 -> GL_UNSIGNED_BYTE;
             case R32F, RG32F, DEPTH32F -> GL_FLOAT;
             case R32UI -> GL_UNSIGNED_INT;
             case DEPTH24_STENCIL8 -> GL_UNSIGNED_INT_24_8;

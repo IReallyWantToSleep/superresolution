@@ -111,6 +111,7 @@ public class Fsr2ShaderResource {
                                     .type(TextureType.Texture2D)
                                     .format(TextureFormat.RGBA8)
                                     .usages(TextureUsages.create().storage().sampler())
+                                    .label("SRFSR2NullTexture")
                                     .build()
                     );
                 }

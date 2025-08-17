@@ -102,7 +102,6 @@ public class ShaderSource {
             Path commonProjectPath = Path.of(Minecraft.getInstance().gameDirectory.getAbsolutePath())
                     .getParent()
                     .getParent()
-                    .getParent()
                     .resolve("common")
                     .resolve("src")
                     .resolve("main")

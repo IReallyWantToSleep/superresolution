@@ -31,10 +31,10 @@ public class IrisTextureResolver {
         return resolveTexture(renderer, name,
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId)
-                        .getAltTexture(),
+                        .getMainTexture(),
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId)
-                        .getMainTexture(),
+                        .getAltTexture(),
                 depthId -> depthId,
                 -1
         );
