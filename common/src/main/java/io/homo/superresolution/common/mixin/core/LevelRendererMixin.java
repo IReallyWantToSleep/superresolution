@@ -1,11 +1,10 @@
 package io.homo.superresolution.common.mixin.core;
 
-#if MC_VER > MC_1_20_6
-
 import io.homo.superresolution.common.SuperResolution;
+
+#if MC_VER > MC_1_20_6
 import net.minecraft.client.DeltaTracker;
 #else
-
 import com.mojang.blaze3d.vertex.PoseStack;
 #endif
 

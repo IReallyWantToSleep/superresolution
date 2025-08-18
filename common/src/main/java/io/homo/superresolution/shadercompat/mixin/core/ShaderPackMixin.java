@@ -25,8 +25,8 @@ public class ShaderPackMixin implements SRCompatShaderPack {
     @Unique
     private SRShaderCompatConfig superresolution$config;
 
-    #if MC_VER > MC_1_20_1
-    @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V", at = @At("RETURN"))
+    #if MC_VER > MC_1_20_6
+    @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V", at = @At("RETURN"), remap = false)
     private void loadSuperResolutionComaptConfig(
             Path root,
             Map<?, ?> changedConfigs,
@@ -35,7 +35,7 @@ public class ShaderPackMixin implements SRCompatShaderPack {
             CallbackInfo ci
     )
     #else
-    @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;)V", at = @At("RETURN"))
+    @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;)V", at = @At("RETURN"), remap = false)
     private void loadSuperResolutionComaptConfig(
             Path root,
             Map<?, ?> changedConfigs,
@@ -46,7 +46,8 @@ public class ShaderPackMixin implements SRCompatShaderPack {
         try {
             Path srConfigPath = root.resolve("superresolution.json");
             if (Files.exists(srConfigPath)) {
-                superresolution$config = SRShaderCompatConfig.loadFromJson(srConfigPath.toFile());
+
+                superresolution$config = SRShaderCompatConfig.loadFromJson(srConfigPath);
                 SuperResolution.LOGGER.info("光影包 {} 支持超分辨率功能", root);
                 return;
             }

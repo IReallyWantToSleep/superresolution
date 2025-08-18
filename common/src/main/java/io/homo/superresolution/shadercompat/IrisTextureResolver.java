@@ -7,6 +7,7 @@ import net.irisshaders.iris.targets.RenderTargets;
 
 import java.util.function.Function;
 
+import static org.lwjgl.opengl.GL11.GL_DEPTH_COMPONENT;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 
 public class IrisTextureResolver {
@@ -20,7 +21,10 @@ public class IrisTextureResolver {
         int id = getIrisTextureByName(renderer, name);
         if (id < 1) return null;
         return new OnlyNameTexture(
-                () -> TextureFormat.fromGl(GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, id)),
+                () -> {
+                    int format = GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, id);
+                    return format == GL_DEPTH_COMPONENT ? TextureFormat.DEPTH32 : TextureFormat.fromGl(format);
+                },
                 () -> GlTextureInfoGetter.getWidth(GL_TEXTURE_2D, id),
                 () -> GlTextureInfoGetter.getHeight(GL_TEXTURE_2D, id),
                 () -> (long) id

@@ -48,6 +48,19 @@ public class OnlyNameTexture implements ITexture {
     }
 
     @Override
+    public TextureDescription getTextureDescription() {
+        return TextureDescription.create()
+                .filterMode(getTextureFilterMode())
+                .format(getTextureFormat())
+                .size(getWidth(), getHeight())
+                .type(getTextureType())
+                .wrapMode(getTextureWrapMode())
+                .mipmapSettings(getMipmapSettings())
+                .usages(getTextureUsages())
+                .build();
+    }
+
+    @Override
     public int getWidth() {
         return widthSupplier.get();
     }

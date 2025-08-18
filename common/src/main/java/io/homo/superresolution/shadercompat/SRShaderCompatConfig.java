@@ -6,8 +6,11 @@ import com.google.gson.GsonBuilder;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipInputStream;
 
 public class SRShaderCompatConfig {
 
@@ -52,11 +55,9 @@ public class SRShaderCompatConfig {
     public UpscaleConfig sr;
     public UpscaleJitterConfig sr_jitter;
 
-    public static SRShaderCompatConfig loadFromJson(File file) throws IOException {
-        try (FileReader reader = new FileReader(file)) {
-            Gson gson = new GsonBuilder().create();
-            return gson.fromJson(reader, SRShaderCompatConfig.class);
-        }
+    public static SRShaderCompatConfig loadFromJson(Path file) throws IOException {
+        Gson gson = new GsonBuilder().create();
+        return gson.fromJson(Files.readString(file), SRShaderCompatConfig.class);
     }
 
     public WorldConfig getUpscaleConfigForWorld(String worldId) {

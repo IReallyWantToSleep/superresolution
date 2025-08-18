@@ -12,12 +12,13 @@
         "core.IrisRenderingPipelineMixin",
         "core.ShaderPackAccessor",
         "core.StandardMacrosMixin",
-        "core.ViewportUniformsMixin"
-    ],
-    "mixins": [
+        "core.ViewportUniformsMixin",
         "core.CapturedRenderingStateMixin",
+        "core.CompositeRendererPassMixin",
         "core.RenderTargetsAccessor",
         "core.ShaderPackMixin"
+    ],
+    "mixins": [
     ],
     "injectors": {
         "defaultRequire": 1

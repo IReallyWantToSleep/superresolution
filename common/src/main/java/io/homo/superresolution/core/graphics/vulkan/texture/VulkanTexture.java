@@ -328,4 +328,9 @@ public class VulkanTexture implements ITexture {
         }
         throw new VulkanException("Texture does not have external memory");
     }
+
+    @Override
+    public TextureDescription getTextureDescription() {
+        return description;
+    }
 }

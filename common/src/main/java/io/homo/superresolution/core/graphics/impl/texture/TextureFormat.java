@@ -89,6 +89,12 @@ public enum TextureFormat {
             DataType.FLOAT,
             TextureComponent.Depth
     ),
+    DEPTH32F_STENCIL8(
+            GL_DEPTH32F_STENCIL8, VK_FORMAT_D32_SFLOAT_S8_UINT,
+            DataType.FLOAT,
+            TextureComponent.Depth,
+            TextureComponent.Stencil
+    ),
     DEPTH24_STENCIL8(
             GL_DEPTH24_STENCIL8, VK_FORMAT_D24_UNORM_S8_UINT,
             DataType.UNSIGNED_NORMALIZED,
@@ -201,7 +207,7 @@ public enum TextureFormat {
             case RG32F -> 8;
             case R32F, R32UI -> 4;
             case RGBA16F, RGBA16 -> 8;
-            case RGB16F -> 6;
+            case RGB16F, DEPTH32F_STENCIL8 -> 6;
             case R11G11B10F -> 4;
             case DEPTH32F, DEPTH32, DEPTH_COMPONENT -> 4;
             case DEPTH24, DEPTH24_STENCIL8 -> 4;

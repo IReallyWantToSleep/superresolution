@@ -44,6 +44,7 @@ public class SuperResolutionConfig {
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     public static final BooleanValue ENABLE_DATASET_GENERATOR;
+    public static final StringValue DATASET_PATH;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
     public static final BooleanValue ENABLE_DEBUG;
     public static final BooleanValue DISABLE_UPSCALE_ON_VANILLA;
@@ -161,8 +162,13 @@ public class SuperResolutionConfig {
         );
 
         ENABLE_DATASET_GENERATOR = builder.defineBoolean(
-                "enable_dataset_generator",
+                "dataset/enable_dataset_generator",
                 () -> false,
+                ""
+        );
+        DATASET_PATH = builder.defineString(
+                "dataset/dataset_path",
+                () -> "msrDataset",
                 ""
         );
         ENABLE_DETAILED_PROFILING = builder.defineBoolean(

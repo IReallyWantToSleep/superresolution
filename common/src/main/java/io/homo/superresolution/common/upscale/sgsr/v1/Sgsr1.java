@@ -51,7 +51,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .type(TextureType.Texture2D)
                         .width(MinecraftRenderHandle.getScreenWidth())
                         .height(MinecraftRenderHandle.getScreenHeight())
-                        .format(TextureFormat.RGBA8)
+                        .format(TextureFormat.R11G11B10F)
                         .usages(TextureUsages.create().sampler().storage().attachmentColor())
                         .label("Sgsr1Output")
                         .build()

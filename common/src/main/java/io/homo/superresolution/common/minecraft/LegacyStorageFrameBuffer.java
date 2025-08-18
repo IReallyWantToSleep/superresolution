@@ -5,6 +5,8 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
+
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
@@ -222,7 +224,20 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
 
         @Override
         public TextureUsages getTextureUsages() {
-            return TextureUsages.create().attachmentColor().attachmentDepth().sampler().storage().copy();
+            return TextureUsages.create().sampler().storage().copy();
+        }
+
+        @Override
+        public TextureDescription getTextureDescription() {
+            return TextureDescription.create()
+                    .filterMode(getTextureFilterMode())
+                    .format(getTextureFormat())
+                    .size(getWidth(), getHeight())
+                    .type(getTextureType())
+                    .wrapMode(getTextureWrapMode())
+                    .mipmapSettings(getMipmapSettings())
+                    .usages(getTextureUsages())
+                    .build();
         }
 
         @Override
