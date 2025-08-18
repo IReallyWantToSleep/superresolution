@@ -63,12 +63,15 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static void registerKeyMapping() {
         if (!registeredKeyMapping) {
+            if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
+            
             KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
         }
         registeredKeyMapping = true;
     }
 
     public static void registerEvents() {
+
         ClientLifecycleEvent.CLIENT_SETUP.register(
                 (minecraft) -> registerKeyMapping()
         );
@@ -164,7 +167,6 @@ public final class SuperResolution implements Resizable, Destroyable {
             MinecraftRenderHandle.init();
             AlgorithmManager.init();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
-            if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
         }
     }
 

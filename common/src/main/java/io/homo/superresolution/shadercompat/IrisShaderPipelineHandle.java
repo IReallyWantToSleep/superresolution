@@ -23,6 +23,9 @@ public class IrisShaderPipelineHandle {
      * 拿到CompositeRender.Pass里的pass名称
      */
     public static String getCompositePassName(Object obj) {
+        if (obj instanceof NamedCompositePass) {
+            return ((NamedCompositePass) obj).superresolution$getName();
+        }
         try {
             Class<?> passClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$Pass");
             Field nameField = passClazz.getDeclaredField("name");
@@ -46,7 +49,7 @@ public class IrisShaderPipelineHandle {
      */
     public static void onCompositeRendererRender(
             CompositeRenderer compositeRenderer,
-            int currentPassIndex
+            NamedCompositePass currentPass
     ) {
         if (!shouldApplySuperResolutionChanges()) return;
         try {
@@ -67,7 +70,7 @@ public class IrisShaderPipelineHandle {
                         if (compositeRenderer.equals(((IrisRenderingPipelineAccessor) Iris.getPipelineManager().getPipeline().get()).getCompositeRenderer())) {
                             if (ShaderCompatUpscaleDispatcher.getCurrentConfig() != null && ShaderCompatUpscaleDispatcher.getCurrentConfig().enabled) {
                                 String targetPassName = ShaderCompatUpscaleDispatcher.getCurrentConfig().upscale_config.before_upscale_shader_name;
-                                String currentPassName = getCompositePassName(getCompositeRendererPasses(compositeRenderer).get(currentPassIndex));
+                                String currentPassName = getCompositePassName(currentPass);
                                 if (targetPassName.equals(currentPassName)) {
                                     ShaderCompatUpscaleDispatcher.dispatchUpscale(compositeRenderer);
                                 }

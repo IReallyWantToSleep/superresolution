@@ -39,7 +39,7 @@ public class FrameBufferTextureAdapter implements ITexture {
     @Override
     public TextureUsages getTextureUsages() {
         if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
-            return TextureUsages.create().storage().sampler().attachmentDepth().attachmentColor();
+            return TextureUsages.create().storage().sampler();
         }
         return frameBuffer.getTexture(attachmentType).getTextureUsages();
     }
@@ -74,6 +74,19 @@ public class FrameBufferTextureAdapter implements ITexture {
             return TextureMipmapSettings.disabled();
         }
         return frameBuffer.getTexture(attachmentType).getMipmapSettings();
+    }
+
+    @Override
+    public TextureDescription getTextureDescription() {
+        return TextureDescription.create()
+                .filterMode(getTextureFilterMode())
+                .format(getTextureFormat())
+                .size(getWidth(), getHeight())
+                .type(getTextureType())
+                .wrapMode(getTextureWrapMode())
+                .mipmapSettings(getMipmapSettings())
+                .usages(getTextureUsages())
+                .build();
     }
 
     @Override

@@ -49,6 +49,11 @@ public class TextureSupplier implements ITexture {
     }
 
     @Override
+    public TextureDescription getTextureDescription() {
+        return supplier.get().getTextureDescription();
+    }
+
+    @Override
     public int getWidth() {
         return supplier.get().getWidth();
     }

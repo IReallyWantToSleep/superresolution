@@ -45,7 +45,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                         .width(MinecraftRenderHandle.getRenderWidth())
                         .height(MinecraftRenderHandle.getRenderHeight())
                         .usages(TextureUsages.create().sampler().storage().sampler())
-                        .format(TextureFormat.RGBA8)
+                        .format(TextureFormat.R11G11B10F)
                         .label("Sgsr2Output")
                         .build())
         ));
