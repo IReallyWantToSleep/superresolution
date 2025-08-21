@@ -158,7 +158,7 @@ extern "C"
         uint64_t providerId);
 
     SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
-        const std::wstring &libPath,
+        const std::string &libPath,
         const std::string &getProvidersFuncName,      // SRUpscaleProviderSupplierFunc
         const std::string &getProvidersCountFuncName, // SRUpscaleProviderSupplierCountFunc
         SRMessageCallback messageCallback);
