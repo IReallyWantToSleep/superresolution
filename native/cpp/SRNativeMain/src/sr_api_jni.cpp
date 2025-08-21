@@ -6,6 +6,8 @@
 #include <string>
 #include <iostream>
 #include "sr/sr_modules.h"
+#include <codecvt>
+#include <locale>
 static JNIEnv *g_envForCallback = nullptr;
 
 void sr_message_callback_bridge(SRMsgType type, const wchar_t *message)
@@ -14,7 +16,9 @@ void sr_message_callback_bridge(SRMsgType type, const wchar_t *message)
         return;
 
     std::wstring wmsg(message);
-    std::string utf8msg(wmsg.begin(), wmsg.end());
+    // 显式转换为UTF-8,在大多数时候和大多数平台下应该没问题
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::string utf8msg = converter.to_bytes(wmsg);
 
     java_log(g_envForCallback, const_cast<char *>(utf8msg.c_str()), (int)type);
 }
@@ -413,9 +417,9 @@ extern "C"
             return SR_RETURN_CODE_ERROR;
         }
 
-        const jchar *libPathChars = env->GetStringChars(libPath, nullptr);
-        std::wstring wLibPath(reinterpret_cast<const wchar_t *>(libPathChars), env->GetStringLength(libPath));
-        env->ReleaseStringChars(libPath, libPathChars);
+        const char *libPathChars = env->GetStringUTFChars(libPath, nullptr);
+        std::string LibPath(reinterpret_cast<const char *>(libPathChars), env->GetStringUTFLength(libPath));
+        env->ReleaseStringUTFChars(libPath, libPathChars);
 
         const char *funcName = env->GetStringUTFChars(getProvidersFuncName, nullptr);
         const char *countName = env->GetStringUTFChars(getProvidersCountFuncName, nullptr);
@@ -426,7 +430,7 @@ extern "C"
         env->ReleaseStringUTFChars(getProvidersFuncName, funcName);
         env->ReleaseStringUTFChars(getProvidersCountFuncName, countName);
 
-        return srLoadUpscaleProvidersFromLibrary(wLibPath, funcNameStr, countNameStr, sr_message_callback_bridge);
+        return srLoadUpscaleProvidersFromLibrary(LibPath, funcNameStr, countNameStr, sr_message_callback_bridge);
     }
 
 #ifdef __cplusplus
