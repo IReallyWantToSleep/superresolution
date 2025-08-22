@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.vulkan.texture;
 
+import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
@@ -94,10 +95,19 @@ public class VulkanTexture implements ITexture {
         imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
 
         if (isExternal || exportable) {
-            VkExternalMemoryImageCreateInfo extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
-                    .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
-
+            VkExternalMemoryImageCreateInfo extInfo;
+            if(OSType.isCurrentOS(OSType.WINDOWS)) {
+                extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
+                        .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
+                // Here,still WIN32,though. Is this used for renderdoc?
+            }
+            else{
+                extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
+                        .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
+                // Now it's Linux. Other systems are not supported.
+            }
             imageInfo.pNext(extInfo);
         }
 

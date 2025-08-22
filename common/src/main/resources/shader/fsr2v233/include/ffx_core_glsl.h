@@ -240,7 +240,7 @@
 /// @ingroup GLSLCore
 #define FFX_BROADCAST_MIN_INT16X4(x) FFX_MIN16_I4(FFX_MIN16_I(x))
 
-    #extension GL_EXT_shader_explicit_arithmetic_types : require
+    #extension GL_EXT_shader_explicit_arithmetic_types : enable
 #if !defined(FFX_SKIP_EXT)
 #if FFX_HALF
     #extension GL_EXT_shader_16bit_storage : require
@@ -251,12 +251,12 @@
     #extension GL_NV_shader_atomic_int64 : require
 #endif // #if defined(FFX_LONG)
 
-#if defined(FFX_WAVE)
+//#if defined(FFX_WAVE)
     #extension GL_KHR_shader_subgroup_arithmetic : require
     #extension GL_KHR_shader_subgroup_ballot : require
     #extension GL_KHR_shader_subgroup_quad : require
     #extension GL_KHR_shader_subgroup_shuffle : require
-#endif // #if defined(FFX_WAVE)
+//#endif // #if defined(FFX_WAVE)
 #endif // #if !defined(FFX_SKIP_EXT)
 
 // Forward declarations

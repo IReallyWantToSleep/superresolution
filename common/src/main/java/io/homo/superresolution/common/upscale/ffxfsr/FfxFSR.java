@@ -59,8 +59,8 @@ public class FfxFSR extends AbstractAlgorithm {
     private GlFrameBuffer outputFrameBuffer;
 
     public boolean updateFsr() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL == null) return false;
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return false;
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) return false;
         if (context != null) {
             if (context.nativePtr > 0) {
