@@ -23,7 +23,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
-#extension GL_EXT_samplerless_texture_functions : require
+//#extension GL_EXT_samplerless_texture_functions : require
 
 #define FSR2_BIND_SRV_INPUT_MOTION_VECTORS                  7
 #define FSR2_BIND_SRV_INPUT_DEPTH                           8

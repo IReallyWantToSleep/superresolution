@@ -23,10 +23,16 @@ public class RenderDoc {
         //if (true) return;
         var apiPointer = new PointerByReference();
         RenderdocLibrary.RenderdocApi apiInstance = null;
-        if (OSType.isCurrentOS(OSType.WINDOWS)) {
+        if (OSType.isCurrentOS(OSType.WINDOWS) || OSType.isCurrentOS(OSType.LINUX)) {
             try {
                 String projectDir = Platform.currentPlatform.getGameFolder().getParent().getParent().toAbsolutePath().toString();
-                String libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
+                String libPath = "";
+                if (OSType.isCurrentOS(OSType.WINDOWS)) {
+                    libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
+                }
+                else {
+                    libPath = Path.of(projectDir, "renderdoc", "librenderdoc.so").toAbsolutePath().toString();
+                }
                 LOGGER.info("RenderDoc库路径 {}", libPath);
                 System.load(libPath);
                 RenderdocLibrary renderdocLibrary;
