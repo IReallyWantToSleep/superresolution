@@ -64,7 +64,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void registerKeyMapping() {
         if (!registeredKeyMapping) {
             if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
-            
+
             KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
         }
         registeredKeyMapping = true;
@@ -90,7 +90,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                 }
         );
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
-            while (SuperResolution.getInstance().OPENGUI_KEYMAPPING.consumeClick()) {
+            while (OPENGUI_KEYMAPPING.consumeClick()) {
                 minecraft.setScreen(
                         ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
                 );

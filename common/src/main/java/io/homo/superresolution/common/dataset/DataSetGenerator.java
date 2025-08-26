@@ -4,24 +4,20 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
 import net.minecraft.client.KeyMapping;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.File;
@@ -31,6 +27,9 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import static org.lwjgl.opengl.GL33.*;
 
@@ -42,7 +41,12 @@ public class DataSetGenerator {
             InputConstants.KEY_F7,
             "Super Resolution"
     );
-    private static ITexture tempTexture;
+    private static ITexture tempColorTexture;
+    private static ITexture tempDepthTexture;
+
+    private static String id = UUID.randomUUID().toString().replace("-", "");
+    private static String previousId;
+
 
     public static void init() {
         KeyMappingRegistry.register(SAVE_KEYMAPPING);
@@ -75,7 +79,11 @@ public class DataSetGenerator {
             return;
         }
 
+
         try (FileOutputStream fos = new FileOutputStream(outputPath.toFile())) {
+            GzipParameters parm = new GzipParameters();
+            parm.setCompressionLevel(1);
+
             byte[] arr = new byte[dataSize];
             pixelData.get(arr);
             fos.write(arr);
@@ -94,13 +102,16 @@ public class DataSetGenerator {
         }
 
         int frameCount = MinecraftRenderHandle.getFrameCount();
-        if (!SAVE_KEYMAPPING.isDown()) return;
-        File dir = Paths.get(OUTPUT_DIR.getPath(), String.valueOf(frameCount)).toFile();
+        if (!SAVE_KEYMAPPING.isDown()) {
+            previousId = id;
+            return;
+        }
+        File dir = Paths.get(OUTPUT_DIR.getPath()).toFile();
         if (!dir.exists() && !dir.mkdirs()) {
             System.err.println("Failed to create frame output directory: " + dir.getAbsolutePath());
         }
-        if (tempTexture == null) {
-            tempTexture = GlTexture2D.create(TextureDescription.create()
+        if (tempColorTexture == null) {
+            tempColorTexture = GlTexture2D.create(TextureDescription.create()
                     .size(1, 1)
                     .type(TextureType.Texture2D)
                     .mipmapsDisabled()
@@ -108,26 +119,68 @@ public class DataSetGenerator {
                     .format(TextureFormat.RGB16F)
                     .build());
         }
-        tempTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        tempColorTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+
+        if (tempDepthTexture == null) {
+            tempDepthTexture = GlTexture2D.create(TextureDescription.create()
+                    .size(1, 1)
+                    .type(TextureType.Texture2D)
+                    .mipmapsDisabled()
+                    .usages(TextureUsages.create().sampler())
+                    .format(TextureFormat.R32F)
+                    .build());
+        }
+        tempDepthTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        previousId = id;
+        id = UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private static String getTextureName(ITexture texture, String desc, String id, String previousId) {
+        return "%s-%s_%s-%s_%s.%s+%s.texture.bin".formatted(
+                desc,
+                texture.getWidth(),
+                texture.getHeight(),
+                texture.getTextureFormat().name(),
+                texture.getTextureFormat().getChannelCount(),
+                id,
+                previousId
+        );
     }
 
     private static void onLevelEnd() {
         int frameCount = MinecraftRenderHandle.getFrameCount();
-        if (!SAVE_KEYMAPPING.isDown()) return;
-        File dir = Paths.get(OUTPUT_DIR.getPath(), String.valueOf(frameCount)).toFile();
-        File HR_RGB_IMAGE = Paths.get(dir.getPath(), "hr_rgb.bin").toFile();
+        if (!SAVE_KEYMAPPING.isDown()) {
+            previousId = id;
+            return;
+        }
+        File dir = Paths.get(OUTPUT_DIR.getPath()).toFile();
+        File HR_RGB_IMAGE = Paths.get(dir.getPath(), getTextureName(tempColorTexture, "Color", id, previousId)).toFile();
         GlTextureCopier.copy(
                 CopyOperation.create()
-                        .src(MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.Color))
-                        .dst(tempTexture)
+                        .src(MinecraftRenderHandle.colorTexture)
+                        .dst(tempColorTexture)
                         .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
                         .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
                         .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
         );
         writeImage(
-                tempTexture,
+                tempColorTexture,
                 HR_RGB_IMAGE.getAbsolutePath()
         );
+        SuperResolution.LOGGER.info("写入{}", HR_RGB_IMAGE.getAbsolutePath());
+
+        File HR_DEPTH_IMAGE = Paths.get(dir.getPath(), getTextureName(tempDepthTexture, "Depth", id, previousId)).toFile();
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(MinecraftRenderHandle.depthTexture)
+                        .dst(tempDepthTexture)
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+        );
+        writeImage(
+                tempDepthTexture,
+                HR_DEPTH_IMAGE.getAbsolutePath()
+        );
+        SuperResolution.LOGGER.info("写入{}", HR_DEPTH_IMAGE.getAbsolutePath());
     }
 
     private static int getGLPixelFormat(TextureFormat format) {
