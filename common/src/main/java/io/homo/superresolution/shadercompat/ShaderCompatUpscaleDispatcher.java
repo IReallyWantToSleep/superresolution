@@ -17,6 +17,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
@@ -243,16 +244,21 @@ public class ShaderCompatUpscaleDispatcher {
             }
         }
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        for (String targetName : currentConfig.output_textures.get("upscaled_color").target) {
-            GlTextureCopier.copy(
-                    CopyOperation.create()
-                            .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
-                            .dst(IrisTextureResolver.getIrisTexture(compositeRenderer, targetName))
-                            .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
-                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                            .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                            .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-            );
+        if (currentConfig.output_textures.get("upscaled_color").enabled) {
+            for (String targetName : currentConfig.output_textures.get("upscaled_color").target) {
+                ITexture texture = IrisTextureResolver.getIrisTexture(compositeRenderer, targetName);
+                if (texture != null) {
+                    GlTextureCopier.copy(
+                            CopyOperation.create()
+                                    .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
+                                    .dst(texture)
+                                    .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
+                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                                    .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                                    .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                    );
+                }
+            }
         }
     }
 }
