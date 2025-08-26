@@ -1,5 +1,6 @@
 package io.homo.superresolution.shadercompat.mixin.core;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -62,6 +63,7 @@ public class ViewportUniformsMixin {
                 UniformUpdateFrequency.PER_FRAME,
                 "SRJitterOffset",
                 () -> {
+                    if (!SuperResolution.getCurrentAlgorithm().isSupportJitter()) return new Vector2f(0);
                     io.homo.superresolution.core.math.Vector2f jitterOffset = AlgorithmManager.getJitterOffset();
                     return new Vector2f(jitterOffset.x, jitterOffset.y);
                 }
