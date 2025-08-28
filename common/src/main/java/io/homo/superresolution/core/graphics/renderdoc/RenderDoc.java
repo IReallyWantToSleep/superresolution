@@ -20,11 +20,12 @@ public class RenderDoc {
     }
 
     public static void init() {
-        //if (true) return;
+        if (true) return;
         var apiPointer = new PointerByReference();
         RenderdocLibrary.RenderdocApi apiInstance = null;
         if (OSType.isCurrentOS(OSType.WINDOWS)) {
             try {
+                LOGGER.info(Thread.currentThread().getName());
                 String projectDir = Platform.currentPlatform.getGameFolder().getParent().getParent().toAbsolutePath().toString();
                 String libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
                 LOGGER.info("RenderDoc库路径 {}", libPath);

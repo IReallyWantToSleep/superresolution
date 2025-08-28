@@ -57,7 +57,7 @@ neoForge {
             jvmArguments.add("-XX:+CreateMinidumpOnCrash")
             //jvmArguments.add("-Dorg.lwjgl.util.Debug=true")
             //jvmArguments.add("-Dorg.lwjgl.util.DebugAllocator=true")
-
+            environment("ENABLE_VULKAN_RENDERDOC_CAPTURE", "1")
             systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
             ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
             additionalRuntimeClasspathConfiguration.dependencies.add(

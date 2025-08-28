@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(SuperResolution)
 
 option(SR_FSR "启用以支持FSR" ON)
-option(SR_FSROGL "启用以支持FSR OpenGL" ON)
+option(SR_FSROGL "启用以支持FSR OpenGL" OFF)
 option(SR_XESS "启用以支持XESS" OFF)
 option(SR_DLSS "启用以支持DLSS" OFF)
 

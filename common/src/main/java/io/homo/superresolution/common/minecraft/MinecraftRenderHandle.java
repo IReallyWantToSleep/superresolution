@@ -276,6 +276,20 @@ public class MinecraftRenderHandle {
             PerformanceInfo.begin("world");
             GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[0]);
         }
+        if (needCaptureVulkan) {
+            if (RenderDoc.renderdoc != null) {
+                if (RenderSystems.vulkan() != null) {
+                    RenderSystems.vulkan().device().commendEncoder().begin();
+                    RenderSystems.vulkan().device().commendEncoder().end().submit(RenderSystems.vulkan().device());
+                    RenderDoc.renderdoc.StartFrameCapture.call(
+                            new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
+                            null
+                    );
+                    RenderSystems.vulkan().device().commendEncoder().begin();
+                    RenderSystems.vulkan().device().commendEncoder().end().submit(RenderSystems.vulkan().device());
+                }
+            }
+        }
         updateRenderTarget();
         updateRenderTargetSize();
         if (!SuperResolution.isShaderPackCompatSuperResolution()) {
@@ -381,28 +395,7 @@ public class MinecraftRenderHandle {
                                 dispatchResource
                         );
                     }
-                    if (needCaptureVulkan) {
-                        if (RenderDoc.renderdoc != null) {
-                            if (RenderSystems.vulkan() != null) {
-                                RenderDoc.renderdoc.StartFrameCapture.call(
-                                        new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                                        null
-                                );
-                            }
-                        }
-                    }
                     SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
-                    if (needCaptureVulkan) {
-                        if (RenderDoc.renderdoc != null) {
-                            if (RenderSystems.vulkan() != null) {
-                                needCaptureVulkan = false;
-                                RenderDoc.renderdoc.EndFrameCapture.call(
-                                        new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                                        null
-                                );
-                            }
-                        }
-                    }
                     if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchFinishEvent.EVENT.hasEvent()) {
                         AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
                                 SuperResolution.currentAlgorithm,
@@ -453,6 +446,18 @@ public class MinecraftRenderHandle {
             if (RenderDoc.renderdoc != null) {
                 needCapture = false;
                 RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+            }
+        }
+
+        if (needCaptureVulkan) {
+            if (RenderDoc.renderdoc != null) {
+                if (RenderSystems.vulkan() != null) {
+                    needCaptureVulkan = false;
+                    RenderDoc.renderdoc.EndFrameCapture.call(
+                            new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
+                            null
+                    );
+                }
             }
         }
         PerformanceInfo.end("CPU_SRUpscaleB");
