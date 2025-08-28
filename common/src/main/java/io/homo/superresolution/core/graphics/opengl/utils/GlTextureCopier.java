@@ -27,6 +27,10 @@ import static org.lwjgl.opengl.GL30.*;
 public class GlTextureCopier {
     private static final Map<String, GlShaderProgram> programMap = new HashMap<>();
 
+    public static int getCachedFrameBuffer() {
+        return cachedFrameBuffer;
+    }
+
     private static int cachedFrameBuffer = -1;
 
     private static GlShaderProgram getOrCreateProgram(CopyOperation copyOperation) {
