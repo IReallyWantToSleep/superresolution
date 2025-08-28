@@ -50,7 +50,7 @@ public class GlState implements AutoCloseable {
             STATE_SHADER_STORAGE_BUFFER;
     private static final long DEFAULT_MASK = STATE_ALL;
 
-    private static final int MAX_TEXTURES = 32;
+    private static final int MAX_TEXTURES = 16;
     private final long stateMask;
     public int program;
     public int vao;

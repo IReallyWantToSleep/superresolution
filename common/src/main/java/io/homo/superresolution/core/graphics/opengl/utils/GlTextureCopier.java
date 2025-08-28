@@ -9,18 +9,25 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
+import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.system.IRenderState;
+import org.lwjgl.opengl.GL43;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.lwjgl.opengl.GL30.*;
+
 public class GlTextureCopier {
     private static final Map<String, GlShaderProgram> programMap = new HashMap<>();
+
+    private static int cachedFrameBuffer = -1;
 
     private static GlShaderProgram getOrCreateProgram(CopyOperation copyOperation) {
         String key = mappingKey(copyOperation.getMappings());
@@ -56,32 +63,42 @@ public class GlTextureCopier {
 
     public static void copy(CopyOperation copyOperation) {
         GlDebug.pushGroup(GlDebug.nextCopyId(), "CopyTexture");
-        GlShaderProgram program = getOrCreateProgram(copyOperation);
-        IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commendEncoder().renderState().get();
-        GlFrameBuffer dstFbo = GlFrameBuffer.create(copyOperation.getDstTexture(), null);
+        try (GlState state = new GlState(GlState.STATE_READ_FBO | GlState.STATE_DRAW_FBO)) {
+            if (cachedFrameBuffer < 0) {
+                cachedFrameBuffer = Gl.DSA.createFramebuffer();
+                GlDebug.objectLabel(GL_FRAMEBUFFER, cachedFrameBuffer, "CopyOperationTempFrameBuffer");
+            }
+            Gl.DSA.framebufferTexture(
+                    cachedFrameBuffer,
+                    GL43.GL_COLOR_ATTACHMENT0,
+                    (int) copyOperation.getDstTexture().handle(),
+                    0
+            );
+            GL43.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, cachedFrameBuffer);
+            GlShaderProgram program = getOrCreateProgram(copyOperation);
+            IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commendEncoder().renderState().get();
+            RenderSystems.opengl().device().commendEncoder()
+                    .begin()
+                    .renderState()
+                    .colorMask(true, true, true, true)
+                    .depthTest(false)
+                    .depthWrite(false)
+                    .cullFace(false)
+                    .viewport(0, 0, copyOperation.getDstTexture().getWidth(), copyOperation.getDstTexture().getHeight());
 
-        RenderSystems.opengl().device().commendEncoder()
-                .begin()
-                .renderState()
-                .colorMask(true, true, true, true)
-                .depthTest(false)
-                .depthWrite(false)
-                .cullFace(false)
-                .viewport(0, 0, copyOperation.getDstTexture().getWidth(), copyOperation.getDstTexture().getHeight());
+            program.uniforms().samplerTexture("tex").set(copyOperation.getSrcTexture());
 
-        program.uniforms().samplerTexture("tex").set(copyOperation.getSrcTexture());
-
-        RenderSystems.opengl().device().commendEncoder()
-                .draw(
-                        program,
-                        dstFbo,
-                        DrawObject.fullscreenQuad(RenderSystems.opengl().device()).once(),
-                        0,
-                        DrawObject.fullscreenQuadVertexCount()
-                );
-        RenderSystems.opengl().device().commendEncoder().renderState().apply(stateSnapshot);
-        RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commendEncoder().end());
-        dstFbo.destroy();
+            RenderSystems.opengl().device().commendEncoder()
+                    .draw(
+                            program,
+                            null,
+                            DrawObject.fullscreenQuad(RenderSystems.opengl().device()).once(),
+                            0,
+                            DrawObject.fullscreenQuadVertexCount()
+                    );
+            RenderSystems.opengl().device().commendEncoder().renderState().apply(stateSnapshot);
+            RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commendEncoder().end());
+        }
         GlDebug.popGroup();
     }
 }

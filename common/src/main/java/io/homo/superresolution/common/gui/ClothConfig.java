@@ -556,8 +556,64 @@ public class ClothConfig {
             chart.push(PerformanceInfo.getAsMillis("runTick"), 1000);
         });
         frameTimeChart.setDisplayRange(0, 100);
+        ClothChartEntry worldTimeChartCPU = new ClothChartEntry(
+                "CPU " + Component.translatable("superresolution.screen.info.performance_info.world_time",
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_RenderWorld"))
+                                .setScale(3, RoundingMode.HALF_UP)
+                ).getString(),
+                Component.empty()
+                        .append("CPU ")
+                        .append(Component.translatable("superresolution.screen.info.performance_info.world_time",
+                                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_RenderWorld"))
+                                                .setScale(3, RoundingMode.HALF_UP)
+                                )
+                        ),
+                null
+        );
+        worldTimeChartCPU.setRenderCallback((chart) -> {
+            if (Minecraft.getInstance().level != null) {
+                chart.setName(
+                        "CPU " + Component.translatable("superresolution.screen.info.performance_info.world_time",
+                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_RenderWorld"))
+                                        .setScale(3, RoundingMode.HALF_UP)
+                        ).getString()
+                );
+                chart.push(PerformanceInfo.getAsMillis("CPU_RenderWorld"), 1000);
+            }
+        });
+        worldTimeChartCPU.setDisplayRange(0, 80);
+
+        ClothChartEntry srUpscaleTimeChartCPU = new ClothChartEntry(
+                "CPU " + Component.translatable("superresolution.screen.info.performance_info.upscale_time",
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"))
+                                .setScale(3, RoundingMode.HALF_UP)
+                ).getString(),
+                Component.empty()
+                        .append("CPU ")
+                        .append(Component.translatable("superresolution.screen.info.performance_info.upscale_time",
+                                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"))
+                                                .setScale(3, RoundingMode.HALF_UP)
+                                )
+                        ),
+                null
+        );
+        srUpscaleTimeChartCPU.setRenderCallback((chart) -> {
+            if (Minecraft.getInstance().level != null) {
+                chart.setName(
+                        "CPU " + Component.translatable("superresolution.screen.info.performance_info.upscale_time",
+                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"))
+                                        .setScale(3, RoundingMode.HALF_UP)
+                        ).getString()
+                );
+                chart.push(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"), 1000);
+            }
+        });
+        srUpscaleTimeChartCPU.setDisplayRange(0, 40);
         performanceInfoCategory.addEntry(debugInfo);
         performanceInfoCategory.addEntry(frameTimeChart);
+        performanceInfoCategory.addEntry(worldTimeChartCPU);
+        performanceInfoCategory.addEntry(srUpscaleTimeChartCPU);
+
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             ClothChartEntry worldTimeChart = new ClothChartEntry(
                     Component.translatable("superresolution.screen.info.performance_info.world_time",
