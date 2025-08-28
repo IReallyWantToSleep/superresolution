@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.graphics.impl;
 
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexArray;
@@ -28,30 +29,30 @@ public class DrawObject implements Destroyable {
     }
 
     public static DrawObject fullscreenQuad(IDevice device) {
-        if (fullscreenQuadInstance == null) {
-            float[] vertices = {
-                    -1f, 1f, 0f, 1f,
-                    1f, 1f, 1f, 1f,
-                    -1f, -1f, 0f, 0f,
-                    1f, -1f, 1f, 0f
-            };
+        //if (fullscreenQuadInstance == null) {
+        float[] vertices = {
+                -1f, 1f, 0f, 1f,
+                1f, 1f, 1f, 1f,
+                -1f, -1f, 0f, 0f,
+                1f, -1f, 1f, 0f
+        };
 
-            VertexBufferDescription desc = new VertexBufferDescription(vertices.length * Float.BYTES, false);
-            IVertexBuffer vbo = device.createVertexBuffer(desc);
-            vbo.updateData(vertices, 0, vertices.length);
+        VertexBufferDescription desc = new VertexBufferDescription(vertices.length * Float.BYTES, false);
+        IVertexBuffer vbo = device.createVertexBuffer(desc);
+        vbo.updateData(vertices, 0, vertices.length);
 
-            VertexAttribute[] attributes = new VertexAttribute[]{
-                    new VertexAttribute(0, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 0),
-                    new VertexAttribute(1, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 2 * Float.BYTES)
-            };
+        VertexAttribute[] attributes = new VertexAttribute[]{
+                new VertexAttribute(0, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 0),
+                new VertexAttribute(1, 2, VertexAttribute.DataType.FLOAT, 4 * Float.BYTES, 2 * Float.BYTES)
+        };
+        //TODO:转换成通用实现
+        IVertexArray vao = new GlVertexArray();
+        vao.setAttributes(attributes, vbo);
 
-            IVertexArray vao = new GlVertexArray();
-            vao.setAttributes(attributes, vbo);
+        return new DrawObject(vbo, vao, PrimitiveType.TRIANGLE_STRIP);
+        //}
 
-            fullscreenQuadInstance = new DrawObject(vbo, vao, PrimitiveType.TRIANGLE_STRIP);
-        }
-
-        return fullscreenQuadInstance;
+        //return fullscreenQuadInstance;
     }
 
     public PrimitiveType getPrimitiveType() {
@@ -77,10 +78,10 @@ public class DrawObject implements Destroyable {
 
     @Override
     public void destroy() {
-        if (this != fullscreenQuadInstance) {
-            this.vertexBuffer.destroy();
-            this.vertexArray.destroy();
-        }
+
+        this.vertexBuffer.destroy();
+        this.vertexArray.destroy();
+
     }
 
     public void close() {

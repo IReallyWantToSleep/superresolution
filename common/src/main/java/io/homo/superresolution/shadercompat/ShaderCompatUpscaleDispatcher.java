@@ -127,6 +127,8 @@ public class ShaderCompatUpscaleDispatcher {
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
         if (!SuperResolutionConfig.isEnableUpscale()) return;
         if (getCurrentConfig() == null) return;
+        PerformanceInfo.begin("CPU_SRUpscaleC");
+
         SRShaderCompatConfig.WorldUpscaleConfig currentConfig = getCurrentConfig().upscale_config;
         /*
           检查用于复制纹理的着色器是否可用，不可用就初始化
@@ -260,5 +262,7 @@ public class ShaderCompatUpscaleDispatcher {
                 }
             }
         }
+        PerformanceInfo.end("CPU_SRUpscaleC");
+
     }
 }

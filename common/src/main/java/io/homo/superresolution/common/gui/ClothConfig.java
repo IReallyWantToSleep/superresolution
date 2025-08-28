@@ -585,13 +585,13 @@ public class ClothConfig {
 
         ClothChartEntry srUpscaleTimeChartCPU = new ClothChartEntry(
                 "CPU " + Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"))
+                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"))
                                 .setScale(3, RoundingMode.HALF_UP)
                 ).getString(),
                 Component.empty()
                         .append("CPU ")
                         .append(Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"))
+                                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"))
                                                 .setScale(3, RoundingMode.HALF_UP)
                                 )
                         ),
@@ -601,11 +601,11 @@ public class ClothConfig {
             if (Minecraft.getInstance().level != null) {
                 chart.setName(
                         "CPU " + Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"))
+                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"))
                                         .setScale(3, RoundingMode.HALF_UP)
                         ).getString()
                 );
-                chart.push(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB"), 1000);
+                chart.push(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"), 1000);
             }
         });
         srUpscaleTimeChartCPU.setDisplayRange(0, 40);
