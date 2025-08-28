@@ -23,7 +23,7 @@
 
 #extension GL_GOOGLE_include_directive : enable
 // Needed for rw_upscaled_output declaration
-#extension GL_EXT_shader_image_load_formatted : require
+#extension GL_EXT_shader_image_load_formatted : enable
 
 #define FSR2_BIND_SRV_INPUT_EXPOSURE                         13
 #define FSR2_BIND_SRV_DILATED_REACTIVE_MASKS                 14

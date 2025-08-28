@@ -119,9 +119,7 @@ FfxFloat32x4 SpdReduce4(FfxFloat32x4 v0, FfxFloat32x4 v1, FfxFloat32x4 v2, FfxFl
 #endif // #if FFX_SPD_PACKED_ONLY
 
 //_____________________________________________________________/\_______________________________________________________________
-#if defined(FFX_GLSL) && !defined(FFX_SPD_NO_WAVE_OPERATIONS)
-#extension GL_KHR_shader_subgroup_quad:require
-#endif
+
 
 void ffxSpdWorkgroupShuffleBarrier()
 {

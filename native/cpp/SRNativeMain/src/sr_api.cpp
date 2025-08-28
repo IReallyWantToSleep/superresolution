@@ -16,7 +16,7 @@
 
 #include <unordered_set>
 
-static std::unordered_set<std::wstring> g_loadedLibraries;
+static std::unordered_set<std::string> g_loadedLibraries;
 
 static std::vector<SRUpscaleProvider> g_srLoadedUpscaleProviders;
 static std::mutex g_providerMutex;
@@ -89,7 +89,7 @@ SR_API SRReturnCode srDispatchUpscale(
     return context->callbacks.pDispatchUpscale(context, desc);
 }
 SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
-    const std::wstring &libPath,
+    const std::string &libPath,
     const std::string &getProvidersFuncName,
     const std::string &getProvidersCountFuncName,
     SRMessageCallback messageCallback)
@@ -107,7 +107,24 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     }
 
 #ifdef ON_WIN64
-    HMODULE dll = LoadLibraryW(libPath.c_str());
+    // 首先将UTF-8字符串（jstring->GetStringUTFChars+reinterpet_cast->libPath(std::string)）转换为Windows Wide Char.
+    // 计算目标缓冲区大小
+    size_t wideLen = MultiByteToWideChar(CP_UTF8, 0, libPath.c_str(), -1, NULL, 0);
+    // 为0则返回error
+    if (size_t == 0)
+    {
+        if (messageCallback)
+        {
+            messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to load DLL.");
+        }
+        return SR_RETURN_CODE_ERROR;
+    }
+    // 否则分配内存并执行实际转换(在Windows上使用Windows API)
+    wchar_t* widePath = new wchar_t[wideLen];
+    MultiByteToWideChar(CP_UTF8, 0, libPath.c_str(), -1, widePath, wideLen);
+    HMODULE dll = LoadLibraryW(widePath);
+    // 调用完回收内存（Should we use try{}finally{} here?）
+    delete[] widePath;
     if (!dll)
     {
         if (messageCallback)
@@ -121,14 +138,16 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     auto getProviders = (SRUpscaleProviderSupplierFunc)GetProcAddress(dll, getProvidersFuncName.c_str());
 
 #elif defined(ON_LINUX64)
+    // 路径不用转换，本来就是UTF-8 
+    // 这个converter用来转换messageCallback
+    // FSR为什么要用wchar_t呢
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    std::string utf8LibPath = converter.to_bytes(libPath);
-
-    void *handle = dlopen(utf8LibPath.c_str(), RTLD_NOW);
+    void *handle = dlopen(libPath.c_str(), RTLD_NOW);
     if (!handle)
     {
         if (messageCallback)
         {
+            // 这里必须使用wchar_t，以与FSR的CallBack兼容
             std::wstring error = L"Failed to load .so: " + converter.from_bytes(dlerror());
             messageCallback(SR_MESSAGE_TYPE_ERROR, error.c_str());
         }

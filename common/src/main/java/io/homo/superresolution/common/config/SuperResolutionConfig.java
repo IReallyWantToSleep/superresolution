@@ -122,13 +122,13 @@ public class SuperResolutionConfig {
 
         ENABLE_RENDER_DOC = builder.defineBoolean(
                 "debug/enable_render_doc",
-                () -> CURRENT_OS_TYPE == OSType.WINDOWS && Platform.currentPlatform.isDevelopmentEnvironment(),
+                () -> (CURRENT_OS_TYPE == OSType.WINDOWS || CURRENT_OS_TYPE == OSType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable RenderDoc integration (auto-disabled on incompatible OS)"
         );
 
         ENABLE_IMGUI = builder.defineBoolean(
                 "debug/enable_imgui",
-                () -> CURRENT_OS_TYPE == OSType.WINDOWS && Platform.currentPlatform.isDevelopmentEnvironment(),
+                () -> (CURRENT_OS_TYPE == OSType.WINDOWS || CURRENT_OS_TYPE == OSType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable ImGui debug interface (auto-disabled on incompatible OS)"
         );
 
