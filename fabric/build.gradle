@@ -95,7 +95,7 @@ loom {
     runs {
         client {
             client()
-
+            environmentVariables.put("ENABLE_VULKAN_RENDERDOC_CAPTURE", "1")
             vmArgs.add("-XX:+CreateMinidumpOnCrash")
             //vmArgs.add("-javaagent:" + Paths.get(renderdocPath, "render-nurse.jar"))
             vmArgs.add("--enable-preview")

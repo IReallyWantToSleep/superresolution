@@ -16,6 +16,18 @@ public class VkGlInteropSemaphore {
     private final long semaphoreHandle;
     private final VulkanDevice device;
 
+    public long getVkSemaphoreHandle() {
+        return vkSemaphoreHandle;
+    }
+
+    public long getGlSemaphoreHandle() {
+        return glSemaphoreHandle;
+    }
+
+    public long getSemaphoreHandle() {
+        return semaphoreHandle;
+    }
+
     private VkGlInteropSemaphore(long vkSemaphoreHandle, long glSemaphoreHandle, long semaphoreHandle, VulkanDevice device) {
         this.vkSemaphoreHandle = vkSemaphoreHandle;
         this.glSemaphoreHandle = glSemaphoreHandle;
@@ -56,40 +68,52 @@ public class VkGlInteropSemaphore {
         glDeleteSemaphoresEXT((int) glSemaphoreHandle);
     }
 
-    public void signalVulkan() {
+    public void signalVulkan(long[] commandBuffers) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pWaitSemaphores(null);
-            submitInfo.pSignalSemaphores(stack.longs(vkSemaphoreHandle));
-            submitInfo.pCommandBuffers(null);
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                    .pWaitSemaphores(null)
+                    .pSignalSemaphores(stack.longs(vkSemaphoreHandle))
+                    .pCommandBuffers(commandBuffers != null ? stack.pointers(commandBuffers) : null);
             VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), submitInfo, VK_NULL_HANDLE));
             VK_CHECK(vkQueueWaitIdle(device.getGraphicsQueue()));
         }
     }
 
+    public void waitVulkan(long[] commandBuffers) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                    .pWaitSemaphores(stack.longs(vkSemaphoreHandle))
+                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT))
+                    .pSignalSemaphores(null)
+                    .pCommandBuffers(commandBuffers != null ? stack.pointers(commandBuffers) : null);
+            VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), submitInfo, VK_NULL_HANDLE));
+            VK_CHECK(vkQueueWaitIdle(device.getGraphicsQueue()));
+        }
+    }
+
+    public void signalOpenGL(int[] textures, int[] framebuffers, int[] buffers) {
+        glSignalSemaphoreEXT((int) glSemaphoreHandle, textures, framebuffers, buffers);
+    }
+
+    public void waitOpenGL(int[] textures, int[] framebuffers, int[] buffers) {
+        glWaitSemaphoreEXT((int) glSemaphoreHandle, textures, framebuffers, buffers);
+    }
+
+    public void signalVulkan() {
+        signalVulkan(null);
+    }
 
     public void waitVulkan() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pWaitSemaphores(stack.longs(vkSemaphoreHandle));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
-            submitInfo.pSignalSemaphores(null);
-            submitInfo.pCommandBuffers(null);
-
-            VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), submitInfo, VK_NULL_HANDLE));
-            VK_CHECK(vkQueueWaitIdle(device.getGraphicsQueue()));
-        }
+        waitVulkan(null);
     }
-
 
     public void signalOpenGL() {
-        glSignalSemaphoreEXT((int) glSemaphoreHandle, new int[]{}, new int[]{}, new int[]{});
+        signalOpenGL(null, null, null);
     }
 
-
     public void waitOpenGL() {
-        glWaitSemaphoreEXT((int) glSemaphoreHandle, new int[]{}, new int[]{}, new int[]{});
+        waitOpenGL(null, null, null);
     }
 }

@@ -8,6 +8,7 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
@@ -21,27 +22,27 @@ import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
+import io.homo.superresolution.core.graphics.vulkan.semaphore.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.math.Vector2i;
 import io.homo.superresolution.srapi.*;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
 import java.util.Optional;
 
+import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
+import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
+
 public class FfxFSR extends AbstractAlgorithm {
     private SRUpscaleContext context;
-    private GlShaderProgram copyShader;
-    private GlFrameBuffer copyFramebuffer;
-
-    private Pipeline copyPipeline;
-
-    private ITexture srcInputColorGlTexture;
-    private ITexture srcInputDepthGlTexture;
-    private ITexture srcMotionVectorsGlTexture;
 
 
     private GlImportableTexture2D inputColorGlTexture;
@@ -54,14 +55,17 @@ public class FfxFSR extends AbstractAlgorithm {
     private VulkanTexture inputMotionVectorsVkTexture;
 
     private GlImportableTexture2D outputColorGlTexture;
+    private GlTexture2D outputColorTexture;
     private VulkanTexture outputColorVkTexture;
 
     private GlFrameBuffer outputFrameBuffer;
 
-    public boolean updateFsr() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return false;
+    private VkGlInteropSemaphore syncSemaphore;
+
+    public void updateFsr() {
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return;
         Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
-        if (!(lib.toFile().isFile() && lib.toFile().canRead())) return false;
+        if (!(lib.toFile().isFile() && lib.toFile().canRead())) return;
         if (context != null) {
             if (context.nativePtr > 0) {
                 SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
@@ -73,7 +77,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000006);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000003);
         this.context = new SRUpscaleContext(0);
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
@@ -90,7 +94,6 @@ public class FfxFSR extends AbstractAlgorithm {
         SuperResolution.LOGGER.info(String.valueOf(code.value));
         SuperResolution.LOGGER.info(String.valueOf(context.nativePtr));
         SuperResolution.LOGGER.info(String.valueOf(provider.nativePtr));
-        return true;
     }
 
     protected void destroySharedTexture() {
@@ -99,21 +102,24 @@ public class FfxFSR extends AbstractAlgorithm {
         if (this.inputDepthVkTexture != null) this.inputDepthVkTexture.destroy();
         if (this.inputDepthGlTexture != null) this.inputDepthGlTexture.destroy();
         if (this.outputColorVkTexture != null) this.outputColorVkTexture.destroy();
+        if (this.outputColorGlTexture != null) this.outputColorGlTexture.destroy();
+
         if (this.outputFrameBuffer != null) this.outputFrameBuffer.destroy();
-        if (this.copyFramebuffer != null) this.copyFramebuffer.destroy();
+        if (this.outputColorTexture != null) this.outputColorTexture.destroy();
+
 
     }
 
     protected void createSharedTexture() {
-        this.srcInputColorGlTexture = MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.Color);
         this.inputColorVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler())
-                        .format(this.srcInputColorGlTexture.getTextureFormat())
-                        .type(this.srcInputColorGlTexture.getTextureType())
-                        .width(this.srcInputColorGlTexture.getWidth())
-                        .height(this.srcInputColorGlTexture.getHeight())
+                        .format(TextureFormat.R11G11B10F)
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .width(MinecraftRenderHandle.getRenderHeight())
+                        .label("SRUpscaleInputColorVkTexture")
                         .build(),
                 false,
                 0,
@@ -121,31 +127,31 @@ public class FfxFSR extends AbstractAlgorithm {
         );
         this.inputColorGlTexture = new GlImportableTexture2D(this.inputColorVkTexture);
 
-        this.srcInputDepthGlTexture = MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
         this.inputDepthVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler())
                         .format(TextureFormat.R16F)
-                        .type(this.srcInputDepthGlTexture.getTextureType())
-                        .width(this.srcInputDepthGlTexture.getWidth())
-                        .height(this.srcInputDepthGlTexture.getHeight())
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .width(MinecraftRenderHandle.getRenderHeight())
+                        .label("SRUpscaleInputDepthVkTexture")
                         .build(),
                 false,
                 0,
                 true
         );
-        this.inputDepthGlTexture = new GlImportableTexture2D(this.inputColorVkTexture);
+        this.inputDepthGlTexture = new GlImportableTexture2D(this.inputDepthVkTexture);
 
-        this.srcMotionVectorsGlTexture = AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color);
         this.inputMotionVectorsVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler())
                         .format(TextureFormat.RG16F)
-                        .type(this.srcMotionVectorsGlTexture.getTextureType())
-                        .width(this.srcMotionVectorsGlTexture.getWidth())
-                        .height(this.srcMotionVectorsGlTexture.getHeight())
+                        .type(TextureType.Texture2D)
+                        .width(MinecraftRenderHandle.getRenderWidth())
+                        .width(MinecraftRenderHandle.getRenderHeight())
+                        .label("SRUpscaleInputMotionVectorsVkTexture")
                         .build(),
                 false,
                 0,
@@ -153,56 +159,39 @@ public class FfxFSR extends AbstractAlgorithm {
         );
         this.inputMotionVectorsGlTexture = new GlImportableTexture2D(this.inputMotionVectorsVkTexture);
 
-
         this.outputColorVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .usages(TextureUsages.create().sampler().storage())
+                        .format(TextureFormat.R11G11B10F)
+                        .width(MinecraftRenderHandle.getScreenWidth())
+                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .label("SRUpscaleOutputColorVkTexture")
+                        .build(),
+                false,
+                0,
+                true
+        );
+        this.outputColorGlTexture = new GlImportableTexture2D(this.outputColorVkTexture);
+        this.outputColorTexture = GlTexture2D.create(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().sampler().storage())
                         .format(TextureFormat.RGBA8)
                         .width(MinecraftRenderHandle.getScreenWidth())
                         .height(MinecraftRenderHandle.getScreenHeight())
-                        .build(),
-                false,
-                0,
-                true
+                        .label("SRUpscaleOutputColorGlTexture_FfxFsr")
+                        .build()
         );
-        this.outputColorGlTexture = new GlImportableTexture2D(this.inputColorVkTexture);
-        this.outputFrameBuffer = GlFrameBuffer.create(this.outputColorGlTexture, null);
-        copyFramebuffer = GlFrameBuffer.create(
-                this.inputDepthGlTexture,
-                null
-        );
+        this.outputFrameBuffer = GlFrameBuffer.create(this.outputColorTexture, null);
     }
 
     @Override
     public void init() {
-        if (!updateFsr()) {
-            throw new RuntimeException();
-        }
+        updateFsr();
         createSharedTexture();
-        copyShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.graphics(
-                                new ShaderSource(ShaderType.FRAGMENT, "/shader/depth_to_r16f.frag.glsl", true),
-                                new ShaderSource(ShaderType.VERTEX, "/shader/depth_to_r16f.vert.glsl", true)
-                        )
-                        .name("ffxfsr_copy_depth_to_color")
-                        .uniformSamplerTexture("tex", 0)
-                        .build()
-        );
-        copyShader.compile();
-        copyPipeline = new Pipeline();
-        copyPipeline.job("copy",
-                PipelineJobBuilders.graphics(copyShader)
-                        .resource(
-                                "tex",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.of(this.inputDepthGlTexture)
-                                )
-                        )
-                        .targetFramebuffer(copyFramebuffer)
-                        .build()
-        );
+        syncSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
     }
 
     @Override
@@ -212,18 +201,42 @@ public class FfxFSR extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
-        RenderSystems.opengl().device().commendEncoder().begin();
-        RenderSystems.opengl().device().commendEncoder().copyTexture(
-                this.srcInputColorGlTexture,
-                this.inputColorGlTexture
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(dispatchResource.resources().colorTexture())
+                        .dst(this.inputColorGlTexture)
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
         );
-        RenderSystems.opengl().device().commendEncoder().copyTexture(
-                this.srcMotionVectorsGlTexture,
-                this.inputMotionVectorsGlTexture
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(dispatchResource.resources().depthTexture())
+                        .dst(this.inputDepthGlTexture)
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
         );
-        //copyPipeline.execute(RenderSystems.opengl().device().commendEncoder().getCommandBuffer());
-        RenderSystems.opengl().device().commendEncoder().end().submit(RenderSystems.opengl().device());
-        RenderSystems.opengl().finish();
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(dispatchResource.resources().motionVectorsTexture())
+                        .dst(this.inputMotionVectorsGlTexture)
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+        );
+        syncSemaphore.signalOpenGL(
+                new int[]{
+                        Math.toIntExact(this.inputColorGlTexture.handle()),
+                        Math.toIntExact(this.inputDepthGlTexture.handle()),
+                        Math.toIntExact(this.inputMotionVectorsGlTexture.handle())
+                },
+                new int[]{
+                        GlTextureCopier.getCachedFrameBuffer()
+                },
+                new int[]{
+                        GL_LAYOUT_GENERAL_EXT,
+                        GL_LAYOUT_GENERAL_EXT,
+                        GL_LAYOUT_GENERAL_EXT
+                }
+        );
 
         RenderSystems.vulkan().device().commendEncoder().begin();
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commendEncoder().getCommandBuffer();
@@ -253,7 +266,7 @@ public class FfxFSR extends AbstractAlgorithm {
         desc.setPreExposure(1.0f);
         desc.setCameraNear(dispatchResource.cameraNear());
         desc.setCameraFar(dispatchResource.cameraFar());
-        desc.setCameraFovAngleVertical((float) Math.toRadians(dispatchResource.verticalFov()));
+        desc.setCameraFovAngleVertical(dispatchResource.verticalFov());
         desc.setViewSpaceToMetersFactor(0.0f);
         desc.setReset(false);
         desc.setFlags(0);
@@ -264,14 +277,37 @@ public class FfxFSR extends AbstractAlgorithm {
         );
 
         RenderSystems.vulkan().device().commendEncoder().end();
-        commandBuffer.submit(RenderSystems.vulkan().device());
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                    .pCommandBuffers(
+                            stack.pointers(
+                                    commandBuffer
+                                            .getNativeCommandBuffer()
+                                            .address()
+                            )
+                    )
+                    .pWaitSemaphores(stack.longs(syncSemaphore.getVkSemaphoreHandle()))
+                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
+            vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        }
         RenderSystems.vulkan().finish();
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(this.outputColorGlTexture)
+                        .dst(this.outputColorTexture)
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+        );
         return true;
     }
 
     @Override
     public void destroy() {
         destroySharedTexture();
+        syncSemaphore.destroy();
         if (context != null && context.nativePtr > 0)
             SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
     }
