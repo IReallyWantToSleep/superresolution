@@ -1,5 +1,6 @@
 #pragma once
 #include "sr/sr_api.h"
+#include <cstdint>
 
 #include "ffx-fsr2-api/ffx_error.h"
 #include "ffx-fsr2-api/ffx_types.h"
@@ -58,7 +59,7 @@ static GLenum getGLFormatFromSurfaceFormat(SRSurfaceFormat fmt)
 FfxResource SRTextureResourceToFfxResourceGL(const SRTextureResource *srTex)
 {
     return ffxGetTextureResourceGL(
-        (GLuint)(srTex->handle),
+        (GLuint)(uintptr_t)(srTex->handle),
         srTex->desc.width,
         srTex->desc.height,
         getGLFormatFromSurfaceFormat(srTex->desc.format),
