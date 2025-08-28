@@ -261,8 +261,12 @@ public class MinecraftRenderHandle {
 
     public static void onRenderWorldBegin(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
+        PerformanceInfo.begin("CPU_RenderWorld");
         isRenderingWorld = true;
         //SuperResolution.LOGGER.info("renderBegin");
+
+        PerformanceInfo.begin("CPU_SRUpscaleA");
+
         if (SuperResolution.cachedWidth != getScreenWidth() || SuperResolution.cachedHeight != getScreenHeight()) {
             SuperResolution.getInstance().resize(getScreenWidth(), getScreenHeight());
         }
@@ -296,11 +300,15 @@ public class MinecraftRenderHandle {
                 LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
             }
         }
+        PerformanceInfo.end("CPU_SRUpscaleA");
+
     }
 
     public static void onRenderWorldEnd(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
         isRenderingWorld = false;
+        PerformanceInfo.begin("CPU_SRUpscaleB");
+
         if (!SuperResolution.isShaderPackCompatSuperResolution()) {
         #if MC_VER == MC_1_21_5
             ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
@@ -447,9 +455,11 @@ public class MinecraftRenderHandle {
                 RenderDoc.renderdoc.EndFrameCapture.call(null, null);
             }
         }
+        PerformanceInfo.end("CPU_SRUpscaleB");
 
         //SuperResolution.LOGGER.info("renderEnd");
         frameCount++;
+        PerformanceInfo.end("CPU_RenderWorld");
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {

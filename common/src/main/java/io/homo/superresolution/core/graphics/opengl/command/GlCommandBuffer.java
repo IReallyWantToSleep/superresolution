@@ -45,7 +45,14 @@ public class GlCommandBuffer implements ICommandBuffer {
 
     @Override
     public void submit(IDevice device) {
-        try (GlState state = new GlState(GlState.STATE_ALL)) {
+        try (GlState state = new GlState(
+                GlState.STATE_DRAW_FBO |
+                        GlState.STATE_ACTIVE_TEXTURE |
+                        GlState.STATE_TEXTURES |
+                        GlState.STATE_PROGRAM |
+                        GlState.STATE_VERTEX_OPERATIONS |
+                        GlState.STATE_VIEWPORT
+        )) {
             GlDebug.pushGroup(GlDebug.nextCommandBufferId(), "GlCommandBuffer");
             for (Runnable call : glCalls) {
                 call.run();
