@@ -23,6 +23,12 @@ allprojects {
     }
 
     repositories {
+        if (System.getenv().containsKey("SR_DEV")) {
+            maven {
+                name "minecraftdevRepository"
+                url "http://127.0.0.1:8080/releases"
+            }
+        }
         mavenCentral()
         maven { url 'https://maven.neoforged.net' }
         maven { url 'https://maven.aliyun.com/repository/central' }

@@ -72,4 +72,8 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     ) {
         return new Vector2f(0);
     }
+
+    public boolean isSupportJitter() {
+        return false;
+    }
 }
