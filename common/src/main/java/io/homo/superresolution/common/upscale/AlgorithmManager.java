@@ -88,7 +88,7 @@ public class AlgorithmManager {
                     new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
                     new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
             );
-            return jitter.divide(new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()));
+            return jitter;
         }
         return new Vector2f(0);
     }

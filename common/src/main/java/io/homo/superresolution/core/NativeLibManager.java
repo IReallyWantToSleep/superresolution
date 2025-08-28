@@ -36,7 +36,6 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
             LIB_SUPER_RESOLUTION_FSRGL = new NativeLib("SuperResolutionFSRGL", false);
-            libs.add(new NativeLib("SPIRV-Tools-shared", true));
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_FSRGL);

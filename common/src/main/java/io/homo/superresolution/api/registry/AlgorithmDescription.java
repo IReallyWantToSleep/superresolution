@@ -44,10 +44,6 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         return displayName;
     }
 
-    public String getUUID() {
-        return uuid;
-    }
-
     public T createNewInstance() {
         try {
             T instance = this.clazz.getDeclaredConstructor().newInstance();

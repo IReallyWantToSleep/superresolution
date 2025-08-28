@@ -6,6 +6,14 @@ plugins {
 }
 
 repositories {
+    maven { url 'https://maven.aliyun.com/repository/central' }
+
+    if (System.getenv().containsKey("SR_DEV")) {
+        maven {
+            name "minecraftdevRepository"
+            url "http://127.0.0.1:8080/releases"
+        }
+    }
     maven {
         url "https://cursemaven.com"
         content {
