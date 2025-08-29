@@ -26,11 +26,11 @@ extern "C"
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
         size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->phyDevice), 1);
         void *scratchBuffer = calloc(1, scratchBufferSize);
-        FfxInterface ffxInterface = *new FfxInterface();
-        SRFSR_CHECK(ffxGetInterfaceVK(&ffxInterface, device, scratchBuffer, scratchBufferSize, 1));
+        FfxInterface *ffxInterface = new FfxInterface();
+        SRFSR_CHECK(ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1));
         FfxFsr3UpscalerContextDescription fsrContexDesc = {};
         fsrContexDesc.flags = FFX_FSR3UPSCALER_ENABLE_DEBUG_CHECKING;
-        fsrContexDesc.backendInterface = ffxInterface;
+        fsrContexDesc.backendInterface = *ffxInterface;
         fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
         fsrContexDesc.maxUpscaleSize = {desc->upscaledSize.x, desc->upscaledSize.y};
         fsrContexDesc.fpMessage = desc->messageCallback ? reinterpret_cast<FfxFsr3UpscalerMessage>(desc->messageCallback) : nullptr;
@@ -38,12 +38,14 @@ extern "C"
         FfxErrorCode code = ffxFsr3UpscalerContextCreate(fsr3Context, &fsrContexDesc);
         if (code != FFX_OK)
         {
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context create failed");
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(code).c_str());
             free(scratchBuffer);
             return (SRReturnCode)SR_RETURN_CODE_ERROR;
         }
         SRFsr3PrivateData *privateData = new SRFsr3PrivateData();
         privateData->context = fsr3Context;
-        privateData->ffxInterface = &ffxInterface;
+        privateData->ffxInterface = ffxInterface;
         privateData->scratchBuffer = scratchBuffer;
 
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);

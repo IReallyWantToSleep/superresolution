@@ -1,6 +1,6 @@
 #include "sr/fsr/sr_provider.h"
 
-static SRUpscaleProvider g_providers[1];
+static SRUpscaleProvider g_providers[2];
 static bool g_initialized = false;
 
 static void ensureInitialized() {
@@ -18,12 +18,13 @@ extern "C" {
     SR_API SRReturnCode srGetFfxFSRUpscaleProviders(SRUpscaleProvider *outProvider) {
         ensureInitialized();
         outProvider[0] = g_providers[0];
+        outProvider[1] = g_providers[1];
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srGetFfxFSRUpscaleProvidersCount(uint32_t *outCount) {
         ensureInitialized();
-        *outCount = 1;
+        *outCount = 2;
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 }

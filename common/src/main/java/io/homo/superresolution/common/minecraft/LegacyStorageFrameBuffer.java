@@ -45,10 +45,6 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
             this.depthBufferId = TextureUtil.generateTextureId();
             this.colorAttachment1 = TextureUtil.generateTextureId();
             if (label == null) label = "SRLegacyStorageFrameBuffer";
-            GlDebug.objectLabel(GL_FRAMEBUFFER, frameBufferId, label);
-            GlDebug.objectLabel(GL_TEXTURE, colorTextureId, label + "-ColorTexture");
-            GlDebug.objectLabel(GL_TEXTURE, depthBufferId, label + "-DepthTexture");
-
             glBindFramebuffer(GL_FRAMEBUFFER, this.frameBufferId);
             //depth
             glBindTexture(GL_TEXTURE_2D, this.depthBufferId);
@@ -88,6 +84,10 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
             this.clear(clearError);
             #endif
             this.unbindRead();
+            GlDebug.objectLabel(GL_FRAMEBUFFER, frameBufferId, label);
+            GlDebug.objectLabel(GL_TEXTURE, colorTextureId, label + "-ColorTexture");
+            GlDebug.objectLabel(GL_TEXTURE, depthBufferId, label + "-DepthTexture");
+
         } else {
             throw new IllegalArgumentException("Window " + width + "x" + height + " size out of bounds (max. size: " + maxSupportedTextureSize + ")");
         }

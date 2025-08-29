@@ -111,7 +111,7 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     // 计算目标缓冲区大小
     size_t wideLen = MultiByteToWideChar(CP_UTF8, 0, libPath.c_str(), -1, NULL, 0);
     // 为0则返回error
-    if (size_t == 0)
+    if (wideLen == 0)
     {
         if (messageCallback)
         {
