@@ -1,16 +1,16 @@
-package io.homo.superresolution.shadercompat;
+package io.homo.superresolution.core.graphics.opengl.framebuffer;
 
 import io.homo.superresolution.core.graphics.impl.texture.*;
 
 import java.util.function.Supplier;
 
-public class OnlyNameTexture implements ITexture {
+public class GlOnlyNameTexture implements ITexture {
     private final Supplier<TextureFormat> textureFormatSupplier;
     private final Supplier<Integer> widthSupplier;
     private final Supplier<Integer> heightSupplier;
     private final Supplier<Long> handleSupplier;
 
-    public OnlyNameTexture(Supplier<TextureFormat> textureFormatSupplier, Supplier<Integer> widthSupplier, Supplier<Integer> heightSupplier, Supplier<Long> handleSupplier) {
+    public GlOnlyNameTexture(Supplier<TextureFormat> textureFormatSupplier, Supplier<Integer> widthSupplier, Supplier<Integer> heightSupplier, Supplier<Long> handleSupplier) {
         this.textureFormatSupplier = textureFormatSupplier;
         this.widthSupplier = widthSupplier;
         this.heightSupplier = heightSupplier;

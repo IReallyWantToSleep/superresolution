@@ -19,7 +19,7 @@ public class NativeLibManager {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-NativeLib");
 
 
-    public static final boolean USE_DEBUG_LIB = false;
+    public static final boolean USE_DEBUG_LIB = true;
 
     private static final List<NativeLib> libs = new ArrayList<>();
     private static boolean nativeApiAvailable;
@@ -35,10 +35,8 @@ public class NativeLibManager {
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
-            LIB_SUPER_RESOLUTION_FSRGL = new NativeLib("SuperResolutionFSRGL", false);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
-            libs.add(LIB_SUPER_RESOLUTION_FSRGL);
 
         } else if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
@@ -47,10 +45,8 @@ public class NativeLibManager {
         } else if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
-            LIB_SUPER_RESOLUTION_FSRGL = new NativeLib("SuperResolutionFSRGL", false);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
-            libs.add(LIB_SUPER_RESOLUTION_FSRGL);
 
         } else if (os.type == OSType.MACOS && os.arch == Arch.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);

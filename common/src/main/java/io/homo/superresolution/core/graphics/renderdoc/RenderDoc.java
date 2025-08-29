@@ -20,7 +20,7 @@ public class RenderDoc {
     }
 
     public static void init() {
-        if (true) return;
+        //if (true) return;
         var apiPointer = new PointerByReference();
         RenderdocLibrary.RenderdocApi apiInstance = null;
         if (OSType.isCurrentOS(OSType.WINDOWS) || OSType.isCurrentOS(OSType.LINUX)) {
@@ -30,8 +30,7 @@ public class RenderDoc {
                 String libPath = "";
                 if (OSType.isCurrentOS(OSType.WINDOWS)) {
                     libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
-                }
-                else {
+                } else {
                     libPath = Path.of(projectDir, "renderdoc", "librenderdoc.so").toAbsolutePath().toString();
                 }
                 LOGGER.info("RenderDoc库路径 {}", libPath);

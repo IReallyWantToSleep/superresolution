@@ -96,13 +96,13 @@ public class VulkanTexture implements ITexture {
 
         if (isExternal || exportable) {
             VkExternalMemoryImageCreateInfo extInfo;
-            if(OSType.isCurrentOS(OSType.WINDOWS)) {
+            //TODO:移到VulkanInterop
+            if (OSType.isCurrentOS(OSType.WINDOWS)) {
                 extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
                         .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);
                 // Here,still WIN32,though. Is this used for renderdoc?
-            }
-            else{
+            } else {
                 extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
                         .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);

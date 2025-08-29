@@ -38,6 +38,8 @@ extern "C"
         FfxErrorCode code = ffxFsr2ContextCreate(fsr2Context, &fsrContexDesc);
         if (code != FFX_OK)
         {
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 Context create failed");
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(code).c_str());
             free(scratchBuffer);
             return (SRReturnCode)SR_RETURN_CODE_ERROR;
         }

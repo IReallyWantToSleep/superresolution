@@ -1,6 +1,7 @@
 package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlOnlyNameTexture;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.irisshaders.iris.targets.RenderTargets;
@@ -17,10 +18,10 @@ public class IrisTextureResolver {
     private static final String NO_HAND_DEPTH_TEX = "noHandDepthtex";
     private static final String NO_TRANSLUCENT_DEPTH_TEX = "noTranslucentDepthtex";
 
-    public static OnlyNameTexture getIrisTexture(CompositeRenderer renderer, String name) {
+    public static GlOnlyNameTexture getIrisTexture(CompositeRenderer renderer, String name) {
         int id = getIrisTextureByName(renderer, name);
         if (id < 1) return null;
-        return new OnlyNameTexture(
+        return new GlOnlyNameTexture(
                 () -> {
                     int format = GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, id);
                     return format == GL_DEPTH_COMPONENT ? TextureFormat.DEPTH32 : TextureFormat.fromGl(format);

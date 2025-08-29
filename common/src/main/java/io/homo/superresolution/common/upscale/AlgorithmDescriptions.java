@@ -4,6 +4,7 @@ import io.homo.superresolution.api.event.AlgorithmRegisterEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSROgl;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
@@ -110,8 +111,10 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(NONE);
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
-        AlgorithmRegistry.registry(FSR);
-        AlgorithmRegistry.registry(FSROgl);
+        if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
+            AlgorithmRegistry.registry(FSR);
+            //AlgorithmRegistry.registry(FSROgl);
+        }
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         AlgorithmRegisterEvent.EVENT.invoker().onAlgorithmRegister();

@@ -261,6 +261,10 @@ public class MinecraftRenderHandle {
 
     public static void onRenderWorldBegin(CallType type) {
         if (!checkRenderWorldCallPos(type)) return;
+        PerformanceInfo.end("CPU_SRUpscaleA", 0);
+        PerformanceInfo.end("CPU_SRUpscaleB", 0);
+        PerformanceInfo.end("CPU_SRUpscaleC", 0);
+
         PerformanceInfo.begin("CPU_RenderWorld");
         isRenderingWorld = true;
         //SuperResolution.LOGGER.info("renderBegin");
