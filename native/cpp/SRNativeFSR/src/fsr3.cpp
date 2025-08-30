@@ -128,10 +128,10 @@ extern "C"
     SR_API SRUpscaleContextCallbacks srGetFfxFSR3UpscaleCallbacks()
     {
         static SRUpscaleContextCallbacks callbacks = {
-            .pCreate = (SRCreateFunc)srFfxFsr3CreateUpscaleContext,
-            .pDestroy = (SRDestroyFunc)srFfxFsr3DestroyUpscaleContext,
-            .pQuery = (SRQueryFunc)srFfxFsr3QueryUpscale,
-            .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr3DispatchUpscale,
+              .pCreate = (SRCreateFunc)srFfxFsr3CreateUpscaleContext,
+              .pDestroy = (SRDestroyFunc)srFfxFsr3DestroyUpscaleContext,
+              .pQuery = (SRQueryFunc)srFfxFsr3QueryUpscale,
+              .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr3DispatchUpscale,
         };
         return callbacks;
     }

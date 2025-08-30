@@ -103,7 +103,7 @@ public class ClothConfig {
                 .setDefaultValue(AlgorithmDescriptions.FSR1)
                 .setNameProvider(((anEnum) -> Component.literal(((AlgorithmDescription<?>) anEnum).getBriefName())))
                 .setErrorSupplier((algorithmType -> {
-                    if (Platform.currentPlatform.isDevelopmentEnvironment() || Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID).contains("dev")) {
+                    if (Platform.currentPlatform.isDevelopmentEnvironment() || Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID).contains("dev") || System.getenv().containsKey("SR_TEST")) {
                         return Optional.empty();
                     }
                     if (!((AlgorithmDescription<?>) algorithmType).getRequirement().check().support()) {
