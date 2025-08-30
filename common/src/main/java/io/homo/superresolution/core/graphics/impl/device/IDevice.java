@@ -45,7 +45,7 @@ public interface IDevice {
      */
     IBuffer createBuffer(BufferDescription description);
 
-    ICommandEncoder commendEncoder();
+    ICommandEncoder commandEncoder();
 
     ICommandDecoder commandDecoder();
 

@@ -91,6 +91,7 @@ public class VulkanCommandManager {
             VulkanUtils.VK_CHECK(vkAllocateCommandBuffers(device.getVkDevice(), allocInfo, pCommandBuffer), "Failed to allocate command buffer");
             VkCommandBuffer cmdBuf = new VkCommandBuffer(pCommandBuffer.get(0), device.getVkDevice());
             allocatedBuffers.add(cmdBuf);
+            
             return cmdBuf;
         }
     }

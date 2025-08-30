@@ -26,7 +26,7 @@ public class None extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        if (cachedFrameBufferId < 0) {
+        if (cachedFrameBufferId < 0 || Gl.DSA.checkNamedFramebufferStatus(cachedFrameBufferId, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             cachedFrameBufferId = Gl.DSA.createFramebuffer();
         }
         Gl.DSA.framebufferTexture(

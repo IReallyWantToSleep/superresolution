@@ -24,13 +24,13 @@ import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
 
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
+import static org.lwjgl.opengl.EXTSemaphore.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class FfxFSR extends AbstractAlgorithm {
     private SRUpscaleContext context;
@@ -226,14 +226,12 @@ public class FfxFSR extends AbstractAlgorithm {
                         GlTextureCopier.getCachedFrameBuffer()
                 },
                 new int[]{
-                        GL_LAYOUT_GENERAL_EXT,
-                        GL_LAYOUT_GENERAL_EXT,
-                        GL_LAYOUT_GENERAL_EXT
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT
                 }
         );
 
-        RenderSystems.vulkan().device().commendEncoder().begin();
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commendEncoder().getCommandBuffer();
+        RenderSystems.vulkan().device().commandEncoder().begin();
+        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commandEncoder().getCommandBuffer();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
         desc.setCommandList(commandBuffer.getNativeCommandBuffer().address());
         desc.setColor(new SRTextureResource(this.inputColorVkTexture));
@@ -276,7 +274,8 @@ public class FfxFSR extends AbstractAlgorithm {
                 desc
         );
 
-        RenderSystems.vulkan().device().commendEncoder().end();
+        RenderSystems.vulkan().device().commandEncoder().end();
+
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
@@ -293,17 +292,9 @@ public class FfxFSR extends AbstractAlgorithm {
             vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo, VK_NULL_HANDLE);
         }
         syncVkSemaphore.waitOpenGL(
-                new int[]{Math.toIntExact(this.outputColorGlTexture.handle()), Math.toIntExact(this.outputColorTexture.handle())},
-                new int[]{},
-                new int[]{}
-        );
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(this.outputColorGlTexture)
-                        .dst(this.outputColorTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
+                new int[]{Math.toIntExact(this.outputFrameBuffer.handle())},
+                new int[]{GL_LAYOUT_GENERAL_EXT}
         );
         return true;
     }

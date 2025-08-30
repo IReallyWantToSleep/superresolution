@@ -13,7 +13,6 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
-import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 
 
@@ -176,10 +175,10 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.cameraFovAngleVertical = cameraFovAngleVertical;
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
-        RenderSystems.opengl().device().commendEncoder().begin();
-        dispatchDescription.commandBuffer = RenderSystems.opengl().device().commendEncoder().getCommandBuffer();
+        RenderSystems.opengl().device().commandEncoder().begin();
+        dispatchDescription.commandBuffer = RenderSystems.opengl().device().commandEncoder().getCommandBuffer();
         fsr2Context.dispatch(dispatchDescription);
-        RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commendEncoder().end());
+        RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commandEncoder().end());
         return true;
     }
 

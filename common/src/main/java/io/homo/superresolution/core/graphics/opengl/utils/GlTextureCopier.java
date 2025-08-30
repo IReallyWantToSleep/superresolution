@@ -3,19 +3,16 @@ package io.homo.superresolution.core.graphics.opengl.utils;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.DrawObject;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL46;
 
 import java.util.HashMap;
 import java.util.List;
@@ -80,8 +77,8 @@ public class GlTextureCopier {
             );
             GL43.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, cachedFrameBuffer);
             GlShaderProgram program = getOrCreateProgram(copyOperation);
-            IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commendEncoder().renderState().get();
-            RenderSystems.opengl().device().commendEncoder()
+            IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commandEncoder().renderState().get();
+            RenderSystems.opengl().device().commandEncoder()
                     .begin()
                     .renderState()
                     .colorMask(true, true, true, true)
@@ -91,8 +88,8 @@ public class GlTextureCopier {
                     .viewport(0, 0, copyOperation.getDstTexture().getWidth(), copyOperation.getDstTexture().getHeight());
 
             program.uniforms().samplerTexture("tex").set(copyOperation.getSrcTexture());
-
-            RenderSystems.opengl().device().commendEncoder()
+            GL46.glTextureBarrier();
+            RenderSystems.opengl().device().commandEncoder()
                     .draw(
                             program,
                             null,
@@ -100,8 +97,8 @@ public class GlTextureCopier {
                             0,
                             DrawObject.fullscreenQuadVertexCount()
                     );
-            RenderSystems.opengl().device().commendEncoder().renderState().apply(stateSnapshot);
-            RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commendEncoder().end());
+            RenderSystems.opengl().device().commandEncoder().renderState().apply(stateSnapshot);
+            RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commandEncoder().end());
         }
         GlDebug.popGroup();
     }

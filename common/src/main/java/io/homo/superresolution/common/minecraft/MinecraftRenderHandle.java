@@ -283,14 +283,14 @@ public class MinecraftRenderHandle {
         if (needCaptureVulkan) {
             if (RenderDoc.renderdoc != null) {
                 if (RenderSystems.vulkan() != null) {
-                    RenderSystems.vulkan().device().commendEncoder().begin();
-                    RenderSystems.vulkan().device().commendEncoder().end().submit(RenderSystems.vulkan().device());
+                    RenderSystems.vulkan().device().commandEncoder().begin();
+                    RenderSystems.vulkan().device().commandEncoder().end().submit(RenderSystems.vulkan().device());
                     RenderDoc.renderdoc.StartFrameCapture.call(
                             new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
                             null
                     );
-                    RenderSystems.vulkan().device().commendEncoder().begin();
-                    RenderSystems.vulkan().device().commendEncoder().end().submit(RenderSystems.vulkan().device());
+                    RenderSystems.vulkan().device().commandEncoder().begin();
+                    RenderSystems.vulkan().device().commandEncoder().end().submit(RenderSystems.vulkan().device());
                 }
             }
         }
@@ -383,9 +383,9 @@ public class MinecraftRenderHandle {
                     depthPreprocessConfigUBO.upload();
                     GL41.glDisable(GL41.GL_DEPTH_TEST);
                     GL41.glDisable(GL41.GL_CULL_FACE);
-                    RenderSystems.current().device().commendEncoder().begin();
-                    depthPreprocessPipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
-                    RenderSystems.current().device().commendEncoder().end().submit(RenderSystems.current().device());
+                    RenderSystems.current().device().commandEncoder().begin();
+                    depthPreprocessPipeline.execute(RenderSystems.current().device().commandEncoder().getCommandBuffer());
+                    RenderSystems.current().device().commandEncoder().end().submit(RenderSystems.current().device());
                     GL41.glEnable(GL41.GL_DEPTH_TEST);
                     GL41.glEnable(GL41.GL_CULL_FACE);
                     DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(

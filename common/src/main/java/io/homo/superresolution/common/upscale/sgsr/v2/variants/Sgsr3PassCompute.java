@@ -14,7 +14,6 @@ import io.homo.superresolution.core.math.Vector3i;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
@@ -50,12 +49,12 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         swapHistoryOutput();
         swapLumaHistory();
-        RenderSystems.opengl().device().commendEncoder().begin();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commendEncoder().getCommandBuffer();
+        RenderSystems.opengl().device().commandEncoder().begin();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().commandEncoder().getCommandBuffer();
         sgsrPipeline.executeJob(commandBuffer, "convert");
         sgsrPipeline.executeJob(commandBuffer, "activate");
         sgsrPipeline.executeJob(commandBuffer, "upscale");
-        RenderSystems.opengl().device().commendEncoder().end();
+        RenderSystems.opengl().device().commandEncoder().end();
         RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
     }
 
