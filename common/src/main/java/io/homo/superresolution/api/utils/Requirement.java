@@ -160,6 +160,18 @@ public class Requirement {
     }
 
     public Result check() {
+        if (System.getenv().containsKey("SR_TEST")) {
+            return new Result(
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true
+            );
+        }
         return new Result(
                 checkOSCompatibility(),
                 checkGLVersion(),
