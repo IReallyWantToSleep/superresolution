@@ -183,7 +183,7 @@ public class FSR1 extends AbstractAlgorithm {
     public boolean dispatch(DispatchResource dispatchResource) {
         super.dispatch(dispatchResource);
 
-        RenderSystems.current().device().commendEncoder().begin();
+        RenderSystems.current().device().commandEncoder().begin();
         fsr1UBOData.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
         fsr1UBOData.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
@@ -197,11 +197,11 @@ public class FSR1 extends AbstractAlgorithm {
         if (inImageResource != null && getResources().colorTexture() != null) {
             inImageResource.setResource(getResources().colorTexture());
         }
-        fsrUpscalePipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
+        fsrUpscalePipeline.execute(RenderSystems.current().device().commandEncoder().getCommandBuffer());
         RenderSystems.current().device().submitCommandBuffer(
                 RenderSystems.current()
                         .device()
-                        .commendEncoder()
+                        .commandEncoder()
                         .end()
         );
         return true;

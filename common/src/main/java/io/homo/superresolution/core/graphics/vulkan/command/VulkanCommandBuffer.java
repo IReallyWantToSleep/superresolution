@@ -65,6 +65,6 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     @Override
     public ICommandEncoder getEncoder() {
-        return vulkanDevice.commendEncoder();
+        return vulkanDevice.commandEncoder();
     }
 }

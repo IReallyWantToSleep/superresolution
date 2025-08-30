@@ -81,7 +81,7 @@ public class VulkanDevice implements IDevice {
     }
 
     @Override
-    public ICommandEncoder commendEncoder() {
+    public ICommandEncoder commandEncoder() {
         return commandEncoder;
     }
 

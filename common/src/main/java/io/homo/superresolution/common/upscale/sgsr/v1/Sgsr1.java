@@ -1,27 +1,20 @@
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.math.Vector3i;
 import org.lwjgl.opengl.GL41;
 
 import java.util.Optional;
@@ -111,12 +104,12 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputFbo.clearFrameBuffer();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);
-        RenderSystems.current().device().commendEncoder().begin();
-        pipeline.execute(RenderSystems.current().device().commendEncoder().getCommandBuffer());
+        RenderSystems.current().device().commandEncoder().begin();
+        pipeline.execute(RenderSystems.current().device().commandEncoder().getCommandBuffer());
         RenderSystems.current().device().submitCommandBuffer(
                 RenderSystems.current()
                         .device()
-                        .commendEncoder()
+                        .commandEncoder()
                         .end()
         );
         GL41.glEnable(GL41.GL_DEPTH_TEST);

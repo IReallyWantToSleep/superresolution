@@ -68,6 +68,6 @@ public class GlCommandBuffer implements ICommandBuffer {
 
     @Override
     public ICommandEncoder getEncoder() {
-        return device.commendEncoder();
+        return device.commandEncoder();
     }
 }

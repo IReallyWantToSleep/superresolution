@@ -263,15 +263,15 @@ public class OpticalFlowMotionVectorsGenerator {
         ubo.upload();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);
-        RenderSystems.opengl().device().commendEncoder().begin();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commendEncoder().getCommandBuffer();
+        RenderSystems.opengl().device().commandEncoder().begin();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().commandEncoder().getCommandBuffer();
         pipeline.executeJob(commandBuffer, "preprocess");
         pipeline.executeJob(commandBuffer, "copy_preprocess_fbo_to_current_frame_texture");
         pipeline.executeJob(commandBuffer, "pass1");
         pipeline.executeJob(commandBuffer, "pass2");
         pipeline.executeJob(commandBuffer, "pass3");
         pipeline.executeJob(commandBuffer, "copy_current_frame_texture_to_previous_frame_texture");
-        RenderSystems.opengl().device().commendEncoder().end();
+        RenderSystems.opengl().device().commandEncoder().end();
         RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
         GL41.glEnable(GL41.GL_DEPTH_TEST);
         GL41.glEnable(GL41.GL_CULL_FACE);

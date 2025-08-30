@@ -55,7 +55,7 @@ public class GlDevice implements IDevice {
     }
 
     @Override
-    public ICommandEncoder commendEncoder() {
+    public ICommandEncoder commandEncoder() {
         return commandEncoder;
     }
 
