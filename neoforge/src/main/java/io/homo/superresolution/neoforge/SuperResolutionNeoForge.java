@@ -20,5 +20,6 @@ public final class SuperResolutionNeoForge {
             SodiumOptionScreen.register();
         }
         SuperResolution.registerEvents();
+        SuperResolution.registerKeyMapping();
     }
 }
