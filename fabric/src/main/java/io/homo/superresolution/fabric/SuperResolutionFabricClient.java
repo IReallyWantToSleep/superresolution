@@ -13,5 +13,6 @@ public final class SuperResolutionFabricClient implements ClientModInitializer {
         if (io.homo.superresolution.common.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
+
     }
 }

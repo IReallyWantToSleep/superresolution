@@ -71,12 +71,12 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void registerEvents() {
-
         ClientLifecycleEvent.CLIENT_SETUP.register(
                 (minecraft) -> registerKeyMapping()
         );
         ClientLifecycleEvent.CLIENT_STARTED.register(
                 (minecraft) -> {
+                    registerKeyMapping();
                     instance = new SuperResolution();
                     SuperResolution.preInit();
                     SuperResolution.initRendering();
