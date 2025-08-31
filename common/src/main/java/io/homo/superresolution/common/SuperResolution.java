@@ -273,10 +273,11 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void destroy() {
-        RenderSystems.destroy();
         if (currentAlgorithm != null)
             currentAlgorithm.destroy();
         AlgorithmManager.destroy();
+
+        RenderSystems.destroy();
     }
 
     public static boolean isShaderPackCompatSuperResolution() {

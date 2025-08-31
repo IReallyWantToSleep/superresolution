@@ -67,7 +67,7 @@ public class SuperResolutionConfig {
                 "upscale_ratio",
                 () -> 1.7f,
                 "Upscale ratio factor",
-                value -> value > -0.1f && value <= 4.0f
+                value -> value >= 0.5f && value <= 4.0f
         );
 
         UPSCALE_ALGO = builder.defineString(
@@ -271,7 +271,8 @@ public class SuperResolutionConfig {
                         newAlgo.displayName,
                         currentAlgo.displayName
                 );
-                throw new RuntimeException("Algorithm initialization failed");
+                UPSCALE_ALGO.set(AlgorithmDescriptions.NONE.codeName);
+                SuperResolution.createAlgorithm();
             } else {
                 SuperResolution.LOGGER.error(
                         "初始化算法 {} 失败，已回退到算法 {}",
@@ -430,10 +431,13 @@ public class SuperResolutionConfig {
 
     public static float getMinUpscaleRatio() {
         if (SuperResolution.isShaderPackCompatSuperResolution()) return 1.0f;
+        return 0.5f;
+        /*
         int maxSize = 16384;
         if (Minecraft.getInstance().getWindow() == null) return 0.1f;
         double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
         double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
         return (float) Math.max(maxWidth, maxHeight);
+        */
     }
 }
