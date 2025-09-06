@@ -314,9 +314,7 @@ public class MinecraftRenderHandle {
             }
         }
         if (LevelRenderStartEvent.EVENT.hasEvent()) {
-            try (GlState ignored = new GlState()) {
-                LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
-            }
+            LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
         }
         PerformanceInfo.end("CPU_SRUpscaleA");
 
@@ -339,9 +337,7 @@ public class MinecraftRenderHandle {
             getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         }
         if (LevelRenderEndEvent.EVENT.hasEvent()) {
-            try (GlState ignored = new GlState()) {
-                LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
-            }
+            LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
         }
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             GL41.glEndQuery(GL41.GL_TIME_ELAPSED);

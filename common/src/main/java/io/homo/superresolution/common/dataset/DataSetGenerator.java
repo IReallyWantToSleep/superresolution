@@ -92,16 +92,16 @@ public class DataSetGenerator {
     }
 
     private static void onLevelBegin() {
-        OUTPUT_DIR = Paths.get(SuperResolutionConfig.DATASET_PATH.get()).toFile();
-        if (!OUTPUT_DIR.exists() && !OUTPUT_DIR.mkdirs()) {
-            System.err.println("Failed to create output directory: " + OUTPUT_DIR.getAbsolutePath());
-        }
-
         int frameCount = MinecraftRenderHandle.getFrameCount();
         if (!SAVE_KEYMAPPING.isDown()) {
             previousId = id;
             return;
         }
+        OUTPUT_DIR = Paths.get(SuperResolutionConfig.DATASET_PATH.get()).toFile();
+        if (!OUTPUT_DIR.exists() && !OUTPUT_DIR.mkdirs()) {
+            System.err.println("Failed to create output directory: " + OUTPUT_DIR.getAbsolutePath());
+        }
+
         File dir = Paths.get(OUTPUT_DIR.getPath()).toFile();
         if (!dir.exists() && !dir.mkdirs()) {
             System.err.println("Failed to create frame output directory: " + dir.getAbsolutePath());
