@@ -19,7 +19,7 @@
             ]
         },
         "cloth_config_version": "15.0.140",
-        "mod_artifact_minecraft_ver": "1.21~1.21.1"
+        "mod_artifact_minecraft_ver": "1.21..1.21.1"
     },
     "fabric": {
         "loader_version": "0.16.7",
@@ -59,6 +59,10 @@
                     "version": "0.3.1"
                 },
                 {
+                    "name": "immediatelyfast",
+                    "version": "1.6.6+1.21.1-fabric"
+                },
+                {
                     "name": "sodium-options-api",
                     "version": "fabric-1.21.1-1.0.10",
                     "compileOnly": true
@@ -92,6 +96,10 @@
                 {
                     "name": "sodium",
                     "version": "mc1.21.1-0.6.7-neoforge"
+                },
+                {
+                    "name": "immediatelyfast",
+                    "version": "1.6.6+1.21.1-neoforge"
                 },
                 {
                     "name": "distanthorizons",

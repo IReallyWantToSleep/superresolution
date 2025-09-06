@@ -24,6 +24,16 @@ def parse_mc_version_range(mc_version_str):
         if idx1 > idx2:
             raise ValueError(f"版本范围顺序错误: {mc_version_str}")
         return ALL_VERSIONS[idx1:idx2+1]
+    elif ".." in mc_version_str:
+        start, end = mc_version_str.split("..")
+        try:
+            idx1 = ALL_VERSIONS.index(start)
+            idx2 = ALL_VERSIONS.index(end)
+        except ValueError:
+            raise ValueError(f"未知版本号: {mc_version_str}")
+        if idx1 > idx2:
+            raise ValueError(f"版本范围顺序错误: {mc_version_str}")
+        return ALL_VERSIONS[idx1:idx2+1]
     else:
         if mc_version_str not in ALL_VERSIONS:
             raise ValueError(f"未知版本号: {mc_version_str}")
