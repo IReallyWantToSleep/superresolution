@@ -4,6 +4,7 @@ import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCapabilities;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanValidationLayers;
+import io.homo.superresolution.core.utils.VkReflectionHelper;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -135,7 +136,7 @@ public class VkRenderSystem implements IRenderSystem {
 
             PointerBuffer instancePtr = stack.mallocPointer(1);
             VK_CHECK(vkCreateInstance(createInfo, null, instancePtr), "Failed to create VkInstance");
-            instance = new VkInstance(instancePtr.get(0), createInfo);
+            instance = VkReflectionHelper.createVkInstanceSafely(instancePtr.get(0), createInfo);
         }
     }
 
