@@ -1,5 +1,24 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
@@ -17,7 +36,6 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -108,8 +126,8 @@ public class OpticalFlowMotionVectorsGenerator {
         currentFrameTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .format(TextureFormat.R32F)
                         .usages(TextureUsages.create().sampler().storage())
                         .label("SRMotionVectorsGenerator-currentFrameTexture")
@@ -119,8 +137,8 @@ public class OpticalFlowMotionVectorsGenerator {
         previousFrameTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .format(TextureFormat.R32F)
                         .usages(TextureUsages.create().sampler().storage())
                         .label("SRMotionVectorsGenerator-previousFrameTexture")
@@ -129,38 +147,38 @@ public class OpticalFlowMotionVectorsGenerator {
         motionVectorsFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RG16F,
                 null,
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
         );
         motionVectorsFrameBuffer.label("SRMotionVectorsGenerator-MotionVectorsFrameBuffer");
 
         gradFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RG32F,
                 null,
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
         );
         gradFrameBuffer.label("SRMotionVectorsGenerator-GradFrameBuffer");
 
         deltaFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.R32F,
                 null,
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
         );
         gradFrameBuffer.label("SRMotionVectorsGenerator-PreprocessFrameBuffer");
         preprocessFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.R32F,
                 null,
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
         );
 
         pipeline.job("preprocess",
                 PipelineJobBuilders.graphics(preprocessShader)
                         .resource("tex_current",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(MinecraftRenderHandle.getRenderTarget())
+                                        FrameBufferTextureAdapter.ofColor(RenderHandlerManager.getRenderTarget())
                                 )
                         )
                         .targetFramebuffer(preprocessFrameBuffer)
@@ -243,8 +261,8 @@ public class OpticalFlowMotionVectorsGenerator {
     }
 
     public static void resize() {
-        int width = MinecraftRenderHandle.getRenderWidth();
-        int height = MinecraftRenderHandle.getRenderHeight();
+        int width = RenderHandlerManager.getRenderWidth();
+        int height = RenderHandlerManager.getRenderHeight();
 
         currentFrameTexture.resize(width, height);
         previousFrameTexture.resize(width, height);

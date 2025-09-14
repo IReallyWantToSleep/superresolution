@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.dataset;
 
 import com.mojang.blaze3d.platform.InputConstants;
@@ -6,7 +24,8 @@ import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -24,8 +43,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 
 import static org.lwjgl.opengl.GL33.*;
 
@@ -92,7 +109,7 @@ public class DataSetGenerator {
     }
 
     private static void onLevelBegin() {
-        int frameCount = MinecraftRenderHandle.getFrameCount();
+        int frameCount = RenderHandlerManager.getFrameCount();
         if (!SAVE_KEYMAPPING.isDown()) {
             previousId = id;
             return;
@@ -115,7 +132,7 @@ public class DataSetGenerator {
                     .format(TextureFormat.RGB16F)
                     .build());
         }
-        tempColorTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        tempColorTexture.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
 
         if (tempDepthTexture == null) {
             tempDepthTexture = GlTexture2D.create(TextureDescription.create()
@@ -126,7 +143,7 @@ public class DataSetGenerator {
                     .format(TextureFormat.R32F)
                     .build());
         }
-        tempDepthTexture.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        tempDepthTexture.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
         previousId = id;
         id = UUID.randomUUID().toString().replace("-", "");
     }
@@ -144,7 +161,7 @@ public class DataSetGenerator {
     }
 
     private static void onLevelEnd() {
-        int frameCount = MinecraftRenderHandle.getFrameCount();
+        int frameCount = RenderHandlerManager.getFrameCount();
         if (!SAVE_KEYMAPPING.isDown()) {
             previousId = id;
             return;
@@ -153,7 +170,7 @@ public class DataSetGenerator {
         File HR_RGB_IMAGE = Paths.get(dir.getPath(), getTextureName(tempColorTexture, "Color", id, previousId)).toFile();
         GlTextureCopier.copy(
                 CopyOperation.create()
-                        .src(MinecraftRenderHandle.colorTexture)
+                        .src(RenderHandlerManager.getColorTexture())
                         .dst(tempColorTexture)
                         .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
                         .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
@@ -168,7 +185,7 @@ public class DataSetGenerator {
         File HR_DEPTH_IMAGE = Paths.get(dir.getPath(), getTextureName(tempDepthTexture, "Depth", id, previousId)).toFile();
         GlTextureCopier.copy(
                 CopyOperation.create()
-                        .src(MinecraftRenderHandle.depthTexture)
+                        .src(RenderHandlerManager.getDepthTexture())
                         .dst(tempDepthTexture)
                         .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
         );

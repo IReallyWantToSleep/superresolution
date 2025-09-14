@@ -13,7 +13,6 @@
         "core.ShaderPackAccessor",
         "core.StandardMacrosMixin",
         "core.ViewportUniformsMixin",
-        "core.CapturedRenderingStateMixin",
         "core.CompositeRendererPassMixin",
         "core.RenderTargetsAccessor",
         "core.ShaderPackMixin"

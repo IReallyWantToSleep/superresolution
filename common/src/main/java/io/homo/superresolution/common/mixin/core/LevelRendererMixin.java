@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.SuperResolution;
@@ -17,7 +35,8 @@ import com.mojang.blaze3d.buffers.GpuBufferSlice;
 #endif
 
 import io.homo.superresolution.common.minecraft.CallType;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -42,7 +61,7 @@ public abstract class LevelRendererMixin {
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
     private void onResizePostChain(PostChain instance, int w, int h) {
         if (SuperResolution.isShaderPackCompatSuperResolution()) return;
-        instance.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+        instance.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
     }
     #endif
 
@@ -81,14 +100,14 @@ public abstract class LevelRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            MinecraftRenderHandle.onRenderWorldBegin(CallType.LEVEL_RENDERER);
+            RenderHandlerManager.onRenderWorldBegin(CallType.LEVEL_RENDERER);
         }
     }
 
     @Inject(at = @At(value = "RETURN"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            MinecraftRenderHandle.onRenderWorldEnd(CallType.LEVEL_RENDERER);
+            RenderHandlerManager.onRenderWorldEnd(CallType.LEVEL_RENDERER);
         }
     }
 }

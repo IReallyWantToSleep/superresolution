@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.gui;
 
 import io.homo.superresolution.api.event.ConfigChangedEvent;
@@ -14,7 +32,8 @@ import io.homo.superresolution.common.gui.entries.ClothTextListListEntry;
 import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.gui.widgets.Line;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
@@ -76,8 +95,8 @@ public class ClothConfig {
                 .setTooltipSupplier((integer -> {
                     float value = getFloat(integer);
                     return Optional.of(new Component[]{Component.literal(Component.translatable("superresolution.screen.config.options.tooltip.upscale_ratio").getString().formatted(
-                            (int) (MinecraftRenderHandle.getScreenWidth() / value),
-                            (int) (MinecraftRenderHandle.getScreenHeight() / value),
+                            (int) (RenderHandlerManager.getScreenWidth() / value),
+                            (int) (RenderHandlerManager.getScreenHeight() / value),
                             (int) ((1 / value) * 100) + "%"
                     ))});
                 }))
@@ -537,11 +556,11 @@ public class ClothConfig {
 
         ClothChartEntry frameTimeChart = new ClothChartEntry(
                 Component.translatable("superresolution.screen.info.performance_info.frame_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("runTick"))
+                        BigDecimal.valueOf(PerformanceRecoder.getCpuFrameTimeMs())
                                 .setScale(3, RoundingMode.HALF_UP)
                 ).getString(),
                 Component.translatable("superresolution.screen.info.performance_info.frame_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("runTick"))
+                        BigDecimal.valueOf(PerformanceRecoder.getCpuFrameTimeMs())
                                 .setScale(3, RoundingMode.HALF_UP)
                 ),
                 null
@@ -549,22 +568,22 @@ public class ClothConfig {
         frameTimeChart.setRenderCallback((chart) -> {
             chart.setName(
                     Component.translatable("superresolution.screen.info.performance_info.frame_time",
-                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("runTick"))
+                            BigDecimal.valueOf(PerformanceRecoder.getCpuFrameTimeMs())
                                     .setScale(3, RoundingMode.HALF_UP)
                     ).getString()
             );
-            chart.push(PerformanceInfo.getAsMillis("runTick"), 1000);
+            chart.push(PerformanceRecoder.getCpuFrameTimeMs(), 1000);
         });
         frameTimeChart.setDisplayRange(0, 100);
         ClothChartEntry worldTimeChartCPU = new ClothChartEntry(
                 "CPU " + Component.translatable("superresolution.screen.info.performance_info.world_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_RenderWorld"))
+                        BigDecimal.valueOf(PerformanceRecoder.getCpuWorldTimeMs())
                                 .setScale(3, RoundingMode.HALF_UP)
                 ).getString(),
                 Component.empty()
                         .append("CPU ")
                         .append(Component.translatable("superresolution.screen.info.performance_info.world_time",
-                                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_RenderWorld"))
+                                        BigDecimal.valueOf(PerformanceRecoder.getCpuWorldTimeMs())
                                                 .setScale(3, RoundingMode.HALF_UP)
                                 )
                         ),
@@ -574,24 +593,24 @@ public class ClothConfig {
             if (Minecraft.getInstance().level != null) {
                 chart.setName(
                         "CPU " + Component.translatable("superresolution.screen.info.performance_info.world_time",
-                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_RenderWorld"))
+                                BigDecimal.valueOf(PerformanceRecoder.getCpuWorldTimeMs())
                                         .setScale(3, RoundingMode.HALF_UP)
                         ).getString()
                 );
-                chart.push(PerformanceInfo.getAsMillis("CPU_RenderWorld"), 1000);
+                chart.push(PerformanceRecoder.getCpuWorldTimeMs(), 1000);
             }
         });
         worldTimeChartCPU.setDisplayRange(0, 80);
 
         ClothChartEntry srUpscaleTimeChartCPU = new ClothChartEntry(
                 "CPU " + Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"))
+                        BigDecimal.valueOf(PerformanceRecoder.getCpuUpscaleTimeMs())
                                 .setScale(3, RoundingMode.HALF_UP)
                 ).getString(),
                 Component.empty()
                         .append("CPU ")
                         .append(Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                        BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"))
+                                        BigDecimal.valueOf(PerformanceRecoder.getCpuUpscaleTimeMs())
                                                 .setScale(3, RoundingMode.HALF_UP)
                                 )
                         ),
@@ -601,11 +620,11 @@ public class ClothConfig {
             if (Minecraft.getInstance().level != null) {
                 chart.setName(
                         "CPU " + Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                BigDecimal.valueOf(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"))
+                                BigDecimal.valueOf(PerformanceRecoder.getCpuUpscaleTimeMs())
                                         .setScale(3, RoundingMode.HALF_UP)
                         ).getString()
                 );
-                chart.push(PerformanceInfo.getAsMillis("CPU_SRUpscaleA") + PerformanceInfo.getAsMillis("CPU_SRUpscaleB") + PerformanceInfo.getAsMillis("CPU_SRUpscaleC"), 1000);
+                chart.push(PerformanceRecoder.getCpuUpscaleTimeMs(), 1000);
             }
         });
         srUpscaleTimeChartCPU.setDisplayRange(0, 40);
@@ -617,11 +636,11 @@ public class ClothConfig {
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             ClothChartEntry worldTimeChart = new ClothChartEntry(
                     Component.translatable("superresolution.screen.info.performance_info.world_time",
-                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                            BigDecimal.valueOf(PerformanceRecoder.getWorldTimeMs())
                                     .setScale(3, RoundingMode.HALF_UP)
                     ).getString(),
                     Component.translatable("superresolution.screen.info.performance_info.world_time",
-                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                            BigDecimal.valueOf(PerformanceRecoder.getWorldTimeMs())
                                     .setScale(3, RoundingMode.HALF_UP)
                     ),
                     null
@@ -630,22 +649,22 @@ public class ClothConfig {
                 if (Minecraft.getInstance().level != null) {
                     chart.setName(
                             Component.translatable("superresolution.screen.info.performance_info.world_time",
-                                    BigDecimal.valueOf(PerformanceInfo.getAsMillis("world"))
+                                    BigDecimal.valueOf(PerformanceRecoder.getWorldTimeMs())
                                             .setScale(3, RoundingMode.HALF_UP)
                             ).getString()
                     );
-                    chart.push(PerformanceInfo.getAsMillis("world"), 1000);
+                    chart.push(PerformanceRecoder.getWorldTimeMs(), 1000);
                 }
             });
             worldTimeChart.setDisplayRange(0, 80);
 
             ClothChartEntry upscaleTimeChart = new ClothChartEntry(
                     Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                            BigDecimal.valueOf(PerformanceRecoder.getUpscaleTimeMs())
                                     .setScale(3, RoundingMode.HALF_UP)
                     ).getString(),
                     Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                            BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                            BigDecimal.valueOf(PerformanceRecoder.getUpscaleTimeMs())
                                     .setScale(3, RoundingMode.HALF_UP)
                     ),
                     null
@@ -654,11 +673,11 @@ public class ClothConfig {
                 if (Minecraft.getInstance().level != null) {
                     chart.setName(
                             Component.translatable("superresolution.screen.info.performance_info.upscale_time",
-                                    BigDecimal.valueOf(PerformanceInfo.getAsMillis("upscale"))
+                                    BigDecimal.valueOf(PerformanceRecoder.getUpscaleTimeMs())
                                             .setScale(3, RoundingMode.HALF_UP)
                             ).getString()
                     );
-                    chart.push(PerformanceInfo.getAsMillis("upscale"), 1000);
+                    chart.push(PerformanceRecoder.getUpscaleTimeMs(), 1000);
                 }
             });
             upscaleTimeChart.setDisplayRange(0, 40);

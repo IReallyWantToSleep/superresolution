@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.shadercompat;
 
 
@@ -6,8 +24,8 @@ import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.PerformanceInfo;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
@@ -28,7 +46,6 @@ import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.opengl.GL41;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -68,18 +85,18 @@ public class ShaderCompatUpscaleDispatcher {
 
     public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer) {
         return new DispatchResource(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight(),
+                new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
 
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight(),
+                new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
-                MinecraftRenderHandle.getFrameCount(),
-                MinecraftRenderHandle.frameTime,
+                RenderHandlerManager.getFrameCount(),
+                PerformanceRecoder.getCpuFrameTimeMs(),
                 (float) param.verticalFov,
-                (float) Math.tan(param.verticalFov / 2.0) * MinecraftRenderHandle.getRenderWidth() / MinecraftRenderHandle.getRenderHeight(),
+                (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,
                 Minecraft.getInstance().gameRenderer.getDepthFar(),
                 param.currentModelViewMatrix,
@@ -127,7 +144,8 @@ public class ShaderCompatUpscaleDispatcher {
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
         if (!SuperResolutionConfig.isEnableUpscale()) return;
         if (getCurrentConfig() == null) return;
-        PerformanceInfo.begin("CPU_SRUpscaleC");
+
+        PerformanceRecoder.beginUpscale();
 
         SRShaderCompatConfig.WorldUpscaleConfig currentConfig = getCurrentConfig().upscale_config;
         /*
@@ -200,11 +218,7 @@ public class ShaderCompatUpscaleDispatcher {
         升采样阶段开始
          */
         {
-            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
-                PerformanceInfo.begin("upscale");
-                GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, MinecraftRenderHandle.timeQueryIds[1]);
-            }
-            if (MinecraftRenderHandle.needCaptureUpscale) {
+            if (RenderHandlerManager.needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
                     RenderDoc.renderdoc.StartFrameCapture.call(null, null);
                 }
@@ -232,17 +246,11 @@ public class ShaderCompatUpscaleDispatcher {
         升采样阶段结束
          */
         {
-            if (MinecraftRenderHandle.needCaptureUpscale) {
+            if (RenderHandlerManager.needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
-                    MinecraftRenderHandle.needCaptureUpscale = false;
+                    RenderHandlerManager.needCaptureUpscale = false;
                     RenderDoc.renderdoc.EndFrameCapture.call(null, null);
                 }
-            }
-            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
-                GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
-                long[] upscaleTime = {0};
-                GL41.glGetQueryObjectui64v(MinecraftRenderHandle.timeQueryIds[1], GL41.GL_QUERY_RESULT, upscaleTime);
-                PerformanceInfo.end("upscale", upscaleTime[0]);
             }
         }
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
@@ -262,7 +270,6 @@ public class ShaderCompatUpscaleDispatcher {
                 }
             }
         }
-        PerformanceInfo.end("CPU_SRUpscaleC");
-
+        PerformanceRecoder.endUpscale();
     }
 }

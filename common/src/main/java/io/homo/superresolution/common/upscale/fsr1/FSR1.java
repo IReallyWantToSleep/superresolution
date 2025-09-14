@@ -1,6 +1,25 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.pipeline.*;
@@ -11,7 +30,6 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAc
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.api.AbstractAlgorithm;
@@ -51,8 +69,8 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1TempTexture = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .format(TextureFormat.R11G11B10F)
                         .usages(TextureUsages.create().sampler().storage())
                         .label("Fsr1TempTexture")
@@ -61,8 +79,8 @@ public class FSR1 extends AbstractAlgorithm {
         output = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getScreenWidth())
-                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .width(RenderHandlerManager.getScreenWidth())
+                        .height(RenderHandlerManager.getScreenHeight())
                         .format(TextureFormat.R11G11B10F)
                         .usages(TextureUsages.create().sampler().storage())
                         .label("Fsr1OutputTexture")
@@ -71,8 +89,8 @@ public class FSR1 extends AbstractAlgorithm {
         outputFbo = GlFrameBuffer.create(
                 output,
                 null,
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
         );
         outputFbo.label("Fsr1OutputFbo");
         fsrUpscalePipeline.job("fsr1_easu",
@@ -116,7 +134,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .workGroupSupplier(this::getWorkGroupSize)
                         .build()
         );
-        this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
     }
 
     public void initShader() {
@@ -158,8 +176,8 @@ public class FSR1 extends AbstractAlgorithm {
 
     private Vector3i getWorkGroupSize() {
         int workRegionDim = 16;
-        int dispatchX = (MinecraftRenderHandle.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
-        int dispatchY = (MinecraftRenderHandle.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
+        int dispatchX = (RenderHandlerManager.getScreenWidth() + (workRegionDim - 1)) / workRegionDim;
+        int dispatchY = (RenderHandlerManager.getScreenHeight() + (workRegionDim - 1)) / workRegionDim;
         return new Vector3i(
                 dispatchX,
                 dispatchY,
@@ -184,9 +202,9 @@ public class FSR1 extends AbstractAlgorithm {
         super.dispatch(dispatchResource);
 
         RenderSystems.current().device().commandEncoder().begin();
-        fsr1UBOData.setVec2("renderViewportSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        fsr1UBOData.setVec2("containerTextureSize", MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
-        fsr1UBOData.setVec2("upscaledViewportSize", MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        fsr1UBOData.setVec2("renderViewportSize", RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
+        fsr1UBOData.setVec2("containerTextureSize", RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
+        fsr1UBOData.setVec2("upscaledViewportSize", RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
         fsr1UBOData.fillBuffer();
         fsr1UBO.upload();

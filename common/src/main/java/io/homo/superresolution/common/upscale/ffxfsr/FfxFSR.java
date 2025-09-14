@@ -1,9 +1,27 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.ffxfsr;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -24,7 +42,6 @@ import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
@@ -75,8 +92,8 @@ public class FfxFSR extends AbstractAlgorithm {
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
                 ((VulkanDevice) RenderSystems.vulkan().device()).getPhysicalDevice(),
-                new Vector2i(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
-                new Vector2i(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
+                new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
                 0
         );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
@@ -110,8 +127,8 @@ public class FfxFSR extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler())
                         .format(TextureFormat.R11G11B10F)
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .label("SRUpscaleInputColorVkTexture")
                         .build(),
                 false,
@@ -126,8 +143,8 @@ public class FfxFSR extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler())
                         .format(TextureFormat.R16F)
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .label("SRUpscaleInputDepthVkTexture")
                         .build(),
                 false,
@@ -142,8 +159,8 @@ public class FfxFSR extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler())
                         .format(TextureFormat.RG16F)
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .label("SRUpscaleInputMotionVectorsVkTexture")
                         .build(),
                 false,
@@ -158,8 +175,8 @@ public class FfxFSR extends AbstractAlgorithm {
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().sampler().storage())
                         .format(TextureFormat.R11G11B10F)
-                        .width(MinecraftRenderHandle.getScreenWidth())
-                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .width(RenderHandlerManager.getScreenWidth())
+                        .height(RenderHandlerManager.getScreenHeight())
                         .label("SRUpscaleOutputColorVkTexture")
                         .build(),
                 false,
@@ -172,8 +189,8 @@ public class FfxFSR extends AbstractAlgorithm {
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().sampler().storage())
                         .format(TextureFormat.R11G11B10F)
-                        .width(MinecraftRenderHandle.getScreenWidth())
-                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .width(RenderHandlerManager.getScreenWidth())
+                        .height(RenderHandlerManager.getScreenHeight())
                         .label("SRUpscaleOutputColorGlTexture_FfxFsr")
                         .build()
         );
