@@ -1,9 +1,27 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -32,16 +50,16 @@ public class FSR2 extends AbstractAlgorithm {
         RenderSystem.assertOnRenderThread();
         this.output.resize(width, height);
         outputFbo.resizeFrameBuffer(width, height);
-        inputTexture.getMipmapSettings().bias((float) (Math.log((double) MinecraftRenderHandle.getRenderWidth() / MinecraftRenderHandle.getScreenWidth()) / Math.log(2) - 1f));
+        inputTexture.getMipmapSettings().bias((float) (Math.log((double) RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getScreenWidth()) / Math.log(2) - 1f));
         inputTexture.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
         );
         fsr2Context.resize(new Fsr2Dimensions(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight(),
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
         ));
     }
 
@@ -49,8 +67,8 @@ public class FSR2 extends AbstractAlgorithm {
     public void init() {
         output = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getScreenWidth())
-                .height(MinecraftRenderHandle.getScreenHeight())
+                .width(RenderHandlerManager.getScreenWidth())
+                .height(RenderHandlerManager.getScreenHeight())
                 .format(TextureFormat.R11G11B10F)
                 .usages(TextureUsages.create().sampler().storage().sampler())
                 .label("SRFsr2Output")
@@ -59,8 +77,8 @@ public class FSR2 extends AbstractAlgorithm {
         outputFbo = GlFrameBuffer.create(
                 output,
                 null,
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
         );
         outputFbo.label("SRFsr2OutputFbo");
         exposureTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
@@ -74,8 +92,8 @@ public class FSR2 extends AbstractAlgorithm {
         );
         inputTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getRenderWidth())
-                .height(MinecraftRenderHandle.getRenderHeight())
+                .width(RenderHandlerManager.getRenderWidth())
+                .height(RenderHandlerManager.getRenderHeight())
                 .format(TextureFormat.R11G11B10F)
                 .mipmapsAuto()
                 .usages(TextureUsages.create().sampler().storage())
@@ -87,16 +105,16 @@ public class FSR2 extends AbstractAlgorithm {
                         .flags(new Fsr2ContextFlags())
                         .version(SuperResolutionConfig.SPECIAL.FSR2.VERSION.get()),
                 new Fsr2Dimensions(
-                        MinecraftRenderHandle.getRenderWidth(),
-                        MinecraftRenderHandle.getRenderHeight(),
-                        MinecraftRenderHandle.getScreenWidth(),
-                        MinecraftRenderHandle.getScreenHeight()
+                        RenderHandlerManager.getRenderWidth(),
+                        RenderHandlerManager.getRenderHeight(),
+                        RenderHandlerManager.getScreenWidth(),
+                        RenderHandlerManager.getScreenHeight()
                 )
         );
         fsr2Context.init();
         this.resize(
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
         );
     }
 

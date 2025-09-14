@@ -1,9 +1,27 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.ffxfsr;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.NativeLibManager;
@@ -48,8 +66,8 @@ public class FfxFSROgl extends AbstractAlgorithm {
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 null,
                 null,
-                new Vector2i(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
-                new Vector2i(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
+                new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
                 0
         );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
@@ -70,8 +88,8 @@ public class FfxFSROgl extends AbstractAlgorithm {
     }
 
     protected void createTexture() {
-        this.srcInputColorGlTexture = MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.Color);
-        this.srcInputDepthGlTexture = MinecraftRenderHandle.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
+        this.srcInputColorGlTexture = RenderHandlerManager.getRenderTarget().getTexture(FrameBufferAttachmentType.Color);
+        this.srcInputDepthGlTexture = RenderHandlerManager.getRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
         this.srcMotionVectorsGlTexture = AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color);
         this.outputColorGlTexture = RenderSystems.opengl().device().createTexture(
                 TextureDescription.create()
@@ -80,7 +98,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
                         .mipmapsDisabled()
                         .filterMode(TextureFilterMode.LINEAR)
                         .format(TextureFormat.RGBA8)
-                        .size(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+                        .size(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
                         .label("SRFSR2-Output")
                         .build()
         );

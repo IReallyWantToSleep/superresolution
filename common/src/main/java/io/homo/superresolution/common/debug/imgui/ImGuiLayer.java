@@ -1,10 +1,29 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.debug.imgui;
 
 import imgui.ImGui;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
@@ -29,7 +48,7 @@ public class ImGuiLayer {
     public float[] blurM = new float[1];
 
     public void imgui() {
-        float previewHeight = ((float) PREVIEW_WIDTH / MinecraftRenderHandle.getScreenWidth()) * MinecraftRenderHandle.getScreenHeight();
+        float previewHeight = ((float) PREVIEW_WIDTH / RenderHandlerManager.getScreenWidth()) * RenderHandlerManager.getScreenHeight();
 
         ImGui.begin("DEBUG");
         drawCaptureButtons();
@@ -68,50 +87,50 @@ public class ImGuiLayer {
 
     private void drawDebugTextures(float height) {
         drawImageIfExists("out", ShaderCompatUpscaleDispatcher.debugInfo.get("out"),
-                MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(), height);
+                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
 
         drawImageIfExists("color", ShaderCompatUpscaleDispatcher.debugInfo.get("color"),
-                MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
 
         drawImageIfExists("colorA", ShaderCompatUpscaleDispatcher.debugInfo.get("colora"),
-                MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
 
         drawImage("outFramebuffer", SuperResolution.currentAlgorithm.getOutputTextureId(),
-                MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(), height);
+                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
 
-        if (MinecraftRenderHandle.colorTexture != null) {
-            drawImage("colorTexture", (int) MinecraftRenderHandle.colorTexture.handle(),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        if (RenderHandlerManager.getColorTexture() != null) {
+            drawImage("colorTexture", (int) RenderHandlerManager.getColorTexture().handle(),
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
-        if (MinecraftRenderHandle.depthTexture != null) {
-            drawImage("depthTexture", (int) MinecraftRenderHandle.depthTexture.handle(),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+        if (RenderHandlerManager.getDepthTexture() != null) {
+            drawImage("depthTexture", (int) RenderHandlerManager.getDepthTexture().handle(),
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
 
-        drawImage("MainRenderTarget", (int) MinecraftRenderHandle.getOriginRenderTarget().handle(),
-                MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight(), height);
+        drawImage("MainRenderTarget", (int) RenderHandlerManager.getOriginRenderTarget().handle(),
+                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
 
         drawImage("mv", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
-                MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
 
         if (OpticalFlowMotionVectorsGenerator.gradFrameBuffer != null) {
             drawImage("mv grad", OpticalFlowMotionVectorsGenerator.gradFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
         if (OpticalFlowMotionVectorsGenerator.deltaFrameBuffer != null) {
             drawImage("mv delta", OpticalFlowMotionVectorsGenerator.deltaFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
 
         if (OpticalFlowMotionVectorsGenerator.currentFrameTexture != null)
             drawImage("mv c", (int) OpticalFlowMotionVectorsGenerator.currentFrameTexture.handle(),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         if (OpticalFlowMotionVectorsGenerator.previousFrameTexture != null)
             drawImage("mv pt", (int) OpticalFlowMotionVectorsGenerator.previousFrameTexture.handle(),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         if (OpticalFlowMotionVectorsGenerator.preprocessFrameBuffer != null)
             drawImage("mv pf", OpticalFlowMotionVectorsGenerator.preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                    MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight(), height);
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
     }
 
     private void drawFsr2Resources(float height) {

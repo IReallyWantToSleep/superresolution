@@ -1,9 +1,28 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -42,14 +61,14 @@ public class Sgsr2 extends AbstractAlgorithm {
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
                 RenderSystems.current().device().createTexture(TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getRenderWidth())
-                        .height(MinecraftRenderHandle.getRenderHeight())
+                        .width(RenderHandlerManager.getRenderWidth())
+                        .height(RenderHandlerManager.getRenderHeight())
                         .usages(TextureUsages.create().sampler().storage().sampler())
                         .format(TextureFormat.R11G11B10F)
                         .label("Sgsr2Output")
                         .build())
         ));
-        this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         paramsData = UniformStructBuilder.start()
                 .vec2Entry("renderSize")
                 .vec2Entry("displaySize")
@@ -89,7 +108,7 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsData.setVec2("displaySize", dispatchResource.screenSize());
         paramsData.setVec2("renderSizeRcp", dispatchResource.renderSize().divideInto(1));
         paramsData.setVec2("displaySizeRcp", dispatchResource.screenSize().divideInto(1));
-        paramsData.setVec2("jitterOffset", getJitterOffset(dispatchResource.frameCount(), dispatchResource.renderSize(), dispatchResource.screenSize()));
+        paramsData.setVec2("jitterOffset", getOriginJitterOffset(dispatchResource.frameCount(), dispatchResource.renderSize(), dispatchResource.screenSize()));
         /*
         glm::mat4 inv_view       = glm::inverse(current_view);
         glm::mat4 inv_proj       = glm::inverse(current_proj);
@@ -151,21 +170,27 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        //Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-
+        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
         return new Vector2f(
-                0,
-                0
+                originJitter.x,
+                originJitter.y
         );
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        //int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        //return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
+        return new Vector2f(0);
+        /*
+        //halton
+        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
+        //R2 参考PhotonShader
+        /*
         return new Vector2f(
-                0,
-                0
+                (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
+                (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
         );
+        */
+        
     }
 
     @Override

@@ -1,16 +1,33 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.mixin.core;
 
 import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -50,14 +67,14 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) return;
         if (SuperResolution.isShaderPackCompatSuperResolution()) return;
 
-        if (!screenTarget.equals(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget())) {
+        if (!screenTarget.equals(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget())) {
             return;
         }
         this.passes.forEach(PostPass::close);
         this.passes.clear();
         this.customRenderTargets.values().forEach(RenderTarget::destroyBuffers);
         this.customRenderTargets.clear();
-        ((PostChainAccessor) this).setScreenTarget(MinecraftRenderHandle.getRenderTarget().asMcRenderTarget());
+        ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getRenderTarget().asMcRenderTarget());
         this.updateOrthoMatrix();
         this.load(textureManager, resourceLocation);
         SuperResolution.LOGGER.info("已注入PostChain {}", this.name);
@@ -75,14 +92,14 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) return;
         if (SuperResolution.isShaderPackCompatSuperResolution()) return;
 
-        if (!screenTarget.equals(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget())) {
+        if (!screenTarget.equals(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget())) {
             return;
         }
         this.passes.forEach(PostPass::close);
         this.passes.clear();
         this.customRenderTargets.values().forEach(RenderTarget::destroyBuffers);
         this.customRenderTargets.clear();
-        ((PostChainAccessor) this).setScreenTarget(MinecraftRenderHandle.getRenderTarget().asMcRenderTarget());
+        ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getRenderTarget().asMcRenderTarget());
         this.updateOrthoMatrix();
         this.load(textureManager, name);
         SuperResolution.LOGGER.info("已注入PostChain {}", this.name);
@@ -103,10 +120,10 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) return;
         if (SuperResolution.isShaderPackCompatSuperResolution()) return;
         if (
-                width != MinecraftRenderHandle.getRenderWidth() ||
-                        height != MinecraftRenderHandle.getRenderHeight()
+                width != RenderHandlerManager.getRenderWidth() ||
+                        height != RenderHandlerManager.getRenderHeight()
         ) {
-            this.resize(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight());
+            this.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
             ci.cancel();
         }
     }
@@ -115,10 +132,10 @@ public abstract class PostChainMixin {
     public void onProcess(float partialTicks, CallbackInfo ci) {
         if (super_resolution$onBlackList()) return;
         if (SuperResolution.isShaderPackCompatSuperResolution()) {
-            ((PostChainAccessor) this).setScreenTarget(MinecraftRenderHandle.getOriginRenderTarget().asMcRenderTarget());
+            ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
             return;
         }
-        MinecraftRenderHandle.fixPostChain((PostChain) (Object) this);
+        RenderHandlerManager.onProcessPostChain((PostChain) (Object) this);
     }
 
     @Unique

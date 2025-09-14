@@ -1,5 +1,24 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
@@ -11,7 +30,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.math.Vector3i;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -36,8 +54,8 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     private ITexture HistoryOutput;
 
     private Vector3i getWorkGroupSize() {
-        int dispatchX = SgsrUtils.divideRoundUp(MinecraftRenderHandle.getScreenWidth(), 8);
-        int dispatchY = SgsrUtils.divideRoundUp(MinecraftRenderHandle.getScreenHeight(), 8);
+        int dispatchX = SgsrUtils.divideRoundUp(RenderHandlerManager.getScreenWidth(), 8);
+        int dispatchY = SgsrUtils.divideRoundUp(RenderHandlerManager.getScreenHeight(), 8);
         return new Vector3i(
                 dispatchX,
                 dispatchY,
@@ -106,50 +124,50 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         sgsrPipeline = new Pipeline();
         PrevLumaHistory = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getRenderWidth())
-                .height(MinecraftRenderHandle.getRenderHeight())
+                .width(RenderHandlerManager.getRenderWidth())
+                .height(RenderHandlerManager.getRenderHeight())
                 .format(TextureFormat.R32UI)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
         LumaHistory = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getRenderWidth())
-                .height(MinecraftRenderHandle.getRenderHeight())
+                .width(RenderHandlerManager.getRenderWidth())
+                .height(RenderHandlerManager.getRenderHeight())
                 .format(TextureFormat.R32UI)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
         YCoCgColor = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getRenderWidth())
-                .height(MinecraftRenderHandle.getRenderHeight())
+                .width(RenderHandlerManager.getRenderWidth())
+                .height(RenderHandlerManager.getRenderHeight())
                 .format(TextureFormat.R32UI)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
         MotionDepthClipAlphaBuffer = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getRenderWidth())
-                .height(MinecraftRenderHandle.getRenderHeight())
+                .width(RenderHandlerManager.getRenderWidth())
+                .height(RenderHandlerManager.getRenderHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
         MotionDepthAlphaBuffer = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getRenderWidth())
-                .height(MinecraftRenderHandle.getRenderHeight())
+                .width(RenderHandlerManager.getRenderWidth())
+                .height(RenderHandlerManager.getRenderHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
         PrevHistoryOutput = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getScreenWidth())
-                .height(MinecraftRenderHandle.getScreenHeight())
+                .width(RenderHandlerManager.getScreenWidth())
+                .height(RenderHandlerManager.getScreenHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
         HistoryOutput = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
-                .width(MinecraftRenderHandle.getScreenWidth())
-                .height(MinecraftRenderHandle.getScreenHeight())
+                .width(RenderHandlerManager.getScreenWidth())
+                .height(RenderHandlerManager.getScreenHeight())
                 .format(TextureFormat.RGBA16F)
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
@@ -302,19 +320,19 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         HistoryOutput.resize(width, height);
         PrevHistoryOutput.resize(width, height);
         MotionDepthAlphaBuffer.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight());
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
         YCoCgColor.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight());
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
         MotionDepthClipAlphaBuffer.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight());
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
         PrevLumaHistory.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight());
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
         LumaHistory.resize(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight());
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
     }
 }

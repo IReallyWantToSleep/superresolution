@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.platform.InputConstants;
@@ -11,13 +29,14 @@ import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.common.platform.*;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.api.AbstractAlgorithm;
@@ -164,7 +183,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
 
 
-            MinecraftRenderHandle.init();
+            RenderHandlerManager.initialize();
             AlgorithmManager.init();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
         }
@@ -205,10 +224,10 @@ public final class SuperResolution implements Resizable, Destroyable {
                 currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
                 AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
                         currentAlgorithm,
-                        MinecraftRenderHandle.getScreenWidth(),
-                        MinecraftRenderHandle.getScreenHeight(),
-                        MinecraftRenderHandle.getRenderWidth(),
-                        MinecraftRenderHandle.getRenderHeight()
+                        RenderHandlerManager.getScreenWidth(),
+                        RenderHandlerManager.getScreenHeight(),
+                        RenderHandlerManager.getRenderWidth(),
+                        RenderHandlerManager.getRenderHeight()
                 );
 
                 return true;
@@ -262,10 +281,10 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (currentAlgorithm != null) {
             AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
                     currentAlgorithm,
-                    MinecraftRenderHandle.getScreenWidth(),
-                    MinecraftRenderHandle.getScreenHeight(),
-                    MinecraftRenderHandle.getRenderWidth(),
-                    MinecraftRenderHandle.getRenderHeight()
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight(),
+                    RenderHandlerManager.getRenderWidth(),
+                    RenderHandlerManager.getRenderHeight()
             );
             currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
         }

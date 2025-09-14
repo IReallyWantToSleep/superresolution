@@ -1,6 +1,24 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.gui.effect;
 
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
@@ -27,15 +45,15 @@ public class BlurRenderer {
         blurFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RGBA8,
                 null,
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
         );
         blurTempTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription
                         .create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getScreenWidth())
-                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .width(RenderHandlerManager.getScreenWidth())
+                        .height(RenderHandlerManager.getScreenHeight())
                         .format(TextureFormat.RGBA8)
                         .usages(TextureUsages.create().sampler().attachmentColor())
                         .mipmapsAuto()
@@ -49,25 +67,25 @@ public class BlurRenderer {
 
     public static void copyTextureAndGenMipmap() {
         if (
-                MinecraftRenderHandle.getOriginRenderTarget().getWidth() != blurTempTexture.getWidth() ||
-                        MinecraftRenderHandle.getOriginRenderTarget().getHeight() != blurTempTexture.getHeight()
+                RenderHandlerManager.getOriginRenderTarget().getWidth() != blurTempTexture.getWidth() ||
+                        RenderHandlerManager.getOriginRenderTarget().getHeight() != blurTempTexture.getHeight()
         ) {
             blurTempTexture.resize(
-                    MinecraftRenderHandle.getOriginRenderTarget().getWidth(),
-                    MinecraftRenderHandle.getOriginRenderTarget().getHeight()
+                    RenderHandlerManager.getOriginRenderTarget().getWidth(),
+                    RenderHandlerManager.getOriginRenderTarget().getHeight()
             );
         }
         if (
-                MinecraftRenderHandle.getOriginRenderTarget().getWidth() != blurFrameBuffer.getWidth() ||
-                        MinecraftRenderHandle.getOriginRenderTarget().getHeight() != blurFrameBuffer.getHeight()
+                RenderHandlerManager.getOriginRenderTarget().getWidth() != blurFrameBuffer.getWidth() ||
+                        RenderHandlerManager.getOriginRenderTarget().getHeight() != blurFrameBuffer.getHeight()
         ) {
             blurFrameBuffer.resizeFrameBuffer(
-                    MinecraftRenderHandle.getOriginRenderTarget().getWidth(),
-                    MinecraftRenderHandle.getOriginRenderTarget().getHeight()
+                    RenderHandlerManager.getOriginRenderTarget().getWidth(),
+                    RenderHandlerManager.getOriginRenderTarget().getHeight()
             );
         }
         GlTexture2D dst = blurTempTexture;
-        ITexture src = MinecraftRenderHandle.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color);
+        ITexture src = RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color);
         dst.copyFromTex((int) src.handle());
         dst.generateMipmap();
     }

@@ -1,13 +1,33 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -84,9 +104,9 @@ public class AlgorithmManager {
     public static Vector2f getJitterOffset() {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null) {
             Vector2f jitter = SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
-                    MinecraftRenderHandle.getFrameCount(),
-                    new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
-                    new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight())
+                    RenderHandlerManager.getFrameCount(),
+                    new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
+                    new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
             );
             return jitter;
         }
@@ -95,8 +115,8 @@ public class AlgorithmManager {
 
 
     public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
-        float jx_ndc = (2.0f * jitter.x) / MinecraftRenderHandle.getRenderWidth();
-        float jy_ndc = (2.0f * jitter.y) / MinecraftRenderHandle.getRenderHeight();
+        float jx_ndc = (2.0f * jitter.x) / RenderHandlerManager.getRenderWidth();
+        float jy_ndc = (2.0f * jitter.y) / RenderHandlerManager.getRenderHeight();
         proj.m20(proj.m20() + jx_ndc);
         proj.m21(proj.m21() + jy_ndc);
 
@@ -110,18 +130,18 @@ public class AlgorithmManager {
             ITexture motionVectors
     ) {
         return new DispatchResource(
-                MinecraftRenderHandle.getRenderWidth(),
-                MinecraftRenderHandle.getRenderHeight(),
-                new Vector2f(MinecraftRenderHandle.getRenderWidth(), MinecraftRenderHandle.getRenderHeight()),
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight(),
+                new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
 
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight(),
-                new Vector2f(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight()),
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight(),
+                new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
-                MinecraftRenderHandle.getFrameCount(),
-                MinecraftRenderHandle.frameTime,
+                RenderHandlerManager.getFrameCount(),
+                PerformanceRecoder.getCpuFrameTimeMs(),
                 (float) param.verticalFov,
-                (float) Math.tan(param.verticalFov / 2.0) * MinecraftRenderHandle.getRenderWidth() / MinecraftRenderHandle.getRenderHeight(),
+                (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,
                 Minecraft.getInstance().gameRenderer.getDepthFar(),
                 param.currentModelViewMatrix,

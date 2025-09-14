@@ -1,6 +1,24 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
-import io.homo.superresolution.common.minecraft.MinecraftRenderHandle;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
@@ -42,8 +60,8 @@ public class Sgsr1 extends AbstractAlgorithm {
         output = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(MinecraftRenderHandle.getScreenWidth())
-                        .height(MinecraftRenderHandle.getScreenHeight())
+                        .width(RenderHandlerManager.getScreenWidth())
+                        .height(RenderHandlerManager.getScreenHeight())
                         .format(TextureFormat.R11G11B10F)
                         .usages(TextureUsages.create().sampler().storage().attachmentColor())
                         .label("Sgsr1Output")
@@ -52,8 +70,8 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputFbo = GlFrameBuffer.create(
                 output,
                 null,
-                MinecraftRenderHandle.getScreenWidth(),
-                MinecraftRenderHandle.getScreenHeight()
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
         );
         outputFbo.label("Sgsr1OutputFbo");
         sgsrShader = RenderSystems.current().device().createShaderProgram(
@@ -84,7 +102,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .build()
         );
 
-        this.resize(MinecraftRenderHandle.getScreenWidth(), MinecraftRenderHandle.getScreenHeight());
+        this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
     }
 
     @Override
