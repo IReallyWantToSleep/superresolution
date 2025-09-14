@@ -82,8 +82,8 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         renderTarget = new io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper(
                 new com.mojang.blaze3d.pipeline.TextureTarget(
                         "SuperrResolution-ScaledRenderTarget",
-                        getRenderWidth(),
-                        getRenderHeight(),
+                        RenderHandlerManager.getRenderWidth(),
+                        RenderHandlerManager.getRenderHeight(),
                         true
                 )
         );
@@ -91,8 +91,8 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
                 io.homo.superresolution.core.graphics.impl.texture.TextureFormat.RGBA8,
                 io.homo.superresolution.core.graphics.impl.texture.TextureFormat.DEPTH24_STENCIL8,
-                getRenderWidth(),
-                getRenderHeight()
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
         );
         #else
         renderTarget = new LegacyStorageFrameBuffer(true);
@@ -239,7 +239,10 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         !=1.21.5 在渲染世界前后更换RenderTarget
         */
         #if MC_VER == MC_1_21_5
-        RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(getRenderWidth(), getRenderHeight());
+        RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
+        );
         #else
         RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
         renderTarget.bind(FrameBufferBindPoint.Write);
@@ -256,10 +259,10 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         */
         //TODO:不用copy直接blitFrameBuffer
         #if MC_VER == MC_1_21_5
-        ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
-                ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
+        ((io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D) RenderHandlerManager.getRenderTarget().getTexture(FrameBufferAttachmentType.Color)).copyFromTex(
+                ((com.mojang.blaze3d.opengl.GlTexture) java.util.Objects.requireNonNull(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().getColorTexture())).glId()
         );
-        getOriginRenderTarget().asMcRenderTarget().resize(getScreenWidth(), getScreenHeight());
+        RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         #else
         RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
         #endif

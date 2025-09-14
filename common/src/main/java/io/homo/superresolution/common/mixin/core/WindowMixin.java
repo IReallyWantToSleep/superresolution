@@ -97,7 +97,7 @@ public class WindowMixin {
     @Inject(at = @At("RETURN"), method = "getGuiScale", cancellable = true)
     private void getScaleFactor(CallbackInfoReturnable<Integer> ci) {
         if (!SuperResolution.isShaderPackCompatSuperResolution())
-            ci.setReturnValue((int) (ci.getReturnValue() * MinecraftRenderHandle.getCurrentScaleFactor()));
+            ci.setReturnValue((int) (ci.getReturnValue() * RenderHandlerManager.getCurrentScaleFactor()));
     }
     #endif
 

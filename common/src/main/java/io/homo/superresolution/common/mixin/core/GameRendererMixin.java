@@ -45,10 +45,6 @@ public abstract class GameRendererMixin {
     #else
     protected abstract float getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
 
-    @Shadow
-    @Final
-    private Minecraft minecraft;
-
     #endif
     @Inject(method = "resize", at = @At(value = "HEAD"))
     private void onResize(int i, int j, CallbackInfo ci) {

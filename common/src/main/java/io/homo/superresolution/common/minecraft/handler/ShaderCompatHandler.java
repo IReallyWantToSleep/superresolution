@@ -89,6 +89,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         updateRenderTargetSize();
     }
 
+    
     @Override
     public void onRenderWorldEnd(CallType type) {
         updateRenderTarget();
