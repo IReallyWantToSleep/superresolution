@@ -35,7 +35,7 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     public RenderTarget renderTarget;
     private int clearColor = ColorUtil.color(255, 0, 0, 0);
 
-    MinecraftRenderTargetWrapper(RenderTarget renderTarget) {
+    public MinecraftRenderTargetWrapper(RenderTarget renderTarget) {
         this.renderTarget = renderTarget;
     }
 

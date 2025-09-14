@@ -100,10 +100,11 @@ public class VkReflectionHelper {
                 : VK_API_VERSION_1_0;
 
         try {
-            return (VKCapabilitiesInstance) newVKCapabilitiesInstance.invoke((FunctionProvider)functionName -> {
+            return (VKCapabilitiesInstance) newVKCapabilitiesInstance.invoke((FunctionProvider) functionName -> {
                 long address = callPPP(handle, memAddress(functionName), getVkGetInstanceProcAddr());
                 if (address == NULL && Checks.DEBUG_FUNCTIONS) {
-                    apiLogMissing("VK instance", functionName);
+                    //lwjgl3.3.3-没有这个函数，鉴于用不到，直接注释了
+                    //apiLogMissing("VK instance", functionName);
                 }
                 return address;
             }, apiVersion, getEnabledExtensionSet.invoke(apiVersion, ci.ppEnabledExtensionNames()), getAvailableDeviceExtensions(handle));
@@ -126,8 +127,8 @@ public class VkReflectionHelper {
             IntBuffer ip = stack.callocInt(1);
 
             // long GetInstanceProcAddr                = VK.getGlobalCommands().vkGetInstanceProcAddr;
-            long GetInstanceProcAddr                = getVkGetInstanceProcAddr();
-            long EnumeratePhysicalDevices           = callPPP(instance, memAddress(stack.ASCII("vkEnumeratePhysicalDevices")), GetInstanceProcAddr);
+            long GetInstanceProcAddr = getVkGetInstanceProcAddr();
+            long EnumeratePhysicalDevices = callPPP(instance, memAddress(stack.ASCII("vkEnumeratePhysicalDevices")), GetInstanceProcAddr);
             long EnumerateDeviceExtensionProperties = callPPP(instance, memAddress(stack.ASCII("vkEnumerateDeviceExtensionProperties")), GetInstanceProcAddr);
             if (EnumeratePhysicalDevices == NULL || EnumerateDeviceExtensionProperties == NULL) {
                 break out;
