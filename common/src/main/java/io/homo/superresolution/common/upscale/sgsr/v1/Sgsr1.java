@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
@@ -62,7 +63,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getScreenWidth())
                         .height(RenderHandlerManager.getScreenHeight())
-                        .format(TextureFormat.R11G11B10F)
+                        .format(SuperResolutionConfig.getInternalTextureFormat())
                         .usages(TextureUsages.create().sampler().storage().attachmentColor())
                         .label("Sgsr1Output")
                         .build()
@@ -80,6 +81,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
                         .name("SGSRV1")
                         .addDefine("UseEdgeDirection", "")
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("sgsr1_data", 0, (int) buffer.size())
                         .uniformSamplerTexture("ps0", 1)
                         .build()

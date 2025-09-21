@@ -36,11 +36,11 @@ layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 //输入/输出
 #if FSR_EASU == 1
 layout(binding = 0) uniform sampler2D inImage;
-layout(binding = 1, r11f_g11f_b10f) writeonly uniform image2D outImage;
+layout(binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
 #endif
 #if FSR_RCAS == 1
-layout(binding = 0, r11f_g11f_b10f) readonly uniform image2D inImage;
-layout(binding = 1, r11f_g11f_b10f) writeonly uniform image2D outImage;
+layout(binding = 0, SR_INTERNAL_TEXTURE_FORMAT) readonly uniform image2D inImage;
+layout(binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
 #endif
 //uniforms
 layout(binding = 0, std140) uniform fsr1_data_t {

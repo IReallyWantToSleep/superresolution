@@ -29,21 +29,25 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
+import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
-import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
+import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class SuperResolutionConfig {
@@ -68,6 +72,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_DEBUG;
     public static final BooleanValue DISABLE_UPSCALE_ON_VANILLA;
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
+    public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final OSType CURRENT_OS_TYPE = new OS().type;
     public static final Runnable resolutionChangeCallback;
 
@@ -206,6 +211,13 @@ public class SuperResolutionConfig {
                 "Disable Super Resolution when using vanilla rendering."
         );
 
+        INTERNAL_TEXTURE_FORMAT = builder.defineEnum(
+                "internal_texture_format",
+                InternalTextureFormat.class,
+                () -> InternalTextureFormat.R11B11G10F,
+                "The precision of the internal texture format affects video memory consumption: higher precision results in greater consumption, while lower precision leads to smaller consumption. Note: Excessively low precision may cause noticeable color banding in the image."
+        );
+
         SPECIAL = new SpecialConfigs(builder);
         Path configPath = Platform.currentPlatform
                 .getGameFolder()
@@ -308,7 +320,7 @@ public class SuperResolutionConfig {
 
     public static boolean isEnableUpscale() {
         if (SuperResolutionConfig.isDisableUpscaleOnVanilla())
-            return isEnableUpscaleOriginal() && SuperResolution.irisApiIsShaderPackInUse();
+            return isEnableUpscaleOriginal() && ShaderCompatHandler.irisApiIsShaderPackInUse();
         return isEnableUpscaleOriginal();
     }
 
@@ -448,8 +460,35 @@ public class SuperResolutionConfig {
         DISABLE_UPSCALE_ON_VANILLA.set(value);
     }
 
+    public static void setInternalTextureFormat(InternalTextureFormat format) {
+        INTERNAL_TEXTURE_FORMAT.set(format);
+    }
+
+    public static String getInternalTextureFormatGlslFormatQualifier() {
+        return switch (getInternalTextureFormat()) {
+            case RGBA8 -> "rgba8";
+            case RGBA16F -> "rgba16f";
+            case RGBA16 -> "rgba16";
+            case R11G11B10F -> "r11f_g11f_b10f";
+            default -> "r11f_g11f_b10f";
+        };
+    }
+
+    public static TextureFormat getInternalTextureFormat() {
+        //user settings > shaderPack > default
+        if (INTERNAL_TEXTURE_FORMAT.get() == InternalTextureFormat.AUTO) {
+            Optional<SRShaderCompatConfig.WorldConfig> currentLevelCompatConfig = ShaderCompatHandler.getCurrentLevelCompatConfig();
+            if (currentLevelCompatConfig.isPresent()) {
+                if (currentLevelCompatConfig.get().enabled) {
+                    return currentLevelCompatConfig.get().upscale_config.getSrInternalTextureFormat();
+                }
+            }
+        }
+        return INTERNAL_TEXTURE_FORMAT.get().format();
+    }
+
     public static float getMinUpscaleRatio() {
-        if (SuperResolution.isShaderPackCompatSuperResolution()) return 1.0f;
+        if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) return 1.0f;
         return 0.5f;
         /*
         int maxSize = 16384;

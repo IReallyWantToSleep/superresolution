@@ -64,7 +64,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
                         .usages(TextureUsages.create().sampler().storage().sampler())
-                        .format(TextureFormat.R11G11B10F)
+                        .format(SuperResolutionConfig.getInternalTextureFormat())
                         .label("Sgsr2Output")
                         .build())
         ));
@@ -190,7 +190,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                 (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
         );
         */
-        
+
     }
 
     @Override

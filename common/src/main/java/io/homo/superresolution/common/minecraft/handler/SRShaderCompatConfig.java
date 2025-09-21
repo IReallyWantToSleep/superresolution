@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.shadercompat;
+package io.homo.superresolution.common.minecraft.handler;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

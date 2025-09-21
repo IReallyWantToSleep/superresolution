@@ -19,9 +19,9 @@
 package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -69,8 +69,8 @@ public class FSR2 extends AbstractAlgorithm {
                 .type(TextureType.Texture2D)
                 .width(RenderHandlerManager.getScreenWidth())
                 .height(RenderHandlerManager.getScreenHeight())
-                .format(TextureFormat.R11G11B10F)
-                .usages(TextureUsages.create().sampler().storage().sampler())
+                .format(SuperResolutionConfig.getInternalTextureFormat())
+                .usages(TextureUsages.create().sampler().storage())
                 .label("SRFsr2Output")
                 .build()
         );
@@ -85,8 +85,8 @@ public class FSR2 extends AbstractAlgorithm {
                 .type(TextureType.Texture2D)
                 .width(1)
                 .height(1)
-                .format(TextureFormat.RGBA8)
-                .usages(TextureUsages.create().sampler().storage().sampler())
+                .format(TextureFormat.R8)
+                .usages(TextureUsages.create().sampler().storage())
                 .label("SRFsr2ExposureTexture")
                 .build()
         );
@@ -94,7 +94,7 @@ public class FSR2 extends AbstractAlgorithm {
                 .type(TextureType.Texture2D)
                 .width(RenderHandlerManager.getRenderWidth())
                 .height(RenderHandlerManager.getRenderHeight())
-                .format(TextureFormat.R11G11B10F)
+                .format(SuperResolutionConfig.getInternalTextureFormat())
                 .mipmapsAuto()
                 .usages(TextureUsages.create().sampler().storage())
                 .label("SRFsr2InputTexture")
@@ -222,7 +222,7 @@ public class FSR2 extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!SuperResolution.isShaderPackCompatSuperResolution()) return new Vector2f(0);
+        if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return new Vector2f(0);
         //halton
         int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);

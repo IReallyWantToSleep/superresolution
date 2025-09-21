@@ -29,10 +29,65 @@ import net.minecraft.client.renderer.PostChain;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class ShaderCompatHandler implements IMinecraftRenderHandler {
     private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
+
+    public static void irisApiReloadShader() {
+        try {
+            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
+            irisApiClazz.getMethod("reload").invoke(null);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public static boolean irisApiIsShaderPackInUse() {
+        try {
+            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            Object irisApiInstance = irisApiClazz.getMethod("getInstance").invoke(null);
+            return (boolean) irisApiClazz.getMethod("isShaderPackInUse").invoke(irisApiInstance);
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    public static boolean isShaderPackCompatSuperResolution() {
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
+            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChanges").invoke(null);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
+
+    public static Optional<SRShaderCompatConfig> getShaderPackCompatConfig() {
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
+            return (Optional<SRShaderCompatConfig>) irisApiClazz.getMethod("getCurrentShaderPackConfig").invoke(null);
+        } catch (Throwable e) {
+            return Optional.empty();
+        }
+    }
+
+    public static Optional<SRShaderCompatConfig.WorldConfig> getCurrentLevelCompatConfig() {
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher");
+            return Optional.ofNullable((SRShaderCompatConfig.WorldConfig) irisApiClazz.getMethod("getCurrentConfig").invoke(null));
+        } catch (Throwable e) {
+            return Optional.empty();
+        }
+    }
+
+    public static boolean isShaderPackCompatSuperResolutionJitter() {
+        try {
+            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
+            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChangesJitter").invoke(null);
+        } catch (Throwable e) {
+            return false;
+        }
+    }
 
     public void updateRenderTarget() {
         renderTargets.clear();
@@ -89,7 +144,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         updateRenderTargetSize();
     }
 
-    
+
     @Override
     public void onRenderWorldEnd(CallType type) {
         updateRenderTarget();

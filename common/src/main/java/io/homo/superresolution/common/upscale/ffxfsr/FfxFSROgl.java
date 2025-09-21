@@ -97,7 +97,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler().storage())
                         .mipmapsDisabled()
                         .filterMode(TextureFilterMode.LINEAR)
-                        .format(TextureFormat.RGBA8)
+                        .format(SuperResolutionConfig.getInternalTextureFormat())
                         .size(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
                         .label("SRFSR2-Output")
                         .build()

@@ -22,6 +22,7 @@ import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceRecoder;

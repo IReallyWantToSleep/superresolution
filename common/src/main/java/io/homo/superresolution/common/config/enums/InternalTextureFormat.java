@@ -16,12 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.shadercompat;
+package io.homo.superresolution.common.config.enums;
 
-import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
-public interface SRCompatShaderPack {
-    SRShaderCompatConfig superresolution$getSuperResolutionComaptConfig();
+public enum InternalTextureFormat {
+    RGBA8(TextureFormat.RGBA8),
+    RGBA16F(TextureFormat.RGBA16F),
+    RGBA16(TextureFormat.RGBA16),
+    AUTO(null),
+    R11B11G10F(TextureFormat.R11G11B10F);
 
-    boolean superresolution$isSupportsSuperResolution();
+    private final TextureFormat format;
+
+    InternalTextureFormat(TextureFormat format) {
+        this.format = format;
+    }
+
+    public TextureFormat format() {
+        return format;
+    }
 }

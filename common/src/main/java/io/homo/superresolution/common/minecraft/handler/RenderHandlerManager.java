@@ -40,8 +40,6 @@ import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 
-import static org.lwjgl.opengl.GL11.glViewport;
-
 public class RenderHandlerManager {
     public static boolean needCapture = false;
     public static boolean needCaptureVulkan = false;
@@ -70,12 +68,12 @@ public class RenderHandlerManager {
         if (handler == null) return true;
         if (
                 handler instanceof MinecraftRenderHandler &&
-                        SuperResolution.isShaderPackCompatSuperResolution()) {
+                        ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
             return true;
         }
         if (
                 handler instanceof ShaderCompatHandler &&
-                        !SuperResolution.isShaderPackCompatSuperResolution()) {
+                        !ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
             return true;
         }
         return false;
@@ -87,7 +85,7 @@ public class RenderHandlerManager {
                 handler.destroy();
                 handler = null;
             }
-            if (SuperResolution.isShaderPackCompatSuperResolution()) {
+            if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
                 handler = new ShaderCompatHandler();
             } else {
                 handler = new MinecraftRenderHandler();
@@ -143,10 +141,10 @@ public class RenderHandlerManager {
     public static void onRenderWorldEnd(CallType type) {
         if (type == CallType.LEVEL_RENDERER) isRenderingWorld = false;
         if (checkRenderWorldCallPos(type)) {
+            handler.onRenderWorldEnd(type);
             if (LevelRenderEndEvent.EVENT.hasEvent()) {
                 LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
             }
-            handler.onRenderWorldEnd(type);
             if (RenderHandlerManager.needCapture) {
                 if (RenderDoc.renderdoc != null) {
                     RenderHandlerManager.needCapture = false;
@@ -257,10 +255,16 @@ public class RenderHandlerManager {
     }
 
     public static ITexture getColorTexture() {
+        if (handler instanceof MinecraftRenderHandler) {
+            return ((MinecraftRenderHandler) handler).colorTexture;
+        }
         return handler.getScaledRenderTarget().getTexture(FrameBufferAttachmentType.Color);
     }
 
     public static ITexture getDepthTexture() {
+        if (handler instanceof MinecraftRenderHandler) {
+            return ((MinecraftRenderHandler) handler).depthTexture;
+        }
         return handler.getScaledRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
     }
 }
