@@ -31,17 +31,17 @@ public class IrisRenderingPipelineMixin {
     #if MC_VER > MC_1_21_5
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getMainRenderTarget()Lcom/mojang/blaze3d/pipeline/RenderTarget;"), remap = true)
     public RenderTarget replaceRenderTarget(Minecraft instance) {
-        return RenderHandlerManager.getRenderTarget().asMcRenderTarget();
+        return RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget();
     }
 
     @Redirect(method = "beginLevelRendering", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getMainRenderTarget()Lcom/mojang/blaze3d/pipeline/RenderTarget;"), remap = true)
     public RenderTarget replaceRenderTarget_(Minecraft instance) {
-        return RenderHandlerManager.getRenderTarget().asMcRenderTarget();
+        return RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget();
     }
 
     @Redirect(method = "finalizeGameRendering", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getMainRenderTarget()Lcom/mojang/blaze3d/pipeline/RenderTarget;"), remap = true)
     public RenderTarget replaceRenderTarget__(Minecraft instance) {
-        return RenderHandlerManager.getRenderTarget().asMcRenderTarget();
+        return RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget();
     }
     #endif
 }

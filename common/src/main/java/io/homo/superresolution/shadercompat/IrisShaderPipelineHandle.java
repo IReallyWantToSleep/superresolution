@@ -21,6 +21,7 @@ package io.homo.superresolution.shadercompat;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.IrisRenderingPipelineAccessor;
@@ -104,8 +105,8 @@ public class IrisShaderPipelineHandle {
         }
     }
 
-    public static Optional<SRShaderCompatConfig> getCurrentShaderPackConfig(Optional<ShaderPack> shaderPack) {
-        return shaderPack.map(pack -> ((SRCompatShaderPack) pack).superresolution$getSuperResolutionComaptConfig());
+    public static Optional<SRShaderCompatConfig> getCurrentShaderPackConfig() {
+        return getCurrentShaderPack().map(pack -> ((SRCompatShaderPack) pack).superresolution$getSuperResolutionComaptConfig());
     }
 
     public static @NotNull Optional<ShaderPack> getCurrentShaderPack() {

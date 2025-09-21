@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.opengl.command;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
@@ -47,7 +48,8 @@ public class GlCommandEncoder implements ICommandEncoder {
     @Override
     public ICommandEncoder begin() {
         if (this.commandBuffer != null) {
-            throw new IllegalStateException();
+            SuperResolution.LOGGER.error("The GlCommandEncoder is recording commands, but it is calling the begin method.");
+            //throw new IllegalStateException();
         }
         this.commandBuffer = new GlCommandBuffer((GlDevice) getDevice());
         return this;

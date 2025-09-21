@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
@@ -77,6 +78,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl", true))
                         .name("SGSR_2PCS_A")
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
                         .uniformSamplerTexture("InputColor", 1)
                         .uniformSamplerTexture("InputDepth", 2)
@@ -90,6 +92,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl", true))
                         .name("SGSR_2PCS_B")
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
                         .uniformSamplerTexture("PrevHistoryOutput", 7)
                         .uniformSamplerTexture("MotionDepthClipAlphaBuffer", 8)

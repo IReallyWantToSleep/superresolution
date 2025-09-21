@@ -26,13 +26,27 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
+import io.homo.superresolution.core.graphics.impl.buffer.*;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.File;
@@ -56,6 +70,12 @@ public class DataSetGenerator {
     );
     private static ITexture tempColorTexture;
     private static ITexture tempDepthTexture;
+
+    private static IFrameBuffer preprocessDepthFrameBuffer;
+    private static Pipeline depthPreprocessPipeline;
+    private static IShaderProgram<?> depthPreprocessShader;
+    private static IBufferData depthPreprocessConfigData;
+    private static IBuffer depthPreprocessConfigUBO;
 
     private static String id = UUID.randomUUID().toString().replace("-", "");
     private static String previousId;
@@ -144,11 +164,58 @@ public class DataSetGenerator {
                     .build());
         }
         tempDepthTexture.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
+
+        if (preprocessDepthFrameBuffer == null)
+            preprocessDepthFrameBuffer = GlFrameBuffer.create(
+                    tempDepthTexture,
+                    null
+            );
+        if (depthPreprocessConfigData == null)
+            depthPreprocessConfigData = UniformStructBuilder.start()
+                    .floatEntry("near")
+                    .floatEntry("far")
+                    .build();
+        if (depthPreprocessConfigUBO == null) {
+            depthPreprocessConfigUBO = RenderSystems.current().device().createBuffer(
+                    BufferDescription.create()
+                            .size(depthPreprocessConfigData.size())
+                            .usage(BufferUsage.UBO)
+                            .build()
+            );
+            depthPreprocessConfigUBO.setBufferData(depthPreprocessConfigData);
+        }
+        if (depthPreprocessShader == null) {
+            depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
+                    ShaderDescription.graphics(
+                                    new ShaderSource(ShaderType.FRAGMENT, "/shader/preprocess_depth.frag.glsl", true),
+                                    new ShaderSource(ShaderType.VERTEX, "/shader/preprocess_depth.vert.glsl", true)
+                            )
+                            .name("SRPreprocessDepthShader")
+                            .uniformBuffer("camera_config", 0, (int) depthPreprocessConfigData.size())
+                            .uniformSamplerTexture("tex", 0)
+                            .build()
+            );
+            depthPreprocessShader.compile();
+        }
+
         previousId = id;
         id = UUID.randomUUID().toString().replace("-", "");
     }
 
     private static String getTextureName(ITexture texture, String desc, String id, String previousId) {
+        if (desc.contains("Depth")) {
+            return "%s-%s_%s-%s_%s.%s+%s!%s_%s.texture.bin".formatted(
+                    desc,
+                    texture.getWidth(),
+                    texture.getHeight(),
+                    texture.getTextureFormat().name(),
+                    texture.getTextureFormat().getChannelCount(),
+                    id,
+                    previousId,
+                    "0.05",
+                    String.valueOf(Minecraft.getInstance().gameRenderer.getDepthFar())
+            );
+        }
         return "%s-%s_%s-%s_%s.%s+%s.texture.bin".formatted(
                 desc,
                 texture.getWidth(),
@@ -183,14 +250,8 @@ public class DataSetGenerator {
         SuperResolution.LOGGER.info("写入{}", HR_RGB_IMAGE.getAbsolutePath());
 
         File HR_DEPTH_IMAGE = Paths.get(dir.getPath(), getTextureName(tempDepthTexture, "Depth", id, previousId)).toFile();
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(RenderHandlerManager.getDepthTexture())
-                        .dst(tempDepthTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-        );
         writeImage(
-                tempDepthTexture,
+                RenderHandlerManager.getDepthTexture(),
                 HR_DEPTH_IMAGE.getAbsolutePath()
         );
         SuperResolution.LOGGER.info("写入{}", HR_DEPTH_IMAGE.getAbsolutePath());

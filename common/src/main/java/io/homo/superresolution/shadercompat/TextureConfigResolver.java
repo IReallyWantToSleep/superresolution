@@ -19,6 +19,7 @@
 package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import net.irisshaders.iris.pipeline.CompositeRenderer;

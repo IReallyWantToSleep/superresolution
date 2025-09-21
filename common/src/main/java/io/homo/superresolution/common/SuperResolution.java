@@ -29,7 +29,6 @@ import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GpuVendor;
@@ -245,24 +244,6 @@ public final class SuperResolution implements Resizable, Destroyable {
         return defaultAlgorithm;
     }
 
-    public static void irisApiReloadShader() {
-        try {
-            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
-            irisApiClazz.getMethod("reload").invoke(null);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    public static boolean irisApiIsShaderPackInUse() {
-        try {
-            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-            Object irisApiInstance = irisApiClazz.getMethod("getInstance").invoke(null);
-            return (boolean) irisApiClazz.getMethod("isShaderPackInUse").invoke(irisApiInstance);
-        } catch (Throwable ignored) {
-        }
-        return false;
-    }
-
     public void init() {
         if (minecraft == null) minecraft = Minecraft.getInstance();
 
@@ -297,24 +278,5 @@ public final class SuperResolution implements Resizable, Destroyable {
         AlgorithmManager.destroy();
 
         RenderSystems.destroy();
-    }
-
-    public static boolean isShaderPackCompatSuperResolution() {
-        try {
-            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
-            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChanges").invoke(null);
-        } catch (Throwable e) {
-            return false;
-        }
-    }
-
-
-    public static boolean isShaderPackCompatSuperResolutionJitter() {
-        try {
-            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderPipelineHandle");
-            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChangesJitter").invoke(null);
-        } catch (Throwable e) {
-            return false;
-        }
     }
 }

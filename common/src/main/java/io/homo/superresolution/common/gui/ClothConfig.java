@@ -24,6 +24,7 @@ import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
+import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.debug.PerformanceInfo;
@@ -33,6 +34,7 @@ import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
@@ -73,9 +75,9 @@ public class ClothConfig {
                 .setSaveConsumer((newValue) -> {
                     boolean oldValue = SuperResolutionConfig.isEnableUpscale();
                     SuperResolutionConfig.setEnableUpscale(newValue);
-                    if (!SuperResolution.isShaderPackCompatSuperResolution()) return;
+                    if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
                     if (oldValue != newValue) {
-                        SuperResolution.irisApiReloadShader();
+                        ShaderCompatHandler.irisApiReloadShader();
                     }
                 })
                 .build());
@@ -210,6 +212,18 @@ public class ClothConfig {
                 .setDefaultValue(false)
                 .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
                 .build());
+        commonCategory.addEntry(entryBuilder.startEnumSelector(
+                        Component.literal("内部纹理格式"),
+                        InternalTextureFormat.class,
+                        SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get()
+                )
+                .setTooltip(Component.literal("内部纹理格式的精度会影响显存的消耗，精度越高，消耗越大；精度越低，消耗越小；\n注意：精度过低会导致画面出现明显色阶"))
+                .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
+                .setSaveConsumer((newValue) -> {
+                    SuperResolutionConfig.setInternalTextureFormat(newValue);
+                    SuperResolution.recreateAlgorithm();
+                })
+                .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
                         SuperResolutionConfig.isForceDisableShaderCompat()
@@ -218,8 +232,8 @@ public class ClothConfig {
                 .setDefaultValue(false)
                 .setSaveConsumer((newValue) -> {
                     SuperResolutionConfig.setForceDisableShaderCompat(newValue);
-                    if (!SuperResolution.isShaderPackCompatSuperResolution()) return;
-                    SuperResolution.irisApiReloadShader();
+                    if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
+                    ShaderCompatHandler.irisApiReloadShader();
                 })
                 .build());
 

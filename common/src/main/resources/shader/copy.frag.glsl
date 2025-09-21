@@ -18,7 +18,7 @@ precision mediump float;
     #error "Invalid COPY_CHANCEL"
 #endif
 
-#define ZERO_COPY_DATA COPY_DATA(0)
+#define ZERO_COPY_DATA COPY_DATA(1)
 
 layout(location = 0) uniform sampler2D tex;
 layout(location = 0) in vec2 vTexCoord;

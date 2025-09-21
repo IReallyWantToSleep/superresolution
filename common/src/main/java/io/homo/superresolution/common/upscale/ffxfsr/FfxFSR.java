@@ -22,6 +22,7 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -125,7 +126,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler())
-                        .format(TextureFormat.R11G11B10F)
+                        .format(SuperResolutionConfig.getInternalTextureFormat())
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -174,7 +175,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R11G11B10F)
+                        .format(SuperResolutionConfig.getInternalTextureFormat())
                         .width(RenderHandlerManager.getScreenWidth())
                         .height(RenderHandlerManager.getScreenHeight())
                         .label("SRUpscaleOutputColorVkTexture")
@@ -188,7 +189,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R11G11B10F)
+                        .format(SuperResolutionConfig.getInternalTextureFormat())
                         .width(RenderHandlerManager.getScreenWidth())
                         .height(RenderHandlerManager.getScreenHeight())
                         .label("SRUpscaleOutputColorGlTexture_FfxFsr")
@@ -354,7 +355,7 @@ public class FfxFSR extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!SuperResolution.isShaderPackCompatSuperResolution()) return new Vector2f(0);
+        if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return new Vector2f(0);
         //halton
         int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
