@@ -34,7 +34,7 @@ import java.util.List;
 
 public class VulkanCommandBuffer implements ICommandBuffer {
     private final List<GpuCommand> gpuCommands = new ArrayList<>();
-    private VulkanDevice vulkanDevice;
+    private final VulkanDevice vulkanDevice;
 
     public VkCommandBuffer getNativeCommandBuffer() {
         return nativeCommandBuffer;
@@ -62,7 +62,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     @Override
     public void destroy() {
         gpuCommands.clear();
-        VK10.vkEndCommandBuffer(nativeCommandBuffer);
+        vulkanDevice.getCommandManager().freeCommandBuffer(nativeCommandBuffer);
         nativeCommandBuffer = null;
     }
 

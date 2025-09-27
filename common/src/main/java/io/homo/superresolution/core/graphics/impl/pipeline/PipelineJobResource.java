@@ -129,7 +129,7 @@ public class PipelineJobResource<RT> {
                 PipelineResourceType type,
                 Supplier<Optional<IBuffer>> resource
         ) {
-            super(access, type, resource, buffer -> buffer == null || buffer.getUsage() == BufferUsage.UBO);
+            super(access, type, resource, buffer -> buffer == null || buffer.getUsage() == BufferUsage.Ubo);
         }
 
         public static UniformBuffer create(Supplier<Optional<IBuffer>> ubo) {
@@ -141,7 +141,7 @@ public class PipelineJobResource<RT> {
         }
 
         public static UniformBuffer create(IBuffer ubo) {
-            if (ubo.getUsage() != BufferUsage.UBO) {
+            if (ubo.getUsage() != BufferUsage.Ubo) {
                 throw new IllegalArgumentException("Buffer must have UBO usage");
             }
             return create(() -> Optional.of(ubo));

@@ -21,32 +21,61 @@ package io.homo.superresolution.core.graphics.impl.buffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.Buffer;
+import java.util.Objects;
 
 public class StaticBufferData implements IBufferData {
     private final Buffer buffer;
     private final long size;
+    private final boolean owned;
 
-    public StaticBufferData(long size) {
+    private StaticBufferData(Buffer buffer, long size, boolean owned) {
+        this.buffer = buffer;
         this.size = size;
-        this.buffer = MemoryUtil.memCalloc(1, (int) size);
+        this.owned = owned;
     }
 
-    public StaticBufferData(Buffer buffer, boolean copy) {
-        this.size = buffer.limit();
-        if (copy) {
-            this.buffer = MemoryUtil.memCalloc(1, (int) size);
-            MemoryUtil.memCopy(
-                    MemoryUtil.memAddress(buffer),
-                    MemoryUtil.memAddress(this.buffer),
-                    size
-            );
-        } else {
-            this.buffer = buffer;
+    public static StaticBufferData create(long size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("Size must be positive");
         }
+        Buffer buffer = MemoryUtil.memCalloc(1, (int) size);
+        return new StaticBufferData(buffer, size, true);
     }
 
-    public StaticBufferData(Buffer buffer) {
-        this(buffer, true);
+    public static StaticBufferData copy(Buffer buffer) {
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
+        if (buffer.limit() <= 0) {
+            throw new IllegalArgumentException("Buffer must have positive size");
+        }
+
+        long size = buffer.limit();
+        Buffer internalBuffer = MemoryUtil.memCalloc(1, (int) size);
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(buffer),
+                MemoryUtil.memAddress(internalBuffer),
+                size
+        );
+        return new StaticBufferData(internalBuffer, size, true);
+    }
+
+    public static StaticBufferData wrap(long address, long size) {
+        if (address == 0) {
+            throw new IllegalArgumentException("Address cannot be zero");
+        }
+        if (size <= 0) {
+            throw new IllegalArgumentException("Size must be positive");
+        }
+
+        Buffer buffer = MemoryUtil.memByteBuffer(address, (int) size);
+        return new StaticBufferData(buffer, size, false);
+    }
+
+    public static StaticBufferData wrap(Buffer buffer) {
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
+        if (buffer.limit() <= 0) {
+            throw new IllegalArgumentException("Buffer must have positive size");
+        }
+        return new StaticBufferData(buffer, buffer.limit(), false);
     }
 
     @Override
@@ -61,21 +90,23 @@ public class StaticBufferData implements IBufferData {
 
     @Override
     public void free() {
-        MemoryUtil.memFree(buffer);
+        if (owned) {
+            MemoryUtil.memFree(buffer);
+        }
     }
 
     @Override
     public void put(byte[] src, long offset) {
-        throw new RuntimeException();
+        throw new UnsupportedOperationException("Static buffer does not support modification");
     }
 
     @Override
     public void updatePartial(Buffer data, long offset, long length) {
-        throw new RuntimeException();
+        throw new UnsupportedOperationException("Static buffer does not support modification");
     }
 
     @Override
     public void update(Buffer data) {
-        throw new RuntimeException();
+        throw new UnsupportedOperationException("Static buffer does not support modification");
     }
 }

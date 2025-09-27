@@ -309,6 +309,7 @@ public class FfxFSR extends AbstractAlgorithm {
                     .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
             vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo, VK_NULL_HANDLE);
         }
+        commandBuffer.destroy();
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{Math.toIntExact(this.outputFrameBuffer.handle())},

@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.upscale.nis;
 
-import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.nis.enums.NISHDRMode;
 import io.homo.superresolution.common.upscale.nis.struct.NISConfig;
@@ -27,7 +26,7 @@ import org.lwjgl.system.MemoryStack;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class NVIDIAImageScalingConfig implements IUniformStruct {
+public class NVIDIAImageScalingConfig {
     public NISConfig config = new NISConfig();
     public ByteBuffer container;
 
@@ -175,12 +174,10 @@ public class NVIDIAImageScalingConfig implements IUniformStruct {
         container.flip();
     }
 
-    @Override
     public ByteBuffer container() {
         return container;
     }
 
-    @Override
     public long size() {
         return 256;
     }

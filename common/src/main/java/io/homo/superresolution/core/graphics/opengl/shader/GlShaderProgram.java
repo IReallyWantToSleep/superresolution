@@ -23,6 +23,7 @@ import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderCompileException;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
@@ -88,9 +89,9 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     protected GlShader compileSingleShader(ShaderSource source, boolean compat) {
         int glShaderType = switch (source.getType()) {
-            case VERTEX -> GL_VERTEX_SHADER;
-            case COMPUTE -> GL_COMPUTE_SHADER;
-            case FRAGMENT -> GL_FRAGMENT_SHADER;
+            case Vertex -> GL_VERTEX_SHADER;
+            case Compute -> GL_COMPUTE_SHADER;
+            case Fragment -> GL_FRAGMENT_SHADER;
         };
         Objects.requireNonNull(source, "ShaderSource cannot be null");
         GlShader shader = new GlShader(source.getType());
@@ -104,9 +105,9 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
                 GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                         source.getSource(),
                         switch (source.getType()) {
-                            case VERTEX -> EShLanguage.EShLangVertex;
-                            case FRAGMENT -> EShLanguage.EShLangFragment;
-                            case COMPUTE -> EShLanguage.EShLangCompute;
+                            case Vertex -> EShLanguage.EShLangVertex;
+                            case Fragment -> EShLanguage.EShLangFragment;
+                            case Compute -> EShLanguage.EShLangCompute;
                         },
                         EShSource.EShSourceGlsl,
                         EShClient.EShClientOpenGL,
@@ -187,15 +188,15 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     private void validateShaderTypes() {
         Set<ShaderType> types = description.sourceMap().keySet();
-        if (types.contains(ShaderType.VERTEX) || types.contains(ShaderType.FRAGMENT)) {
-            if (!types.contains(ShaderType.VERTEX) || !types.contains(ShaderType.FRAGMENT)) {
+        if (types.contains(ShaderType.Vertex) || types.contains(ShaderType.Fragment)) {
+            if (!types.contains(ShaderType.Vertex) || !types.contains(ShaderType.Fragment)) {
                 throw new IllegalStateException("通用着色器必须同时拥有VERTEX与FRAGMENT类型的ShaderSource");
             }
-            if (types.stream().anyMatch(t -> t != ShaderType.VERTEX && t != ShaderType.FRAGMENT)) {
+            if (types.stream().anyMatch(t -> t != ShaderType.Vertex && t != ShaderType.Fragment)) {
                 throw new IllegalStateException("通用着色器仅支持VERTEX与FRAGMENT类型的ShaderSource");
             }
         } else {
-            if (types.size() != 1 || !types.contains(ShaderType.COMPUTE)) {
+            if (types.size() != 1 || !types.contains(ShaderType.Compute)) {
                 throw new IllegalStateException("计算着色器只需要一个着色器源码且类型必须为COMPUTE");
             }
         }

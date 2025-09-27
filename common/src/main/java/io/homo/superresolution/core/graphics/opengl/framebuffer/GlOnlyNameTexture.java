@@ -52,12 +52,12 @@ public class GlOnlyNameTexture implements ITexture {
 
     @Override
     public TextureFilterMode getTextureFilterMode() {
-        return TextureFilterMode.NEAREST;
+        return TextureFilterMode.Nearest;
     }
 
     @Override
     public TextureWrapMode getTextureWrapMode() {
-        return TextureWrapMode.CLAMP_TO_EDGE;
+        return TextureWrapMode.ClampToEdge;
     }
 
     @Override

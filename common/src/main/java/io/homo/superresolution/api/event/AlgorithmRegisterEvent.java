@@ -18,6 +18,9 @@
 
 package io.homo.superresolution.api.event;
 
+/**
+ * 注册算法事件，当内置算法注册后被触发
+ */
 public interface AlgorithmRegisterEvent {
     Event<AlgorithmRegisterEvent> EVENT = EventFactory.create(
             AlgorithmRegisterEvent.class,

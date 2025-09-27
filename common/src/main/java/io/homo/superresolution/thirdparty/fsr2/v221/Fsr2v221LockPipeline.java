@@ -53,7 +53,7 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
     @Override
     public void init() {
         program = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2v221/ffx_fsr2_lock_pass.ogl.glsl", true))
+                ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v221/ffx_fsr2_lock_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_lock")
                         .uniformBuffer("cbFSR2", 3, (int) context.fsr2ConstantsUBO.getSize())

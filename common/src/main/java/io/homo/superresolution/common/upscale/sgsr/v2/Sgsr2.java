@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.api.InputResourceSet;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -32,7 +31,6 @@ import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
@@ -40,7 +38,6 @@ import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import org.joml.Matrix4f;
 
 import java.util.function.Consumer;
@@ -84,7 +81,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                 .uintEntry("reset")
                 .build();
         paramsUbo = RenderSystems.current().device().createBuffer(BufferDescription.create()
-                .usage(BufferUsage.UBO)
+                .usage(BufferUsage.Ubo)
                 .size(paramsData.size())
                 .build()
         );

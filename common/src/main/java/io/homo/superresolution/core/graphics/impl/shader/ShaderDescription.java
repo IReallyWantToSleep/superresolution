@@ -67,15 +67,15 @@ public class ShaderDescription {
     }
 
     public ShaderSource fragment() {
-        return sourceMap.get(ShaderType.FRAGMENT);
+        return sourceMap.get(ShaderType.Fragment);
     }
 
     public ShaderSource vertex() {
-        return sourceMap.get(ShaderType.VERTEX);
+        return sourceMap.get(ShaderType.Vertex);
     }
 
     public ShaderSource compute() {
-        return sourceMap.get(ShaderType.COMPUTE);
+        return sourceMap.get(ShaderType.Compute);
     }
 
     protected void updateShaderSource() {
@@ -130,22 +130,22 @@ public class ShaderDescription {
         }
 
         public Builder fragment(ShaderSource source) {
-            if (source.getType() != ShaderType.FRAGMENT) throw new RuntimeException();
-            description.sourceMap.put(ShaderType.FRAGMENT, source);
+            if (source.getType() != ShaderType.Fragment) throw new RuntimeException();
+            description.sourceMap.put(ShaderType.Fragment, source);
             return this;
         }
 
         public Builder vertex(ShaderSource source) {
-            if (source.getType() != ShaderType.VERTEX) throw new RuntimeException();
+            if (source.getType() != ShaderType.Vertex) throw new RuntimeException();
 
-            description.sourceMap.put(ShaderType.VERTEX, source);
+            description.sourceMap.put(ShaderType.Vertex, source);
             return this;
         }
 
         public Builder compute(ShaderSource source) {
-            if (source.getType() != ShaderType.COMPUTE) throw new RuntimeException();
+            if (source.getType() != ShaderType.Compute) throw new RuntimeException();
 
-            description.sourceMap.put(ShaderType.COMPUTE, source);
+            description.sourceMap.put(ShaderType.Compute, source);
             return this;
         }
 

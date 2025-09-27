@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.minecraft.handler;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.event.*;
 import io.homo.superresolution.common.SuperResolution;
@@ -65,7 +64,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 
 public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
@@ -104,7 +102,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().storage().sampler())
                         .mipmapsDisabled()
-                        .wrapMode(TextureWrapMode.CLAMP_TO_EDGE)
+                        .wrapMode(TextureWrapMode.ClampToEdge)
                         .size(
                                 RenderHandlerManager.getRenderWidth(),
                                 RenderHandlerManager.getRenderHeight()
@@ -118,7 +116,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                         .format(TextureFormat.R32F)
                         .usages(TextureUsages.create().storage().sampler())
                         .type(TextureType.Texture2D)
-                        .wrapMode(TextureWrapMode.CLAMP_TO_EDGE)
+                        .wrapMode(TextureWrapMode.ClampToEdge)
                         .size(
                                 RenderHandlerManager.getRenderWidth(),
                                 RenderHandlerManager.getRenderHeight()
@@ -136,15 +134,15 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         depthPreprocessConfigUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(depthPreprocessConfigData.size())
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .build()
         );
         depthPreprocessConfigUBO.setBufferData(depthPreprocessConfigData);
 
         depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.graphics(
-                                new ShaderSource(ShaderType.FRAGMENT, "/shader/preprocess_depth.frag.glsl", true),
-                                new ShaderSource(ShaderType.VERTEX, "/shader/preprocess_depth.vert.glsl", true)
+                                new ShaderSource(ShaderType.Fragment, "/shader/preprocess_depth.frag.glsl", true),
+                                new ShaderSource(ShaderType.Vertex, "/shader/preprocess_depth.vert.glsl", true)
                         )
                         .name("SRPreprocessDepthShader")
                         .uniformBuffer("camera_config", 0, (int) depthPreprocessConfigData.size())

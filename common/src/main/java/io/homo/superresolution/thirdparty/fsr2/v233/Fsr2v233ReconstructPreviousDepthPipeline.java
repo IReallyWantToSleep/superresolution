@@ -55,7 +55,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
     @Override
     public void init() {
         program = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2v233/ffx_fsr2_reconstruct_previous_depth_pass.glsl", true))
+                ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v233/ffx_fsr2_reconstruct_previous_depth_pass.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_reconstruct_previous_depth_v233")
                         .uniformBuffer("cbFSR2", 12, (int) context.fsr2ConstantsUBO.getSize())

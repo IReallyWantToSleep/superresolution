@@ -57,9 +57,9 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
     public void init() {
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_FSR2_OPTION_APPLY_SHARPENING", "1");
-        shaderDefines.put("FFX_HALF", (!(GraphicsCapabilities.detectGpuVendor() == GpuVendor.NVIDIA) && Fsr2DeviceCapabilities.isFp16Supported()) ? "1" : "0");
+        shaderDefines.put("FFX_HALF", (!(GraphicsCapabilities.detectGpuVendor() == GpuVendor.Nvidia) && Fsr2DeviceCapabilities.isFp16Supported()) ? "1" : "0");
         program = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2v233/ffx_fsr2_accumulate_pass.glsl", true))
+                ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v233/ffx_fsr2_accumulate_pass.glsl", true))
                         .addDefines(getShaderDefines(shaderDefines))
                         .name("fsr2_accumulate_v233")
                         .uniformBuffer("cbFSR2", 18, (int) context.fsr2ConstantsUBO.getSize())

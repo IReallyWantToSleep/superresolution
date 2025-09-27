@@ -24,17 +24,12 @@ import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
@@ -46,7 +41,6 @@ import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
-import org.lwjgl.opengl.GL41;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.File;
@@ -179,7 +173,7 @@ public class DataSetGenerator {
             depthPreprocessConfigUBO = RenderSystems.current().device().createBuffer(
                     BufferDescription.create()
                             .size(depthPreprocessConfigData.size())
-                            .usage(BufferUsage.UBO)
+                            .usage(BufferUsage.Ubo)
                             .build()
             );
             depthPreprocessConfigUBO.setBufferData(depthPreprocessConfigData);
@@ -187,8 +181,8 @@ public class DataSetGenerator {
         if (depthPreprocessShader == null) {
             depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
                     ShaderDescription.graphics(
-                                    new ShaderSource(ShaderType.FRAGMENT, "/shader/preprocess_depth.frag.glsl", true),
-                                    new ShaderSource(ShaderType.VERTEX, "/shader/preprocess_depth.vert.glsl", true)
+                                    new ShaderSource(ShaderType.Fragment, "/shader/preprocess_depth.frag.glsl", true),
+                                    new ShaderSource(ShaderType.Vertex, "/shader/preprocess_depth.vert.glsl", true)
                             )
                             .name("SRPreprocessDepthShader")
                             .uniformBuffer("camera_config", 0, (int) depthPreprocessConfigData.size())
