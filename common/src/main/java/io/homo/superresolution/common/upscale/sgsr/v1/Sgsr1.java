@@ -53,7 +53,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 .build();
         ubo = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .size(buffer.size())
                         .build()
         );
@@ -77,8 +77,8 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputFbo.label("Sgsr1OutputFbo");
         sgsrShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/sgsr/v1/sgsr1_shader.vert.glsl"))
-                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
+                        .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/sgsr/v1/sgsr1_shader.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
                         .name("SGSRV1")
                         .addDefine("UseEdgeDirection", "")
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())

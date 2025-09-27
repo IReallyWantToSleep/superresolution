@@ -81,7 +81,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     public void init(Sgsr2 sgsr) {
         activateShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl", true))
                         .name("SGSR_3PCS_A")
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
@@ -96,7 +96,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
 
         convertShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl", true))
                         .name("SGSR_3PCS_B")
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
@@ -112,7 +112,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
 
         upscaleShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl", true))
                         .name("SGSR_3PCS_C")
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())

@@ -59,7 +59,7 @@ public class GlDevice implements IDevice {
 
     @Override
     public GlShaderProgram createShaderProgram(ShaderDescription description) {
-        return OpenGLShaderFactory.createShader(description);
+        return new GlShaderProgram(description);
     }
 
     @Override

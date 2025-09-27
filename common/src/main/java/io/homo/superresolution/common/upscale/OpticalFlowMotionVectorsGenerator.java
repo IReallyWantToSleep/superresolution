@@ -61,8 +61,8 @@ public class OpticalFlowMotionVectorsGenerator {
     public static void initShaders() {
         preprocessShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
-                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/preprocess.frag.glsl"))
+                        .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/preprocess.frag.glsl"))
                         .name("motion_vector_preprocess")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .uniformSamplerTexture("tex_current", 1)
@@ -72,8 +72,8 @@ public class OpticalFlowMotionVectorsGenerator {
 
         pass1Shader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
-                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass1.frag.glsl"))
+                        .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/pass1.frag.glsl"))
                         .name("motion_vector_pass1")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .uniformSamplerTexture("tex_current", 1)
@@ -83,8 +83,8 @@ public class OpticalFlowMotionVectorsGenerator {
 
         pass2Shader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
-                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass2.frag.glsl"))
+                        .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/pass2.frag.glsl"))
                         .name("motion_vector_pass2")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .uniformSamplerTexture("tex_current", 1)
@@ -95,8 +95,8 @@ public class OpticalFlowMotionVectorsGenerator {
 
         pass3Shader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .vertex(ShaderSource.file(ShaderType.VERTEX, "/shader/motion_vector/common.vert.glsl"))
-                        .fragment(ShaderSource.file(ShaderType.FRAGMENT, "/shader/motion_vector/pass3.frag.glsl"))
+                        .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
+                        .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/pass3.frag.glsl"))
                         .name("motion_vector_pass3")
                         .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
                         .uniformSamplerTexture("grad_current", 1)
@@ -116,7 +116,7 @@ public class OpticalFlowMotionVectorsGenerator {
         ubo = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(structuredUniformBuffer.size())
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .build()
         );
         ubo.setBufferData(structuredUniformBuffer);

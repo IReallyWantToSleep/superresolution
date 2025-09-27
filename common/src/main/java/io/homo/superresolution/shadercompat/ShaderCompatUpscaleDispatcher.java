@@ -156,8 +156,8 @@ public class ShaderCompatUpscaleDispatcher {
             if (copyProgram == null) {
                 copyProgram = RenderSystems.opengl().device().createShaderProgram(
                         ShaderDescription.graphics(
-                                        new ShaderSource(ShaderType.FRAGMENT, "/shader/copy.frag.glsl", true),
-                                        new ShaderSource(ShaderType.VERTEX, "/shader/copy.vert.glsl", true)
+                                        new ShaderSource(ShaderType.Fragment, "/shader/copy.frag.glsl", true),
+                                        new ShaderSource(ShaderType.Vertex, "/shader/copy.vert.glsl", true)
                                 )
                                 .addDefine("COPY_CHANCEL", "4")
                                 .addDefine("COPY_SRC_CHANCEL0", "0").addDefine("COPY_DST_CHANCEL0", "0")

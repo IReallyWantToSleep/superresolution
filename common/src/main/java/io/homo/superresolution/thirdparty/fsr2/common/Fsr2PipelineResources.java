@@ -232,10 +232,10 @@ public class Fsr2PipelineResources {
                                 .format(desc.format)
                                 .filterMode(
                                         desc.mipCount == 0 ?
-                                                TextureFilterMode.LINEAR :
+                                                TextureFilterMode.Linear :
                                                 desc.mipCount == -1 ?
-                                                        TextureFilterMode.NEAREST :
-                                                        TextureFilterMode.LINEAR
+                                                        TextureFilterMode.Nearest :
+                                                        TextureFilterMode.Linear
                                 )
                                 .label(desc.label)
                                 .build()
@@ -259,10 +259,10 @@ public class Fsr2PipelineResources {
                                 .format(desc.format)
                                 .filterMode(
                                         desc.mipCount == 0 ?
-                                                TextureFilterMode.LINEAR :
+                                                TextureFilterMode.Linear :
                                                 desc.mipCount == -1 ?
-                                                        TextureFilterMode.NEAREST :
-                                                        TextureFilterMode.LINEAR
+                                                        TextureFilterMode.Nearest :
+                                                        TextureFilterMode.Linear
                                 )
                                 .label(desc.label)
                                 .build()

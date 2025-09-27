@@ -18,11 +18,9 @@
 
 package io.homo.superresolution.core.graphics.impl;
 
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexArray;
-import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.impl.Destroyable;
 
 public class DrawObject implements Destroyable {
@@ -67,7 +65,7 @@ public class DrawObject implements Destroyable {
         IVertexArray vao = new GlVertexArray();
         vao.setAttributes(attributes, vbo);
 
-        return new DrawObject(vbo, vao, PrimitiveType.TRIANGLE_STRIP);
+        return new DrawObject(vbo, vao, PrimitiveType.TriangleStrip);
         //}
 
         //return fullscreenQuadInstance;

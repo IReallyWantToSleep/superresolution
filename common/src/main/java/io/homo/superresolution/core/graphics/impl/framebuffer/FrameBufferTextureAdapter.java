@@ -73,7 +73,7 @@ public class FrameBufferTextureAdapter implements ITexture {
     @Override
     public TextureFilterMode getTextureFilterMode() {
         if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
-            return TextureFilterMode.NEAREST;
+            return TextureFilterMode.Nearest;
         }
         return frameBuffer.getTexture(attachmentType).getTextureFilterMode();
     }
@@ -81,7 +81,7 @@ public class FrameBufferTextureAdapter implements ITexture {
     @Override
     public TextureWrapMode getTextureWrapMode() {
         if (frameBuffer instanceof MinecraftRenderTargetWrapper) {
-            return TextureWrapMode.CLAMP_TO_EDGE;
+            return TextureWrapMode.ClampToEdge;
         }
         return frameBuffer.getTexture(attachmentType).getTextureWrapMode();
     }

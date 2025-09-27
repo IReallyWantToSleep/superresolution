@@ -386,10 +386,10 @@ public class GlCommandDecoder implements ICommandDecoder {
                 glBindVertexArray((int) drawObject.getVertexArray().handle());
 
                 int glPrimitive = switch (drawObject.getPrimitiveType()) {
-                    case TRIANGLES -> GL_TRIANGLES;
-                    case TRIANGLE_STRIP -> GL_TRIANGLE_STRIP;
-                    case LINES -> GL_LINES;
-                    case POINTS -> GL_POINTS;
+                    case Triangle -> GL_TRIANGLES;
+                    case TriangleStrip -> GL_TRIANGLE_STRIP;
+                    case Lines -> GL_LINES;
+                    case Points -> GL_POINTS;
                 };
                 glDrawArrays(glPrimitive, firstVertex, vertexCount);
                 if (drawObject.isOnce()) {

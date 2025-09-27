@@ -55,17 +55,17 @@ public class GraphicsCapabilities {
     }
 
     private static GpuVendor parseVendorFromName(String rawName) {
-        if (rawName == null) return GpuVendor.UNKNOWN;
+        if (rawName == null) return GpuVendor.Unknown;
 
         String lowerName = rawName.toLowerCase();
         if (lowerName.contains("nvidia") || lowerName.contains("geforce")) {
-            return GpuVendor.NVIDIA;
+            return GpuVendor.Nvidia;
         } else if (lowerName.contains("amd") || lowerName.contains("radeon") || lowerName.contains("ati ")) {
-            return GpuVendor.AMD;
+            return GpuVendor.Amd;
         } else if (lowerName.contains("intel") || lowerName.contains("iris") || lowerName.contains("hd graphics")) {
-            return GpuVendor.INTEL;
+            return GpuVendor.Intel;
         }
-        return GpuVendor.UNKNOWN;
+        return GpuVendor.Unknown;
     }
 
     private static int[] detectGLVersion() {

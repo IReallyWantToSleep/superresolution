@@ -30,8 +30,8 @@ public class GlBlitShader {
         if (shaderCache == null) {
             shaderCache = RenderSystems.current().device().createShaderProgram(
                     ShaderDescription.create()
-                            .fragment(new ShaderSource(ShaderType.FRAGMENT, "/shader/blit.frag.glsl", true))
-                            .vertex(new ShaderSource(ShaderType.VERTEX, "/shader/blit.vert.glsl", true))
+                            .fragment(new ShaderSource(ShaderType.Fragment, "/shader/blit.frag.glsl", true))
+                            .vertex(new ShaderSource(ShaderType.Vertex, "/shader/blit.vert.glsl", true))
                             .uniformSamplerTexture("uTexture", 0)
                             .build());
             shaderCache.compile();

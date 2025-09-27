@@ -38,9 +38,9 @@ public class GlRenderState implements IRenderState {
     private boolean colorMaskG = true;
     private boolean colorMaskB = true;
     private boolean colorMaskA = true;
-    private BlendFactor blendSrcFactor = BlendFactor.ONE;
-    private BlendFactor blendDstFactor = BlendFactor.ZERO;
-    private DepthFunc depthFunc = DepthFunc.LESS;
+    private BlendFactor blendSrcFactor = BlendFactor.One;
+    private BlendFactor blendDstFactor = BlendFactor.Zero;
+    private DepthFunc depthFunc = DepthFunc.Less;
 
 
     public void updateFromOpenGL() {
@@ -72,61 +72,61 @@ public class GlRenderState implements IRenderState {
 
     private BlendFactor fromGlBlendFactor(int glFactor) {
         return switch (glFactor) {
-            case GL11.GL_ZERO -> BlendFactor.ZERO;
-            case GL11.GL_ONE -> BlendFactor.ONE;
-            case GL11.GL_SRC_COLOR -> BlendFactor.SRC_COLOR;
-            case GL11.GL_ONE_MINUS_SRC_COLOR -> BlendFactor.ONE_MINUS_SRC_COLOR;
-            case GL11.GL_DST_COLOR -> BlendFactor.DST_COLOR;
-            case GL11.GL_ONE_MINUS_DST_COLOR -> BlendFactor.ONE_MINUS_DST_COLOR;
-            case GL11.GL_SRC_ALPHA -> BlendFactor.SRC_ALPHA;
-            case GL11.GL_ONE_MINUS_SRC_ALPHA -> BlendFactor.ONE_MINUS_SRC_ALPHA;
-            case GL11.GL_DST_ALPHA -> BlendFactor.DST_ALPHA;
-            case GL11.GL_ONE_MINUS_DST_ALPHA -> BlendFactor.ONE_MINUS_DST_ALPHA;
-            default -> BlendFactor.ONE;
+            case GL11.GL_ZERO -> BlendFactor.Zero;
+            case GL11.GL_ONE -> BlendFactor.One;
+            case GL11.GL_SRC_COLOR -> BlendFactor.SrcColor;
+            case GL11.GL_ONE_MINUS_SRC_COLOR -> BlendFactor.OneMinusSrcColor;
+            case GL11.GL_DST_COLOR -> BlendFactor.DstColor;
+            case GL11.GL_ONE_MINUS_DST_COLOR -> BlendFactor.OneMinusDstColor;
+            case GL11.GL_SRC_ALPHA -> BlendFactor.SrcAlpha;
+            case GL11.GL_ONE_MINUS_SRC_ALPHA -> BlendFactor.OneMinusSrcAlpha;
+            case GL11.GL_DST_ALPHA -> BlendFactor.DstAlpha;
+            case GL11.GL_ONE_MINUS_DST_ALPHA -> BlendFactor.OneMinusDstAlpha;
+            default -> BlendFactor.One;
         };
     }
 
 
     private DepthFunc fromGlDepthFunc(int glFunc) {
         return switch (glFunc) {
-            case GL11.GL_NEVER -> DepthFunc.NEVER;
-            case GL11.GL_LESS -> DepthFunc.LESS;
-            case GL11.GL_EQUAL -> DepthFunc.EQUAL;
-            case GL11.GL_LEQUAL -> DepthFunc.LESS_EQUAL;
-            case GL11.GL_GREATER -> DepthFunc.GREATER;
-            case GL11.GL_NOTEQUAL -> DepthFunc.NOT_EQUAL;
-            case GL11.GL_GEQUAL -> DepthFunc.GREATER_EQUAL;
-            case GL11.GL_ALWAYS -> DepthFunc.ALWAYS;
-            default -> DepthFunc.LESS;
+            case GL11.GL_NEVER -> DepthFunc.Never;
+            case GL11.GL_LESS -> DepthFunc.Less;
+            case GL11.GL_EQUAL -> DepthFunc.Equal;
+            case GL11.GL_LEQUAL -> DepthFunc.LessEqual;
+            case GL11.GL_GREATER -> DepthFunc.Greater;
+            case GL11.GL_NOTEQUAL -> DepthFunc.NotEqual;
+            case GL11.GL_GEQUAL -> DepthFunc.GreaterEqual;
+            case GL11.GL_ALWAYS -> DepthFunc.Always;
+            default -> DepthFunc.Less;
         };
     }
 
     private int toGlBlendFactor(BlendFactor bf) {
         return switch (bf) {
-            case ZERO -> GL11.GL_ZERO;
-            case ONE -> GL11.GL_ONE;
-            case SRC_COLOR -> GL11.GL_SRC_COLOR;
-            case ONE_MINUS_SRC_COLOR -> GL11.GL_ONE_MINUS_SRC_COLOR;
-            case DST_COLOR -> GL11.GL_DST_COLOR;
-            case ONE_MINUS_DST_COLOR -> GL11.GL_ONE_MINUS_DST_COLOR;
-            case SRC_ALPHA -> GL11.GL_SRC_ALPHA;
-            case ONE_MINUS_SRC_ALPHA -> GL11.GL_ONE_MINUS_SRC_ALPHA;
-            case DST_ALPHA -> GL11.GL_DST_ALPHA;
-            case ONE_MINUS_DST_ALPHA -> GL11.GL_ONE_MINUS_DST_ALPHA;
+            case Zero -> GL11.GL_ZERO;
+            case One -> GL11.GL_ONE;
+            case SrcColor -> GL11.GL_SRC_COLOR;
+            case OneMinusSrcColor -> GL11.GL_ONE_MINUS_SRC_COLOR;
+            case DstColor -> GL11.GL_DST_COLOR;
+            case OneMinusDstColor -> GL11.GL_ONE_MINUS_DST_COLOR;
+            case SrcAlpha -> GL11.GL_SRC_ALPHA;
+            case OneMinusSrcAlpha -> GL11.GL_ONE_MINUS_SRC_ALPHA;
+            case DstAlpha -> GL11.GL_DST_ALPHA;
+            case OneMinusDstAlpha -> GL11.GL_ONE_MINUS_DST_ALPHA;
             default -> GL11.GL_ONE;
         };
     }
 
     private int toGlDepthFunc(DepthFunc func) {
         return switch (func) {
-            case NEVER -> GL11.GL_NEVER;
-            case LESS -> GL11.GL_LESS;
-            case EQUAL -> GL11.GL_EQUAL;
-            case LESS_EQUAL -> GL11.GL_LEQUAL;
-            case GREATER -> GL11.GL_GREATER;
-            case NOT_EQUAL -> GL11.GL_NOTEQUAL;
-            case GREATER_EQUAL -> GL11.GL_GEQUAL;
-            case ALWAYS -> GL11.GL_ALWAYS;
+            case Never -> GL11.GL_NEVER;
+            case Less -> GL11.GL_LESS;
+            case Equal -> GL11.GL_EQUAL;
+            case LessEqual -> GL11.GL_LEQUAL;
+            case Greater -> GL11.GL_GREATER;
+            case NotEqual -> GL11.GL_NOTEQUAL;
+            case GreaterEqual -> GL11.GL_GEQUAL;
+            case Always -> GL11.GL_ALWAYS;
             default -> GL11.GL_LESS;
         };
     }

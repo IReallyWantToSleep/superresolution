@@ -16,15 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.opengl;
+package io.homo.superresolution.core.graphics.impl.shader;
 
-
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-
-public class OpenGLShaderFactory {
-    public static GlShaderProgram createShader(ShaderDescription description) {
-        GlShaderProgram program = new GlShaderProgram(description);
-        return program;
+public class ShaderCompileException extends RuntimeException {
+    public ShaderCompileException(String message) {
+        super(message);
     }
 }

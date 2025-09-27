@@ -29,7 +29,7 @@ import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.shader.ShaderCompileException;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderCompileException;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
@@ -226,9 +226,9 @@ public class ShaderCompiler {
 
     private static EShLanguage mapToGlslangType(ShaderType type) {
         return switch (type) {
-            case VERTEX -> EShLanguage.EShLangVertex;
-            case FRAGMENT -> EShLanguage.EShLangFragment;
-            case COMPUTE -> EShLanguage.EShLangCompute;
+            case Vertex -> EShLanguage.EShLangVertex;
+            case Fragment -> EShLanguage.EShLangFragment;
+            case Compute -> EShLanguage.EShLangCompute;
         };
     }
 

@@ -76,7 +76,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     public void init(Sgsr2 sgsr) {
         convertShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl", true))
                         .name("SGSR_2PCS_A")
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
@@ -90,7 +90,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         convertShader.compile();
         upscaleShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.COMPUTE, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl", true))
                         .name("SGSR_2PCS_B")
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())

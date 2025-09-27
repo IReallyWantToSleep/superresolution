@@ -21,7 +21,6 @@ package io.homo.superresolution.thirdparty.fsr2.common;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
-import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.thirdparty.fsr2.common.struct.Fsr2CBFSR2;
@@ -30,13 +29,8 @@ import io.homo.superresolution.thirdparty.fsr2.common.struct.Fsr2CBSpd;
 import io.homo.superresolution.thirdparty.fsr2.v221.*;
 import io.homo.superresolution.thirdparty.fsr2.v233.*;
 import org.lwjgl.opengl.GL41;
-import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
@@ -120,19 +114,19 @@ public class Fsr2Context {
         this.fsr2RcasConstantsUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2RcasConstants.size())
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .build()
         );
         this.fsr2SpdConstantsUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2SpdConstants.size())
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .build()
         );
         this.fsr2ConstantsUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2Constants.size())
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .build()
         );
         this.fsr2SpdConstantsUBO.setBufferData(this.fsr2SpdConstants);
@@ -179,7 +173,7 @@ public class Fsr2Context {
         resize(this.dimensions);
         maximumBiasTextureUploaded = false;
     }
-    
+
 
     public void dispatch(Fsr2DispatchDescription dispatchDescription) {
         if (!maximumBiasTextureUploaded) {

@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.graphics.impl.buffer;
 
-import io.homo.superresolution.core.graphics.impl.IUniformStruct;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.math.Vector3f;
 import io.homo.superresolution.core.math.Vector4f;
@@ -30,7 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Objects;
 
-public class StructuredUniformBuffer implements IUniformStruct, IBufferData {
+public class StructuredUniformBuffer implements IBufferData {
     protected final int size;
     protected final ByteBuffer container;
     private final Map<String, Entry> entries;

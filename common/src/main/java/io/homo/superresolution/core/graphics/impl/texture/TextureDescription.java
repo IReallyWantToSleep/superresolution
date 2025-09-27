@@ -26,8 +26,8 @@ public class TextureDescription {
     private TextureFormat format;
     private TextureType type;
     private TextureUsages usages = TextureUsages.create();
-    private TextureFilterMode filterMode = TextureFilterMode.NEAREST;
-    private TextureWrapMode wrapMode = TextureWrapMode.CLAMP_TO_EDGE;
+    private TextureFilterMode filterMode = TextureFilterMode.Nearest;
+    private TextureWrapMode wrapMode = TextureWrapMode.ClampToEdge;
     private TextureMipmapSettings mipmapSettings = TextureMipmapSettings.disabled();
 
     private String label;

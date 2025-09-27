@@ -56,7 +56,7 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_HALF", "0");
         program = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(new ShaderSource(ShaderType.COMPUTE, "/shader/fsr2v221/ffx_fsr2_compute_luminance_pyramid_pass.ogl.glsl", true))
+                ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v221/ffx_fsr2_compute_luminance_pyramid_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(shaderDefines))
                         .name("fsr2_compute_luminance_pyramid")
                         .uniformBuffer("cbFSR2", 5, (int) context.fsr2ConstantsUBO.getSize())

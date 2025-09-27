@@ -27,9 +27,9 @@ public class GlShader implements Destroyable {
 
     public GlShader(ShaderType type) {
         this.id = GL45.glCreateShader(switch (type) {
-            case VERTEX -> GL45.GL_VERTEX_SHADER;
-            case COMPUTE -> GL45.GL_COMPUTE_SHADER;
-            case FRAGMENT -> GL45.GL_FRAGMENT_SHADER;
+            case Vertex -> GL45.GL_VERTEX_SHADER;
+            case Compute -> GL45.GL_COMPUTE_SHADER;
+            case Fragment -> GL45.GL_FRAGMENT_SHADER;
         });
     }
 

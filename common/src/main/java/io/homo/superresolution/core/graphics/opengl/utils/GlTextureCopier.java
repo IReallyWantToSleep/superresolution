@@ -54,8 +54,8 @@ public class GlTextureCopier {
             return programMap.get(key);
         ShaderDescription.Builder builder =
                 ShaderDescription.graphics(
-                        new ShaderSource(ShaderType.FRAGMENT, "/shader/copy.frag.glsl", true),
-                        new ShaderSource(ShaderType.VERTEX, "/shader/copy.vert.glsl", true)
+                        new ShaderSource(ShaderType.Fragment, "/shader/copy.frag.glsl", true),
+                        new ShaderSource(ShaderType.Vertex, "/shader/copy.vert.glsl", true)
                 );
 
         builder.addDefine("COPY_CHANCEL", String.valueOf(copyOperation.getMappings().size()));

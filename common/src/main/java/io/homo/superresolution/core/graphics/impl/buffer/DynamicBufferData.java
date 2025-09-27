@@ -27,33 +27,57 @@ import java.util.Objects;
 public class DynamicBufferData implements IBufferData {
     private final Buffer buffer;
     private final long size;
+    private final boolean owned;
     private boolean dirty = false;
 
-    public DynamicBufferData(long size) {
+    private DynamicBufferData(Buffer buffer, long size, boolean owned) {
+        this.buffer = buffer;
+        this.size = size;
+        this.owned = owned;
+    }
+
+    public static DynamicBufferData create(long size) {
         if (size <= 0) {
             throw new IllegalArgumentException("Size must be positive");
         }
-        this.size = size;
-        this.buffer = MemoryUtil.memCalloc(1, (int) size);
+        Buffer buffer = MemoryUtil.memCalloc(1, (int) size);
+        return new DynamicBufferData(buffer, size, true);
     }
 
-    public DynamicBufferData(Buffer buffer, boolean copy) {
+    public static DynamicBufferData copy(Buffer buffer) {
         Objects.requireNonNull(buffer, "Buffer cannot be null");
         if (buffer.limit() <= 0) {
             throw new IllegalArgumentException("Buffer must have positive size");
         }
 
-        this.size = buffer.limit();
-        if (copy) {
-            this.buffer = MemoryUtil.memCalloc(1, (int) size);
-            MemoryUtil.memCopy(
-                    MemoryUtil.memAddress(buffer),
-                    MemoryUtil.memAddress(this.buffer),
-                    size
-            );
-        } else {
-            this.buffer = buffer;
+        long size = buffer.limit();
+        Buffer internalBuffer = MemoryUtil.memCalloc(1, (int) size);
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(buffer),
+                MemoryUtil.memAddress(internalBuffer),
+                size
+        );
+        return new DynamicBufferData(internalBuffer, size, true);
+    }
+
+    public static DynamicBufferData wrap(long address, long size) {
+        if (address == 0) {
+            throw new IllegalArgumentException("Address cannot be zero");
         }
+        if (size <= 0) {
+            throw new IllegalArgumentException("Size must be positive");
+        }
+
+        Buffer buffer = MemoryUtil.memByteBuffer(address, (int) size);
+        return new DynamicBufferData(buffer, size, false);
+    }
+    
+    public static DynamicBufferData wrap(Buffer buffer) {
+        Objects.requireNonNull(buffer, "Buffer cannot be null");
+        if (buffer.limit() <= 0) {
+            throw new IllegalArgumentException("Buffer must have positive size");
+        }
+        return new DynamicBufferData(buffer, buffer.limit(), false);
     }
 
     public void update(Buffer data) {
@@ -111,7 +135,9 @@ public class DynamicBufferData implements IBufferData {
 
     @Override
     public void free() {
-        MemoryUtil.memFree(buffer);
+        if (owned) {
+            MemoryUtil.memFree(buffer);
+        }
     }
 
     @Override
@@ -127,5 +153,12 @@ public class DynamicBufferData implements IBufferData {
         byteBuffer.put(src);
         byteBuffer.position(position);
         markDirty();
+    }
+
+    public ByteBuffer asByteBuffer() {
+        if (buffer instanceof ByteBuffer) {
+            return (ByteBuffer) buffer;
+        }
+        throw new UnsupportedOperationException("Buffer is not a ByteBuffer");
     }
 }

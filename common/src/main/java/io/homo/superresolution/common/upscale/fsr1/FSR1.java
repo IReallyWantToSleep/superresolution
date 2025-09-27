@@ -60,7 +60,7 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1UBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(fsr1UBOData.size())
-                        .usage(BufferUsage.UBO)
+                        .usage(BufferUsage.Ubo)
                         .build()
         );
         fsr1UBO.setBufferData(fsr1UBOData);
@@ -140,7 +140,7 @@ public class FSR1 extends AbstractAlgorithm {
     public void initShader() {
         int fp16 = SuperResolutionConfig.SPECIAL.FSR1.FP16.get() ? checkFP16Support() : 0;
         fsr1EASUShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
+                ShaderDescription.compute(ShaderSource.file(ShaderType.Compute, "/shader/fsr1/fsr1_main.comp.glsl"))
                         .name("FSR1_EASU")
                         .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
@@ -152,7 +152,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .build()
         );
         fsr1RCASShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.compute(ShaderSource.file(ShaderType.COMPUTE, "/shader/fsr1/fsr1_main.comp.glsl"))
+                ShaderDescription.compute(ShaderSource.file(ShaderType.Compute, "/shader/fsr1/fsr1_main.comp.glsl"))
                         .name("FSR1_RCAS")
                         .addDefine("FSR_FP16_CRITERIA", String.valueOf(fp16))
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))

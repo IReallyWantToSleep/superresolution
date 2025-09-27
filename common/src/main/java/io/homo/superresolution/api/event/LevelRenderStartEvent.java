@@ -21,6 +21,11 @@ package io.homo.superresolution.api.event;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
+/**
+ * 世界渲染开始事件，触发位置随配置中的捕获模式改变
+ * 捕获模式为A或C时会在GameRenderer::renderLevel触发
+ * 捕获模式为B时会在LevelRenderer::renderLevel触发
+ */
 public interface LevelRenderStartEvent {
     Event<LevelRenderStartEvent> EVENT = EventFactory.create(
             LevelRenderStartEvent.class,

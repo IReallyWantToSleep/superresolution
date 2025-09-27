@@ -81,18 +81,18 @@ public class GlBuffer implements IBuffer {
 
     private int getGlTarget() {
         return switch (usage) {
-            case UBO -> GL_UNIFORM_BUFFER;
-            case COPY_SRC -> GL_COPY_READ_BUFFER;
-            case COPY_DST -> GL_COPY_WRITE_BUFFER;
+            case Ubo -> GL_UNIFORM_BUFFER;
+            case CopySrc -> GL_COPY_READ_BUFFER;
+            case CopyDst -> GL_COPY_WRITE_BUFFER;
             default -> GL_ARRAY_BUFFER;
         };
     }
 
     private int getGlUsage() {
         return switch (usage) {
-            case STATIC_DRAW -> GL_STATIC_DRAW;
-            case DYNAMIC_DRAW -> GL_DYNAMIC_DRAW;
-            case UBO -> GL_DYNAMIC_DRAW;
+            case StaticDraw -> GL_STATIC_DRAW;
+            case DynamicDraw -> GL_DYNAMIC_DRAW;
+            case Ubo -> GL_DYNAMIC_DRAW;
             default -> GL_STATIC_DRAW;
         };
     }

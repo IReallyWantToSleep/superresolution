@@ -177,7 +177,7 @@ public class SuperResolutionConfig {
                         return false;
                     }
                     return RenderSystem.isOnRenderThread() ? (
-                            GraphicsCapabilities.detectGpuVendor() == GpuVendor.INTEL ||
+                            GraphicsCapabilities.detectGpuVendor() == GpuVendor.Intel ||
                                     !GraphicsCapabilities.hasGLExtension("GL_ARB_gl_spirv") ||
                                     (GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 2)
                     ) : false;
