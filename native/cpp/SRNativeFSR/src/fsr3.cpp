@@ -80,7 +80,9 @@ extern "C"
             ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = 0;
             return (SRReturnCode)SR_RETURN_CODE_ERROR;
             break;
-
+        case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
+            ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = true;
+            break;
         default:
             break;
         }

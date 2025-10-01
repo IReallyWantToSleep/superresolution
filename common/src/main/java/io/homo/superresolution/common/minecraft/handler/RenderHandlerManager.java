@@ -55,6 +55,7 @@ public class RenderHandlerManager {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
+        PerformanceRecoder.initialize();
         updateHandler();
     }
 
@@ -110,8 +111,9 @@ public class RenderHandlerManager {
             SuperResolution.getInstance().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         }
         if (type == CallType.LEVEL_RENDERER) isRenderingWorld = true;
-        PerformanceRecoder.beginWorld();
         if (!checkRenderWorldCallPos(type)) return;
+        PerformanceRecoder.beginWorld();
+
         shouldApplyScale = true;
         if (RenderHandlerManager.needCapture) {
             if (RenderDoc.renderdoc != null) {
@@ -141,6 +143,7 @@ public class RenderHandlerManager {
     public static void onRenderWorldEnd(CallType type) {
         if (type == CallType.LEVEL_RENDERER) isRenderingWorld = false;
         if (checkRenderWorldCallPos(type)) {
+            PerformanceRecoder.endWorld();
             handler.onRenderWorldEnd(type);
             if (LevelRenderEndEvent.EVENT.hasEvent()) {
                 LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
@@ -164,7 +167,6 @@ public class RenderHandlerManager {
             }
             shouldApplyScale = false;
         }
-        PerformanceRecoder.endWorld();
         GlDebug.popGroup();
     }
 

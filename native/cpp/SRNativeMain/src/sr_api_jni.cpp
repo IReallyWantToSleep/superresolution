@@ -77,6 +77,9 @@ SRTextureResource fromJavaSRTextureResourceVK(JNIEnv *env, jobject obj)
     jfieldID imageFieldId = env->GetFieldID(cls, "handle", JAVA_TYPE_LONG);
     jlong image = env->GetLongField(obj, imageFieldId);
 
+    jfieldID imageViewFieldId = env->GetFieldID(cls, "imageView", JAVA_TYPE_LONG);
+    jlong imageView = env->GetLongField(obj, imageViewFieldId);
+
     jfieldID descFieldId = env->GetFieldID(cls, "description", "Lio/homo/superresolution/srapi/SRTextureResourceDescription;");
     jobject descObj = env->GetObjectField(obj, descFieldId);
 
@@ -86,7 +89,7 @@ SRTextureResource fromJavaSRTextureResourceVK(JNIEnv *env, jobject obj)
     resource.exist = true;
     resource.handle = reinterpret_cast<void *>(image);
     resource.desc = desc;
-
+    resource.imageView = reinterpret_cast<void *>(imageView);
     return resource;
 }
 
@@ -172,7 +175,7 @@ extern "C"
         desc.device = (VkDevice)device;
         desc.phyDevice = (VkPhysicalDevice)phyDevice;
         desc.flags = static_cast<uint32_t>(flags);
-        desc.deviceProcAddr =  reinterpret_cast<SRUpscaleProvider *>(provider)->providerId == SR_MODULES_FSR2OGL_ID ? java_glfwGetProcAddress : java_vkGetDeviceProcAddr;
+        desc.deviceProcAddr = reinterpret_cast<SRUpscaleProvider *>(provider)->providerId == SR_MODULES_FSR2OGL_ID ? java_glfwGetProcAddress : java_vkGetDeviceProcAddr;
         desc.messageCallback = sr_message_callback_bridge;
 
         SRUpscaleContext *context = new SRUpscaleContext();
@@ -377,6 +380,12 @@ extern "C"
             auto *memInfo = static_cast<SRUpscaleContextQueryGpuMemoryInfoResult *>(result.data);
             jfieldID gpuMemField = env->GetFieldID(resultCls, "gpuMemory", "J");
             env->SetLongField(outResultObj, gpuMemField, static_cast<jlong>(memInfo->gpuMemory));
+        }
+        else if (queryType == SR_UPSCALE_CONTEXT_QUERY_AVAILABLE)
+        {
+            auto *memInfo = static_cast<SRUpscaleContextQueryAvailableInfoResult *>(result.data);
+            jfieldID isAvailableField = env->GetFieldID(resultCls, "isAvailable", "Z");
+            env->SetBooleanField(outResultObj, isAvailableField, static_cast<jboolean>(memInfo->isAvailable));
         }
 
         return code;

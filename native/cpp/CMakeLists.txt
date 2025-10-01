@@ -3,14 +3,14 @@ project(SuperResolution)
 
 option(SR_FSR "启用以支持FSR" ON)
 option(SR_FSROGL "启用以支持FSR OpenGL" OFF)
-option(SR_XESS "启用以支持XESS" OFF)
+option(SR_XESS "启用以支持XESS" ON)
 option(SR_DLSS "启用以支持DLSS" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "构建类型" FORCE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "构建类型" FORCE)
 endif()
 
 if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "Release"))

@@ -45,6 +45,7 @@ public class NativeLibManager {
 
     public static NativeLib LIB_SUPER_RESOLUTION = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSRGL = null;
 
     static {
@@ -53,8 +54,10 @@ public class NativeLibManager {
         if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
+            LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
+            libs.add(LIB_SUPER_RESOLUTION_XESS);
 
         } else if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
