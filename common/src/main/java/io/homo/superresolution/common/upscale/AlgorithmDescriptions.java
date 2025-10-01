@@ -34,6 +34,7 @@ import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.common.upscale.xess.XeSS;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
@@ -77,6 +78,16 @@ public class AlgorithmDescriptions {
                     "FSR",
                     "fsr",
                     "AMD FidelityFX Super Resolution",
+                    Requirement.nothing()
+                            .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
+                            .requireVulkan(true)
+            );
+    public static final AlgorithmDescription<XeSS> XESS =
+            new AlgorithmDescription<>(
+                    XeSS.class,
+                    "XeSS",
+                    "xess",
+                    "Intel Xe Super Sampling",
                     Requirement.nothing()
                             .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
                             .requireVulkan(true)
@@ -131,6 +142,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR2);
         if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
             AlgorithmRegistry.registry(FSR);
+            AlgorithmRegistry.registry(XESS);
             //AlgorithmRegistry.registry(FSROgl);
         }
         AlgorithmRegistry.registry(SGSR1);

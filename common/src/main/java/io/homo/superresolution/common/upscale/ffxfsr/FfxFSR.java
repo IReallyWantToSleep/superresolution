@@ -77,6 +77,8 @@ public class FfxFSR extends AbstractAlgorithm {
         if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return;
         Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) return;
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+
         if (context != null) {
             if (context.nativePtr > 0) {
                 SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
@@ -108,6 +110,8 @@ public class FfxFSR extends AbstractAlgorithm {
     }
 
     protected void destroySharedTexture() {
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+
         if (this.inputColorVkTexture != null) this.inputColorVkTexture.destroy();
         if (this.inputColorGlTexture != null) this.inputColorGlTexture.destroy();
         if (this.inputDepthVkTexture != null) this.inputDepthVkTexture.destroy();
@@ -247,6 +251,7 @@ public class FfxFSR extends AbstractAlgorithm {
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 }
         );
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
         RenderSystems.vulkan().device().commandEncoder().begin();
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commandEncoder().getCommandBuffer();
@@ -309,7 +314,6 @@ public class FfxFSR extends AbstractAlgorithm {
                     .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
             vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo, VK_NULL_HANDLE);
         }
-        commandBuffer.destroy();
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{Math.toIntExact(this.outputFrameBuffer.handle())},
@@ -320,6 +324,8 @@ public class FfxFSR extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+
         destroySharedTexture();
         syncSemaphore.destroy();
         syncVkSemaphore.destroy();
@@ -330,6 +336,8 @@ public class FfxFSR extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+
         updateFsr();
         destroySharedTexture();
         createSharedTexture();

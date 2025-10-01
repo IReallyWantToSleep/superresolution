@@ -13,7 +13,6 @@ extern "C"
 {
 #endif
 
-
 #define SR_MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
 
     typedef enum
@@ -37,6 +36,8 @@ extern "C"
     {
         SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO = 0,
         SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO = 1,
+        SR_UPSCALE_CONTEXT_QUERY_AVAILABLE = 2,
+
     } SRUpscaleContextQueryType;
 
     typedef struct
@@ -55,13 +56,18 @@ extern "C"
     {
         uint64_t versionNumber;
         uint64_t versionId;
-        char *versionName;
+        char *versionName;//已弃用
     } SRUpscaleContextQueryVersionInfoResult;
 
     typedef struct
     {
         uint64_t gpuMemory;
     } SRUpscaleContextQueryGpuMemoryInfoResult;
+
+    typedef struct
+    {
+        bool isAvailable;
+    } SRUpscaleContextQueryAvailableInfoResult;
 
     typedef struct SRCreateUpscaleContextDesc
     {
@@ -79,7 +85,7 @@ extern "C"
         bool exist;
         SRTextureResourceDescription desc;
         void *handle;
-
+        void *imageView; //可选
     } SRTextureResource;
 
     typedef struct SRDispatchUpscaleDesc

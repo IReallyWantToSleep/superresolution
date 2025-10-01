@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "super_resolution_xess",
+  "version": "${version}",
+  "name": "Super Resolution",
+  "description": "",
+  "authors": [""],
+  "contact": {
+    "homepage": ""  },
+  "license": "All-Rights-Reserved",
+  "icon": "assets/super_resolution_xess/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.homo.superresolution.modules.fabric.SRXessModuleFabric"
+    ],
+    "client": [
+      "io.homo.superresolution.modules.fabric.client.SRXessModuleFabricClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}
