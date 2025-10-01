@@ -30,9 +30,9 @@ public class SuperResolutionNativeHelper {
 
     public static void CPP_Log(String msg, int level) {
         switch (level) {
-            case 0 -> LOGGER_CPP.info(msg);
+            case 2 -> LOGGER_CPP.info(msg);
             case 1 -> LOGGER_CPP.warn(msg);
-            case 2 -> LOGGER_CPP.error(msg);
+            case 0 -> LOGGER_CPP.error(msg);
             case 3 -> LOGGER_CPP.debug(msg);
         }
     }
@@ -42,6 +42,7 @@ public class SuperResolutionNativeHelper {
     }
 
     public static long CPP_vkGetDeviceProcAddr(String name) {
+        if (name.equals("SuperResolution_GetInstance")) return RenderSystems.vulkan().getVulkanInstance().address();
         return VK10.vkGetDeviceProcAddr(
                 ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
                 name

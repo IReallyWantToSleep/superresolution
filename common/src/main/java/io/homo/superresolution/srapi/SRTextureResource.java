@@ -19,16 +19,22 @@
 package io.homo.superresolution.srapi;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 
 public class SRTextureResource {
     public SRTextureResourceDescription description;
     public ITexture texture;
     public long handle;
+    public long imageView = -1;
+
 
     public SRTextureResource(ITexture texture) {
         this.texture = texture;
         this.description = new SRTextureResourceDescription(texture);
         this.handle = texture.handle();
+        if (texture instanceof VulkanTexture) {
+            this.imageView = ((VulkanTexture) texture).getImageView();
+        }
     }
 
     public long getHandle() {

@@ -37,6 +37,8 @@ import java.util.List;
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memUTF8;
+import static org.lwjgl.vulkan.EXTMutableDescriptorType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
+import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
@@ -96,7 +98,6 @@ public class VkRenderSystem implements IRenderSystem {
     @Override
     public void initRenderSystem() {
         createInstance();
-
         validationLayers = new VulkanValidationLayers(instance);
         if (ENABLE_VALIDATION) validationLayers.setupDebugMessenger();
         VkPhysicalDevice physicalDevice = selectPhysicalDevice();
@@ -187,34 +188,81 @@ public class VkRenderSystem implements IRenderSystem {
             for (String ext : deviceExtensions) {
                 if (supportedDeviceExts.contains(ext)) {
                     enableDeviceExts.add(ext);
+                    LOGGER.info("启用设备扩展: {}", ext);
                 } else {
                     LOGGER.warn("扩展 {} 不被当前物理设备支持，已跳过", ext);
                 }
             }
-            VkPhysicalDeviceVulkan12Features features12 = VkPhysicalDeviceVulkan12Features.calloc()
-                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
 
-            VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc()
+            VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT mutableDescriptorTypeFeaturesEXT =
+                    VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT);
+            VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR shaderIntegerDotProductFeaturesKHR =
+                    VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR)
+                            .pNext(mutableDescriptorTypeFeaturesEXT.address());
+
+            VkPhysicalDeviceVulkan12Features features12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+                    .pNext(shaderIntegerDotProductFeaturesKHR.address());
+
+            VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
-                    .pNext(features12);
+                    .pNext(features12.address());
 
             vkGetPhysicalDeviceFeatures2(physicalDevice, features2);
 
-            if (features12.shaderFloat16()) {
-                features12.shaderFloat16(true);
-            }
+            boolean deviceSupportsMutableDescriptor = mutableDescriptorTypeFeaturesEXT.mutableDescriptorType();
+            boolean deviceSupportsShaderInt8 = features12.shaderInt8();
+            boolean deviceSupportsShaderFloat16 = features12.shaderFloat16();
+            boolean deviceSupportsShaderIntegerDotProduct = shaderIntegerDotProductFeaturesKHR.shaderIntegerDotProduct();
+
+            LOGGER.info("Vulkan 设备特性支持状态:");
+            LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
+            LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
+            LOGGER.info("  shaderFloat16: {}", deviceSupportsShaderFloat16);
+            LOGGER.info("  shaderIntegerDotProduct: {}", deviceSupportsShaderIntegerDotProduct);
+
+            VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures =
+                    VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT)
+                            .mutableDescriptorType(deviceSupportsMutableDescriptor);
+
+            VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR deviceShaderIntFeatures =
+                    VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR)
+                            .pNext(deviceMutableFeatures.address())
+                            .shaderIntegerDotProduct(deviceSupportsShaderIntegerDotProduct);
+
+            VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+                    .pNext(deviceShaderIntFeatures.address())
+                    .shaderFloat16(deviceSupportsShaderFloat16)
+                    .shaderInt8(deviceSupportsShaderInt8);
+
+            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
+                    .pNext(deviceFeatures12.address());
+
+            // 启用基础特性
+            deviceFeatures2.features().shaderStorageImageWriteWithoutFormat(features2.features().shaderStorageImageWriteWithoutFormat());
+
+            // 记录特性启用状态
+            LOGGER.info("Vulkan 特性启用状态:");
+            LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
+            LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
+            LOGGER.info("  shaderFloat16: {}", deviceSupportsShaderFloat16);
+            LOGGER.info("  shaderIntegerDotProduct: {}", deviceSupportsShaderIntegerDotProduct);
+
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
-                    .pNext(features12)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
+                    .pNext(deviceFeatures2.address())
                     .pQueueCreateInfos(queueCreateInfos)
-                    .ppEnabledExtensionNames(asPointerBuffer(stack, enableDeviceExts));
+                    .ppEnabledExtensionNames(asPointerBuffer(stack, enableDeviceExts))
+                    .pEnabledFeatures(null);
 
             if (ENABLE_VALIDATION)
                 createInfo.ppEnabledLayerNames(validationLayers.getValidationLayersPointerBuffer(stack));
-
-            if (capabilities.getDeviceFeatures() != null) {
-                createInfo.pEnabledFeatures(capabilities.getDeviceFeatures());
-            }
 
             PointerBuffer pDevice = stack.mallocPointer(1);
             VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),

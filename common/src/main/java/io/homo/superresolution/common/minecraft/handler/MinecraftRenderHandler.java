@@ -166,7 +166,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         int renderWidth = RenderHandlerManager.getRenderWidth();
         int renderHeight = RenderHandlerManager.getRenderHeight();
         //修复PostChain中的RenderTarget大小不正确
-        for (RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
+        for (com.mojang.blaze3d.pipeline.RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
             if (renderTarget.width != renderWidth ||
                     renderTarget.height != renderHeight ||
                     ((PostChainAccessor) postChain).getScreenWidth() != renderWidth ||
