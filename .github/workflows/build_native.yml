@@ -20,6 +20,8 @@ jobs:
           vulkan-query-version: 1.4.321.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
+      - name: Download libraries
+        run: python script/download_libraries.py
       - name: Build native libraries
         working-directory: native/cpp
         run: bash build_linux.sh
@@ -41,6 +43,8 @@ jobs:
           vulkan-query-version: 1.4.321.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
+      - name: Download libraries
+        run: python script/download_libraries.py
       - name: Build native libraries
         working-directory: native/cpp
         run: powershell -ExecutionPolicy Bypass -File build_windows.ps1
