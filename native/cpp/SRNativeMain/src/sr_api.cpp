@@ -115,7 +115,7 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     {
         if (messageCallback)
         {
-            messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to load DLL.");
+            messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to load DLL,libPath is empty.");
         }
         return SR_RETURN_CODE_ERROR;
     }
@@ -129,7 +129,11 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     {
         if (messageCallback)
         {
-            messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to load DLL.");
+            std::wstring error = L"Failed to load DLL: ";
+            error += std::to_wstring(GetLastError());
+            error += L" Path: ";
+            error += widePath;
+            messageCallback(SR_MESSAGE_TYPE_ERROR, error.c_str());
         }
         return SR_RETURN_CODE_ERROR;
     }

@@ -26,6 +26,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.minecraft.*;
 import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
@@ -52,7 +53,6 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
-import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
@@ -263,6 +263,12 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                         .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
 
         );
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth))
+                        .dst(depthTexture)
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+        );
         RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         #else
         RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
@@ -273,6 +279,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         PerformanceRecoder.beginUpscale();
         try (GlState ignored = new GlState()) {
             AlgorithmManager.update();
+
             {
                 //ScaledRenderTarget.ColorTex copy to MinecraftRenderHandler.colorTexture
                 #if MC_VER < MC_1_21_5
@@ -284,35 +291,19 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                                 .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
                                 .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
                 );
+                GlTextureCopier.copy(
+                        CopyOperation.create()
+                                .src(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth))
+                                .dst(depthTexture)
+                                .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                );
                 #endif
-                //更新相机参数
-                ((StructuredUniformBuffer) (depthPreprocessConfigData)).setFloat(
-                        "near", 0.05f
-                );
-                ((StructuredUniformBuffer) (depthPreprocessConfigData)).setFloat(
-                        "far", Minecraft.getInstance().gameRenderer.getDepthFar()
-                );
-                ((StructuredUniformBuffer) (depthPreprocessConfigData)).fillBuffer();
-                depthPreprocessConfigUBO.upload();
 
-                {
-                    GL41.glDisable(GL41.GL_DEPTH_TEST);
-                    GL41.glDisable(GL41.GL_CULL_FACE);
-                }
-
-                //因为创建Pipeline时直接指明深度纹理所以这里用不着绑定
-                RenderSystems.current().device().commandEncoder().begin();
-                depthPreprocessPipeline.execute(
-                        RenderSystems.current()
-                                .device()
-                                .commandEncoder()
-                                .getCommandBuffer()
-                );
-                RenderSystems.current().device().commandEncoder().end().submit(RenderSystems.current().device());
-
-                {
-                    GL41.glEnable(GL41.GL_DEPTH_TEST);
-                    GL41.glEnable(GL41.GL_CULL_FACE);
+                if (SuperResolutionConfig.isGenerateMotionVectors()) {
+                    MotionVectorsGenerator.update(
+                            colorTexture,
+                            renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
+                    );
                 }
                 DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
                         colorTexture,
@@ -486,5 +477,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         depthPreprocessPipeline.destroy();
         preprocessDepthFrameBuffer.destroy();
         renderTarget.destroy();
+    }
+
+    public ITexture getColorTexture() {
+        return colorTexture;
+    }
+
+    public ITexture getDepthTexture() {
+        return depthTexture;
     }
 }

@@ -20,30 +20,30 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
 import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import org.lwjgl.opengl.GL41;
 
-public class OpticalFlowMotionVectorsGenerator {
+public class MotionVectorsGenerator {
     public static GlShaderProgram preprocessShader;
     public static GlShaderProgram pass1Shader;
     public static GlShaderProgram pass2Shader;
@@ -55,6 +55,7 @@ public class OpticalFlowMotionVectorsGenerator {
     public static GlFrameBuffer deltaFrameBuffer;
     public static GlFrameBuffer preprocessFrameBuffer;
     public static GlFrameBuffer motionVectorsFrameBuffer;
+    public static GlFrameBuffer inputFrameBuffer;
     public static StructuredUniformBuffer structuredUniformBuffer;
     private static GlBuffer ubo;
 
@@ -133,6 +134,12 @@ public class OpticalFlowMotionVectorsGenerator {
                         .label("SRMotionVectorsGenerator-currentFrameTexture")
                         .build()
         );
+        inputFrameBuffer = GlFrameBuffer.create(
+                TextureFormat.RGB16F,
+                null,
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
+        );
 
         previousFrameTexture = (GlTexture2D) RenderSystems.current().device().createTexture(
                 TextureDescription.create()
@@ -178,7 +185,7 @@ public class OpticalFlowMotionVectorsGenerator {
                 PipelineJobBuilders.graphics(preprocessShader)
                         .resource("tex_current",
                                 PipelineJobResource.SamplerTexture.create(
-                                        FrameBufferTextureAdapter.ofColor(RenderHandlerManager.getRenderTarget())
+                                        FrameBufferTextureAdapter.ofColor(inputFrameBuffer)
                                 )
                         )
                         .targetFramebuffer(preprocessFrameBuffer)
@@ -270,9 +277,22 @@ public class OpticalFlowMotionVectorsGenerator {
         gradFrameBuffer.resizeFrameBuffer(width, height);
         deltaFrameBuffer.resizeFrameBuffer(width, height);
         preprocessFrameBuffer.resizeFrameBuffer(width, height);
+        inputFrameBuffer.resizeFrameBuffer(width, height);
     }
 
-    public static void update() {
+    public static void update(
+            ITexture colorTexture,
+            ITexture depthTexture
+    ) {
+        motionVectorsFrameBuffer.clearFrameBuffer();
+        GlTextureCopier.copy(
+                CopyOperation.create()
+                        .src(colorTexture)
+                        .dst(inputFrameBuffer.getTexture(FrameBufferAttachmentType.Color))
+                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+        );
         structuredUniformBuffer.setFloat("exposure", 3.0f);
         structuredUniformBuffer.setInt("window_radius", 2);
         structuredUniformBuffer.setFloat("min_value", 1e-6f);
@@ -306,6 +326,7 @@ public class OpticalFlowMotionVectorsGenerator {
         pass1Shader.destroy();
         pass2Shader.destroy();
         pass3Shader.destroy();
+        inputFrameBuffer.destroy();
     }
 
     public static IFrameBuffer getMotionVectorsFrameBuffer() {

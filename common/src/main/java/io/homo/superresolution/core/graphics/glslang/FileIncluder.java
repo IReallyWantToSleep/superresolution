@@ -51,7 +51,7 @@ public class FileIncluder {
             if (includePath.toFile().exists()) {
                 try {
                     includeSource = Files.readString(includePath);
-                    SuperResolution.LOGGER.info("加载ShaderInclude {}", includePath);
+                    SuperResolution.LOGGER.debug("加载ShaderInclude {}", includePath);
 
                 } catch (Throwable e) {
                     includeSource = String.join("\n", FileReadHelper.readText(fullPath));
@@ -85,7 +85,7 @@ public class FileIncluder {
             if (includePath.toFile().exists()) {
                 try {
                     includeSource = Files.readString(includePath);
-                    SuperResolution.LOGGER.info("加载ShaderInclude {}", includePath);
+                    SuperResolution.LOGGER.debug("加载ShaderInclude {}", includePath);
 
                 } catch (Throwable e) {
                     includeSource = String.join("\n", FileReadHelper.readText(fullPath));

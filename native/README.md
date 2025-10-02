@@ -1,5 +1,7 @@
 # Super Resolution Native
 
+# 文档已过时
+
 # 构建
 
 * 使用`-DSRLIB_VERSION=0.0.0`指定版本

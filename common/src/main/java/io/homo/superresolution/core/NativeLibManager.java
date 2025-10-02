@@ -18,9 +18,14 @@
 
 package io.homo.superresolution.core;
 
+import com.sun.jna.Native;
+import com.sun.jna.Pointer;
+import com.sun.jna.PointerType;
+import com.sun.jna.win32.W32APIOptions;
 import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.core.utils.MessageBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +53,23 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSRGL = null;
 
+    public interface ExtendedKernel32 extends com.sun.jna.platform.win32.Kernel32 {
+        class DllDirectoryCookie extends PointerType {
+            public DllDirectoryCookie() {
+                super();
+            }
+
+            public DllDirectoryCookie(Pointer p) {
+                super(p);
+            }
+        }
+
+        DllDirectoryCookie AddDllDirectory(String lpPathName);
+
+    }
+
+    private static ExtendedKernel32 kernel32Instance;
+
     static {
         OS os = new OS();
 
@@ -55,6 +77,7 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false);
+
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
@@ -96,6 +119,10 @@ public class NativeLibManager {
         }
         if (!status) {
             LOGGER.error("依赖库提取失败; 信息: {}", error != null ? error : "无");
+            MessageBox.createError(
+                    "SuperResolution在提取必要依赖库时失败，错误原因：%s".formatted(error),
+                    "Error"
+            );
             throw new RuntimeException("依赖库提取失败");
         } else {
             LOGGER.info("依赖库文件已提取到 {}", path);

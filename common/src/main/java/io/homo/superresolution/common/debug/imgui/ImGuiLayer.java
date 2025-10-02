@@ -22,16 +22,13 @@ import imgui.ImGui;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.OpticalFlowMotionVectorsGenerator;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResourceType;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
@@ -86,51 +83,23 @@ public class ImGuiLayer {
     }
 
     private void drawDebugTextures(float height) {
-        drawImageIfExists("out", ShaderCompatUpscaleDispatcher.debugInfo.get("out"),
-                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
-
-        drawImageIfExists("color", ShaderCompatUpscaleDispatcher.debugInfo.get("color"),
-                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
-
-        drawImageIfExists("colorA", ShaderCompatUpscaleDispatcher.debugInfo.get("colora"),
-                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
-
-        drawImage("outFramebuffer", SuperResolution.currentAlgorithm.getOutputTextureId(),
-                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
 
         if (RenderHandlerManager.getColorTexture() != null) {
-            drawImage("colorTexture", (int) RenderHandlerManager.getColorTexture().handle(),
+            drawImage("Input Color Texture", (int) RenderHandlerManager.getColorTexture().handle(),
                     RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
         if (RenderHandlerManager.getDepthTexture() != null) {
-            drawImage("depthTexture", (int) RenderHandlerManager.getDepthTexture().handle(),
+            drawImage("Input Depth Texture", (int) RenderHandlerManager.getDepthTexture().handle(),
                     RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
 
-        drawImage("MainRenderTarget", (int) RenderHandlerManager.getOriginRenderTarget().handle(),
-                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
-
-        drawImage("mv", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
+        drawImage("Generated Motion Vectors", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
                 RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
 
-        if (OpticalFlowMotionVectorsGenerator.gradFrameBuffer != null) {
-            drawImage("mv grad", OpticalFlowMotionVectorsGenerator.gradFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
-        }
-        if (OpticalFlowMotionVectorsGenerator.deltaFrameBuffer != null) {
-            drawImage("mv delta", OpticalFlowMotionVectorsGenerator.deltaFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
-        }
+        drawImage("Upscale Output", SuperResolution.currentAlgorithm.getOutputTextureId(),
+                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
 
-        if (OpticalFlowMotionVectorsGenerator.currentFrameTexture != null)
-            drawImage("mv c", (int) OpticalFlowMotionVectorsGenerator.currentFrameTexture.handle(),
-                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
-        if (OpticalFlowMotionVectorsGenerator.previousFrameTexture != null)
-            drawImage("mv pt", (int) OpticalFlowMotionVectorsGenerator.previousFrameTexture.handle(),
-                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
-        if (OpticalFlowMotionVectorsGenerator.preprocessFrameBuffer != null)
-            drawImage("mv pf", OpticalFlowMotionVectorsGenerator.preprocessFrameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
+
     }
 
     private void drawFsr2Resources(float height) {

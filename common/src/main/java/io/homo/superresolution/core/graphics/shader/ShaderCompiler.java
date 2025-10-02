@@ -121,7 +121,7 @@ public class ShaderCompiler {
                     throw new IOException("SPIR-V缓冲区为空或大小非法");
                 }
 
-                LOGGER.info("保存SPIR-V，大小={} bytes, 路径={}", size, path);
+                LOGGER.debug("保存SPIR-V，大小={} bytes, 路径={}", size, path);
 
                 if (SuperResolutionConfig.isDebugDumpShader()) {
                     try {
@@ -142,7 +142,7 @@ public class ShaderCompiler {
                     buffer.position(0);
                     buffer.get(outBytes);
                     Files.write(path, outBytes);
-                    LOGGER.info("SPIR-V保存成功: {}", path);
+                    LOGGER.debug("SPIR-V保存成功: {}", path);
                 } catch (IOException e) {
                     LOGGER.error("保存SPIR-V失败", e);
                 }
@@ -291,11 +291,11 @@ public class ShaderCompiler {
             );
 
             if (!Files.exists(path)) {
-                LOGGER.info("未找到缓存文件: {}", path);
+                LOGGER.debug("未找到缓存文件: {}", path);
                 return false;
             }
         }
-        LOGGER.info("着色器缓存文件存在。");
+        LOGGER.debug("着色器缓存文件存在。");
         return true;
     }
 
@@ -304,7 +304,7 @@ public class ShaderCompiler {
 
         String hash = getShaderProgramMd5(program, apiTag);
         String filename = program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv";
-        LOGGER.info("加载缓存二进制: {}", filename);
+        LOGGER.debug("加载缓存二进制: {}", filename);
         return loadBinaryWithApi(filename, apiTag);
     }
 
@@ -322,7 +322,7 @@ public class ShaderCompiler {
             ByteBuffer buffer;
             buffer = MemoryUtil.memAlloc(data.length);
             buffer.put(data).flip();
-            LOGGER.info("成功加载SPIR-V缓存文件: {}", filename);
+            LOGGER.debug("成功加载SPIR-V缓存文件: {}", filename);
             int format = isVulkan(apiTag) ? -1 : GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
             return new ShaderBinary(buffer, data.length, format);
 
@@ -361,7 +361,7 @@ public class ShaderCompiler {
             if (!closed) {
                 synchronized (this) {
                     if (!closed) {
-                        LOGGER.info("释放着色器代码内存 {} bytes", size);
+                        LOGGER.debug("释放着色器代码内存 {} bytes", size);
                         MemoryUtil.memFree(binary);
                         closed = true;
                     }

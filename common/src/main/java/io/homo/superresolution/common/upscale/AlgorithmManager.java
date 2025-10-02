@@ -21,9 +21,6 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.enums.InternalTextureFormat;
-import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
@@ -38,7 +35,7 @@ public class AlgorithmManager {
     public static AlgorithmParam param = new AlgorithmParam();
 
     public static GlFrameBuffer getMotionVectorsFrameBuffer() {
-        return (GlFrameBuffer) OpticalFlowMotionVectorsGenerator.getMotionVectorsFrameBuffer();
+        return (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer();
     }
 
     public static void destroy() {
@@ -46,7 +43,7 @@ public class AlgorithmManager {
     }
 
     public static void resize(int width, int height) {
-        OpticalFlowMotionVectorsGenerator.resize();
+        MotionVectorsGenerator.resize();
     }
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
@@ -164,14 +161,10 @@ public class AlgorithmManager {
     }
 
     public static void init() {
-        OpticalFlowMotionVectorsGenerator.init();
+        MotionVectorsGenerator.init();
     }
 
     public static void update() {
-        getMotionVectorsFrameBuffer().clearFrameBuffer();
-        if (SuperResolutionConfig.isGenerateMotionVectors()) {
-            OpticalFlowMotionVectorsGenerator.update();
-        }
     }
 
     public static class AlgorithmParam {

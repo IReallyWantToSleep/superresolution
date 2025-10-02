@@ -19,7 +19,9 @@
 package io.homo.superresolution.common.minecraft.handler;
 
 import io.homo.superresolution.common.minecraft.CallType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.Destroyable;
 import net.minecraft.client.renderer.PostChain;
 
@@ -41,4 +43,12 @@ public interface IMinecraftRenderHandler extends Destroyable {
     void initialize();
 
     void resize();
+
+    default ITexture getColorTexture() {
+        return getScaledRenderTarget().getTexture(FrameBufferAttachmentType.Color);
+    }
+
+    default ITexture getDepthTexture() {
+        return getScaledRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
+    }
 }

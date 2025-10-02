@@ -220,8 +220,10 @@ public class ClothConfig {
                 .setTooltip(Component.literal("内部纹理格式的精度会影响显存的消耗，精度越高，消耗越大；精度越低，消耗越小；\n注意：精度过低会导致画面出现明显色阶"))
                 .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
                 .setSaveConsumer((newValue) -> {
-                    SuperResolutionConfig.setInternalTextureFormat(newValue);
-                    SuperResolution.recreateAlgorithm();
+                    if (SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get() != newValue) {
+                        SuperResolutionConfig.setInternalTextureFormat(newValue);
+                        SuperResolution.recreateAlgorithm();
+                    }
                 })
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
