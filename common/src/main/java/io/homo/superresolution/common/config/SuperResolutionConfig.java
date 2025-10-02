@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.config;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.config.*;
 import io.homo.superresolution.api.config.values.list.StringListValue;
 import io.homo.superresolution.api.config.values.single.BooleanValue;
@@ -277,41 +278,59 @@ public class SuperResolutionConfig {
         return algo;
     }
 
-    public static void setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
+    public static synchronized void setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
         if (newAlgo == null) {
             newAlgo = getDefaultAlgorithm();
         }
 
-        AlgorithmDescription<?> currentAlgo = getUpscaleAlgorithm();
+        String algoName = UPSCALE_ALGO.get();
+        AlgorithmDescription<?> currentAlgo = AlgorithmRegistry.getDescriptionByID(algoName);
+
         if (currentAlgo == newAlgo) return;
 
-        UPSCALE_ALGO.set(newAlgo.codeName);
+        AbstractAlgorithm oldAlgorithmInstance = SuperResolution.currentAlgorithm;
+        AlgorithmDescription<?> oldDescription = SuperResolution.algorithmDescription;
 
-        SuperResolution.algorithmDescription = newAlgo;
-        if (SuperResolution.currentAlgorithm != null) {
-            SuperResolution.currentAlgorithm.destroy();
-        }
-
-        if (!SuperResolution.createAlgorithm()) {
-            UPSCALE_ALGO.set(currentAlgo.codeName);
-            SuperResolution.algorithmDescription = currentAlgo;
+        try {
+            UPSCALE_ALGO.set(newAlgo.codeName);
+            SuperResolution.algorithmDescription = newAlgo;
 
             if (!SuperResolution.createAlgorithm()) {
-                SuperResolution.LOGGER.error(
-                        "在初始化算法 {} 时失败后在回退到算法 {} 时又发生异常",
-                        newAlgo.displayName,
-                        currentAlgo.displayName
-                );
-                UPSCALE_ALGO.set(AlgorithmDescriptions.NONE.codeName);
-                SuperResolution.createAlgorithm();
-            } else {
-                SuperResolution.LOGGER.error(
-                        "初始化算法 {} 失败，已回退到算法 {}",
-                        newAlgo.displayName,
-                        currentAlgo.displayName
-                );
+                throw new RuntimeException("创建算法失败");
+            }
+
+            if (oldAlgorithmInstance != null) {
+                try {
+                    oldAlgorithmInstance.destroy();
+                } catch (Exception e) {
+                    SuperResolution.LOGGER.error("销毁旧算法时出错", e);
+                }
+            }
+
+        } catch (Exception e) {
+            SuperResolution.LOGGER.error("切换到算法 {} 失败，尝试回滚", newAlgo.displayName, e);
+
+            UPSCALE_ALGO.set(oldDescription != null ? oldDescription.codeName : AlgorithmDescriptions.NONE.codeName);
+            SuperResolution.algorithmDescription = oldDescription;
+            SuperResolution.currentAlgorithm = oldAlgorithmInstance;
+
+            if (oldAlgorithmInstance == null && oldDescription != null) {
+                try {
+                    if (!SuperResolution.createAlgorithm()) {
+                        fallbackToNone();
+                    }
+                } catch (Exception ex) {
+                    fallbackToNone();
+                }
             }
         }
+    }
+
+    private static void fallbackToNone() {
+        SuperResolution.LOGGER.error("所有回滚尝试失败，使用NONE算法");
+        UPSCALE_ALGO.set(AlgorithmDescriptions.NONE.codeName);
+        SuperResolution.algorithmDescription = AlgorithmDescriptions.NONE;
+        SuperResolution.createAlgorithm();
     }
 
     public static boolean isEnableUpscaleOriginal() {
@@ -483,6 +502,7 @@ public class SuperResolutionConfig {
                     return currentLevelCompatConfig.get().upscale_config.getSrInternalTextureFormat();
                 }
             }
+            return TextureFormat.R11G11B10F;
         }
         return INTERNAL_TEXTURE_FORMAT.get().format();
     }

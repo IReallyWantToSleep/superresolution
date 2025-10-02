@@ -50,6 +50,7 @@ public class SRShaderCompatConfig {
         public Map<String, OutputTextureConfig> output_textures;
 
         public TextureFormat getSrInternalTextureFormat() {
+            if (sr_internal_texture_format == null) return TextureFormat.R11G11B10F;
             return switch (sr_internal_texture_format) {
                 case "r11b11g10f" -> TextureFormat.R11G11B10F;
                 case "rgb8" -> TextureFormat.RGB8;

@@ -140,11 +140,11 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(NONE);
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
-        if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
-            AlgorithmRegistry.registry(FSR);
-            AlgorithmRegistry.registry(XESS);
-            //AlgorithmRegistry.registry(FSROgl);
-        }
+        //if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
+        AlgorithmRegistry.registry(FSR);
+        AlgorithmRegistry.registry(XESS);
+        //AlgorithmRegistry.registry(FSROgl);
+        //}
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         AlgorithmRegisterEvent.EVENT.invoker().onAlgorithmRegister();

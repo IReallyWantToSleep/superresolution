@@ -26,9 +26,11 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
+import io.homo.superresolution.common.minecraft.handler.TextureInfo;
 import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
@@ -59,9 +61,9 @@ import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 public class ShaderCompatUpscaleDispatcher {
     public static Map<String, Object> debugInfo = new HashMap<>();
 
-    private static TextureConfigResolver.TextureInfo colorTexture;
-    private static TextureConfigResolver.TextureInfo depthTexture;
-    private static TextureConfigResolver.TextureInfo motionVectorsTexture;
+    public static TextureInfo colorTexture;
+    public static TextureInfo depthTexture;
+    public static TextureInfo motionVectorsTexture;
 
     private static SRShaderCompatConfig.InputTextureConfig lastColorConfig;
     private static SRShaderCompatConfig.InputTextureConfig lastDepthConfig;
@@ -226,6 +228,12 @@ public class ShaderCompatUpscaleDispatcher {
             }
         }
         AlgorithmManager.update();
+        if (SuperResolutionConfig.isGenerateMotionVectors()) {
+            MotionVectorsGenerator.update(
+                    colorTexture.getInternalTexture(),
+                    depthTexture.getInternalTexture()
+            );
+        }
         DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
         if (SuperResolution.currentAlgorithm != null) {
             AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(

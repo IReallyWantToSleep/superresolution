@@ -257,16 +257,10 @@ public class RenderHandlerManager {
     }
 
     public static ITexture getColorTexture() {
-        if (handler instanceof MinecraftRenderHandler) {
-            return ((MinecraftRenderHandler) handler).colorTexture;
-        }
-        return handler.getScaledRenderTarget().getTexture(FrameBufferAttachmentType.Color);
+        return handler.getColorTexture();
     }
 
     public static ITexture getDepthTexture() {
-        if (handler instanceof MinecraftRenderHandler) {
-            return ((MinecraftRenderHandler) handler).depthTexture;
-        }
-        return handler.getScaledRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
+        return handler.getDepthTexture();
     }
 }

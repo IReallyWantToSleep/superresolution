@@ -60,4 +60,3 @@ for (loader in gradle.ext.versionConfigSrc.common.platforms) {
     println "❇️ 已启用加载器 " + loaderName
     include(loaderName)
 }
-include 'modules'

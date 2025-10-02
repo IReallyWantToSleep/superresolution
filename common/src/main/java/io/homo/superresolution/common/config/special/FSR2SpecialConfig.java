@@ -60,9 +60,11 @@ public class FSR2SpecialConfig extends SpecialConfig {
                         .setTooltip(Component.translatable("superresolution.screen.config.special.fsr2.fp16.tooltip"))
                         .setType(ConfigSpecType.BOOLEAN)
                         .setSaveConsumer((v) -> {
-                            getSpecialConfigs().FSR2.FP16.set(v);
-                            if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR2) {
-                                SuperResolution.recreateAlgorithm();
+                            if (getSpecialConfigs().FSR2.FP16.get() != v) {
+                                getSpecialConfigs().FSR2.FP16.set(v);
+                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR2) {
+                                    SuperResolution.recreateAlgorithm();
+                                }
                             }
                         })
                         .setDefaultValue(true)
@@ -80,9 +82,11 @@ public class FSR2SpecialConfig extends SpecialConfig {
                         .setTooltip(Component.translatable("superresolution.screen.config.special.fsr2.version.tooltip"))
                         .setKey("version")
                         .setSaveConsumer((v) -> {
-                            getSpecialConfigs().FSR2.VERSION.set(v);
-                            if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR2) {
-                                SuperResolution.recreateAlgorithm();
+                            if (getSpecialConfigs().FSR2.VERSION.get() != v) {
+                                getSpecialConfigs().FSR2.VERSION.set(v);
+                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR2) {
+                                    SuperResolution.recreateAlgorithm();
+                                }
                             }
                         })
                         .setType(ConfigSpecType.ENUM)
