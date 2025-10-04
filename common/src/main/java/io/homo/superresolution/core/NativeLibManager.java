@@ -77,10 +77,9 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false);
-
             libs.add(LIB_SUPER_RESOLUTION);
-            libs.add(LIB_SUPER_RESOLUTION_FSR);
-            libs.add(LIB_SUPER_RESOLUTION_XESS);
+            //libs.add(LIB_SUPER_RESOLUTION_FSR);
+            //libs.add(LIB_SUPER_RESOLUTION_XESS);
 
         } else if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
@@ -89,6 +88,7 @@ public class NativeLibManager {
         } else if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
+
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
 
@@ -154,6 +154,7 @@ public class NativeLibManager {
         try (InputStream in = NativeLibManager.class.getClassLoader()
                 .getResourceAsStream(sourcePath.toString().replace("\\", "/"))) {
             if (in == null) {
+                LOGGER.error("{} 提取失败", sourcePath);
                 return false;
             }
             if (_writeFile(in, targetPath.toString())) {
@@ -175,34 +176,40 @@ public class NativeLibManager {
         public final Path preExtractPath;
         public Path extractedPath;
         public boolean available;
+        public boolean nameIsPath;
 
         public NativeLib(String baseName, boolean loadAtStartup) {
-            this.baseName = baseName;
-            this.loadAtStartup = loadAtStartup;
-            this.fileName = buildFullFileName(baseName);
-            this.preExtractPath = Paths.get(BASE_PATH, this.fileName);
+            this(baseName, loadAtStartup, false);
         }
 
-        private static String buildFullFileName(String baseName) {
+        public NativeLib(String baseName, boolean loadAtStartup, boolean nameIsPath) {
+            this.baseName = baseName;
+            this.loadAtStartup = loadAtStartup;
+            this.fileName = buildFullFileName(baseName, nameIsPath);
+            this.preExtractPath = Paths.get(BASE_PATH, this.fileName);
+            this.nameIsPath = nameIsPath;
+        }
+
+        private static String buildFullFileName(String baseName, boolean nameIsPath) {
             OS os = new OS();
             StringBuilder sb = new StringBuilder();
+            if (!nameIsPath) {
+                sb.append("lib");
+                sb.append(baseName);
 
-            sb.append("lib");
-            sb.append(baseName);
+                if (os.type == OSType.WINDOWS) sb.append("+win64");
+                else if (os.type == OSType.LINUX) sb.append("+linux64");
+                else if (os.type == OSType.MACOS) sb.append("+macarm64");
+                else if (os.type == OSType.ANDROID) sb.append("+android");
 
-
-            if (os.type == OSType.WINDOWS) sb.append("+win64");
-            else if (os.type == OSType.LINUX) sb.append("+linux64");
-            else if (os.type == OSType.MACOS) sb.append("+macarm64");
-            else if (os.type == OSType.ANDROID) sb.append("+android");
-
-
-            if (USE_DEBUG_LIB) {
-                sb.append("+debug");
+                if (USE_DEBUG_LIB) {
+                    sb.append("+debug");
+                } else {
+                    sb.append("+release");
+                }
             } else {
-                sb.append("+release");
+                sb.append(baseName);
             }
-
 
             if (os.type == OSType.WINDOWS) sb.append(".dll");
             else if (os.type == OSType.LINUX || os.type == OSType.ANDROID) sb.append(".so");

@@ -50,10 +50,17 @@ public class AlgorithmManager {
         return type.getRequirement().check().support();
     }
 
-    public static void setMatrixVanilla(Matrix4f proj, Matrix4f modelView) {
+    public static float extractVerticalFovDegrees(Matrix4f projectionMatrix) {
+        float m11 = projectionMatrix.m11();
+        float halfFovRad = (float) Math.atan(1.0f / m11);
+        float fovDegrees = (float) Math.toDegrees(halfFovRad * 2.0f);
+        return fovDegrees;
+    }
 
+    public static void setMatrixVanilla(Matrix4f proj, Matrix4f modelView) {
         setModelViewMatrix(modelView);
         setProjectionMatrix(proj);
+        param.verticalFov = extractVerticalFovDegrees(proj);
         Matrix4f curViewProjectionMatrix = new Matrix4f(proj);
         curViewProjectionMatrix.mul(modelView);
         if (param.lastModelViewProjectionMatrix == null) {

@@ -32,8 +32,10 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GpuVendor;
+import io.homo.superresolution.core.graphics.nanovg.NanoVG;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
+import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.common.platform.*;
@@ -100,6 +102,8 @@ public final class SuperResolution implements Resizable, Destroyable {
                     SuperResolution.initRendering();
                     SuperResolution.createAlgorithm();
                     SuperResolution.getInstance().init();
+                    NanoVG.init();
+                    MaterialUI.init();
                 }
         );
         ClientLifecycleEvent.CLIENT_STOPPING.register(

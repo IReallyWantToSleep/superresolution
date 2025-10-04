@@ -142,6 +142,7 @@ public enum TextureFormat {
             TextureComponent.G,
             TextureComponent.B
     ),
+    @Deprecated
     DEPTH_COMPONENT(
             GL_DEPTH_COMPONENT, VK_FORMAT_D16_UNORM,
             DataType.UNSIGNED_NORMALIZED,

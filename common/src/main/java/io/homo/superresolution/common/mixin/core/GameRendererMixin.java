@@ -18,15 +18,14 @@
 
 package io.homo.superresolution.common.mixin.core;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
-import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.Minecraft;
@@ -96,21 +95,6 @@ public abstract class GameRendererMixin {
             RenderHandlerManager.onRenderHandEnd();
         }
     }
-
-
-    #if MC_VER < MC_1_21_4
-    @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getFov(Lnet/minecraft/client/Camera;FZ)D"), method = "renderLevel")
-    private double onGetFov(GameRenderer instance, Camera d0, float fogtype, boolean b) {
-        AlgorithmManager.param.verticalFov = getFov(d0, fogtype, b);
-        return AlgorithmManager.param.verticalFov;
-    }
-    #else
-    @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;getFov(Lnet/minecraft/client/Camera;FZ)F"), method = "renderLevel")
-    private float onGetFov(GameRenderer instance, Camera d0, float fogtype, boolean b) {
-        AlgorithmManager.param.verticalFov = getFov(d0, fogtype, b);
-        return (float) AlgorithmManager.param.verticalFov;
-    }
-    #endif
 
 
     /*
