@@ -22,7 +22,7 @@
         "mod_artifact_minecraft_ver": "1.21..1.21.1"
     },
     "fabric": {
-        "loader_version": "0.16.7",
+        "loader_version": "0.16.11",
         "api_version": "0.105.0+1.21.1",
         "dependencies": {
             "modrinth": [
@@ -62,6 +62,18 @@
                     "name": "sodium-options-api",
                     "version": "fabric-1.21.1-1.0.10",
                     "compileOnly": true
+                },
+                {
+                    "name": "accrelatedrendering-refabricated",
+                    "version": "1.0.1-1.21.1-fabric"
+                },
+                {
+                    "name": "forge-config-api-port",
+                    "version": "v21.1.4-1.21.1-Fabric"
+                },
+                {
+                    "name": "immediatelyfast",
+                    "version": "1.6.7+1.21.1-fabric"
                 }
             ],
             "local": [

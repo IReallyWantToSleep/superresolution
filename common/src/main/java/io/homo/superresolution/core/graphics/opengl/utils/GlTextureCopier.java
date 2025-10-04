@@ -24,10 +24,13 @@ import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL46;
@@ -41,12 +44,56 @@ import static org.lwjgl.opengl.GL30.*;
 
 public class GlTextureCopier {
     private static final Map<String, GlShaderProgram> programMap = new HashMap<>();
+    private static final Map<String, GlShaderProgram> computeProgramMap = new HashMap<>();
+    private static GlSampler sampler;
 
     public static int getCachedFrameBuffer() {
         return cachedFrameBuffer;
     }
 
     private static int cachedFrameBuffer = -1;
+
+    private static String toComputeShaderFormatQualifier(TextureFormat format) {
+        return switch (format) {
+            case RGBA8 -> "rgba8";
+            case RGBA16F -> "rgba16f";
+            case RGBA16 -> "rgba16";
+            case RG16F -> "rg16f";
+            case RG32F -> "rg32f";
+            case RG8 -> "rg8";
+            case R16F -> "r16f";
+            case R8 -> "r8";
+            case R32F -> "r32f";
+            case R32UI -> "r32ui";
+            case R16_SNORM -> "r16_snorm";
+            case R11G11B10F -> "r11f_g11f_b10f";
+            default -> null;
+        };
+    }
+
+    private static GlShaderProgram getOrCreateComputeProgram(CopyOperation copyOperation) {
+        String key = mappingKey(copyOperation.getMappings());
+        if (computeProgramMap.containsKey(key))
+            return computeProgramMap.get(key);
+        ShaderDescription.Builder builder =
+                ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/copy.comp.glsl", true));
+
+        builder.addDefine("COPY_CHANCEL", String.valueOf(copyOperation.getMappings().size()));
+        for (int i = 0; i < copyOperation.getMappings().size(); i++) {
+            CopyOperation.ChannelMapping map = copyOperation.getMappings().get(i);
+            builder.addDefine("COPY_SRC_CHANCEL" + i, String.valueOf(map.src.ordinal()));
+            builder.addDefine("COPY_DST_CHANCEL" + i, String.valueOf(map.dst.ordinal()));
+        }
+        builder.addDefine("COPY_DST_FORMAT", toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()));
+
+        builder.uniformSamplerTexture("tex", 0);
+        builder.uniformStorageTexture("outImage", ShaderUniformAccess.Write, 0);
+
+        GlShaderProgram program = RenderSystems.opengl().device().createShaderProgram(builder.build());
+        program.compile();
+        computeProgramMap.put(key, program);
+        return program;
+    }
 
     private static GlShaderProgram getOrCreateProgram(CopyOperation copyOperation) {
         String key = mappingKey(copyOperation.getMappings());
@@ -82,6 +129,26 @@ public class GlTextureCopier {
 
     public static void copy(CopyOperation copyOperation) {
         GlDebug.pushGroup(GlDebug.nextCopyId(), "CopyTexture");
+        if (sampler == null) sampler = GlSampler.create(GlSampler.SamplerType.LinearClamp);
+        if (toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()) != null) {
+            GlShaderProgram program = getOrCreateComputeProgram(copyOperation);
+            //用线性采样，防止出现锯齿
+            GL43.glBindSampler(0, (int) sampler.handle());
+            RenderSystems.opengl().device().commandEncoder().begin();
+            program.uniforms().samplerTexture("tex").set(copyOperation.getSrcTexture());
+            program.uniforms().storageTexture("outImage").set(copyOperation.getDstTexture());
+            RenderSystems.opengl().device().commandEncoder().dispatchCompute(
+                    program,
+                    (int) Math.ceil((double) copyOperation.getSrcTexture().getWidth() / 16),
+                    (int) Math.ceil((double) copyOperation.getSrcTexture().getHeight() / 16),
+                    1
+            );
+            RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commandEncoder().end());
+            GL43.glBindSampler(0, 0);
+            GlDebug.popGroup();
+            return;
+        }
+
         try (GlState state = new GlState(GlState.STATE_READ_FBO | GlState.STATE_DRAW_FBO)) {
             if (cachedFrameBuffer < 0) {
                 cachedFrameBuffer = Gl.DSA.createFramebuffer();
@@ -89,11 +156,11 @@ public class GlTextureCopier {
             }
             Gl.DSA.framebufferTexture(
                     cachedFrameBuffer,
-                    GL43.GL_COLOR_ATTACHMENT0,
+                    GL_COLOR_ATTACHMENT0,
                     (int) copyOperation.getDstTexture().handle(),
                     0
             );
-            GL43.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, cachedFrameBuffer);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, cachedFrameBuffer);
             GlShaderProgram program = getOrCreateProgram(copyOperation);
             IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commandEncoder().renderState().get();
             RenderSystems.opengl().device().commandEncoder()
@@ -106,7 +173,6 @@ public class GlTextureCopier {
                     .viewport(0, 0, copyOperation.getDstTexture().getWidth(), copyOperation.getDstTexture().getHeight());
 
             program.uniforms().samplerTexture("tex").set(copyOperation.getSrcTexture());
-            GL46.glTextureBarrier();
             RenderSystems.opengl().device().commandEncoder()
                     .draw(
                             program,

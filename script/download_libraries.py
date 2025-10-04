@@ -402,11 +402,9 @@ def update_progress():
               f"失败: {failed_files}", end="", flush=True)
         time.sleep(0.25)
 
-# 启动进度显示线程
 progress_thread = threading.Thread(target=update_progress, daemon=True)
 progress_thread.start()
 
-# 使用线程池并发下载
 with ThreadPoolExecutor(max_workers=8) as executor:
     futures = {executor.submit(download_file, lib_desc): lib_desc for lib_desc in libraries}
 

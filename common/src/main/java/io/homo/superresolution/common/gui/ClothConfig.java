@@ -37,6 +37,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.gui.WidgetDesignScreen;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
@@ -251,6 +252,11 @@ public class ClothConfig {
         commonCategory.addEntry(new ClothButtonEntry(
                 Component.translatable("superresolution.screen.config.button.label.info"),
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),
+                true
+        ));
+        commonCategory.addEntry(new ClothButtonEntry(
+                Component.literal("UI Design"),
+                (button) -> Minecraft.getInstance().setScreen(new WidgetDesignScreen(Component.literal(""))),
                 true
         ));
         for (String key : SuperResolutionConfig.SPECIAL.description.keySet()) {

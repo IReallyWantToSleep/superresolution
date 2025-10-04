@@ -509,18 +509,10 @@ public class GlCommandDecoder implements ICommandDecoder {
 
         putGlCommand(commandBuffer, () -> {
             pushGroup(debugId, debugName);
-            //try (GlState state = new GlState(
-            //        GlState.STATE_TEXTURE |
-            //                GlState.STATE_ACTIVE_TEXTURE |
-            //                GlState.STATE_TEXTURES |
-            //                GlState.STATE_PROGRAM
-            //)) {
             setupShaderProgram(shaderProgram, resourcesSnapshot);
             glDispatchCompute(x, y, z);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-            //} finally {
             popGroup();
-            //}
         });
     }
 

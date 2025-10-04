@@ -159,3 +159,5 @@ build_jars
 *.pdb
 /native/cpp/output/
 __pycache__
+/native/cpp/SRNativeFSR/libraries/
+/native/cpp/SRNativeMain/libraries/
