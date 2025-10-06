@@ -7,7 +7,7 @@
         "platforms": [
             "fabric"
         ],
-        "lwjgl_version": "3.3.1",
+        "lwjgl_version": "3.3.3",
         "architectury_api_version": "11.1.17",
         "forge": {
             "minecraft_version_range": "[1.20.4,)"

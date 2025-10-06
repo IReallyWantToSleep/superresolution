@@ -16,17 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.layout;
+package io.homo.superresolution.core.gui.core.event.events;
 
-import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.math.Vector2f;
-
-public interface ILayoutElement {
-    Rectangle getBounds();
-
-    Vector2f getAbsolutePosition();
-
-    void setParent(ILayoutContainer parent);
-
-    ILayoutContainer getParent();
+@FunctionalInterface
+public interface ClickEvent<WIDGET> {
+    void accept(WIDGET widget);
 }

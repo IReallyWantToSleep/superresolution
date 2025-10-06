@@ -26,6 +26,7 @@ import io.homo.superresolution.common.platform.Arch;
 import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.core.utils.MessageBox;
+import org.lwjgl.system.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ public class NativeLibManager {
 
 
     public static NativeLib LIB_SUPER_RESOLUTION = null;
+    public static NativeLib LIB_NANOVG = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSRGL = null;
@@ -77,6 +79,15 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false);
+            LIB_NANOVG = new NativeLib(
+                    "lwjgl_nanovg",
+                    false,
+                    true,
+                    Configuration.LIBRARY_PATH.get() == null ?
+                            null :
+                            Path.of(Configuration.LIBRARY_PATH.get())
+            );
+            libs.add(LIB_NANOVG);
             libs.add(LIB_SUPER_RESOLUTION);
             //libs.add(LIB_SUPER_RESOLUTION_FSR);
             //libs.add(LIB_SUPER_RESOLUTION_XESS);
@@ -88,7 +99,15 @@ public class NativeLibManager {
         } else if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
-
+            LIB_NANOVG = new NativeLib(
+                    "liblwjgl_nanovg",
+                    false,
+                    true,
+                    Configuration.LIBRARY_PATH.get() == null ?
+                            null :
+                            Path.of(Configuration.LIBRARY_PATH.get())
+            );
+            libs.add(LIB_NANOVG);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
 
@@ -158,6 +177,7 @@ public class NativeLibManager {
                 return false;
             }
             if (_writeFile(in, targetPath.toString())) {
+                library.extractedPath = targetPath;
                 LOGGER.info("{} 提取成功", library.fileName);
             } else {
                 throw new IOException(library.fileName + " 提取失败");
@@ -177,17 +197,23 @@ public class NativeLibManager {
         public Path extractedPath;
         public boolean available;
         public boolean nameIsPath;
+        public Path targetPath;
 
         public NativeLib(String baseName, boolean loadAtStartup) {
             this(baseName, loadAtStartup, false);
         }
 
         public NativeLib(String baseName, boolean loadAtStartup, boolean nameIsPath) {
+            this(baseName, loadAtStartup, false, null);
+        }
+
+        public NativeLib(String baseName, boolean loadAtStartup, boolean nameIsPath, Path targetPath) {
             this.baseName = baseName;
             this.loadAtStartup = loadAtStartup;
             this.fileName = buildFullFileName(baseName, nameIsPath);
             this.preExtractPath = Paths.get(BASE_PATH, this.fileName);
             this.nameIsPath = nameIsPath;
+            this.targetPath = targetPath;
         }
 
         private static String buildFullFileName(String baseName, boolean nameIsPath) {
@@ -219,7 +245,11 @@ public class NativeLibManager {
         }
 
         public Path getTargetPath(Path root) {
-            this.extractedPath = root.resolve(fileName);
+            if (targetPath != null) {
+                this.extractedPath = targetPath.resolve(fileName);
+            } else {
+                this.extractedPath = root.resolve(fileName);
+            }
             return this.extractedPath;
         }
     }

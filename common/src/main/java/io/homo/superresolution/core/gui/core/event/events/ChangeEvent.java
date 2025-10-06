@@ -16,8 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.widgets.switchs;
+package io.homo.superresolution.core.gui.core.event.events;
 
-public enum MaterialSwitchVariant {
-    Elevated, Filled, Tonal, Outlined, Text
+@FunctionalInterface
+public interface ChangeEvent<WIDGET, T> {
+    void accept(WIDGET widget, T newValue, T oldValue);
 }

@@ -9,6 +9,7 @@ import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonShape;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
+import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MinecraftUtil;
@@ -31,69 +32,66 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
     @Override
     protected void buildWidgets() {
         materialScheme = MaterialScheme.from(MaterialTheme.Dark, Color.from("#6750A4"));
+        ContainerWidget rootContainer = new ContainerWidget();
+        ContainerWidget btnContainer = new ContainerWidget();
         container = new ContainerWidget();
         container.layout(new AbsoluteLayout());
+        rootContainer.layout(new AbsoluteLayout());
+        btnContainer.layout(new AbsoluteLayout());
+        rootContainer.addChild(btnContainer);
+        rootContainer.addChild(container);
+        MaterialSwitch switchA = MaterialSwitch.create().scheme(materialScheme);
+        MaterialSwitch switchB = MaterialSwitch.create().scheme(materialScheme);
+        MaterialSwitch switchC = MaterialSwitch.create().scheme(materialScheme);
+        MaterialSwitch switchD = MaterialSwitch.create().scheme(materialScheme);
+        MaterialSwitch switchE = MaterialSwitch.create().scheme(materialScheme);
+        MaterialSwitch switchF = MaterialSwitch.create().scheme(materialScheme);
         MaterialButton buttonElevated = MaterialButton.create()
-                .text("Elevated")
-                .icon(MaterialSymbols.iconEdit())
-                .scheme(materialScheme)
-                .size(MaterialButtonSize.Small);
-        MaterialButton buttonFilled = MaterialButton.create()
-                .text("Filled")
-                .scheme(materialScheme)
-                .size(MaterialButtonSize.Small);
-        MaterialButton buttonTonal = MaterialButton.create()
-                .text("Tonal")
-                .scheme(materialScheme)
-                .size(MaterialButtonSize.Small);
-        MaterialButton buttonOutlined = MaterialButton.create()
-                .text("Outlined")
-                .scheme(materialScheme)
-                .size(MaterialButtonSize.Small);
-        MaterialButton buttonText = MaterialButton.create()
-                .text("Text")
-                .size(MaterialButtonSize.Small)
-                .icon(MaterialSymbols.iconEdit()).scheme(materialScheme);
-        buttonElevated.style()
-                .variant(MaterialButtonVariant.Elevated);
-        buttonFilled.style()
-                .variant(MaterialButtonVariant.Filled);
-        buttonTonal.style()
-                .variant(MaterialButtonVariant.Tonal);
-        buttonOutlined.style()
-                .variant(MaterialButtonVariant.Outlined);
-        buttonText.style()
-                .variant(MaterialButtonVariant.Text)
-                .shape(MaterialButtonShape.Square);
-        AbsoluteLayout layout = container.layout();
-        container.addChildren(buttonElevated);
-        container.addChildren(buttonFilled);
-        container.addChildren(buttonTonal);
-        container.addChildren(buttonOutlined);
-        container.addChildren(buttonText);
+                .text("Elevated").icon(MaterialSymbols.iconEdit())
+                .scheme(materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton buttonFilled = MaterialButton.create().text("Filled").scheme(materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton buttonTonal = MaterialButton.create().text("Tonal").scheme(materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton buttonOutlined = MaterialButton.create().text("Outlined").scheme(materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton buttonText = MaterialButton.create().text("Text").size(MaterialButtonSize.Small).icon(MaterialSymbols.iconEdit()).scheme(materialScheme);
+        buttonElevated.style().variant(MaterialButtonVariant.Elevated);
+        buttonFilled.style().variant(MaterialButtonVariant.Filled);
+        buttonTonal.style().variant(MaterialButtonVariant.Tonal);
+        buttonOutlined.style().variant(MaterialButtonVariant.Outlined);
+        buttonText.style().variant(MaterialButtonVariant.Text).shape(MaterialButtonShape.Square);
+        AbsoluteLayout layout = (AbsoluteLayout) btnContainer.getLayout();
+        btnContainer.addChild(buttonElevated);
+        btnContainer.addChild(buttonFilled);
+        btnContainer.addChild(buttonTonal);
+        btnContainer.addChild(buttonOutlined);
+        btnContainer.addChild(buttonText);
+        layout.setPosition(buttonElevated, new Vector2f(50, 50));
+        layout.setPosition(buttonFilled, new Vector2f(50, 100));
+        layout.setPosition(buttonTonal, new Vector2f(50, 150));
+        layout.setPosition(buttonOutlined, new Vector2f(50, 200));
+        layout.setPosition(buttonText, new Vector2f(50, 250));
+        layout = (AbsoluteLayout) container.getLayout();
+        switchB.style().showCheckedIconWhenEnable(true);
+        switchC.style().showUncheckedIconWhenEnable(true);
+        switchD.style().showCheckedIconAlways(true);
+        switchE.style().showUncheckedIconAlways(true);
+        switchF.style().showCheckedIconAlways(true).showUncheckedIconAlways(true);
+        container.addChild(switchA);
+        container.addChild(switchB);
+        container.addChild(switchC);
+        container.addChild(switchD);
+        container.addChild(switchE);
+        container.addChild(switchF);
+        layout.setPosition(switchA, new Vector2f(50, 50));
+        layout.setPosition(switchF, new Vector2f(110, 50));
+        layout.setPosition(switchB, new Vector2f(50, 110));
+        layout.setPosition(switchC, new Vector2f(110, 110));
+        layout.setPosition(switchD, new Vector2f(50, 170));
+        layout.setPosition(switchE, new Vector2f(110, 170));
 
-        layout.setPosition(
-                buttonElevated,
-                new Vector2f(50, 50)
-        );
-        layout.setPosition(
-                buttonFilled,
-                new Vector2f(50, 100)
-        );
-        layout.setPosition(
-                buttonTonal,
-                new Vector2f(50, 150)
-        );
-        layout.setPosition(
-                buttonOutlined,
-                new Vector2f(50, 200)
-        );
-        layout.setPosition(
-                buttonText,
-                new Vector2f(50, 250)
-        );
-
-        addWidget(container);
+        layout = (AbsoluteLayout) rootContainer.getLayout();
+        layout.setPosition(btnContainer, new Vector2f(0, 0));
+        layout.setPosition(container, new Vector2f(300, 0));
+        addWidget(rootContainer);
     }
 
     @Override

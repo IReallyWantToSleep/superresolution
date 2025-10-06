@@ -18,14 +18,16 @@
 
 package io.homo.superresolution.core.gui.core.layout;
 
+import io.homo.superresolution.core.gui.core.AbstractWidget;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.math.Vector2f;
 
-public interface ILayout extends ILayoutElement {
-    void addElement(ILayoutElement element);
+import java.util.List;
 
-    void removeElement(ILayoutElement element);
+public interface ILayout {
+    void layout(ILayoutContainer container);
 
     Vector2f getElementPosition(ILayoutElement element);
 
-    void update();
+    Rectangle getContainerBounds();
 }

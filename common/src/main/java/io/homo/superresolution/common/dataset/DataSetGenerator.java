@@ -56,12 +56,21 @@ import static org.lwjgl.opengl.GL33.*;
 
 public class DataSetGenerator {
     public static File OUTPUT_DIR = Paths.get("K:/", "msrDataset").toFile();
+    #if MC_VER > MC_1_21_6
+    private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
+            "key.super_resolution.save_data",
+            InputConstants.Type.KEYSYM,
+            InputConstants.KEY_F7,
+            SuperResolution.CATEGORY
+    );
+    #else
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F7,
             "Super Resolution"
     );
+    #endif
     private static ITexture tempColorTexture;
     private static ITexture tempDepthTexture;
 

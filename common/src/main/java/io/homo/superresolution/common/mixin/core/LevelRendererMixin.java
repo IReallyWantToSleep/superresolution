@@ -46,6 +46,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.PostChain;
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -94,6 +95,10 @@ public abstract class LevelRendererMixin {
     }
     #elif MC_VER == MC_1_21_6
     private void renderLevel_MC_1_21_6(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f frustumMatrix, Matrix4f projectionMatrix, GpuBufferSlice fogBuffer, org.joml.Vector4f fogColor, boolean renderSky, CallbackInfo ci) {
+        AlgorithmManager.setMatrixVanilla(projectionMatrix, frustumMatrix);
+    }
+    #elif MC_VER == MC_1_21_9
+    private void renderLevel_MC_1_21_9(GraphicsResourceAllocator p_361796_, DeltaTracker p_348530_, boolean p_109603_, Camera p_109604_, Matrix4f p_254120_, Matrix4f projectionMatrix, Matrix4f frustumMatrix, GpuBufferSlice p_425977_, Vector4f p_425544_, boolean p_426302_, CallbackInfo ci) {
         AlgorithmManager.setMatrixVanilla(projectionMatrix, frustumMatrix);
     }
     #endif

@@ -24,11 +24,17 @@ import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
 public class MaterialSwitchAnimationSet extends AnimationSet {
     protected NumberAnimator hover;
     protected NumberAnimator press;
+    protected NumberAnimator handlePosition;
+    protected NumberAnimator change;
 
+    protected NumberAnimator handleSize;
 
     @Override
     protected void init() {
         hover = addAnimation();
         press = addAnimation();
+        handleSize = addAnimation();
+        handlePosition = addAnimation();
+        change = addAnimation();
     }
 }

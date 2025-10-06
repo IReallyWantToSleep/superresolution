@@ -218,6 +218,23 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         return Math.min(Math.max((int) (height * expandAnimator.value()) + (expandAnimator.value() == 1.0 ? 3 + bottom : 24), 24), height + 3 + bottom);
     }
 
+    #if MC_VER > MC_1_21_6
+    @Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean idkThis) {
+        if (event.button() == 0) {
+            Style style = this.getTextAt(event.x(), event.y());
+            AbstractConfigScreen configScreen = this.getConfigScreen();
+            if (configScreen != null && configScreen.handleComponentClicked(style)) {
+                return true;
+            }
+            if (mainRectangle.contains(event.x(), event.y()) && this.canExpand && !hoverdText) {
+                this.setExpanded(!isExpanded());
+            }
+        }
+
+        return super.mouseClicked(event, idkThis);
+    }
+    #else
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
             Style style = this.getTextAt(mouseX, mouseY);
@@ -232,6 +249,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
+    #endif
 
     protected @Nullable Style getTextAt(double x, double y) {
         if (mainRectangle.contains(x, y) && isExpanded()) {

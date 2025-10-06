@@ -82,10 +82,11 @@ legacyForge {
             sourceSet(sourceSets.main)
         }
     }
-
-    parchment {
-        minecraftVersion = versionConfig.common.parchmentVersion.split(":")[0]
-        mappingsVersion = versionConfig.common.parchmentVersion.split(":")[1]
+    if (getCurrentVersionConfig().common.parchmentVersion != null) {
+        parchment {
+            minecraftVersion = versionConfig.common.parchmentVersion.split(":")[0]
+            mappingsVersion = versionConfig.common.parchmentVersion.split(":")[1]
+        }
     }
 }
 
@@ -110,19 +111,15 @@ dependencies {
     jarJar(implementation "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
     jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
-    jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
-    jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
     modImplementation "dev.architectury:architectury-forge:$versionConfig.common.architecturyApiVersion"
     modImplementation "me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion"
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb"
 
     for (lib in versionConfig.forge.dependencies.modrinth) {
         if (lib.compileOnly) {
-            modCompileOnly("maven.modrinth:${lib.name}:${lib.version}-forge,${versionConfig.common.minecraftVersion}")
+            modCompileOnly("maven.modrinth:${lib.name}:${lib.version}-forge,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}")
         } else {
-            modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${versionConfig.common.minecraftVersion}")
+            modImplementation("maven.modrinth:${lib.name}:${lib.version}-forge,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}")
         }
     }
     for (lib in versionConfig.forge.dependencies.local) {

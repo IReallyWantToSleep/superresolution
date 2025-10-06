@@ -7,12 +7,17 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.event.EventHandle;
 import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
-import io.homo.superresolution.core.gui.widgets.AbstractWidget;
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+#if MC_VER >MC_1_21_6
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+#endif
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -178,6 +183,48 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
         }
     }
 
+    #if MC_VER > MC_1_21_6
+    @Override
+    public boolean charTyped(CharacterEvent event) {
+        invokeEventHandle((handle) -> handle.charTyped(((char) event.codepoint()), event.modifiers()));
+        return true;
+    }
+
+    @Override
+    public boolean keyReleased(KeyEvent event) {
+        invokeEventHandle((handle) -> handle.keyPress(event.key(), event.scancode(), event.modifiers()));
+        super.keyPressed(event);
+        return true;
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        invokeEventHandle((handle) -> handle.keyPress(event.key(), event.scancode(), event.modifiers()));
+        super.keyPressed(event);
+        return true;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        invokeEventHandle((handle) -> handle.mouseDrag((float) transformPos(event.x()), (float) transformPos(event.y()), (float) transformPos(dragX), (float) transformPos(dragY), event.button()));
+        super.mouseDragged(event, dragX, dragY);
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        invokeEventHandle((handle) -> handle.mouseRelease((float) transformPos(event.x()), (float) transformPos(event.y()), event.button()));
+        super.mouseReleased(event);
+        return true;
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean idk) {
+        invokeEventHandle((handle) -> handle.mousePress((float) transformPos(event.x()), (float) transformPos(event.y()), event.button()));
+        super.mouseClicked(event, idk);
+        return true;
+    }
+    #else
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         invokeEventHandle((handle) -> handle.mousePress((float) transformPos(mouseX), (float) transformPos(mouseY), button));
@@ -200,13 +247,6 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollX)));
-        super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-        return true;
-    }
-
-    @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         invokeEventHandle((handle) -> handle.keyRelease(keyCode, scanCode, modifiers));
         super.keyReleased(keyCode, scanCode, modifiers);
@@ -221,16 +261,35 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
     }
 
     @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        invokeEventHandle((handle) -> handle.charTyped(codePoint, modifiers));
+        return true;
+    }
+    #endif
+
+    #if MC_VER > MC_1_20_1
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollX)));
+        super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return true;
+    }
+    #else
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX) {
+        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollX)));
+        super.mouseScrolled(mouseX, mouseY, scrollX);
+        return true;
+    }
+    #endif
+
+
+    @Override
     public void mouseMoved(double mouseX, double mouseY) {
         invokeEventHandle((handle) -> handle.mouseMove((float) transformPos(mouseX), (float) transformPos(mouseY)));
         super.mouseMoved(mouseX, mouseY);
     }
 
-    @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        invokeEventHandle((handle) -> handle.charTyped(codePoint, modifiers));
-        return true;
-    }
 
     protected double transformPos(double pos) {
         return (Minecraft.getInstance().getWindow().getGuiScale() * pos) / nvg.globalScale();

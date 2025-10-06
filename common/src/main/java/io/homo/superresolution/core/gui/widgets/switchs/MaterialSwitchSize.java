@@ -19,67 +19,27 @@
 package io.homo.superresolution.core.gui.widgets.switchs;
 
 public record MaterialSwitchSize(
-        float height,
-        float padding,
-        float iconPadding,
-        float roundCornerSize,
-        float squareCornerSize,
-        float pressedCornerSize,
+        float trackHeight,
+        float trackWidth,
+        float trackOutlineWidth,
         float iconSize,
-        float fontSize
+        float handleSizeChecked,
+        float handleSizePress,
+        float handleSize,
+        float handleSizeCheckedWithIcon,
+        float handleSizePressWithIcon,
+        float handleSizeWithIcon
 ) {
-    public static final MaterialSwitchSize ExtraSmall = new MaterialSwitchSize(
+    public static final MaterialSwitchSize Default = new MaterialSwitchSize(
             32,
-            12,
-            4,
-            0,// full
-            12,
-            8,
-            20,
-            14
-    );
-
-    public static final MaterialSwitchSize Small = new MaterialSwitchSize(
-            40,
+            52,
+            2,
             16,
-            8,
-            0, // full
-            12,
-            8,
-            20,
-            14
-    );
-
-    public static final MaterialSwitchSize Medium = new MaterialSwitchSize(
-            56,
             24,
-            8,
-            0, // full
-            16,
-            12,
-            24,
-            16
-    );
-
-    public static final MaterialSwitchSize Large = new MaterialSwitchSize(
-            96,
-            48,
-            12,
-            0, // full
             28,
             16,
-            32,
+            24,
+            28,
             24
-    );
-
-    public static final MaterialSwitchSize ExtraLarge = new MaterialSwitchSize(
-            136,
-            64,
-            16,
-            0, // full
-            28,
-            16,
-            40,
-            32
     );
 }

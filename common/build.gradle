@@ -14,17 +14,22 @@ if (isNewVersion) {
 if (isNewVersion) {
     neoForge {
         neoFormVersion = versionConfig.common.neoFormVersion == null ? getCurrentNeoFormVersion() : versionConfig.common.neoFormVersion
-        parchment {
-            minecraftVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[0]
-            mappingsVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[1]
+        if (getCurrentVersionConfig().common.parchmentVersion != null) {
+            parchment {
+                minecraftVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[0]
+                mappingsVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[1]
+            }
         }
     }
 } else {
     legacyForge {
         mcpVersion = "${versionConfig.common.minecraftVersion}"
-        parchment {
-            minecraftVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[0]
-            mappingsVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[1]
+        if (getCurrentVersionConfig().common.parchmentVersion != null) {
+
+            parchment {
+                minecraftVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[0]
+                mappingsVersion = getCurrentVersionConfig().common.parchmentVersion.split(":")[1]
+            }
         }
     }
 }

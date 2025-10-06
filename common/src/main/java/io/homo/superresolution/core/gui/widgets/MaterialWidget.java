@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.gui.widgets;
 
 import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.WidgetStyle;
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 

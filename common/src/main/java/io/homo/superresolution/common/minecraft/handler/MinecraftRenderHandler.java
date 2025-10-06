@@ -250,95 +250,98 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         !=1.21.5 在渲染世界后还原RenderTarget
         */
         //TODO:不用copy直接blitFrameBuffer
-        #if MC_VER >= MC_1_21_5
-        glEnable(GL_BLEND);
-        GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color))
-                        .dst(colorTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-                        .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
+        if (SuperResolutionConfig.isEnableUpscale()) {
+            #if MC_VER >= MC_1_21_5
+            glEnable(GL_BLEND);
+            GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
+            GlTextureCopier.copy(
+                    CopyOperation.create()
+                            .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color))
+                            .dst(colorTexture)
+                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                            .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                            .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                            .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
 
-        );
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth))
-                        .dst(depthTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-        );
-        RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
-        #else
-        RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
-        #endif
+            );
+            GlTextureCopier.copy(
+                    CopyOperation.create()
+                            .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth))
+                            .dst(depthTexture)
+                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+            );
+            RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
+            #else
+            RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
+            #endif
+        }
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         //push SRUpscale
         GlDebug.pushGroup(64108435, "SRUpscale");
         PerformanceRecoder.beginUpscale();
         try (GlState ignored = new GlState()) {
             AlgorithmManager.update();
+            if (SuperResolutionConfig.isEnableUpscale()) {
+                {
+                    //ScaledRenderTarget.ColorTex copy to MinecraftRenderHandler.colorTexture
+                    #if MC_VER < MC_1_21_5
+                    GlTextureCopier.copy(
+                            CopyOperation.create()
+                                    .src(renderTarget.getTexture(FrameBufferAttachmentType.Color))
+                                    .dst(colorTexture)
+                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                                    .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                                    .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                    );
+                    GlTextureCopier.copy(
+                            CopyOperation.create()
+                                    .src(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth))
+                                    .dst(depthTexture)
+                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                    );
+                    #endif
 
-            {
-                //ScaledRenderTarget.ColorTex copy to MinecraftRenderHandler.colorTexture
-                #if MC_VER < MC_1_21_5
-                GlTextureCopier.copy(
-                        CopyOperation.create()
-                                .src(renderTarget.getTexture(FrameBufferAttachmentType.Color))
-                                .dst(colorTexture)
-                                .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                                .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                                .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-                );
-                GlTextureCopier.copy(
-                        CopyOperation.create()
-                                .src(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth))
-                                .dst(depthTexture)
-                                .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                );
-                #endif
-
-                if (SuperResolutionConfig.isGenerateMotionVectors()) {
-                    MotionVectorsGenerator.update(
+                    if (SuperResolutionConfig.isGenerateMotionVectors()) {
+                        MotionVectorsGenerator.update(
+                                colorTexture,
+                                renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
+                        );
+                    }
+                    DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
                             colorTexture,
-                            renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
+                            depthTexture,
+                            AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
                     );
+
+                    if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchEvent.EVENT.hasEvent()) {
+                        AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
+                                SuperResolution.currentAlgorithm,
+                                dispatchResource
+                        );
+                    }
+                    SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+                    if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchFinishEvent.EVENT.hasEvent()) {
+                        AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
+                                SuperResolution.currentAlgorithm,
+                                SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                        );
+                    }
+
                 }
-                DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
-                        colorTexture,
-                        depthTexture,
-                        AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                //TODO:允许指定Filter
+                IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+                Gl.DSA.blitFramebuffer(
+                        (int) outFbo.handle(),
+                        (int) RenderHandlerManager.getOriginRenderTarget().handle(),
+                        0, 0, outFbo.getWidth(), outFbo.getHeight(),
+                        0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(),
+                        GL46.GL_COLOR_BUFFER_BIT,
+                        GL46.GL_NEAREST
                 );
 
-                if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchEvent.EVENT.hasEvent()) {
-                    AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
-                            SuperResolution.currentAlgorithm,
-                            dispatchResource
-                    );
-                }
-                SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
-                if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchFinishEvent.EVENT.hasEvent()) {
-                    AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
-                            SuperResolution.currentAlgorithm,
-                            SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
-                    );
-                }
-
+                if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
+                    blitHandRenderTarget();
             }
-            //TODO:允许指定Filter
-            IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-            Gl.DSA.blitFramebuffer(
-                    (int) outFbo.handle(),
-                    (int) RenderHandlerManager.getOriginRenderTarget().handle(),
-                    0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                    0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(),
-                    GL46.GL_COLOR_BUFFER_BIT,
-                    GL46.GL_NEAREST
-            );
-
-            if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
-                blitHandRenderTarget();
         }
         glViewport(
                 0,

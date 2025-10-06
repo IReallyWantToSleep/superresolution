@@ -21,23 +21,10 @@ package io.homo.superresolution.core.gui.core.impl;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public abstract class TooltipHolder {
-    protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
+public interface TooltipHolder {
+    void setTooltipSupplier(Supplier<Optional<String>> supplier);
 
-    public static TooltipHolder none() {
-        return new TooltipHolder() {
-        };
-    }
+    Optional<String> getTooltip();
 
-    public void setTooltipSupplier(Supplier<Optional<String>> supplier) {
-        tooltipSupplier = supplier;
-    }
-
-    public Optional<String> getTooltip() {
-        return tooltipSupplier.get();
-    }
-
-    public void setTooltip(String tooltip) {
-        tooltipSupplier = () -> Optional.of(tooltip);
-    }
+    void setTooltip(String tooltip);
 }
