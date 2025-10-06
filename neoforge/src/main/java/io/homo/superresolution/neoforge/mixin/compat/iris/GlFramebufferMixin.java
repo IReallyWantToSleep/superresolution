@@ -48,7 +48,10 @@ public abstract class GlFramebufferMixin extends GlResource {
     #if MC_VER < MC_1_21_5
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
     private void checkFboCompleteness(int texture, CallbackInfo ci) {
-        int status = getStatus();
+        int status = Gl.DSA.checkNamedFramebufferStatus(
+                getGlId(),
+                GL_FRAMEBUFFER
+        );
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
         }

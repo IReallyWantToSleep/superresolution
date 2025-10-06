@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.utils;
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
@@ -40,7 +41,7 @@ public class MouseCursor {
             glfwCursor = GLFW.glfwCreateStandardCursor(id);
         } else {
             GLFW.glfwSetCursor(
-                    Minecraft.getInstance().getWindow().getWindow(),
+                    MinecraftWindow.getWindowHandle(),
                     glfwCursor
             );
         }

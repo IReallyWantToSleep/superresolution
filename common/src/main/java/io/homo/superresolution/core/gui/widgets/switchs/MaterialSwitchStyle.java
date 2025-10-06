@@ -21,34 +21,45 @@ package io.homo.superresolution.core.gui.widgets.switchs;
 import io.homo.superresolution.core.gui.core.WidgetStyle;
 
 public class MaterialSwitchStyle extends WidgetStyle<MaterialSwitchStyle> {
-    private MaterialSwitchSize size = MaterialSwitchSize.Medium;
-    private MaterialSwitchShape shape = MaterialSwitchShape.Round;
-    private MaterialSwitchVariant variant = MaterialSwitchVariant.Elevated;
+    private boolean showCheckedIconWhenEnable;
+    private boolean showCheckedIconAlways;
 
-    public MaterialSwitchSize size() {
-        return size;
+    private boolean showUncheckedIconWhenEnable;
+    private boolean showUncheckedIconAlways;
+
+    public boolean showCheckedIconWhenEnable() {
+        return showCheckedIconWhenEnable;
     }
 
-    public MaterialSwitchStyle size(MaterialSwitchSize size) {
-        this.size = size;
+    public MaterialSwitchStyle showCheckedIconWhenEnable(boolean showCheckedIconWhenEnable) {
+        this.showCheckedIconWhenEnable = showCheckedIconWhenEnable;
         return this;
     }
 
-    public MaterialSwitchShape shape() {
-        return shape;
+    public boolean showCheckedIconAlways() {
+        return showCheckedIconAlways;
     }
 
-    public MaterialSwitchStyle shape(MaterialSwitchShape shape) {
-        this.shape = shape;
+    public MaterialSwitchStyle showCheckedIconAlways(boolean showCheckedIconAlways) {
+        this.showCheckedIconAlways = showCheckedIconAlways;
         return this;
     }
 
-    public MaterialSwitchVariant variant() {
-        return variant;
+    public boolean showUncheckedIconWhenEnable() {
+        return showUncheckedIconWhenEnable;
     }
 
-    public MaterialSwitchStyle variant(MaterialSwitchVariant variant) {
-        this.variant = variant;
+    public MaterialSwitchStyle showUncheckedIconWhenEnable(boolean showUncheckedIconWhenEnable) {
+        this.showUncheckedIconWhenEnable = showUncheckedIconWhenEnable;
+        return this;
+    }
+
+    public boolean showUncheckedIconAlways() {
+        return showUncheckedIconAlways;
+    }
+
+    public MaterialSwitchStyle showUncheckedIconAlways(boolean showUncheckedIconAlways) {
+        this.showUncheckedIconAlways = showUncheckedIconAlways;
         return this;
     }
 }

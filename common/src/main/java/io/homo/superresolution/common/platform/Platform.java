@@ -55,6 +55,10 @@ public abstract class Platform {
     }
 
     public String getMinecraftVersion() {
+        #if MC_VER > MC_1_21_6
+        return SharedConstants.getCurrentVersion().id();
+        #else
         return SharedConstants.VERSION_STRING;
+        #endif
     }
 }

@@ -16,10 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.widgets;
+package io.homo.superresolution.core.gui.core;
 
-import io.homo.superresolution.core.gui.core.MouseButton;
-import io.homo.superresolution.core.gui.core.WidgetStyle;
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.event.EventHandle;
 import io.homo.superresolution.core.gui.core.event.EventHandler;
@@ -29,31 +27,30 @@ import io.homo.superresolution.core.gui.core.event.events.MouseHoverEvent;
 import io.homo.superresolution.core.gui.core.event.events.MousePressEvent;
 import io.homo.superresolution.core.gui.core.event.events.MouseReleaseEvent;
 import io.homo.superresolution.core.gui.core.impl.*;
-import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
+import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.math.Vector2f;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 public abstract class AbstractWidget<
         T extends AbstractWidget<?, ?, ?>,
         STYLE extends WidgetStyle<?>,
         ANIM extends AnimationSet
-        > extends TooltipHolder implements
+        > extends AbstractLayoutElement implements
         EventListener,
         Renderable,
         EventHandle<T>,
-        ILayoutElement {
+        TooltipHolder {
     protected boolean visible = true;
-    protected boolean hovered;
-    protected boolean pressed;
-    protected boolean focused;
+    protected boolean disabled = false;
+    protected boolean hovered = false;
+    protected boolean pressed = false;
+    protected boolean focused = false;
     protected EventHandler<T> eventHandler;
     protected STYLE style;
     protected ANIM animationSet;
-    protected AbstractContainerWidget<?, ?, ?> parent;
+    protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
 
     public AbstractWidget() {
         this.eventHandler = new EventHandler<>((T) this);
@@ -61,7 +58,7 @@ public abstract class AbstractWidget<
         eventHandler.registerEventType("focus");
         eventHandler.registerEventType("mousePress", Vector2f.class);
         eventHandler.registerEventType("mouseRelease", Vector2f.class);
-        eventHandler.registerEventType("mouseHover", Vector2f.class, Boolean.class);  // 三参数
+        eventHandler.registerEventType("mouseHover", Vector2f.class, Boolean.class);
         init();
     }
 
@@ -80,7 +77,7 @@ public abstract class AbstractWidget<
     @Override
     public void mouseMove(float x, float y) {
         Vector2f mousePos = new Vector2f(x, y);
-        boolean isHovering = getRectangle().in(x, y);
+        boolean isHovering = getBounds().in(x, y);
 
         if (isHovering != this.hovered) {
             eventHandler.triggerEvent("mouseHover", mousePos, isHovering);
@@ -90,7 +87,7 @@ public abstract class AbstractWidget<
 
     @Override
     public void mousePress(float x, float y, int button) {
-        if (button == MouseButton.Left.id() && getRectangle().in(x, y)) {
+        if (button == MouseButton.Left.id() && getBounds().in(x, y)) {
             Vector2f mousePos = new Vector2f(x, y);
             eventHandler.triggerEvent("mousePress", mousePos);
             setPressed(true);
@@ -106,6 +103,31 @@ public abstract class AbstractWidget<
             }
             setPressed(false);
         }
+    }
+
+    @Override
+    public void mouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        EventListener.super.mouseDrag(mouseX, mouseY, dragX, dragY, button);
+    }
+
+    @Override
+    public void mouseScroll(float x, float y, double scrollX) {
+        EventListener.super.mouseScroll(x, y, scrollX);
+    }
+
+    @Override
+    public void keyPress(int keyCode, int scancode, int modifiers) {
+        EventListener.super.keyPress(keyCode, scancode, modifiers);
+    }
+
+    @Override
+    public void keyRelease(int keyCode, int scancode, int modifiers) {
+        EventListener.super.keyRelease(keyCode, scancode, modifiers);
+    }
+
+    @Override
+    public void charTyped(char codePoint, int modifiers) {
+        EventListener.super.charTyped(codePoint, modifiers);
     }
 
     @Override
@@ -169,7 +191,7 @@ public abstract class AbstractWidget<
         return (T) this;
     }
 
-    public abstract Rectangle getRectangle();
+    public abstract Rectangle getBounds();
 
     public void onMouseHover(MouseHoverEvent<T> listener) {
         eventHandler.addEventListener("mouseHover", listener);
@@ -184,23 +206,36 @@ public abstract class AbstractWidget<
     }
 
     public void onFocus(FocusEvent<T> listener) {
-        eventHandler.addEventListener("focus", (widget) -> listener.accept((T) widget));
+        eventHandler.addEventListener("focus", (widget) -> listener.accept(widget));
     }
 
-    public AbstractContainerWidget<?, ?, ?> getParent() {
-        return parent;
+
+    public boolean isDisabled() {
+        return disabled;
     }
 
-    public void setParent(AbstractContainerWidget<?, ?, ?> parent) {
-        this.parent = parent;
+    public AbstractWidget<T, STYLE, ANIM> setDisabled(boolean disabled) {
+        this.disabled = disabled;
+        return this;
     }
 
     @Override
-    public void setParent(ILayoutElement parent) {
-        setParent((AbstractContainerWidget<?, ?, ?>) parent);
+    public void setTooltipSupplier(Supplier<Optional<String>> supplier) {
+        tooltipSupplier = supplier;
     }
 
-    public Vector2f getAbsolutePosition() {
-        return parent == null ? new Vector2f(0, 0) : parent.layout().getElementPosition(this);
+    @Override
+    public Optional<String> getTooltip() {
+        return tooltipSupplier.get();
+    }
+
+    @Override
+    public void setTooltip(String tooltip) {
+        this.tooltipSupplier = () -> Optional.ofNullable(tooltip);
+    }
+
+    @Override
+    public int getZIndex() {
+        return style == null ? 0 : style.zIndex();
     }
 }

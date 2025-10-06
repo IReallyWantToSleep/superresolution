@@ -16,9 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.widgets.switchs;
+package io.homo.superresolution.core.gui.core.layout;
 
-public enum MaterialSwitchShape {
-    Round,
-    Square
+import java.util.List;
+
+public interface ILayoutContainer extends ILayoutElement {
+    void addChild(ILayoutElement element);
+
+    void removeChild(ILayoutElement element);
+
+    List<ILayoutElement> getChildren();
+
+    ILayout getLayout();
+
+    void setLayout(ILayout layout);
 }

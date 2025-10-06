@@ -24,6 +24,7 @@ import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.impl.Destroyable;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
@@ -50,7 +51,7 @@ public class ImguiMain implements Destroyable {
         ImGuiIO io = ImGui.getIO();
         io.getFonts().setFreeTypeRenderer(true);
         io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
-        imGuiGlfw.init(Minecraft.getInstance().getWindow().getWindow(), true);
+        imGuiGlfw.init(MinecraftWindow.getWindowHandle(), true);
         imGuiGl3.init();
     }
 

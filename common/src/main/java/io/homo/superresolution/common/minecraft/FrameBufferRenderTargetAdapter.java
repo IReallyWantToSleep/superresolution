@@ -51,8 +51,10 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
     private void updateState() {
         this.width = frameBuffer.getWidth();
         this.height = frameBuffer.getHeight();
+        #if !(MC_VER > MC_1_21_6)
         this.viewWidth = frameBuffer.getWidth();
         this.viewHeight = frameBuffer.getHeight();
+        #endif
         this.colorTexture = GpuTextureAdapter.ofTexture(frameBuffer.getTexture(FrameBufferAttachmentType.Color));
         ((GpuTextureAdapter) this.colorTexture).bindFramebuffer(frameBuffer);
         ITexture texture = frameBuffer.getTexture(FrameBufferAttachmentType.DepthStencil);
@@ -108,11 +110,19 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public void blitAndBlendToTexture(GpuTexture gpuTexture) {
         updateState();
+        #if MC_VER > MC_1_21_6
+        GlBlitRenderer.blitToScreen(
+                frameBuffer.getTexture(FrameBufferAttachmentType.Color),
+                this.width,
+                this.height
+        );
+        #else
         GlBlitRenderer.blitToScreen(
                 frameBuffer.getTexture(FrameBufferAttachmentType.Color),
                 this.viewWidth,
                 this.viewHeight
         );
+        #endif
     }
 
     @Nullable

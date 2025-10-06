@@ -84,6 +84,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     @Override
     protected void init() {
         this.animationSet = new MaterialButtonAnimationSet();
+        eventHandler.registerEventType("click");
         onMouseHover((widget, mousePosition, hover) -> onHover(mousePosition, hover));
         onMouseRelease((widget, mousePosition) -> onRelease(mousePosition));
         onMousePress((widget, mousePosition) -> onPress(mousePosition));
@@ -146,7 +147,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     }
 
     @Override
-    public Rectangle getRectangle() {
+    public Rectangle getBounds() {
         return rectangle;
     }
 
@@ -333,6 +334,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 lastClickPosition,
                 new Vector2f(rectangle.width, rectangle.height)
         );
+        eventHandler.triggerEvent("click");
         System.out.printf("press %s %s%n", mousePosition.x, mousePosition.y);
     }
 

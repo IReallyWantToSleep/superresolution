@@ -39,7 +39,9 @@ dependencies {
     minecraft "com.mojang:minecraft:${versionConfig.common.minecraftVersion}"
     mappings loom.layered {
         officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
+        if (getCurrentVersionConfig().common.parchmentVersion != null) {
+            parchment("org.parchmentmc.data:parchment-${versionConfig.common.parchmentVersion}@zip")
+        }
     }
     modImplementation "net.fabricmc:fabric-loader:${versionConfig.fabric.loaderVersion}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${versionConfig.fabric.apiVersion}"
@@ -72,7 +74,7 @@ dependencies {
 
     //额外库/模组
     for (lib in versionConfig.fabric.dependencies.modrinth) {
-        def depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${versionConfig.common.minecraftVersion}"
+        def depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}"
         if (lib.compileOnly) {
             modCompileOnly(depName)
         } else {

@@ -21,12 +21,32 @@ package io.homo.superresolution.core.gui.core.layout;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.math.Vector2f;
 
-public interface ILayoutElement {
-    Rectangle getBounds();
+public abstract class AbstractLayoutElement implements ILayoutElement {
+    protected ILayoutContainer parent;
+    protected final Rectangle bounds = new Rectangle();
 
-    Vector2f getAbsolutePosition();
+    @Override
+    public Rectangle getBounds() {
+        return bounds;
+    }
 
-    void setParent(ILayoutContainer parent);
+    @Override
+    public Vector2f getAbsolutePosition() {
+        if (parent != null) {
+            Vector2f parentPos = parent.getAbsolutePosition();
+            Vector2f relativePos = parent.getLayout().getElementPosition(this);
+            return new Vector2f(parentPos.x + relativePos.x, parentPos.y + relativePos.y);
+        }
+        return new Vector2f(bounds.x, bounds.y);
+    }
 
-    ILayoutContainer getParent();
+    @Override
+    public void setParent(ILayoutContainer parent) {
+        this.parent = parent;
+    }
+
+    @Override
+    public ILayoutContainer getParent() {
+        return parent;
+    }
 }

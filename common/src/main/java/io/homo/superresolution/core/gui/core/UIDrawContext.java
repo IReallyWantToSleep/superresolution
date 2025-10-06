@@ -64,6 +64,17 @@ public class UIDrawContext {
         nvgContext.rect(x, y, width, height);
     }
 
+    public void arc(
+            float x,
+            float y,
+            float radius
+    ) {
+        nvgArc(
+                nvgContext.contextPtr,
+                x, y, radius, (float) 0, (float) (2 * Math.PI), NVG_CCW
+        );
+    }
+
     public void roundedRect(float x, float y, float width, float height, float radius) {
         nvgContext.roundedRect(x, y, width, height, radius);
     }
@@ -91,6 +102,20 @@ public class UIDrawContext {
     public void drawRoundedRect(float x, float y, float width, float height, float radius, Color color, boolean fill) {
         nvgContext.drawRoundedRect(x, y, width, height, radius, color, fill);
     }
+
+    public void drawArc(
+            float x,
+            float y,
+            float radius,
+            Color color,
+            boolean fill
+    ) {
+        beginPath();
+        drawColor(fill, color);
+        arc(x, y, radius);
+        endPath(fill);
+    }
+
 
     public void imagePattern(float ox, float oy, float ex, float ey, float width, float height, float angle, float alpha, int image) {
         nvgContext.imagePattern(ox, oy, ex, ey, width, height, angle, alpha, image);

@@ -18,12 +18,36 @@
 
 package io.homo.superresolution.core.gui.widgets;
 
+import io.homo.superresolution.core.gui.core.UIDrawContext;
+import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.WidgetStyle;
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.layout.ILayout;
 
 public class ContainerWidget extends AbstractContainerWidget<ContainerWidget, WidgetStyle<?>, AnimationSet> {
+    private final Rectangle rectangle = new Rectangle();
+
+    public Rectangle getBounds() {
+        return rectangle;
+    }
+
     @Override
     protected void init() {
+        super.init();
+    }
 
+    @Override
+    protected void renderSelf(UIDrawContext drawContext, UIInputState inputState) {
+
+    }
+
+    public static ContainerWidget create() {
+        return new ContainerWidget();
+    }
+
+    public ContainerWidget layout(ILayout layout) {
+        setLayout(layout);
+        return this;
     }
 }

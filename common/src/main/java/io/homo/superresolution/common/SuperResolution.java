@@ -49,6 +49,7 @@ import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.core.utils.MessageBox;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,12 +74,24 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static Thread renderThread;
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
+    #if MC_VER > MC_1_21_6
+    //??
+    //key.category + . + namespace + path
+    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
+    public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
+            "key.super_resolution.open_config",
+            InputConstants.Type.KEYSYM,
+            InputConstants.KEY_F6,
+            CATEGORY
+    );
+    #else
     public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F6,
             "Super Resolution"
     );
+    #endif
     private static boolean registeredKeyMapping = false;
 
     public static void registerKeyMapping() {

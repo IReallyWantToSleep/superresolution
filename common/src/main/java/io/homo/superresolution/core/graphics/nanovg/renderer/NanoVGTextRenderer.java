@@ -189,7 +189,7 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         nvgFontSize(contextPtr, fontSize);
         nvgFontFace(contextPtr, fontName);
         nvgFillColor(contextPtr, color.nvg());
-        float yPos = startY + 1.2f;
+        float yPos = startY + 1.5f;
         for (String line : metrics.lines) {
             nvgText(contextPtr, startX, yPos, line);
             yPos += lineHeight;

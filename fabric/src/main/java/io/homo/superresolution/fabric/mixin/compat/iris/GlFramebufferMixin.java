@@ -19,6 +19,7 @@
 package io.homo.superresolution.fabric.mixin.compat.iris;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import net.irisshaders.iris.gl.GlResource;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
@@ -59,8 +60,10 @@ public abstract class GlFramebufferMixin extends GlResource {
     #else
     private void checkFboCompleteness(GpuTexture texture, CallbackInfo ci) {
     #endif
-
-        int status = getStatus();
+        int status = Gl.DSA.checkNamedFramebufferStatus(
+                getGlId(),
+                GL_FRAMEBUFFER
+        );
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
         }

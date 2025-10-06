@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.utils;
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.math.Vector2f;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
@@ -26,7 +27,7 @@ public class MinecraftUtil {
     public static Vector2f getScreenSize() {
         int[] w = new int[1];
         int[] h = new int[1];
-        GLFW.glfwGetWindowSize(Minecraft.getInstance().getWindow().getWindow(), w, h);
+        GLFW.glfwGetWindowSize(MinecraftWindow.getWindowHandle(), w, h);
         return new Vector2f(Math.max(1, w[0]), Math.max(1, h[0]));
     }
 }

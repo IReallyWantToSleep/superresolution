@@ -18,15 +18,14 @@
 
 package io.homo.superresolution.core.gui.widgets.switchs;
 
-import io.homo.superresolution.core.graphics.nanovg.NanoVG;
-import io.homo.superresolution.core.graphics.nanovg.renderer.TextAlign;
-import io.homo.superresolution.core.gui.MaterialRipple;
 import io.homo.superresolution.core.gui.MaterialSymbol;
+import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIDrawContext;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
@@ -34,48 +33,58 @@ import io.homo.superresolution.core.utils.MouseCursor;
 import java.util.function.Supplier;
 
 public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitchStyle, MaterialSwitchAnimationSet> {
-    private Supplier<String> textContextSupplier = () -> null;
     private Rectangle rectangle = new Rectangle();
-    private Vector2f position;
-    private MaterialRipple ripple;
-    private Vector2f lastClickPosition;
-    private Supplier<MaterialSymbol> iconContextSupplier = () -> null;
 
-    public MaterialSwitch(MaterialSwitchSize size, Vector2f position) {
+    public boolean isChecked() {
+        return checked;
+    }
+
+    public MaterialSwitch toggleChecked() {
+        boolean newChecked = !this.checked;
+
+        if (newChecked) {
+            // 打开开关
+            animationSet.handlePosition
+                    .ease(Easing.LINEAR)
+                    .animateTo(rectangle.width - 32, 200);
+            animationSet.handleSize
+                    .ease(Easing.LINEAR)
+                    .animateTo(
+                            (style.showCheckedIconWhenEnable() || style.showCheckedIconAlways()) ?
+                                    MaterialSwitchSize.Default.handleSizeCheckedWithIcon() :
+                                    MaterialSwitchSize.Default.handleSizeChecked(),
+                            150
+                    );
+        } else {
+            // 关闭开关
+            animationSet.handlePosition
+                    .ease(Easing.LINEAR)
+                    .animateTo(0, 200);
+            animationSet.handleSize
+                    .ease(Easing.LINEAR)
+                    .animateTo(
+                            (style.showUncheckedIconWhenEnable() || style.showUncheckedIconAlways()) ?
+                                    MaterialSwitchSize.Default.handleSizeWithIcon() :
+                                    MaterialSwitchSize.Default.handleSize(),
+                            150
+                    );
+        }
+
+        animationSet.change.set(0);
+        animationSet.change.animateTo(1, 200);
+        this.checked = newChecked;
+        return this;
+    }
+
+    private boolean checked;
+
+    public MaterialSwitch() {
         this.style = new MaterialSwitchStyle();
-        this.ripple = new MaterialRipple();
-        this.style.size(size);
-        this.position = position;
         updateRectangle();
     }
 
-    public static MaterialSwitch create(Vector2f position) {
-        return create(position, MaterialSwitchSize.Medium);
-    }
-
-    public static MaterialSwitch create(Vector2f position, MaterialSwitchSize size) {
-        return new MaterialSwitch(size, position);
-    }
-
-    public static MaterialSwitch create(Rectangle rectangle) {
-        float iconSizeRatio = 0.1f;
-        float iconPaddingRatio = 0.038f;
-        float paddingRatio = 0.1525f;
-        float squareCornerSizeRatio = 0.07f;
-        float pressedCornerSizeRatio = 0.07f * 0.7f;
-        float fontSizeRatio = 0.076f;
-
-        MaterialSwitchSize buttonSize = new MaterialSwitchSize(
-                rectangle.height,
-                rectangle.width * paddingRatio,
-                rectangle.width * iconPaddingRatio,
-                0,
-                rectangle.width * squareCornerSizeRatio,
-                rectangle.width * pressedCornerSizeRatio,
-                rectangle.width * iconSizeRatio,
-                rectangle.width * fontSizeRatio
-        );
-        return new MaterialSwitch(buttonSize, new Vector2f(rectangle.x, rectangle.y));
+    public static MaterialSwitch create() {
+        return new MaterialSwitch();
     }
 
     @Override
@@ -86,240 +95,125 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
         onMousePress((widget, mousePosition) -> onPress(mousePosition));
     }
 
-    public Vector2f position() {
-        return position;
-    }
-
-    public MaterialSwitch position(Vector2f position) {
-        this.position = position;
-        updateRectangle();
-        return this;
-    }
-
-    public MaterialSwitchSize size() {
-        return style.size();
-    }
-
-    public MaterialSwitch size(MaterialSwitchSize size) {
-        this.style.size(size);
-        updateRectangle();
-        return this;
-    }
-
-    public MaterialSwitch text(String string) {
-        this.textContextSupplier = () -> string;
-        updateRectangle();
-        return this;
-    }
-
-    public MaterialSwitch text(Supplier<String> supplier) {
-        this.textContextSupplier = supplier;
-        updateRectangle();
-        return this;
-    }
-
-    public MaterialSwitch icon(MaterialSymbol icon) {
-        this.iconContextSupplier = () -> icon;
-        updateRectangle();
-        return this;
-    }
-
-    public MaterialSwitch icon(Supplier<MaterialSymbol> supplier) {
-        this.iconContextSupplier = supplier;
-        updateRectangle();
-        return this;
-    }
-
     private void updateRectangle() {
-        NanoVG.context.save();
-        NanoVG.context.fontSize(size().fontSize());
-        float textContextWidth = NanoVG.RENDERER.TEXT.measureTextWidth(textContextSupplier.get(), size().fontSize());
-        NanoVG.context.restore();
-
-        float iconContextWidth = 0;
-        if (iconContextSupplier.get() != null) {
-            iconContextWidth = style.size().iconSize();
-        }
-        float width =
-                style.size().padding() +
-                        iconContextWidth +
-                        (iconContextWidth == 0 ? 0 : style.size().iconPadding()) +
-                        textContextWidth +
-                        style.size().padding();
-        rectangle.x = position.x;
-        rectangle.y = position.y;
-        rectangle.width = width;
-        rectangle.height = style.size().height();
+        rectangle.x = getAbsolutePosition().x;
+        rectangle.y = getAbsolutePosition().y;
+        rectangle.width = MaterialSwitchSize.Default.trackWidth();
+        rectangle.height = MaterialSwitchSize.Default.trackHeight();
     }
 
     @Override
-    public Rectangle getRectangle() {
+    public Rectangle getBounds() {
         return rectangle;
     }
 
     @Override
     public void render(UIDrawContext drawContext, UIInputState inputState) {
         updateRectangle();
+        if (animationSet.handleSize.floatValue() <
+                ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways())) ||
+                        (!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways())) ?
+                        MaterialSwitchSize.Default.handleSizeWithIcon() : MaterialSwitchSize.Default.handleSize())
+        ) {
+            animationSet.handleSize.set(
+                    ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways())) ||
+                            (!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways())) ?
+                            MaterialSwitchSize.Default.handleSizeWithIcon() : MaterialSwitchSize.Default.handleSize())
+            );
+        }
         animationSet.update();
-        this.ripple.update();
+        SwitchColors colors = getSwitchColors();
 
-        ButtonColors colors = getButtonColors();
-        float cornerSize = style.shape() == MaterialSwitchShape.Round ?
-                rectangle.height / 2 :
-                style.size().squareCornerSize();
-        float deltaValue = style.size().pressedCornerSize() - style.size().squareCornerSize();
-        cornerSize += animationSet.press.floatValue() * deltaValue;
-        if (colors.backgroundColor != null) {
-            drawContext.drawRoundedRect(
-                    position.x,
-                    position.y,
-                    rectangle.width,
-                    rectangle.height,
-                    cornerSize,
-                    colors.backgroundColor,
-                    true
-            );
-        }
-        if (colors.coverColor != null) {
-            drawContext.drawRoundedRect(
-                    position.x,
-                    position.y,
-                    rectangle.width,
-                    rectangle.height,
-                    cornerSize,
-                    colors.coverColor,
-                    true
-            );
-        }
+        drawContext.drawRoundedRect(
+                rectangle.x,
+                rectangle.y,
+                MaterialSwitchSize.Default.trackWidth(),
+                MaterialSwitchSize.Default.trackHeight(),
+                MaterialSwitchSize.Default.trackHeight() / 2,
+                colors.trackColor,
+                true
+        );
 
-        if (colors.borderColor != null) {
-            drawContext.strokeWidth(1);
-            drawContext.drawRoundedRect(
-                    position.x,
-                    position.y,
-                    rectangle.width,
-                    rectangle.height,
-                    cornerSize,
-                    colors.borderColor,
-                    false
-            );
-        }
-        if ((ripple.shouldRender() || isPressed()) && lastClickPosition != null) {
+        if (!isChecked()) {
             drawContext.beginPath();
-            drawContext.paint(ripple.getPaint(
-                    style.variant() == MaterialSwitchVariant.Elevated ? scheme.primary() :
-                            style.variant() == MaterialSwitchVariant.Filled ? scheme.onPrimary() :
-                                    style.variant() == MaterialSwitchVariant.Tonal ? scheme.onSecondaryContainer() :
-                                            style.variant() == MaterialSwitchVariant.Text ?
-                                                    scheme.primary() : scheme.onSurfaceVariant(),
-                    drawContext,
-                    lastClickPosition,
-                    rectangle.getPosition()
-            ));
+            drawContext.strokeColor(scheme().outline());
+            drawContext.strokeWidth(MaterialSwitchSize.Default.trackOutlineWidth());
             drawContext.roundedRect(
-                    position.x,
-                    position.y,
-                    rectangle.width,
-                    rectangle.height,
-                    cornerSize
+                    rectangle.x,
+                    rectangle.y,
+                    MaterialSwitchSize.Default.trackWidth(),
+                    MaterialSwitchSize.Default.trackHeight(),
+                    MaterialSwitchSize.Default.trackHeight() / 2
             );
-            drawContext.endPath();
+            drawContext.endPath(false);
         }
+        float handleSize = animationSet.handleSize.floatValue();
+        float handleX = rectangle.x + 16 + animationSet.handlePosition.floatValue();
 
-        float iconContextWidth = 0;
-        if (iconContextSupplier.get() != null && colors.iconColor != null) {
-            iconContextWidth = style.size().iconSize();
-            iconContextSupplier.get().render(
+        drawContext.drawArc(
+                handleX,
+                rectangle.getCenterY(),
+                handleSize / 2,
+                colors.handleColor,
+                true
+        );
+
+        if (isHovered() || animationSet.hover.floatValue() > 0.001) {
+            drawContext.drawArc(
+                    handleX,
+                    rectangle.getCenterY(),
+                    20,
+                    scheme().onSurface().copy().alpha((int) (0.1 * 255 * animationSet.hover.floatValue())),
+                    true
+            );
+        }
+        if ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways()))) {
+            float checkedIconX = rectangle.x + rectangle.width - 16;
+            MaterialSymbols.iconCheck().render(
                     drawContext,
-                    colors.iconColor,
-                    style.size().iconSize(),
+                    colors.iconColor.copy().alpha(
+                            !animationSet.handlePosition.isRunning() ? 255 : Math.min((int) ((animationSet.handlePosition.progress() * 1.8) * 255), 255)
+                    ),
+                    MaterialSwitchSize.Default.iconSize(),
                     new Vector2f(
-                            position.x + size().padding() + (style.size().iconSize() / 2),
+                            checkedIconX,
                             rectangle.getCenterY()
                     )
             );
         }
-        drawContext.text().drawAlignedText(
-                drawContext.font(),
-                size().fontSize(),
-                textContextSupplier.get(),
-                position.x + size().padding() + iconContextWidth + (iconContextWidth == 0 ? 0 : style.size().iconPadding()),
-                rectangle.getCenterY(),
-                rectangle.width,
-                20,
-                colors.textColor,
-                TextAlign.of(TextAlign.ALIGN_LEFT, TextAlign.ALIGN_MIDDLE),
-                false
-        );
-
-
+        if ((!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways()))) {
+            float closeIconX = rectangle.x + 16;
+            MaterialSymbols.iconClose().render(
+                    drawContext,
+                    colors.iconColor.copy().alpha(
+                            !animationSet.handlePosition.isRunning() ? 255 : Math.min((int) ((animationSet.handlePosition.progress() * 1.8) * 255), 255)
+                    ),
+                    MaterialSwitchSize.Default.iconSize(),
+                    new Vector2f(
+                            closeIconX,
+                            rectangle.getCenterY()
+                    )
+            );
+        }
     }
 
-    private ButtonColors getButtonColors() {
-        ButtonColors colors = new ButtonColors();
-
-        switch (style.variant()) {
-            case Elevated:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.primary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
-                }
-                colors.backgroundColor = scheme.surfaceContainerLow();
-                colors.textColor = scheme.primary();
-                colors.iconColor = scheme.primary();
-                break;
-
-            case Filled:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.onPrimary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
-                }
-                colors.backgroundColor = scheme.primary();
-                colors.textColor = scheme.onPrimary();
-                colors.iconColor = scheme.onPrimary();
-                break;
-
-            case Tonal:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.onSecondaryContainer().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
-                }
-                colors.backgroundColor = scheme.secondaryContainer();
-                colors.textColor = scheme.onSecondaryContainer();
-                colors.iconColor = scheme.onSecondaryContainer();
-                break;
-
-            case Text:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.primary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
-                }
-                colors.textColor = scheme.primary();
-                colors.iconColor = scheme.primary();
-                break;
-
-            case Outlined:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.onSurfaceVariant().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
-                }
-                colors.borderColor = scheme.outlineVariant();
-                colors.textColor = scheme.onSurfaceVariant();
-                colors.iconColor = scheme.onSurfaceVariant();
-                break;
-            default:
-                colors.backgroundColor = scheme.primary();
-                colors.textColor = scheme.primary();
-                break;
-        }
-
+    private SwitchColors getSwitchColors() {
+        SwitchColors colors = new SwitchColors();
+        colors.trackColor = isChecked() ? scheme().primary() : scheme().surfaceContainerHighest();
+        colors.handleColor = isChecked() ? scheme().onPrimary() : scheme().outline();
+        colors.iconColor = isChecked() ? scheme().onPrimaryContainer() : scheme().surfaceContainerHighest();
         return colors;
     }
 
     private void onHover(Vector2f mousePosition, boolean hover) {
         if (hover) {
             animationSet.hover
-                    .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                    .animateTo(0.08, 200);
+                    .ease(Easing.LINEAR)
+                    .animateTo(1, 200);
             MouseCursor.HAND.use();
         } else {
             animationSet.hover
-                    .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
+                    .ease(Easing.LINEAR)
                     .animateTo(0, 200);
             MouseCursor.ARROW.use();
         }
@@ -328,34 +222,46 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
     }
 
     private void onPress(Vector2f mousePosition) {
+        animationSet.handleSize
+                .ease(Easing.LINEAR)
+                .animateTo(
+                        (style.showCheckedIconWhenEnable() && isChecked()) || style.showCheckedIconAlways() ?
+                                MaterialSwitchSize.Default.handleSizePressWithIcon() :
+                                MaterialSwitchSize.Default.handleSizePress(),
+                        150
+                );
         animationSet.hover
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(0.1, 200);
-        animationSet.press
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
+                .ease(Easing.LINEAR)
                 .animateTo(1, 200);
-        lastClickPosition = mousePosition.copy();
-        //this.ripple.setPressed(true);
+        animationSet.press
+                .ease(Easing.LINEAR)
+                .animateTo(1, 200);
         System.out.printf("press %s %s%n", mousePosition.x, mousePosition.y);
     }
 
     private void onRelease(Vector2f mousePosition) {
+        toggleChecked();
+        animationSet.handleSize
+                .ease(Easing.LINEAR)
+                .animateTo(
+                        (style.showUncheckedIconWhenEnable() && !isChecked()) || style.showUncheckedIconAlways() ?
+                                !isChecked() ? MaterialSwitchSize.Default.handleSizeCheckedWithIcon() : MaterialSwitchSize.Default.handleSizeWithIcon() :
+                                isChecked() ? MaterialSwitchSize.Default.handleSizeChecked() : MaterialSwitchSize.Default.handleSize(),
+                        150
+                );
         animationSet.hover
                 .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(isHovered() ? 0.08 : 0, 200);
+                .animateTo(isHovered() ? 1 : 0, 200);
         animationSet.press
                 .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
                 .animateTo(0, 200);
-        //this.ripple.setPressed(false);
-        System.out.printf("release %s %s%n", mousePosition.x, mousePosition.y);
 
+        System.out.printf("release %s %s%n", mousePosition.x, mousePosition.y);
     }
 
-    private static class ButtonColors {
-        Color coverColor;
-        Color backgroundColor;
-        Color textColor;
-        Color borderColor;
+    private static class SwitchColors {
         Color iconColor;
+        Color handleColor;
+        Color trackColor;
     }
 }
