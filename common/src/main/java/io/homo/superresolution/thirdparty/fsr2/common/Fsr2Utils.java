@@ -19,7 +19,7 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.pow;

@@ -18,8 +18,9 @@
 
 package io.homo.superresolution.srapi;
 
-import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.core.math.Vector2i;
+
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 
 public class SRDispatchUpscaleDesc {
     long commandList;

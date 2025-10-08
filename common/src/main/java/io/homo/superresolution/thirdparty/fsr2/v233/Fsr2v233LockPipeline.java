@@ -27,7 +27,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.math.Vector3i;
+import org.joml.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
 import java.util.HashMap;

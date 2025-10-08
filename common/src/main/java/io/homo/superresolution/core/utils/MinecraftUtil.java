@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.utils;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 

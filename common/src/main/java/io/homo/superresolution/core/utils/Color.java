@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.utils;
 
-import io.homo.superresolution.core.graphics.nanovg.NanoVG;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import org.lwjgl.nanovg.NVGColor;
 
 public class Color {

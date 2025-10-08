@@ -35,8 +35,8 @@ public class ModConfigSpecBuilder {
     protected boolean autoSave = false;
     protected boolean autoReload = false;
     protected final ConfigSpec spec = new ConfigSpec();
-    private List<String> lastPath = List.of();
-    private Path configPath;
+    protected List<String> lastPath = List.of();
+    protected Path configPath;
 
     protected static List<String> splitPath(String path) {
         return Arrays.asList(path.split("/"));

@@ -36,7 +36,7 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
-import io.homo.superresolution.core.math.Vector3i;
+import org.joml.Vector3i;
 
 import java.util.Optional;
 

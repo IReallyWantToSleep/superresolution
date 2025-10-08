@@ -1,14 +1,14 @@
 package io.homo.superresolution.core.gui;
 
-import io.homo.superresolution.core.graphics.nanovg.NanoVG;
-import io.homo.superresolution.core.graphics.nanovg.NanoVGContext;
-import io.homo.superresolution.core.gui.core.UIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.event.EventHandle;
-import io.homo.superresolution.core.gui.core.event.EventListener;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGDrawContext;
+import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,10 +26,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
+public abstract class NanoVGScreen<T> extends Screen {
     protected final NanoVGContext nvg;
     protected final ArrayList<Renderable> renderable = new ArrayList<>();
-    protected final ArrayList<EventListener> eventListener = new ArrayList<>();
+    protected final ArrayList<GuiEventListener> eventListener = new ArrayList<>();
     protected final ArrayList<AbstractWidget<?, ?, ?>> widget = new ArrayList<>();
     protected boolean transparent = false;
     protected Map<String, ArrayList<Consumer<T>>> eventListenerMap = new HashMap<>();
@@ -40,15 +40,6 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
         nvg = NanoVG.context;
         buildWidgets();
     }
-
-    @Override
-    public void removeEventListener(String type, Object consumer) {
-    }
-
-    @Override
-    public void addEventListener(String type, Object consumer) {
-    }
-
 
     public boolean isTransparent() {
         return transparent;
@@ -76,8 +67,9 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
         nvg.resetGlobalTransform();
         nvg.resetTransform();
         nvg.globalAlpha(1.0f);
-        UIDrawContext drawContext = new UIDrawContext(nvg);
+        NanoVGDrawContext drawContext = new NanoVGDrawContext(nvg);
         draw(drawContext, (int) mouseX, (int) mouseY, partialTick);
+        drawContext.drawAll();
         nvg.end();
         drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
     }
@@ -99,12 +91,12 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
             for (Consumer<T> consumer : eventListenerMap.get(type)) consumer.accept((T) this);
     }
 
-    public void draw(UIDrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void draw(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
         drawWidgets(drawContext, mouseX, mouseY, delta);
         drawTooltips(drawContext, mouseX, mouseY, delta);
     }
 
-    public void drawTooltips(UIDrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void drawTooltips(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
         for (AbstractWidget<?, ?, ?> abstractWidget : widget) {
             //abstractWidget.renderTooltip(drawContext, delta);
         }
@@ -118,7 +110,7 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
         //super.renderBackground(guiGraphics, mouseX, mouseY, delta);
     }
 
-    public void drawWidgets(UIDrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void drawWidgets(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
         Map<Integer, List<Renderable>> layers = Stream.concat(renderable.stream(), widget.stream())
                 .collect(Collectors.groupingBy(
                         Renderable::getZIndex,
@@ -150,7 +142,7 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
         if (widget instanceof AbstractWidget) {
             this.widget.remove(widget);
         }
-        if (widget instanceof EventListener) {
+        if (widget instanceof GuiEventListener) {
             this.eventListener.remove(widget);
         }
     }
@@ -177,8 +169,8 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
         return widget;
     }
 
-    protected void invokeEventHandle(Consumer<EventListener> consumer) {
-        for (EventListener handle : eventListener) {
+    protected void invokeEventHandle(Consumer<GuiEventListener> consumer) {
+        for (GuiEventListener handle : eventListener) {
             consumer.accept(handle);
         }
     }
@@ -270,7 +262,7 @@ public abstract class NanoVGScreen<T> extends Screen implements EventHandle<T> {
     #if MC_VER > MC_1_20_1
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollX)));
+        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollY)));
         super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         return true;
     }

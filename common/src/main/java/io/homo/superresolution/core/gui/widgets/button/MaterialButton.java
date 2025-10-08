@@ -18,23 +18,19 @@
 
 package io.homo.superresolution.core.gui.widgets.button;
 
-import io.homo.superresolution.core.graphics.nanovg.NanoVG;
-import io.homo.superresolution.core.graphics.nanovg.renderer.TextAlign;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.MaterialRipple;
 import io.homo.superresolution.core.gui.MaterialSymbol;
-import io.homo.superresolution.core.gui.core.UIDrawContext;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.core.math.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
-import org.lwjgl.nanovg.NVGColor;
-import org.lwjgl.nanovg.NVGPaint;
-
-import static org.lwjgl.nanovg.NanoVG.*;
+import org.joml.Vector2f;
 
 import java.util.function.Supplier;
 
@@ -84,10 +80,9 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     @Override
     protected void init() {
         this.animationSet = new MaterialButtonAnimationSet();
-        eventHandler.registerEventType("click");
-        onMouseHover((widget, mousePosition, hover) -> onHover(mousePosition, hover));
-        onMouseRelease((widget, mousePosition) -> onRelease(mousePosition));
-        onMousePress((widget, mousePosition) -> onPress(mousePosition));
+        onHover((event) -> onHover(event.getMousePosition(), event.isHovering()));
+        onMouseRelease((event) -> onRelease(event.getMousePosition()));
+        onMousePress((event) -> onPress(event.getMousePosition()));
     }
 
     public MaterialButtonSize size() {
@@ -152,7 +147,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     }
 
     @Override
-    public void render(UIDrawContext drawContext, UIInputState inputState) {
+    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        drawContext.beginBatch();
         updateRectangle();
         animationSet.update();
         this.ripple.update();
@@ -233,7 +229,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                     )
             );
         }
-        drawContext.text().drawAlignedText(
+        drawContext.drawAlignedText(
                 drawContext.font(),
                 size().fontSize(),
                 textContextSupplier.get(),
@@ -242,11 +238,11 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 rectangle.width,
                 20,
                 colors.textColor,
-                TextAlign.of(TextAlign.ALIGN_LEFT, TextAlign.ALIGN_MIDDLE),
+                TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                 false
         );
 
-
+        drawContext.endBatch(getZIndex());
     }
 
     private ButtonColors getButtonColors() {
@@ -257,44 +253,46 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 if (isHovered() || animationSet.hover.isRunning()) {
                     colors.coverColor = scheme.primary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
                 }
-                colors.backgroundColor = scheme.surfaceContainerLow();
-                colors.textColor = scheme.primary();
-                colors.iconColor = scheme.primary();
+                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : scheme.surfaceContainerLow();
+                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.primary();
+                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.primary();
                 break;
 
             case Filled:
                 if (isHovered() || animationSet.hover.isRunning()) {
                     colors.coverColor = scheme.onPrimary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
                 }
-                colors.backgroundColor = scheme.primary();
-                colors.textColor = scheme.onPrimary();
-                colors.iconColor = scheme.onPrimary();
+                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : scheme.primary();
+                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onPrimary();
+                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onPrimary();
                 break;
 
             case Tonal:
                 if (isHovered() || animationSet.hover.isRunning()) {
                     colors.coverColor = scheme.onSecondaryContainer().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
                 }
-                colors.backgroundColor = scheme.secondaryContainer();
-                colors.textColor = scheme.onSecondaryContainer();
-                colors.iconColor = scheme.onSecondaryContainer();
+                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : scheme.secondaryContainer();
+                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onSecondaryContainer();
+                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onSecondaryContainer();
                 break;
 
             case Text:
                 if (isHovered() || animationSet.hover.isRunning()) {
                     colors.coverColor = scheme.primary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
                 }
-                colors.textColor = scheme.primary();
-                colors.iconColor = scheme.primary();
+                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : null;
+                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.primary();
+                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.primary();
                 break;
 
             case Outlined:
                 if (isHovered() || animationSet.hover.isRunning()) {
                     colors.coverColor = scheme.onSurfaceVariant().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
                 }
+                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : null;
                 colors.borderColor = scheme.outlineVariant();
-                colors.textColor = scheme.onSurfaceVariant();
-                colors.iconColor = scheme.onSurfaceVariant();
+                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onSurfaceVariant();
+                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onSurfaceVariant();
                 break;
             default:
                 colors.backgroundColor = scheme.primary();
@@ -317,7 +315,6 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                     .animateTo(0, 200);
             MouseCursor.ARROW.use();
         }
-        System.out.printf("hover %s %s %s%n", mousePosition.x, mousePosition.y, hover);
 
     }
 
@@ -328,14 +325,12 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
         animationSet.press
                 .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
                 .animateTo(1, 200);
-        lastClickPosition = mousePosition.copy();
+        lastClickPosition = new Vector2f(mousePosition);
         this.ripple.setPressed(
                 true,
                 lastClickPosition,
                 new Vector2f(rectangle.width, rectangle.height)
         );
-        eventHandler.triggerEvent("click");
-        System.out.printf("press %s %s%n", mousePosition.x, mousePosition.y);
     }
 
     private void onRelease(Vector2f mousePosition) {
@@ -350,7 +345,6 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 lastClickPosition,
                 new Vector2f(rectangle.width, rectangle.height)
         );
-        System.out.printf("release %s %s%n", mousePosition.x, mousePosition.y);
 
     }
 

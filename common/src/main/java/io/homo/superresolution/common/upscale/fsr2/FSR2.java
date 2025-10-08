@@ -26,7 +26,7 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;

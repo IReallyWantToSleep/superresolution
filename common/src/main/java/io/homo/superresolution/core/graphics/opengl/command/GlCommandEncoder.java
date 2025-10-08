@@ -32,8 +32,8 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.GlRenderState;
 import io.homo.superresolution.core.graphics.system.IRenderState;
-import io.homo.superresolution.core.math.Vector3i;
-import io.homo.superresolution.core.math.Vector4i;
+import org.joml.Vector3i;
+import org.joml.Vector4i;
 
 public class GlCommandEncoder implements ICommandEncoder {
     private GlCommandBuffer commandBuffer;

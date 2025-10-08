@@ -21,7 +21,7 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
-import io.homo.superresolution.core.math.Vector4i;
+import org.joml.Vector4i;
 
 import java.util.Objects;
 

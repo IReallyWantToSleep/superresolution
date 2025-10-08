@@ -19,16 +19,13 @@
 package io.homo.superresolution.core.gui.core;
 
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
-import io.homo.superresolution.core.gui.core.event.EventHandle;
 import io.homo.superresolution.core.gui.core.event.EventHandler;
 import io.homo.superresolution.core.gui.core.event.EventListener;
-import io.homo.superresolution.core.gui.core.event.events.FocusEvent;
-import io.homo.superresolution.core.gui.core.event.events.MouseHoverEvent;
-import io.homo.superresolution.core.gui.core.event.events.MousePressEvent;
-import io.homo.superresolution.core.gui.core.event.events.MouseReleaseEvent;
+import io.homo.superresolution.core.gui.core.event.GuiEventListener;
+import io.homo.superresolution.core.gui.core.event.events.*;
 import io.homo.superresolution.core.gui.core.impl.*;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -38,27 +35,21 @@ public abstract class AbstractWidget<
         STYLE extends WidgetStyle<?>,
         ANIM extends AnimationSet
         > extends AbstractLayoutElement implements
-        EventListener,
+        GuiEventListener,
         Renderable,
-        EventHandle<T>,
         TooltipHolder {
     protected boolean visible = true;
     protected boolean disabled = false;
     protected boolean hovered = false;
     protected boolean pressed = false;
     protected boolean focused = false;
-    protected EventHandler<T> eventHandler;
+    protected EventHandler eventHandler;
     protected STYLE style;
     protected ANIM animationSet;
     protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
 
     public AbstractWidget() {
-        this.eventHandler = new EventHandler<>((T) this);
-
-        eventHandler.registerEventType("focus");
-        eventHandler.registerEventType("mousePress", Vector2f.class);
-        eventHandler.registerEventType("mouseRelease", Vector2f.class);
-        eventHandler.registerEventType("mouseHover", Vector2f.class, Boolean.class);
+        this.eventHandler = new EventHandler();
         init();
     }
 
@@ -78,19 +69,21 @@ public abstract class AbstractWidget<
     public void mouseMove(float x, float y) {
         Vector2f mousePos = new Vector2f(x, y);
         boolean isHovering = getBounds().in(x, y);
-
+        eventHandler.fire(new MouseEvent.MouseMoveEvent(mousePos));
         if (isHovering != this.hovered) {
-            eventHandler.triggerEvent("mouseHover", mousePos, isHovering);
+            eventHandler.fire(new WidgetEvent.HoverEvent(mousePos, isHovering));
             setHovered(isHovering);
         }
     }
 
     @Override
     public void mousePress(float x, float y, int button) {
-        if (button == MouseButton.Left.id() && getBounds().in(x, y)) {
+        if (getBounds().in(x, y)) {
             Vector2f mousePos = new Vector2f(x, y);
-            eventHandler.triggerEvent("mousePress", mousePos);
-            setPressed(true);
+            if (button == MouseButton.Left.id()) {
+                setPressed(true);
+            }
+            eventHandler.fire(new MouseEvent.MousePressEvent(mousePos, button));
         }
     }
 
@@ -99,7 +92,7 @@ public abstract class AbstractWidget<
         if (button == MouseButton.Left.id()) {
             Vector2f mousePos = new Vector2f(x, y);
             if (isPressed()) {
-                eventHandler.triggerEvent("mouseRelease", mousePos);
+                eventHandler.fire(new MouseEvent.MouseReleaseEvent(mousePos, button));
             }
             setPressed(false);
         }
@@ -107,37 +100,27 @@ public abstract class AbstractWidget<
 
     @Override
     public void mouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
-        EventListener.super.mouseDrag(mouseX, mouseY, dragX, dragY, button);
+        eventHandler.fire(new MouseEvent.MouseDragEvent(button, new Vector2f(mouseX, mouseY), new Vector2f(dragX, dragY)));
     }
 
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
-        EventListener.super.mouseScroll(x, y, scrollX);
+        eventHandler.fire(new MouseEvent.MouseScrollEvent(new Vector2f(x, y), (float) scrollX));
     }
 
     @Override
     public void keyPress(int keyCode, int scancode, int modifiers) {
-        EventListener.super.keyPress(keyCode, scancode, modifiers);
+        GuiEventListener.super.keyPress(keyCode, scancode, modifiers);
     }
 
     @Override
     public void keyRelease(int keyCode, int scancode, int modifiers) {
-        EventListener.super.keyRelease(keyCode, scancode, modifiers);
+        GuiEventListener.super.keyRelease(keyCode, scancode, modifiers);
     }
 
     @Override
     public void charTyped(char codePoint, int modifiers) {
-        EventListener.super.charTyped(codePoint, modifiers);
-    }
-
-    @Override
-    public void addEventListener(String type, Object listener) {
-        eventHandler.addEventListener(type, listener);
-    }
-
-    @Override
-    public void removeEventListener(String type, Object listener) {
-        eventHandler.removeEventListener(type, listener);
+        GuiEventListener.super.charTyped(codePoint, modifiers);
     }
 
     public boolean isVisible() {
@@ -193,20 +176,33 @@ public abstract class AbstractWidget<
 
     public abstract Rectangle getBounds();
 
-    public void onMouseHover(MouseHoverEvent<T> listener) {
-        eventHandler.addEventListener("mouseHover", listener);
+    public void onHover(EventListener<WidgetEvent.HoverEvent> listener) {
+        eventHandler.on(WidgetEvent.HoverEvent.class, listener);
     }
 
-    public void onMousePress(MousePressEvent<T> listener) {
-        eventHandler.addEventListener("mousePress", listener::accept);
+    public void onFocus(EventListener<WidgetEvent.FocusEvent> listener) {
+        eventHandler.on(WidgetEvent.FocusEvent.class, listener);
     }
 
-    public void onMouseRelease(MouseReleaseEvent<T> listener) {
-        eventHandler.addEventListener("mouseRelease", listener::accept);
+
+    public void onMousePress(EventListener<MouseEvent.MousePressEvent> listener) {
+        eventHandler.on(MouseEvent.MousePressEvent.class, listener);
     }
 
-    public void onFocus(FocusEvent<T> listener) {
-        eventHandler.addEventListener("focus", (widget) -> listener.accept(widget));
+    public void onMouseMove(EventListener<MouseEvent.MouseMoveEvent> listener) {
+        eventHandler.on(MouseEvent.MouseMoveEvent.class, listener);
+    }
+
+    public void onMouseRelease(EventListener<MouseEvent.MouseReleaseEvent> listener) {
+        eventHandler.on(MouseEvent.MouseReleaseEvent.class, listener);
+    }
+
+    public void onMouseDrag(EventListener<MouseEvent.MouseDragEvent> listener) {
+        eventHandler.on(MouseEvent.MouseDragEvent.class, listener);
+    }
+
+    public void onMouseScroll(EventListener<MouseEvent.MouseScrollEvent> listener) {
+        eventHandler.on(MouseEvent.MouseScrollEvent.class, listener);
     }
 
 

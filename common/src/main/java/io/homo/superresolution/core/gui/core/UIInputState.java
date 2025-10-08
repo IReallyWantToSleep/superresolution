@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core;
 
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 public record UIInputState(
         Vector2f mousePosition,

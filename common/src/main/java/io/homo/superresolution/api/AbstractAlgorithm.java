@@ -23,7 +23,7 @@ import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     protected InputResourceSet getResources() {

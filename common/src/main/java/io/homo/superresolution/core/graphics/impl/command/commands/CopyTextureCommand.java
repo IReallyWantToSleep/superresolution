@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.graphics.impl.command.commands;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.math.Vector4i;
+import org.joml.Vector4i;
 
 public class CopyTextureCommand extends GpuCommand {
     public Vector4i sourceDimensions = null;

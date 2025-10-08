@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.gui.entries;
 
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import io.homo.superresolution.common.mixin.gui.AbstractWidgetAccessor;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import net.minecraft.client.gui.GuiGraphics;

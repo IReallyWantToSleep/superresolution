@@ -22,8 +22,8 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.math.Vector3i;
-import io.homo.superresolution.core.math.Vector4i;
+import org.joml.Vector3i;
+import org.joml.Vector4i;
 
 import java.util.HashMap;
 import java.util.Map;

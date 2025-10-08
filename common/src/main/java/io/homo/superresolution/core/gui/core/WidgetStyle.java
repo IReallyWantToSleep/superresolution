@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.gui.core;
 
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+
 public class WidgetStyle<T extends WidgetStyle<?>> {
     private int zIndex = 0;
     private float alpha = 1.0f;

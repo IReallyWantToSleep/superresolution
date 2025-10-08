@@ -31,8 +31,8 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.core.math.Vector2i;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 import net.minecraft.client.Minecraft;
 

@@ -18,11 +18,8 @@
 
 package io.homo.superresolution.core.gui.core.layout;
 
-import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.math.Vector2f;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.joml.Vector2f;
 
 public class AbsoluteLayout extends AbstractLayout {
 
@@ -41,7 +38,7 @@ public class AbsoluteLayout extends AbstractLayout {
     @Override
     public Vector2f getElementPosition(ILayoutElement element) {
         AbsoluteLayoutData data = (AbsoluteLayoutData) getElementData(element);
-        return data != null ? data.position.copy() : new Vector2f(0, 0);
+        return data != null ? new Vector2f(data.position) : new Vector2f(0, 0);
     }
 
     public void setPosition(ILayoutElement element, Vector2f position) {

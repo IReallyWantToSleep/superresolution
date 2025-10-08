@@ -35,7 +35,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.math.Vector3i;
+import org.joml.Vector3i;
 
 import java.util.Optional;
 
