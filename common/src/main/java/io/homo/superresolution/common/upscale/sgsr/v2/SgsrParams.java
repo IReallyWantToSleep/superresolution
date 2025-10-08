@@ -19,7 +19,7 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
@@ -110,8 +110,8 @@ public class SgsrParams implements IBufferData {
         container.clear();
         setRenderSize(dispatchResource.renderSize());
         setDisplaySize(dispatchResource.screenSize());
-        setRenderSizeRcp(dispatchResource.renderSize().divideInto(1.0f));
-        setDisplaySizeRcp(dispatchResource.screenSize().divideInto(1.0f));
+        setRenderSizeRcp(new Vector2f().set(1).div(dispatchResource.renderSize()));
+        setDisplaySizeRcp(new Vector2f().set(1).div(dispatchResource.screenSize()));
         setJitterOffset(new Vector2f(0.0f));
         fillZero(40, 48);
         //const auto curr_view_proj_matrix        = m_cameraProjection * m_cameraView;

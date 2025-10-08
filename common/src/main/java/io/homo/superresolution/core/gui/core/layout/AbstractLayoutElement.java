@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui.core.layout;
 
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 public abstract class AbstractLayoutElement implements ILayoutElement {
     protected ILayoutContainer parent;

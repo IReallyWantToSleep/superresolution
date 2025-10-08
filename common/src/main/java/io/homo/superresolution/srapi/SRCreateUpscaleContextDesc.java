@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.srapi;
 
-import io.homo.superresolution.core.math.Vector2i;
+import org.joml.Vector2i;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 

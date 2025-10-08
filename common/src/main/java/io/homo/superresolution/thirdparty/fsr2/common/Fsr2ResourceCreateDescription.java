@@ -19,7 +19,7 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 public class Fsr2ResourceCreateDescription {
     public Vector2f size;

@@ -37,7 +37,7 @@ import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import org.joml.Matrix4f;
 
 import java.util.function.Consumer;
@@ -103,8 +103,8 @@ public class Sgsr2 extends AbstractAlgorithm {
 
         paramsData.setVec2("renderSize", dispatchResource.renderSize());
         paramsData.setVec2("displaySize", dispatchResource.screenSize());
-        paramsData.setVec2("renderSizeRcp", dispatchResource.renderSize().divideInto(1));
-        paramsData.setVec2("displaySizeRcp", dispatchResource.screenSize().divideInto(1));
+        paramsData.setVec2("renderSizeRcp", new Vector2f().set(1).div(dispatchResource.renderSize()));
+        paramsData.setVec2("displaySizeRcp", new Vector2f().set(1).div(dispatchResource.screenSize()));
         paramsData.setVec2("jitterOffset", getOriginJitterOffset(dispatchResource.frameCount(), dispatchResource.renderSize(), dispatchResource.screenSize()));
         /*
         glm::mat4 inv_view       = glm::inverse(current_view);

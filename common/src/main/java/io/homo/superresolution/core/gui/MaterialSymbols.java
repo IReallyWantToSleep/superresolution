@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import io.homo.superresolution.core.graphics.nanovg.NanoVGFont;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
 import io.homo.superresolution.core.utils.FileReadHelper;
 
 import java.lang.reflect.Type;

@@ -18,10 +18,11 @@
 
 package io.homo.superresolution.core.gui;
 
-import io.homo.superresolution.core.graphics.nanovg.NanoVGFont;
-import io.homo.superresolution.core.graphics.nanovg.renderer.TextAlign;
-import io.homo.superresolution.core.gui.core.UIDrawContext;
-import io.homo.superresolution.core.math.Vector2f;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
+import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 
 public class MaterialSymbol {
@@ -48,11 +49,11 @@ public class MaterialSymbol {
     }
 
     public void render(
-            UIDrawContext drawContext,
+            IUIDrawContext drawContext,
             Color color,
             float iconSize,
             Vector2f position) {
-        drawContext.text().drawAlignedText(
+        drawContext.drawAlignedText(
                 iconFont,
                 iconSize,
                 codepoint,
@@ -61,7 +62,7 @@ public class MaterialSymbol {
                 iconSize,
                 iconSize,
                 color,
-                TextAlign.of(TextAlign.ALIGN_CENTER, TextAlign.ALIGN_MIDDLE),
+                TextAlign.of(TextAlignType.ALIGN_CENTER, TextAlignType.ALIGN_MIDDLE),
                 false
         );
     }

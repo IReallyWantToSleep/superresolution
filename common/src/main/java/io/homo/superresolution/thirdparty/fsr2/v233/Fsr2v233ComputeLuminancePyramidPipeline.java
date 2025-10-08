@@ -29,7 +29,7 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAc
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.math.Vector3i;
+import org.joml.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
 import java.util.HashMap;

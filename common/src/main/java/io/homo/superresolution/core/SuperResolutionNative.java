@@ -19,8 +19,8 @@
 package io.homo.superresolution.core;
 
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
-import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.core.math.Vector2i;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 
 import java.nio.ByteBuffer;

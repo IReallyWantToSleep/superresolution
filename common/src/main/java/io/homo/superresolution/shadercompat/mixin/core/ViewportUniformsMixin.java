@@ -80,7 +80,7 @@ public class ViewportUniformsMixin {
                 "SRJitterOffset",
                 () -> {
                     if (!SuperResolution.getCurrentAlgorithm().isSupportJitter()) return new Vector2f(0);
-                    io.homo.superresolution.core.math.Vector2f jitterOffset = AlgorithmManager.getJitterOffset();
+                    org.joml.Vector2f jitterOffset = AlgorithmManager.getJitterOffset();
                     return new Vector2f(jitterOffset.x, jitterOffset.y);
                 }
         );

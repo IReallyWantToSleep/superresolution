@@ -24,7 +24,7 @@ import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 import java.util.HashMap;
 import java.util.HashSet;

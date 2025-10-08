@@ -18,11 +18,11 @@
 
 package io.homo.superresolution.core.gui.core.impl;
 
-import io.homo.superresolution.core.gui.core.UIDrawContext;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 
 public interface Renderable {
-    void render(UIDrawContext drawContext, UIInputState inputState);
+    void render(IUIDrawContext drawContext, UIInputState inputState);
 
     default int getZIndex() {
         return 0;

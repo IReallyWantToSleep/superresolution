@@ -18,9 +18,9 @@
 
 package io.homo.superresolution.core.graphics.impl.buffer;
 
-import io.homo.superresolution.core.math.Vector2f;
-import io.homo.superresolution.core.math.Vector3f;
-import io.homo.superresolution.core.math.Vector4f;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 

@@ -19,7 +19,8 @@
 package io.homo.superresolution.core.graphics.impl.command.commands;
 
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.math.Vector3i;
+import org.joml.Vector3i;
+
 
 public class ComputeCommand extends GpuCommand {
     public IShaderProgram<?> shaderProgram;

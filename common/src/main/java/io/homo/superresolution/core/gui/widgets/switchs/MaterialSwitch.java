@@ -18,19 +18,15 @@
 
 package io.homo.superresolution.core.gui.widgets.switchs;
 
-import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialSymbols;
-import io.homo.superresolution.core.gui.core.UIDrawContext;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Easing;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
-
-import java.util.function.Supplier;
 
 public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitchStyle, MaterialSwitchAnimationSet> {
     private Rectangle rectangle = new Rectangle();
@@ -90,10 +86,11 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
     @Override
     protected void init() {
         this.animationSet = new MaterialSwitchAnimationSet();
-        onMouseHover((widget, mousePosition, hover) -> onHover(mousePosition, hover));
-        onMouseRelease((widget, mousePosition) -> onRelease(mousePosition));
-        onMousePress((widget, mousePosition) -> onPress(mousePosition));
+        onHover((event) -> onHover(event.getMousePosition(), event.isHovering()));
+        onMouseRelease((event) -> onRelease(event.getMousePosition()));
+        onMousePress((event) -> onPress(event.getMousePosition()));
     }
+
 
     private void updateRectangle() {
         rectangle.x = getAbsolutePosition().x;
@@ -108,7 +105,8 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
     }
 
     @Override
-    public void render(UIDrawContext drawContext, UIInputState inputState) {
+    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        drawContext.beginBatch();
         updateRectangle();
         if (animationSet.handleSize.floatValue() <
                 ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways())) ||
@@ -136,7 +134,11 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
 
         if (!isChecked()) {
             drawContext.beginPath();
-            drawContext.strokeColor(scheme().outline());
+            drawContext.strokeColor(
+                    isDisabled() ?
+                            scheme().onSurface().copy().alpha((int) (255 * 0.08)) :
+                            scheme().outline()
+            );
             drawContext.strokeWidth(MaterialSwitchSize.Default.trackOutlineWidth());
             drawContext.roundedRect(
                     rectangle.x,
@@ -183,11 +185,10 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
         }
         if ((!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways()))) {
             float closeIconX = rectangle.x + 16;
+            float alpha = isDisabled() ? 1 : clamp(!animationSet.handlePosition.isRunning() ? 255f : Math.min(((animationSet.handlePosition.progress() * 1.8f) * 255f), 255f) / 255f, 0, 1);
             MaterialSymbols.iconClose().render(
                     drawContext,
-                    colors.iconColor.copy().alpha(
-                            !animationSet.handlePosition.isRunning() ? 255 : Math.min((int) ((animationSet.handlePosition.progress() * 1.8) * 255), 255)
-                    ),
+                    colors.iconColor,
                     MaterialSwitchSize.Default.iconSize(),
                     new Vector2f(
                             closeIconX,
@@ -195,13 +196,36 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
                     )
             );
         }
+        drawContext.endBatch(getZIndex());
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.min(max, Math.max(value, min));
     }
 
     private SwitchColors getSwitchColors() {
         SwitchColors colors = new SwitchColors();
-        colors.trackColor = isChecked() ? scheme().primary() : scheme().surfaceContainerHighest();
-        colors.handleColor = isChecked() ? scheme().onPrimary() : scheme().outline();
-        colors.iconColor = isChecked() ? scheme().onPrimaryContainer() : scheme().surfaceContainerHighest();
+        colors.trackColor = isDisabled() ?
+                (isChecked() ?
+                        scheme().onSurface().copy().alpha((int) (255 * 0.1)) :
+                        scheme().surfaceVariant()).copy().alpha((int) (255 * 0.1)) :
+                (isChecked() ?
+                        scheme().primary() :
+                        scheme().surfaceContainerHighest());
+        colors.handleColor = isDisabled() ?
+                (isChecked() ?
+                        scheme().surface() :
+                        scheme().onSurface().copy().alpha((int) (255 * 0.38))) :
+                (isChecked() ?
+                        scheme().onPrimary() :
+                        scheme().outline());
+        colors.iconColor = isDisabled() ?
+                (isChecked() ?
+                        scheme().surfaceContainerHighest().copy().alpha((int) (0 * 0.38)) :
+                        scheme().surfaceContainerHighest().copy().alpha((int) (255 * 0.38))) :
+                (isChecked() ?
+                        scheme().primary() :
+                        scheme().surfaceContainerHighest());
         return colors;
     }
 
@@ -217,7 +241,6 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
                     .animateTo(0, 200);
             MouseCursor.ARROW.use();
         }
-        System.out.printf("hover %s %s %s%n", mousePosition.x, mousePosition.y, hover);
 
     }
 
@@ -236,7 +259,6 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
         animationSet.press
                 .ease(Easing.LINEAR)
                 .animateTo(1, 200);
-        System.out.printf("press %s %s%n", mousePosition.x, mousePosition.y);
     }
 
     private void onRelease(Vector2f mousePosition) {
@@ -256,7 +278,6 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
                 .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
                 .animateTo(0, 200);
 
-        System.out.printf("release %s %s%n", mousePosition.x, mousePosition.y);
     }
 
     private static class SwitchColors {

@@ -24,6 +24,7 @@ import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.neoforge.compat.sodium.SodiumOptionScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;

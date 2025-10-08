@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui.core.layout;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 
 import java.util.List;
 

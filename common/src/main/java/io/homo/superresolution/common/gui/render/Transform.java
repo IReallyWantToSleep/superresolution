@@ -18,7 +18,8 @@
 
 package io.homo.superresolution.common.gui.render;
 
-import io.homo.superresolution.core.math.Vector2f;
+
+import org.joml.Vector2f;
 
 public class Transform {
     private Vector2f scale;
@@ -36,7 +37,7 @@ public class Transform {
         this.translation = translation;
         this.rotation = rotation;
     }
-    
+
     public static Transform empty() {
         return new Transform(new Vector2f(1.0f, 1.0f), new Vector2f(0.0f, 0.0f), 0.0f);
     }

@@ -19,7 +19,7 @@
 package io.homo.superresolution.thirdparty.fsr2.common.struct;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
-import io.homo.superresolution.core.math.Vector2f;
+import org.joml.Vector2f;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Dimensions;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2DispatchDescription;

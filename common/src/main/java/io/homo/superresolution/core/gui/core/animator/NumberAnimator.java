@@ -95,9 +95,8 @@ public class NumberAnimator implements IAnimator<Number> {
         if (state == AnimationState.RUNNING) {
             long currentTime = System.currentTimeMillis();
 
-            // Apply delay
             if (delay > 0 && currentTime - delayStartTime < delay) {
-                return; // Wait for delay
+                return;
             }
 
             double progress = (currentTime - startTime) / (double) duration;
