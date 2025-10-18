@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.event.events;
+package io.homo.superresolution.core.gui.core;
 
-@FunctionalInterface
-public interface ClickEvent<WIDGET> {
-    void accept(WIDGET widget);
+import org.joml.Vector2f;
+
+public interface IHitTest {
+    boolean hitTest(Vector2f absolutePos);
 }

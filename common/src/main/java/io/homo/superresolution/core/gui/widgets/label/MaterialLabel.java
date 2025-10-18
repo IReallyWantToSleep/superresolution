@@ -34,9 +34,21 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
     private Rectangle rectangle = new Rectangle();
     private Supplier<String> textSupplier = () -> "";
 
+    @Override
+    protected boolean isInteractive() {
+        return false;
+    }
+
     public MaterialLabel() {
         this.style = new MaterialLabelStyle();
         this.animationSet = new MaterialLabelAnimationSet();
+    }
+
+    public void setBounds(float x, float y, float width, float height) {
+        rectangle.setLocation(
+                x,
+                y
+        );
     }
 
     public static MaterialLabel create() {
@@ -66,7 +78,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
     @Override
     protected void init() {
     }
-    
+
 
     @Override
     public Rectangle getBounds() {

@@ -104,6 +104,14 @@
                     "name": "simple-clouds",
                     "version": "0.6.3+1.20.1-forge",
                     "compileOnly": true
+                },
+                {
+                    "name": "enchanted-wilderness-elegant-countryside.",
+                    "version": "phase3"
+                },
+                {
+                    "name": "geckolib",
+                    "version": "4.8.2"
                 }
             ],
             "local": [

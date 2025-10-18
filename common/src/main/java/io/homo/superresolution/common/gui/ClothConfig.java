@@ -259,6 +259,11 @@ public class ClothConfig {
                 (button) -> Minecraft.getInstance().setScreen(new WidgetDesignScreen(Component.literal(""))),
                 true
         ));
+        commonCategory.addEntry(new ClothButtonEntry(
+                Component.literal("UI Test"),
+                (button) -> Minecraft.getInstance().setScreen(TestOptionBuilder.build(Minecraft.getInstance().screen)),
+                true
+        ));
         for (String key : SuperResolutionConfig.SPECIAL.description.keySet()) {
             addSpecialConfig(builder, entryBuilder, key);
         }

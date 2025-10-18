@@ -16,9 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.event.events;
+package io.homo.superresolution.common.gui.options;
 
-@FunctionalInterface
-public interface FocusEvent<WIDGET> {
-    void accept(WIDGET widget);
+import io.homo.superresolution.common.gui.impl.Text;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class OptionCategory {
+    private Text name;
+
+    public OptionCategory(Text name) {
+        this.name = name;
+    }
+
+    public List<AbstractOptionEntry<?, ?, ?>> getEntries() {
+        return entries;
+    }
+
+    protected List<AbstractOptionEntry<?, ?, ?>> entries = new ArrayList<>();
+
+    public Text getCategoryName() {
+        return name;
+    }
+
+    public OptionCategory addEntry(AbstractOptionEntry<?, ?, ?> entry) {
+        entries.add(entry);
+        return this;
+    }
 }

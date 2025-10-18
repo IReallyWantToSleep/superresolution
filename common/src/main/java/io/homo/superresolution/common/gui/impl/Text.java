@@ -44,4 +44,14 @@ public class Text {
     public String getString() {
         return translatable ? Language.getInstance().getOrDefault(value) : value;
     }
+
+    @Override
+    public String toString() {
+        return getString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof Text && ((Text) obj).translatable == translatable && value.equals(((Text) obj).value);
+    }
 }

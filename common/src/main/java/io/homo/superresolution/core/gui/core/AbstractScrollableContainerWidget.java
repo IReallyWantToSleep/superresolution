@@ -34,6 +34,21 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
     protected Vector2f scrollOffset = new Vector2f(0, 0);
     protected boolean horizontalScrollEnabled = true;
     protected boolean verticalScrollEnabled = true;
+    protected float topPadding = 0;
+    protected float bottomPadding = 0;
+    protected float leftPadding = 0;
+    protected float rightPadding = 0;
+    protected boolean isContainerDragging = false;
+
+    public void setBounds(float x, float y, float width, float height) {
+        bounds.setBounds(
+                x,
+                y,
+                width,
+                height
+        );
+        viewRegion.set(width, height);
+    }
 
     public IScrollHandler getScrollHandler() {
         return scrollHandler;
@@ -77,6 +92,33 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
         });
     }
 
+    public void setTopPadding(float padding) {
+        this.topPadding = Math.max(0, padding);
+        if (layout != null) {
+            layout.layout(this);
+        }
+    }
+
+    public void setBottomPadding(float padding) {
+        this.bottomPadding = Math.max(0, padding);
+        if (layout != null) {
+            layout.layout(this);
+        }
+    }
+
+    public void setLeftPadding(float padding) {
+        this.leftPadding = Math.max(0, padding);
+        if (layout != null) {
+            layout.layout(this);
+        }
+    }
+
+    public void setRightPadding(float padding) {
+        this.rightPadding = Math.max(0, padding);
+        if (layout != null) {
+            layout.layout(this);
+        }
+    }
 
     @Override
     public void setLayout(ILayout layout) {
@@ -184,6 +226,27 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
                 region.width,
                 region.height
         );
+/*
+//debug
+        drawContext.drawRect(
+                region.x,
+                region.y,
+                region.width,
+                region.height,
+                Color.rgba(255, 0, 0, 255),
+                false
+        );
+
+        drawContext.drawRect(
+                region.x - scrollOffset.x,
+                region.y - scrollOffset.y,
+                layout.getContainerBounds().width,
+                layout.getContainerBounds().height,
+                Color.rgba(255, 255, 0, 255),
+                false
+        );
+*/
+
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?, ?, ?> widget) {
                 if (region.intersect(widget.getBounds())) {
@@ -229,8 +292,8 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
             for (ILayoutElement child : container.getChildren()) {
                 Vector2f originalPosition = wrappedLayout.getElementPosition(child);
                 Vector2f scrolledPosition = new Vector2f(
-                        originalPosition.x - (horizontalScrollEnabled ? scrollOffset.x : 0),
-                        originalPosition.y - (verticalScrollEnabled ? scrollOffset.y : 0)
+                        originalPosition.x - (horizontalScrollEnabled ? scrollOffset.x : 0) + leftPadding,
+                        originalPosition.y - (verticalScrollEnabled ? scrollOffset.y : 0) + topPadding
                 );
 
                 absoluteLayout.setPosition(child, scrolledPosition);
@@ -251,10 +314,10 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
 
             Rectangle wrappedBounds = wrappedLayout.getContainerBounds();
             containerBounds.setBounds(
-                    wrappedBounds.x,
-                    wrappedBounds.y,
-                    wrappedBounds.width,
-                    wrappedBounds.height
+                    0,
+                    0,
+                    wrappedBounds.x + wrappedBounds.width + rightPadding + leftPadding,
+                    wrappedBounds.y + wrappedBounds.height + bottomPadding + topPadding
             );
         }
     }

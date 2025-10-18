@@ -227,17 +227,19 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         updateRenderTargetSize();
 
         /*
-        =1.21.5 在渲染世界前后直接resizeRenderTarget
+        =1.21.5 在渲染世界前后resizeRenderTarget
         !=1.21.5 在渲染世界前后更换RenderTarget
         */
-        #if MC_VER >= MC_1_21_5
-        RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight()
-        );
-        #else
-        RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
-        renderTarget.bind(FrameBufferBindPoint.Write);
+        if (SuperResolutionConfig.isEnableUpscale()) {
+            #if MC_VER >= MC_1_21_5
+            RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(
+                    RenderHandlerManager.getRenderWidth(),
+                    RenderHandlerManager.getRenderHeight()
+            );
+            #else
+            RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
+            renderTarget.bind(FrameBufferBindPoint.Write);
+        }
         #endif
 
     }

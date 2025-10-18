@@ -4,6 +4,7 @@ import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
@@ -28,28 +29,23 @@ public class MaterialRipple {
             reset();
             return;
         }
-
-        if (waitingForFade && isRippleFilled() && !fading) {
-            startFadeOut();
-            waitingForFade = false;
-        }
     }
 
-    public void setPressed(boolean pressed, Vector2f center, Vector2f size) {
-        if (fading) {
+    public void setPressed(boolean pressed, Vector2f center, Rectangle region) {
+        if (fading || center == null || region == null) {
             return;
         }
 
-        if (active) {
+        if (active && pressed) {
             reset();
         }
 
         this.pressed = pressed;
-        this.rippleCenter = center == null ? new Vector2f(size.x / 2, size.y / 2) : new Vector2f(center);
-        this.rippleSize = new Vector2f(size);
-        this.maxRippleRadius = calcMaxDistance(rippleCenter, size);
+        this.rippleCenter = new Vector2f(center);
+        this.rippleSize = new Vector2f(region.getSize());
+        this.maxRippleRadius = calcMaxDistance(rippleCenter, region);
 
-        long radiusDuration = 1500;
+        long radiusDuration = 400; // Reduced duration for smoother animation
         float beginAlpha = 0.3f;
 
         if (pressed) {
@@ -62,13 +58,16 @@ public class MaterialRipple {
             radiusAnimator.set(0);
             radiusAnimator
                     .ease(Easing.LINEAR)
-                    .animateTo(1, radiusDuration)
+                    .animateTo(this.maxRippleRadius, radiusDuration)
                     .onComplete(() -> {
                         if (!this.pressed && !fading) {
                             startFadeOut();
                         }
                     });
             alphaAnimator.set(beginAlpha);
+            alphaAnimator
+                    .ease(Easing.LINEAR)
+                    .animateTo(beginAlpha, radiusDuration);
         } else {
             if (isRippleFilled()) {
                 startFadeOut();
@@ -78,20 +77,36 @@ public class MaterialRipple {
         }
     }
 
-    private float calcMaxDistance(Vector2f center, Vector2f size) {
-        float[] dx = {0, size.x, 0, size.x};
-        float[] dy = {0, 0, size.y, size.y};
+    private float calcMaxDistance(Vector2f center, Rectangle region) {
+        float[] dx = {
+                region.x,                    // Top-left
+                region.getLimitX(),         // Top-right
+                region.getLimitX(),         // Bottom-right
+                region.x                    // Bottom-left
+        };
+        float[] dy = {
+                region.y,                    // Top-left
+                region.y,                    // Top-right
+                region.getLimitY(),         // Bottom-right
+                region.getLimitY()          // Bottom-left
+        };
+
         float max = 0;
         for (int i = 0; i < 4; i++) {
-            float dist = (float) Math.hypot(center.x - dx[i], center.y - dy[i]);
-            if (dist > max) max = dist;
+            float dist = (float) Math.sqrt(
+                    Math.pow(dx[i] - center.x, 2) +
+                            Math.pow(dy[i] - center.y, 2)
+            );
+            max = Math.max(max, dist);
         }
+
+        max = Math.max(max, Math.max(region.width, region.height) * 0.5f) * 1.1f;
+
         return max;
     }
 
     private boolean isRippleFilled() {
-        boolean filled = radiusAnimator.isCompleted();
-        return filled;
+        return radiusAnimator.isCompleted();
     }
 
     private void startFadeOut() {
@@ -100,7 +115,7 @@ public class MaterialRipple {
         alphaAnimator
                 .set(currentAlpha)
                 .ease(Easing.LINEAR)
-                .animateTo(0, fadeDuration)
+                .animateTo(0, 500)
                 .onComplete(() -> {
                     fading = false;
                     if (!pressed) {
@@ -133,25 +148,23 @@ public class MaterialRipple {
             Vector2f position,
             Vector2f size
     ) {
-        if (!active) {
+        if (!active || rippleCenter == null) {
             return drawContext.createPaint();
         }
-
-        float radius = maxRippleRadius * Math.min(1.0f, radiusAnimator.floatValue());
+        float radius = radiusAnimator.floatValue();
         float alphaValue = alphaAnimator.floatValue();
-
         return drawContext.radialGradient(
-                position.x,
-                position.y,
+                rippleCenter.x,
+                rippleCenter.y,
                 Math.max(radius - 5, 0),
-                radius + 8,
+                radius,
                 color.copy().alpha((int) (255 * 0.2 * alphaValue)),
                 color.copy().alpha(0)
         );
     }
 
     public boolean shouldRender() {
-        boolean shouldRender = active && (alphaAnimator.floatValue() > 0.01f || fading || radiusAnimator.isRunning() || alphaAnimator.isRunning());
-        return shouldRender;
+        return active || alphaAnimator.floatValue() > 0.01f || fading ||
+                radiusAnimator.isRunning() || alphaAnimator.isRunning();
     }
 }

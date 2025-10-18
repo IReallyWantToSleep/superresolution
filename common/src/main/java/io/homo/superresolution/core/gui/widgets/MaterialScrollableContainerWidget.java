@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.gui.widgets;
 
 import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.core.AbstractContainerWidget;
 import io.homo.superresolution.core.gui.core.AbstractScrollableContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
@@ -27,9 +28,9 @@ import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
 public class MaterialScrollableContainerWidget extends AbstractScrollableContainerWidget {
-    private final int SCROLLBAR_SIZE = 8; // 滚动条宽度
-    private final int SCROLLBAR_MARGIN = 2; // 滚动条边距
-    private final int MIN_SCROLLBAR_LENGTH = 20; // 滚动条最小长度
+    private final int SCROLLBAR_SIZE = 8;
+    private final int SCROLLBAR_MARGIN = 2;
+    private final int MIN_SCROLLBAR_LENGTH = 20;
 
     private Color scrollbarColor = Color.rgba(0.3f, 0.3f, 0.3f, 0.6f);
     private Color scrollbarHoverColor = Color.rgba(0.4f, 0.4f, 0.4f, 0.8f);
@@ -58,8 +59,24 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
     @Override
     protected void renderScrollbar(IUIDrawContext drawContext, UIInputState inputState) {
         updateScrollbarVisibility();
+        Vector2f position = getAbsolutePosition();
+        Rectangle region = new Rectangle(
+                position.x,
+                position.y,
+                viewRegion.x,
+                viewRegion.y
+        );
+        drawContext.beginBatch();
+        drawContext.scissor(
+                region.x,
+                region.y,
+                region.width,
+                region.height
+        );
         renderVerticalScrollbar(drawContext, inputState);
         renderHorizontalScrollbar(drawContext, inputState);
+        drawContext.resetScissor();
+        drawContext.endBatch(0);
     }
 
     private void updateScrollbarVisibility() {
@@ -77,7 +94,7 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
         if (!verticalScrollbarVisible) return;
 
         Rectangle containerBounds = getLayout().getContainerBounds();
-        Vector2f viewRegion = getViewRegion().getSize();
+        //Vector2f viewRegion = getViewRegion().getSize();
         Vector2f scrollOffset = getScrollOffset();
         Vector2f absolutePos = getAbsolutePosition();
 
@@ -96,7 +113,7 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
 
         float scrollRange = contentHeight - viewRegion.y;
         float scrollProgress = scrollOffset.y / scrollRange;
-        float thumbY = scrollbarY + (scrollbarHeight - thumbHeight) * scrollProgress;
+        float thumbY = scrollbarY + (scrollbarHeight - thumbHeight + SCROLLBAR_MARGIN + SCROLLBAR_MARGIN) * scrollProgress;
 
         verticalScrollbarRect.setBounds(scrollbarX, thumbY, scrollbarWidth, thumbHeight);
 
@@ -169,29 +186,45 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
                 horizontalScrollbarRect.in(x, y);
     }
 
+    @Override
     protected void onMousePressed(Vector2f mousePosition) {
-        super.onMousePressed(mousePosition);
-        if (verticalScrollbarHovered) {
+        if (verticalScrollbarRect.in(mousePosition.x, mousePosition.y)) {
             verticalScrollbarDragging = true;
-        } else if (horizontalScrollbarHovered) {
+            return;
+        }
+        if (horizontalScrollbarRect.in(mousePosition.x, mousePosition.y)) {
             horizontalScrollbarDragging = true;
+            return;
+        }
+        if (findInteractiveWidgetAt(mousePosition) == null) {
+            isContainerDragging = true;
+            getScrollHandler().onDragStart(mousePosition);
         }
     }
 
+    @Override
     protected void onMouseDragged(Vector2f mousePosition, Vector2f dragDelta, int button) {
-        super.onMouseDragged(mousePosition, dragDelta, button);
-
         if (verticalScrollbarDragging) {
             handleVerticalScrollbarDrag(dragDelta.y);
-        } else if (horizontalScrollbarDragging) {
+            return;
+        }
+        if (horizontalScrollbarDragging) {
             handleHorizontalScrollbarDrag(dragDelta.x);
+            return;
+        }
+        if (isContainerDragging) {
+            getScrollHandler().onDragMove(mousePosition, dragDelta);
         }
     }
 
+    @Override
     protected void onMouseReleased(Vector2f mousePosition) {
-        super.onMouseReleased(mousePosition);
         verticalScrollbarDragging = false;
         horizontalScrollbarDragging = false;
+        if (isContainerDragging) {
+            getScrollHandler().onDragEnd(mousePosition);
+            isContainerDragging = false;
+        }
     }
 
     private void handleVerticalScrollbarDrag(float mouseY) {
@@ -247,10 +280,11 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
     @Override
     protected Rectangle getAbsoluteViewRect() {
         return new Rectangle(
-                getAbsolutePosition().x,
-                getAbsolutePosition().y,
-                getBounds().width - SCROLLBAR_SIZE,
-                getBounds().height - SCROLLBAR_SIZE);
+                getAbsolutePosition().x + leftPadding,
+                getAbsolutePosition().y + topPadding,
+                getBounds().width - leftPadding - rightPadding - (verticalScrollbarVisible ? SCROLLBAR_SIZE : 0),
+                getBounds().height - topPadding - bottomPadding - (horizontalScrollbarVisible ? SCROLLBAR_SIZE : 0)
+        );
     }
 
     @Override
@@ -259,13 +293,20 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
         return new Rectangle(
                 position.x,
                 position.y,
-                viewRegion.x + SCROLLBAR_SIZE,
-                viewRegion.y + SCROLLBAR_SIZE
+                viewRegion.x + (horizontalScrollEnabled && horizontalScrollbarVisible ? SCROLLBAR_SIZE : 0),
+                viewRegion.y + (verticalScrollEnabled && verticalScrollbarVisible ? SCROLLBAR_SIZE : 0)
         );
     }
 
     public MaterialScrollableContainerWidget setViewRegion(Vector2f viewRegion) {
-        this.viewRegion = viewRegion.sub(SCROLLBAR_SIZE, SCROLLBAR_SIZE);
+        this.viewRegion = viewRegion.sub(
+                (horizontalScrollEnabled && horizontalScrollbarVisible ? SCROLLBAR_SIZE : 0),
+                (verticalScrollEnabled && verticalScrollbarVisible ? SCROLLBAR_SIZE : 0)
+        );
+        this.viewRegion.add(
+                0,
+                bottomPadding
+        );
         return this;
     }
 }

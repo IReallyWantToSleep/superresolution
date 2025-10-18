@@ -52,4 +52,18 @@ public class WidgetEvent {
         }
     }
 
+    public static class ClickEvent extends Event {
+    }
+
+    public static class ChangeEvent<T> extends Event {
+        private final T value;
+
+        public ChangeEvent(T value) {
+            this.value = value;
+        }
+
+        public T getValue() {
+            return value;
+        }
+    }
 }

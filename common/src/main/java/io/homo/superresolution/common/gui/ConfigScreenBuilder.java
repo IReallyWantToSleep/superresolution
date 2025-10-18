@@ -40,6 +40,7 @@ public class ConfigScreenBuilder {
         clothConfigBuilder.setEnableSearch(true);
         clothConfigBuilder.setTitle(Component.translatable("superresolution.screen.config.name"));
         ClothConfig.add(clothConfigBuilder);
+        //return TestOptionBuilder.build(parentScreen);
         return clothConfigBuilder.build(ClothStyleConfigScreen.class);
     }
 

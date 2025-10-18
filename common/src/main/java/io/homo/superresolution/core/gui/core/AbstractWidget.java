@@ -176,6 +176,17 @@ public abstract class AbstractWidget<
 
     public abstract Rectangle getBounds();
 
+    public abstract void setBounds(float x, float y, float width, float height);
+
+    public void setBounds(Rectangle rectangle) {
+        setBounds(
+                rectangle.x,
+                rectangle.y,
+                rectangle.width,
+                rectangle.height
+        );
+    }
+
     public void onHover(EventListener<WidgetEvent.HoverEvent> listener) {
         eventHandler.on(WidgetEvent.HoverEvent.class, listener);
     }
@@ -184,6 +195,16 @@ public abstract class AbstractWidget<
         eventHandler.on(WidgetEvent.FocusEvent.class, listener);
     }
 
+    protected boolean isInteractive() {
+        return false;
+    }
+
+    public AbstractWidget<?, ?, ?> findInteractiveWidgetAt(Vector2f absPos) {
+        if (!hitTest(absPos)) {
+            return null;
+        }
+        return isInteractive() ? this : null;
+    }
 
     public void onMousePress(EventListener<MouseEvent.MousePressEvent> listener) {
         eventHandler.on(MouseEvent.MousePressEvent.class, listener);

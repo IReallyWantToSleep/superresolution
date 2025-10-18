@@ -9,11 +9,12 @@
         "lwjgl_version": "3.3.3",
         "architectury_api_version": "18.0.3",
         "neoforge": {
-            "minecraft_version_range": "[1.21.9,)"
+            "minecraft_version_range": "[1.21.9,1.21.10)"
         },
         "fabric": {
             "minecraft_version_range": [
-                "~1.21.9"
+                "~1.21.9",
+                "~1.21.10"
             ]
         },
         "cloth_config_version": "20.0.148",

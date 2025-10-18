@@ -66,7 +66,7 @@ public class RenderSystems {
     }
 
     private static void initVulkan() {
-        if (SuperResolutionConfig.isSkipInitVulkan()) return;
+        //if (SuperResolutionConfig.isSkipInitVulkan()) return;
         try {
             VK.create();
         } catch (Exception | Error e) {

@@ -44,17 +44,23 @@ public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implemen
     protected Consumer<VT> saveConsumer = null;
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
-    protected AbstractContainerWidget<?, ?, ?> container;
+
+    protected OptionContainerWidget container;
     protected LT layout;
+
+    protected SELF setScheme(MaterialScheme scheme) {
+        this.scheme = scheme;
+        return (SELF) this;
+    }
+
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     public AbstractOptionEntry(Text name, VT value) {
         this.name = name;
         this.value = value;
-        this.container = new ContainerWidget();
-        initLayout();
-        this.container.setLayout(layout);
     }
+
+    protected abstract void init();
 
     protected abstract void initLayout();
 
@@ -101,8 +107,8 @@ public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implemen
         return (SELF) this;
     }
 
-    public @Nullable Supplier<VT> getDefaultValue() {
-        return defaultValue;
+    public Optional<VT> getDefaultValue() {
+        return defaultValue == null ? Optional.empty() : Optional.ofNullable(defaultValue.get());
     }
 
     public AbstractOptionEntry<VT, LT, SELF> setDefaultValue(@Nullable Supplier<VT> defaultValue) {
@@ -175,5 +181,13 @@ public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implemen
     @Override
     public void charTyped(char codePoint, int modifiers) {
         container.charTyped(codePoint, modifiers);
+    }
+
+    public OptionContainerWidget getContainer() {
+        return container;
+    }
+
+    public float getEntryHeight() {
+        return 48;
     }
 }

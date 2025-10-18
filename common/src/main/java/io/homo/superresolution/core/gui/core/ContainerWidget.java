@@ -24,10 +24,14 @@ import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayout;
 
 public class ContainerWidget extends AbstractContainerWidget<ContainerWidget, WidgetStyle<?>, AnimationSet> {
-    private final Rectangle rectangle = new Rectangle();
 
     public Rectangle getBounds() {
-        return rectangle;
+        return new Rectangle(
+                getAbsolutePosition().x,
+                getAbsolutePosition().y,
+                bounds.width,
+                bounds.height
+        );
     }
 
     @Override
@@ -37,7 +41,7 @@ public class ContainerWidget extends AbstractContainerWidget<ContainerWidget, Wi
 
     @Override
     protected Rectangle getViewRegion() {
-        return rectangle;
+        return getBounds();
     }
 
     @Override

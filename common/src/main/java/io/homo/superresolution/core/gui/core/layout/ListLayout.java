@@ -50,9 +50,15 @@ public class ListLayout extends AbstractLayout {
     private Rectangle layoutBounds = new Rectangle(0, 0, Float.MAX_VALUE, Float.MAX_VALUE);
     private float rowHeight = 0;
     private float verticalGap = 0;
+    private float topPadding = 0;
+    private float bottomPadding = 0;
     private HorizontalAlignment defaultHorizontalAlignment = HorizontalAlignment.LEFT;
     private VerticalAlignment defaultVerticalAlignment = VerticalAlignment.TOP;
     private final Map<ILayoutElement, Vector2f> computedPositions = new HashMap<>();
+
+    @Override
+    protected void updateContainerBounds(ILayoutContainer container) {
+    }
 
     public void setLayoutBounds(Rectangle bounds) {
         this.layoutBounds = bounds != null ? bounds.clone() : new Rectangle(0, 0, Float.MAX_VALUE, Float.MAX_VALUE);
@@ -64,6 +70,14 @@ public class ListLayout extends AbstractLayout {
 
     public void setVerticalGap(float gap) {
         this.verticalGap = gap;
+    }
+
+    public void setTopPadding(float padding) {
+        this.topPadding = Math.max(0, padding);
+    }
+
+    public void setBottomPadding(float padding) {
+        this.bottomPadding = Math.max(0, padding);
     }
 
     public void setDefaultAlignment(HorizontalAlignment horizontal, VerticalAlignment vertical) {
@@ -80,7 +94,7 @@ public class ListLayout extends AbstractLayout {
         }
 
         List<ILayoutElement> children = container.getChildren();
-        float currentY = layoutBounds.y;
+        float currentY = layoutBounds.y + topPadding;
 
         for (ILayoutElement element : children) {
             ListLayoutData data = (ListLayoutData) getElementData(element);
@@ -151,7 +165,7 @@ public class ListLayout extends AbstractLayout {
     @Override
     protected void calculateContainerBounds(ILayoutContainer container) {
         if (container.getChildren().isEmpty()) {
-            containerBounds.setBounds(layoutBounds.x, layoutBounds.y, 0, 0);
+            containerBounds.setBounds(layoutBounds.x, layoutBounds.y, 0, bottomPadding);
             return;
         }
 
@@ -172,9 +186,9 @@ public class ListLayout extends AbstractLayout {
 
         containerBounds.setBounds(
                 Math.min(minX, layoutBounds.x),
-                Math.min(minY, layoutBounds.y),
+                layoutBounds.y,
                 Math.max(maxX - minX, layoutBounds.width),
-                Math.max(maxY - minY, layoutBounds.height)
+                (maxY - layoutBounds.y) + bottomPadding
         );
     }
 }

@@ -1,5 +1,6 @@
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
@@ -30,6 +31,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
     private ContainerWidget createLine(int line) {
         ContainerWidget linearContainer = new ContainerWidget();
+        linearContainer.setBounds(0, 0, 400, 60);
         LinearLayout linearLayout = new LinearLayout();
         linearLayout.setLayoutBounds(new Rectangle(0, 0, 400, 60));
         linearLayout.setHorizontalGap(10);
@@ -76,14 +78,25 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
     protected void buildWidgets() {
         materialScheme = MaterialScheme.from(MaterialTheme.Dark, Color.from("#6750A4"));
         ContainerWidget rootContainer = new ContainerWidget();
+        rootContainer.layout(new AbsoluteLayout());
 
         MaterialScrollableContainerWidget scrollableContainer = new MaterialScrollableContainerWidget();
         ListLayout listLayout = new ListLayout();
-        listLayout.setLayoutBounds(new Rectangle(0, 0, 600, 400));
+
+        // 关键修复：设置正确的布局边界
+        listLayout.setLayoutBounds(new Rectangle(0, 0, 400, 700)); // 与容器大小匹配
         listLayout.setVerticalGap(3);
+
         scrollableContainer.layout(listLayout);
         scrollableContainer.scheme(materialScheme);
+
+        // 关键修复：正确设置视图区域和边界
+        scrollableContainer.setBounds(0, 0, 400, 700);
         scrollableContainer.setViewRegion(new Vector2f(400, 700));
+
+        // 确保滚动设置正确
+        scrollableContainer.setHorizontalScrollEnabled(false);
+        scrollableContainer.setVerticalScrollEnabled(true);
 
         List<ContainerWidget> lines = new ArrayList<>();
         for (int i = 0; i < 40; i++) {
@@ -97,11 +110,16 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
         rootContainer.addChild(scrollableContainer);
         ((AbsoluteLayout) rootContainer.getLayout()).setPosition(scrollableContainer, new Vector2f(0, 0));
+
+        // 关键修复：设置根容器边界
+        Vector2f screenSize = MinecraftUtil.getScreenSize();
+        rootContainer.setBounds(0, 0, screenSize.x, screenSize.y);
+
         addWidget(rootContainer);
     }
 
     @Override
-    public void draw(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void draw(IUIDrawContext drawContext, UIInputState inputState) {
         drawContext.beginBatch();
         drawContext.drawRect(
                 0,
@@ -112,7 +130,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 true
         );
         drawContext.endBatch(-1);
-        super.draw(drawContext, mouseX, mouseY, delta);
+        super.draw(drawContext, inputState);
         this.setTransparent(true);
         drawContext.beginBatch();
         Color[] colors = {

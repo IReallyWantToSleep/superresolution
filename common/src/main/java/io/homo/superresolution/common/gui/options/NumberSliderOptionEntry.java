@@ -20,19 +20,33 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.layout.LinearLayout;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
-import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
+import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
+import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 
-public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, LinearLayout, BooleanSwitchOptionEntry> {
-    protected MaterialSwitch aSwitch;
+import java.util.function.Function;
+
+public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, LinearLayout, NumberSliderOptionEntry> {
+    protected MaterialSlider slider;
     protected MaterialLabel label;
+    protected Number max;
+    protected Number min;
+    protected Number step;
+    protected Function<Number, String> valueFormater;
 
-
-    public BooleanSwitchOptionEntry(Text name, Boolean value) {
+    public NumberSliderOptionEntry(
+            Text name,
+            Number value,
+            Number max,
+            Number min
+    ) {
         super(name, value);
+        this.max = max;
+        this.min = min;
         init();
     }
 
@@ -45,24 +59,24 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Linea
     }
 
     @Override
-    protected BooleanSwitchOptionEntry setScheme(MaterialScheme scheme) {
-        aSwitch.scheme(scheme);
-        label.scheme(scheme);
-        return super.setScheme(scheme);
-    }
-
-    @Override
     protected void initLayout() {
         layout = new LinearLayout();
     }
 
     @Override
+    protected NumberSliderOptionEntry setScheme(MaterialScheme scheme) {
+        slider.scheme(scheme);
+        label.scheme(scheme);
+        return super.setScheme(scheme);
+    }
+
+    @Override
     protected void initWidget() {
-        aSwitch = MaterialSwitch.create()
+        slider = MaterialSlider.create()
                 .scheme(scheme);
         label = MaterialLabel.create()
                 .text(() -> this.name.getString());
-        container.addChild(aSwitch);
+        container.addChild(slider);
         container.addChild(label);
         container.scheme(scheme);
         layout.setElementPosition(
@@ -71,10 +85,20 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Linea
                 LinearLayout.VerticalAlignment.CENTER
         );
         layout.setElementPosition(
-                aSwitch,
+                slider,
                 LinearLayout.HorizontalAlignment.RIGHT,
                 LinearLayout.VerticalAlignment.CENTER
         );
+        slider.style().valueIndicator(true);
+        if (step != null && step.doubleValue() != 0) {
+            slider.style().steps(true);
+            slider.setStep(step);
+        }
+        slider.style().size(MaterialSliderSize.ExtraSmall);
+        slider.setValueIndicatorTextFormater(valueFormater);
+        slider.setMin(min);
+        slider.setMax(max);
+        slider.setValue(value);
     }
 
     @Override

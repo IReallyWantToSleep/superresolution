@@ -26,6 +26,8 @@ import io.homo.superresolution.core.gui.MaterialRipple;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Easing;
+import io.homo.superresolution.core.gui.core.event.EventListener;
+import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
@@ -40,6 +42,13 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     private MaterialRipple ripple;
     private Vector2f lastClickPosition;
     private Supplier<MaterialSymbol> iconContextSupplier = () -> null;
+
+    public void setBounds(float x, float y, float width, float height) {
+        rectangle.setLocation(
+                x,
+                y
+        );
+    }
 
     public MaterialButton(MaterialButtonSize size) {
         this.style = new MaterialButtonStyle();
@@ -75,6 +84,10 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 size.x * fontSizeRatio
         );
         return new MaterialButton(buttonSize);
+    }
+
+    public void onClick(EventListener<WidgetEvent.ClickEvent> listener) {
+        eventHandler.on(WidgetEvent.ClickEvent.class, listener);
     }
 
     @Override
@@ -318,6 +331,11 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
 
     }
 
+    @Override
+    protected boolean isInteractive() {
+        return true;
+    }
+
     private void onPress(Vector2f mousePosition) {
         animationSet.hover
                 .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
@@ -329,8 +347,9 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
         this.ripple.setPressed(
                 true,
                 lastClickPosition,
-                new Vector2f(rectangle.width, rectangle.height)
+                rectangle
         );
+        eventHandler.fire(new WidgetEvent.ClickEvent());
     }
 
     private void onRelease(Vector2f mousePosition) {
@@ -343,7 +362,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
         this.ripple.setPressed(
                 false,
                 lastClickPosition,
-                new Vector2f(rectangle.width, rectangle.height)
+                rectangle
         );
 
     }

@@ -26,6 +26,26 @@ public class Rectangle {
     public float width;
     public float height;
 
+    public Rectangle setX(float x) {
+        this.x = x;
+        return this;
+    }
+
+    public Rectangle setY(float y) {
+        this.y = y;
+        return this;
+    }
+
+    public Rectangle setWidth(float width) {
+        this.width = width;
+        return this;
+    }
+
+    public Rectangle setHeight(float height) {
+        this.height = height;
+        return this;
+    }
+
     public Rectangle(float x, float y, float width, float height) {
         this.x = x;
         this.y = y;

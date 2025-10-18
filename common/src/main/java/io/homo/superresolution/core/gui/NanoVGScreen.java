@@ -32,11 +32,9 @@ public abstract class NanoVGScreen<T> extends Screen {
     protected final ArrayList<GuiEventListener> eventListener = new ArrayList<>();
     protected final ArrayList<AbstractWidget<?, ?, ?>> widget = new ArrayList<>();
     protected boolean transparent = false;
-    protected Map<String, ArrayList<Consumer<T>>> eventListenerMap = new HashMap<>();
 
     protected NanoVGScreen(Component title) {
         super(title);
-        eventListenerMap.put("resize", new ArrayList<>());
         nvg = NanoVG.context;
         buildWidgets();
     }
@@ -68,7 +66,10 @@ public abstract class NanoVGScreen<T> extends Screen {
         nvg.resetTransform();
         nvg.globalAlpha(1.0f);
         NanoVGDrawContext drawContext = new NanoVGDrawContext(nvg);
-        draw(drawContext, (int) mouseX, (int) mouseY, partialTick);
+        draw(drawContext, new UIInputState(
+                new Vector2f(mouseX, mouseY),
+                partialTick
+        ));
         drawContext.drawAll();
         nvg.end();
         drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
@@ -77,29 +78,29 @@ public abstract class NanoVGScreen<T> extends Screen {
     @Override
     protected void init() {
         super.init();
-        invokeEventListener("resize");
     }
 
     @Override
     public void resize(@NotNull Minecraft minecraft, int width, int height) {
         super.resize(minecraft, width, height);
-        invokeEventListener("resize");
     }
 
-    protected void invokeEventListener(String type) {
-        if (eventListenerMap.get(type) != null)
-            for (Consumer<T> consumer : eventListenerMap.get(type)) consumer.accept((T) this);
+    public void draw(IUIDrawContext drawContext, UIInputState inputState) {
+        drawBefore(drawContext, inputState);
+        drawWidgets(drawContext, inputState);
+        drawTooltips(drawContext, inputState);
+        drawAfter(drawContext, inputState);
     }
 
-    public void draw(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
-        drawWidgets(drawContext, mouseX, mouseY, delta);
-        drawTooltips(drawContext, mouseX, mouseY, delta);
+    public void drawTooltips(IUIDrawContext drawContext, UIInputState inputState) {
     }
 
-    public void drawTooltips(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
-        for (AbstractWidget<?, ?, ?> abstractWidget : widget) {
-            //abstractWidget.renderTooltip(drawContext, delta);
-        }
+    public void drawAfter(IUIDrawContext drawContext, UIInputState inputState) {
+
+    }
+
+    public void drawBefore(IUIDrawContext drawContext, UIInputState inputState) {
+
     }
 
     public void drawAfter(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
@@ -110,7 +111,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         //super.renderBackground(guiGraphics, mouseX, mouseY, delta);
     }
 
-    public void drawWidgets(IUIDrawContext drawContext, int mouseX, int mouseY, float delta) {
+    public void drawWidgets(IUIDrawContext drawContext, UIInputState inputState) {
         Map<Integer, List<Renderable>> layers = Stream.concat(renderable.stream(), widget.stream())
                 .collect(Collectors.groupingBy(
                         Renderable::getZIndex,
@@ -119,10 +120,7 @@ public abstract class NanoVGScreen<T> extends Screen {
                 ));
 
         layers.values().forEach(layer ->
-                layer.forEach(r -> r.render(drawContext, new UIInputState(
-                        new Vector2f(mouseX, mouseY),
-                        delta
-                )))
+                layer.forEach(r -> r.render(drawContext, inputState))
         );
     }
 

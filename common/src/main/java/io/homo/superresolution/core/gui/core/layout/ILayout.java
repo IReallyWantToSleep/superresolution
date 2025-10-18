@@ -29,5 +29,7 @@ public interface ILayout {
 
     Vector2f getElementPosition(ILayoutElement element);
 
+    void removeElement(ILayoutElement element);
+
     Rectangle getContainerBounds();
 }
