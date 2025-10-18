@@ -23,6 +23,8 @@ import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.event.EventListener;
+import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import org.joml.Vector2f;
@@ -43,6 +45,13 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         return valueIndicatorTextFormater;
     }
 
+    public void setBounds(float x, float y, float width, float height) {
+        rectangle.setLocation(
+                x,
+                y
+        );
+    }
+
     public MaterialSlider setValueIndicatorTextFormater(Function<Number, String> valueIndicatorTextFormater) {
         this.valueIndicatorTextFormater = valueIndicatorTextFormater;
         return this;
@@ -57,6 +66,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
 
     public MaterialSlider setValue(Number value) {
         this.value = value;
+        eventHandler.fire(new WidgetEvent.ChangeEvent<>(value));
         return this;
     }
 
@@ -100,6 +110,15 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
 
     public static MaterialSlider create() {
         return new MaterialSlider(MaterialSliderSize.Medium, 354);
+    }
+
+    public void onChange(EventListener<WidgetEvent.ChangeEvent> listener) {
+        eventHandler.on(WidgetEvent.ChangeEvent.class, listener);
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return true;
     }
 
     @Override
@@ -202,7 +221,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
 
         drawContext.beginBatch();
         if (style.valueIndicator() && animationSet.hover.doubleValue() > 0.01) {
-            String valueIndicatorString = valueIndicatorTextFormater.apply(value());
+            String valueIndicatorString = valueIndicatorTextFormater == null ? String.valueOf(value()) : valueIndicatorTextFormater.apply(value());
             Vector2f valueIndicatorStringRegion = drawContext.measureText(valueIndicatorString, 14f);
             Rectangle valueIndicatorRegion = new Rectangle();
             valueIndicatorRegion.width = style.size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;

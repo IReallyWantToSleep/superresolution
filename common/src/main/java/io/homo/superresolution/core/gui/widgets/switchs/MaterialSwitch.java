@@ -22,6 +22,8 @@ import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.event.EventListener;
+import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import org.joml.Vector2f;
@@ -35,9 +37,14 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
         return checked;
     }
 
+    @Override
+    protected boolean isInteractive() {
+        return true;
+    }
+
     public MaterialSwitch toggleChecked() {
         boolean newChecked = !this.checked;
-
+        eventHandler.fire(new WidgetEvent.ChangeEvent<>(newChecked));
         if (newChecked) {
             // 打开开关
             animationSet.handlePosition
@@ -102,6 +109,17 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
     @Override
     public Rectangle getBounds() {
         return rectangle;
+    }
+
+    public void setBounds(float x, float y, float width, float height) {
+        rectangle.setLocation(
+                x,
+                y
+        );
+    }
+
+    public void onChange(EventListener<WidgetEvent.ChangeEvent> listener) {
+        eventHandler.on(WidgetEvent.ChangeEvent.class, listener);
     }
 
     @Override

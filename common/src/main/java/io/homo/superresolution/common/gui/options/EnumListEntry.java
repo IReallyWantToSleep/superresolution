@@ -16,9 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.event.events;
+package io.homo.superresolution.common.gui.options;
 
-@FunctionalInterface
-public interface ChangeEvent<WIDGET, T> {
-    void accept(WIDGET widget, T newValue, T oldValue);
+
+import com.google.common.collect.ImmutableList;
+import io.homo.superresolution.common.gui.impl.Text;
+
+public class EnumListEntry<T extends Enum<T>> extends SelectionListOptionEntry<T> {
+
+    public EnumListEntry(Text name, T value, ImmutableList<T> values) {
+        super(name, value, values);
+    }
 }

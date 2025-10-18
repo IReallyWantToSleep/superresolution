@@ -38,6 +38,22 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected VT value;
     protected Text name;
 
+    protected OptionCategory getCategory() {
+        return category;
+    }
+
+    protected SELF setCategory(OptionCategory category) {
+        this.category = category;
+        return (SELF) this;
+    }
+
+    protected OptionCategory category;
+
+    public AbstractOptionBuilder(Text name, VT value) {
+        this.name = name;
+        this.value = value;
+    }
+
     public abstract OT build();
 
     protected OT finishBuild(OT option) {
@@ -48,51 +64,52 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         option.setRequiresRestartGame(requireRestartGame);
         option.setSaveConsumer(saveConsumer);
         option.setTooltipSupplier(tooltipSupplier);
+        category.addEntry(option);
         return option;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setValue(VT value) {
+    public SELF setValue(VT value) {
         this.value = value;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setName(Text name) {
+    public SELF setName(Text name) {
         this.name = name;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setRequireRestartGame(boolean requireRestartGame) {
+    public SELF setRequireRestartGame(boolean requireRestartGame) {
         this.requireRestartGame = requireRestartGame;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setDefaultValue(@Nullable Supplier<VT> defaultValue) {
+    public SELF setDefaultValue(@Nullable Supplier<VT> defaultValue) {
         this.defaultValue = defaultValue;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setErrorSupplier(@Nullable Function<VT, Optional<Text>> errorSupplier) {
+    public SELF setErrorSupplier(@Nullable Function<VT, Optional<Text>> errorSupplier) {
         this.errorSupplier = errorSupplier;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setEnableRequirement(@Nullable OptionRequirement enableRequirement) {
+    public SELF setEnableRequirement(@Nullable OptionRequirement enableRequirement) {
         this.enableRequirement = enableRequirement;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setDisplayRequirement(@Nullable OptionRequirement displayRequirement) {
+    public SELF setDisplayRequirement(@Nullable OptionRequirement displayRequirement) {
         this.displayRequirement = displayRequirement;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setSaveConsumer(Consumer<VT> saveConsumer) {
+    public SELF setSaveConsumer(Consumer<VT> saveConsumer) {
         this.saveConsumer = saveConsumer;
-        return this;
+        return (SELF) this;
     }
 
-    public AbstractOptionBuilder<VT, OT, SELF> setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
+    public SELF setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
         this.tooltipSupplier = tooltipSupplier;
-        return this;
+        return (SELF) this;
     }
 }

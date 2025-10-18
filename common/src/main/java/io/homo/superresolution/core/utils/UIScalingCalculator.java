@@ -39,7 +39,7 @@ public class UIScalingCalculator {
                 displayWidth, displayHeight
         );
         BigDecimal bd = BigDecimal.valueOf(clamp(areaScaling * sizeCompensation * userZoom, MIN_SCALE, MAX_SCALE));
-        return bd.setScale(2, RoundingMode.HALF_UP).doubleValue();
+        return bd.doubleValue();
     }
 
     private static double calculateSizeCompensation(double baseW, double baseH,

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.layout;
 
+import io.homo.superresolution.core.gui.core.backends.interfaces.CommandsBatch;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import org.joml.Vector2f;
 
@@ -36,10 +37,16 @@ public class LinearLayout extends AbstractLayout {
     public static class LinearLayoutData extends LayoutData {
         public final HorizontalAlignment horizontalAlignment;
         public final VerticalAlignment verticalAlignment;
+        public final int index;
 
-        public LinearLayoutData(HorizontalAlignment horizontalAlignment, VerticalAlignment verticalAlignment) {
+        public LinearLayoutData(int index, HorizontalAlignment horizontalAlignment, VerticalAlignment verticalAlignment) {
             this.horizontalAlignment = horizontalAlignment;
             this.verticalAlignment = verticalAlignment;
+            this.index = index;
+        }
+
+        public LinearLayoutData(HorizontalAlignment horizontalAlignment, VerticalAlignment verticalAlignment) {
+            this(0, horizontalAlignment, verticalAlignment);
         }
 
         public LinearLayoutData() {
@@ -86,6 +93,9 @@ public class LinearLayout extends AbstractLayout {
                 }
             }
         });
+        leftElements.sort(Comparator.comparingInt((e) -> e.getValue().index));
+        centerElements.sort(Comparator.comparingInt((e) -> e.getValue().index));
+        rightElements.sort(Comparator.comparingInt((e) -> e.getValue().index));
         {
             float currentX = 0;
             for (Map.Entry<ILayoutElement, LinearLayoutData> entry : leftElements) {
@@ -151,6 +161,11 @@ public class LinearLayout extends AbstractLayout {
         setElementData(element, new LinearLayoutData(horizontalAlign, verticalAlign));
     }
 
+    public void setElementPosition(ILayoutElement element, int index, HorizontalAlignment horizontalAlign, VerticalAlignment verticalAlign) {
+        setElementData(element, new LinearLayoutData(index, horizontalAlign, verticalAlign));
+    }
+
+
     @Override
     protected void calculateContainerBounds(ILayoutContainer container) {
         if (container.getChildren().isEmpty()) {
@@ -169,5 +184,9 @@ public class LinearLayout extends AbstractLayout {
         }
 
         containerBounds.setBounds(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    @Override
+    protected void updateContainerBounds(ILayoutContainer container) {
     }
 }

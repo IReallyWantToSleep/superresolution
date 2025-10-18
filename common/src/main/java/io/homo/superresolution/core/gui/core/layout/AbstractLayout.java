@@ -43,10 +43,19 @@ public abstract class AbstractLayout implements ILayout {
     protected abstract void performLayout(ILayoutContainer container);
 
     @Override
+    public void removeElement(ILayoutElement element) {
+        elementData.remove(element);
+    }
+
+    @Override
     public void layout(ILayoutContainer container) {
         performLayout(container);
         calculateContainerBounds(container);
+        updateContainerBounds(container);
 
+    }
+
+    protected void updateContainerBounds(ILayoutContainer container) {
         container.getBounds().setBounds(
                 containerBounds.x,
                 containerBounds.y,
@@ -76,7 +85,12 @@ public abstract class AbstractLayout implements ILayout {
             maxY = Math.max(maxY, pos.y + childBounds.height);
         }
 
-        containerBounds.setBounds(minX, minY, maxX - minX, maxY - minY);
+        containerBounds.setBounds(
+                minX,
+                minY,
+                maxX - minX,
+                maxY - minY
+        );
     }
 
     public static class LayoutData {

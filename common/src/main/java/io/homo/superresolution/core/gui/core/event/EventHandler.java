@@ -1,4 +1,3 @@
-// EventHandler.java
 package io.homo.superresolution.core.gui.core.event;
 
 import java.util.*;

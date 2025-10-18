@@ -18,10 +18,17 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.gui.impl.Text;
+
 public class BooleanSwitchBuilder extends AbstractOptionBuilder<Boolean, BooleanSwitchOptionEntry, BooleanSwitchBuilder> {
+    public BooleanSwitchBuilder(Text name, Boolean value) {
+        super(name, value);
+    }
+
     @Override
     public BooleanSwitchOptionEntry build() {
         BooleanSwitchOptionEntry entry = new BooleanSwitchOptionEntry(this.name, this.value);
+
         return finishBuild(entry);
     }
 }

@@ -18,10 +18,11 @@
 
 package io.homo.superresolution.core.gui.core.layout;
 
+import io.homo.superresolution.core.gui.core.IHitTest;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import org.joml.Vector2f;
 
-public abstract class AbstractLayoutElement implements ILayoutElement {
+public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest {
     protected ILayoutContainer parent;
     protected final Rectangle bounds = new Rectangle();
 
@@ -48,5 +49,12 @@ public abstract class AbstractLayoutElement implements ILayoutElement {
     @Override
     public ILayoutContainer getParent() {
         return parent;
+    }
+
+    @Override
+    public boolean hitTest(Vector2f absolutePos) {
+        Rectangle absBounds = getBounds();
+        boolean result = absBounds.in(absolutePos);
+        return result;
     }
 }

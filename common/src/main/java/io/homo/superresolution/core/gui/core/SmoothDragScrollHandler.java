@@ -13,10 +13,9 @@ public class SmoothDragScrollHandler implements IScrollHandler {
     private Vector2f minOffset = new Vector2f(Float.NEGATIVE_INFINITY);
     private Vector2f maxOffset = new Vector2f(Float.POSITIVE_INFINITY);
     private boolean enableBounds = false;
-
-    // 平滑系数参数
-    private float smoothTime = 1.45f;  // 越小越快，越大越柔和
-    private float scrollStep = 20f;   // 滚轮滚动的基本距离
+    private boolean dragging = false;
+    private float smoothTime = 1.45f;
+    private float scrollStep = 30f;
 
     public SmoothDragScrollHandler(OnOffsetChangedListener listener) {
         this.listener = listener;
@@ -24,14 +23,18 @@ public class SmoothDragScrollHandler implements IScrollHandler {
 
     @Override
     public void onDragStart(Vector2f pos) {
+        dragging = true;
     }
 
     @Override
     public void onDragMove(Vector2f pos, Vector2f delta) {
+        if (dragging)
+            scrollBy(delta.mul(-1.5f));
     }
 
     @Override
     public void onDragEnd(Vector2f pos) {
+        dragging = false;
     }
 
     @Override
@@ -61,7 +64,6 @@ public class SmoothDragScrollHandler implements IScrollHandler {
 
     @Override
     public void update(float deltaTime) {
-        // 使用指数插值法（平滑逼近目标）
         float factor = 1.0f - (float) Math.exp(-deltaTime / smoothTime);
         offset.lerp(targetOffset, factor);
         notifyOffset();
