@@ -16,21 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.backends.commands;
+package io.homo.superresolution.core.gui.widgets.menu;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommand;
-import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
-import io.homo.superresolution.core.utils.Color;
-
-public abstract class SetStrokeColorCommand extends DrawCommand {
-    protected final Color color;
-
-    public SetStrokeColorCommand(Color color) {
-        super(DrawCommandType.SetStrokeColor);
-        this.color = color;
-    }
-
-    public Color color() {
-        return color;
-    }
+public class MaterialMenu {
 }
