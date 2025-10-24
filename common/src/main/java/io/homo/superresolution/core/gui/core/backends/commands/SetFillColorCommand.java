@@ -18,9 +18,9 @@
 
 package io.homo.superresolution.core.gui.core.backends.commands;
 
-import io.homo.superresolution.common.gui.render.Color;
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommand;
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
+import io.homo.superresolution.core.utils.Color;
 
 public abstract class SetFillColorCommand extends DrawCommand {
     protected final Color color;

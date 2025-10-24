@@ -16,15 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.gui.render;
+package io.homo.superresolution.core.gui.widgets.menu;
 
-public interface DrawContext {
-    void drawRect(
-            float x,
-            float y,
-            float width,
-            float height,
-            Transform transform,
-            Color color
-    );
+import io.homo.superresolution.core.gui.core.animator.AnimationSet;
+import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
+
+public class MaterialMenuAnimationSet extends AnimationSet {
+    protected NumberAnimator hover;
+    protected NumberAnimator press;
+
+    @Override
+    protected void init() {
+        hover = addAnimation();
+        press = addAnimation();
+    }
 }
