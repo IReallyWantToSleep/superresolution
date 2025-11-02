@@ -27,6 +27,13 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+    maven {
+        name = "yoga"
+        url = "https://repo1.maven.org/maven2"
+        content {
+            includeGroup "org.appliedenergistics.yoga"
+        }
+    }
 }
 
 configurations {

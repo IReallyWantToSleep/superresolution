@@ -28,11 +28,11 @@ import io.homo.superresolution.core.utils.Color;
 public class OptionContainerWidget extends ContainerWidget {
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
-    public OptionContainerWidget(AbstractOptionEntry<?, ?, ?> entry) {
+    public OptionContainerWidget(AbstractOptionEntry<?, ?> entry) {
         this.entry = entry;
     }
 
-    protected AbstractOptionEntry<?, ?, ?> entry;
+    protected AbstractOptionEntry<?, ?> entry;
 
     public MaterialScheme scheme() {
         return scheme;
@@ -46,8 +46,7 @@ public class OptionContainerWidget extends ContainerWidget {
 
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        bounds.height = entry.getEntryHeight();
-
+        setElementHeight(entry.getEntryHeight());
         super.render(drawContext, inputState);
     }
 

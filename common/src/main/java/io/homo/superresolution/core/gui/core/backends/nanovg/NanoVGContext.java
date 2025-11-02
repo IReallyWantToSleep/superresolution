@@ -18,23 +18,20 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
-
-import org.joml.Vector2f;
-import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.core.utils.MinecraftUtil;
-import io.homo.superresolution.core.utils.UIScalingCalculator;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.core.utils.UIScalingCalculator;
 import net.minecraft.client.Minecraft;
+import org.joml.Vector2f;
 import org.lwjgl.nanovg.NVGPaint;
 import org.lwjgl.nanovg.NanoSVG;
 import org.lwjgl.nanovg.NanoVG;
 import org.lwjgl.nanovg.NanoVGGL3;
-import org.lwjgl.opengl.GL42;
 
 import static org.lwjgl.nanovg.NanoVG.*;
 import static org.lwjgl.opengl.GL30.*;
@@ -59,8 +56,8 @@ public class NanoVGContext {
         frameBuffer = GlFrameBuffer.create(
                 TextureFormat.R11G11B10F,
                 TextureFormat.DEPTH24_STENCIL8,
-                (int) MinecraftUtil.getScreenSize().x,
-                (int) MinecraftUtil.getScreenSize().y
+                (int) MinecraftWindow.getWindowWidth(),
+                (int) MinecraftWindow.getWindowHeight()
         );
         frameBuffer.setClearColorRGBA(0, 0, 0, 1);
     }
@@ -76,7 +73,7 @@ public class NanoVGContext {
     }
 
     public void begin(boolean copyMinecraftFbo) {
-        Vector2f screenSize = MinecraftUtil.getScreenSize();
+        Vector2f screenSize = MinecraftWindow.getWindowSize();
         GlStates.save("nanovg-frame");
         //if (
         //        frameBuffer.getWidth() != ((int) screenSize.x) ||
@@ -102,16 +99,16 @@ public class NanoVGContext {
                     GL_LINEAR
             );
         }
+        globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
 
         NanoVG.nvgBeginFrame(
                 contextPtr,
                 screenSize.x,
                 screenSize.y,
-                1.0f
+                globalScale
         );
         nvgReset(contextPtr);
         nvgScale(contextPtr, 1, 1);
-        globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
     }
 
     public void end() {

@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.gui.widgets.label;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
@@ -31,28 +30,22 @@ import org.joml.Vector2f;
 import java.util.function.Supplier;
 
 public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelStyle, MaterialLabelAnimationSet> {
-    private Rectangle rectangle = new Rectangle();
     private Supplier<String> textSupplier = () -> "";
-
-    @Override
-    protected boolean isInteractive() {
-        return false;
-    }
 
     public MaterialLabel() {
         this.style = new MaterialLabelStyle();
         this.animationSet = new MaterialLabelAnimationSet();
-    }
+        getLayoutNode().setDebugName("MaterialLabel");
 
-    public void setBounds(float x, float y, float width, float height) {
-        rectangle.setLocation(
-                x,
-                y
-        );
     }
 
     public static MaterialLabel create() {
         return new MaterialLabel();
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return false;
     }
 
     public MaterialLabel text(String text) {
@@ -81,18 +74,11 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
 
 
     @Override
-    public Rectangle getBounds() {
-        return rectangle;
-    }
-
-    @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         drawContext.beginBatch();
         Vector2f textSize = drawContext.measureText(textSupplier.get(), style.fontSize());
-        rectangle.x = getAbsolutePosition().x;
-        rectangle.y = getAbsolutePosition().y;
-        rectangle.width = textSize.x;
-        rectangle.height = textSize.y;
+        setElementSize(textSize.x, textSize.y);
+        Rectangle bounds = getBounds();
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
             Color textColor = getTextColor();
@@ -100,10 +86,10 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
                     drawContext.font(),
                     style.fontSize(),
                     text,
-                    rectangle.x,
-                    rectangle.y,
-                    rectangle.width,
-                    rectangle.height,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
                     textColor,
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP),
                     false

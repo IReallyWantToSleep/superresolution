@@ -26,6 +26,26 @@ public class Rectangle {
     public float width;
     public float height;
 
+    public Rectangle(Vector2f position, Vector2f size) {
+        this(position.x, position.y, size.x, size.y);
+
+    }
+
+    public Rectangle(float x, float y, float width, float height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public Rectangle() {
+        this(0, 0, 0, 0);
+    }
+
+    public Rectangle(Rectangle region) {
+        this(region.x, region.y, region.width, region.height);
+    }
+
     public Rectangle setX(float x) {
         this.x = x;
         return this;
@@ -44,17 +64,6 @@ public class Rectangle {
     public Rectangle setHeight(float height) {
         this.height = height;
         return this;
-    }
-
-    public Rectangle(float x, float y, float width, float height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-
-    public Rectangle() {
-        this(0, 0, 0, 0);
     }
 
     public Vector2f getPosition() {

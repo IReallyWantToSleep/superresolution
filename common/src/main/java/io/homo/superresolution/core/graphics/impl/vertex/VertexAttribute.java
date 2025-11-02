@@ -54,7 +54,7 @@ public class VertexAttribute {
     }
 
     public enum DataType {
-        FLOAT,    // 浮点型
-        INTEGER   // 整型
+        FLOAT,
+        INTEGER
     }
 }

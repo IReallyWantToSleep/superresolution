@@ -21,5 +21,6 @@ package io.homo.superresolution.core.gui;
 public class MaterialUI {
     public static void init() {
         MaterialSymbols.init();
+        AnimationSystem.initialize();
     }
 }

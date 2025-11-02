@@ -18,12 +18,13 @@
 
 package io.homo.superresolution.core.gui.core.backends.interfaces;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class CommandsBatch {
-    private int zIndex;
     private final List<Object> sequence = new ArrayList<>();
+    private int zIndex;
     private CommandsBatch parent;
 
     public void zIndex(int z) {

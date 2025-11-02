@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.gui.widgets.label;
 
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
-import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
 
 /**
  * 一破标签用动画集是有什么深意吗🤔

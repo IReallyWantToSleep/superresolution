@@ -22,11 +22,10 @@ import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.core.layout.LinearLayout;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 
-public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, LinearLayout, BooleanSwitchOptionEntry> {
+public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, BooleanSwitchOptionEntry> {
     protected MaterialSwitch aSwitch;
     protected MaterialLabel label;
 
@@ -40,7 +39,6 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Linea
     protected void init() {
         this.container = new OptionContainerWidget(this);
         initLayout();
-        this.container.setLayout(layout);
         initWidget();
     }
 
@@ -53,7 +51,6 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Linea
 
     @Override
     protected void initLayout() {
-        layout = new LinearLayout();
     }
 
     @Override
@@ -65,16 +62,6 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Linea
         container.addChild(aSwitch);
         container.addChild(label);
         container.scheme(scheme);
-        layout.setElementPosition(
-                label,
-                LinearLayout.HorizontalAlignment.LEFT,
-                LinearLayout.VerticalAlignment.CENTER
-        );
-        layout.setElementPosition(
-                aSwitch,
-                LinearLayout.HorizontalAlignment.RIGHT,
-                LinearLayout.VerticalAlignment.CENTER
-        );
     }
 
     @Override

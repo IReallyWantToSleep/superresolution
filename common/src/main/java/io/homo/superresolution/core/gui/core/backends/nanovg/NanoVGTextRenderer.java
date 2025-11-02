@@ -22,8 +22,8 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
 import io.homo.superresolution.core.gui.core.backends.interfaces.ITextRenderer;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
-import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
+import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;

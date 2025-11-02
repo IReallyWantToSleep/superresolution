@@ -26,7 +26,6 @@ import io.homo.superresolution.core.gui.core.AbstractContainerWidget;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
-import io.homo.superresolution.core.gui.core.layout.ILayout;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -34,7 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implements Renderable, ValueHolder<VT>, GuiEventListener {
+public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, ValueHolder<VT>, GuiEventListener {
     protected Text name;
     protected boolean requiresRestartGame;
     protected @Nullable Supplier<VT> defaultValue = null;
@@ -46,7 +45,6 @@ public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implemen
     protected VT value;
 
     protected OptionContainerWidget container;
-    protected LT layout;
 
     protected SELF setScheme(MaterialScheme scheme) {
         this.scheme = scheme;
@@ -84,18 +82,18 @@ public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implemen
         return saveConsumer;
     }
 
-    public AbstractOptionEntry<VT, LT, SELF> setSaveConsumer(Consumer<VT> saveConsumer) {
+    public SELF setSaveConsumer(Consumer<VT> saveConsumer) {
         this.saveConsumer = saveConsumer;
-        return this;
+        return (SELF) this;
     }
 
     public Function<VT, Optional<Text[]>> getTooltipSupplier() {
         return tooltipSupplier;
     }
 
-    public AbstractOptionEntry<VT, LT, SELF> setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
+    public SELF setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
         this.tooltipSupplier = tooltipSupplier;
-        return this;
+        return (SELF) this;
     }
 
     public boolean isRequiresRestartGame() {
@@ -111,36 +109,36 @@ public abstract class AbstractOptionEntry<VT, LT extends ILayout, SELF> implemen
         return defaultValue == null ? Optional.empty() : Optional.ofNullable(defaultValue.get());
     }
 
-    public AbstractOptionEntry<VT, LT, SELF> setDefaultValue(@Nullable Supplier<VT> defaultValue) {
+    public SELF setDefaultValue(@Nullable Supplier<VT> defaultValue) {
         this.defaultValue = defaultValue;
-        return this;
+        return (SELF) this;
     }
 
     public @Nullable Function<VT, Optional<Text>> getErrorSupplier() {
         return errorSupplier;
     }
 
-    public AbstractOptionEntry<VT, LT, SELF> setErrorSupplier(@Nullable Function<VT, Optional<Text>> errorSupplier) {
+    public SELF setErrorSupplier(@Nullable Function<VT, Optional<Text>> errorSupplier) {
         this.errorSupplier = errorSupplier;
-        return this;
+        return (SELF) this;
     }
 
     public @Nullable OptionRequirement getEnableRequirement() {
         return enableRequirement;
     }
 
-    public AbstractOptionEntry<VT, LT, SELF> setEnableRequirement(@Nullable OptionRequirement enableRequirement) {
+    public SELF setEnableRequirement(@Nullable OptionRequirement enableRequirement) {
         this.enableRequirement = enableRequirement;
-        return this;
+        return (SELF) this;
     }
 
     public @Nullable OptionRequirement getDisplayRequirement() {
         return displayRequirement;
     }
 
-    public AbstractOptionEntry<VT, LT, SELF> setDisplayRequirement(@Nullable OptionRequirement displayRequirement) {
+    public SELF setDisplayRequirement(@Nullable OptionRequirement displayRequirement) {
         this.displayRequirement = displayRequirement;
-        return this;
+        return (SELF) this;
     }
 
     @Override

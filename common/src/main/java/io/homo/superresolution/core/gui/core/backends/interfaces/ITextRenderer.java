@@ -18,8 +18,8 @@
 
 package io.homo.superresolution.core.gui.core.backends.interfaces;
 
-import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
+import org.joml.Vector2f;
 
 public interface ITextRenderer {
 

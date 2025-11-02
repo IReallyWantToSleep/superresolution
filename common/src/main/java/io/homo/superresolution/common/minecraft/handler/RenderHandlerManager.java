@@ -91,6 +91,7 @@ public class RenderHandlerManager {
             } else {
                 handler = new MinecraftRenderHandler();
             }
+            minecraft.resizeDisplay();
             handler.initialize();
         }
     }
@@ -123,14 +124,10 @@ public class RenderHandlerManager {
         if (RenderHandlerManager.needCaptureVulkan) {
             if (RenderDoc.renderdoc != null) {
                 if (RenderSystems.vulkan() != null) {
-                    RenderSystems.vulkan().device().commandEncoder().begin();
-                    RenderSystems.vulkan().device().commandEncoder().end().submit(RenderSystems.vulkan().device());
                     RenderDoc.renderdoc.StartFrameCapture.call(
                             new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
                             null
                     );
-                    RenderSystems.vulkan().device().commandEncoder().begin();
-                    RenderSystems.vulkan().device().commandEncoder().end().submit(RenderSystems.vulkan().device());
                 }
             }
         }

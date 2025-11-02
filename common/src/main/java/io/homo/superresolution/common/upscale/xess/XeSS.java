@@ -111,9 +111,9 @@ public class XeSS extends AbstractAlgorithm {
                 provider,
                 upscaleContextDesc
         );
-        SuperResolution.LOGGER.info(String.valueOf(code.value));
-        SuperResolution.LOGGER.info(String.valueOf(context.nativePtr));
-        SuperResolution.LOGGER.info(String.valueOf(provider.nativePtr));
+        SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code.value);
+        SuperResolution.LOGGER.info("'SRUpscaleContext' pointer: {}", context.nativePtr);
+        SuperResolution.LOGGER.info("'SRUpscaleProvider' pointer: {}", provider.nativePtr);
     }
 
     protected void destroySharedTexture() {

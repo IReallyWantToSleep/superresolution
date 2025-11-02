@@ -19,10 +19,8 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg.commands;
 
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommand;
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGSetStrokeWidthCommand extends NVGDrawCommand {
     protected final float width;

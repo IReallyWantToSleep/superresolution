@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.minecraft;
 
 import net.minecraft.client.Minecraft;
+import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 
 public class MinecraftWindow {
@@ -34,24 +35,24 @@ public class MinecraftWindow {
         #endif
     }
 
-    public static int[] getWindowSize() {
+    public static Vector2f getWindowSize() {
         int[] sizeX = new int[]{1};
         int[] sizeY = new int[]{1};
         if (hasWindow()) {
             GLFW.glfwGetFramebufferSize(getWindowHandle(), sizeX, sizeY);
         }
-        return new int[]{
+        return new Vector2f(
                 Math.max(sizeX[0], 1),
                 Math.max(sizeY[0], 1)
-        };
+        );
     }
 
     public static int getWindowWidth() {
-        return getWindowSize()[0];
+        return (int) getWindowSize().x;
     }
 
     public static int getWindowHeight() {
-        return getWindowSize()[1];
+        return (int) getWindowSize().y;
     }
 
     public static int[] getWindowSourceSize() {

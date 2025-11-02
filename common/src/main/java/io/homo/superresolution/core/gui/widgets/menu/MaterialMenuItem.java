@@ -37,14 +37,6 @@ public class MaterialMenuItem extends AbstractWidget<MaterialMenuItem, MaterialM
     }
 
     @Override
-    public void setBounds(float x, float y, float width, float height) {
-        rectangle.setLocation(
-                x,
-                y
-        );
-    }
-
-    @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
 
     }

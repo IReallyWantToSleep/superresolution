@@ -39,6 +39,7 @@ import io.homo.superresolution.common.platform.OS;
 import io.homo.superresolution.common.platform.OSType;
 import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -220,10 +221,7 @@ public class SuperResolutionConfig {
         );
 
         SPECIAL = new SpecialConfigs(builder);
-        Path configPath = Platform.currentPlatform
-                .getGameFolder()
-                .resolve("config")
-                .resolve("super_resolution.toml");
+        Path configPath = SuperResolutionConstants.CONFIG_FILE;
         builder.configPath(configPath);
         SPEC = builder.build();
         resolutionChangeCallback = () -> {

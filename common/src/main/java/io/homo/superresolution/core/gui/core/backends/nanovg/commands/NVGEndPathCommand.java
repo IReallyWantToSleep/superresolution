@@ -20,7 +20,6 @@ package io.homo.superresolution.core.gui.core.backends.nanovg.commands;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGEndPathCommand extends NVGDrawCommand {
     protected final boolean fill;

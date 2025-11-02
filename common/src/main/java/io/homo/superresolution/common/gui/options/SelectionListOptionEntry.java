@@ -23,20 +23,15 @@ import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
-import io.homo.superresolution.core.gui.core.layout.LinearLayout;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, LinearLayout, SelectionListOptionEntry<T>> {
+public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, SelectionListOptionEntry<T>> {
     protected final ImmutableList<T> values;
     protected final AtomicInteger index;
     protected final int original;
@@ -58,13 +53,11 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, LinearLa
     protected void init() {
         this.container = new OptionContainerWidget(this);
         initLayout();
-        this.container.setLayout(layout);
         initWidget();
     }
 
     @Override
     protected void initLayout() {
-        layout = new LinearLayout();
     }
 
     @Override
@@ -86,16 +79,6 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, LinearLa
         container.addChild(selectButton);
         container.scheme(scheme);
 
-        layout.setElementPosition(
-                label,
-                LinearLayout.HorizontalAlignment.LEFT,
-                LinearLayout.VerticalAlignment.CENTER
-        );
-        layout.setElementPosition(
-                selectButton,
-                LinearLayout.HorizontalAlignment.RIGHT,
-                LinearLayout.VerticalAlignment.CENTER
-        );
     }
 
     @Override
@@ -108,7 +91,6 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, LinearLa
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         selectButton.text(nameProvider.apply(value()));
-        container.getLayout().layout(container);
         container.render(drawContext, inputState);
     }
 

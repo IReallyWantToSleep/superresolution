@@ -22,10 +22,6 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import org.lwjgl.nanovg.NVGPaint;
 
 public class NanoVGPaint implements IPaint {
-    public NVGPaint get() {
-        return paint;
-    }
-
     private final NVGPaint paint;
 
     public NanoVGPaint() {
@@ -34,5 +30,9 @@ public class NanoVGPaint implements IPaint {
 
     public NanoVGPaint(NVGPaint paint) {
         this.paint = paint;
+    }
+
+    public NVGPaint get() {
+        return paint;
     }
 }

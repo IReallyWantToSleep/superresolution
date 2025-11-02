@@ -19,6 +19,8 @@
 package io.homo.superresolution.core.gui.core.layout;
 
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaProps;
 import org.joml.Vector2f;
 
 public interface ILayoutElement {
@@ -26,7 +28,11 @@ public interface ILayoutElement {
 
     Vector2f getAbsolutePosition();
 
+    ILayoutContainer getParent();
+
     void setParent(ILayoutContainer parent);
 
-    ILayoutContainer getParent();
+    YogaProps layout();
+    
+    YogaNode getLayoutNode();
 }

@@ -19,11 +19,11 @@
 package io.homo.superresolution.core.gui.core.backends.interfaces;
 
 public abstract class DrawCommand {
+    protected final DrawCommandType type;
+
     public DrawCommand(DrawCommandType type) {
         this.type = type;
     }
-
-    protected final DrawCommandType type;
 
     public DrawCommandType type() {
         return type;

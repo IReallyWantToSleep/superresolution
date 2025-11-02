@@ -27,38 +27,40 @@ import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
+import org.joml.Vector2f;
 
 import java.util.function.Function;
 
 public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSliderStyle, MaterialSliderAnimationSet> {
-    private Rectangle rectangle = new Rectangle();
-
     private Number value = 0.0;
     private Number step = 0.0;
     private Number max = 1.0;
     private Number min = 0.0;
+    private Function<Number, String> valueIndicatorTextFormater = Object::toString;
+
+    public MaterialSlider(MaterialSliderSize size, float width) {
+        this.style = new MaterialSliderStyle();
+        this.style.size(size);
+        setElementWidth(width);
+        updateRectangle();
+        getLayoutNode().setDebugName("MaterialSlider");
+
+    }
+
+    public static MaterialSlider create() {
+        return new MaterialSlider(MaterialSliderSize.Medium, 354);
+    }
 
     public Function<Number, String> getValueIndicatorTextFormater() {
         return valueIndicatorTextFormater;
-    }
-
-    public void setBounds(float x, float y, float width, float height) {
-        rectangle.setLocation(
-                x,
-                y
-        );
     }
 
     public MaterialSlider setValueIndicatorTextFormater(Function<Number, String> valueIndicatorTextFormater) {
         this.valueIndicatorTextFormater = valueIndicatorTextFormater;
         return this;
     }
-
-    private Function<Number, String> valueIndicatorTextFormater = Object::toString;
-
 
     public Number value() {
         return value;
@@ -97,19 +99,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         return this;
     }
 
-    public MaterialSlider(MaterialSliderSize size, float width) {
-        this.style = new MaterialSliderStyle();
-        this.style.size(size);
-        rectangle.width = width;
-        updateRectangle();
-    }
-
     public float width() {
-        return rectangle.width;
-    }
-
-    public static MaterialSlider create() {
-        return new MaterialSlider(MaterialSliderSize.Medium, 354);
+        return getBounds().width;
     }
 
     public void onChange(EventListener<WidgetEvent.ChangeEvent> listener) {
@@ -132,14 +123,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
     }
 
     private void updateRectangle() {
-        rectangle.x = getAbsolutePosition().x;
-        rectangle.y = getAbsolutePosition().y;
-        rectangle.height = style.size().handleHeight();
-    }
-
-    @Override
-    public Rectangle getBounds() {
-        return rectangle;
+        setElementHeight(style.size().handleHeight());
     }
 
     @Override
@@ -150,19 +134,19 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         drawContext.beginBatch();
         animationSet.update();
         SliderColors colors = getSliderColors();
-
+        Rectangle bounds = getBounds();
         float progress = (float) ((value.doubleValue() - min.doubleValue()) / (max.doubleValue() - min.doubleValue()));
         //滑块中间X
-        float availableWidth = rectangle.width - style.size().stepsHorizontalPadding() * 2;
-        float handleXPosition = rectangle.x + availableWidth * progress;
+        float availableWidth = bounds.width - style.size().stepsHorizontalPadding() * 2;
+        float handleXPosition = bounds.x + availableWidth * progress;
         float handleWidth = animationSet.handleSize.floatValue();
         float activeTrackWidth = (availableWidth * progress) - (handleWidth / 2) - style.size().handleHorizontalPadding() + style.size().stepsSize();
         if (activeTrackWidth > 1) {
             drawContext.beginPath();
             drawContext.fillColor(colors.activeTrackColor);
             drawContext.roundedRectComplex(
-                    rectangle.x,
-                    rectangle.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
+                    bounds.x,
+                    bounds.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
                     activeTrackWidth,
                     style.size().trackHeight(),
                     Math.min(style.size().trackCornerSize(), activeTrackWidth / 2),
@@ -174,20 +158,20 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         }
         drawContext.drawRoundedRect(
                 handleXPosition - (handleWidth / 2) + style.size().stepsSize(),
-                rectangle.y,
+                bounds.y,
                 handleWidth,
                 style.size().handleHeight(),
                 Math.min(2, handleWidth / 2),
                 colors.handleColor,
                 true
         );
-        float inactiveTrackWidth = rectangle.width - activeTrackWidth - handleWidth - style.size().handleHorizontalPadding() - style.size().handleHorizontalPadding();
+        float inactiveTrackWidth = bounds.width - activeTrackWidth - handleWidth - style.size().handleHorizontalPadding() - style.size().handleHorizontalPadding();
         if (inactiveTrackWidth > 1) {
             drawContext.beginPath();
             drawContext.fillColor(colors.inactiveTrackColor);
             drawContext.roundedRectComplex(
-                    rectangle.getLimitX() - inactiveTrackWidth,
-                    rectangle.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
+                    bounds.getLimitX() - inactiveTrackWidth,
+                    bounds.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
                     inactiveTrackWidth,
                     style.size().trackHeight(),
                     Math.min(2, inactiveTrackWidth / 2),
@@ -203,14 +187,14 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
             float stepSpacing = availableWidth / (steps);
 
             for (int stepIndex = 0; stepIndex <= steps; stepIndex++) {
-                float stepXPosition = rectangle.x + style.size().stepsHorizontalPadding() + stepSpacing * stepIndex;
+                float stepXPosition = bounds.x + style.size().stepsHorizontalPadding() + stepSpacing * stepIndex;
                 if (Math.abs(stepXPosition - handleXPosition) < stepSpacing / 2) continue;
                 double stepValue = min.doubleValue() + stepIndex * step.doubleValue();
                 Color stepColor = value.doubleValue() >= stepValue ?
                         colors.stepActiveIndicatorsColor : colors.stepInactiveIndicatorsColor;
                 drawContext.drawArc(
                         stepXPosition,
-                        rectangle.y + (style.size().trackHeight() / 2) + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
+                        bounds.y + (style.size().trackHeight() / 2) + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
                         style.size().stepsSize() / 2,
                         stepColor,
                         true
@@ -227,7 +211,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
             valueIndicatorRegion.width = style.size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;
             valueIndicatorRegion.height = style.size().valueIndicatorTextVerticalPadding() * 2 + 20;
             valueIndicatorRegion.x = handleXPosition - valueIndicatorRegion.width / 2;
-            valueIndicatorRegion.y = rectangle.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2) - ((style.size().handleHeight() - style.size().trackHeight()) / 2) - style.size().valueIndicatorBottomPadding() - rectangle.height;
+            valueIndicatorRegion.y = bounds.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2) - ((style.size().handleHeight() - style.size().trackHeight()) / 2) - style.size().valueIndicatorBottomPadding() - bounds.height;
             drawContext.transform().push();
             drawContext.transform().last().scaleAt(
                     animationSet.hover.floatValue(),
@@ -291,9 +275,10 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
     }
 
     private float calcProgressFromMouse(Vector2f position) {
-        float relativeX = position.x - rectangle.x;
-        float clampedX = clamp(relativeX, 0, rectangle.width);
-        return clampedX / rectangle.width;
+        Rectangle bounds = getBounds();
+        float relativeX = position.x - bounds.x;
+        float clampedX = clamp(relativeX, 0, bounds.width);
+        return clampedX / bounds.width;
     }
 
     private float clamp(float value, float min, float max) {
