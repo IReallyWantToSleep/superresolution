@@ -20,30 +20,46 @@ package io.homo.superresolution.core.gui.core.layout;
 
 import io.homo.superresolution.core.gui.core.IHitTest;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaProps;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.MutableYogaConfig;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaConfig;
 import org.joml.Vector2f;
 
 public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest {
+    public static final MutableYogaConfig yogaConfig = YogaConfig.create();
+    private final Vector2f elementSize = new Vector2f(-1, -1);
     protected ILayoutContainer parent;
-    protected final Rectangle bounds = new Rectangle();
+    private YogaNode layoutNode = new YogaNode(yogaConfig);
+
+    public void setElementSize(float width, float height) {
+        elementSize.set(width, height);
+        if (width > 0) layoutNode.setWidth(width);
+        if (height > 0) layoutNode.setHeight(height);
+    }
+
+    public void setElementWidth(float width) {
+        setElementSize(width, elementSize.y);
+    }
+
+    public void setElementHeight(float height) {
+        setElementSize(elementSize.x, height);
+    }
 
     @Override
     public Rectangle getBounds() {
-        return bounds;
+        return new Rectangle(
+                getAbsolutePosition(),
+                (elementSize.x <= 0 || elementSize.y <= 0) ? new Vector2f(layoutNode.getLayoutWidth(), layoutNode.getLayoutHeight()) : elementSize
+        );
     }
 
     @Override
     public Vector2f getAbsolutePosition() {
-        if (parent != null) {
-            Vector2f parentPos = parent.getAbsolutePosition();
-            Vector2f relativePos = parent.getLayout().getElementPosition(this);
-            return new Vector2f(parentPos.x + relativePos.x, parentPos.y + relativePos.y);
-        }
-        return new Vector2f(bounds.x, bounds.y);
-    }
-
-    @Override
-    public void setParent(ILayoutContainer parent) {
-        this.parent = parent;
+        return new Vector2f(
+                getLayoutNode().getAbsolutePositionX(),
+                getLayoutNode().getAbsolutePositionY()
+        );
     }
 
     @Override
@@ -52,9 +68,23 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
     }
 
     @Override
+    public void setParent(ILayoutContainer parent) {
+        this.parent = parent;
+    }
+
+    @Override
     public boolean hitTest(Vector2f absolutePos) {
         Rectangle absBounds = getBounds();
         boolean result = absBounds.in(absolutePos);
         return result;
+    }
+
+    public YogaNode getLayoutNode() {
+        return layoutNode;
+    }
+
+    @Override
+    public YogaProps layout() {
+        return layoutNode;
     }
 }

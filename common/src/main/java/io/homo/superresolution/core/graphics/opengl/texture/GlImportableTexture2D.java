@@ -52,7 +52,8 @@ public class GlImportableTexture2D extends GlTexture2D {
             long size = sourceTexture.getMemorySize();
 
             SuperResolution.LOGGER.info(
-                    "memSize {} Size {}x{} SizePerPixel {} Levels {} Format {}",
+                    "OpenGL-Vulkan interop texture: MemoryHandle {} MemorySize {}bits Size {}x{}px PixelSize {} Levels {} Format {}",
+                    handle,
                     size,
                     sourceTexture.getWidth(),
                     sourceTexture.getHeight(),

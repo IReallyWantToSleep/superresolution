@@ -20,11 +20,9 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.nanovg.commands.*;
-import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
+import org.joml.Vector2f;
 import org.lwjgl.nanovg.NVGPaint;
-
-import java.util.ArrayList;
 
 import static org.lwjgl.nanovg.NanoVG.*;
 

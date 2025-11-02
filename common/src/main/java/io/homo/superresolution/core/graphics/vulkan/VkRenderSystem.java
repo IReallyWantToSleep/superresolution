@@ -22,10 +22,9 @@ import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCapabilities;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanValidationLayers;
-import io.homo.superresolution.core.utils.VkReflectionHelper;
+import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +46,7 @@ import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
-    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport();
+    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport() && false;
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
 
     private final List<String> instanceExtensions = new ArrayList<>();
@@ -214,13 +213,16 @@ public class VkRenderSystem implements IRenderSystem {
 
             boolean deviceSupportsMutableDescriptor = mutableDescriptorTypeFeaturesEXT.mutableDescriptorType();
             boolean deviceSupportsShaderInt8 = features12.shaderInt8();
+            boolean deviceSupportsShaderInt16 = features2.features().shaderInt16();
             boolean deviceSupportsShaderFloat16 = features12.shaderFloat16();
             boolean deviceSupportsShaderIntegerDotProduct = shaderIntegerDotProductFeaturesKHR.shaderIntegerDotProduct();
-
+            boolean deviceSupportsShaderStorageImageWriteWithoutFormat = features2.features().shaderStorageImageWriteWithoutFormat();
             LOGGER.info("Vulkan 设备特性支持状态:");
             LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
             LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
+            LOGGER.info("  shaderInt16: {}", deviceSupportsShaderInt16);
             LOGGER.info("  shaderFloat16: {}", deviceSupportsShaderFloat16);
+            LOGGER.info("  shaderStorageImageWriteWithoutFormat: {}", deviceSupportsShaderFloat16);
             LOGGER.info("  shaderIntegerDotProduct: {}", deviceSupportsShaderIntegerDotProduct);
 
             VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures =
@@ -243,17 +245,8 @@ public class VkRenderSystem implements IRenderSystem {
             VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
                     .pNext(deviceFeatures12.address());
-
-            // 启用基础特性
-            deviceFeatures2.features().shaderStorageImageWriteWithoutFormat(features2.features().shaderStorageImageWriteWithoutFormat());
-
-            // 记录特性启用状态
-            LOGGER.info("Vulkan 特性启用状态:");
-            LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
-            LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
-            LOGGER.info("  shaderFloat16: {}", deviceSupportsShaderFloat16);
-            LOGGER.info("  shaderIntegerDotProduct: {}", deviceSupportsShaderIntegerDotProduct);
-
+            deviceFeatures2.features().shaderInt16(deviceSupportsShaderInt16);
+            deviceFeatures2.features().shaderStorageImageWriteWithoutFormat(deviceSupportsShaderStorageImageWriteWithoutFormat);
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
                     .pNext(deviceFeatures2.address())
@@ -262,7 +255,7 @@ public class VkRenderSystem implements IRenderSystem {
                     .pEnabledFeatures(null);
 
             if (ENABLE_VALIDATION)
-                createInfo.ppEnabledLayerNames(validationLayers.getValidationLayersPointerBuffer(stack));
+                createInfo.ppEnabledLayerNames(VulkanValidationLayers.getValidationLayersPointerBuffer(stack));
 
             PointerBuffer pDevice = stack.mallocPointer(1);
             VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),

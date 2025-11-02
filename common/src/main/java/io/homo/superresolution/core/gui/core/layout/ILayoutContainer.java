@@ -26,8 +26,4 @@ public interface ILayoutContainer extends ILayoutElement {
     void removeChild(ILayoutElement element);
 
     List<ILayoutElement> getChildren();
-
-    ILayout getLayout();
-
-    void setLayout(ILayout layout);
 }

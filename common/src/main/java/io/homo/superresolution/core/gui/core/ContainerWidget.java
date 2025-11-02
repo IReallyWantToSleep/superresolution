@@ -21,17 +21,11 @@ package io.homo.superresolution.core.gui.core;
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.gui.core.layout.ILayout;
 
 public class ContainerWidget extends AbstractContainerWidget<ContainerWidget, WidgetStyle<?>, AnimationSet> {
 
-    public Rectangle getBounds() {
-        return new Rectangle(
-                getAbsolutePosition().x,
-                getAbsolutePosition().y,
-                bounds.width,
-                bounds.height
-        );
+    public static ContainerWidget create() {
+        return new ContainerWidget();
     }
 
     @Override
@@ -47,14 +41,5 @@ public class ContainerWidget extends AbstractContainerWidget<ContainerWidget, Wi
     @Override
     protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
 
-    }
-
-    public static ContainerWidget create() {
-        return new ContainerWidget();
-    }
-
-    public ContainerWidget layout(ILayout layout) {
-        setLayout(layout);
-        return this;
     }
 }

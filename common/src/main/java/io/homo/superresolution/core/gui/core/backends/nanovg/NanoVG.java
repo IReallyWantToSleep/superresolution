@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
-import io.homo.superresolution.core.utils.MinecraftUtil;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import org.lwjgl.nanovg.NVGColor;
 
 import static org.lwjgl.nanovg.NanoVGGL3.NVG_ANTIALIAS;
@@ -40,11 +40,11 @@ public class NanoVG {
     }
 
     public static float getScreenWidth() {
-        return MinecraftUtil.getScreenSize().x;
+        return MinecraftWindow.getWindowWidth();
     }
 
     public static float getScreenHeight() {
-        return MinecraftUtil.getScreenSize().y;
+        return MinecraftWindow.getWindowHeight();
     }
 
     public static NVGColor colorRGB(int r, int g, int b) {

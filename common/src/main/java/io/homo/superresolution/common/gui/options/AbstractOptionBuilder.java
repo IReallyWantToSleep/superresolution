@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<VT, ?, OT>, SELF> {
+public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<VT, OT>, SELF> {
     protected boolean requireRestartGame = false;
     protected @Nullable Supplier<VT> defaultValue = null;
     protected @Nullable Function<VT, Optional<Text>> errorSupplier;

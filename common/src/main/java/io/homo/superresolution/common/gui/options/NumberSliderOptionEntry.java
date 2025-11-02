@@ -20,17 +20,15 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.core.layout.LinearLayout;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 
 import java.util.function.Function;
 
-public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, LinearLayout, NumberSliderOptionEntry> {
+public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberSliderOptionEntry> {
     protected MaterialSlider slider;
     protected MaterialLabel label;
     protected Number max;
@@ -54,13 +52,12 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, LinearL
     protected void init() {
         this.container = new OptionContainerWidget(this);
         initLayout();
-        this.container.setLayout(layout);
         initWidget();
     }
 
     @Override
     protected void initLayout() {
-        layout = new LinearLayout();
+
     }
 
     @Override
@@ -79,16 +76,7 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, LinearL
         container.addChild(slider);
         container.addChild(label);
         container.scheme(scheme);
-        layout.setElementPosition(
-                label,
-                LinearLayout.HorizontalAlignment.LEFT,
-                LinearLayout.VerticalAlignment.CENTER
-        );
-        layout.setElementPosition(
-                slider,
-                LinearLayout.HorizontalAlignment.RIGHT,
-                LinearLayout.VerticalAlignment.CENTER
-        );
+
         slider.style().valueIndicator(true);
         if (step != null && step.doubleValue() != 0) {
             slider.style().steps(true);

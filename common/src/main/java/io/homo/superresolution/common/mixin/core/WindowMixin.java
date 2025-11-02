@@ -38,17 +38,6 @@ public class WindowMixin {
     @Shadow
     private int framebufferHeight;
 
-    @Inject(at = @At("RETURN"), method = "getScreenWidth", cancellable = true)
-    private void getScreenWidth(CallbackInfoReturnable<Integer> ci) {
-        if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
-            ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
-    }
-
-    @Inject(at = @At("RETURN"), method = "getScreenHeight", cancellable = true)
-    private void getScreenHeight(CallbackInfoReturnable<Integer> ci) {
-        if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
-            ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
-    }
 
     @Inject(at = @At("RETURN"), method = "getGuiScaledWidth", cancellable = true)
     private void getGuiScaledWidth(CallbackInfoReturnable<Integer> ci) {

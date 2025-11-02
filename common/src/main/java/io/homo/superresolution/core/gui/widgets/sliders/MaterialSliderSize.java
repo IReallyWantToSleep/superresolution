@@ -18,8 +18,6 @@
 
 package io.homo.superresolution.core.gui.widgets.sliders;
 
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
-
 public record MaterialSliderSize(
         float trackCornerSize,
         float trackHeight,

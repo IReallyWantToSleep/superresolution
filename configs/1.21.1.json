@@ -64,10 +64,6 @@
                     "compileOnly": true
                 },
                 {
-                    "name": "accrelatedrendering-refabricated",
-                    "version": "1.0.1-1.21.1-fabric"
-                },
-                {
                     "name": "forge-config-api-port",
                     "version": "v21.1.4-1.21.1-Fabric"
                 },

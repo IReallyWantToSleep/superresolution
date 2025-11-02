@@ -8,6 +8,7 @@ import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGDrawContext;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
+import io.homo.superresolution.thirdparty.icyllis.modernui.core.Looper;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;

@@ -1,131 +1,127 @@
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.gui.core.layout.AbsoluteLayout;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
-import io.homo.superresolution.core.gui.core.layout.LinearLayout;
-import io.homo.superresolution.core.gui.core.layout.ListLayout;
 import io.homo.superresolution.core.gui.widgets.MaterialScrollableContainerWidget;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.Animator;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.AnimatorListener;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimator;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test.CaptureTree;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.core.utils.MinecraftUtil;
 import net.minecraft.network.chat.Component;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
+    private ContainerWidget rootContainer;
     private MaterialScheme materialScheme;
 
     public WidgetDesignScreen(Component title) {
         super(title);
     }
 
+
     private ContainerWidget createLine(int line) {
-        ContainerWidget linearContainer = new ContainerWidget();
-        linearContainer.setBounds(0, 0, 400, 60);
-        LinearLayout linearLayout = new LinearLayout();
-        linearLayout.setLayoutBounds(new Rectangle(0, 0, 400, 60));
-        linearLayout.setHorizontalGap(10);
-        linearContainer.layout(linearLayout);
+        ContainerWidget lineContainer = new ContainerWidget();
+        lineContainer.setElementSize(400, 60);
+
+        lineContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
+        lineContainer.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+        lineContainer.layout().setAlignItems(YogaAlign.STRETCH);
+
         MaterialButton btnElevated = MaterialButton.create()
                 .text("Elevated " + line)
                 .scheme(materialScheme)
                 .size(MaterialButtonSize.ExtraSmall);
         btnElevated.style().variant(MaterialButtonVariant.Elevated);
+        btnElevated.layout().setAlignSelf(YogaAlign.FLEX_START);
 
         MaterialButton btnFilled = MaterialButton.create()
                 .text("Filled " + line)
                 .scheme(materialScheme)
                 .size(MaterialButtonSize.Medium);
         btnFilled.style().variant(MaterialButtonVariant.Filled);
+        btnFilled.layout().setAlignSelf(YogaAlign.CENTER);
 
         MaterialButton btnTonal = MaterialButton.create()
                 .text("Tonal " + line)
                 .scheme(materialScheme)
                 .size(MaterialButtonSize.ExtraSmall);
         btnTonal.style().variant(MaterialButtonVariant.Tonal);
-        linearContainer.addChild(btnElevated);
-        linearContainer.addChild(btnFilled);
-        linearContainer.addChild(btnTonal);
-        linearLayout.setElementPosition(
-                btnElevated,
-                LinearLayout.HorizontalAlignment.LEFT,
-                LinearLayout.VerticalAlignment.TOP
-        );
-        linearLayout.setElementPosition(
-                btnFilled,
-                LinearLayout.HorizontalAlignment.CENTER,
-                LinearLayout.VerticalAlignment.CENTER
-        );
-        linearLayout.setElementPosition(
-                btnTonal,
-                LinearLayout.HorizontalAlignment.RIGHT,
-                LinearLayout.VerticalAlignment.BOTTOM
-        );
-        return linearContainer;
+        btnTonal.layout().setAlignSelf(YogaAlign.FLEX_END);
+
+        lineContainer.addChild(btnElevated);
+        lineContainer.addChild(btnFilled);
+        lineContainer.addChild(btnTonal);
+        return lineContainer;
     }
 
     @Override
     protected void buildWidgets() {
         materialScheme = MaterialScheme.from(MaterialTheme.Dark, Color.from("#6750A4"));
-        ContainerWidget rootContainer = new ContainerWidget();
-        rootContainer.layout(new AbsoluteLayout());
-
+        rootContainer = new ContainerWidget();
         MaterialScrollableContainerWidget scrollableContainer = new MaterialScrollableContainerWidget();
-        ListLayout listLayout = new ListLayout();
-
-        // 关键修复：设置正确的布局边界
-        listLayout.setLayoutBounds(new Rectangle(0, 0, 400, 700)); // 与容器大小匹配
-        listLayout.setVerticalGap(3);
-
-        scrollableContainer.layout(listLayout);
         scrollableContainer.scheme(materialScheme);
-
-        // 关键修复：正确设置视图区域和边界
-        scrollableContainer.setBounds(0, 0, 400, 700);
+        scrollableContainer.setElementSize(400, 700);
         scrollableContainer.setViewRegion(new Vector2f(400, 700));
 
-        // 确保滚动设置正确
         scrollableContainer.setHorizontalScrollEnabled(false);
         scrollableContainer.setVerticalScrollEnabled(true);
+
+        scrollableContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        scrollableContainer.layout().setGap(YogaGutter.COLUMN, 4);
 
         List<ContainerWidget> lines = new ArrayList<>();
         for (int i = 0; i < 40; i++) {
             ContainerWidget line = createLine(i);
             lines.add(line);
-            listLayout.setElementPosition(
-                    line, ListLayout.HorizontalAlignment.LEFT, ListLayout.VerticalAlignment.TOP
-            );
             scrollableContainer.addChild(line);
         }
 
         rootContainer.addChild(scrollableContainer);
-        ((AbsoluteLayout) rootContainer.getLayout()).setPosition(scrollableContainer, new Vector2f(0, 0));
-
-        // 关键修复：设置根容器边界
-        Vector2f screenSize = MinecraftUtil.getScreenSize();
-        rootContainer.setBounds(0, 0, screenSize.x, screenSize.y);
-
+        //rootContainer.layout().setPositionType(YogaPositionType.ABSOLUTE);
+        rootContainer.layout().setPosition(YogaEdge.LEFT, 0);
+        rootContainer.layout().setPosition(YogaEdge.TOP, 100);
+        Vector2f screenSize = MinecraftWindow.getWindowSize();
+        rootContainer.setElementSize(screenSize.x, screenSize.y);
+        rootContainer.getLayoutNode().setDebugName("Root");
         addWidget(rootContainer);
     }
 
     @Override
     public void draw(IUIDrawContext drawContext, UIInputState inputState) {
+        Vector2f screenSize = MinecraftWindow.getWindowSize();
+        rootContainer.getLayoutNode().setWidth(screenSize.x);
+        rootContainer.getLayoutNode().setHeight(screenSize.y);
+        rootContainer.getLayoutNode().setPosition(YogaEdge.TOP, 100);
+        rootContainer.getLayoutNode().calculateLayout(screenSize.x, screenSize.y);
+        CaptureTree.calculateLayoutWithCapture(
+                rootContainer.getLayoutNode(),
+                screenSize.x,
+                screenSize.y,
+                YogaDirection.LTR,
+                Path.of("test_layout.json")
+        );
         drawContext.beginBatch();
         drawContext.drawRect(
                 0,
                 0,
-                MinecraftUtil.getScreenSize().x,
-                MinecraftUtil.getScreenSize().y,
+                MinecraftWindow.getWindowSize().x,
+                MinecraftWindow.getWindowSize().y,
                 materialScheme.background(),
                 true
         );
@@ -205,8 +201,8 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         int colorCount = colors.length;
         int colorsPerColumn = 30;
 
-        float screenWidth = MinecraftUtil.getScreenSize().x;
-        float screenHeight = MinecraftUtil.getScreenSize().y;
+        float screenWidth = MinecraftWindow.getWindowSize().x;
+        float screenHeight = MinecraftWindow.getWindowSize().y;
         float columnWidth = screenWidth * 0.2f;
         float leftColumnX = screenWidth * 0.6f;
         float rightColumnX = screenWidth * 0.8f;

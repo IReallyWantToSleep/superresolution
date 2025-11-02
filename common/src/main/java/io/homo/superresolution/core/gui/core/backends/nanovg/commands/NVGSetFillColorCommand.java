@@ -18,11 +18,9 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg.commands;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommand;
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
 import io.homo.superresolution.core.utils.Color;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGSetFillColorCommand extends NVGDrawCommand {
     protected final Color color;

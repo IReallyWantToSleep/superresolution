@@ -22,8 +22,8 @@ import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
-import io.homo.superresolution.core.gui.core.layout.*;
-import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
+import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -37,58 +37,26 @@ public abstract class AbstractContainerWidget<
         > extends AbstractWidget<T, STYLE, ANIM> implements ILayoutContainer {
 
     protected final List<ILayoutElement> children = new ArrayList<>();
-    protected ILayout layout;
-
-    public void setBounds(float x, float y, float width, float height) {
-        bounds.setBounds(
-                x,
-                y,
-                width,
-                height
-        );
-    }
 
     @Override
     protected void init() {
-        if (this.layout == null) {
-            this.layout = new AbsoluteLayout();
-        }
+        super.getLayoutNode().setDebugName("ContainerNode");
     }
 
-    @Override
     public void addChild(ILayoutElement element) {
         children.add(element);
         element.setParent(this);
-        if (layout != null) {
-            layout.layout(this);
-        }
+        getLayoutNode().addChildAt(element.getLayoutNode(), getLayoutNode().getChildCount());
     }
 
-    @Override
     public void removeChild(ILayoutElement element) {
         children.remove(element);
         element.setParent(null);
-        if (layout != null) {
-            layout.layout(this);
-        }
+        getLayoutNode().removeChild(element.getLayoutNode());
     }
 
-    @Override
     public List<ILayoutElement> getChildren() {
         return Collections.unmodifiableList(children);
-    }
-
-    @Override
-    public ILayout getLayout() {
-        return layout;
-    }
-
-    @Override
-    public void setLayout(ILayout layout) {
-        this.layout = layout;
-        if (layout != null) {
-            layout.layout(this);
-        }
     }
 
     public void addChild(AbstractWidget<?, ?, ?> widget) {
@@ -212,10 +180,6 @@ public abstract class AbstractContainerWidget<
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         if (!isVisible()) return;
-
-        if (layout != null) {
-            layout.layout(this);
-        }
 
         renderSelf(drawContext, inputState);
 

@@ -22,9 +22,12 @@ import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.event.EventHandler;
 import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
-import io.homo.superresolution.core.gui.core.event.events.*;
-import io.homo.superresolution.core.gui.core.impl.*;
+import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
+import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
+import io.homo.superresolution.core.gui.core.impl.Renderable;
+import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
+import io.homo.superresolution.core.impl.Destroyable;
 import org.joml.Vector2f;
 
 import java.util.Optional;
@@ -37,7 +40,8 @@ public abstract class AbstractWidget<
         > extends AbstractLayoutElement implements
         GuiEventListener,
         Renderable,
-        TooltipHolder {
+        TooltipHolder,
+        Destroyable {
     protected boolean visible = true;
     protected boolean disabled = false;
     protected boolean hovered = false;
@@ -174,19 +178,6 @@ public abstract class AbstractWidget<
         return (T) this;
     }
 
-    public abstract Rectangle getBounds();
-
-    public abstract void setBounds(float x, float y, float width, float height);
-
-    public void setBounds(Rectangle rectangle) {
-        setBounds(
-                rectangle.x,
-                rectangle.y,
-                rectangle.width,
-                rectangle.height
-        );
-    }
-
     public void onHover(EventListener<WidgetEvent.HoverEvent> listener) {
         eventHandler.on(WidgetEvent.HoverEvent.class, listener);
     }
@@ -255,4 +246,8 @@ public abstract class AbstractWidget<
     public int getZIndex() {
         return style == null ? 0 : style.zIndex();
     }
+
+    public void destroy() {
+    }
+
 }

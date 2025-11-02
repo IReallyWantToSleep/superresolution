@@ -22,6 +22,8 @@ import io.homo.superresolution.core.gui.core.WidgetStyle;
 
 public class MaterialSliderStyle extends WidgetStyle<MaterialSliderStyle> {
     private boolean steps;
+    private MaterialSliderSize size = MaterialSliderSize.Medium;
+    private boolean valueIndicator;
 
     public MaterialSliderSize size() {
         return size;
@@ -32,8 +34,6 @@ public class MaterialSliderStyle extends WidgetStyle<MaterialSliderStyle> {
         return this;
     }
 
-    private MaterialSliderSize size = MaterialSliderSize.Medium;
-
     public boolean valueIndicator() {
         return valueIndicator;
     }
@@ -42,9 +42,6 @@ public class MaterialSliderStyle extends WidgetStyle<MaterialSliderStyle> {
         this.valueIndicator = valueIndicator;
         return this;
     }
-
-    private boolean valueIndicator;
-
 
     public boolean steps() {
         return steps;

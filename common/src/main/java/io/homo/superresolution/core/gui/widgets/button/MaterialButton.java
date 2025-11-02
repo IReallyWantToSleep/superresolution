@@ -18,42 +18,44 @@
 
 package io.homo.superresolution.core.gui.widgets.button;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.MaterialRipple;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.animator.Easing;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.BezierInterpolator;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.PropertyValuesHolder;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.TimeInterpolator;
+import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimator;
 import org.joml.Vector2f;
 
 import java.util.function.Supplier;
 
 public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButtonStyle, MaterialButtonAnimationSet> {
     private Supplier<String> textContextSupplier = () -> null;
-    private Rectangle rectangle = new Rectangle();
     private MaterialRipple ripple;
     private Vector2f lastClickPosition;
     private Supplier<MaterialSymbol> iconContextSupplier = () -> null;
 
-    public void setBounds(float x, float y, float width, float height) {
-        rectangle.setLocation(
-                x,
-                y
-        );
-    }
+    private ValueAnimator hoverAnimator;
+    private ValueAnimator pressAnimator;
+    private ValueAnimator.AnimatorUpdateListener hoverUpdateListener;
+    private ValueAnimator.AnimatorUpdateListener pressUpdateListener;
 
     public MaterialButton(MaterialButtonSize size) {
         this.style = new MaterialButtonStyle();
         this.ripple = new MaterialRipple();
         this.style.size(size);
+        getLayoutNode().setDebugName("MaterialButton");
         updateRectangle();
     }
 
@@ -92,10 +94,41 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
 
     @Override
     protected void init() {
-        this.animationSet = new MaterialButtonAnimationSet();
+        initAnimators();
+
         onHover((event) -> onHover(event.getMousePosition(), event.isHovering()));
         onMouseRelease((event) -> onRelease(event.getMousePosition()));
         onMousePress((event) -> onPress(event.getMousePosition()));
+    }
+
+    private void initAnimators() {
+        hoverAnimator = ValueAnimator.ofFloat(0f, 0f);
+        hoverAnimator.setDuration(200);
+        hoverAnimator.setInterpolator(new BezierInterpolator(0.2f, 0, 0, 1));
+
+        pressAnimator = ValueAnimator.ofFloat(0f, 0f);
+        pressAnimator.setDuration(200);
+        pressAnimator.setInterpolator(new BezierInterpolator(0.2f, 0, 0, 1));
+    }
+
+    private void animateHoverTo(float targetValue, long duration) {
+        if (hoverAnimator.isRunning()) {
+            hoverAnimator.cancel();
+        }
+
+        hoverAnimator.setValues(PropertyValuesHolder.ofFloat((float) hoverAnimator.getAnimatedValue(), targetValue));
+        hoverAnimator.setDuration(duration);
+        hoverAnimator.start();
+    }
+
+    private void animatePressTo(float targetValue, long duration) {
+        if (pressAnimator.isRunning()) {
+            pressAnimator.cancel();
+        }
+
+        pressAnimator.setValues(PropertyValuesHolder.ofFloat((Float) pressAnimator.getAnimatedValue(), targetValue));
+        pressAnimator.setDuration(duration);
+        pressAnimator.start();
     }
 
     public MaterialButtonSize size() {
@@ -148,47 +181,43 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                         (iconContextWidth == 0 ? 0 : style.size().iconPadding()) +
                         textContextWidth +
                         style.size().padding();
-        rectangle.x = getAbsolutePosition().x;
-        rectangle.y = getAbsolutePosition().y;
-        rectangle.width = width;
-        rectangle.height = style.size().height();
-    }
-
-    @Override
-    public Rectangle getBounds() {
-        return rectangle;
+        setElementSize(width, style.size().height());
     }
 
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         drawContext.beginBatch();
         updateRectangle();
-        animationSet.update();
+
         this.ripple.update();
 
+        Rectangle bounds = getBounds();
         ButtonColors colors = getButtonColors();
+
         float cornerSize = style.shape() == MaterialButtonShape.Round ?
-                rectangle.height / 2 :
+                bounds.height / 2 :
                 style.size().squareCornerSize();
         float deltaValue = style.size().pressedCornerSize() - style.size().squareCornerSize();
-        cornerSize += animationSet.press.floatValue() * deltaValue;
+        cornerSize += ((float) pressAnimator.getAnimatedValue()) * deltaValue;
+
         if (colors.backgroundColor != null) {
             drawContext.drawRoundedRect(
-                    rectangle.x,
-                    rectangle.y,
-                    rectangle.width,
-                    rectangle.height,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
                     cornerSize,
                     colors.backgroundColor,
                     true
             );
         }
+
         if (colors.coverColor != null) {
             drawContext.drawRoundedRect(
-                    rectangle.x,
-                    rectangle.y,
-                    rectangle.width,
-                    rectangle.height,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
                     cornerSize,
                     colors.coverColor,
                     true
@@ -198,35 +227,42 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
         if (colors.borderColor != null) {
             drawContext.strokeWidth(1);
             drawContext.drawRoundedRect(
-                    rectangle.x,
-                    rectangle.y,
-                    rectangle.width,
-                    rectangle.height,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
                     cornerSize,
                     colors.borderColor,
                     false
             );
         }
-        if ((ripple.shouldRender() || isPressed()) && lastClickPosition != null) {
-            drawContext.beginPath();
-            drawContext.paint(ripple.getPaint(
+
+        if ((ripple.shouldRender() || ripple.isPressed())) {
+            IPaint[] ripplePaints = ripple.getPaints(
                     style.variant() == MaterialButtonVariant.Elevated ? scheme.primary() :
                             style.variant() == MaterialButtonVariant.Filled ? scheme.onPrimary() :
                                     style.variant() == MaterialButtonVariant.Tonal ? scheme.onSecondaryContainer() :
-                                            style.variant() == MaterialButtonVariant.Text ?
-                                                    scheme.primary() : scheme.onSurfaceVariant(),
+                                            style.variant() == MaterialButtonVariant.Text ? scheme.primary() :
+                                                    scheme.onSurfaceVariant(),
                     drawContext,
-                    lastClickPosition,
-                    rectangle.getPosition()
-            ));
-            drawContext.roundedRect(
-                    rectangle.x,
-                    rectangle.y,
-                    rectangle.width,
-                    rectangle.height,
-                    cornerSize
+                    bounds.getPosition(),
+                    bounds.getSize()
             );
-            drawContext.endPath();
+
+            for (IPaint paint : ripplePaints) {
+                if (paint != null) {
+                    drawContext.beginPath();
+                    drawContext.paint(paint);
+                    drawContext.roundedRect(
+                            bounds.x,
+                            bounds.y,
+                            bounds.width,
+                            bounds.height,
+                            cornerSize
+                    );
+                    drawContext.endPath();
+                }
+            }
         }
 
         float iconContextWidth = 0;
@@ -237,18 +273,19 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                     colors.iconColor,
                     style.size().iconSize(),
                     new Vector2f(
-                            rectangle.x + size().padding() + (style.size().iconSize() / 2),
-                            rectangle.getCenterY()
+                            bounds.x + size().padding() + (style.size().iconSize() / 2),
+                            bounds.getCenterY()
                     )
             );
         }
+
         drawContext.drawAlignedText(
                 drawContext.font(),
                 size().fontSize(),
                 textContextSupplier.get(),
-                rectangle.x + size().padding() + iconContextWidth + (iconContextWidth == 0 ? 0 : style.size().iconPadding()),
-                rectangle.getCenterY(),
-                rectangle.width,
+                bounds.x + size().padding() + iconContextWidth + (iconContextWidth == 0 ? 0 : style.size().iconPadding()),
+                bounds.getCenterY(),
+                bounds.width,
                 20,
                 colors.textColor,
                 TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
@@ -263,8 +300,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
 
         switch (style.variant()) {
             case Elevated:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.primary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
+                if (isHovered() || (hoverAnimator != null && hoverAnimator.isRunning())) {
+                    colors.coverColor = scheme.primary().copy().alpha((int) (255 * (float) hoverAnimator.getAnimatedValue() * 0.08));
                 }
                 colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : scheme.surfaceContainerLow();
                 colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.primary();
@@ -272,8 +309,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 break;
 
             case Filled:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.onPrimary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
+                if (isHovered() || (hoverAnimator != null && hoverAnimator.isRunning())) {
+                    colors.coverColor = scheme.onPrimary().copy().alpha((int) (255 * (float) hoverAnimator.getAnimatedValue() * 0.08));
                 }
                 colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : scheme.primary();
                 colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onPrimary();
@@ -281,8 +318,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 break;
 
             case Tonal:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.onSecondaryContainer().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
+                if (isHovered() || (hoverAnimator != null && hoverAnimator.isRunning())) {
+                    colors.coverColor = scheme.onSecondaryContainer().copy().alpha((int) (255 * (float) hoverAnimator.getAnimatedValue() * 0.08));
                 }
                 colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : scheme.secondaryContainer();
                 colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.onSecondaryContainer();
@@ -290,8 +327,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 break;
 
             case Text:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.primary().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
+                if (isHovered() || (hoverAnimator != null && hoverAnimator.isRunning())) {
+                    colors.coverColor = scheme.primary().copy().alpha((int) (255 * (float) hoverAnimator.getAnimatedValue() * 0.08));
                 }
                 colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : null;
                 colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f)) : scheme.primary();
@@ -299,8 +336,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
                 break;
 
             case Outlined:
-                if (isHovered() || animationSet.hover.isRunning()) {
-                    colors.coverColor = scheme.onSurfaceVariant().copy().alpha((int) (255 * animationSet.hover.doubleValue()));
+                if (isHovered() || (hoverAnimator != null && hoverAnimator.isRunning())) {
+                    colors.coverColor = scheme.onSurfaceVariant().copy().alpha((int) (255 * (float) hoverAnimator.getAnimatedValue() * 0.08));
                 }
                 colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : null;
                 colors.borderColor = scheme.outlineVariant();
@@ -318,17 +355,12 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
 
     private void onHover(Vector2f mousePosition, boolean hover) {
         if (hover) {
-            animationSet.hover
-                    .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                    .animateTo(0.08, 200);
+            animateHoverTo(1.0f, 200);
             MouseCursor.HAND.use();
         } else {
-            animationSet.hover
-                    .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                    .animateTo(0, 200);
+            animateHoverTo(0f, 200);
             MouseCursor.ARROW.use();
         }
-
     }
 
     @Override
@@ -337,34 +369,60 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     }
 
     private void onPress(Vector2f mousePosition) {
-        animationSet.hover
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(0.1, 200);
-        animationSet.press
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(1, 200);
+        animateHoverTo(1.25f, 200);
+
+        animatePressTo(1.0f, 200);
+
         lastClickPosition = new Vector2f(mousePosition);
         this.ripple.setPressed(
                 true,
                 lastClickPosition,
-                rectangle
+                getBounds()
         );
         eventHandler.fire(new WidgetEvent.ClickEvent());
     }
 
     private void onRelease(Vector2f mousePosition) {
-        animationSet.hover
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(isHovered() ? 0.08 : 0, 200);
-        animationSet.press
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(0, 200);
+        float targetHoverValue = isHovered() ? 1.0f : 0f;
+        animateHoverTo(targetHoverValue, 200);
+
+        animatePressTo(0f, 200);
+
         this.ripple.setPressed(
                 false,
                 lastClickPosition,
-                rectangle
+                getBounds()
         );
+    }
 
+    @Override
+    public void destroy() {
+        if (hoverAnimator != null) {
+            if (hoverUpdateListener != null) {
+                hoverAnimator.removeUpdateListener(hoverUpdateListener);
+                hoverUpdateListener = null;
+            }
+            if (hoverAnimator.isRunning()) {
+                hoverAnimator.cancel();
+            }
+            hoverAnimator = null;
+        }
+
+        if (pressAnimator != null) {
+            if (pressUpdateListener != null) {
+                pressAnimator.removeUpdateListener(pressUpdateListener);
+                pressUpdateListener = null;
+            }
+            if (pressAnimator.isRunning()) {
+                pressAnimator.cancel();
+            }
+            pressAnimator = null;
+        }
+
+        if (ripple != null) {
+            ripple.destroy();
+            ripple = null;
+        }
     }
 
     private static class ButtonColors {

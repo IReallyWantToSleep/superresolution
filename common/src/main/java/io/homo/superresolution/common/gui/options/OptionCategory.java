@@ -30,17 +30,17 @@ public class OptionCategory {
         this.name = name;
     }
 
-    public List<AbstractOptionEntry<?, ?, ?>> getEntries() {
+    public List<AbstractOptionEntry<?, ?>> getEntries() {
         return entries;
     }
 
-    protected List<AbstractOptionEntry<?, ?, ?>> entries = new ArrayList<>();
+    protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
 
     public Text getCategoryName() {
         return name;
     }
 
-    public OptionCategory addEntry(AbstractOptionEntry<?, ?, ?> entry) {
+    public OptionCategory addEntry(AbstractOptionEntry<?, ?> entry) {
         entries.add(entry);
         return this;
     }
