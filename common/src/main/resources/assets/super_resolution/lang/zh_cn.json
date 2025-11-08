@@ -83,6 +83,8 @@
     "superresolution.screen.config.options.tooltip.enable_imgui": "仅开发环境有效，启用调试界面",
     "superresolution.screen.config.options.label.generate_motion_vectors": "生成运动矢量",
     "superresolution.screen.config.options.tooltip.generate_motion_vectors": "运动矢量可以提升部分算法（FSR2,SGSR2）的超分质量，但会损失性能",
+    "superresolution.screen.config.options.label.internal_texture_format": "内部纹理格式",
+    "superresolution.screen.config.options.tooltip.internal_texture_format": "内部纹理格式的精度会影响显存的消耗，精度越高，消耗越大；精度越低，消耗越小；\n注意：精度过低会导致画面出现明显色阶",
     "superresolution.screen.debug.performance_info": "性能信息",
     "superresolution.screen.info.title.performance_info": "性能信息",
     "superresolution.screen.info.performance_info.frame_time": "帧时间 %1$sms",

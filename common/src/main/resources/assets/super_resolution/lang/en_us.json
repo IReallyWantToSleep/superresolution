@@ -79,6 +79,8 @@
     "superresolution.screen.config.category.debug": "Debug Settings",
     "superresolution.screen.config.options.label.debug_dump_shader": "Dump Shader Code",
     "superresolution.screen.config.options.tooltip.debug_dump_shader": "Dump generated shader code",
+    "superresolution.screen.config.options.label.internal_texture_format": "Internal Texture Format",
+    "superresolution.screen.config.options.tooltip.internal_texture_format": "The precision of internal texture format affects VRAM consumption. Higher precision = more VRAM; Lower precision = less VRAM.\nNote: Too low precision may cause visible color banding",
     "superresolution.screen.config.options.label.enable_renderdoc": "Enable RenderDoc",
     "superresolution.screen.config.options.tooltip.enable_renderdoc": "Development environment only. Enable RenderDoc integration",
     "superresolution.screen.config.options.label.enable_imgui": "Enable Imgui",

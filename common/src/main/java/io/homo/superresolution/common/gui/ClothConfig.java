@@ -214,11 +214,11 @@ public class ClothConfig {
                 .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
                 .build());
         commonCategory.addEntry(entryBuilder.startEnumSelector(
-                        Component.literal("内部纹理格式"),
+                        Component.translatable("superresolution.screen.config.options.label.internal_texture_format"),
                         InternalTextureFormat.class,
                         SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get()
                 )
-                .setTooltip(Component.literal("内部纹理格式的精度会影响显存的消耗，精度越高，消耗越大；精度越低，消耗越小；\n注意：精度过低会导致画面出现明显色阶"))
+                .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.internal_texture_format"))
                 .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
                 .setSaveConsumer((newValue) -> {
                     if (SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get() != newValue) {
@@ -254,16 +254,19 @@ public class ClothConfig {
                 (button) -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildInfoScreen(Minecraft.getInstance().screen)),
                 true
         ));
-        commonCategory.addEntry(new ClothButtonEntry(
-                Component.literal("UI Design"),
-                (button) -> Minecraft.getInstance().setScreen(new WidgetDesignScreen(Component.literal(""))),
-                true
-        ));
-        commonCategory.addEntry(new ClothButtonEntry(
-                Component.literal("UI Test"),
-                (button) -> Minecraft.getInstance().setScreen(TestOptionBuilder.build(Minecraft.getInstance().screen)),
-                true
-        ));
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) {
+            commonCategory.addEntry(new ClothButtonEntry(
+                    Component.literal("UI Design"),
+                    (button) -> Minecraft.getInstance().setScreen(new WidgetDesignScreen(Component.literal(""))),
+                    true
+            ));
+            commonCategory.addEntry(new ClothButtonEntry(
+                    Component.literal("UI Test"),
+                    (button) -> Minecraft.getInstance().setScreen(TestOptionBuilder.build(Minecraft.getInstance().screen)),
+                    true
+            ));
+        }
+
         for (String key : SuperResolutionConfig.SPECIAL.description.keySet()) {
             addSpecialConfig(builder, entryBuilder, key);
         }
