@@ -1,13 +1,13 @@
 package io.homo.superresolution.forge.platform;
 
-import io.homo.superresolution.common.platform.IrisPlatform;
+import io.homo.superresolution.api.platform.IrisPlatform;
 
 import java.lang.reflect.Method;
 
 public class IrisForgePlatform extends IrisPlatform {
     @Override
     public boolean isShaderPackInUse() {
-        try{
+        try {
             Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
             Method getInstanceMethod = irisApiClazz.getMethod("getInstance");
             Object irisApiInstance = getInstanceMethod.invoke(null);

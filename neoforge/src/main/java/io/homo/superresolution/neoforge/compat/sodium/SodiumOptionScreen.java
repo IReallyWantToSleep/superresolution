@@ -18,6 +18,10 @@
 
 package io.homo.superresolution.neoforge.compat.sodium;
 
+#if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
+import toni.sodiumoptionsapi.api.OptionGUIConstruction;
+import toni.sodiumoptionsapi.api.OptionIdentifier;
+import toni.sodiumoptionsapi.util.IOptionGroupIdAccessor;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.SuperResolution;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
@@ -28,10 +32,6 @@ import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsSto
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
-#if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
-import toni.sodiumoptionsapi.api.OptionGUIConstruction;
-import toni.sodiumoptionsapi.api.OptionIdentifier;
-import toni.sodiumoptionsapi.util.IOptionGroupIdAccessor;
 #endif
 
 public class SodiumOptionScreen {

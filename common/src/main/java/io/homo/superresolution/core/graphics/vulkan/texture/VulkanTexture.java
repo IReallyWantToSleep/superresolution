@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan.texture;
 
-import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
@@ -115,7 +115,7 @@ public class VulkanTexture implements ITexture {
         if (isExternal || exportable) {
             VkExternalMemoryImageCreateInfo extInfo;
             //TODO:移到VulkanInterop
-            if (OSType.isCurrentOS(OSType.WINDOWS)) {
+            if (OperatingSystemType.isCurrentOS(OperatingSystemType.WINDOWS)) {
                 extInfo = VkExternalMemoryImageCreateInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO)
                         .handleTypes(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT);

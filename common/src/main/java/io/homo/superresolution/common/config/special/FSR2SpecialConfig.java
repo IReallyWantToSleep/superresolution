@@ -24,7 +24,6 @@ import io.homo.superresolution.api.config.values.single.BooleanValue;
 import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Version;
 import net.minecraft.network.chat.Component;

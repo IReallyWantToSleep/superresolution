@@ -38,7 +38,7 @@ import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
-import io.homo.superresolution.common.platform.*;
+import io.homo.superresolution.api.platform.*;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -141,7 +141,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static void preInit() {
         if (minecraft == null) minecraft = Minecraft.getInstance();
         File gameDir = Platform.currentPlatform.getGameFolder().toFile();
-        if (Platform.currentPlatform.getEnv() == EnvType.SERVER)
+        if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
         NativeLibManager.extract(gameDir.getAbsolutePath());
         NativeLibManager.load(gameDir.getAbsolutePath());

@@ -22,20 +22,17 @@ import io.homo.superresolution.api.event.AlgorithmRegisterEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.utils.Requirement;
-import io.homo.superresolution.common.platform.Platform;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSROgl;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
-import io.homo.superresolution.common.upscale.nis.NVIDIAImageScaling;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
-import io.homo.superresolution.common.platform.OS;
-import io.homo.superresolution.common.platform.Arch;
-import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.SystemArchitecture;
+import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.common.upscale.xess.XeSS;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
 public class AlgorithmDescriptions {
@@ -79,7 +76,7 @@ public class AlgorithmDescriptions {
                     "fsr",
                     "AMD FidelityFX Super Resolution",
                     Requirement.nothing()
-                            .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
                             .requireVulkan(true)
             );
     public static final AlgorithmDescription<XeSS> XESS =
@@ -89,7 +86,7 @@ public class AlgorithmDescriptions {
                     "xess",
                     "Intel Xe Super Sampling",
                     Requirement.nothing()
-                            .addSupportedOS(new OS(Arch.X86_64, OSType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
                             .requireVulkan(true)
             );
     public static final AlgorithmDescription<FfxFSROgl> FSROgl =

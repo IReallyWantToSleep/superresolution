@@ -19,8 +19,6 @@
 package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
-import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
 public interface IPipelineJob {
     /**

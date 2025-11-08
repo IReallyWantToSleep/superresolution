@@ -8,10 +8,6 @@
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style;
 
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.FloatOptional;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.SmallValueBuffer;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleLength;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleValueHandle;
 
 /**
  * StyleValuePool allows compact storage for a sparse collection of assigned

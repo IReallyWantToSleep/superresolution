@@ -7,8 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.CalculateLayout;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.FlexDirectionUtil;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.MutableYogaConfig;

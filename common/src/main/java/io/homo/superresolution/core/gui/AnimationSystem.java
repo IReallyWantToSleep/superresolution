@@ -22,12 +22,8 @@ package io.homo.superresolution.core.gui;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.AnimationHandler;
 import io.homo.superresolution.thirdparty.icyllis.modernui.core.Core;
 import io.homo.superresolution.thirdparty.icyllis.modernui.core.Looper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class AnimationSystem {
     private static volatile Thread animationThread;
@@ -43,10 +39,10 @@ public class AnimationSystem {
                 while (true) {
                     long currentTimeNanos = System.nanoTime();
                     AnimationHandler.getInstance().doAnimationFrame(Core.timeMillis());
-                    Thread.sleep(Duration.ofNanos(Math.max(
-                            frameTime - (System.nanoTime() - currentTimeNanos),
-                            0
-                    )));
+                    Thread.sleep(
+                            ((long) Math.floor(frameTime - (System.nanoTime() - currentTimeNanos) / 1000L)),
+                            (int) (frameTime - (System.nanoTime() - currentTimeNanos) - ((long) Math.floor(frameTime - (System.nanoTime() - currentTimeNanos) / 1000L) * 1000L))
+                    );
                 }
             } catch (Exception e) {
                 e.printStackTrace();

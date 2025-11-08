@@ -18,16 +18,14 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.EXTMemoryObjectFD;
 import org.lwjgl.opengl.EXTMemoryObjectWin32;
 import org.lwjgl.opengl.EXTSemaphoreFD;
 import org.lwjgl.opengl.EXTSemaphoreWin32;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.NativeResource;
-import org.lwjgl.system.NativeType;
 import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
@@ -41,7 +39,7 @@ public class VulkanInterop {
     public static final VulkanInteropExt IMPL;
 
     static {
-        if (Platform.currentPlatform.getOS().type == OSType.WINDOWS) {
+        if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             IMPL = new WindowsVulkanInteropExtImpl();
         } else {
             IMPL = new LinuxVulkanInteropExtImpl();

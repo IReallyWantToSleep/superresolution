@@ -19,10 +19,9 @@
 package io.homo.superresolution.core.graphics.shader;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.SuperResolutionNative;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
@@ -32,7 +31,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderCompileException;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +41,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

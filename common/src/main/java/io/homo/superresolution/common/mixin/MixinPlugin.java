@@ -18,11 +18,12 @@
 
 package io.homo.superresolution.common.mixin;
 
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.objectweb.asm.tree.ClassNode;
+
 import java.util.List;
 import java.util.Set;
 

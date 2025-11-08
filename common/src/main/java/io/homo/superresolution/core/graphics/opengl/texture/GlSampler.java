@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.graphics.opengl.texture;
 
 import io.homo.superresolution.core.graphics.impl.GpuObject;
-import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.impl.Destroyable;
 
 import static io.homo.superresolution.core.graphics.opengl.Gl.DSA;

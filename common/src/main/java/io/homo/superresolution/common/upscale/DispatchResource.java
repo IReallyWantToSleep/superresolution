@@ -19,9 +19,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import org.joml.Vector2f;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import org.joml.Matrix4f;
 
 public record DispatchResource(

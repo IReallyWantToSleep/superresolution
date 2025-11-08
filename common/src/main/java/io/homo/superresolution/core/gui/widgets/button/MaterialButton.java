@@ -34,7 +34,6 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.BezierInterpolator;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.PropertyValuesHolder;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.TimeInterpolator;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimator;
 import org.joml.Vector2f;
 

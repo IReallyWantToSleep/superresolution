@@ -7,8 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison;
-
 /**
  * Represents an optional float value that may be undefined (NaN).
  * Corresponds to facebook::yoga::FloatOptional in C++.

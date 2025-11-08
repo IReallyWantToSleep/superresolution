@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.platform;
+package io.homo.superresolution.api.platform;
 
 import net.minecraft.network.chat.Component;
 
-public class OS {
-    public static OS any = new OS(Arch.ANY, OSType.ANY);
-    public Arch arch;
-    public OSType type;
+public class OperatingSystem {
+    public static OperatingSystem any = new OperatingSystem(SystemArchitecture.ANY, OperatingSystemType.ANY);
+    public SystemArchitecture arch;
+    public OperatingSystemType type;
 
-    public OS() {
-        type = OSType.get();
-        arch = Arch.get();
+    public OperatingSystem() {
+        type = OperatingSystemType.get();
+        arch = SystemArchitecture.get();
     }
 
-    public OS(Arch arch, OSType type) {
+    public OperatingSystem(SystemArchitecture arch, OperatingSystemType type) {
         this.type = type;
         this.arch = arch;
     }

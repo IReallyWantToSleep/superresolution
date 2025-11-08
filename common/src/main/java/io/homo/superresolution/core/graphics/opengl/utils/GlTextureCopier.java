@@ -33,7 +33,6 @@ import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.system.IRenderState;
 import org.lwjgl.opengl.GL43;
-import org.lwjgl.opengl.GL46;
 
 import java.util.HashMap;
 import java.util.List;

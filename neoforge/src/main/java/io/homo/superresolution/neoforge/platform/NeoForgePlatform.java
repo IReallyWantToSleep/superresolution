@@ -18,8 +18,9 @@
 
 package io.homo.superresolution.neoforge.platform;
 
-import io.homo.superresolution.common.platform.EnvType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.EnvironmentType;
+import io.homo.superresolution.api.platform.Platform;
+import net.minecraft.SharedConstants;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.LoadingModList;
@@ -39,7 +40,11 @@ public class NeoForgePlatform extends Platform {
 
     @Override
     public boolean isDevelopmentEnvironment() {
+        #if MC_VER >= MC_1_21_9
+        return !FMLLoader.getCurrent().isProduction();
+        #else
         return !FMLLoader.isProduction();
+        #endif
     }
 
     @Override
@@ -49,12 +54,28 @@ public class NeoForgePlatform extends Platform {
     }
 
     @Override
-    public EnvType getEnv() {
-        return FMLLoader.getDist().isClient() ? EnvType.CLIENT : EnvType.SERVER;
+    public EnvironmentType getEnv() {
+        #if MC_VER >= MC_1_21_9
+        return FMLLoader.getCurrent().getDist().isClient() ? EnvironmentType.CLIENT : EnvironmentType.SERVER;
+        #else
+        return FMLLoader.getDist().isClient() ? EnvironmentType.CLIENT : EnvironmentType.SERVER;
+        #endif
+    }
+
+    public String getMinecraftVersion() {
+        #if MC_VER > MC_1_21_6
+        return SharedConstants.getCurrentVersion().id();
+        #else
+        return SharedConstants.VERSION_STRING;
+        #endif
     }
 
     @Override
     public Path getGameFolder() {
+        #if MC_VER >= MC_1_21_9
+        return FMLLoader.getCurrent().getGameDir();
+        #else
         return FMLLoader.getGamePath();
+        #endif
     }
 }

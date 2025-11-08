@@ -1,7 +1,8 @@
 package io.homo.superresolution.forge.platform;
 
-import io.homo.superresolution.common.platform.EnvType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.EnvironmentType;
+import io.homo.superresolution.api.platform.Platform;
+import net.minecraft.SharedConstants;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -13,6 +14,15 @@ public class ForgePlatform extends Platform {
     @Override
     public void init() {
         if (isInstallIris()) this.irisPlatform = new IrisForgePlatform();
+    }
+
+    @Override
+    public String getMinecraftVersion() {
+        #if MC_VER > MC_1_21_6
+        return SharedConstants.getCurrentVersion().id();
+        #else
+        return SharedConstants.getCurrentVersion().getName();
+        #endif
     }
 
     @Override
@@ -31,10 +41,10 @@ public class ForgePlatform extends Platform {
         return null;
     }
 
-    public EnvType getEnv() {
+    public EnvironmentType getEnv() {
         return switch (FMLLoader.getDist()) {
-            case CLIENT -> EnvType.CLIENT;
-            case DEDICATED_SERVER -> EnvType.SERVER;
+            case CLIENT -> EnvironmentType.CLIENT;
+            case DEDICATED_SERVER -> EnvironmentType.SERVER;
         };
     }
 

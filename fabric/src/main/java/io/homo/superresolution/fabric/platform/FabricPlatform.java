@@ -18,9 +18,10 @@
 
 package io.homo.superresolution.fabric.platform;
 
-import io.homo.superresolution.common.platform.EnvType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.EnvironmentType;
+import io.homo.superresolution.api.platform.Platform;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.SharedConstants;
 
 import java.nio.file.Path;
 
@@ -47,10 +48,10 @@ public class FabricPlatform extends Platform {
         return null;
     }
 
-    public EnvType getEnv() {
+    public EnvironmentType getEnv() {
         return switch (FabricLoader.getInstance().getEnvironmentType()) {
-            case CLIENT -> EnvType.CLIENT;
-            case SERVER -> EnvType.SERVER;
+            case CLIENT -> EnvironmentType.CLIENT;
+            case SERVER -> EnvironmentType.SERVER;
         };
     }
 
@@ -58,4 +59,11 @@ public class FabricPlatform extends Platform {
         return FabricLoader.getInstance().getGameDir().toAbsolutePath().normalize();
     }
 
+    public String getMinecraftVersion() {
+        #if MC_VER > MC_1_21_6
+        return SharedConstants.getCurrentVersion().id();
+        #else
+        return SharedConstants.VERSION_STRING;
+        #endif
+    }
 }

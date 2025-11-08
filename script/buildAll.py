@@ -22,6 +22,9 @@ output_dir = cur_path / OUTPUT_DIR
 _gradle_args: List[str] = ["--info"] if ENABLE_GRADLE_OUTPUT_INFO else []
 _gradle_output = subprocess.DEVNULL if not ENABLE_GRADLE_OUTPUT else None
 
+print("GRADLE_HOME: ", os.environ.get('GRADLE_HOME', '未设置').strip())
+if os.environ.get('GRADLE_HOME') is not None and 'GRADLE_USER_HOME' not in os.environ:
+    os.environ.setdefault('GRADLE_USER_HOME', os.path.join(os.environ['GRADLE_HOME'], '.gradle'))
 class JavaFinder:
     def __init__(self):
         self.java_home = os.environ.get('JAVA_HOME')

@@ -9,7 +9,6 @@ package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config;
 
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.LogLevel;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaConfig;
 
 /**
  * Interface for logging events from the yoga layout engine.

@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core;
 
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 
 import java.io.IOException;
 import java.nio.file.Files;

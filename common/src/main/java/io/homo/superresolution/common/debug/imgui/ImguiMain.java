@@ -26,7 +26,6 @@ import imgui.glfw.ImGuiImplGlfw;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.impl.Destroyable;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 public class ImguiMain implements Destroyable {

@@ -132,7 +132,7 @@ dependencies {
     }
 
     if (irisDependency != null) {
-        compileOnly "maven.modrinth:${irisDependency.name}:${irisDependency.version}-${irisPlatform},${versionConfig.common.minecraftVersion}"
+        compileOnly "maven.modrinth:${irisDependency.name}:${irisDependency.version}-${irisPlatform},${irisDependency.minecraftVersion == null ? versionConfig.common.minecraftVersion : irisDependency.minecraftVersion}"
     }
 }
 
@@ -178,4 +178,8 @@ tasks.register("genJNIHeader", Exec) {
 
 processResources {
 
+}
+
+
+sourceSets {
 }

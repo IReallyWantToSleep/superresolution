@@ -21,8 +21,8 @@ package io.homo.superresolution.common.gui;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.gui.widgets.Line;
-import io.homo.superresolution.common.platform.OS;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -130,8 +130,8 @@ public class InfoBuilder {
         if (req.getSupportedOS().isEmpty()) {
             addIndentedLine(Component.translatable("superresolution.screen.text.any").getString());
         } else {
-            for (OS os : req.getSupportedOS()) {
-                addIndentedLine("%s %s".formatted(os.type.getString(), os.arch.getString()));
+            for (OperatingSystem operatingSystem : req.getSupportedOS()) {
+                addIndentedLine("%s %s".formatted(operatingSystem.type.getString(), operatingSystem.arch.getString()));
             }
         }
     }

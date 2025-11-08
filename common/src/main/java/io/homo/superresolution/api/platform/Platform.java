@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.platform;
+package io.homo.superresolution.api.platform;
 
 import net.minecraft.SharedConstants;
 
@@ -33,11 +33,11 @@ public abstract class Platform {
 
     public abstract String getModVersionString(String modId);
 
-    public OS getOS() {
-        return new OS();
+    public OperatingSystem getOS() {
+        return new OperatingSystem();
     }
 
-    public abstract EnvType getEnv();
+    public abstract EnvironmentType getEnv();
 
     public abstract Path getGameFolder();
 
@@ -54,11 +54,5 @@ public abstract class Platform {
         return isInstallIris;
     }
 
-    public String getMinecraftVersion() {
-        #if MC_VER > MC_1_21_6
-        return SharedConstants.getCurrentVersion().id();
-        #else
-        return SharedConstants.VERSION_STRING;
-        #endif
-    }
+    public abstract String getMinecraftVersion();
 }

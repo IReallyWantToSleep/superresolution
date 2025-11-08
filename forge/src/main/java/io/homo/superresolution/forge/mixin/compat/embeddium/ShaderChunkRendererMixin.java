@@ -1,8 +1,5 @@
 package io.homo.superresolution.forge.mixin.compat.embeddium;
 
-import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.platform.Platform;
-import me.jellysquid.mods.sodium.client.gl.shader.*;
 import me.jellysquid.mods.sodium.client.render.chunk.ShaderChunkRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;

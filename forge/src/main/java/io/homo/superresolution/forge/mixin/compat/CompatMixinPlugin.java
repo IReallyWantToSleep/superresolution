@@ -1,6 +1,6 @@
 package io.homo.superresolution.forge.mixin.compat;
 
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.forge.platform.ForgePlatform;

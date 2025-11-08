@@ -20,7 +20,8 @@ package io.homo.superresolution.common.config;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.api.config.*;
+import io.homo.superresolution.api.config.ModConfigSpec;
+import io.homo.superresolution.api.config.ModConfigSpecBuilder;
 import io.homo.superresolution.api.config.values.list.StringListValue;
 import io.homo.superresolution.api.config.values.single.BooleanValue;
 import io.homo.superresolution.api.config.values.single.EnumValue;
@@ -35,9 +36,9 @@ import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
 import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
-import io.homo.superresolution.common.platform.OS;
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.GpuVendor;
@@ -75,7 +76,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue DISABLE_UPSCALE_ON_VANILLA;
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
-    public static final OSType CURRENT_OS_TYPE = new OS().type;
+    public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
 
     static {
@@ -142,19 +143,19 @@ public class SuperResolutionConfig {
 
         SKIP_INIT_VULKAN = builder.defineBoolean(
                 "debug/skip_init_vulkan",
-                () -> !(CURRENT_OS_TYPE == OSType.ANDROID || CURRENT_OS_TYPE == OSType.MACOS),
+                () -> !(CURRENT_OS_TYPE == OperatingSystemType.ANDROID || CURRENT_OS_TYPE == OperatingSystemType.MACOS),
                 "Skip Vulkan initialization (auto-set based on OS)"
         );
 
         ENABLE_RENDER_DOC = builder.defineBoolean(
                 "debug/enable_render_doc",
-                () -> (CURRENT_OS_TYPE == OSType.WINDOWS || CURRENT_OS_TYPE == OSType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
+                () -> (CURRENT_OS_TYPE == OperatingSystemType.WINDOWS || CURRENT_OS_TYPE == OperatingSystemType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable RenderDoc integration (auto-disabled on incompatible OS)"
         );
 
         ENABLE_IMGUI = builder.defineBoolean(
                 "debug/enable_imgui",
-                () -> (CURRENT_OS_TYPE == OSType.WINDOWS || CURRENT_OS_TYPE == OSType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
+                () -> (CURRENT_OS_TYPE == OperatingSystemType.WINDOWS || CURRENT_OS_TYPE == OperatingSystemType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
                 "Enable ImGui debug interface (auto-disabled on incompatible OS)"
         );
 

@@ -20,11 +20,11 @@ package io.homo.superresolution.fabric.mixin.compat.sodium;
 
 #if MC_VER > MC_1_20_6
 
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 #else
 
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 #endif
 

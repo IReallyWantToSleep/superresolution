@@ -39,8 +39,8 @@ import io.homo.superresolution.common.perf.PerformanceRecoder;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.gui.WidgetDesignScreen;
 import io.homo.superresolution.core.impl.Pair;
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
@@ -65,7 +65,7 @@ public class ClothConfig {
     public static void add(ConfigBuilder builder) {
         ConfigCategory commonCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.general"));
         ConfigEntryBuilder entryBuilder = ConfigEntryBuilderImpl.create();
-        if (Platform.currentPlatform.getOS().type == OSType.ANDROID) {
+        if (Platform.currentPlatform.getOS().type == OperatingSystemType.ANDROID) {
             commonCategory.addEntry(entryBuilder.startTextDescription(
                             Component.translatable("superresolution.screen.config.warn.mobile_device"))
                     .setColor(ColorUtil.color(255, 255, 0, 0)).build());

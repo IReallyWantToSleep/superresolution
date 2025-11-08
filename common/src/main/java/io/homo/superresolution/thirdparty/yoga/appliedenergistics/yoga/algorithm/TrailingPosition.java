@@ -9,7 +9,6 @@ package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorith
 
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.FlexDirectionUtil;
 
 public class TrailingPosition {
 

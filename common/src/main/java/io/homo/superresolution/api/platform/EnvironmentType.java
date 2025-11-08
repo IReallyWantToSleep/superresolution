@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.platform;
+package io.homo.superresolution.api.platform;
 
-public enum EnvType {
+public enum EnvironmentType {
     CLIENT, SERVER
 }

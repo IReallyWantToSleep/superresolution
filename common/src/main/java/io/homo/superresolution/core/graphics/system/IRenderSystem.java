@@ -18,12 +18,7 @@
 
 package io.homo.superresolution.core.graphics.system;
 
-import io.homo.superresolution.core.graphics.impl.DrawObject;
-import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 public interface IRenderSystem {
     /**
