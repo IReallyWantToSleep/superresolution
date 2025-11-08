@@ -23,7 +23,6 @@ import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.utils.Color;
 
 public class OptionContainerWidget extends ContainerWidget {
     protected MaterialScheme scheme = MaterialScheme.defaultLight;

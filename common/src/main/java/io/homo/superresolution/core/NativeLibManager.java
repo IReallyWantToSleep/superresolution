@@ -18,13 +18,11 @@
 
 package io.homo.superresolution.core;
 
-import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.PointerType;
-import com.sun.jna.win32.W32APIOptions;
-import io.homo.superresolution.common.platform.Arch;
-import io.homo.superresolution.common.platform.OS;
-import io.homo.superresolution.common.platform.OSType;
+import io.homo.superresolution.api.platform.SystemArchitecture;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.core.utils.MessageBox;
 import org.lwjgl.system.Configuration;
 import org.slf4j.Logger;
@@ -73,9 +71,9 @@ public class NativeLibManager {
     private static ExtendedKernel32 kernel32Instance;
 
     static {
-        OS os = new OS();
+        OperatingSystem operatingSystem = new OperatingSystem();
 
-        if (os.type == OSType.WINDOWS && os.arch == Arch.X86_64) {
+        if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false);
@@ -92,11 +90,11 @@ public class NativeLibManager {
             //libs.add(LIB_SUPER_RESOLUTION_FSR);
             //libs.add(LIB_SUPER_RESOLUTION_XESS);
 
-        } else if (os.type == OSType.ANDROID && os.arch == Arch.AARCH64) {
+        } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             libs.add(LIB_SUPER_RESOLUTION);
 
-        } else if (os.type == OSType.LINUX && os.arch == Arch.X86_64) {
+        } else if (operatingSystem.type == OperatingSystemType.LINUX && operatingSystem.arch == SystemArchitecture.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
             LIB_NANOVG = new NativeLib(
@@ -111,7 +109,7 @@ public class NativeLibManager {
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
 
-        } else if (os.type == OSType.MACOS && os.arch == Arch.AARCH64) {
+        } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
             libs.add(LIB_SUPER_RESOLUTION);
         }
@@ -217,16 +215,16 @@ public class NativeLibManager {
         }
 
         private static String buildFullFileName(String baseName, boolean nameIsPath) {
-            OS os = new OS();
+            OperatingSystem operatingSystem = new OperatingSystem();
             StringBuilder sb = new StringBuilder();
             if (!nameIsPath) {
                 sb.append("lib");
                 sb.append(baseName);
 
-                if (os.type == OSType.WINDOWS) sb.append("+win64");
-                else if (os.type == OSType.LINUX) sb.append("+linux64");
-                else if (os.type == OSType.MACOS) sb.append("+macarm64");
-                else if (os.type == OSType.ANDROID) sb.append("+android");
+                if (operatingSystem.type == OperatingSystemType.WINDOWS) sb.append("+win64");
+                else if (operatingSystem.type == OperatingSystemType.LINUX) sb.append("+linux64");
+                else if (operatingSystem.type == OperatingSystemType.MACOS) sb.append("+macarm64");
+                else if (operatingSystem.type == OperatingSystemType.ANDROID) sb.append("+android");
 
                 if (USE_DEBUG_LIB) {
                     sb.append("+debug");
@@ -237,9 +235,10 @@ public class NativeLibManager {
                 sb.append(baseName);
             }
 
-            if (os.type == OSType.WINDOWS) sb.append(".dll");
-            else if (os.type == OSType.LINUX || os.type == OSType.ANDROID) sb.append(".so");
-            else if (os.type == OSType.MACOS) sb.append(".dylib");
+            if (operatingSystem.type == OperatingSystemType.WINDOWS) sb.append(".dll");
+            else if (operatingSystem.type == OperatingSystemType.LINUX || operatingSystem.type == OperatingSystemType.ANDROID)
+                sb.append(".so");
+            else if (operatingSystem.type == OperatingSystemType.MACOS) sb.append(".dylib");
 
             return sb.toString();
         }

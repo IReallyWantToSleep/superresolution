@@ -50,7 +50,6 @@ public class FSR2 extends AbstractAlgorithm {
         RenderSystem.assertOnRenderThread();
         this.output.resize(width, height);
         outputFbo.resizeFrameBuffer(width, height);
-        inputTexture.getMipmapSettings().bias((float) (Math.log((double) RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getScreenWidth()) / Math.log(2) - 1f));
         inputTexture.resize(
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight()

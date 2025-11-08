@@ -21,7 +21,6 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VkDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

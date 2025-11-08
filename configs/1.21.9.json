@@ -1,10 +1,12 @@
 {
+    "skip_build": true,
     "common": {
         "java_version": 21,
         "minecraft_version": "1.21.9",
         "parchment_version": null,
         "platforms": [
-            "fabric"
+            "fabric",
+            "neoforge"
         ],
         "lwjgl_version": "3.3.3",
         "architectury_api_version": "18.0.3",
@@ -51,5 +53,35 @@
             "local": []
         },
         "modmenu_version": "16.0.0-rc.1"
+    },
+    "neoforge": {
+        "loader_version": "21.9.16-beta",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.10-0.7.2-neoforge",
+                    "minecraft_version": "1.21.10"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.9.6+1.21.10-neoforge",
+                    "minecraft_version": "1.21.10"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.3.6-b-1.21.10",
+                    "minecraft_version": "1.21.10"
+                },
+                {
+                    "name": "reeses-sodium-options",
+                    "version": "mc1.21.6-1.8.4+neoforge",
+                    "minecraft_version": "1.21.6",
+                    "compileOnly": true
+                }
+            ],
+            "local": [
+            ]
+        }
     }
 }

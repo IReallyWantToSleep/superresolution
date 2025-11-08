@@ -7,8 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.PixelGrid;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaConfig;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison;
 

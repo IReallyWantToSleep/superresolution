@@ -7,8 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-
 /**
  * Functional interface for cloning nodes in the yoga layout engine.
  */

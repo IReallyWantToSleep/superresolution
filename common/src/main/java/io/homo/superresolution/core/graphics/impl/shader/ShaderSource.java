@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.graphics.impl.shader;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 import io.homo.superresolution.core.utils.FileReadHelper;

@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.platform;
+package io.homo.superresolution.api.platform;
 
 import com.sun.jna.Platform;
 import net.minecraft.network.chat.Component;
 
-public enum Arch {
+public enum SystemArchitecture {
     AARCH64("aarch64"),
     ARM32("arm"),
     X86_64("x86-64"),
@@ -30,13 +30,13 @@ public enum Arch {
 
     private final String platformArch;
 
-    Arch(String platformArch) {
+    SystemArchitecture(String platformArch) {
         this.platformArch = platformArch;
     }
 
-    public static Arch get() {
+    public static SystemArchitecture get() {
         String arch = Platform.ARCH;
-        for (Arch a : values()) {
+        for (SystemArchitecture a : values()) {
             if (a != ANY && a.platformArch.equals(arch)) {
                 return a;
             }
@@ -44,8 +44,8 @@ public enum Arch {
         return ANY;
     }
 
-    public boolean equals(Arch arch) {
-        return arch == ANY || Arch.get() == arch;
+    public boolean equals(SystemArchitecture arch) {
+        return arch == ANY || SystemArchitecture.get() == arch;
     }
 
     public String getString() {

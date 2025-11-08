@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;

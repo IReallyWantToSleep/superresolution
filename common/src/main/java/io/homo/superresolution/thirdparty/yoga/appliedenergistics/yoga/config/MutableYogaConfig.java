@@ -12,8 +12,6 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaClone
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaErrata;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaExperimentalFeature;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaConfig;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaLogger;
 
 import java.util.EnumSet;
 import java.util.Set;

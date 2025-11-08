@@ -181,7 +181,7 @@ public class ClothStyleConfigScreen extends AbstractConfigScreen {
         if (Minecraft.getInstance().level == null) {
             #if MC_VER >= MC_1_20_6
             #if MC_VER < MC_1_21_6
-               panorama.render(graphics, width, height, 1.0f, delta);
+            panorama.render(graphics, width, height, 1.0f, delta);
             #else
             panorama.render(graphics, width, height, true);
             #endif

@@ -7,10 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaWrap;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleLength;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 

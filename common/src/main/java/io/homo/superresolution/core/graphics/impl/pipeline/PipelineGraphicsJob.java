@@ -22,7 +22,6 @@ import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.system.IRenderSystem;
 
 import java.util.Objects;
 

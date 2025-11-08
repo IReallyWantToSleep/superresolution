@@ -5,13 +5,14 @@
     "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
-        "reesessodiumoptions.TabFrameMixin",
-        "sodium.SodiumOptionsGUIMixin",
         "iris.GlFramebufferMixin",
         "iris.IrisRenderingPipelineMixin",
+        "reesessodiumoptions.TabFrameMixin",
+        "sodium.SodiumOptionsGUIMixin",
         "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "mixins": [
+        "iris.DHCompatInternalMixin"
     ],
     "injectors": {
         "defaultRequire": 1

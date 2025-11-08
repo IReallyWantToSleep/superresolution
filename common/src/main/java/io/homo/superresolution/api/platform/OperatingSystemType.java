@@ -16,13 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.platform;
+package io.homo.superresolution.api.platform;
 
 import com.sun.jna.Platform;
-import io.homo.superresolution.common.SuperResolution;
 import net.minecraft.network.chat.Component;
 
-public enum OSType {
+public enum OperatingSystemType {
     ANDROID(Platform.ANDROID == Platform.getOSType()),
     LINUX(Platform.LINUX == Platform.getOSType()),
     WINDOWS(Platform.WINDOWS == Platform.getOSType()),
@@ -31,11 +30,11 @@ public enum OSType {
 
     private final boolean isCurrentOS;
 
-    OSType(boolean isCurrentOS) {
+    OperatingSystemType(boolean isCurrentOS) {
         this.isCurrentOS = isCurrentOS;
     }
 
-    public static OSType get() {
+    public static OperatingSystemType get() {
         if (ANDROID.isCurrentOS || System.getenv("POJAV_RENDERER") != null) {
             return ANDROID;
         } else if (LINUX.isCurrentOS) {
@@ -49,12 +48,12 @@ public enum OSType {
         }
     }
 
-    public static boolean isCurrentOS(OSType osType) {
+    public static boolean isCurrentOS(OperatingSystemType osType) {
         return osType.isCurrentOS;
     }
 
-    public boolean equals(OSType type) {
-        return type == ANY || OSType.get() == type;
+    public boolean equals(OperatingSystemType type) {
+        return type == ANY || OperatingSystemType.get() == type;
     }
 
     public String getString() {

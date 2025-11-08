@@ -20,7 +20,6 @@ package io.homo.superresolution.core.graphics.opengl.dsa;
 
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.lwjgl.opengl.GL43;
-import org.lwjgl.opengl.GL45C;
 
 import java.nio.*;
 

@@ -20,7 +20,7 @@ package io.homo.superresolution.neoforge.mixin.compat.sodium;
 
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;

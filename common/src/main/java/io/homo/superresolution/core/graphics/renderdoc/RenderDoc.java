@@ -22,8 +22,8 @@ import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;
-import io.homo.superresolution.common.platform.OSType;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +40,12 @@ public class RenderDoc {
     public static void init() {
         var apiPointer = new PointerByReference();
         RenderdocLibrary.RenderdocApi apiInstance = null;
-        if (OSType.isCurrentOS(OSType.WINDOWS) || OSType.isCurrentOS(OSType.LINUX)) {
+        if (OperatingSystemType.isCurrentOS(OperatingSystemType.WINDOWS) || OperatingSystemType.isCurrentOS(OperatingSystemType.LINUX)) {
             try {
                 LOGGER.info(Thread.currentThread().getName());
                 String projectDir = Platform.currentPlatform.getGameFolder().getParent().getParent().toAbsolutePath().toString();
                 String libPath = "";
-                if (OSType.isCurrentOS(OSType.WINDOWS)) {
+                if (OperatingSystemType.isCurrentOS(OperatingSystemType.WINDOWS)) {
                     libPath = Path.of(projectDir, "renderdoc", "renderdoc.dll").toAbsolutePath().toString();
                 } else {
                     libPath = Path.of(projectDir, "renderdoc", "librenderdoc.so").toAbsolutePath().toString();

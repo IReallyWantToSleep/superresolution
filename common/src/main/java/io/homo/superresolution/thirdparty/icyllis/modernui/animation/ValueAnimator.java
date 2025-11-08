@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.thirdparty.icyllis.modernui.animation;
 
-import io.homo.superresolution.thirdparty.icyllis.modernui.core.Looper;
 import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.ApiStatus;
 

@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.utils;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 public class MouseCursor {

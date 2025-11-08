@@ -18,8 +18,7 @@
 
 package io.homo.superresolution.neoforge.mixin.compat;
 
-import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.neoforge.platform.NeoForgePlatform;
 import net.neoforged.fml.loading.FMLConfig;

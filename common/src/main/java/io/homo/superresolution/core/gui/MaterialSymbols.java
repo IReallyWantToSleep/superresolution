@@ -1028,7 +1028,7 @@ public class MaterialSymbols {
     }
 
     public static MaterialSymbol iconApi() {
-        return symbols.get("api");
+        return symbols.get("io/homo/superresolution/api");
     }
 
     public static MaterialSymbol iconApkDocument() {

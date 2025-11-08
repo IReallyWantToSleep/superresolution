@@ -25,7 +25,6 @@ import io.homo.superresolution.core.graphics.impl.command.commands.GpuCommand;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
-import io.homo.superresolution.core.graphics.opengl.GlState;
 
 import java.util.ArrayList;
 import java.util.Collection;

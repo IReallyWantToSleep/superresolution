@@ -7,8 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.LayoutPassReason;
-
 import java.util.Objects;
 
 public final class LayoutData {

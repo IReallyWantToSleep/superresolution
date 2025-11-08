@@ -7,8 +7,6 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-
 /**
  * Interface for node baseline function.
  */

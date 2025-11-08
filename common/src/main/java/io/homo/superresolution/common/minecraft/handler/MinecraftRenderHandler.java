@@ -19,13 +19,14 @@
 package io.homo.superresolution.common.minecraft.handler;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.api.event.*;
+import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
+import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.minecraft.*;
 import io.homo.superresolution.common.perf.PerformanceRecoder;
-import io.homo.superresolution.common.platform.Platform;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
@@ -239,9 +240,8 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
             #else
             RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
             renderTarget.bind(FrameBufferBindPoint.Write);
+            #endif
         }
-        #endif
-
     }
 
     public void onRenderWorldEnd(CallType type) {

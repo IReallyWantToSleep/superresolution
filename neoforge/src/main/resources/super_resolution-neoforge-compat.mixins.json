@@ -6,14 +6,15 @@
     "minVersion": "0.8",
     "client": [
         "iris.GlFramebufferMixin",
+        "iris.IrisRenderingPipelineMixin",
         "reesessodiumoptions.TabFrameMixin",
         "simpleclouds.DefaultPipelineMixin",
         "simpleclouds.ShaderSupportPipelineMixin",
         "sodium.SodiumOptionsGUIMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
-        "iris.IrisRenderingPipelineMixin"
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "mixins": [
+        "iris.DHCompatInternalMixin"
     ],
     "injectors": {
         "defaultRequire": 1

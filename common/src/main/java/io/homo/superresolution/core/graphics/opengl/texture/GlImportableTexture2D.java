@@ -19,15 +19,12 @@
 package io.homo.superresolution.core.graphics.opengl.texture;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
 
 import static org.lwjgl.opengl.EXTMemoryObject.*;
-import static org.lwjgl.opengl.EXTMemoryObjectWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT;
-import static org.lwjgl.opengl.EXTMemoryObjectWin32.glImportMemoryWin32HandleEXT;
 import static org.lwjgl.opengl.GL11.*;
 
 public class GlImportableTexture2D extends GlTexture2D {

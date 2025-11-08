@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.fabric.platform;
 
-import io.homo.superresolution.common.platform.IrisPlatform;
+import io.homo.superresolution.api.platform.IrisPlatform;
 
 import java.lang.reflect.Method;
 

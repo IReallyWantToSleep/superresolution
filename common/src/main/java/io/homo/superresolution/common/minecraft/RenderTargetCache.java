@@ -20,7 +20,6 @@ package io.homo.superresolution.common.minecraft;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 
 import java.util.*;
 

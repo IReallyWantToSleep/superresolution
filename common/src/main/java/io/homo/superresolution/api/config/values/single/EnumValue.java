@@ -22,7 +22,6 @@ import com.electronwill.nightconfig.core.ConfigSpec;
 import io.homo.superresolution.api.config.ConfigValue;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {

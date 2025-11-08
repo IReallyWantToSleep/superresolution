@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.api.utils;
 
-import io.homo.superresolution.common.platform.*;
+import io.homo.superresolution.api.platform.*;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 
@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 public class Requirement {
     private final Set<String> requiredGlExtensions = new HashSet<>();
-    private final Set<OS> supportedOS = new HashSet<>();
+    private final Set<OperatingSystem> supportedOS = new HashSet<>();
     private final Set<String> requiredVulkanDeviceExtensions = new HashSet<>();
     private int glMajorVersion = -1;
     private int glMinorVersion = -1;
@@ -205,7 +205,7 @@ public class Requirement {
     private boolean checkOSCompatibility() {
         if (supportedOS.isEmpty()) return true;
 
-        final OS current = Platform.currentPlatform.getOS();
+        final OperatingSystem current = Platform.currentPlatform.getOS();
         return supportedOS.stream()
                 .anyMatch(os -> os.arch.equals(current.arch) &&
                         os.type.equals(current.type));
@@ -245,29 +245,29 @@ public class Requirement {
     }
 
 
-    public Set<OS> getSupportedOS() {
+    public Set<OperatingSystem> getSupportedOS() {
         return Collections.unmodifiableSet(supportedOS);
     }
 
-    public Requirement addSupportedOS(Arch arch) {
-        return addSupportedOS(new OS(arch, OSType.ANY));
+    public Requirement addSupportedOS(SystemArchitecture arch) {
+        return addSupportedOS(new OperatingSystem(arch, OperatingSystemType.ANY));
     }
 
-    public Requirement addSupportedOS(OSType type) {
-        return addSupportedOS(new OS(Arch.ANY, type));
+    public Requirement addSupportedOS(OperatingSystemType type) {
+        return addSupportedOS(new OperatingSystem(SystemArchitecture.ANY, type));
     }
 
-    public Requirement addSupportedOS(Arch arch, OSType type) {
-        return addSupportedOS(new OS(arch, type));
+    public Requirement addSupportedOS(SystemArchitecture arch, OperatingSystemType type) {
+        return addSupportedOS(new OperatingSystem(arch, type));
     }
 
-    public Requirement addSupportedOS(OS os) {
-        supportedOS.add(Objects.requireNonNull(os, "操作系统配置不能为null"));
+    public Requirement addSupportedOS(OperatingSystem operatingSystem) {
+        supportedOS.add(Objects.requireNonNull(operatingSystem, "操作系统配置不能为null"));
         return this;
     }
 
     @Deprecated
-    public ArrayList<OS> getIncludeOS() {
+    public ArrayList<OperatingSystem> getIncludeOS() {
         return new ArrayList<>(supportedOS);
     }
 
