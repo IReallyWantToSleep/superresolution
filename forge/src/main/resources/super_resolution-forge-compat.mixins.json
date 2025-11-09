@@ -9,11 +9,12 @@
         "embeddium.EmbeddiumOptionMixin",
         "embeddium.ShaderChunkRendererMixin",
         "oculus.GlFramebufferMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
         "simpleclouds.DefaultPipelineMixin",
-        "simpleclouds.ShaderSupportPipelineMixin"
+        "simpleclouds.ShaderSupportPipelineMixin",
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
     ],
     "mixins": [
+        "oculus.DHCompatInternalMixin"
     ],
     "injectors": {
         "defaultRequire": 1

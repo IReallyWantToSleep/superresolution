@@ -93,8 +93,9 @@ public class ImGuiLayer {
                     RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
         }
 
-        drawImage("Generated Motion Vectors", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
-                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
+        if (AlgorithmManager.getMotionVectorsFrameBuffer() != null)
+            drawImage("Generated Motion Vectors", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
+                    RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
 
         drawImage("Upscale Output", SuperResolution.currentAlgorithm.getOutputTextureId(),
                 RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);

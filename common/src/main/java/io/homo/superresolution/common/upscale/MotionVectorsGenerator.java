@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
@@ -58,6 +59,7 @@ public class MotionVectorsGenerator {
     public static GlFrameBuffer inputFrameBuffer;
     public static StructuredUniformBuffer structuredUniformBuffer;
     private static GlBuffer ubo;
+    private static boolean isInit;
 
     public static void initShaders() {
         preprocessShader = RenderSystems.current().device().createShaderProgram(
@@ -108,6 +110,16 @@ public class MotionVectorsGenerator {
     }
 
     public static void init() {
+        if (isInit || !SuperResolutionConfig.isGenerateMotionVectors()) return;
+        motionVectorsFrameBuffer = GlFrameBuffer.create(
+                TextureFormat.RG16F,
+                null,
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight()
+        );
+        motionVectorsFrameBuffer.label("SRMotionVectorsGenerator-MotionVectorsFrameBuffer");
+        if (!SuperResolutionConfig.isGenerateMotionVectors()) return;
+
         structuredUniformBuffer = UniformStructBuilder.start()
                 .floatEntry("exposure")
                 .intEntry("window_radius")
@@ -151,13 +163,6 @@ public class MotionVectorsGenerator {
                         .label("SRMotionVectorsGenerator-previousFrameTexture")
                         .build()
         );
-        motionVectorsFrameBuffer = GlFrameBuffer.create(
-                TextureFormat.RG16F,
-                null,
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight()
-        );
-        motionVectorsFrameBuffer.label("SRMotionVectorsGenerator-MotionVectorsFrameBuffer");
 
         gradFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RG32F,
@@ -265,9 +270,12 @@ public class MotionVectorsGenerator {
         );
 
         resize();
+        isInit = true;
     }
 
     public static void resize() {
+        if (!isInit) return;
+
         int width = RenderHandlerManager.getRenderWidth();
         int height = RenderHandlerManager.getRenderHeight();
 
@@ -284,6 +292,8 @@ public class MotionVectorsGenerator {
             ITexture colorTexture,
             ITexture depthTexture
     ) {
+        if (!isInit) init();
+        if (!isInit) return;
         motionVectorsFrameBuffer.clearFrameBuffer();
         GlTextureCopier.copy(
                 CopyOperation.create()

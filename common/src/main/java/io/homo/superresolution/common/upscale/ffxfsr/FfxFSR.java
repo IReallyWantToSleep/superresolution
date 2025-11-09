@@ -231,13 +231,14 @@ public class FfxFSR extends AbstractAlgorithm {
                         .dst(this.inputDepthGlTexture)
                         .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
         );
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(dispatchResource.resources().motionVectorsTexture())
-                        .dst(this.inputMotionVectorsGlTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-        );
+        if (dispatchResource.resources().motionVectorsTexture() != null)
+            GlTextureCopier.copy(
+                    CopyOperation.create()
+                            .src(dispatchResource.resources().motionVectorsTexture())
+                            .dst(this.inputMotionVectorsGlTexture)
+                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                            .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+            );
         syncSemaphore.signalOpenGL(
                 new int[]{
                         Math.toIntExact(this.inputColorGlTexture.handle()),

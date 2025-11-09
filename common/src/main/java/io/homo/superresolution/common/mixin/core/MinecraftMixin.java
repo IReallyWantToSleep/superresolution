@@ -37,7 +37,6 @@ public class MinecraftMixin {
 
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
-        SuperResolution.check();
         SuperResolution.gameIsLoad = true;
     }
 
@@ -57,11 +56,6 @@ public class MinecraftMixin {
     private void onRenderEnd(CallbackInfo ci) {
         PerformanceInfo.end("runTick");
         RenderHandlerManager.onRenderEnd();
-    }
-
-    @Inject(at = @At(value = "HEAD"), method = "destroy")
-    private void onExit(CallbackInfo ci) {
-        SuperResolution.getInstance().destroy();
     }
 
     @Inject(method = "resizeDisplay", at = @At(value = "HEAD"), cancellable = true)

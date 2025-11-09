@@ -235,7 +235,7 @@ public class XeSS extends AbstractAlgorithm {
                         .dst(this.inputDepthGlTexture)
                         .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
         );
-        GlTextureCopier.copy(
+        if (dispatchResource.resources().motionVectorsTexture() != null) GlTextureCopier.copy(
                 CopyOperation.create()
                         .src(dispatchResource.resources().motionVectorsTexture())
                         .dst(this.inputMotionVectorsGlTexture)
