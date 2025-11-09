@@ -50,7 +50,9 @@ public class RenderSystems {
 
 
     public static void destroy() {
-        opengl.destroyRenderSystem();
+        if (opengl != null) {
+            opengl.destroyRenderSystem();
+        }
         if (vulkan != null) {
             vulkan.destroyRenderSystem();
         }

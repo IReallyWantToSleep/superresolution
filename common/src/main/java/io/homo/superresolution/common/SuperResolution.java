@@ -111,12 +111,15 @@ public final class SuperResolution implements Resizable, Destroyable {
                 (minecraft) -> {
                     registerKeyMapping();
                     instance = new SuperResolution();
+                    SuperResolution.check();
                     SuperResolution.preInit();
                     SuperResolution.initRendering();
                     SuperResolution.createAlgorithm();
                     SuperResolution.getInstance().init();
-                    NanoVG.init();
-                    MaterialUI.init();
+                    if (Platform.currentPlatform.isDevelopmentEnvironment()) {
+                        NanoVG.init();
+                        MaterialUI.init();
+                    }
                 }
         );
         ClientLifecycleEvent.CLIENT_STOPPING.register(
@@ -277,7 +280,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public void resize(int width, int height) {
         cachedWidth = MinecraftWindow.getWindowWidth();
         cachedHeight = MinecraftWindow.getWindowHeight();
-        if (currentAlgorithm != null) {
+        if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscale()) {
             AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
                     currentAlgorithm,
                     RenderHandlerManager.getScreenWidth(),

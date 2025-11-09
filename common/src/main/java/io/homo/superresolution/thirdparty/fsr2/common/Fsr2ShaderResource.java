@@ -35,6 +35,7 @@ public class Fsr2ShaderResource {
     public Supplier<Fsr2PipelineResources.Fsr2ResourceEntry> resourceEntry = null;
     public Supplier<Fsr2PipelineResourceType> resourceType = null;
     public String resourceName;
+    private static ITexture nullTexture;
 
     public GlSampler sampler() {
         return sampler;
@@ -121,17 +122,19 @@ public class Fsr2ShaderResource {
                             return texture2D.getMipView(Math.min(texture2D.getMipmapLevel(), 5));
                         }
                     }
-                    Fsr2Context.LOGGER.error("%s %s".formatted(resourceEntry.get().type().name(), resourceEntry.get().getDescription().label));
-                    return RenderSystems.current().device().createTexture(
-                            TextureDescription.create()
-                                    .width(1)
-                                    .height(1)
-                                    .type(TextureType.Texture2D)
-                                    .format(TextureFormat.RGBA8)
-                                    .usages(TextureUsages.create().storage().sampler())
-                                    .label("SRFSR2NullTexture")
-                                    .build()
-                    );
+                    if (nullTexture == null) {
+                        nullTexture = RenderSystems.current().device().createTexture(
+                                TextureDescription.create()
+                                        .width(1)
+                                        .height(1)
+                                        .type(TextureType.Texture2D)
+                                        .format(TextureFormat.RGBA8)
+                                        .usages(TextureUsages.create().storage().sampler())
+                                        .label("SRFSR2NullTexture")
+                                        .build()
+                        );
+                    }
+                    return nullTexture;
                 }
                 return texture;
             });

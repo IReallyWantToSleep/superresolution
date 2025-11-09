@@ -162,7 +162,12 @@ public class AlgorithmManager {
                 new InputResourceSet(
                         color,
                         depth,
-                        motionVectors == null ? getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) : motionVectors
+                        motionVectors == null ?
+                                getMotionVectorsFrameBuffer() == null ?
+                                        null :
+                                        getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
+                                motionVectors
+
                 )
         );
     }

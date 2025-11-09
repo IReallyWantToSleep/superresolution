@@ -71,8 +71,21 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     protected void checkProgram() {
         if (glGetProgrami(handle, GL_LINK_STATUS) == GL_FALSE) {
             String log = glGetProgramInfoLog(handle);
+            String errorDetails = String.format(
+                    "着色器程序 '%s' 链接失败，暂时忽略\n错误日志:\n%s",
+                    description.shaderName(),
+                    log
+            );
+            LOGGER.error(errorDetails);
+
+            saveLinkErrorArtifacts(log);
+            /*
             glDeleteProgram(handle);
-            throw new RuntimeException("着色器程序链接状态不为GL_TRUE:\n" + log);
+            handle = 0;
+
+            throw new ShaderCompileException(errorDetails);
+            */
+
         }
     }
 
@@ -174,7 +187,7 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     private void saveErrorArtifacts(ShaderType type, String sourceCode, String log) {
         String time = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String baseName = String.format("errorArtifact_%s.%s", type.name(), time);
+        String baseName = String.format("errorArtifact_%s_%s.%s", description.shaderName(), type.name(), time);
         Path sourcePath = Path.of(baseName + ".glsl");
         Path logPath = Path.of(baseName + ".log");
         try {
@@ -183,6 +196,34 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
             LOGGER.info("保存错误着色器源码至: {}, 日志至: {}", sourcePath, logPath);
         } catch (IOException e) {
             LOGGER.error("无法保存着色器源码或日志文件: {}", e.getMessage());
+        }
+    }
+
+    private void saveLinkErrorArtifacts(String log) {
+        String time = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String baseName = String.format("linkError_%s.%s", description.shaderName(), time);
+        Path logPath = Path.of(baseName + ".log");
+        Path infoPath = Path.of(baseName + ".info");
+
+        try {
+            Files.writeString(logPath, log);
+
+            StringBuilder info = new StringBuilder();
+            info.append("着色器程序: ").append(description.shaderName()).append("\n");
+            info.append("链接状态: GL_FALSE\n");
+            info.append("\n附加的着色器信息:\n");
+
+            int attachedShaders = glGetProgrami(handle, GL_ATTACHED_SHADERS);
+            info.append("附加的着色器数量: ").append(attachedShaders).append("\n");
+            description.sourceMap().forEach((type, source) -> {
+                info.append("附加的着色器类型: ").append(type.name()).append("\n");
+                info.append("附加的着色器代码: ").append(source.getSource()).append("\n");
+            });
+
+            Files.writeString(infoPath, info.toString());
+            LOGGER.info("保存链接错误日志至: {}, 程序信息至: {}", logPath, infoPath);
+        } catch (IOException e) {
+            LOGGER.error("无法保存链接错误信息: {}", e.getMessage());
         }
     }
 
@@ -225,12 +266,24 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
                 );
                 shaders.add(shader);
             });
+            if (this.handle != 0) {
+                glDeleteProgram(this.handle);
+            }
             this.handle = glCreateProgram();
+            glFlush();
             shaders.forEach(s -> glAttachShader(handle, s.id()));
             glLinkProgram(handle);
+            glFlush();
             checkProgram();
+
             updateDebugLabel(getDebugLabel());
             this.isCompiled = true;
+        } catch (ShaderCompileException e) {
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("着色器程序 '{}' 编译过程中发生未预期的错误", description.shaderName(), e);
+            e.printStackTrace();
+            throw new ShaderCompileException("着色器程序编译失败: " + e.getMessage());
         } finally {
             shaders.forEach(GlShader::destroy);
         }
@@ -245,8 +298,13 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     @Override
     public void destroy() {
-        uniforms.destroy();
-        glDeleteProgram(this.handle);
+        if (uniforms != null) {
+            uniforms.destroy();
+        }
+        if (handle != 0) {
+            glDeleteProgram(this.handle);
+            handle = 0;
+        }
     }
 
     @Override

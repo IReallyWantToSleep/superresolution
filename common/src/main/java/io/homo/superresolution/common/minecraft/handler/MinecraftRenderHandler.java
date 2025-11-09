@@ -302,18 +302,25 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                                     .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
                     );
                     #endif
-
+                    DispatchResource dispatchResource;
                     if (SuperResolutionConfig.isGenerateMotionVectors()) {
                         MotionVectorsGenerator.update(
                                 colorTexture,
                                 renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
                         );
+                        dispatchResource = AlgorithmManager.getDispatchResource(
+                                colorTexture,
+                                depthTexture,
+                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                        );
+                    } else {
+                        dispatchResource = AlgorithmManager.getDispatchResource(
+                                colorTexture,
+                                depthTexture,
+                                null
+                        );
                     }
-                    DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
-                            colorTexture,
-                            depthTexture,
-                            AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
-                    );
+
 
                     if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchEvent.EVENT.hasEvent()) {
                         AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
@@ -388,8 +395,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
 
     public void callOnRenderTargets(Consumer<IFrameBuffer> callback, boolean includeMainRenderTarget) {
         callOnRenderTargets(callback);
-        if (includeMainRenderTarget) callback.accept(renderTarget);
-
+        if (includeMainRenderTarget && renderTarget != null) callback.accept(renderTarget);
     }
 
     public void updateRenderTargetSize() {

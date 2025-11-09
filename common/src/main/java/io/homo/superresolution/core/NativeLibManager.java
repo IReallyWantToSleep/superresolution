@@ -36,10 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NativeLibManager {
-
     public static final String BASE_PATH = "lib";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-NativeLib");
-
 
     public static final boolean USE_DEBUG_LIB = true;
 
@@ -74,11 +72,12 @@ public class NativeLibManager {
         OperatingSystem operatingSystem = new OperatingSystem();
 
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
-            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
-            LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
-            LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false);
+            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
+            LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
             LIB_NANOVG = new NativeLib(
                     "lwjgl_nanovg",
+                    false,
                     false,
                     true,
                     Configuration.LIBRARY_PATH.get() == null ?
@@ -91,14 +90,15 @@ public class NativeLibManager {
             //libs.add(LIB_SUPER_RESOLUTION_XESS);
 
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
-            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
+            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);
 
         } else if (operatingSystem.type == OperatingSystemType.LINUX && operatingSystem.arch == SystemArchitecture.X86_64) {
-            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
-            LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false);
+            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_NANOVG = new NativeLib(
                     "liblwjgl_nanovg",
+                    false,
                     false,
                     true,
                     Configuration.LIBRARY_PATH.get() == null ?
@@ -110,7 +110,7 @@ public class NativeLibManager {
             libs.add(LIB_SUPER_RESOLUTION_FSR);
 
         } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {
-            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true);
+            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);
         }
     }
@@ -121,37 +121,76 @@ public class NativeLibManager {
 
     public static void extract(String path) {
         LOGGER.info("开始提取依赖库文件");
-        boolean status = true;
-        String error = null;
-        try {
-            for (NativeLib lib : libs) {
+        List<String> requiredFailures = new ArrayList<>();
+        List<String> optionalFailures = new ArrayList<>();
+
+        for (NativeLib lib : libs) {
+            try {
                 if (!extractLibrary(path, lib)) {
-                    status = false;
+                    if (lib.required) {
+                        requiredFailures.add(lib.fileName);
+                        LOGGER.error("必要依赖库 {} 提取失败", lib.fileName);
+                    } else {
+                        optionalFailures.add(lib.fileName);
+                        LOGGER.warn("可选依赖库 {} 提取失败，已跳过", lib.fileName);
+                    }
+                }
+            } catch (Exception e) {
+                if (lib.required) {
+                    requiredFailures.add(lib.fileName);
+                    LOGGER.error("必要依赖库 {} 提取失败: {}", lib.fileName, e.getMessage());
+                    e.printStackTrace();
+                } else {
+                    optionalFailures.add(lib.fileName);
+                    LOGGER.warn("可选依赖库 {} 提取失败，已跳过: {}", lib.fileName, e.getMessage());
                 }
             }
-        } catch (Exception e) {
-            status = false;
-            error = e.toString();
-            e.printStackTrace();
         }
-        if (!status) {
-            LOGGER.error("依赖库提取失败; 信息: {}", error != null ? error : "无");
+
+        if (!requiredFailures.isEmpty()) {
+            String errorMsg = String.join(", ", requiredFailures);
+            LOGGER.error("必要依赖库提取失败: {}", errorMsg);
             MessageBox.createError(
-                    "SuperResolution在提取必要依赖库时失败，错误原因：%s".formatted(error),
+                    "SuperResolution在提取必要依赖库时失败，失败的库：%s".formatted(errorMsg),
                     "Error"
             );
-            throw new RuntimeException("依赖库提取失败");
-        } else {
-            LOGGER.info("依赖库文件已提取到 {}", path);
+            throw new RuntimeException("必要依赖库提取失败: " + errorMsg);
         }
+
+        if (!optionalFailures.isEmpty()) {
+            LOGGER.info("已跳过以下可选依赖库: {}", String.join(", ", optionalFailures));
+        }
+
+        LOGGER.info("依赖库文件已提取到 {}", path);
     }
 
     public static void load(String path) {
         for (NativeLib lib : libs) {
+            if (lib.extractedPath == null) {
+                if (lib.required) {
+                    LOGGER.error("必要依赖库 {} 未提取，无法加载", lib.fileName);
+                    throw new RuntimeException("必要依赖库 " + lib.fileName + " 未提取");
+                } else {
+                    LOGGER.warn("可选依赖库 {} 未提取，已跳过加载", lib.fileName);
+                    continue;
+                }
+            }
+
             File f = lib.getTargetPath(Path.of(path)).toFile();
             if (lib.loadAtStartup) {
-                LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
-                System.load(f.getAbsolutePath());
+                try {
+                    LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
+                    System.load(f.getAbsolutePath());
+                    lib.available = true;
+                } catch (Exception e) {
+                    if (lib.required) {
+                        LOGGER.error("必要依赖库 {} 加载失败: {}", lib.fileName, e.getMessage());
+                        throw new RuntimeException("必要依赖库加载失败: " + lib.fileName, e);
+                    } else {
+                        LOGGER.warn("可选依赖库 {} 加载失败，已跳过: {}", lib.fileName, e.getMessage());
+                        lib.available = false;
+                    }
+                }
             }
         }
         nativeApiAvailable = true;
@@ -171,43 +210,59 @@ public class NativeLibManager {
         try (InputStream in = NativeLibManager.class.getClassLoader()
                 .getResourceAsStream(sourcePath.toString().replace("\\", "/"))) {
             if (in == null) {
-                LOGGER.error("{} 提取失败", sourcePath);
+                if (library.required) {
+                    LOGGER.error("必要依赖库 {} 提取失败：资源未找到", sourcePath);
+                } else {
+                    LOGGER.warn("可选依赖库 {} 提取失败：资源未找到", sourcePath);
+                }
                 return false;
             }
             if (_writeFile(in, targetPath.toString())) {
                 library.extractedPath = targetPath;
                 LOGGER.info("{} 提取成功", library.fileName);
+                return true;
             } else {
-                throw new IOException(library.fileName + " 提取失败");
+                if (library.required) {
+                    throw new IOException("必要依赖库 " + library.fileName + " 提取失败");
+                } else {
+                    LOGGER.warn("可选依赖库 {} 提取失败", library.fileName);
+                    return false;
+                }
             }
         } catch (IOException e) {
-            LOGGER.error("{} 提取失败; 信息: {}", library.fileName, e.toString());
-            throw e;
+            if (library.required) {
+                LOGGER.error("必要依赖库 {} 提取失败; 信息: {}", library.fileName, e.toString());
+                throw e;
+            } else {
+                LOGGER.warn("可选依赖库 {} 提取失败; 信息: {}", library.fileName, e.toString());
+                return false;
+            }
         }
-        return true;
     }
 
     public static class NativeLib {
         public final String baseName;
         public final String fileName;
         public final boolean loadAtStartup;
+        public final boolean required;
         public final Path preExtractPath;
         public Path extractedPath;
         public boolean available;
         public boolean nameIsPath;
         public Path targetPath;
 
-        public NativeLib(String baseName, boolean loadAtStartup) {
-            this(baseName, loadAtStartup, false);
+        public NativeLib(String baseName, boolean loadAtStartup, boolean required) {
+            this(baseName, loadAtStartup, required, false);
         }
 
-        public NativeLib(String baseName, boolean loadAtStartup, boolean nameIsPath) {
-            this(baseName, loadAtStartup, false, null);
+        public NativeLib(String baseName, boolean loadAtStartup, boolean required, boolean nameIsPath) {
+            this(baseName, loadAtStartup, required, nameIsPath, null);
         }
 
-        public NativeLib(String baseName, boolean loadAtStartup, boolean nameIsPath, Path targetPath) {
+        public NativeLib(String baseName, boolean loadAtStartup, boolean required, boolean nameIsPath, Path targetPath) {
             this.baseName = baseName;
             this.loadAtStartup = loadAtStartup;
+            this.required = required;
             this.fileName = buildFullFileName(baseName, nameIsPath);
             this.preExtractPath = Paths.get(BASE_PATH, this.fileName);
             this.nameIsPath = nameIsPath;
