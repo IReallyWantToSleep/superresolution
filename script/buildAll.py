@@ -180,10 +180,13 @@ if __name__ == "__main__":
             pass
         print(f"\n=== 正在构建 {version} ===")
         print("目标加载器:", ", ".join(config["common"]["platforms"]))
-        
-        if not call_gradle_task("clean"):
-            print(f"清理环境失败，跳过清理")
-        
+        call_gradle_task("clean")
+        for platform in config["common"]["platforms"] + ["common"]:
+            try:
+                shutil.rmtree(f"{platform}/build", ignore_errors=True)
+                print(f"已清理构建目录: {platform}/build")
+            except Exception as e:
+                print(f"清理构建目录失败 {platform}: {e}")
         build_args = f"-Pminecraft_version_config={version}"
         if not call_gradle_task("build", build_args):
             print(f"构建 {version} 失败")
