@@ -78,3 +78,7 @@ if(NOT WIN32)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(SR_MAIN_LIB -lstdc++fs -pthread -ldl)
 endif()
+
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()

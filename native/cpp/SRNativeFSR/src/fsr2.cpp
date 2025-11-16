@@ -16,6 +16,11 @@ extern "C"
 {
 #endif
 
+    SR_API SRReturnCode srFfxFsr2InitUpscaleContext(SRUpscaleContext *context)
+    {
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
+
     SR_API SRReturnCode srFfxFsr2CreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
     {
         VkDeviceContext deviceContext = {
@@ -71,18 +76,23 @@ extern "C"
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
+        {
             ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
             ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionName = const_cast<char *>("2.3.3");
             break;
+        }
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
-            // FSR2不支持
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = 0;
-            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        {
+            FfxEffectMemoryUsage usage = {};
+            ffxFsr2ContextGetGpuMemoryUsage(((SRFsr2PrivateData *)context->userContext)->context, &usage);
+            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = usage.totalUsageInBytes;
             break;
+        }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
+        {
             ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = true;
             break;
+        }
         default:
             break;
         }
@@ -131,6 +141,7 @@ extern "C"
     {
         static SRUpscaleContextCallbacks callbacks = {
             .pCreate = (SRCreateFunc)srFfxFsr2CreateUpscaleContext,
+            .pInit = (SRInitFunc)srFfxFsr2InitUpscaleContext,
             .pDestroy = (SRDestroyFunc)srFfxFsr2DestroyUpscaleContext,
             .pQuery = (SRQueryFunc)srFfxFsr2QueryUpscale,
             .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr2DispatchUpscale,

@@ -77,7 +77,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialScrollableContainerWidget scrollableContainer = new MaterialScrollableContainerWidget();
         scrollableContainer.scheme(materialScheme);
         scrollableContainer.setElementSize(400, 700);
-        scrollableContainer.setViewRegion(new Vector2f(400, 700));
+        scrollableContainer.setViewRegion(new Vector2f(400, 500));
 
         scrollableContainer.setHorizontalScrollEnabled(false);
         scrollableContainer.setVerticalScrollEnabled(true);

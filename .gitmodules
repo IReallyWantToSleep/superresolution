@@ -1,0 +1,3 @@
+[submodule "native/cpp/SRNativeDLSS/third_party/DLSS"]
+	path = native/cpp/SRNativeDLSS/third_party/DLSS
+	url = https://github.com/NVIDIA/DLSS

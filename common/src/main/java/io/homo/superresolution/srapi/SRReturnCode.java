@@ -19,7 +19,15 @@
 package io.homo.superresolution.srapi;
 
 public enum SRReturnCode {
-    OK(0), ERROR(1);
+    OK(0),
+    NULL_POINTER(1),
+    ERROR(2),
+    CANNOT_FIND_PROVIDER(3),
+    UNEXPECTED_ERROR(4),
+    CANNOT_FIND_LIBRARY(5),
+    INVALID_PROVIDER_LIBRARY(6),
+    INVALID_ARGUMENT(7),
+    UNSUPPORTED(8);
     public final int value;
 
     SRReturnCode(int value) {

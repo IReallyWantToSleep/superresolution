@@ -27,6 +27,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -209,19 +210,25 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         return Class.forName("io.homo.superresolution.shadercompat.ShaderCompatUpscaleDispatcher");
     }
 
+    @Nullable
     public ITexture getColorTexture() {
         try {
             Class<?> dispatcherClass = getShaderCompatUpscaleDispatcher();
-            return ((TextureInfo) dispatcherClass.getField("colorTexture").get(null)).getInternalTexture();
+            TextureInfo textureInfo = ((TextureInfo) dispatcherClass.getField("colorTexture").get(null));
+            if (textureInfo == null) return null;
+            return textureInfo.getInternalTexture();
         } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
+    @Nullable
     public ITexture getDepthTexture() {
         try {
             Class<?> dispatcherClass = getShaderCompatUpscaleDispatcher();
-            return ((TextureInfo) dispatcherClass.getField("depthTexture").get(null)).getInternalTexture();
+            TextureInfo textureInfo = ((TextureInfo) dispatcherClass.getField("depthTexture").get(null));
+            if (textureInfo == null) return null;
+            return textureInfo.getInternalTexture();
         } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }

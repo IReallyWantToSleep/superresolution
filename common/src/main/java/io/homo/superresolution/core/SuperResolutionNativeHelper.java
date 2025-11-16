@@ -20,9 +20,12 @@ package io.homo.superresolution.core;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.vulkan.VK;
 import org.lwjgl.vulkan.VK10;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationTargetException;
 
 public class SuperResolutionNativeHelper {
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-Native");
@@ -42,6 +45,20 @@ public class SuperResolutionNativeHelper {
 
     public static long CPP_vkGetDeviceProcAddr(String name) {
         if (name.equals("SuperResolution_GetInstance")) return RenderSystems.vulkan().getVulkanInstance().address();
+        if (name.equals("SuperResolution_VkGetInstanceProcAddr")) {
+            Class<VK> clazz = VK.class;
+            try {
+                return (long) clazz.getDeclaredMethod("getGlobalCommands").invoke(null).getClass().getField("vkGetInstanceProcAddr").get(null);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return VK10.vkGetDeviceProcAddr(
                 ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
                 name

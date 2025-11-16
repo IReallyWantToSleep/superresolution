@@ -2,14 +2,13 @@
     "skip_build": true,
     "common": {
         "java_version": 21,
-        "minecraft_version": "1.21.9",
-        "parchment_version": null,
+        "minecraft_version": "1.21.10",
+        "parchment_version": "1.21.10:2025.10.12",
         "platforms": [
-            "fabric",
-            "neoforge"
+            "fabric"
         ],
         "lwjgl_version": "3.3.3",
-        "architectury_api_version": "18.0.3",
+        "architectury_api_version": "18.0.6",
         "neoforge": {
             "minecraft_version_range": "[1.21.9,1.21.10)"
         },
@@ -19,13 +18,13 @@
                 "~1.21.10"
             ]
         },
-        "cloth_config_version": "20.0.148",
-        "mod_artifact_minecraft_ver": "1.21.9",
-        "neoform_version": "1.21.9-20250930.151910"
+        "cloth_config_version": "20.0.149",
+        "mod_artifact_minecraft_ver": "1.21.9..1.21.10",
+        "neoform_version": "1.21.10-20251010.172816"
     },
     "fabric": {
-        "loader_version": "0.17.2",
-        "api_version": "0.134.0+1.21.9",
+        "loader_version": "0.18.0",
+        "api_version": "0.138.3+1.21.10",
         "dependencies": {
             "modrinth": [
                 {
@@ -34,15 +33,15 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.9.3+1.21.9-fabric"
+                    "version": "1.9.6+1.21.10-fabric"
                 },
                 {
                     "name": "sodium",
-                    "version": "mc1.21.9-0.7.0-fabric"
+                    "version": "mc1.21.10-0.7.2-fabric"
                 },
                 {
                     "name": "spark",
-                    "version": "1.10.145-fabric"
+                    "version": "1.10.152-fabric"
                 },
                 {
                     "name": "fabric-permissions-api",
@@ -58,6 +57,10 @@
         "loader_version": "21.9.16-beta",
         "dependencies": {
             "modrinth": [
+                {
+                    "name": "spark",
+                    "version": "1.10.152-neoforge"
+                },
                 {
                     "name": "sodium",
                     "version": "mc1.21.10-0.7.2-neoforge",

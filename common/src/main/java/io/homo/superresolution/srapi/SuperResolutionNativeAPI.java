@@ -38,19 +38,28 @@ public class SuperResolutionNativeAPI {
         SRUpscaleContext *context,
         const SRDispatchUpscaleDesc *desc);
     * */
+    public static SRReturnCode srInitUpscaleContext(SRUpscaleContext context) {
+        if (context.nativePtr < 1) {
+            return SRReturnCode.NULL_POINTER;
+        }
+        int code = SuperResolutionNative.NsrInitUpscaleContext(context.nativePtr);
+        return SRReturnCode.fromValue(code);
+    }
+
     public static SRReturnCode srCreateUpscaleContext(
             SRUpscaleContext outContext,
             SRUpscaleProvider provider,
             SRCreateUpscaleContextDesc desc
     ) {
         if (provider.nativePtr < 1) {
-            return SRReturnCode.ERROR;
+            return SRReturnCode.NULL_POINTER;
         }
         int code = SuperResolutionNative.NsrCreateUpscaleContext(
                 outContext,
                 provider.nativePtr,
                 desc.device,
                 desc.phyDevice,
+                desc.cmdBuf,
                 desc.upscaledSize.x,
                 desc.upscaledSize.y,
                 desc.renderSize.x,

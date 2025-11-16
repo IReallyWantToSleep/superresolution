@@ -14,81 +14,11 @@ struct SRXeSSPrivateData
 extern "C"
 {
 #endif
-
-    VkFormat getVkFormat(SRSurfaceFormat fmt)
+    SR_API SRReturnCode srXeSSInitUpscaleContext(SRUpscaleContext *context)
     {
-        switch (fmt)
-        {
-        case (SR_SURFACE_FORMAT_UNKNOWN):
-            return VK_FORMAT_UNDEFINED;
-        case (SR_SURFACE_FORMAT_R32G32B32A32_TYPELESS):
-            return VK_FORMAT_R32G32B32A32_SFLOAT;
-        case (SR_SURFACE_FORMAT_R32G32B32A32_UINT):
-            return VK_FORMAT_R32G32B32A32_UINT;
-        case (SR_SURFACE_FORMAT_R32G32B32A32_FLOAT):
-            return VK_FORMAT_R32G32B32A32_SFLOAT;
-        case (SR_SURFACE_FORMAT_R16G16B16A16_FLOAT):
-            return VK_FORMAT_R16G16B16A16_SFLOAT;
-        case (SR_SURFACE_FORMAT_R32G32B32_FLOAT):
-            return VK_FORMAT_R32G32B32_SFLOAT;
-        case (SR_SURFACE_FORMAT_R32G32_FLOAT):
-            return VK_FORMAT_R32G32_SFLOAT;
-        case (SR_SURFACE_FORMAT_R8_UINT):
-            return VK_FORMAT_R8_UINT;
-        case (SR_SURFACE_FORMAT_R32_UINT):
-            return VK_FORMAT_R32_UINT;
-        case (SR_SURFACE_FORMAT_R8G8B8A8_TYPELESS):
-            return VK_FORMAT_R8G8B8A8_UNORM;
-        case (SR_SURFACE_FORMAT_R8G8B8A8_UNORM):
-            return VK_FORMAT_R8G8B8A8_UNORM;
-        case (SR_SURFACE_FORMAT_R8G8B8A8_SNORM):
-            return VK_FORMAT_R8G8B8A8_SNORM;
-        case (SR_SURFACE_FORMAT_R8G8B8A8_SRGB):
-            return VK_FORMAT_R8G8B8A8_SRGB;
-        case (SR_SURFACE_FORMAT_B8G8R8A8_TYPELESS):
-            return VK_FORMAT_B8G8R8A8_UNORM;
-        case (SR_SURFACE_FORMAT_B8G8R8A8_UNORM):
-            return VK_FORMAT_B8G8R8A8_UNORM;
-        case (SR_SURFACE_FORMAT_B8G8R8A8_SRGB):
-            return VK_FORMAT_B8G8R8A8_SRGB;
-        case (SR_SURFACE_FORMAT_R11G11B10_FLOAT):
-            return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
-        case (SR_SURFACE_FORMAT_R10G10B10A2_UNORM):
-            return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
-        case (SR_SURFACE_FORMAT_R16G16_FLOAT):
-            return VK_FORMAT_R16G16_SFLOAT;
-        case (SR_SURFACE_FORMAT_R16G16_UINT):
-            return VK_FORMAT_R16G16_UINT;
-        case (SR_SURFACE_FORMAT_R16G16_SINT):
-            return VK_FORMAT_R16G16_SINT;
-        case (SR_SURFACE_FORMAT_R16_FLOAT):
-            return VK_FORMAT_R16_SFLOAT;
-        case (SR_SURFACE_FORMAT_R16_UINT):
-            return VK_FORMAT_R16_UINT;
-        case (SR_SURFACE_FORMAT_R16_UNORM):
-            return VK_FORMAT_R16_UNORM;
-        case (SR_SURFACE_FORMAT_R16_SNORM):
-            return VK_FORMAT_R16_SNORM;
-        case (SR_SURFACE_FORMAT_R8_UNORM):
-            return VK_FORMAT_R8_UNORM;
-        case (SR_SURFACE_FORMAT_R8G8_UNORM):
-            return VK_FORMAT_R8G8_UNORM;
-        case (SR_SURFACE_FORMAT_R8G8_UINT):
-            return VK_FORMAT_R8G8_UINT;
-        case (SR_SURFACE_FORMAT_R32_FLOAT):
-            return VK_FORMAT_R32_SFLOAT;
-        case (SR_SURFACE_FORMAT_R9G9B9E5_SHAREDEXP):
-            return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
-
-        default:
-            return VK_FORMAT_UNDEFINED;
-        }
-    }
-
-    SR_API SRReturnCode srXeSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
-    {
-        SRXeSSPrivateData *privateData = new SRXeSSPrivateData();
-        // 懒得改接口了
+        SRXeSSPrivateData *privateData = (SRXeSSPrivateData *)context->userContext;
+        xess_result_t status;
+        const SRCreateUpscaleContextDesc *desc = &context->desc;
         float upscaleRatio = desc->upscaledSize.x / desc->renderSize.x;
         xess_quality_settings_t quality_settings = XESS_QUALITY_SETTING_AA;
         if (upscaleRatio < 1.0f)
@@ -114,26 +44,6 @@ extern "C"
         //(2.3,3.0]
         if (upscaleRatio > 2.3f)
             quality_settings = XESS_QUALITY_SETTING_ULTRA_PERFORMANCE;
-        VkInstance instance = (VkInstance)desc->deviceProcAddr(desc->device, "SuperResolution_GetInstance");
-        auto status = xessVKCreateContext(instance, (VkPhysicalDevice)desc->phyDevice, (VkDevice)desc->device, &privateData->xessContext);
-        if (status != XESS_RESULT_SUCCESS)
-        {
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context create failed");
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
-            return SR_RETURN_CODE_ERROR;
-        }
-        else
-        {
-            desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
-        }
-
-        xessSetLoggingCallback(
-            privateData->xessContext,
-            XESS_LOGGING_LEVEL_DEBUG,
-            [](const char *msg, xess_logging_level_t level)
-            {
-                printf("[XeSS %d]: %s\n", level, msg);
-            });
         xess_2d_t upscale_size;
         upscale_size.x = desc->upscaledSize.x;
         upscale_size.y = desc->upscaledSize.y;
@@ -188,9 +98,36 @@ extern "C"
         {
             desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context init successful");
         }
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
 
+    SR_API SRReturnCode srXeSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
+    {
+        ///////////////
+        SRXeSSPrivateData *privateData = new SRXeSSPrivateData();
+        auto status = xessVKCreateContext((VkInstance)desc->instance, (VkPhysicalDevice)desc->phyDevice, (VkDevice)desc->device, &privateData->xessContext);
+        if (status != XESS_RESULT_SUCCESS)
+        {
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context create failed");
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            return SR_RETURN_CODE_ERROR;
+        }
+        else
+        {
+            desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
+        }
+
+        xessSetLoggingCallback(
+            privateData->xessContext,
+            XESS_LOGGING_LEVEL_DEBUG,
+            [](const char *msg, xess_logging_level_t level)
+            {
+                printf("[XeSS %d]: %s\n", level, msg);
+            });
+        context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
         privateData->messageCallback = desc->messageCallback;
         context->userContext = privateData;
+        ///////////////
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
@@ -208,21 +145,30 @@ extern "C"
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
+        {
             xess_version_t version;
             xessGetVersion(&version);
             ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(version.major, version.minor, version.patch);
             ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(version.major, version.minor, version.patch);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionName = const_cast<char *>("");
             break;
+        }
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
-            // XeSS不支持
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = 0;
-            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        {
+            xess_2d_t pOutputResolution = {};
+            xess_properties_t pBindingProperties = {};
+            xessGetProperties(
+                ((SRXeSSPrivateData *)(context->userContext))->xessContext,
+                &pOutputResolution,
+                &pBindingProperties);
+            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = pBindingProperties.tempBufferHeapSize + pBindingProperties.tempTextureHeapSize;
             break;
+        }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
+        {
             ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = xessIsOptimalDriver(
                                                                                        ((SRXeSSPrivateData *)(context->userContext))->xessContext) == XESS_RESULT_SUCCESS;
             break;
+        }
         default:
             break;
         }
@@ -239,7 +185,7 @@ extern "C"
         info.subresourceRange.levelCount = 1;
         info.subresourceRange.baseArrayLayer = 0;
         info.subresourceRange.layerCount = 1;
-        info.format = getVkFormat(resource->desc.format);
+        info.format = srTextureFormatToVkFormat(resource->desc.format);
         info.width = resource->desc.width;
         info.height = resource->desc.height;
         return info;
@@ -297,6 +243,7 @@ extern "C"
     {
         static SRUpscaleContextCallbacks callbacks = {
             .pCreate = (SRCreateFunc)srXeSSCreateUpscaleContext,
+            .pInit = (SRInitFunc)srXeSSInitUpscaleContext,
             .pDestroy = (SRDestroyFunc)srXeSSDestroyUpscaleContext,
             .pQuery = (SRQueryFunc)srXeSSQueryUpscale,
             .pDispatchUpscale = (SRDispatchUpscaleFunc)srXeSSDispatchUpscale,

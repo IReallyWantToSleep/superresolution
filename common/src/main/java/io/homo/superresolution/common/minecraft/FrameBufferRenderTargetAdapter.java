@@ -20,6 +20,10 @@ package io.homo.superresolution.common.minecraft;
 
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+#if MC_VER >= MC_1_21_6
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTextureView;
+#endif
 import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 
 
@@ -38,6 +42,11 @@ import io.homo.superresolution.core.graphics.opengl.GlState;
 public class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IFrameBuffer frameBuffer;
 
+    #if MC_VER >= MC_1_21_6
+    private GpuTextureView colorTextureView;
+    private GpuTextureView depthTextureView;
+
+    #endif
     FrameBufferRenderTargetAdapter(IFrameBuffer frameBuffer) {
         super(frameBuffer.handle() + "-IFrameBuffer-" + frameBuffer.getTextureId(FrameBufferAttachmentType.Color), frameBuffer.getDepthTextureFormat() != null);
         this.frameBuffer = frameBuffer;
@@ -48,6 +57,18 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         return new FrameBufferRenderTargetAdapter(frameBuffer);
     }
 
+    #if MC_VER >= MC_1_21_6
+    @javax.annotation.Nullable
+    public GpuTextureView getColorTextureView() {
+        return this.colorTextureView;
+    }
+
+    @javax.annotation.Nullable
+    public GpuTextureView getDepthTextureView() {
+        return this.depthTextureView;
+    }
+
+    #endif
     private void updateState() {
         this.width = frameBuffer.getWidth();
         this.height = frameBuffer.getHeight();
@@ -57,6 +78,9 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         #endif
         this.colorTexture = GpuTextureAdapter.ofTexture(frameBuffer.getTexture(FrameBufferAttachmentType.Color));
         ((GpuTextureAdapter) this.colorTexture).bindFramebuffer(frameBuffer);
+        #if MC_VER >= MC_1_21_6
+        this.colorTextureView = RenderSystem.getDevice().createTextureView(this.colorTexture);
+        #endif
         ITexture texture = frameBuffer.getTexture(FrameBufferAttachmentType.DepthStencil);
         if (texture != null) {
             this.depthTexture = GpuTextureAdapter.ofTexture(texture);
@@ -68,6 +92,9 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         }
         if (this.depthTexture != null) {
             ((GpuTextureAdapter) this.depthTexture).bindFramebuffer(frameBuffer);
+            #if MC_VER >= MC_1_21_6
+            this.depthTextureView = RenderSystem.getDevice().createTextureView(this.depthTexture);
+            #endif
         }
     }
 

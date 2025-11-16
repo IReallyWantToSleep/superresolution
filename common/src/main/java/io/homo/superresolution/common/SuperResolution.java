@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common;
 
+import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
@@ -30,6 +31,7 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
@@ -54,6 +56,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
@@ -74,10 +78,16 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static Thread renderThread;
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
+    public static final List<String> INCOMPATIBLE_MODS = ImmutableList.<String>builder()
+            .add("resolutioncontrol-plus-plus")
+            .add("resolutioncontrol-plus")
+            .add("resolutioncontrol")
+            .add("renderscale")
+            .build();
     #if MC_VER > MC_1_21_6
     //??
     //key.category + . + namespace + path
-    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
+    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
     public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
             InputConstants.Type.KEYSYM,
@@ -117,7 +127,6 @@ public final class SuperResolution implements Resizable, Destroyable {
                     SuperResolution.createAlgorithm();
                     SuperResolution.getInstance().init();
                     if (Platform.currentPlatform.isDevelopmentEnvironment()) {
-                        NanoVG.init();
                         MaterialUI.init();
                     }
                 }
@@ -182,6 +191,17 @@ public final class SuperResolution implements Resizable, Destroyable {
             );
             System.exit(1);
         }
+
+        INCOMPATIBLE_MODS.forEach((mod) -> {
+            List<String> installedMods = new ArrayList<>();
+            if (Platform.currentPlatform.isModLoaded(mod)) installedMods.add(mod);
+            if (!installedMods.isEmpty()) {
+                MessageBox.createError(Component.translatable("superresolution.common_requirement.not_support.extension").getString()
+                                .formatted(String.join("\n", installedMods)),
+                        Component.translatable("superresolution.common_requirement.not_support.msg").getString()
+                );
+            }
+        });
     }
 
     public static void initRendering() {
@@ -297,7 +317,7 @@ public final class SuperResolution implements Resizable, Destroyable {
         if (currentAlgorithm != null)
             currentAlgorithm.destroy();
         AlgorithmManager.destroy();
-
+        PerformanceRecorder.cleanup();
         RenderSystems.destroy();
     }
 }

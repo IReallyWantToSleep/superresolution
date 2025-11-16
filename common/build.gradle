@@ -94,6 +94,9 @@ dependencies {
 
     compileOnly 'com.electronwill.night-config:toml:3.6.0'
     compileOnly 'com.electronwill.night-config:core:3.6.0'
+
+    compileOnly "net.neoforged:bus:8.0.5"
+
     // 没这玩意MixinPlugin会报错找不到ClassNode
     if (versionConfig.common.minecraftVersion <= "1.21.1") {
         compileOnly 'org.ow2.asm:asm:9.7.1'
@@ -151,28 +154,27 @@ artifacts {
     commonJava sourceSets.main.java.sourceDirectories.singleFile
     commonResources sourceSets.main.resources.sourceDirectories.singleFile
 }
+tasks.register("genJNIHeader", JavaCompile) {
+    def outputDir = file("../native/cpp/SRNativeMain/include")
+    def sourceFile = file("../common/src/main/java/io/homo/superresolution/core/SuperResolutionNative.java")
 
-tasks.register("genJNIHeader", Exec) {
-    workingDir(rootProject.projectDir)
-    def outputDir = file("../native/cpp/SRNativeMain/include").absolutePath
-    def sourceFile = file("../common/src/main/java/io/homo/superresolution/core/SuperResolutionNative.java").absolutePath
-    def sourceDirs = sourceSets.main.java.srcDirs.join(File.pathSeparator)
-    def classpath = configurations.compileClasspath.asPath
-    commandLine(
-            "javac",
-            "-h", outputDir,
-            "-sourcepath", sourceDirs,
-            "-classpath", classpath,
+    source = fileTree(dir: "../common/src/main/java", include: "**/*.java")
+    classpath = configurations.compileClasspath
+    destinationDirectory.set(file("${buildDir}/jni-temp"))
+    options.headerOutputDirectory.set(outputDir)
+    options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs += [
             "-encoding", "UTF-8",
-            sourceFile
-    )
+            "-proc:full"
+    ]
+
+    doFirst {
+        outputDir.mkdirs()
+    }
 
     doLast {
-        delete(fileTree(
-                dir: file("../common/src/main/java").absolutePath,
-                includes: ["**/*.class"],
-                excludes: ["**/*.java"]
-        ))
+        println "JNI 头文件已生成到: ${outputDir.absolutePath}"
+        delete("${buildDir}/jni-temp")
     }
 }
 

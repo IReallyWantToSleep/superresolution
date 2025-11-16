@@ -87,6 +87,12 @@ python script/buildAll.py
 
 ---
 
+# 许可证
+
+* 模组本身使用GPL-3.0
+* 本机库使用MIT
+* 本软件包含 NVIDIA Corporation 提供的源代码
+
 ## 星星历史图
 
 [![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)

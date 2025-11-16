@@ -22,7 +22,7 @@ import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.perf.PerformanceRecoder;
+import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import org.joml.Vector2f;
@@ -144,7 +144,7 @@ public class AlgorithmManager {
                 new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
                 RenderHandlerManager.getFrameCount(),
-                PerformanceRecoder.getCpuFrameTimeMs(),
+                PerformanceRecorder.getCpuFrameTimeMs(),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,

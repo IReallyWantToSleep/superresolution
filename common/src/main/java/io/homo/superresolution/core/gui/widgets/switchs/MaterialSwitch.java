@@ -22,13 +22,14 @@ import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
+
+import java.util.function.Consumer;
 
 public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitchStyle, MaterialSwitchAnimationSet> {
     private boolean checked;
@@ -55,7 +56,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
 
     public MaterialSwitch toggleChecked() {
         boolean newChecked = !this.checked;
-        eventHandler.fire(new WidgetEvent.ChangeEvent<>(newChecked));
+        eventBus.post(new WidgetEvent.ChangeEvent<>(newChecked));
         if (newChecked) {
             // 打开开关
             animationSet.handlePosition
@@ -104,8 +105,8 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
         ;
     }
 
-    public void onChange(EventListener<WidgetEvent.ChangeEvent> listener) {
-        eventHandler.on(WidgetEvent.ChangeEvent.class, listener);
+    public void onChange(Consumer<WidgetEvent.ChangeEvent<Boolean>> listener) {
+        eventBus.addListener(listener);
     }
 
     @Override

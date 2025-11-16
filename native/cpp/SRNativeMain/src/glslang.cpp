@@ -2,7 +2,7 @@
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/Public/ResourceLimits.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
-#include "jni_header.h"
+#include "io_homo_superresolution_core_SuperResolutionNative.h"
 #include "define.h"
 #include "utils.h"
 #include <cstdlib>

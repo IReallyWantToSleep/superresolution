@@ -20,7 +20,7 @@ import utils.ModrinthUploader
 
 plugins {
     id 'fabric-loom' version '1.11-SNAPSHOT' apply false
-    id 'net.neoforged.moddev' version '2.0.112' apply false
+    id 'net.neoforged.moddev' version '2.0.116' apply false
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id 'multiversion'
     id 'multiversion-neoform'

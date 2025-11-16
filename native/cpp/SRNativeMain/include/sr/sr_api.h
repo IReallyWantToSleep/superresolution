@@ -1,5 +1,7 @@
 #pragma once
 #include "sr_api_types.h"
+#include <vulkan/vulkan.h>
+#include "glad/gl.h"
 #include <string>
 
 #if defined(_WIN32)
@@ -15,10 +17,26 @@ extern "C"
 
 #define SR_MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
 
+#define SR_API_MAX_CONTEXT_CREATE_PARAMS 16
     typedef enum
     {
-        SR_RETURN_CODE_OK = 0,
-        SR_RETURN_CODE_ERROR = 1,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_NONE = 0,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEBUG = 1 << 0,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_OPENGL = 1 << 1,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_VULKAN = 1 << 2,
+    } SRUpscaleContextCreateFlags;
+
+    typedef enum
+    {
+        SR_RETURN_CODE_OK = 0,           // ok
+        SR_RETURN_CODE_NULL_POINTER = 1, // null pointer error
+        SR_RETURN_CODE_ERROR = 2,
+        SR_RETURN_CODE_CANNOT_FIND_PROVIDER = 3,
+        SR_RETURN_CODE_UNEXPECTED_ERROR = 4,
+        SR_RETURN_CODE_CANNOT_FIND_LIBRARY = 5,
+        SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY = 6,
+        SR_RETURN_CODE_INVALID_ARGUMENT = 7,
+        SR_RETURN_CODE_UNSUPPORTED = 8,
     } SRReturnCode;
 
     typedef enum
@@ -47,6 +65,7 @@ extern "C"
     } SRUpscaleContextQueryResult;
 
     typedef SRReturnCode (*SRCreateFunc)(SRUpscaleContext *, const struct SRCreateUpscaleContextDesc *desc);
+    typedef SRReturnCode (*SRInitFunc)(SRUpscaleContext *);
     typedef SRReturnCode (*SRDestroyFunc)(SRUpscaleContext *context);
     typedef SRReturnCode (*SRQueryFunc)(SRUpscaleContextQueryResult *, SRUpscaleContext *, int queryType);
     typedef SRReturnCode (*SRDispatchUpscaleFunc)(SRUpscaleContext *context, const struct SRDispatchUpscaleDesc *desc);
@@ -56,7 +75,6 @@ extern "C"
     {
         uint64_t versionNumber;
         uint64_t versionId;
-        char *versionName;//已弃用
     } SRUpscaleContextQueryVersionInfoResult;
 
     typedef struct
@@ -69,15 +87,25 @@ extern "C"
         bool isAvailable;
     } SRUpscaleContextQueryAvailableInfoResult;
 
+    typedef struct SRCreateUpscaleContextDescExtraParam
+    {
+        uint32_t key;
+        void *value;
+    } SRCreateUpscaleContextDescExtraParam;
+
     typedef struct SRCreateUpscaleContextDesc
     {
+        void *instance;
         void *device;
         void *phyDevice;
+        void *commandBuffer;
         SRGetFuncAddress deviceProcAddr;
         SRVectorUint2 upscaledSize;
         SRVectorUint2 renderSize;
         SRMessageCallback messageCallback;
         uint32_t flags;
+        SRCreateUpscaleContextDescExtraParam extraParams[SR_API_MAX_CONTEXT_CREATE_PARAMS];
+        uint32_t extraParamCount;
     } SRCreateUpscaleContextDesc;
 
     typedef struct SRTextureResource
@@ -85,7 +113,7 @@ extern "C"
         bool exist;
         SRTextureResourceDescription desc;
         void *handle;
-        void *imageView; //可选
+        void *imageView; // 可选
     } SRTextureResource;
 
     typedef struct SRDispatchUpscaleDesc
@@ -122,6 +150,7 @@ extern "C"
     typedef struct SRUpscaleContextCallbacks
     {
         SRCreateFunc pCreate;
+        SRInitFunc pInit;
         SRDestroyFunc pDestroy;
         SRQueryFunc pQuery;
         SRDispatchUpscaleFunc pDispatchUpscale;
@@ -155,6 +184,9 @@ extern "C"
         SRUpscaleContextQueryResult *outResult,
         SRUpscaleContextQueryType queryType);
 
+    SR_API SRReturnCode srInitUpscaleContext(
+        SRUpscaleContext *context);
+
     SR_API SRReturnCode srDispatchUpscale(
         SRUpscaleContext *context,
         const SRDispatchUpscaleDesc *desc);
@@ -168,6 +200,9 @@ extern "C"
         const std::string &getProvidersFuncName,      // SRUpscaleProviderSupplierFunc
         const std::string &getProvidersCountFuncName, // SRUpscaleProviderSupplierCountFunc
         SRMessageCallback messageCallback);
+
+    SR_API GLenum srTextureFormatToGlFormat(SRTextureFormat fmt);
+    SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt);
 
 #ifdef __cplusplus
 }

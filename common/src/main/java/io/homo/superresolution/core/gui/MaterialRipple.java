@@ -7,6 +7,7 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.*;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
+import org.lwjgl.nanovg.NanoVG;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,6 +16,17 @@ import java.util.List;
 public class MaterialRipple {
     private static final int DEFAULT_MAX_RIPPLES = 5;
     private static final long MAX_RIPPLE_AGE = 2000;
+
+    private static final long RIPPLE_ENTER_DURATION = 300;
+    private static final long RIPPLE_ORIGIN_DURATION = 300;
+    private static final long OPACITY_ENTER_DURATION = 100;
+    private static final long OPACITY_EXIT_DURATION = 250;
+    private static final long OPACITY_HOLD_DURATION = OPACITY_ENTER_DURATION + 100;
+
+    private static final float RIPPLE_SMOOTHNESS = 0.5f;
+
+    private static final float START_RADIUS_RATIO = 0.0f;
+
     private final List<SingleRipple> activeRipples = new ArrayList<>();
     private final int maxConcurrentRipples;
     private boolean pressed = false;
@@ -143,17 +155,22 @@ public class MaterialRipple {
     }
 
     public static class SingleRipple {
-        private static final long EXPAND_DURATION = 225;
-        private static final long FADE_OUT_DURATION = 375;
         private static final float PRESSED_ALPHA = 0.12f;
         private ValueAnimator radiusAnimator;
+        private ValueAnimator originAnimator;
         private ValueAnimator alphaAnimator;
+
         private AnimatorListener radiusListener;
         private AnimatorListener alphaListener;
 
-        private final Vector2f rippleCenter;
+        private final Vector2f rippleStartCenter;
+        private final Vector2f rippleTargetCenter;
+        private final Vector2f currentCenter;
+        private final Rectangle region;
         private final long creationTime;
+        private final long enterStartedAtMillis;
         private final float maxRippleRadius;
+        private final float startRippleRadius;
         private volatile boolean isProcessingCallback = false;
 
         private RippleState state = RippleState.IDLE;
@@ -165,21 +182,41 @@ public class MaterialRipple {
                 throw new IllegalArgumentException("Center and region cannot be null");
             }
 
-            this.rippleCenter = new Vector2f(center);
-            this.maxRippleRadius = calcMaxDistance(rippleCenter, region);
+            this.region = region;
+            this.rippleStartCenter = new Vector2f(center);
+            this.rippleTargetCenter = new Vector2f(
+                    region.x + region.width / 2f,
+                    region.y + region.height / 2f
+            );
+            this.currentCenter = new Vector2f(rippleStartCenter);
+
+            this.maxRippleRadius = calcMaxDistance(rippleTargetCenter, region);
+            this.startRippleRadius = maxRippleRadius * START_RADIUS_RATIO;
             this.creationTime = System.currentTimeMillis();
+            this.enterStartedAtMillis = creationTime;
 
             initAnimators();
             startRipple();
         }
 
         private void initAnimators() {
-            radiusAnimator = ValueAnimator.ofFloat(0f, 0f);
-            radiusAnimator.setDuration(EXPAND_DURATION);
-            radiusAnimator.setInterpolator(new BezierInterpolator(0.5f, 0.0f, 0.5f, 1f));
-            alphaAnimator = ValueAnimator.ofFloat(1f, 1f);
-            alphaAnimator.setDuration(FADE_OUT_DURATION);
+            radiusAnimator = ValueAnimator.ofFloat(0f, 1f);
+            radiusAnimator.setDuration(RIPPLE_ENTER_DURATION);
+            radiusAnimator.setInterpolator(TimeInterpolator.LINEAR);
+
+            originAnimator = ValueAnimator.ofFloat(0f, 1f);
+            originAnimator.setDuration(RIPPLE_ORIGIN_DURATION);
+            originAnimator.setInterpolator(TimeInterpolator.LINEAR);
+            originAnimator.addUpdateListener(animation -> {
+                float progress = (float) animation.getAnimatedValue();
+                currentCenter.x = lerp(rippleStartCenter.x, rippleTargetCenter.x, progress);
+                currentCenter.y = lerp(rippleStartCenter.y, rippleTargetCenter.y, progress);
+            });
+
+            alphaAnimator = ValueAnimator.ofFloat(0f, 1f);
+            alphaAnimator.setDuration(OPACITY_ENTER_DURATION);
             alphaAnimator.setInterpolator(TimeInterpolator.LINEAR);
+
             radiusListener = new AnimatorListener() {
                 @Override
                 public void onAnimationEnd(@NotNull Animator animation, boolean isReverse) {
@@ -211,6 +248,10 @@ public class MaterialRipple {
             };
         }
 
+        private float lerp(float start, float end, float t) {
+            return start + (end - start) * t;
+        }
+
         public boolean isPressed() {
             return pressed;
         }
@@ -236,23 +277,27 @@ public class MaterialRipple {
             }
 
             state = RippleState.EXPANDING;
-            if (radiusAnimator.isRunning()) {
-                radiusAnimator.cancel();
-            }
-            if (alphaAnimator.isRunning()) {
-                alphaAnimator.cancel();
-            }
+
+            if (radiusAnimator.isRunning()) radiusAnimator.cancel();
+            if (originAnimator.isRunning()) originAnimator.cancel();
+            if (alphaAnimator.isRunning()) alphaAnimator.cancel();
+
             radiusAnimator.removeListener(radiusListener);
             alphaAnimator.removeListener(alphaListener);
+
             radiusAnimator.setValues(PropertyValuesHolder.ofFloat(0f, 1f));
-            radiusAnimator.setDuration(EXPAND_DURATION);
-            radiusAnimator.setInterpolator(new BezierInterpolator(0.5f, 0.0f, 0.5f, 1f));
+            radiusAnimator.setDuration(RIPPLE_ENTER_DURATION);
+
+            originAnimator.setValues(PropertyValuesHolder.ofFloat(0f, 1f));
+            originAnimator.setDuration(RIPPLE_ORIGIN_DURATION);
+
             alphaAnimator.setValues(PropertyValuesHolder.ofFloat(0f, 1f));
-            alphaAnimator.setDuration((long) (EXPAND_DURATION * 0.3f));
-            alphaAnimator.setInterpolator(TimeInterpolator.LINEAR);
+            alphaAnimator.setDuration(OPACITY_ENTER_DURATION);
+
             radiusAnimator.addListener(radiusListener);
-            alphaAnimator.addListener(alphaListener);
+
             radiusAnimator.start();
+            originAnimator.start();
             alphaAnimator.start();
         }
 
@@ -274,12 +319,20 @@ public class MaterialRipple {
             }
 
             state = RippleState.FADING_OUT;
+
+            long timeSinceEnter = System.currentTimeMillis() - enterStartedAtMillis;
+            long delay = 0;
+            if (timeSinceEnter > 0 && timeSinceEnter < OPACITY_HOLD_DURATION) {
+                delay = OPACITY_HOLD_DURATION - timeSinceEnter;
+            }
+
             if (alphaAnimator.isRunning()) {
                 alphaAnimator.cancel();
             }
             alphaAnimator.removeListener(alphaListener);
             alphaAnimator.setValues(PropertyValuesHolder.ofFloat(1f, 0f));
-            alphaAnimator.setDuration(FADE_OUT_DURATION);
+            alphaAnimator.setDuration(OPACITY_EXIT_DURATION);
+            alphaAnimator.setStartDelay(delay);
             alphaAnimator.setInterpolator(TimeInterpolator.LINEAR);
             alphaAnimator.addListener(alphaListener);
             alphaAnimator.start();
@@ -299,8 +352,6 @@ public class MaterialRipple {
             maxDistance = Math.max(maxDistance, distance(centerX, centerY, region.getLimitX(), region.getLimitY()));
             maxDistance = Math.max(maxDistance, distance(centerX, centerY, region.x, region.getLimitY()));
 
-            maxDistance = Math.max(maxDistance, Math.max(region.width, region.height) * 0.5f);
-
             return maxDistance;
         }
 
@@ -312,29 +363,46 @@ public class MaterialRipple {
 
         public IPaint createPaint(Color color, IUIDrawContext drawContext) {
             if (isDestroy || state == RippleState.IDLE) {
-                return drawContext.createPaint();
+                return null;
             }
+
             float radiusProgress = (float) radiusAnimator.getAnimatedValue();
             float alphaProgress = (float) alphaAnimator.getAnimatedValue();
 
-            float currentRadius = maxRippleRadius * radiusProgress;
+            float currentRadius = lerp(startRippleRadius, maxRippleRadius, radiusProgress);
             float currentAlpha = PRESSED_ALPHA * alphaProgress;
+            if (true) {
+                float maxGradientRadius = currentRadius / (1 - RIPPLE_SMOOTHNESS);
+                float innerRadius = currentRadius * RIPPLE_SMOOTHNESS;
 
-            Color startColor = color.copy().alpha((int) (255 * currentAlpha));
-            Color endColor = color.copy().alpha(0);
+                Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
+                Color edgeColor = color.copy().alpha(0);
 
-            return drawContext.radialGradient(
-                    rippleCenter.x,
-                    rippleCenter.y,
-                    0,
-                    currentRadius,
-                    startColor,
-                    endColor
-            );
+                return drawContext.radialGradient(
+                        currentCenter.x,
+                        currentCenter.y,
+                        innerRadius,
+                        maxGradientRadius,
+                        centerColor,
+                        edgeColor
+                );
+            } else {
+                Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
+                Color edgeColor = color.copy().alpha(0);
+
+                return drawContext.radialGradient(
+                        currentCenter.x,
+                        currentCenter.y,
+                        0,
+                        currentRadius,
+                        centerColor,
+                        edgeColor
+                );
+            }
         }
 
         public boolean shouldRender() {
-            return !isDestroy;
+            return !isDestroy && state != RippleState.IDLE;
         }
 
         public RippleState getState() {
@@ -350,13 +418,14 @@ public class MaterialRipple {
         }
 
         public Vector2f getCenter() {
-            return new Vector2f(rippleCenter);
+            return new Vector2f(currentCenter);
         }
 
         public void destroy() {
             if (isDestroy) return;
             isDestroy = true;
             state = RippleState.IDLE;
+
             if (radiusAnimator != null) {
                 if (radiusListener != null) {
                     radiusAnimator.removeListener(radiusListener);
@@ -366,6 +435,14 @@ public class MaterialRipple {
                 }
                 radiusAnimator = null;
             }
+
+            if (originAnimator != null) {
+                if (originAnimator.isRunning()) {
+                    originAnimator.cancel();
+                }
+                originAnimator = null;
+            }
+
             if (alphaAnimator != null) {
                 if (alphaListener != null) {
                     alphaAnimator.removeListener(alphaListener);
@@ -375,6 +452,7 @@ public class MaterialRipple {
                 }
                 alphaAnimator = null;
             }
+
             radiusListener = null;
             alphaListener = null;
         }

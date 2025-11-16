@@ -4,6 +4,7 @@
     "superresolution.name": "超分辨率",
     "superresolution.screen.warn": "警告",
     "superresolution.common_requirement.not_support.msg": "SuperResolution 错误",
+    "superresolution.incompatible_mods": "有不兼容的模组：\n%s\n你必须删除它们才能进入游戏，SuperResolution不兼容它们的原因是SuperResolution已经包括了它们的功能",
     "superresolution.common_requirement.not_support.version": "OpenGL版本不符合要求\n要求版本:%s.%s\n实际版本:%s.%s",
     "superresolution.common_requirement.not_support.extension": "缺少必要的OpenGL扩展\n缺少的扩展:%s",
     "superresolution.screen.button.label.apply": "应用",

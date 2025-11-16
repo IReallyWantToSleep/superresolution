@@ -103,4 +103,5 @@ public class WindowMixin {
         SuperResolution.framebufferHeight = framebufferHeight;
         RenderHandlerManager.resize();
     }
+    
 }

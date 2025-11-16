@@ -55,11 +55,16 @@ public class SuperResolutionNative {
             long provider,
             long device,
             long phyDevice,
+            long cmdBuf,
             int upscaledSizeX,
             int upscaledSizeY,
             int renderSizeX,
             int renderSizeY,
             int flags
+    );
+
+    public static native int NsrInitUpscaleContext(
+            long Context
     );
 
     public static native int NsrDestroyUpscaleContext(long context);

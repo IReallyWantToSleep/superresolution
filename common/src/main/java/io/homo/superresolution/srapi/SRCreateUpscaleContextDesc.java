@@ -25,23 +25,33 @@ import org.lwjgl.vulkan.VkPhysicalDevice;
 public class SRCreateUpscaleContextDesc {
     public long device;
     public long phyDevice;
+    public long cmdBuf;
     public Vector2i upscaledSize;
     public Vector2i renderSize;
     public int flags;
 
-    public SRCreateUpscaleContextDesc(long device, long phyDevice, Vector2i upscaledSize, Vector2i renderSize, int flags) {
+    public SRCreateUpscaleContextDesc(
+            long device,
+            long phyDevice,
+            long cmdBuf,
+            Vector2i upscaledSize,
+            Vector2i renderSize,
+            int flags
+    ) {
         this.device = device;
         this.phyDevice = phyDevice;
         this.upscaledSize = upscaledSize;
         this.renderSize = renderSize;
         this.flags = flags;
+        this.cmdBuf = cmdBuf;
     }
 
-    public SRCreateUpscaleContextDesc(VkDevice device, VkPhysicalDevice phyDevice, Vector2i upscaledSize, Vector2i renderSize, int flags) {
+    public SRCreateUpscaleContextDesc(VkDevice device, VkPhysicalDevice phyDevice, long cmdBuf, Vector2i upscaledSize, Vector2i renderSize, int flags) {
         if (device != null) this.device = device.address();
         if (phyDevice != null) this.phyDevice = phyDevice.address();
         this.upscaledSize = upscaledSize;
         this.renderSize = renderSize;
         this.flags = flags;
+        this.cmdBuf = cmdBuf;
     }
 }

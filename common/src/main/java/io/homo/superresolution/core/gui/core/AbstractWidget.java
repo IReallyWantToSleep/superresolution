@@ -18,9 +18,8 @@
 
 package io.homo.superresolution.core.gui.core;
 
+import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
-import io.homo.superresolution.core.gui.core.event.EventHandler;
-import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -28,9 +27,11 @@ import io.homo.superresolution.core.gui.core.impl.Renderable;
 import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.impl.Destroyable;
+import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public abstract class AbstractWidget<
@@ -47,13 +48,20 @@ public abstract class AbstractWidget<
     protected boolean hovered = false;
     protected boolean pressed = false;
     protected boolean focused = false;
-    protected EventHandler eventHandler;
+
+    public IEventBus getEventBus() {
+        return eventBus;
+    }
+
+    protected IEventBus eventBus;
     protected STYLE style;
     protected ANIM animationSet;
     protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
 
     public AbstractWidget() {
-        this.eventHandler = new EventHandler();
+        this.eventBus = MaterialUI.createEventBus(
+                this.getClass().getName()
+        );
         init();
     }
 
@@ -73,9 +81,9 @@ public abstract class AbstractWidget<
     public void mouseMove(float x, float y) {
         Vector2f mousePos = new Vector2f(x, y);
         boolean isHovering = getBounds().in(x, y);
-        eventHandler.fire(new MouseEvent.MouseMoveEvent(mousePos));
+        eventBus.post(new MouseEvent.MouseMoveEvent(mousePos));
         if (isHovering != this.hovered) {
-            eventHandler.fire(new WidgetEvent.HoverEvent(mousePos, isHovering));
+            eventBus.post(new WidgetEvent.HoverEvent(mousePos, isHovering));
             setHovered(isHovering);
         }
     }
@@ -87,7 +95,7 @@ public abstract class AbstractWidget<
             if (button == MouseButton.Left.id()) {
                 setPressed(true);
             }
-            eventHandler.fire(new MouseEvent.MousePressEvent(mousePos, button));
+            eventBus.post(new MouseEvent.MousePressEvent(mousePos, button));
         }
     }
 
@@ -96,7 +104,7 @@ public abstract class AbstractWidget<
         if (button == MouseButton.Left.id()) {
             Vector2f mousePos = new Vector2f(x, y);
             if (isPressed()) {
-                eventHandler.fire(new MouseEvent.MouseReleaseEvent(mousePos, button));
+                eventBus.post(new MouseEvent.MouseReleaseEvent(mousePos, button));
             }
             setPressed(false);
         }
@@ -104,12 +112,12 @@ public abstract class AbstractWidget<
 
     @Override
     public void mouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
-        eventHandler.fire(new MouseEvent.MouseDragEvent(button, new Vector2f(mouseX, mouseY), new Vector2f(dragX, dragY)));
+        eventBus.post(new MouseEvent.MouseDragEvent(button, new Vector2f(mouseX, mouseY), new Vector2f(dragX, dragY)));
     }
 
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
-        eventHandler.fire(new MouseEvent.MouseScrollEvent(new Vector2f(x, y), (float) scrollX));
+        eventBus.post(new MouseEvent.MouseScrollEvent(new Vector2f(x, y), (float) scrollX));
     }
 
     @Override
@@ -178,12 +186,12 @@ public abstract class AbstractWidget<
         return (T) this;
     }
 
-    public void onHover(EventListener<WidgetEvent.HoverEvent> listener) {
-        eventHandler.on(WidgetEvent.HoverEvent.class, listener);
+    public void onHover(Consumer<WidgetEvent.HoverEvent> listener) {
+        eventBus.addListener(WidgetEvent.HoverEvent.class, listener);
     }
 
-    public void onFocus(EventListener<WidgetEvent.FocusEvent> listener) {
-        eventHandler.on(WidgetEvent.FocusEvent.class, listener);
+    public void onFocus(Consumer<WidgetEvent.FocusEvent> listener) {
+        eventBus.addListener(WidgetEvent.FocusEvent.class, listener);
     }
 
     protected boolean isInteractive() {
@@ -197,24 +205,24 @@ public abstract class AbstractWidget<
         return isInteractive() ? this : null;
     }
 
-    public void onMousePress(EventListener<MouseEvent.MousePressEvent> listener) {
-        eventHandler.on(MouseEvent.MousePressEvent.class, listener);
+    public void onMousePress(Consumer<MouseEvent.MousePressEvent> listener) {
+        eventBus.addListener(MouseEvent.MousePressEvent.class, listener);
     }
 
-    public void onMouseMove(EventListener<MouseEvent.MouseMoveEvent> listener) {
-        eventHandler.on(MouseEvent.MouseMoveEvent.class, listener);
+    public void onMouseMove(Consumer<MouseEvent.MouseMoveEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseMoveEvent.class, listener);
     }
 
-    public void onMouseRelease(EventListener<MouseEvent.MouseReleaseEvent> listener) {
-        eventHandler.on(MouseEvent.MouseReleaseEvent.class, listener);
+    public void onMouseRelease(Consumer<MouseEvent.MouseReleaseEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseReleaseEvent.class, listener);
     }
 
-    public void onMouseDrag(EventListener<MouseEvent.MouseDragEvent> listener) {
-        eventHandler.on(MouseEvent.MouseDragEvent.class, listener);
+    public void onMouseDrag(Consumer<MouseEvent.MouseDragEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseDragEvent.class, listener);
     }
 
-    public void onMouseScroll(EventListener<MouseEvent.MouseScrollEvent> listener) {
-        eventHandler.on(MouseEvent.MouseScrollEvent.class, listener);
+    public void onMouseScroll(Consumer<MouseEvent.MouseScrollEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseScrollEvent.class, listener);
     }
 
 

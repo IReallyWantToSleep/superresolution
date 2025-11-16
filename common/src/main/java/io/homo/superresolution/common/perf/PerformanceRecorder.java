@@ -1,3 +1,5 @@
+
+
 /*
  * Super Resolution
  * Copyright (c) 2025. 187J3X1-114514
@@ -13,7 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https:
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.perf;
@@ -21,18 +23,21 @@ package io.homo.superresolution.common.perf;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import org.lwjgl.opengl.GL41;
 
-public class PerformanceRecoder {
-    private static int[] timeQueryIds = new int[3];
-    private static float frameTime;
+public class PerformanceRecorder {
+    private static final int QUERY_COUNT = 2;
+    private static final int WORLD_QUERY_INDEX = 0;
+    private static final int UPSCALE_QUERY_INDEX = 1;
+
+    private static int[] timeQueryIds = new int[QUERY_COUNT];
     private static boolean queriesInitialized = false;
 
     private static long worldTimeNs = 0;
     private static long upscaleTimeNs = 0;
-    private static long frameTimeNs = 0;
 
     private static long cpuWorldTimeNs = 0;
     private static long cpuUpscaleTimeNs = 0;
     private static long cpuFrameTimeNs = 0;
+
     private static long cpuWorldStartTimeNs = 0;
     private static long cpuUpscaleStartTimeNs = 0;
     private static long cpuFrameStartTimeNs = 0;
@@ -44,19 +49,25 @@ public class PerformanceRecoder {
         }
     }
 
+    public static void cleanup() {
+        if (queriesInitialized) {
+            GL41.glDeleteQueries(timeQueryIds);
+            queriesInitialized = false;
+        }
+    }
+
     public static void beginFrame() {
         cpuFrameStartTimeNs = System.nanoTime();
     }
 
     public static void endFrame() {
-        frameTimeNs = cpuFrameTimeNs = System.nanoTime() - cpuFrameStartTimeNs;
-        frameTime = cpuFrameTimeNs / 1_000_000.0f;
+        cpuFrameTimeNs = System.nanoTime() - cpuFrameStartTimeNs;
     }
 
     public static void beginUpscale() {
         cpuUpscaleStartTimeNs = System.nanoTime();
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
-            GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[1]);
+            GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[UPSCALE_QUERY_INDEX]);
         }
     }
 
@@ -66,7 +77,7 @@ public class PerformanceRecoder {
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
             long[] upscaleTime = {0};
-            GL41.glGetQueryObjectui64v(timeQueryIds[1], GL41.GL_QUERY_RESULT, upscaleTime);
+            GL41.glGetQueryObjectui64v(timeQueryIds[UPSCALE_QUERY_INDEX], GL41.GL_QUERY_RESULT, upscaleTime);
             upscaleTimeNs = upscaleTime[0];
         }
     }
@@ -74,7 +85,7 @@ public class PerformanceRecoder {
     public static void beginWorld() {
         cpuWorldStartTimeNs = System.nanoTime();
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
-            GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[0]);
+            GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, timeQueryIds[WORLD_QUERY_INDEX]);
         }
     }
 
@@ -83,11 +94,10 @@ public class PerformanceRecoder {
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
             long[] worldTime = {0};
-            GL41.glGetQueryObjectui64v(timeQueryIds[0], GL41.GL_QUERY_RESULT, worldTime);
+            GL41.glGetQueryObjectui64v(timeQueryIds[WORLD_QUERY_INDEX], GL41.GL_QUERY_RESULT, worldTime);
             worldTimeNs = worldTime[0];
         }
     }
-
 
     public static long getWorldTimeNs() {
         return worldTimeNs;
@@ -103,14 +113,6 @@ public class PerformanceRecoder {
 
     public static float getUpscaleTimeMs() {
         return upscaleTimeNs / 1_000_000.0f;
-    }
-
-    public static long getFrameTimeNs() {
-        return frameTimeNs;
-    }
-
-    public static float getFrameTimeMs() {
-        return frameTimeNs / 1_000_000.0f;
     }
 
     public static long getCpuWorldTimeNs() {

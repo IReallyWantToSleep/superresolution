@@ -27,7 +27,7 @@ SR_API SRReturnCode srGetUpscaleProvider(
 {
     if (!outProvider)
     {
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_NULL_POINTER;
     }
 
     std::lock_guard<std::mutex> lock(g_providerMutex);
@@ -41,7 +41,7 @@ SR_API SRReturnCode srGetUpscaleProvider(
         }
     }
 
-    return SR_RETURN_CODE_ERROR;
+    return SR_RETURN_CODE_CANNOT_FIND_PROVIDER;
 }
 
 SR_API SRReturnCode srCreateUpscaleContext(
@@ -51,17 +51,27 @@ SR_API SRReturnCode srCreateUpscaleContext(
 {
     if (!outContext || !provider || !desc)
     {
-        return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
     outContext->callbacks = provider->callbacks;
     return provider->callbacks.pCreate(outContext, desc);
+}
+
+SR_API SRReturnCode srInitUpscaleContext(
+    SRUpscaleContext *context)
+{
+    if (!context || !context->callbacks.pInit)
+    {
+        return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
+    }
+    return context->callbacks.pInit(context);
 }
 
 SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context)
 {
     if (!context || !context->callbacks.pDestroy)
     {
-        return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
     return context->callbacks.pDestroy(context);
 }
@@ -73,7 +83,7 @@ SR_API SRReturnCode srQueryUpscaleContext(
 {
     if (!context || !outResult || !context->callbacks.pQuery)
     {
-        return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
     outResult->type = queryType;
     return context->callbacks.pQuery(outResult, context, queryType);
@@ -84,7 +94,7 @@ SR_API SRReturnCode srDispatchUpscale(
 {
     if (!context || !desc || !context->callbacks.pDispatchUpscale)
     {
-        return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
     return context->callbacks.pDispatchUpscale(context, desc);
 }
@@ -117,10 +127,10 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         {
             messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to load DLL,libPath is empty.");
         }
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
     // 否则分配内存并执行实际转换(在Windows上使用Windows API)
-    wchar_t* widePath = new wchar_t[wideLen];
+    wchar_t *widePath = new wchar_t[wideLen];
     MultiByteToWideChar(CP_UTF8, 0, libPath.c_str(), -1, widePath, wideLen);
     HMODULE dll = LoadLibraryW(widePath);
     // 调用完回收内存（Should we use try{}finally{} here?）
@@ -135,14 +145,14 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
             error += widePath;
             messageCallback(SR_MESSAGE_TYPE_ERROR, error.c_str());
         }
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
     }
 
     auto getProvidersCount = (SRUpscaleProviderSupplierCountFunc)GetProcAddress(dll, getProvidersCountFuncName.c_str());
     auto getProviders = (SRUpscaleProviderSupplierFunc)GetProcAddress(dll, getProvidersFuncName.c_str());
 
 #elif defined(ON_LINUX64)
-    // 路径不用转换，本来就是UTF-8 
+    // 路径不用转换，本来就是UTF-8
     // 这个converter用来转换messageCallback
     // FSR为什么要用wchar_t呢
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
@@ -155,7 +165,7 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
             std::wstring error = L"Failed to load .so: " + converter.from_bytes(dlerror());
             messageCallback(SR_MESSAGE_TYPE_ERROR, error.c_str());
         }
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
     }
 
     auto getProvidersCount = (SRUpscaleProviderSupplierCountFunc)dlsym(handle, getProvidersCountFuncName.c_str());
@@ -174,7 +184,7 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
 #elif defined(ON_LINUX64)
         dlclose(handle);
 #endif
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
     }
 
     uint32_t count = 0;
@@ -189,7 +199,7 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
 #elif defined(ON_LINUX64)
         dlclose(handle);
 #endif
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
     }
 
     std::vector<SRUpscaleProvider> providers(count);
@@ -204,7 +214,7 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
 #elif defined(ON_LINUX64)
         dlclose(handle);
 #endif
-        return SR_RETURN_CODE_ERROR;
+        return SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
 
     {
@@ -219,4 +229,117 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     }
 
     return SR_RETURN_CODE_OK;
+}
+
+SR_API GLenum srTextureFormatToGlFormat(SRTextureFormat fmt)
+{
+    switch (fmt)
+    {
+    case SR_TEXTURE_FORMAT_R32G32B32A32_TYPELESS:
+        return GL_RGBA32F;
+    case SR_TEXTURE_FORMAT_R32G32B32A32_FLOAT:
+        return GL_RGBA32F;
+    case SR_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
+        return GL_RGBA16F;
+    case SR_TEXTURE_FORMAT_R32G32_FLOAT:
+        return GL_RG32F;
+    case SR_TEXTURE_FORMAT_R32_UINT:
+        return GL_R32UI;
+    case SR_TEXTURE_FORMAT_R8G8B8A8_TYPELESS:
+        return GL_RGBA8;
+    case SR_TEXTURE_FORMAT_R8G8B8A8_UNORM:
+        return GL_RGBA8;
+    case SR_TEXTURE_FORMAT_R11G11B10_FLOAT:
+        return GL_R11F_G11F_B10F;
+    case SR_TEXTURE_FORMAT_R16G16_FLOAT:
+        return GL_RG16F;
+    case SR_TEXTURE_FORMAT_R16G16_UINT:
+        return GL_RG16UI;
+    case SR_TEXTURE_FORMAT_R16_FLOAT:
+        return GL_R16F;
+    case SR_TEXTURE_FORMAT_R16_UINT:
+        return GL_R16UI;
+    case SR_TEXTURE_FORMAT_R16_UNORM:
+        return GL_R16;
+    case SR_TEXTURE_FORMAT_R16_SNORM:
+        return GL_R16_SNORM;
+    case SR_TEXTURE_FORMAT_R8_UNORM:
+        return GL_R8;
+    case SR_TEXTURE_FORMAT_R8G8_UNORM:
+        return GL_RG8;
+    case SR_TEXTURE_FORMAT_R32_FLOAT:
+        return GL_R32F;
+    case SR_TEXTURE_FORMAT_R8_UINT:
+        return GL_R8UI;
+    default:
+        return 0;
+    }
+}
+SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt)
+{
+    switch (fmt)
+    {
+    case (SR_TEXTURE_FORMAT_UNKNOWN):
+        return VK_FORMAT_UNDEFINED;
+    case (SR_TEXTURE_FORMAT_R32G32B32A32_TYPELESS):
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R32G32B32A32_UINT):
+        return VK_FORMAT_R32G32B32A32_UINT;
+    case (SR_TEXTURE_FORMAT_R32G32B32A32_FLOAT):
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R16G16B16A16_FLOAT):
+        return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R32G32B32_FLOAT):
+        return VK_FORMAT_R32G32B32_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R32G32_FLOAT):
+        return VK_FORMAT_R32G32_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R8_UINT):
+        return VK_FORMAT_R8_UINT;
+    case (SR_TEXTURE_FORMAT_R32_UINT):
+        return VK_FORMAT_R32_UINT;
+    case (SR_TEXTURE_FORMAT_R8G8B8A8_TYPELESS):
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    case (SR_TEXTURE_FORMAT_R8G8B8A8_UNORM):
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    case (SR_TEXTURE_FORMAT_R8G8B8A8_SNORM):
+        return VK_FORMAT_R8G8B8A8_SNORM;
+    case (SR_TEXTURE_FORMAT_R8G8B8A8_SRGB):
+        return VK_FORMAT_R8G8B8A8_SRGB;
+    case (SR_TEXTURE_FORMAT_B8G8R8A8_TYPELESS):
+        return VK_FORMAT_B8G8R8A8_UNORM;
+    case (SR_TEXTURE_FORMAT_B8G8R8A8_UNORM):
+        return VK_FORMAT_B8G8R8A8_UNORM;
+    case (SR_TEXTURE_FORMAT_B8G8R8A8_SRGB):
+        return VK_FORMAT_B8G8R8A8_SRGB;
+    case (SR_TEXTURE_FORMAT_R11G11B10_FLOAT):
+        return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+    case (SR_TEXTURE_FORMAT_R10G10B10A2_UNORM):
+        return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+    case (SR_TEXTURE_FORMAT_R16G16_FLOAT):
+        return VK_FORMAT_R16G16_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R16G16_UINT):
+        return VK_FORMAT_R16G16_UINT;
+    case (SR_TEXTURE_FORMAT_R16G16_SINT):
+        return VK_FORMAT_R16G16_SINT;
+    case (SR_TEXTURE_FORMAT_R16_FLOAT):
+        return VK_FORMAT_R16_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R16_UINT):
+        return VK_FORMAT_R16_UINT;
+    case (SR_TEXTURE_FORMAT_R16_UNORM):
+        return VK_FORMAT_R16_UNORM;
+    case (SR_TEXTURE_FORMAT_R16_SNORM):
+        return VK_FORMAT_R16_SNORM;
+    case (SR_TEXTURE_FORMAT_R8_UNORM):
+        return VK_FORMAT_R8_UNORM;
+    case (SR_TEXTURE_FORMAT_R8G8_UNORM):
+        return VK_FORMAT_R8G8_UNORM;
+    case (SR_TEXTURE_FORMAT_R8G8_UINT):
+        return VK_FORMAT_R8G8_UINT;
+    case (SR_TEXTURE_FORMAT_R32_FLOAT):
+        return VK_FORMAT_R32_SFLOAT;
+    case (SR_TEXTURE_FORMAT_R9G9B9E5_SHAREDEXP):
+        return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
+    default:
+        return VK_FORMAT_UNDEFINED;
+    }
 }
