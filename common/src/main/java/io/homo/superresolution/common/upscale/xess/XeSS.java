@@ -94,7 +94,12 @@ public class XeSS extends AbstractAlgorithm {
                 "srGetXeSSUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000004);
+        SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
+                SuperResolutionNativeAPI.srGetUpscaleProvider(
+                        provider,
+                        0x8000004)
+        );
+
         this.context = new SRUpscaleContext(0);
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
@@ -102,16 +107,21 @@ public class XeSS extends AbstractAlgorithm {
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 vulkanDevice.getVkDevice(),
                 vulkanDevice.getPhysicalDevice(),
+                0,
                 new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                0
+                SRUpscaleContextCreateFlags.VULKAN.value
         );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
                 upscaleContextDesc
         );
-        SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code.value);
+        SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(
+                context
+        );
+        SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code);
+        SuperResolution.LOGGER.info("'srInitUpscaleContext' return code: {}", code0);
         SuperResolution.LOGGER.info("'SRUpscaleContext' pointer: {}", context.nativePtr);
         SuperResolution.LOGGER.info("'SRUpscaleProvider' pointer: {}", provider.nativePtr);
     }

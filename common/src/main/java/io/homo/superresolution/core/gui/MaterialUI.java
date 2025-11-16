@@ -18,9 +18,43 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
+import net.neoforged.bus.EventBus;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.bus.api.IEventBus;
+
 public class MaterialUI {
+    public static final IEventBus EVENT_BUS;
+
+    static {
+        EVENT_BUS = createEventBus("UI Main");
+    }
+
     public static void init() {
+        NanoVG.init();
         MaterialSymbols.init();
         AnimationSystem.initialize();
+        EVENT_BUS.start();
+    }
+
+    public static IEventBus createEventBus(String name) {
+        return BusBuilder.builder()
+                .setExceptionHandler((
+                        bus,
+                        event,
+                        listeners,
+                        index,
+                        throwable
+                ) -> {
+                    SuperResolution.LOGGER.error(
+                            "{}: 处理事件 {} 时发生错误，监听器 {}",
+                            name,
+                            event.getClass(),
+                            listeners[index]
+                    );
+                    throwable.printStackTrace();
+                })
+                .build();
     }
 }

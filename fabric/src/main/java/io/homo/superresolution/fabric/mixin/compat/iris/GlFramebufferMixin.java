@@ -60,6 +60,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     #else
     private void checkFboCompleteness(GpuTexture texture, CallbackInfo ci) {
     #endif
+        /*
         int status = Gl.DSA.checkNamedFramebufferStatus(
                 getGlId(),
                 GL_FRAMEBUFFER
@@ -67,6 +68,7 @@ public abstract class GlFramebufferMixin extends GlResource {
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
         }
+        */
     }
 
     @Inject(method = "addDepthAttachment", at = @At("HEAD"))
@@ -75,6 +77,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     #else
     public void addDepthAttachment(GpuTexture texture, CallbackInfo ci)
     #endif {
+        /*
         if (super_resolution$currentDepthAttachmentType != 0) {
             IrisRenderSystem.framebufferTexture2D(
                     getGlId(),
@@ -85,9 +88,9 @@ public abstract class GlFramebufferMixin extends GlResource {
                     0
             );
         }
+        */
         #if MC_VER < MC_1_21_5
         super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(texture).getInternalFormat());
-
         #else
         super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(((com.mojang.blaze3d.opengl.GlTexture) texture).glId()).getInternalFormat());
         #endif

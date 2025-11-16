@@ -32,3 +32,17 @@ tasks.register('copyNativeLib', Copy) {
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
+
+tasks.register('copyNativeLibAll', Copy) {
+    from("${projectDir}/cpp/output/lib") {
+        include "libSuperResolution*+*+*.so", "libSuperResolution*+*+*.dll", "libSuperResolution*+*+*.dylib"
+        duplicatesStrategy DuplicatesStrategy.INCLUDE
+    }
+    into "${projectDir}/../common/src/main/resources/lib/"
+
+    from("${projectDir}/cpp/output/bin") {
+        include "libSuperResolution*+*+*.so", "libSuperResolution*+*+*.dll", "libSuperResolution*+*+*.dylib"
+        duplicatesStrategy DuplicatesStrategy.INCLUDE
+    }
+    into "${projectDir}/../common/src/main/resources/lib/"
+}

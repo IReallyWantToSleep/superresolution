@@ -95,16 +95,21 @@ public class FfxFSR extends AbstractAlgorithm {
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
                 ((VulkanDevice) RenderSystems.vulkan().device()).getPhysicalDevice(),
+                0,
                 new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                0
+                SRUpscaleContextCreateFlags.VULKAN.value
         );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
                 upscaleContextDesc
         );
+        SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(
+                context
+        );
         SuperResolution.LOGGER.info(String.valueOf(code.value));
+        SuperResolution.LOGGER.info(String.valueOf(code0.value));
         SuperResolution.LOGGER.info(String.valueOf(context.nativePtr));
         SuperResolution.LOGGER.info(String.valueOf(provider.nativePtr));
     }

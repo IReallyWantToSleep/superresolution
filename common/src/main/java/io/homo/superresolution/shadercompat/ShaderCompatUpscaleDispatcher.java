@@ -27,7 +27,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
 import io.homo.superresolution.common.minecraft.handler.TextureInfo;
-import io.homo.superresolution.common.perf.PerformanceRecoder;
+import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
@@ -97,7 +97,7 @@ public class ShaderCompatUpscaleDispatcher {
                 new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
                 RenderHandlerManager.getFrameCount(),
-                PerformanceRecoder.getCpuFrameTimeMs(),
+                PerformanceRecorder.getCpuFrameTimeMs(),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,
@@ -148,7 +148,7 @@ public class ShaderCompatUpscaleDispatcher {
         if (!SuperResolutionConfig.isEnableUpscale()) return;
         if (getCurrentConfig() == null) return;
 
-        PerformanceRecoder.beginUpscale();
+        PerformanceRecorder.beginUpscale();
 
         SRShaderCompatConfig.WorldUpscaleConfig currentConfig = getCurrentConfig().upscale_config;
         /*
@@ -279,6 +279,6 @@ public class ShaderCompatUpscaleDispatcher {
                 }
             }
         }
-        PerformanceRecoder.endUpscale();
+        PerformanceRecorder.endUpscale();
     }
 }

@@ -1,3 +1,5 @@
+import utils.MinecraftVersion
+
 plugins {
     id 'multiloader-loader'
     id 'net.neoforged.moddev'
@@ -69,7 +71,8 @@ neoForge {
             //environment("ENABLE_VULKAN_RENDERDOC_CAPTURE", "1")
             systemProperty('neoforge.enabledGameTestNamespaces', mod_id)
             ideName = "NeoForge ${it.name.capitalize()} (${project.path})"
-            if (!(versionConfig.common.minecraftVersion >= "1.21.9")) {
+
+            if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
 
                 additionalRuntimeClasspathConfiguration.dependencies.add(
                         dependencies.create(
@@ -151,7 +154,6 @@ dependencies {
     implementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
     implementation "me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion"
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8"
-
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
         def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}"
         if (lib.compileOnly) {

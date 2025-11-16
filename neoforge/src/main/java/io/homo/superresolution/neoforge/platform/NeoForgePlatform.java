@@ -35,7 +35,11 @@ public class NeoForgePlatform extends Platform {
 
     @Override
     public boolean isModLoaded(String modId) {
-        return LoadingModList.get().getModFileById(modId) != null;
+        #if MC_VER >= MC_1_21_9
+        return FMLLoader.getCurrent().getLoadingModList() != null;
+        #else
+        return net.neoforged.fml.loading.LoadingModList.get().getModFileById(modId) != null;
+        #endif
     }
 
     @Override

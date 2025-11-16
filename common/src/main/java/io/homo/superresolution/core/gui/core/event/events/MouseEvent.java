@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.event.events;
 
-import io.homo.superresolution.core.gui.core.event.Event;
+import net.neoforged.bus.api.Event;
 import org.joml.Vector2f;
 
 public class MouseEvent {

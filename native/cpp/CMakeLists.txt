@@ -4,7 +4,7 @@ project(SuperResolution)
 option(SR_FSR "启用以支持FSR" ON)
 option(SR_FSROGL "启用以支持FSR OpenGL" OFF)
 option(SR_XESS "启用以支持XESS" ON)
-option(SR_DLSS "启用以支持DLSS" OFF)
+option(SR_DLSS "启用以支持DLSS" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

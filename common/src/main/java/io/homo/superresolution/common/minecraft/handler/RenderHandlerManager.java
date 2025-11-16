@@ -29,7 +29,7 @@ import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
-import io.homo.superresolution.common.perf.PerformanceRecoder;
+import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
@@ -38,6 +38,7 @@ import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.jetbrains.annotations.Nullable;
 
 public class RenderHandlerManager {
     public static boolean needCapture = false;
@@ -54,7 +55,7 @@ public class RenderHandlerManager {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
-        PerformanceRecoder.initialize();
+        PerformanceRecorder.initialize();
         updateHandler();
     }
 
@@ -96,11 +97,11 @@ public class RenderHandlerManager {
     }
 
     public static void onRenderBegin() {
-        PerformanceRecoder.beginFrame();
+        PerformanceRecorder.beginFrame();
     }
 
     public static void onRenderEnd() {
-        PerformanceRecoder.endFrame();
+        PerformanceRecorder.endFrame();
         frameCount++;
     }
 
@@ -112,7 +113,7 @@ public class RenderHandlerManager {
         }
         if (type == CallType.LEVEL_RENDERER) isRenderingWorld = true;
         if (!checkRenderWorldCallPos(type)) return;
-        PerformanceRecoder.beginWorld();
+        PerformanceRecorder.beginWorld();
 
         shouldApplyScale = true;
         if (RenderHandlerManager.needCapture) {
@@ -139,7 +140,7 @@ public class RenderHandlerManager {
     public static void onRenderWorldEnd(CallType type) {
         if (type == CallType.LEVEL_RENDERER) isRenderingWorld = false;
         if (checkRenderWorldCallPos(type)) {
-            PerformanceRecoder.endWorld();
+            PerformanceRecorder.endWorld();
             handler.onRenderWorldEnd(type);
             if (LevelRenderEndEvent.EVENT.hasEvent()) {
                 LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
@@ -252,10 +253,12 @@ public class RenderHandlerManager {
         return handler.getScaledRenderTarget();
     }
 
+    @Nullable
     public static ITexture getColorTexture() {
         return handler.getColorTexture();
     }
 
+    @Nullable
     public static ITexture getDepthTexture() {
         return handler.getDepthTexture();
     }

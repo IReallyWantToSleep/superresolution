@@ -1,6 +1,5 @@
 #include "sr/sr_api.h"
 #include <vulkan/vulkan.h>
-#include "JNI0.h"
 #include "define.h"
 #include "utils.h"
 #include <string>
@@ -8,6 +7,7 @@
 #include "sr/sr_modules.h"
 #include <codecvt>
 #include <locale>
+#include "io_homo_superresolution_core_SuperResolutionNative.h"
 static JNIEnv *g_envForCallback = nullptr;
 
 void sr_message_callback_bridge(SRMsgType type, const wchar_t *message)
@@ -60,7 +60,7 @@ SRTextureResourceDescription fromJavaSRTextureResourceDesc(JNIEnv *env, jobject 
     }
 
     SRTextureResourceDescription desc = {};
-    desc.format = static_cast<SRSurfaceFormat>(formatValue);
+    desc.format = static_cast<SRTextureFormat>(formatValue);
     desc.width = width;
     desc.height = height;
     desc.mipmapCount = mipmapCount;
@@ -161,6 +161,7 @@ extern "C"
         jlong provider,
         jlong device,
         jlong phyDevice,
+        jlong cmdBuf,
         jint upscaledSizeX,
         jint upscaledSizeY,
         jint renderSizeX,
@@ -174,8 +175,23 @@ extern "C"
         desc.upscaledSize = *new SRVectorUint2{static_cast<uint32_t>(upscaledSizeX), static_cast<uint32_t>(upscaledSizeY)};
         desc.device = (VkDevice)device;
         desc.phyDevice = (VkPhysicalDevice)phyDevice;
+        desc.commandBuffer = (VkCommandBuffer)cmdBuf;
         desc.flags = static_cast<uint32_t>(flags);
-        desc.deviceProcAddr = reinterpret_cast<SRUpscaleProvider *>(provider)->providerId == SR_MODULES_FSR2OGL_ID ? java_glfwGetProcAddress : java_vkGetDeviceProcAddr;
+        if (flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_OPENGL)
+        {
+            desc.deviceProcAddr = java_glfwGetProcAddress;
+        }
+        else if (flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_VULKAN)
+        {
+            VkInstance instance = (VkInstance)java_vkGetDeviceProcAddr(desc.device, "SuperResolution_GetInstance");
+            desc.instance = instance;
+            desc.deviceProcAddr = java_vkGetDeviceProcAddr;
+        }
+        else
+        {
+            sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR, L"Must specify either OPENGL or VULKAN flag when creating upscale context.");
+            return SR_RETURN_CODE_INVALID_ARGUMENT;
+        }
         desc.messageCallback = sr_message_callback_bridge;
 
         SRUpscaleContext *context = new SRUpscaleContext();
@@ -206,7 +222,7 @@ extern "C"
         SRUpscaleContext *context = reinterpret_cast<SRUpscaleContext *>(contextPtr);
         if (!context)
         {
-            return SR_RETURN_CODE_ERROR;
+            return SR_RETURN_CODE_NULL_POINTER;
         }
 
         SRReturnCode rc = srDestroyUpscaleContext(context);
@@ -370,10 +386,8 @@ extern "C"
             auto *verInfo = static_cast<SRUpscaleContextQueryVersionInfoResult *>(result.data);
             jfieldID versionNumberField = env->GetFieldID(resultCls, "versionNumber", "J");
             jfieldID versionIdField = env->GetFieldID(resultCls, "versionId", "J");
-            jfieldID versionNameField = env->GetFieldID(resultCls, "versionName", "Ljava/lang/String;");
             env->SetLongField(outResultObj, versionNumberField, static_cast<jlong>(verInfo->versionNumber));
             env->SetLongField(outResultObj, versionIdField, static_cast<jlong>(verInfo->versionId));
-            env->SetObjectField(outResultObj, versionNameField, env->NewStringUTF(verInfo->versionName));
         }
         else if (queryType == SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO)
         {
@@ -423,7 +437,7 @@ extern "C"
         if (libPath == nullptr || getProvidersFuncName == nullptr || getProvidersCountFuncName == nullptr)
         {
             throwJavaException(env, "One or more input strings are null.");
-            return SR_RETURN_CODE_ERROR;
+            return SR_RETURN_CODE_NULL_POINTER;
         }
 
         const char *libPathChars = env->GetStringUTFChars(libPath, nullptr);
@@ -440,6 +454,16 @@ extern "C"
         env->ReleaseStringUTFChars(getProvidersCountFuncName, countName);
 
         return srLoadUpscaleProvidersFromLibrary(LibPath, funcNameStr, countNameStr, sr_message_callback_bridge);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrInitUpscaleContext(JNIEnv *, jclass, jlong contextPtr)
+    {
+        auto context = reinterpret_cast<SRUpscaleContext *>(contextPtr);
+        if (!context)
+        {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+        return srInitUpscaleContext(context);
     }
 
 #ifdef __cplusplus

@@ -1,3 +1,5 @@
+import utils.MinecraftVersion
+
 import java.nio.file.Paths
 
 plugins {
@@ -64,7 +66,14 @@ dependencies {
     implementation "io.github.spair:imgui-java-lwjgl3:1.87.5"
     implementation "org.anarres:jcpp:1.4.14"
     implementation "org.antlr:antlr4-runtime:4.13.1"
-    implementation "io.github.douira:glsl-transformer:2.0.1"
+    include(implementation "net.neoforged:bus:8.0.5")
+
+
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
+        implementation "io.github.douira:glsl-transformer:2.0.1"
+    } else {
+        implementation "io.github.douira:glsl-transformer:3.0.0-pre3"
+    }
     implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"

@@ -58,3 +58,6 @@ else()
         ${Vulkan_LIBRARIES}
     )
 endif()
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()

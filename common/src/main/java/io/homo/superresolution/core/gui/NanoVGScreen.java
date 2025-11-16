@@ -284,4 +284,17 @@ public abstract class NanoVGScreen<T> extends Screen {
     protected double transformPos(double pos) {
         return (Minecraft.getInstance().getWindow().getGuiScale() * pos) / nvg.globalScale();
     }
+
+    #if MC_VER <= MC_1_20_1
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics) {
+        return;
+    }
+    #else
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        return;
+    }
+    #endif
+
 }

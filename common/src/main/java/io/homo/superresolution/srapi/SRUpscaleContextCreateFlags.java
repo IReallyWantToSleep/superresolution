@@ -16,10 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.event;
+package io.homo.superresolution.srapi;
 
-public interface EventHandle<T> {
-    void addEventListener(String type, Object listener);
+public enum SRUpscaleContextCreateFlags {
+    NONE(0),
+    ENABLE_DEBUG(1 << 0),
+    OPENGL(1 << 1),
+    VULKAN(1 << 2);
+    public final int value;
 
-    void removeEventListener(String type, Object listener);
+    SRUpscaleContextCreateFlags(int value) {
+        this.value = value;
+    }
+
+    public static SRUpscaleContextCreateFlags fromValue(int value) {
+        for (SRUpscaleContextCreateFlags v : values()) {
+            if (v.value == value) {
+                return v;
+            }
+        }
+        throw new IllegalArgumentException("Unknown SRUpscaleContextCreateFlags value: " + value);
+    }
 }

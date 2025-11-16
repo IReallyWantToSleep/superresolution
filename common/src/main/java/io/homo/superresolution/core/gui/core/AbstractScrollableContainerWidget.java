@@ -22,7 +22,11 @@ import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.*;
+import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaOverflow;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import org.joml.Vector2f;
 
 public abstract class AbstractScrollableContainerWidget extends AbstractContainerWidget<AbstractScrollableContainerWidget, WidgetStyle<?>, AnimationSet> {
@@ -41,6 +45,15 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
     public AbstractScrollableContainerWidget() {
         wrapperNode.addChildAt(getWrapperedLayoutNode(), 0);
         wrapperNode.setDebugName("ScrollableContainerWrapperNode");
+        wrapperNode.setOverflow(YogaOverflow.HIDDEN);
+        YogaNode wrapperedNode = getWrapperedLayoutNode();
+        wrapperedNode.setPositionType(YogaPositionType.ABSOLUTE);
+        wrapperedNode.setWidthAuto();
+        wrapperedNode.setHeightAuto();
+        wrapperedNode.setMinWidth(0);
+        wrapperedNode.setMinHeight(0);
+        wrapperedNode.setMaxWidth(Float.MAX_VALUE);
+        wrapperedNode.setMaxHeight(Float.MAX_VALUE);
     }
 
     @Override
@@ -54,7 +67,7 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
 
     @Override
     public void setElementSize(float width, float height) {
-        super.setElementSize(width, height);
+        //super.setElementSize(width, height);
         viewRegion.set(width, height);
         if (width > 0) wrapperNode.setWidth(width);
         if (height > 0) wrapperNode.setHeight(height);
@@ -131,6 +144,9 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
 
     public void setScrollOffset(Vector2f offset) {
         this.scrollOffset = offset != null ? new Vector2f(offset) : new Vector2f(0, 0);
+        getWrapperedLayoutNode().setPosition(YogaEdge.LEFT, -this.scrollOffset.x);
+        getWrapperedLayoutNode().setPosition(YogaEdge.TOP, -this.scrollOffset.y);
+
     }
 
     public void setScrollOffset(float x, float y) {
@@ -208,26 +224,9 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
                 region.width,
                 region.height
         );
-/*
-//debug
-        drawContext.drawRect(
-                region.x,
-                region.y,
-                region.width,
-                region.height,
-                Color.rgba(255, 0, 0, 255),
-                false
-        );
 
-        drawContext.drawRect(
-                region.x - scrollOffset.x,
-                region.y - scrollOffset.y,
-                layout.getContainerBounds().width,
-                layout.getContainerBounds().height,
-                Color.rgba(255, 255, 0, 255),
-                false
-        );
-*/
+//debug
+
 
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?, ?, ?> widget) {
@@ -237,6 +236,22 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
             }
         }
         drawContext.resetScissor();
+        drawContext.drawRect(
+                region.x,
+                region.y,
+                region.width,
+                region.height,
+                Color.rgba(255, 0, 0, 255),
+                false
+        );
+        drawContext.drawRect(
+                getAbsoluteViewRect().x,
+                getAbsoluteViewRect().y,
+                getAbsoluteViewRect().width,
+                getAbsoluteViewRect().height,
+                Color.rgba(255, 255, 0, 255),
+                false
+        );
         renderScrollbar(drawContext, inputState);
         drawContext.endBatch(getZIndex());
     }

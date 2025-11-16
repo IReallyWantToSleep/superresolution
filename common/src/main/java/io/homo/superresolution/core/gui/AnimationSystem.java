@@ -23,31 +23,40 @@ import io.homo.superresolution.thirdparty.icyllis.modernui.animation.AnimationHa
 import io.homo.superresolution.thirdparty.icyllis.modernui.core.Core;
 import io.homo.superresolution.thirdparty.icyllis.modernui.core.Looper;
 
-import java.time.Duration;
+import java.util.concurrent.locks.LockSupport;
 
 public class AnimationSystem {
     private static volatile Thread animationThread;
     private static volatile boolean isInitialized = false;
+    private static volatile boolean shouldStop = false;
 
     public static synchronized void initialize() {
         if (isInitialized) {
             return;
         }
-        long frameTime = (long) ((1000L / 120f) * 1000L);
+
+        shouldStop = false;
+        long frameTimeNanos = (long) ((1_000_000_000L / 120.0));
+
         animationThread = new Thread(() -> {
             try {
-                while (true) {
-                    long currentTimeNanos = System.nanoTime();
+                while (!shouldStop && !Thread.currentThread().isInterrupted()) {
+                    long startTimeNanos = System.nanoTime();
+
                     AnimationHandler.getInstance().doAnimationFrame(Core.timeMillis());
-                    Thread.sleep(
-                            ((long) Math.floor(frameTime - (System.nanoTime() - currentTimeNanos) / 1000L)),
-                            (int) (frameTime - (System.nanoTime() - currentTimeNanos) - ((long) Math.floor(frameTime - (System.nanoTime() - currentTimeNanos) / 1000L) * 1000L))
-                    );
+
+                    long elapsedNanos = System.nanoTime() - startTimeNanos;
+                    long sleepNanos = frameTimeNanos - elapsedNanos;
+
+                    if (sleepNanos > 0) {
+                        LockSupport.parkNanos(sleepNanos);
+                    }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                if (!shouldStop) {
+                    e.printStackTrace();
+                }
             }
-
         }, "SR-MUI-AnimationThread");
 
         animationThread.setDaemon(true);
@@ -60,6 +69,7 @@ public class AnimationSystem {
             return;
         }
 
+        shouldStop = true;
 
         Looper frameLooper = Looper.getFrameLooper();
         if (frameLooper != null) {
@@ -67,6 +77,7 @@ public class AnimationSystem {
         }
 
         if (animationThread != null && animationThread.isAlive()) {
+            animationThread.interrupt();
             try {
                 animationThread.join(3000);
             } catch (InterruptedException e) {
@@ -76,7 +87,6 @@ public class AnimationSystem {
 
         isInitialized = false;
         animationThread = null;
-
     }
 
     public static boolean isAnimationThread() {

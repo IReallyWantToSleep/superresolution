@@ -16,6 +16,11 @@ extern "C"
 {
 #endif
 
+    SR_API SRReturnCode srFfxFsr3InitUpscaleContext(SRUpscaleContext *context)
+    {
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
+
     SR_API SRReturnCode srFfxFsr3CreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
     {
         VkDeviceContext deviceContext = {
@@ -71,18 +76,23 @@ extern "C"
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
+        {
             ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
             ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionName = const_cast<char *>("3.1.4");
             break;
+        }
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
-            // FSR3不支持
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = 0;
-            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        {
+            FfxEffectMemoryUsage usage = {};
+            ffxFsr3UpscalerContextGetGpuMemoryUsage(((SRFsr3PrivateData *)context->userContext)->context, &usage);
+            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = usage.totalUsageInBytes;
             break;
+        }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
+        {
             ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = true;
             break;
+        }
         default:
             break;
         }
@@ -130,10 +140,11 @@ extern "C"
     SR_API SRUpscaleContextCallbacks srGetFfxFSR3UpscaleCallbacks()
     {
         static SRUpscaleContextCallbacks callbacks = {
-              .pCreate = (SRCreateFunc)srFfxFsr3CreateUpscaleContext,
-              .pDestroy = (SRDestroyFunc)srFfxFsr3DestroyUpscaleContext,
-              .pQuery = (SRQueryFunc)srFfxFsr3QueryUpscale,
-              .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr3DispatchUpscale,
+            .pCreate = (SRCreateFunc)srFfxFsr3CreateUpscaleContext,
+            .pInit = (SRInitFunc)srFfxFsr3InitUpscaleContext,
+            .pDestroy = (SRDestroyFunc)srFfxFsr3DestroyUpscaleContext,
+            .pQuery = (SRQueryFunc)srFfxFsr3QueryUpscale,
+            .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr3DispatchUpscale,
         };
         return callbacks;
     }

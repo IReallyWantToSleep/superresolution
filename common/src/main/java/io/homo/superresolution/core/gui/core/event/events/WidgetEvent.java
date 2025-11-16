@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.event.events;
 
-import io.homo.superresolution.core.gui.core.event.Event;
+import net.neoforged.bus.api.Event;
 import org.joml.Vector2f;
 
 public class WidgetEvent {
@@ -52,7 +52,17 @@ public class WidgetEvent {
         }
     }
 
-    public static class ClickEvent extends Event {
+    public static class ClickEvent<T> extends Event {
+        private final T widget;
+
+
+        public ClickEvent(T widget) {
+            this.widget = widget;
+        }
+
+        public T getWidget() {
+            return widget;
+        }
     }
 
     public static class ChangeEvent<T> extends Event {

@@ -23,7 +23,6 @@ import io.homo.superresolution.core.gui.core.animator.Easing;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
-import io.homo.superresolution.core.gui.core.event.EventListener;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
@@ -31,6 +30,7 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSliderStyle, MaterialSliderAnimationSet> {
@@ -68,7 +68,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
 
     public MaterialSlider setValue(Number value) {
         this.value = value;
-        eventHandler.fire(new WidgetEvent.ChangeEvent<>(value));
+        eventBus.post(new WidgetEvent.ChangeEvent<>(value));
         return this;
     }
 
@@ -103,8 +103,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         return getBounds().width;
     }
 
-    public void onChange(EventListener<WidgetEvent.ChangeEvent> listener) {
-        eventHandler.on(WidgetEvent.ChangeEvent.class, listener);
+    public void onChange(Consumer<WidgetEvent.ChangeEvent<Number>> listener) {
+        eventBus.addListener(listener);
     }
 
     @Override

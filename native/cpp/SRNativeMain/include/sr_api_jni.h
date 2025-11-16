@@ -1,5 +1,5 @@
 #include "vulkan/vulkan.h"
-#include "JNI0.h"
+#include "jni/JNI0.h"
 #include "sr_api.h"
 
 SRTextureResource fromJavaSRVkTextureResource(JNIEnv *env, jobject obj);

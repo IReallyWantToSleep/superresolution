@@ -36,25 +36,29 @@ public class GpuTextureAdapter extends GlTexture {
 
     GpuTextureAdapter(ITexture texture) {
         #if MC_VER > MC_1_21_5
-        super(GpuTexture.USAGE_COPY_DST & GpuTexture.USAGE_COPY_SRC & GpuTexture.USAGE_TEXTURE_BINDING & GpuTexture.USAGE_RENDER_ATTACHMENT,
+        super(
+                GpuTexture.USAGE_COPY_DST |
+                        GpuTexture.USAGE_COPY_SRC |
+                        GpuTexture.USAGE_TEXTURE_BINDING |
+                        GpuTexture.USAGE_RENDER_ATTACHMENT,
                 texture.handle() + "--" + texture.getTextureFormat(),
-                texture.getTextureFormat() == TextureFormat.RGBA8 ?
-                        com.mojang.blaze3d.textures.TextureFormat.RGBA8 :
-                        com.mojang.blaze3d.textures.TextureFormat.DEPTH32,
+                texture.getTextureFormat().isDepth() ?
+                        com.mojang.blaze3d.textures.TextureFormat.DEPTH32 :
+                        com.mojang.blaze3d.textures.TextureFormat.RGBA8,
                 texture.getWidth(),
                 texture.getHeight(),
                 1,
-                1,
+                texture.getTextureDescription().getMipmapSettings().getLevels(),
                 (int) texture.handle()
         );
         #else
         super(texture.handle() + "--" + texture.getTextureFormat(),
-                texture.getTextureFormat() == TextureFormat.RGBA8 ?
-                        com.mojang.blaze3d.textures.TextureFormat.RGBA8 :
-                        com.mojang.blaze3d.textures.TextureFormat.DEPTH32,
+                texture.getTextureFormat().isDepth() ?
+                        com.mojang.blaze3d.textures.TextureFormat.DEPTH32 :
+                        com.mojang.blaze3d.textures.TextureFormat.RGBA8,
                 texture.getWidth(),
                 texture.getHeight(),
-                1,
+                texture.getTextureDescription().getMipmapSettings().getLevels(),
                 (int) texture.handle()
         );
         #endif
@@ -97,6 +101,14 @@ public class GpuTextureAdapter extends GlTexture {
 
     public void setTextureFilter(FilterMode filterMode, FilterMode filterMode2, boolean bl) {
     }
+
+    #if MC_VER > MC_1_21_5
+    @Override
+    public int usage() {
+        return
+                GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_RENDER_ATTACHMENT;
+    }
+    #endif
 }
 #else
 public class GpuTextureAdapter {

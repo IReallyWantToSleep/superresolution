@@ -25,7 +25,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.minecraft.*;
-import io.homo.superresolution.common.perf.PerformanceRecoder;
+import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.RenderSystems;
@@ -54,7 +54,6 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
-import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -82,7 +81,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         #if MC_VER > MC_1_21_4
         renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
                 SuperResolutionConfig.getInternalTextureFormat(),
-                io.homo.superresolution.core.graphics.impl.texture.TextureFormat.DEPTH32F,
+                TextureFormat.DEPTH32,
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight()
         );
@@ -232,6 +231,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         !=1.21.5 在渲染世界前后更换RenderTarget
         */
         if (SuperResolutionConfig.isEnableUpscale()) {
+            RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
+            renderTarget.bind(FrameBufferBindPoint.Write);
+            /*
             #if MC_VER >= MC_1_21_5
             RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(
                     RenderHandlerManager.getRenderWidth(),
@@ -241,6 +243,8 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
             RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
             renderTarget.bind(FrameBufferBindPoint.Write);
             #endif
+            */
+
         }
     }
 
@@ -253,7 +257,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         */
         //TODO:不用copy直接blitFrameBuffer
         if (SuperResolutionConfig.isEnableUpscale()) {
-            #if MC_VER >= MC_1_21_5
+            /*#if MC_VER >= MC_1_21_5
             glEnable(GL_BLEND);
             GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
             GlTextureCopier.copy(
@@ -273,20 +277,20 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                             .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
             );
             RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
-            #else
+            #else*/
             RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
-            #endif
+            //#endif
         }
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         //push SRUpscale
         GlDebug.pushGroup(64108435, "SRUpscale");
-        PerformanceRecoder.beginUpscale();
+        PerformanceRecorder.beginUpscale();
         try (GlState ignored = new GlState()) {
             AlgorithmManager.update();
             if (SuperResolutionConfig.isEnableUpscale()) {
                 {
                     //ScaledRenderTarget.ColorTex copy to MinecraftRenderHandler.colorTexture
-                    #if MC_VER < MC_1_21_5
+                    //#if MC_VER < MC_1_21_5
                     GlTextureCopier.copy(
                             CopyOperation.create()
                                     .src(renderTarget.getTexture(FrameBufferAttachmentType.Color))
@@ -301,7 +305,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                                     .dst(depthTexture)
                                     .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
                     );
-                    #endif
+                    //#endif
                     DispatchResource dispatchResource;
                     if (SuperResolutionConfig.isGenerateMotionVectors()) {
                         MotionVectorsGenerator.update(
@@ -358,7 +362,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                 RenderHandlerManager.getScreenWidth(),
                 RenderHandlerManager.getScreenHeight()
         );
-        PerformanceRecoder.endUpscale();
+        PerformanceRecorder.endUpscale();
         //pop SRUpscale
         GlDebug.popGroup();
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
