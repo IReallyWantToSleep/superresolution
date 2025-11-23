@@ -102,6 +102,7 @@ neoForge {
                                 version: "$versionConfig.common.lwjglVersion"
                         )
                 )
+                /*
                 additionalRuntimeClasspathConfiguration.dependencies.add(
                         dependencies.create(
                                 group: "org.lwjgl",
@@ -125,7 +126,7 @@ neoForge {
                                 version: "$versionConfig.common.lwjglVersion",
                                 classifier: "natives-linux"
                         )
-                )
+                )*/
             }
         }
         client {
@@ -145,10 +146,10 @@ dependencies {
     libraries(implementation("io.github.spair:imgui-java-binding:1.87.5"))
     libraries(implementation("io.github.spair:imgui-java-lwjgl3:1.87.5"))
     libraries(jarJar(implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")))
-    libraries(/*jarJar*/ (implementation("org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion")))
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
+    //libraries(/*jarJar*/ (implementation("org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion")))
+    //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
     //libraries(jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows")
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
+    //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
     //libraries(jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux")
 
     implementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"

@@ -46,6 +46,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         ffx_fsr1_x64d
         ffx_fsr2_x64d
         ffx_fsr3upscaler_x64d
+        ffx_fsr2_api_gl_x64d
+        ffx_fsr2_api_x64d
         ${Vulkan_LIBRARIES}
     )
 else()
@@ -55,9 +57,11 @@ else()
         ffx_fsr1_x64
         ffx_fsr2_x64
         ffx_fsr3upscaler_x64
+        ffx_fsr2_api_gl_x64
+        ffx_fsr2_api_x64
         ${Vulkan_LIBRARIES}
     )
 endif()
 if(MSVC)
-    add_compile_options(/utf-8)
+    add_compile_options(/utf-8 /ZI)
 endif()

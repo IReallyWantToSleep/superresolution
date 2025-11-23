@@ -9,6 +9,7 @@ struct SRXeSSPrivateData
     xess_context_handle_t xessContext;
     xess_coord_t renderSize;
     SRMessageCallback messageCallback;
+    bool isAvailable;
 };
 #ifdef __cplusplus
 extern "C"
@@ -103,10 +104,23 @@ extern "C"
 
     SR_API SRReturnCode srXeSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
     {
+        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN)
+        {
+            if (desc->messageCallback)
+            {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS only supports Vulkan");
+            }
+            return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
+        }
+
         ///////////////
         SRXeSSPrivateData *privateData = new SRXeSSPrivateData();
-        auto status = xessVKCreateContext((VkInstance)desc->instance, (VkPhysicalDevice)desc->phyDevice, (VkDevice)desc->device, &privateData->xessContext);
-        if (status != XESS_RESULT_SUCCESS)
+        auto status = xessVKCreateContext(
+            (VkInstance)desc->renderDeviceInfo.vulkan.instance,
+            (VkPhysicalDevice)desc->renderDeviceInfo.vulkan.physicalDevice,
+            (VkDevice)desc->renderDeviceInfo.vulkan.device,
+            &privateData->xessContext);
+        if (status != XESS_RESULT_SUCCESS && status != XESS_RESULT_ERROR_UNSUPPORTED_DEVICE)
         {
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context create failed");
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
@@ -116,6 +130,18 @@ extern "C"
         {
             desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
         }
+        if (status == XESS_RESULT_SUCCESS)
+        {
+            privateData->isAvailable = true;
+        }
+        else
+        {
+            privateData->isAvailable = false;
+            return (SRReturnCode)SR_RETURN_CODE_OK;
+        }
+        context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
+        privateData->messageCallback = desc->messageCallback;
+        context->userContext = privateData;
 
         xessSetLoggingCallback(
             privateData->xessContext,
@@ -124,9 +150,6 @@ extern "C"
             {
                 printf("[XeSS %d]: %s\n", level, msg);
             });
-        context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
-        privateData->messageCallback = desc->messageCallback;
-        context->userContext = privateData;
         ///////////////
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
@@ -139,17 +162,18 @@ extern "C"
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srXeSSQueryUpscale(SRUpscaleContextQueryResult *result, SRUpscaleContext *context, SRUpscaleContextQueryType queryType)
+    SR_API SRReturnCode srXeSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
     {
-        SRUpscaleContextQueryResult *outResult = result;
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
         {
             xess_version_t version;
             xessGetVersion(&version);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(version.major, version.minor, version.patch);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(version.major, version.minor, version.patch);
+            SRQueryVersionResult outResult = {};
+            outResult.versionId = SR_MAKE_VERSION(version.major, version.minor, version.patch);
+            outResult.versionNumber = SR_MAKE_VERSION(version.major, version.minor, version.patch);
+            result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
@@ -160,13 +184,16 @@ extern "C"
                 ((SRXeSSPrivateData *)(context->userContext))->xessContext,
                 &pOutputResolution,
                 &pBindingProperties);
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = pBindingProperties.tempBufferHeapSize + pBindingProperties.tempTextureHeapSize;
+            SRQueryGpuMemoryResult outResult = {};
+            outResult.gpuMemory = pBindingProperties.tempBufferHeapSize + pBindingProperties.tempTextureHeapSize;
+            result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
         {
-            ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = xessIsOptimalDriver(
-                                                                                       ((SRXeSSPrivateData *)(context->userContext))->xessContext) == XESS_RESULT_SUCCESS;
+            SRQueryAvailabilityResult outResult = {};
+            outResult.isAvailable = ((SRXeSSPrivateData *)(context->userContext))->isAvailable;
+            result->data = &outResult;
             break;
         }
         default:
@@ -230,7 +257,7 @@ extern "C"
         execute_params->resetHistory = desc->reset ? 1 : 0;
         execute_params->inputWidth = desc->renderSize.x;
         execute_params->inputHeight = desc->renderSize.y;
-        auto status = xessVKExecute(xessContext, (VkCommandBuffer)desc->commandList, execute_params);
+        auto status = xessVKExecute(xessContext, desc->commandList.apiCommandBuffer.vulkan.commandBuffer, execute_params);
         if (status != XESS_RESULT_SUCCESS)
         {
             ((SRXeSSPrivateData *)context->userContext)->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS execute failed");

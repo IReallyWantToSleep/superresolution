@@ -7,7 +7,6 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.*;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
-import org.lwjgl.nanovg.NanoVG;
 
 import java.util.ArrayList;
 import java.util.Iterator;

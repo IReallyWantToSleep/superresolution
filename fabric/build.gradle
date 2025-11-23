@@ -76,12 +76,12 @@ dependencies {
     }
     implementation("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
     include("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
+    //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
     //include "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
 
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
+    //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
     //include "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-windows"
-    implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
+    //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
     //include "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
     include(implementation('com.electronwill.night-config:toml:3.8.0'))
     include(implementation('com.electronwill.night-config:core:3.8.0'))

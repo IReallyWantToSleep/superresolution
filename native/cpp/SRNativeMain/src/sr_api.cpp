@@ -1,6 +1,7 @@
 #include "sr/sr_api.h"
 #include <mutex>
 #include <vector>
+#include <cstring>
 
 #ifdef ON_WIN64
 #include <windows.h>
@@ -86,7 +87,7 @@ SR_API SRReturnCode srQueryUpscaleContext(
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
     outResult->type = queryType;
-    return context->callbacks.pQuery(outResult, context, queryType);
+    return context->callbacks.pQuery(context, outResult, queryType);
 }
 SR_API SRReturnCode srDispatchUpscale(
     SRUpscaleContext *context,
@@ -342,4 +343,416 @@ SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt)
     default:
         return VK_FORMAT_UNDEFINED;
     }
+}
+
+
+SR_API const SRContextExtraParam *srFindParam(
+    const SRContextExtraParams *params,
+    const char *name)
+{
+    if (!params || !name)
+    {
+        return nullptr;
+    }
+
+    for (uint32_t i = 0; i < params->extraParamCount; ++i)
+    {
+        if (params->extraParams[i].name && strcmp(params->extraParams[i].name, name) == 0)
+        {
+            return &params->extraParams[i];
+        }
+    }
+
+    return nullptr;
+}
+
+SR_API SRReturnCode srParamsSetBool(
+    SRContextExtraParams *params,
+    const char *name,
+    bool value)
+{
+    if (!params || !name)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_BOOL;
+    param->value.boolValue = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsSetInt32(
+    SRContextExtraParams *params,
+    const char *name,
+    int32_t value)
+{
+    if (!params || !name)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_INT32;
+    param->value.int32Value = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsSetUint32(
+    SRContextExtraParams *params,
+    const char *name,
+    uint32_t value)
+{
+    if (!params || !name)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_UINT32;
+    param->value.uint32Value = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsSetFloat(
+    SRContextExtraParams *params,
+    const char *name,
+    float value)
+{
+    if (!params || !name)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_FLOAT;
+    param->value.floatValue = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsSetDouble(
+    SRContextExtraParams *params,
+    const char *name,
+    double value)
+{
+    if (!params || !name)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_DOUBLE;
+    param->value.doubleValue = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsSetString(
+    SRContextExtraParams *params,
+    const char *name,
+    const char *value)
+{
+    if (!params || !name || !value)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_STRING;
+    param->value.stringValue = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsSetPointer(
+    SRContextExtraParams *params,
+    const char *name,
+    void *value)
+{
+    if (!params || !name)
+    {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    if (params->extraParamCount >= SR_API_CONTEXT_MAX_PARAMS)
+    {
+        return SR_RETURN_CODE_ERROR;
+    }
+
+    SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
+    param->name = name;
+    param->valueType = SR_PARAM_VALUE_TYPE_POINTER;
+    param->value.ptrValue = value;
+    params->extraParamCount++;
+
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetBool(
+    const SRContextExtraParams *params,
+    const char *name,
+    bool *outValue,
+    bool defaultValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = defaultValue;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_BOOL)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.boolValue;
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetInt32(
+    const SRContextExtraParams *params,
+    const char *name,
+    int32_t *outValue,
+    int32_t defaultValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = defaultValue;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_INT32)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.int32Value;
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetUint32(
+    const SRContextExtraParams *params,
+    const char *name,
+    uint32_t *outValue,
+    uint32_t defaultValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = defaultValue;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_UINT32)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.uint32Value;
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetFloat(
+    const SRContextExtraParams *params,
+    const char *name,
+    float *outValue,
+    float defaultValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = defaultValue;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_FLOAT)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.floatValue;
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetDouble(
+    const SRContextExtraParams *params,
+    const char *name,
+    double *outValue,
+    double defaultValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = defaultValue;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_DOUBLE)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.doubleValue;
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetString(
+    const SRContextExtraParams *params,
+    const char *name,
+    const char **outValue,
+    const char *defaultValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = defaultValue;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_STRING)
+    {
+        *outValue = defaultValue;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.stringValue;
+    return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srParamsGetPointer(
+    const SRContextExtraParams *params,
+    const char *name,
+    void **outValue)
+{
+    if (!params || !name || !outValue)
+    {
+        if (outValue)
+        {
+            *outValue = nullptr;
+        }
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+
+    const SRContextExtraParam *param = srFindParam(params, name);
+    if (!param)
+    {
+        *outValue = nullptr;
+        return SR_RETURN_CODE_OK;
+    }
+
+    if (param->valueType != SR_PARAM_VALUE_TYPE_POINTER)
+    {
+        *outValue = nullptr;
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    *outValue = param->value.ptrValue;
+    return SR_RETURN_CODE_OK;
 }

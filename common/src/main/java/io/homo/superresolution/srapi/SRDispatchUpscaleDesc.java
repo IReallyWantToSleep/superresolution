@@ -23,7 +23,7 @@ import org.joml.Vector2f;
 import org.joml.Vector2i;
 
 public class SRDispatchUpscaleDesc {
-    long commandList;
+    SRDispatchCommandBufferInfo commandList;
 
     SRTextureResource color;
     SRTextureResource depth;
@@ -49,13 +49,20 @@ public class SRDispatchUpscaleDesc {
     float viewSpaceToMetersFactor;
 
     boolean reset;
+
+    SRContextExtraParams extraParams;
+
     int flags;
 
-    public long getCommandList() {
+    public SRDispatchUpscaleDesc() {
+        this.extraParams = new SRContextExtraParams();
+    }
+
+    public SRDispatchCommandBufferInfo getCommandList() {
         return commandList;
     }
 
-    public SRDispatchUpscaleDesc setCommandList(long commandList) {
+    public SRDispatchUpscaleDesc setCommandList(SRDispatchCommandBufferInfo commandList) {
         this.commandList = commandList;
         return this;
     }
@@ -237,6 +244,15 @@ public class SRDispatchUpscaleDesc {
 
     public SRDispatchUpscaleDesc setReset(boolean reset) {
         this.reset = reset;
+        return this;
+    }
+
+    public SRContextExtraParams getExtraParams() {
+        return extraParams;
+    }
+
+    public SRDispatchUpscaleDesc setExtraParams(SRContextExtraParams extraParams) {
+        this.extraParams = extraParams;
         return this;
     }
 

@@ -22,7 +22,6 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGPaint;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGSetPaintCommand extends NVGDrawCommand {
     protected final IPaint paint;
@@ -38,6 +37,6 @@ public class NVGSetPaintCommand extends NVGDrawCommand {
 
     @Override
     protected void execute() {
-        NanoVG.nvgFillPaint(context.contextPtr, ((NanoVGPaint) paint).get());
+        context.contextPtr.fillPaint(((NanoVGPaint) paint).get());
     }
 }

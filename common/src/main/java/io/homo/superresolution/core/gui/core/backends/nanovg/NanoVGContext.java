@@ -27,15 +27,12 @@ import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.UIScalingCalculator;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGPaint;
 import net.minecraft.client.Minecraft;
 import org.joml.Vector2f;
-import org.lwjgl.nanovg.NVGPaint;
-import org.lwjgl.nanovg.NanoSVG;
-import org.lwjgl.nanovg.NanoVG;
-import org.lwjgl.nanovg.NanoVGGL3;
 import org.lwjgl.opengl.GL42;
 
-import static org.lwjgl.nanovg.NanoVG.*;
 import static org.lwjgl.opengl.GL30.*;
 
 public class NanoVGContext {
@@ -43,7 +40,7 @@ public class NanoVGContext {
     private static Transform S_currentTransform;
     private static Transform S_globalTransform;
     public GlFrameBuffer frameBuffer;
-    public long contextPtr = -1;
+    public io.homo.superresolution.thirdparty.nanovg.NanoVGContext contextPtr;
     public long rastPtr = -1;
     public float globalScale = 1.0f;
     /// 状态
@@ -53,8 +50,8 @@ public class NanoVGContext {
     private float S_alpha = 1f;
 
     public NanoVGContext(int nvgFlags) {
-        contextPtr = NanoVGGL3.nvgCreate(nvgFlags);
-        rastPtr = NanoSVG.nsvgCreateRasterizer();
+        contextPtr = new io.homo.superresolution.thirdparty.nanovg.NanoVGContext(nvgFlags);
+        rastPtr = 0;
         frameBuffer = GlFrameBuffer.create(
                 TextureFormat.R11G11B10F,
                 TextureFormat.DEPTH24_STENCIL8,
@@ -102,25 +99,23 @@ public class NanoVGContext {
             );
         }
         globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
-
-        NanoVG.nvgBeginFrame(
-                contextPtr,
+        contextPtr.beginFrame(
                 screenSize.x,
                 screenSize.y,
                 globalScale
         );
-        nvgReset(contextPtr);
-        nvgScale(contextPtr, 1, 1);
+        contextPtr.reset();
+        contextPtr.scale(1, 1);
     }
 
     public void end() {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
-        NanoVG.nvgEndFrame(contextPtr);
+        contextPtr.endFrame();
         glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) frameBuffer.handle());
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
         glEnable(GL_BLEND);
         GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
-        
+
         glBlitFramebuffer(
                 0,
                 0,
@@ -138,26 +133,26 @@ public class NanoVGContext {
     }
 
     public void save() {
-        NanoVG.nvgSave(contextPtr);
+        contextPtr.save();
     }
 
     public void restore() {
-        NanoVG.nvgRestore(contextPtr);
+        contextPtr.restore();
     }
 
     public void line(
             float x1, float y1,
             float x2, float y2
     ) {
-        NanoVG.nvgMoveTo(contextPtr, x1, y1);
-        NanoVG.nvgLineTo(contextPtr, x2, y2);
+        contextPtr.moveTo(x1, y1);
+        contextPtr.lineTo(x2, y2);
     }
 
     public void rect(
             float x, float y,
             float width, float height
     ) {
-        NanoVG.nvgRect(contextPtr, x, y, width, height);
+        contextPtr.rect(x, y, width, height);
     }
 
     public void roundedRect(
@@ -165,23 +160,23 @@ public class NanoVGContext {
             float width, float height,
             float radius
     ) {
-        NanoVG.nvgRoundedRect(contextPtr, x, y, width, height, radius);
+        contextPtr.roundedRect(x, y, width, height, radius);
     }
 
     public void beginPath() {
-        NanoVG.nvgBeginPath(contextPtr);
+        contextPtr.beginPath();
     }
 
     public void endPath(boolean fill) {
         if (fill) {
-            NanoVG.nvgFill(contextPtr);
+            contextPtr.fill();
         } else {
-            NanoVG.nvgStroke(contextPtr);
+            contextPtr.stroke();
         }
     }
 
     public void endPath() {
-        NanoVG.nvgFill(contextPtr);
+        contextPtr.fill();
     }
 
     public void drawLine(
@@ -222,7 +217,7 @@ public class NanoVGContext {
         endPath(fill);
     }
 
-    public NVGPaint imagePattern(
+    public NanoVGPaint imagePattern(
             float ox,
             float oy,
             float ex,
@@ -233,16 +228,14 @@ public class NanoVGContext {
             float alpha,
             int image
     ) {
-        return nvgImagePattern(
-                contextPtr,
+        return contextPtr.imagePattern(
                 ox,
                 oy,
                 ex,
                 ey,
                 angle,
                 image,
-                alpha,
-                NVGPaint.calloc()
+                alpha
         );
     }
 
@@ -255,7 +248,7 @@ public class NanoVGContext {
     }
 
     public void resetScissor() {
-        NanoVG.nvgResetScissor(contextPtr);
+        contextPtr.resetScissor();
     }
 
     public void scissor(
@@ -264,8 +257,7 @@ public class NanoVGContext {
             float width,
             float height
     ) {
-        NanoVG.nvgScissor(
-                contextPtr,
+        contextPtr.scissor(
                 x,
                 y,
                 width,
@@ -277,13 +269,13 @@ public class NanoVGContext {
         resetTransform();
         if (S_globalTransform != null) {
             float[] globalMat = S_globalTransform.transformMatrix();
-            nvgTransform(contextPtr, globalMat[0], globalMat[1], globalMat[2],
+            contextPtr.transform(globalMat[0], globalMat[1], globalMat[2],
                     globalMat[3], globalMat[4], globalMat[5]);
         }
 
         if (transform != null) {
             float[] mat = transform.transformMatrix();
-            nvgTransform(contextPtr, mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
+            contextPtr.transform(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
             S_currentTransform = transform;
         }
     }
@@ -301,23 +293,31 @@ public class NanoVGContext {
     }
 
     public void resetTransform() {
-        nvgResetTransform(contextPtr);
+        contextPtr.resetTransform();
         float[] globalScaleMat = Transform.identity().scale(globalScale).transformMatrix();
-        nvgTransform(contextPtr, globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
+        contextPtr.transform(globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
                 globalScaleMat[3], globalScaleMat[4], globalScaleMat[5]);
         S_currentTransform = null;
     }
 
     public void resetGlobalTransform() {
-        nvgResetTransform(contextPtr);
+        contextPtr.resetTransform();
         float[] globalScaleMat = Transform.identity().scale(globalScale).transformMatrix();
-        nvgTransform(contextPtr, globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
+        contextPtr.transform(globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
                 globalScaleMat[3], globalScaleMat[4], globalScaleMat[5]);
         S_globalTransform = null;
     }
 
+    public NanoVGColor color(Color color) {
+        return contextPtr.colorRGBA(
+                color.red(),
+                color.green(),
+                color.blue(),
+                color.alpha()
+        );
+    }
 
-    public NVGPaint linearGradient(
+    public NanoVGPaint linearGradient(
             float startX,
             float startY,
             float endX,
@@ -325,58 +325,39 @@ public class NanoVGContext {
             Color from,
             Color to
     ) {
-        return linearGradient(
+        NanoVGColor fromNVG = color(from.copy().alpha((int) (globalAlpha() * from.alpha())));
+        NanoVGColor toNVG = color(to.copy().alpha((int) (globalAlpha() * to.alpha())));
+
+        NanoVGPaint paint = contextPtr.linearGradient(
                 startX,
                 startY,
                 endX,
                 endY,
-                from,
-                to,
-                NVGPaint.calloc()
+                fromNVG,
+                toNVG
         );
-    }
-
-    public NVGPaint linearGradient(
-            float startX,
-            float startY,
-            float endX,
-            float endY,
-            Color from,
-            Color to,
-            NVGPaint srcPaint
-    ) {
-        from = from.copy().alpha((int) (globalAlpha() * from.alpha()));
-        to = to.copy().alpha((int) (globalAlpha() * to.alpha()));
-
-        NVGPaint paint = NanoVG.nvgLinearGradient(
-                contextPtr,
-                startX,
-                startY,
-                endX,
-                endY,
-                from.nvg(),
-                to.nvg(),
-                srcPaint
-        );
-        nvgFillPaint(contextPtr, paint);
         return paint;
     }
 
     public void strokeWidth(float width) {
         S_strokeWidth = width;
-        NanoVG.nvgStrokeWidth(contextPtr, width);
+        contextPtr.strokeWidth(width);
     }
 
     public void strokeColor(Color color) {
         color = color.copy().alpha((int) (globalAlpha() * color.alpha()));
         S_strokeColor = Color.rgba(color.integer());
-        NanoVG.nvgStrokeColor(contextPtr, color.nvg());
+        try (NanoVGColor vgColor = color(color)) {
+            contextPtr.strokeColor(vgColor);
+        }
     }
 
     public void fillColor(Color color) {
         color = color.copy().alpha((int) (globalAlpha() * color.alpha()));
         S_fillColor = Color.rgba(color.integer());
-        NanoVG.nvgFillColor(contextPtr, color.nvg());
+        try (NanoVGColor vgColor = color(color)) {
+            contextPtr.fillColor(vgColor);
+        }
     }
 
 
@@ -389,7 +370,7 @@ public class NanoVGContext {
     }
 
     public void fontSize(float size) {
-        nvgFontSize(contextPtr, size);
+        contextPtr.fontSize(size);
     }
 
     public Color fillColor() {

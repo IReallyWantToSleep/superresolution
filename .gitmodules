@@ -1,3 +1,6 @@
 [submodule "native/cpp/SRNativeDLSS/third_party/DLSS"]
 	path = native/cpp/SRNativeDLSS/third_party/DLSS
 	url = https://github.com/NVIDIA/DLSS
+[submodule "native/cpp/SRNativeMain/third_party/freetype"]
+	path = native/cpp/SRNativeMain/third_party/freetype
+	url = https://github.com/freetype/freetype

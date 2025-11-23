@@ -23,12 +23,12 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.ITextRenderer;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.nanovg.NanoVG.*;
 
 public class NanoVGTextRenderer extends NanoVGRendererBase implements ITextRenderer {
     public static NanoVGTextRenderer INSTANCE;
@@ -72,23 +72,20 @@ public class NanoVGTextRenderer extends NanoVGRendererBase implements ITextRende
 
     public float measureTextWidth(String text, float fontSize) {
         if (text == null || text.isEmpty()) return 0;
-        float[] bounds = new float[4];
-        nvgFontSize(contextPtr, fontSize);
-        nvgTextBounds(contextPtr, 0, 0, text, bounds);
+        contextPtr.fontSize(fontSize);
+        float[] bounds = contextPtr.textBounds(0, 0, text).bounds;
         return (bounds[2] - bounds[0]);
     }
 
     public float measureTextHeight(String text, float fontSize) {
-        float[] bounds = new float[4];
-        nvgFontSize(contextPtr, fontSize);
-        nvgTextBounds(contextPtr, 0, 0, text, bounds);
+        contextPtr.fontSize(fontSize);
+        float[] bounds = contextPtr.textBounds(0, 0, text).bounds;
         return (bounds[3] - bounds[1]) - 2;
     }
 
     public Vector2f measureText(String text, float fontSize) {
-        float[] bounds = new float[4];
-        nvgFontSize(contextPtr, fontSize);
-        nvgTextBounds(contextPtr, 0, 0, text, bounds);
+        contextPtr.fontSize(fontSize);
+        float[] bounds = contextPtr.textBounds(0, 0, text).bounds;
         return new Vector2f(
                 (bounds[2] - bounds[0]),
                 (bounds[3] - bounds[1]) - 2.5f
@@ -107,29 +104,30 @@ public class NanoVGTextRenderer extends NanoVGRendererBase implements ITextRende
             TextAlign align,
             boolean wrap) {
         color = color.copy().alpha((int) (nvg.globalAlpha() * color.alpha()));
+        NanoVGColor vgColor = contextPtr.colorRGBA(color.red(), color.green(), color.blue(), color.alpha());
         String fontName = ((NanoVGFont) font).name;
-        nvgSave(contextPtr);
+        contextPtr.save();
         TextMetrics metrics = calculateTextMetrics(fontName, fontSize, text, maxWidth, lineHeight, wrap);
-        nvgTextAlign(contextPtr, toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
-        nvgFontSize(contextPtr, fontSize);
-        nvgFontFace(contextPtr, fontName);
-        nvgFillColor(contextPtr, color.nvg());
+        contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
+        contextPtr.fillColor(vgColor);
         float yPos = startY + 1.5f;
         for (String line : metrics.lines) {
-            nvgText(contextPtr, startX, yPos, line);
+            contextPtr.text(startX, yPos, line);
             yPos += lineHeight;
         }
-        nvgRestore(contextPtr);
+        contextPtr.restore();
     }
 
     private int toNvgAlign(TextAlignType alignType) {
         return switch (alignType) {
-            case ALIGN_LEFT -> NVG_ALIGN_LEFT;
-            case ALIGN_CENTER -> NVG_ALIGN_CENTER;
-            case ALIGN_RIGHT -> NVG_ALIGN_RIGHT;
-            case ALIGN_TOP -> NVG_ALIGN_TOP;
-            case ALIGN_MIDDLE -> NVG_ALIGN_MIDDLE;
-            case ALIGN_BOTTOM -> NVG_ALIGN_BOTTOM;
+            case ALIGN_LEFT -> 1;
+            case ALIGN_CENTER -> 2;
+            case ALIGN_RIGHT -> 4;
+            case ALIGN_TOP -> 8;
+            case ALIGN_MIDDLE -> 16;
+            case ALIGN_BOTTOM -> 32;
         };
     }
 
@@ -158,10 +156,10 @@ public class NanoVGTextRenderer extends NanoVGRendererBase implements ITextRende
     public TextMetrics calculateTextMetrics(String fontName, float fontSize,
                                             String text, float maxWidth,
                                             float lineHeight, boolean wrap) {
-        nvgSave(contextPtr);
+        contextPtr.save();
 
-        nvgFontSize(contextPtr, fontSize);
-        nvgFontFace(contextPtr, fontName);
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
 
         List<String> lines = wrap ? splitText(text, maxWidth, fontSize) : List.of(text.split("\n"));
         float maxLineWidth = 0;
@@ -169,7 +167,7 @@ public class NanoVGTextRenderer extends NanoVGRendererBase implements ITextRende
             float width = measureTextWidth(line, fontSize);
             if (width > maxLineWidth) maxLineWidth = width;
         }
-        nvgRestore(contextPtr);
+        contextPtr.restore();
         return new TextMetrics(lines, lineHeight, maxLineWidth);
     }
 

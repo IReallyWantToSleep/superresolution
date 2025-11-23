@@ -40,6 +40,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.semaphore.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
@@ -104,10 +105,15 @@ public class XeSS extends AbstractAlgorithm {
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
 
-        SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
-                vulkanDevice.getVkDevice(),
-                vulkanDevice.getPhysicalDevice(),
-                0,
+        SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
+                new SRVulkanDeviceInfo(
+                        RenderSystems.vulkan().getVulkanInstance(),
+                        vulkanDevice.getPhysicalDevice(),
+                        vulkanDevice.getVkDevice(),
+                        null,
+                        vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
+                        VkReflectionHelper.getVkGetInstanceProcAddr()
+                ),
                 new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
                 SRUpscaleContextCreateFlags.VULKAN.value
@@ -117,6 +123,9 @@ public class XeSS extends AbstractAlgorithm {
                 provider,
                 upscaleContextDesc
         );
+        SRUpscaleContextQueryAvailabilityResult result = new SRUpscaleContextQueryAvailabilityResult(0);
+        SuperResolutionNativeAPI.srQueryUpscaleContext(context, result, SRUpscaleContextQueryType.AVAILABLE);
+        System.out.printf(String.valueOf(result.isAvailable));
         SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(
                 context
         );
@@ -271,7 +280,9 @@ public class XeSS extends AbstractAlgorithm {
         RenderSystems.vulkan().device().commandEncoder().begin();
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commandEncoder().getCommandBuffer();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
-        desc.setCommandList(commandBuffer.getNativeCommandBuffer().address());
+        desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
+                commandBuffer.getNativeCommandBuffer()
+        ));
         desc.setColor(new SRTextureResource(this.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(this.inputDepthVkTexture));
         desc.setMotionVectors(new SRTextureResource(this.inputMotionVectorsVkTexture));

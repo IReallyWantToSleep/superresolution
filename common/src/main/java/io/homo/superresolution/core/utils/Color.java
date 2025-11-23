@@ -18,8 +18,7 @@
 
 package io.homo.superresolution.core.utils;
 
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
-import org.lwjgl.nanovg.NVGColor;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
 
 public class Color {
     private final int[] color;
@@ -41,12 +40,12 @@ public class Color {
                     ((Color) object).alpha()
             );
         }
-        if (object instanceof NVGColor) {
+        if (object instanceof NanoVGColor) {
             return Color.rgba(
-                    ((NVGColor) object).r(),
-                    ((NVGColor) object).g(),
-                    ((NVGColor) object).b(),
-                    ((NVGColor) object).a()
+                    ((NanoVGColor) object).r(),
+                    ((NanoVGColor) object).g(),
+                    ((NanoVGColor) object).b(),
+                    ((NanoVGColor) object).a()
             );
         }
         return new Color(ColorUtil.toArray(object));
@@ -106,15 +105,6 @@ public class Color {
         );
     }
 
-    public static NVGColor toNVG(Color color) {
-        return NanoVG.colorRGBA(
-                color.red(),
-                color.green(),
-                color.blue(),
-                color.alpha()
-        );
-    }
-
     public static String toHEX(Color color) {
         return ColorUtil.toCode(color.color);
     }
@@ -165,10 +155,6 @@ public class Color {
         color[3] = v;
         return this;
 
-    }
-
-    public NVGColor nvg() {
-        return Color.toNVG(this);
     }
 
     public String hex() {

@@ -18,36 +18,53 @@ extern "C"
 
     SR_API SRReturnCode srFfxFsr3InitUpscaleContext(SRUpscaleContext *context)
     {
+        const SRCreateUpscaleContextDesc *desc = &context->desc;
+        SRFsr3PrivateData *privateData = (SRFsr3PrivateData *)context->userContext;
+
+        FfxFsr3UpscalerContextDescription fsrContexDesc = {};
+        fsrContexDesc.flags = FFX_FSR3UPSCALER_ENABLE_DEBUG_CHECKING;
+        fsrContexDesc.backendInterface = *(privateData->ffxInterface);
+        fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
+        fsrContexDesc.maxUpscaleSize = {desc->upscaledSize.x, desc->upscaledSize.y};
+        fsrContexDesc.fpMessage = desc->messageCallback ? reinterpret_cast<FfxFsr3UpscalerMessage>(desc->messageCallback) : nullptr;
+
+        FfxErrorCode code = ffxFsr3UpscalerContextCreate(privateData->context, &fsrContexDesc);
+        if (code != FFX_OK)
+        {
+            if (desc->messageCallback)
+            {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context init failed");
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(code).c_str());
+            }
+            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        }
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3CreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
     {
+        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN)
+        {
+            if (desc->messageCallback)
+            {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 only supports Vulkan");
+            }
+            return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
+        }
+
         VkDeviceContext deviceContext = {
-            (VkDevice)(desc->device),
-            (VkPhysicalDevice)(desc->phyDevice),
-            (PFN_vkGetDeviceProcAddr)(desc->deviceProcAddr),
+            (VkDevice)(desc->renderDeviceInfo.vulkan.device),
+            (VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice),
+            (PFN_vkGetDeviceProcAddr)(desc->renderDeviceInfo.vulkan.deviceProcAddr),
         };
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
-        size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->phyDevice), 1);
+        size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
         void *scratchBuffer = calloc(1, scratchBufferSize);
         FfxInterface *ffxInterface = new FfxInterface();
         SRFSR_CHECK(ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1));
-        FfxFsr3UpscalerContextDescription fsrContexDesc = {};
-        fsrContexDesc.flags = FFX_FSR3UPSCALER_ENABLE_DEBUG_CHECKING;
-        fsrContexDesc.backendInterface = *ffxInterface;
-        fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
-        fsrContexDesc.maxUpscaleSize = {desc->upscaledSize.x, desc->upscaledSize.y};
-        fsrContexDesc.fpMessage = desc->messageCallback ? reinterpret_cast<FfxFsr3UpscalerMessage>(desc->messageCallback) : nullptr;
+
         FfxFsr3UpscalerContext *fsr3Context = new FfxFsr3UpscalerContext();
-        FfxErrorCode code = ffxFsr3UpscalerContextCreate(fsr3Context, &fsrContexDesc);
-        if (code != FFX_OK)
-        {
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context create failed");
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(code).c_str());
-            free(scratchBuffer);
-            return (SRReturnCode)SR_RETURN_CODE_ERROR;
-        }
+
         SRFsr3PrivateData *privateData = new SRFsr3PrivateData();
         privateData->context = fsr3Context;
         privateData->ffxInterface = ffxInterface;
@@ -70,27 +87,32 @@ extern "C"
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr3QueryUpscale(SRUpscaleContextQueryResult *result, SRUpscaleContext *context, SRUpscaleContextQueryType queryType)
+    SR_API SRReturnCode srFfxFsr3QueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
     {
-        SRUpscaleContextQueryResult *outResult = result;
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
         {
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
+            SRQueryVersionResult outResult = {};
+            outResult.versionId = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
+            outResult.versionNumber = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
+            result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
         {
             FfxEffectMemoryUsage usage = {};
             ffxFsr3UpscalerContextGetGpuMemoryUsage(((SRFsr3PrivateData *)context->userContext)->context, &usage);
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = usage.totalUsageInBytes;
+            SRQueryGpuMemoryResult outResult = {};
+            outResult.gpuMemory = usage.totalUsageInBytes;
+            result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
         {
-            ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = true;
+            SRQueryAvailabilityResult outResult = {};
+            outResult.isAvailable = true;
+            result->data = &outResult;
             break;
         }
         default:
@@ -103,24 +125,24 @@ extern "C"
     {
         FfxFsr3UpscalerContext *fsr3Context = ((SRFsr3PrivateData *)context->userContext)->context;
 
-        FfxFsr3UpscalerDispatchDescription dispatchDesc = *new FfxFsr3UpscalerDispatchDescription();
-        dispatchDesc.commandList = ffxGetCommandListVK((VkCommandBuffer)(desc->commandList));
+        FfxFsr3UpscalerDispatchDescription dispatchDesc = {};
+        dispatchDesc.commandList = ffxGetCommandListVK(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
 
         if (desc->color.exist)
-            dispatchDesc.color = SRTextureResourceToFfxResource(&desc->color);
+            dispatchDesc.color = srTextureResourceToFfxResource(&desc->color);
         if (desc->depth.exist)
-            dispatchDesc.depth = SRTextureResourceToFfxResource(&desc->depth);
+            dispatchDesc.depth = srTextureResourceToFfxResource(&desc->depth);
         if (desc->motionVectors.exist)
-            dispatchDesc.motionVectors = SRTextureResourceToFfxResource(&desc->motionVectors);
+            dispatchDesc.motionVectors = srTextureResourceToFfxResource(&desc->motionVectors);
         if (desc->exposure.exist)
-            dispatchDesc.exposure = SRTextureResourceToFfxResource(&desc->exposure);
+            dispatchDesc.exposure = srTextureResourceToFfxResource(&desc->exposure);
         if (desc->reactive.exist)
-            dispatchDesc.reactive = SRTextureResourceToFfxResource(&desc->reactive);
+            dispatchDesc.reactive = srTextureResourceToFfxResource(&desc->reactive);
         if (desc->transparencyAndComposition.exist)
-            dispatchDesc.transparencyAndComposition = SRTextureResourceToFfxResource(&desc->transparencyAndComposition);
+            dispatchDesc.transparencyAndComposition = srTextureResourceToFfxResource(&desc->transparencyAndComposition);
         if (desc->output.exist)
-            dispatchDesc.output = SRTextureResourceToFfxResource(&desc->output);
-
+            dispatchDesc.output = srTextureResourceToFfxResource(&desc->output);
+        //return (SRReturnCode)SR_RETURN_CODE_OK;
         dispatchDesc.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};
         dispatchDesc.motionVectorScale = {desc->motionVectorScale.x, desc->motionVectorScale.y};
         dispatchDesc.renderSize = {desc->renderSize.x, desc->renderSize.y};

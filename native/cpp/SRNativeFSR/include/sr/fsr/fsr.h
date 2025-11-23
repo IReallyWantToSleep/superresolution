@@ -7,4 +7,5 @@
     if (FfxErrorCode _rc = (_expr); _rc != FFX_OK) \
     return (SRReturnCode)SR_RETURN_CODE_ERROR
 
-FfxResource SRTextureResourceToFfxResource(const SRTextureResource* srTex);
+
+FfxResource srTextureResourceToFfxResource(const SRTextureResource * srTex);

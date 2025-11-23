@@ -18,17 +18,15 @@
 
 package io.homo.superresolution.core.gui.core.backends.interfaces;
 
-import org.lwjgl.nanovg.NanoVG;
-
 public record TextAlign(TextAlignType horizontal, TextAlignType vertical) {
     //horizontal
-    public static final int ALIGN_LEFT = NanoVG.NVG_ALIGN_LEFT;
-    public static final int ALIGN_CENTER = NanoVG.NVG_ALIGN_CENTER;
-    public static final int ALIGN_RIGHT = NanoVG.NVG_ALIGN_RIGHT;
+    public static final int ALIGN_LEFT = 1;
+    public static final int ALIGN_CENTER = 2;
+    public static final int ALIGN_RIGHT = 4;
     //vertical
-    public static final int ALIGN_TOP = NanoVG.NVG_ALIGN_TOP;
-    public static final int ALIGN_MIDDLE = NanoVG.NVG_ALIGN_MIDDLE;
-    public static final int ALIGN_BOTTOM = NanoVG.NVG_ALIGN_BOTTOM;
+    public static final int ALIGN_TOP = 8;
+    public static final int ALIGN_MIDDLE = 16;
+    public static final int ALIGN_BOTTOM = 32;
 
     public static TextAlign of(TextAlignType horizontal, TextAlignType vertical) {
         return new TextAlign(horizontal, vertical);

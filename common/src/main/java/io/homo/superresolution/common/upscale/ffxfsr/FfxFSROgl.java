@@ -63,6 +63,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
         SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000006);
         this.context = new SRUpscaleContext(0);
+        /*
         SRCreateUpscaleContextDesc upscaleContextDesc = new SRCreateUpscaleContextDesc(
                 null,
                 null,
@@ -70,11 +71,11 @@ public class FfxFSROgl extends AbstractAlgorithm {
                 new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
                 0
-        );
+        );*/
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
-                upscaleContextDesc
+                null
         );
         SuperResolution.LOGGER.info(String.valueOf(code.value));
         SuperResolution.LOGGER.info(String.valueOf(context.nativePtr));
@@ -122,7 +123,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
             return false;
         }
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
-        desc.setCommandList(0);
+        //desc.setCommandList(0);
         desc.setColor(new SRTextureResource(dispatchResource.resources().colorTexture()));
         desc.setDepth(new SRTextureResource(dispatchResource.resources().depthTexture()));
         desc.setMotionVectors(new SRTextureResource(dispatchResource.resources().motionVectorsTexture()));

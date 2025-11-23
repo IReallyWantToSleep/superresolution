@@ -20,7 +20,8 @@ package io.homo.superresolution.srapi;
 
 public enum SRUpscaleContextQueryType {
     VERSION_INFO(0),
-    GPU_MEMORY_INFO(1);
+    GPU_MEMORY_INFO(1),
+    AVAILABLE(2);
 
     public final int value;
 

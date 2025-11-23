@@ -1,5 +1,6 @@
 #include "sr/sr_api.h"
 #include "sr/fsr/fsr2ogl.h"
+#include "sr/fsr/fsr2_internal.h"
 #include "ffx-fsr2-api/ffx_fsr2.h"
 #include "ffx-fsr2-api/gl/ffx_fsr2_gl.h"
 #include "ffx-fsr2-api/ffx_fsr2_interface.h"
@@ -27,17 +28,26 @@ extern "C"
         };
     }
 
-        SR_API SRReturnCode srFfxFsr2OglInitUpscaleContext(SRUpscaleContext *context)
+    SR_API SRReturnCode srFfxFsr2OglInitUpscaleContext(SRUpscaleContext *context)
     {
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr2OglCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
     {
+        if (desc->renderApiType != SR_RENDER_API_TYPE_OPENGL)
+        {
+            if (desc->messageCallback)
+            {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 OpenGL only supports OpenGL");
+            }
+            return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
+        }
+
         size_t scratchBufferSize = ffxFsr2GetScratchMemorySizeGL();
         void *scratchBuffer = calloc(1, scratchBufferSize);
         FfxFsr2Interface ffxInterface = *new FfxFsr2Interface();
-        SRFSR_CHECK(ffxFsr2GetInterfaceGL(&ffxInterface, scratchBuffer, scratchBufferSize, MakeAdapter(desc->deviceProcAddr)));
+        SRFSR_CHECK(ffxFsr2GetInterfaceGL(&ffxInterface, scratchBuffer, scratchBufferSize, MakeAdapter(desc->renderDeviceInfo.opengl.deviceProcAddr)));
         FfxFsr2ContextDescription fsrContexDesc = {};
         fsrContexDesc.flags = FFX_FSR2_ENABLE_DEBUG_CHECKING | FFX_FSR2_ALLOW_NULL_DEVICE_AND_COMMAND_LIST | desc->flags;
         fsrContexDesc.callbacks = ffxInterface;
@@ -73,22 +83,22 @@ extern "C"
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr2OglQueryUpscale(SRUpscaleContextQueryResult *result, SRUpscaleContext *context, SRUpscaleContextQueryType queryType)
+    SR_API SRReturnCode srFfxFsr2OglQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
     {
         SRUpscaleContextQueryResult *outResult = result;
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
+            ((SRQueryVersionResult *)outResult)->versionId = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
+            ((SRQueryVersionResult *)outResult)->versionNumber = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
             break;
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
             // FSR2不支持
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = 0;
+            ((SRQueryGpuMemoryResult *)outResult)->gpuMemory = 0;
             return (SRReturnCode)SR_RETURN_CODE_ERROR;
             break;
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
-            ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = true;
+            ((SRQueryAvailabilityResult *)outResult)->isAvailable = true;
             break;
         default:
             break;
@@ -136,13 +146,12 @@ extern "C"
     }
     SR_API SRUpscaleContextCallbacks srGetFfxFSR2OglUpscaleCallbacks()
     {
-        static SRUpscaleContextCallbacks callbacks = {
-            .pCreate = (SRCreateFunc)srFfxFsr2OglCreateUpscaleContext,
-            .pInit = (SRInitFunc)srFfxFsr2OglInitUpscaleContext,
-            .pDestroy = (SRDestroyFunc)srFfxFsr2OglDestroyUpscaleContext,
-            .pQuery = (SRQueryFunc)srFfxFsr2OglQueryUpscale,
-            .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr2OglDispatchUpscale,
-        };
+        static SRUpscaleContextCallbacks callbacks;
+        callbacks.pCreate = (SRCreateFunc)srFfxFsr2OglCreateUpscaleContext;
+        callbacks.pInit = (SRInitFunc)srFfxFsr2OglInitUpscaleContext;
+        callbacks.pDestroy = (SRDestroyFunc)srFfxFsr2OglDestroyUpscaleContext;
+        callbacks.pQuery = (SRQueryFunc)srFfxFsr2OglQueryUpscale;
+        callbacks.pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr2OglDispatchUpscale;
         return callbacks;
     }
 

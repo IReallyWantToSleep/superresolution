@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
-import static org.lwjgl.nanovg.NanoVG.nvgCreateFont;
 
 public class NanoVGFont implements IFont {
     public int id = -1;
@@ -47,7 +46,7 @@ public class NanoVGFont implements IFont {
             }
             Files.copy(fontStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
             fontStream.close();
-            id = nvgCreateFont(NanoVG.context.contextPtr, name, tempFile.toString());
+            id = NanoVG.context.contextPtr.createFont(name, tempFile.toString());
             tempFile.toFile().delete();
         } catch (Exception e) {
             throw new RuntimeException("字体加载失败: " + name, e);

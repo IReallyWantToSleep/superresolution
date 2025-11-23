@@ -21,11 +21,8 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.nanovg.commands.*;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
 import org.joml.Vector2f;
-import org.lwjgl.nanovg.NVGPaint;
-
-import static org.lwjgl.nanovg.NanoVG.*;
-
 
 public class NanoVGDrawContext implements IUIDrawContext {
     private final NanoVGContext nvgContext;
@@ -122,10 +119,6 @@ public class NanoVGDrawContext implements IUIDrawContext {
         return new NanoVGPaint(nvgContext.linearGradient(startX, startY, endX, endY, from, to));
     }
 
-    @Override
-    public NanoVGPaint linearGradient(float startX, float startY, float endX, float endY, Color from, Color to, IPaint srcPaint) {
-        return new NanoVGPaint(nvgContext.linearGradient(startX, startY, endX, endY, from, to, ((NanoVGPaint) srcPaint).get()));
-    }
 
     @Override
     public NanoVGPaint imagePattern(float ox, float oy, float ex, float ey, float width, float height, float angle, float alpha, int image) {
@@ -145,63 +138,37 @@ public class NanoVGDrawContext implements IUIDrawContext {
 
     @Override
     public IPaint radialGradient(float centerX, float centerY, float radius, Color beginColor, Color endColor) {
-        return new NanoVGPaint(nvgRadialGradient(
-                nvgContext.contextPtr,
+        NanoVGColor beginColorNVG = nvgContext.color(beginColor);
+        NanoVGColor endColorNVG = nvgContext.color(endColor);
+        NanoVGPaint paint = new NanoVGPaint(nvgContext.contextPtr.radialGradient(
                 centerX,
                 centerY,
                 0,
                 radius,
-                beginColor.nvg(),
-                endColor.nvg(),
-                NVGPaint.calloc()
+                beginColorNVG,
+                endColorNVG
         ));
+        beginColorNVG.close();
+        endColorNVG.close();
+        return paint;
     }
 
+
     @Override
-    public NanoVGPaint radialGradient(
-            float centerX,
-            float centerY,
-            float innerRadius,
-            float outerRadius,
-            Color beginColor,
-            Color endColor
-    ) {
-        return (NanoVGPaint) radialGradient(
+    public IPaint radialGradient(float centerX, float centerY, float innerRadius, float outerRadius, Color beginColor, Color endColor) {
+        NanoVGColor beginColorNVG = nvgContext.color(beginColor);
+        NanoVGColor endColorNVG = nvgContext.color(endColor);
+        NanoVGPaint paint = new NanoVGPaint(nvgContext.contextPtr.radialGradient(
                 centerX,
                 centerY,
                 innerRadius,
                 outerRadius,
-                beginColor,
-                endColor,
-                createPaint()
-        );
-    }
-
-    @Override
-    public IPaint radialGradient(float centerX, float centerY, float radius, Color beginColor, Color endColor, IPaint srcPaint) {
-        return radialGradient(
-                centerX,
-                centerY,
-                0,
-                radius,
-                beginColor,
-                endColor,
-                srcPaint
-        );
-    }
-
-    @Override
-    public IPaint radialGradient(float centerX, float centerY, float innerRadius, float outerRadius, Color beginColor, Color endColor, IPaint srcPaint) {
-        return new NanoVGPaint(nvgRadialGradient(
-                nvgContext.contextPtr,
-                centerX,
-                centerY,
-                innerRadius,
-                outerRadius,
-                beginColor.nvg(),
-                endColor.nvg(),
-                ((NanoVGPaint) srcPaint).get()
+                beginColorNVG,
+                endColorNVG
         ));
+        beginColorNVG.close();
+        endColorNVG.close();
+        return paint;
     }
 
     @Override
@@ -245,12 +212,6 @@ public class NanoVGDrawContext implements IUIDrawContext {
         CommandsBatch currentBatch = batchManager.getCurrentBatch();
 
         if (currentBatch != null) currentBatch.addCommand(new NVGSetPaintCommand(nvgContext, paint));
-    }
-
-
-    @Override
-    public IPaint createPaint() {
-        return new NanoVGPaint();
     }
 
     @Override
@@ -327,26 +288,6 @@ public class NanoVGDrawContext implements IUIDrawContext {
 
     public BatchManager getBatchManager() {
         return batchManager;
-    }
-
-    @Override
-    public void immediateScissor(float x, float y, float width, float height) {
-        nvgScissor(nvgContext.contextPtr, x, y, width, height);
-    }
-
-    @Override
-    public void immediateResetScissor() {
-        nvgResetScissor(nvgContext.contextPtr);
-    }
-
-    @Override
-    public void immediateSave() {
-        nvgSave(nvgContext.contextPtr);
-    }
-
-    @Override
-    public void immediateRestore() {
-        nvgRestore(nvgContext.contextPtr);
     }
 
     public class TransformStackWrapper implements ITransformStack {

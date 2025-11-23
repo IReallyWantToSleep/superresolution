@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.15)
 project(SuperResolutionNativeMain)
 
 link_directories(${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM})
+set(FT_DIR "${PROJECT_SOURCE_DIR}/third_party/freetype")
+add_subdirectory("${FT_DIR}")
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/src
+    ${FT_DIR}/include
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -22,7 +25,8 @@ endif()
 
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
-add_library(SR_MAIN_LIB SHARED ${ALL_SRC})
+aux_source_directory(${PROJECT_SOURCE_DIR}/src/nvg NVG_SRC)
+add_library(SR_MAIN_LIB SHARED ${ALL_SRC} ${NVG_SRC})
 if(WIN32)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_libraries(SR_MAIN_LIB
@@ -73,12 +77,12 @@ else()
         SPVRemapper
     )
 endif()
-
+target_link_libraries(SR_MAIN_LIB freetype)
 if(NOT WIN32)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(SR_MAIN_LIB -lstdc++fs -pthread -ldl)
 endif()
 
 if(MSVC)
-    add_compile_options(/utf-8)
+    add_compile_options(/utf-8 /ZI)
 endif()
