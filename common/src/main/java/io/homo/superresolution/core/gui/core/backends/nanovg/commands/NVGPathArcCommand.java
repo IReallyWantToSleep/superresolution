@@ -20,7 +20,6 @@ package io.homo.superresolution.core.gui.core.backends.nanovg.commands;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGPathArcCommand extends NVGDrawCommand {
     protected final float x;
@@ -60,14 +59,13 @@ public class NVGPathArcCommand extends NVGDrawCommand {
 
     @Override
     protected void execute() {
-        NanoVG.nvgArc(
-                context.contextPtr,
+        context.contextPtr.arc(
                 x,
                 y,
                 radius,
                 a0,
                 a1,
-                NanoVG.NVG_CCW
+                1 //NVG_CCW
         );
     }
 }

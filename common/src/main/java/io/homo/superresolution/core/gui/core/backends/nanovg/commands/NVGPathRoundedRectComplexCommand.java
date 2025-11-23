@@ -20,7 +20,6 @@ package io.homo.superresolution.core.gui.core.backends.nanovg.commands;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGPathRoundedRectComplexCommand extends NVGDrawCommand {
     protected final float x;
@@ -86,14 +85,14 @@ public class NVGPathRoundedRectComplexCommand extends NVGDrawCommand {
         float br = bottomRightRadius;
         float w = width;
         float h = height;
-        NanoVG.nvgMoveTo(context.contextPtr, x + tl, y);
-        NanoVG.nvgLineTo(context.contextPtr, x + w - tr, y);
-        NanoVG.nvgBezierTo(context.contextPtr, x + w - tr * (1 - 0.5522847493f), y, x + w, y + tr * (1 - 0.5522847493f), x + w, y + tr);
-        NanoVG.nvgLineTo(context.contextPtr, x + w, y + h - br);
-        NanoVG.nvgBezierTo(context.contextPtr, x + w, y + h - br * (1 - 0.5522847493f), x + w - br * (1 - 0.5522847493f), y + h, x + w - br, y + h);
-        NanoVG.nvgLineTo(context.contextPtr, x + bl, y + h);
-        NanoVG.nvgBezierTo(context.contextPtr, x + bl * (1 - 0.5522847493f), y + h, x, y + h - bl * (1 - 0.5522847493f), x, y + h - bl);
-        NanoVG.nvgLineTo(context.contextPtr, x, y + tl);
-        NanoVG.nvgBezierTo(context.contextPtr, x, y + tl * (1 - 0.5522847493f), x + tl * (1 - 0.5522847493f), y, x + tl, y);
+        context.contextPtr.moveTo(x + tl, y);
+        context.contextPtr.lineTo(x + w - tr, y);
+        context.contextPtr.bezierTo(x + w - tr * (1 - 0.5522847493f), y, x + w, y + tr * (1 - 0.5522847493f), x + w, y + tr);
+        context.contextPtr.lineTo(x + w, y + h - br);
+        context.contextPtr.bezierTo(x + w, y + h - br * (1 - 0.5522847493f), x + w - br * (1 - 0.5522847493f), y + h, x + w - br, y + h);
+        context.contextPtr.lineTo(x + bl, y + h);
+        context.contextPtr.bezierTo(x + bl * (1 - 0.5522847493f), y + h, x, y + h - bl * (1 - 0.5522847493f), x, y + h - bl);
+        context.contextPtr.lineTo(x, y + tl);
+        context.contextPtr.bezierTo(x, y + tl * (1 - 0.5522847493f), x + tl * (1 - 0.5522847493f), y, x + tl, y);
     }
 }

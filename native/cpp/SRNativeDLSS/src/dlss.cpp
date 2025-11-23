@@ -22,19 +22,28 @@ extern "C"
     static bool slInitialized = false;
     SR_API SRReturnCode srDLSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
     {
+        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN)
+        {
+            if (desc->messageCallback)
+            {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"DLSS only supports Vulkan render API.");
+            }
+            return (SRReturnCode)SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
+        }
         ///////////////
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
         SRDLSSPrivateData *privateData = new SRDLSSPrivateData();
+        SRVulkanDeviceInfo vulkanDevice = desc->renderDeviceInfo.vulkan;
         privateData->messageCallback = desc->messageCallback;
         context->userContext = privateData;
         auto result = NVSDK_NGX_VULKAN_Init(
             0x0000000000000000,
             L".",
-            (VkInstance)(desc->instance),
-            (VkPhysicalDevice)(desc->phyDevice),
-            (VkDevice)(desc->device),
-            (PFN_vkGetInstanceProcAddr)(desc->deviceProcAddr(desc->device, "SuperResolution_VkGetInstanceProcAddr")),
-            (PFN_vkGetDeviceProcAddr)(desc->deviceProcAddr),
+            (VkInstance)(vulkanDevice.instance),
+            (VkPhysicalDevice)(vulkanDevice.physicalDevice),
+            (VkDevice)(vulkanDevice.device),
+            (PFN_vkGetInstanceProcAddr)(vulkanDevice.instanceProcAddr),
+            (PFN_vkGetDeviceProcAddr)(vulkanDevice.deviceProcAddr),
             nullptr,
             NVSDK_NGX_Version_API);
         if (!NVSDK_NGX_SUCCEED(result))
@@ -66,9 +75,10 @@ extern "C"
         dlssCreateParams.Feature.InHeight = desc->renderSize.y;
         dlssCreateParams.Feature.InTargetWidth = desc->upscaledSize.x;
         dlssCreateParams.Feature.InTargetHeight = desc->upscaledSize.y;
-        VkCommandBuffer cmd = (VkCommandBuffer)(desc->commandBuffer);
+        SRVulkanDeviceInfo vulkanDevice = desc->renderDeviceInfo.vulkan;
+        VkCommandBuffer cmd = (VkCommandBuffer)vulkanDevice.initCommandBuffer;
         auto result = NGX_VULKAN_CREATE_DLSS_EXT1(
-            (VkDevice)desc->device,
+            vulkanDevice.device,
             cmd,
             1,
             1,
@@ -94,29 +104,30 @@ extern "C"
             NVSDK_NGX_VULKAN_ReleaseFeature(privateData->dlssHandle);
             privateData->dlssHandle = nullptr;
         }
-        NVSDK_NGX_VULKAN_Shutdown1((VkDevice)context->desc.device);
+        SRVulkanDeviceInfo vulkanDevice = context->desc.renderDeviceInfo.vulkan;
+        NVSDK_NGX_VULKAN_Shutdown1((VkDevice)vulkanDevice.device);
         delete privateData;
         context->userContext = nullptr;
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srDLSSQueryUpscale(SRUpscaleContextQueryResult *result, SRUpscaleContext *context, SRUpscaleContextQueryType queryType)
+    SR_API SRReturnCode srDLSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
     {
         SRUpscaleContextQueryResult *outResult = result;
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionId = SR_MAKE_VERSION(
+            ((SRQueryVersionResult *)outResult)->versionId = SR_MAKE_VERSION(
                 1,
                 5,
                 0);
-            ((SRUpscaleContextQueryVersionInfoResult *)outResult)->versionNumber = SR_MAKE_VERSION(
+            ((SRQueryVersionResult *)outResult)->versionNumber = SR_MAKE_VERSION(
                 1,
                 5,
                 0);
             break;
         case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
-            ((SRUpscaleContextQueryGpuMemoryInfoResult *)outResult)->gpuMemory = 0;
+            ((SRQueryGpuMemoryResult *)outResult)->gpuMemory = 0;
             return (SRReturnCode)SR_RETURN_CODE_UNSUPPORTED;
             break;
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
@@ -124,7 +135,7 @@ extern "C"
             SRDLSSPrivateData *privateData = (SRDLSSPrivateData *)context->userContext;
             int support = 0;
             privateData->ngxParams->Get(NVSDK_NGX_Parameter_SuperSampling_Available, &support);
-            ((SRUpscaleContextQueryAvailableInfoResult *)outResult)->isAvailable = NVSDK_NGX_SUCCEED(support) && static_cast<bool>(support);
+            ((SRQueryAvailabilityResult *)outResult)->isAvailable = NVSDK_NGX_SUCCEED(support) && static_cast<bool>(support);
             break;
         }
         default:
@@ -236,7 +247,7 @@ extern "C"
             .InExposureScale = 1.f,
             .InFrameTimeDeltaInMsec = static_cast<float>(desc->frameTimeDelta),
         };
-        auto result = NGX_VULKAN_EVALUATE_DLSS_EXT((VkCommandBuffer)desc->commandList, privateData->dlssHandle, params, &dlssEval);
+        auto result = NGX_VULKAN_EVALUATE_DLSS_EXT((VkCommandBuffer)desc->commandList.apiCommandBuffer.vulkan.commandBuffer, privateData->dlssHandle, params, &dlssEval);
         if (!NVSDK_NGX_SUCCEED(result))
         {
             std::wstring msg = L"NVSDK_NGX_VULKAN_EVALUATE_DLSS_EXT failed. Code:";

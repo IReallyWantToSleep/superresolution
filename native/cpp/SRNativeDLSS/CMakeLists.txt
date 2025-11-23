@@ -46,5 +46,5 @@ else()
 endif()
 
 if(MSVC)
-    add_compile_options(/utf-8)
+    add_compile_options(/utf-8 /ZI)
 endif()

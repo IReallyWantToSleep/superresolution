@@ -1,0 +1,67 @@
+#pragma once
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+    typedef enum
+    {
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_NONE = 0,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEBUG = 1 << 0,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_OPENGL = 1 << 1,
+        SR_UPSCALE_CONTEXT_CREATE_FLAG_VULKAN = 1 << 2,
+    } SRUpscaleContextCreateFlags;
+
+    typedef enum
+    {
+        SR_RETURN_CODE_OK = 0,           // ok
+        SR_RETURN_CODE_NULL_POINTER = 1, // null pointer error
+        SR_RETURN_CODE_ERROR = 2,
+        SR_RETURN_CODE_CANNOT_FIND_PROVIDER = 3,
+        SR_RETURN_CODE_UNEXPECTED_ERROR = 4,
+        SR_RETURN_CODE_CANNOT_FIND_LIBRARY = 5,
+        SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY = 6,
+        SR_RETURN_CODE_INVALID_ARGUMENT = 7,
+        SR_RETURN_CODE_UNSUPPORTED = 8,
+        SR_RETURN_CODE_UNSUPPORTED_RENDER_API = 9,
+    } SRReturnCode;
+
+    typedef enum
+    {
+        SR_MESSAGE_TYPE_ERROR = 0,
+        SR_MESSAGE_TYPE_WARNING = 1,
+        SR_MESSAGE_TYPE_INFO = 2,
+    } SRMessageType;
+
+    typedef enum
+    {
+        SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO = 0,
+        SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO = 1,
+        SR_UPSCALE_CONTEXT_QUERY_AVAILABLE = 2,
+    } SRUpscaleContextQueryType;
+
+    typedef enum SRRenderApiType
+    {
+        SR_RENDER_API_TYPE_VULKAN = 0,
+        SR_RENDER_API_TYPE_OPENGL = 1,
+    } SRRenderApiType;
+
+    typedef enum SRParamValueType
+    {
+        SR_PARAM_VALUE_TYPE_UNKNOWN = 0,
+        SR_PARAM_VALUE_TYPE_BOOL,
+        SR_PARAM_VALUE_TYPE_INT32,
+        SR_PARAM_VALUE_TYPE_UINT32,
+        SR_PARAM_VALUE_TYPE_INT64,
+        SR_PARAM_VALUE_TYPE_UINT64,
+        SR_PARAM_VALUE_TYPE_FLOAT,
+        SR_PARAM_VALUE_TYPE_DOUBLE,
+        SR_PARAM_VALUE_TYPE_STRING,
+        SR_PARAM_VALUE_TYPE_POINTER,
+        SR_PARAM_VALUE_TYPE_BINARY,
+    } SRParamValueType;
+
+#ifdef __cplusplus
+}
+#endif

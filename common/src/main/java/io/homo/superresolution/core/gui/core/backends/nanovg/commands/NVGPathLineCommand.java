@@ -20,7 +20,6 @@ package io.homo.superresolution.core.gui.core.backends.nanovg.commands;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.DrawCommandType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
-import org.lwjgl.nanovg.NanoVG;
 
 public class NVGPathLineCommand extends NVGDrawCommand {
     protected final float x1;
@@ -54,7 +53,7 @@ public class NVGPathLineCommand extends NVGDrawCommand {
 
     @Override
     protected void execute() {
-        NanoVG.nvgMoveTo(context.contextPtr, x1, y1);
-        NanoVG.nvgLineTo(context.contextPtr, x2, y2);
+        context.contextPtr.moveTo(x1, y1);
+        context.contextPtr.lineTo(x2, y2);
     }
 }

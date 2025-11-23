@@ -103,11 +103,7 @@ public interface IUIDrawContext extends ITextRenderer {
 
     void paint(IPaint paint);
 
-    IPaint createPaint();
-
     IPaint linearGradient(float startX, float startY, float endX, float endY, Color from, Color to);
-
-    IPaint linearGradient(float startX, float startY, float endX, float endY, Color from, Color to, IPaint srcPaint);
 
     IPaint imagePattern(float ox, float oy, float ex, float ey, float width, float height, float angle, float alpha, int image);
 
@@ -115,23 +111,11 @@ public interface IUIDrawContext extends ITextRenderer {
 
     IPaint radialGradient(float centerX, float centerY, float innerRadius, float outerRadius, Color beginColor, Color endColor);
 
-    IPaint radialGradient(float centerX, float centerY, float radius, Color beginColor, Color endColor, IPaint srcPaint);
-
-    IPaint radialGradient(float centerX, float centerY, float innerRadius, float outerRadius, Color beginColor, Color endColor, IPaint srcPaint);
-
     void strokeWidth(float width);
 
     void strokeColor(Color color);
 
     void fillColor(Color color);
-
-    void immediateScissor(float x, float y, float width, float height);
-
-    void immediateResetScissor();
-
-    void immediateSave();
-
-    void immediateRestore();
 
     default void drawColor(boolean fill, Color color) {
         if (fill) {

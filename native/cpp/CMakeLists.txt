@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.15)
 project(SuperResolution)
 
 option(SR_FSR "启用以支持FSR" ON)
-option(SR_FSROGL "启用以支持FSR OpenGL" OFF)
 option(SR_XESS "启用以支持XESS" ON)
 option(SR_DLSS "启用以支持DLSS" ON)
 
@@ -67,15 +66,9 @@ include_directories(
 )
 
 add_subdirectory("SRNativeMain")
-
 if(SR_FSR)
     add_subdirectory("SRNativeFSR")
 endif()
-
-if(SR_FSROGL)
-    add_subdirectory("SRNativeFSROgl")
-endif()
-
 if(SR_XESS)
     add_subdirectory("SRNativeXeSS")
 endif()

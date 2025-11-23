@@ -55,13 +55,3 @@ static GLenum getGLFormatFromSurfaceFormat(SRTextureFormat fmt)
         return 0;
     }
 }
-
-FfxResource SRTextureResourceToFfxResourceGL(const SRTextureResource *srTex)
-{
-    return ffxGetTextureResourceGL(
-        (GLuint)(uintptr_t)(srTex->handle),
-        srTex->desc.width,
-        srTex->desc.height,
-        getGLFormatFromSurfaceFormat(srTex->desc.format),
-        nullptr);
-}

@@ -19,20 +19,15 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import org.lwjgl.nanovg.NVGPaint;
 
 public class NanoVGPaint implements IPaint {
-    private final NVGPaint paint;
+    private final io.homo.superresolution.thirdparty.nanovg.NanoVGPaint paint;
 
-    public NanoVGPaint() {
-        this.paint = NVGPaint.calloc();
-    }
-
-    public NanoVGPaint(NVGPaint paint) {
+    public NanoVGPaint(io.homo.superresolution.thirdparty.nanovg.NanoVGPaint paint) {
         this.paint = paint;
     }
 
-    public NVGPaint get() {
+    public io.homo.superresolution.thirdparty.nanovg.NanoVGPaint get() {
         return paint;
     }
 }

@@ -10,7 +10,7 @@
 #include "io_homo_superresolution_core_SuperResolutionNative.h"
 static JNIEnv *g_envForCallback = nullptr;
 
-void sr_message_callback_bridge(SRMsgType type, const wchar_t *message)
+void sr_message_callback_bridge(SRMessageType type, const wchar_t *message)
 {
     if (!g_envForCallback || !message)
         return;
@@ -159,40 +159,86 @@ extern "C"
         jclass,
         jobject outContextObj,
         jlong provider,
-        jlong device,
-        jlong phyDevice,
-        jlong cmdBuf,
+        jint renderApiType,
+        jobject openglDeviceInfo,
+        jobject vulkanDeviceInfo,
         jint upscaledSizeX,
         jint upscaledSizeY,
         jint renderSizeX,
         jint renderSizeY,
+        jlong messageCallback,
+        jlong extraParamsPtr,
         jint flags)
     {
         g_envForCallback = env;
 
-        SRCreateUpscaleContextDesc desc = *new SRCreateUpscaleContextDesc();
-        desc.renderSize = *new SRVectorUint2{static_cast<uint32_t>(renderSizeX), static_cast<uint32_t>(renderSizeY)};
-        desc.upscaledSize = *new SRVectorUint2{static_cast<uint32_t>(upscaledSizeX), static_cast<uint32_t>(upscaledSizeY)};
-        desc.device = (VkDevice)device;
-        desc.phyDevice = (VkPhysicalDevice)phyDevice;
-        desc.commandBuffer = (VkCommandBuffer)cmdBuf;
+        SRCreateUpscaleContextDesc desc = {};
+        desc.renderApiType = static_cast<SRRenderApiType>(renderApiType);
+        desc.renderSize = {static_cast<uint32_t>(renderSizeX), static_cast<uint32_t>(renderSizeY)};
+        desc.upscaledSize = {static_cast<uint32_t>(upscaledSizeX), static_cast<uint32_t>(upscaledSizeY)};
         desc.flags = static_cast<uint32_t>(flags);
-        if (flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_OPENGL)
+        desc.messageCallback = sr_message_callback_bridge;
+
+        if (extraParamsPtr != 0)
         {
-            desc.deviceProcAddr = java_glfwGetProcAddress;
+            desc.extraParams = *reinterpret_cast<SRContextExtraParams *>(extraParamsPtr);
         }
-        else if (flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_VULKAN)
+
+        if (renderApiType == SR_RENDER_API_TYPE_OPENGL)
         {
-            VkInstance instance = (VkInstance)java_vkGetDeviceProcAddr(desc.device, "SuperResolution_GetInstance");
-            desc.instance = instance;
-            desc.deviceProcAddr = java_vkGetDeviceProcAddr;
+            if (openglDeviceInfo != nullptr)
+            {
+                jclass glInfoCls = env->GetObjectClass(openglDeviceInfo);
+                jfieldID deviceProcAddrField = env->GetFieldID(glInfoCls, "deviceProcAddr", "J");
+                jlong deviceProcAddr = env->GetLongField(openglDeviceInfo, deviceProcAddrField);
+
+                desc.renderDeviceInfo.opengl.deviceProcAddr = deviceProcAddr != 0
+                                                                  ? reinterpret_cast<SRGetFuncAddress>(deviceProcAddr)
+                                                                  : java_glfwGetProcAddress;
+            }
+            else
+            {
+                desc.renderDeviceInfo.opengl.deviceProcAddr = java_glfwGetProcAddress;
+            }
+        }
+        else if (renderApiType == SR_RENDER_API_TYPE_VULKAN)
+        {
+            if (vulkanDeviceInfo != nullptr)
+            {
+                jclass vkInfoCls = env->GetObjectClass(vulkanDeviceInfo);
+                jfieldID instanceField = env->GetFieldID(vkInfoCls, "instance", "J");
+                jfieldID physicalDeviceField = env->GetFieldID(vkInfoCls, "physicalDevice", "J");
+                jfieldID deviceField = env->GetFieldID(vkInfoCls, "device", "J");
+                jfieldID initCommandBufferField = env->GetFieldID(vkInfoCls, "initCommandBuffer", "J");
+                jfieldID deviceProcAddrField = env->GetFieldID(vkInfoCls, "deviceProcAddr", "J");
+                jfieldID instanceProcAddrField = env->GetFieldID(vkInfoCls, "instanceProcAddr", "J");
+
+                desc.renderDeviceInfo.vulkan.instance = reinterpret_cast<VkInstance>(env->GetLongField(vulkanDeviceInfo, instanceField));
+                desc.renderDeviceInfo.vulkan.physicalDevice = reinterpret_cast<VkPhysicalDevice>(env->GetLongField(vulkanDeviceInfo, physicalDeviceField));
+                desc.renderDeviceInfo.vulkan.device = reinterpret_cast<VkDevice>(env->GetLongField(vulkanDeviceInfo, deviceField));
+                desc.renderDeviceInfo.vulkan.initCommandBuffer = reinterpret_cast<VkCommandBuffer>(env->GetLongField(vulkanDeviceInfo, initCommandBufferField));
+
+                jlong deviceProcAddr = env->GetLongField(vulkanDeviceInfo, deviceProcAddrField);
+                jlong instanceProcAddr = env->GetLongField(vulkanDeviceInfo, instanceProcAddrField);
+
+                desc.renderDeviceInfo.vulkan.deviceProcAddr = deviceProcAddr != 0
+                                                                  ? reinterpret_cast<SRGetFuncAddress>(deviceProcAddr)
+                                                                  : java_vkGetDeviceProcAddr;
+                desc.renderDeviceInfo.vulkan.instanceProcAddr = instanceProcAddr != 0
+                                                                    ? reinterpret_cast<SRGetFuncAddress>(instanceProcAddr)
+                                                                    : nullptr;
+            }
+            else
+            {
+                sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR, L"Vulkan device info is required for Vulkan API type.");
+                return SR_RETURN_CODE_INVALID_ARGUMENT;
+            }
         }
         else
         {
-            sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR, L"Must specify either OPENGL or VULKAN flag when creating upscale context.");
+            sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR, L"Invalid render API type.");
             return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
-        desc.messageCallback = sr_message_callback_bridge;
 
         SRUpscaleContext *context = new SRUpscaleContext();
         SRReturnCode rc = srCreateUpscaleContext(
@@ -235,7 +281,8 @@ extern "C"
         JNIEnv *env,
         jclass clazz,
         jlong contextPtr,
-        jlong commandList,
+        jint renderApiType,
+        jlong vulkanCommandBuffer,
         jobject color,
         jobject depth,
         jobject motionVectors,
@@ -260,12 +307,23 @@ extern "C"
         jfloat cameraFovAngleVertical,
         jfloat viewSpaceToMetersFactor,
         jboolean reset,
+        jlong extraParamsPtr,
         jint flags)
     {
         g_envForCallback = env;
         SRUpscaleContext *context = reinterpret_cast<SRUpscaleContext *>(contextPtr);
         SRDispatchUpscaleDesc desc = {};
-        desc.commandList = reinterpret_cast<void *>(commandList);
+
+        desc.commandList.renderApiType = static_cast<SRRenderApiType>(renderApiType);
+        if (renderApiType == SR_RENDER_API_TYPE_VULKAN)
+        {
+            desc.commandList.apiCommandBuffer.vulkan.commandBuffer = reinterpret_cast<VkCommandBuffer>(vulkanCommandBuffer);
+        }
+
+        if (extraParamsPtr != 0)
+        {
+            desc.extraParams = *reinterpret_cast<SRContextExtraParams *>(extraParamsPtr);
+        }
         if (color)
         {
             desc.color = fromJavaSRTextureResourceVK(env, color);
@@ -378,12 +436,9 @@ extern "C"
             return code;
 
         jclass resultCls = env->GetObjectClass(outResultObj);
-        jfieldID typeField = env->GetFieldID(resultCls, "type", "I");
-        env->SetIntField(outResultObj, typeField, static_cast<jint>(queryType));
-
         if (queryType == SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO)
         {
-            auto *verInfo = static_cast<SRUpscaleContextQueryVersionInfoResult *>(result.data);
+            auto *verInfo = static_cast<SRQueryVersionResult *>(result.data);
             jfieldID versionNumberField = env->GetFieldID(resultCls, "versionNumber", "J");
             jfieldID versionIdField = env->GetFieldID(resultCls, "versionId", "J");
             env->SetLongField(outResultObj, versionNumberField, static_cast<jlong>(verInfo->versionNumber));
@@ -391,13 +446,13 @@ extern "C"
         }
         else if (queryType == SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO)
         {
-            auto *memInfo = static_cast<SRUpscaleContextQueryGpuMemoryInfoResult *>(result.data);
+            auto *memInfo = static_cast<SRQueryGpuMemoryResult *>(result.data);
             jfieldID gpuMemField = env->GetFieldID(resultCls, "gpuMemory", "J");
             env->SetLongField(outResultObj, gpuMemField, static_cast<jlong>(memInfo->gpuMemory));
         }
         else if (queryType == SR_UPSCALE_CONTEXT_QUERY_AVAILABLE)
         {
-            auto *memInfo = static_cast<SRUpscaleContextQueryAvailableInfoResult *>(result.data);
+            auto *memInfo = static_cast<SRQueryAvailabilityResult *>(result.data);
             jfieldID isAvailableField = env->GetFieldID(resultCls, "isAvailable", "Z");
             env->SetBooleanField(outResultObj, isAvailableField, static_cast<jboolean>(memInfo->isAvailable));
         }
@@ -464,6 +519,329 @@ extern "C"
             return SR_RETURN_CODE_NULL_POINTER;
         }
         return srInitUpscaleContext(context);
+    }
+
+
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrCreateParams(JNIEnv *env, jclass)
+    {
+        g_envForCallback = env;
+        SRContextExtraParams *params = new SRContextExtraParams();
+        params->extraParamCount = 0;
+        return reinterpret_cast<jlong>(params);
+    }
+
+    JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyParams(JNIEnv *env, jclass, jlong paramsPtr)
+    {
+        g_envForCallback = env;
+        if (paramsPtr != 0)
+        {
+            auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+            delete params;
+        }
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetBool(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jboolean value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        SRReturnCode code = srParamsSetBool(params, nameChars, static_cast<bool>(value));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetInt32(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jint value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        SRReturnCode code = srParamsSetInt32(params, nameChars, static_cast<int32_t>(value));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetUint32(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jlong value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        SRReturnCode code = srParamsSetUint32(params, nameChars, static_cast<uint32_t>(value));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetFloat(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jfloat value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        SRReturnCode code = srParamsSetFloat(params, nameChars, static_cast<float>(value));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetDouble(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jdouble value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        SRReturnCode code = srParamsSetDouble(params, nameChars, static_cast<double>(value));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetString(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jstring value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        const char *valueChars = value != nullptr ? env->GetStringUTFChars(value, nullptr) : nullptr;
+        SRReturnCode code = srParamsSetString(params, nameChars, valueChars);
+        env->ReleaseStringUTFChars(name, nameChars);
+        if (valueChars != nullptr)
+            env->ReleaseStringUTFChars(value, valueChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetPointer(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jlong value)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return SR_RETURN_CODE_NULL_POINTER;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        SRReturnCode code = srParamsSetPointer(params, nameChars, reinterpret_cast<void *>(value));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(code);
+    }
+
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrFindParam(JNIEnv *env, jclass, jlong paramsPtr, jstring name)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return 0;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        const SRContextExtraParam *param = srFindParam(params, nameChars);
+        env->ReleaseStringUTFChars(name, nameChars);
+        return reinterpret_cast<jlong>(param);
+    }
+
+    JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetBool(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jboolean defaultValue)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return defaultValue;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        bool outValue = false;
+        srParamsGetBool(params, nameChars, &outValue, static_cast<bool>(defaultValue));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jboolean>(outValue);
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetInt32(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jint defaultValue)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return defaultValue;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        int32_t outValue = 0;
+        srParamsGetInt32(params, nameChars, &outValue, static_cast<int32_t>(defaultValue));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jint>(outValue);
+    }
+
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetUint32(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jlong defaultValue)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return defaultValue;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        uint32_t outValue = 0;
+        srParamsGetUint32(params, nameChars, &outValue, static_cast<uint32_t>(defaultValue));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jlong>(outValue);
+    }
+
+    JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetFloat(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jfloat defaultValue)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return defaultValue;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        float outValue = 0.0f;
+        srParamsGetFloat(params, nameChars, &outValue, static_cast<float>(defaultValue));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jfloat>(outValue);
+    }
+
+    JNIEXPORT jdouble JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetDouble(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jdouble defaultValue)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return defaultValue;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        double outValue = 0.0;
+        srParamsGetDouble(params, nameChars, &outValue, static_cast<double>(defaultValue));
+        env->ReleaseStringUTFChars(name, nameChars);
+        return static_cast<jdouble>(outValue);
+    }
+
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetString(JNIEnv *env, jclass, jlong paramsPtr, jstring name, jstring defaultValue)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return defaultValue;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        const char *defValueChars = defaultValue != nullptr ? env->GetStringUTFChars(defaultValue, nullptr) : nullptr;
+        const char *outValue = nullptr;
+        srParamsGetString(params, nameChars, &outValue, defValueChars);
+        env->ReleaseStringUTFChars(name, nameChars);
+        if (defValueChars != nullptr)
+            env->ReleaseStringUTFChars(defaultValue, defValueChars);
+
+        return outValue != nullptr ? env->NewStringUTF(outValue) : defaultValue;
+    }
+
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetPointer(JNIEnv *env, jclass, jlong paramsPtr, jstring name)
+    {
+        g_envForCallback = env;
+        if (paramsPtr == 0 || name == nullptr)
+            return 0;
+
+        auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+        const char *nameChars = env->GetStringUTFChars(name, nullptr);
+        void *outValue = nullptr;
+        srParamsGetPointer(params, nameChars, &outValue);
+        env->ReleaseStringUTFChars(name, nameChars);
+        return reinterpret_cast<jlong>(outValue);
+    }
+
+
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetName(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return nullptr;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->name != nullptr ? env->NewStringUTF(param->name) : nullptr;
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueType(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return SR_PARAM_VALUE_TYPE_UNKNOWN;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return static_cast<jint>(param->valueType);
+    }
+
+    JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsBool(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return JNI_FALSE;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->valueType == SR_PARAM_VALUE_TYPE_BOOL ? static_cast<jboolean>(param->value.boolValue) : JNI_FALSE;
+    }
+
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsInt32(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return 0;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->valueType == SR_PARAM_VALUE_TYPE_INT32 ? static_cast<jint>(param->value.int32Value) : 0;
+    }
+
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsUint32(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return 0;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->valueType == SR_PARAM_VALUE_TYPE_UINT32 ? static_cast<jlong>(param->value.uint32Value) : 0;
+    }
+
+    JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsFloat(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return 0.0f;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->valueType == SR_PARAM_VALUE_TYPE_FLOAT ? static_cast<jfloat>(param->value.floatValue) : 0.0f;
+    }
+
+    JNIEXPORT jdouble JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsDouble(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return 0.0;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->valueType == SR_PARAM_VALUE_TYPE_DOUBLE ? static_cast<jdouble>(param->value.doubleValue) : 0.0;
+    }
+
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsString(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return nullptr;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        if (param->valueType == SR_PARAM_VALUE_TYPE_STRING && param->value.stringValue != nullptr)
+        {
+            return env->NewStringUTF(param->value.stringValue);
+        }
+        return nullptr;
+    }
+
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsPointer(JNIEnv *env, jclass, jlong paramPtr)
+    {
+        g_envForCallback = env;
+        if (paramPtr == 0)
+            return 0;
+
+        auto *param = reinterpret_cast<const SRContextExtraParam *>(paramPtr);
+        return param->valueType == SR_PARAM_VALUE_TYPE_POINTER ? reinterpret_cast<jlong>(param->value.ptrValue) : 0;
     }
 
 #ifdef __cplusplus

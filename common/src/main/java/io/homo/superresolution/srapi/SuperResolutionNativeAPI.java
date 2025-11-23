@@ -21,23 +21,7 @@ package io.homo.superresolution.srapi;
 import io.homo.superresolution.core.SuperResolutionNative;
 
 public class SuperResolutionNativeAPI {
-    /*
-    SR_API SRReturnCode srCreateUpscaleContext(
-        SRUpscaleContext *outContext,
-        SRUpscaleProvider *provider,
-        const SRCreateUpscaleContextDesc *desc);
 
-    SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context);
-
-    SR_API SRReturnCode srQueryUpscaleContext(
-        SRUpscaleContext *context,
-        SRUpscaleContextQueryResult *outResult,
-        SRUpscaleContextQueryType queryType);
-
-    SR_API SRReturnCode srDispatchUpscale(
-        SRUpscaleContext *context,
-        const SRDispatchUpscaleDesc *desc);
-    * */
     public static SRReturnCode srInitUpscaleContext(SRUpscaleContext context) {
         if (context.nativePtr < 1) {
             return SRReturnCode.NULL_POINTER;
@@ -51,44 +35,50 @@ public class SuperResolutionNativeAPI {
             SRUpscaleProvider provider,
             SRCreateUpscaleContextDesc desc
     ) {
-        if (provider.nativePtr < 1) {
+        if (provider.nativePtr < 1 || desc == null) {
             return SRReturnCode.NULL_POINTER;
         }
+
+        long extraParamsPtr = desc.extraParams != null ? desc.extraParams.getNativePtr() : 0;
+
         int code = SuperResolutionNative.NsrCreateUpscaleContext(
                 outContext,
                 provider.nativePtr,
-                desc.device,
-                desc.phyDevice,
-                desc.cmdBuf,
+                desc.renderApiType.value,
+                desc.getOpenglDeviceInfo(),
+                desc.getVulkanDeviceInfo(),
                 desc.upscaledSize.x,
                 desc.upscaledSize.y,
                 desc.renderSize.x,
                 desc.renderSize.y,
+                desc.messageCallback,
+                extraParamsPtr,
                 desc.flags
         );
         return SRReturnCode.fromValue(code);
     }
 
-    public static SRReturnCode srDestroyUpscaleContext(
-            SRUpscaleContext context
-    ) {
+    public static SRReturnCode srDestroyUpscaleContext(SRUpscaleContext context) {
         if (context.nativePtr < 1) {
             return SRReturnCode.ERROR;
         }
         return SRReturnCode.fromValue(SuperResolutionNative.NsrDestroyUpscaleContext(context.nativePtr));
-
     }
 
     public static SRReturnCode srDispatchUpscale(
             SRUpscaleContext context,
             SRDispatchUpscaleDesc desc
     ) {
-        if (context.nativePtr < 1) {
+        if (context.nativePtr < 1 || desc == null || desc.commandList == null) {
             return SRReturnCode.ERROR;
         }
+
+        long extraParamsPtr = desc.extraParams != null ? desc.extraParams.getNativePtr() : 0;
+
         int code = SuperResolutionNative.NsrDispatchUpscale(
                 context.nativePtr,
-                desc.commandList,
+                desc.commandList.renderApiType.value,
+                desc.commandList.getVulkanCommandBufferAddress(),
                 desc.color,
                 desc.depth,
                 desc.motionVectors,
@@ -113,6 +103,7 @@ public class SuperResolutionNativeAPI {
                 desc.cameraFovAngleVertical,
                 desc.viewSpaceToMetersFactor,
                 desc.reset,
+                extraParamsPtr,
                 desc.flags
         );
         return SRReturnCode.fromValue(code);
@@ -129,6 +120,7 @@ public class SuperResolutionNativeAPI {
         boolean typeTrue = switch (queryType) {
             case VERSION_INFO -> outResult instanceof SRUpscaleContextQueryVersionInfoResult;
             case GPU_MEMORY_INFO -> outResult instanceof SRUpscaleContextQueryGpuMemoryInfoResult;
+            case AVAILABLE -> outResult instanceof SRUpscaleContextQueryAvailabilityResult;
         };
         if (!typeTrue) {
             return SRReturnCode.ERROR;
@@ -154,6 +146,111 @@ public class SuperResolutionNativeAPI {
                 getProvidersFuncName,
                 getProvidersCountFuncName
         ));
+    }
 
+    protected static long srCreateParams() {
+        return SuperResolutionNative.NsrCreateParams();
+    }
+
+    protected static void srDestroyParams(long paramsPtr) {
+        if (paramsPtr != 0) {
+            SuperResolutionNative.NsrDestroyParams(paramsPtr);
+        }
+    }
+
+    protected static int srParamsSetBool(long paramsPtr, String name, boolean value) {
+        return SuperResolutionNative.NsrParamsSetBool(paramsPtr, name, value);
+    }
+
+    protected static int srParamsSetInt32(long paramsPtr, String name, int value) {
+        return SuperResolutionNative.NsrParamsSetInt32(paramsPtr, name, value);
+    }
+
+    protected static int srParamsSetUint32(long paramsPtr, String name, long value) {
+        return SuperResolutionNative.NsrParamsSetUint32(paramsPtr, name, value);
+    }
+
+    protected static int srParamsSetFloat(long paramsPtr, String name, float value) {
+        return SuperResolutionNative.NsrParamsSetFloat(paramsPtr, name, value);
+    }
+
+    protected static int srParamsSetDouble(long paramsPtr, String name, double value) {
+        return SuperResolutionNative.NsrParamsSetDouble(paramsPtr, name, value);
+    }
+
+    protected static int srParamsSetString(long paramsPtr, String name, String value) {
+        return SuperResolutionNative.NsrParamsSetString(paramsPtr, name, value);
+    }
+
+    protected static int srParamsSetPointer(long paramsPtr, String name, long value) {
+        return SuperResolutionNative.NsrParamsSetPointer(paramsPtr, name, value);
+    }
+
+    protected static SRContextExtraParam srFindParam(long paramsPtr, String name) {
+        return new SRContextExtraParam(SuperResolutionNative.NsrFindParam(paramsPtr, name));
+    }
+
+    protected static boolean srParamsGetBool(long paramsPtr, String name, boolean defaultValue) {
+        return SuperResolutionNative.NsrParamsGetBool(paramsPtr, name, defaultValue);
+    }
+
+    protected static int srParamsGetInt32(long paramsPtr, String name, int defaultValue) {
+        return SuperResolutionNative.NsrParamsGetInt32(paramsPtr, name, defaultValue);
+    }
+
+    protected static long srParamsGetUint32(long paramsPtr, String name, long defaultValue) {
+        return SuperResolutionNative.NsrParamsGetUint32(paramsPtr, name, defaultValue);
+    }
+
+    protected static float srParamsGetFloat(long paramsPtr, String name, float defaultValue) {
+        return SuperResolutionNative.NsrParamsGetFloat(paramsPtr, name, defaultValue);
+    }
+
+    protected static double srParamsGetDouble(long paramsPtr, String name, double defaultValue) {
+        return SuperResolutionNative.NsrParamsGetDouble(paramsPtr, name, defaultValue);
+    }
+
+    protected static String srParamsGetString(long paramsPtr, String name, String defaultValue) {
+        return SuperResolutionNative.NsrParamsGetString(paramsPtr, name, defaultValue);
+    }
+
+    protected static long srParamsGetPointer(long paramsPtr, String name) {
+        return SuperResolutionNative.NsrParamsGetPointer(paramsPtr, name);
+    }
+
+    protected static String srParamGetName(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetName(paramPtr);
+    }
+
+    protected static int srParamGetValueType(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueType(paramPtr);
+    }
+
+    protected static boolean srParamGetValueAsBool(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsBool(paramPtr);
+    }
+
+    protected static int srParamGetValueAsInt32(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsInt32(paramPtr);
+    }
+
+    protected static long srParamGetValueAsUint32(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsUint32(paramPtr);
+    }
+
+    protected static float srParamGetValueAsFloat(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsFloat(paramPtr);
+    }
+
+    protected static double srParamGetValueAsDouble(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsDouble(paramPtr);
+    }
+
+    protected static String srParamGetValueAsString(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsString(paramPtr);
+    }
+
+    protected static long srParamGetValueAsPointer(long paramPtr) {
+        return SuperResolutionNative.NsrParamGetValueAsPointer(paramPtr);
     }
 }

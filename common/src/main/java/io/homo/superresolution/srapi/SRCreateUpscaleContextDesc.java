@@ -19,39 +19,140 @@
 package io.homo.superresolution.srapi;
 
 import org.joml.Vector2i;
-import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkPhysicalDevice;
 
+/**
+ * 创建Upscale上下文的描述符
+ */
 public class SRCreateUpscaleContextDesc {
-    public long device;
-    public long phyDevice;
-    public long cmdBuf;
+    /**
+     * 渲染API类型
+     */
+    public SRRenderApiType renderApiType;
+
+    /**
+     * OpenGL设备信息（当renderApiType为OPENGL时使用）
+     */
+    private SROpenGLDeviceInfo openglDeviceInfo;
+
+    /**
+     * Vulkan设备信息（当renderApiType为VULKAN时使用）
+     */
+    private SRVulkanDeviceInfo vulkanDeviceInfo;
+
+    /**
+     * 放大后的分辨率
+     */
     public Vector2i upscaledSize;
+
+    /**
+     * 渲染分辨率
+     */
     public Vector2i renderSize;
+
+    /**
+     * 消息回调（函数指针，可选）
+     */
+    public long messageCallback;
+
+    /**
+     * 额外参数
+     */
+    public SRContextExtraParams extraParams;
+
+    /**
+     * 标志位
+     */
     public int flags;
 
-    public SRCreateUpscaleContextDesc(
-            long device,
-            long phyDevice,
-            long cmdBuf,
+    /**
+     * 创建OpenGL上下文描述符
+     */
+    public static SRCreateUpscaleContextDesc createOpenGL(
+            SROpenGLDeviceInfo deviceInfo,
             Vector2i upscaledSize,
             Vector2i renderSize,
-            int flags
-    ) {
-        this.device = device;
-        this.phyDevice = phyDevice;
-        this.upscaledSize = upscaledSize;
-        this.renderSize = renderSize;
-        this.flags = flags;
-        this.cmdBuf = cmdBuf;
+            int flags) {
+        SRCreateUpscaleContextDesc desc = new SRCreateUpscaleContextDesc();
+        desc.renderApiType = SRRenderApiType.OPENGL;
+        desc.openglDeviceInfo = deviceInfo;
+        desc.upscaledSize = upscaledSize;
+        desc.renderSize = renderSize;
+        desc.flags = flags;
+        desc.extraParams = new SRContextExtraParams();
+        return desc;
     }
 
-    public SRCreateUpscaleContextDesc(VkDevice device, VkPhysicalDevice phyDevice, long cmdBuf, Vector2i upscaledSize, Vector2i renderSize, int flags) {
-        if (device != null) this.device = device.address();
-        if (phyDevice != null) this.phyDevice = phyDevice.address();
+    /**
+     * 创建Vulkan上下文描述符
+     */
+    public static SRCreateUpscaleContextDesc createVulkan(
+            SRVulkanDeviceInfo deviceInfo,
+            Vector2i upscaledSize,
+            Vector2i renderSize,
+            int flags) {
+        SRCreateUpscaleContextDesc desc = new SRCreateUpscaleContextDesc();
+        desc.renderApiType = SRRenderApiType.VULKAN;
+        desc.vulkanDeviceInfo = deviceInfo;
+        desc.upscaledSize = upscaledSize;
+        desc.renderSize = renderSize;
+        desc.flags = flags;
+        desc.extraParams = new SRContextExtraParams();
+        return desc;
+    }
+
+    private SRCreateUpscaleContextDesc() {
+        this.messageCallback = 0;
+    }
+
+    public SRRenderApiType getRenderApiType() {
+        return renderApiType;
+    }
+
+    public SROpenGLDeviceInfo getOpenglDeviceInfo() {
+        return openglDeviceInfo;
+    }
+
+    public SRVulkanDeviceInfo getVulkanDeviceInfo() {
+        return vulkanDeviceInfo;
+    }
+
+    public Vector2i getUpscaledSize() {
+        return upscaledSize;
+    }
+
+    public void setUpscaledSize(Vector2i upscaledSize) {
         this.upscaledSize = upscaledSize;
+    }
+
+    public Vector2i getRenderSize() {
+        return renderSize;
+    }
+
+    public void setRenderSize(Vector2i renderSize) {
         this.renderSize = renderSize;
+    }
+
+    public long getMessageCallback() {
+        return messageCallback;
+    }
+
+    public void setMessageCallback(long messageCallback) {
+        this.messageCallback = messageCallback;
+    }
+
+    public SRContextExtraParams getExtraParams() {
+        return extraParams;
+    }
+
+    public void setExtraParams(SRContextExtraParams extraParams) {
+        this.extraParams = extraParams;
+    }
+
+    public int getFlags() {
+        return flags;
+    }
+
+    public void setFlags(int flags) {
         this.flags = flags;
-        this.cmdBuf = cmdBuf;
     }
 }
