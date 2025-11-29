@@ -39,6 +39,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
@@ -212,9 +213,11 @@ public class ShaderCompatUpscaleDispatcher {
                 motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
                 lastMotionConfig = motionConfig;
             }
+            GlDebug.pushGroup(64108436, "SRUpscale-CopyInput");
             colorTexture.updateTexture();
             depthTexture.updateTexture();
             motionVectorsTexture.updateTexture();
+            GlDebug.popGroup();
         }
 
         /*
@@ -227,6 +230,7 @@ public class ShaderCompatUpscaleDispatcher {
                 }
             }
         }
+        GlDebug.pushGroup(64108436, "SRUpscale");
         AlgorithmManager.update();
         if (SuperResolutionConfig.isGenerateMotionVectors()) {
             MotionVectorsGenerator.update(
@@ -250,18 +254,11 @@ public class ShaderCompatUpscaleDispatcher {
                     SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
             );
         }
-
+        GlDebug.popGroup();
         /*
         升采样阶段结束
          */
-        {
-            if (RenderHandlerManager.needCaptureUpscale) {
-                if (RenderDoc.renderdoc != null) {
-                    RenderHandlerManager.needCaptureUpscale = false;
-                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
-                }
-            }
-        }
+        GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
         if (currentConfig.output_textures.get("upscaled_color").enabled) {
             for (String targetName : currentConfig.output_textures.get("upscaled_color").target) {
@@ -276,6 +273,15 @@ public class ShaderCompatUpscaleDispatcher {
                                     .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
                                     .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
                     );
+                }
+            }
+        }
+        GlDebug.popGroup();
+        {
+            if (RenderHandlerManager.needCaptureUpscale) {
+                if (RenderDoc.renderdoc != null) {
+                    RenderHandlerManager.needCaptureUpscale = false;
+                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
                 }
             }
         }

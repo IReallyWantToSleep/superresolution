@@ -33,8 +33,6 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.GpuVendor;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.gui.MaterialUI;
@@ -55,7 +53,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 

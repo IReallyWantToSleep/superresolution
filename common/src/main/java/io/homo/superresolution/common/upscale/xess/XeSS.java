@@ -314,7 +314,7 @@ public class XeSS extends AbstractAlgorithm {
         desc.setCameraNear(dispatchResource.cameraNear());
         desc.setCameraFar(dispatchResource.cameraFar());
         desc.setCameraFovAngleVertical(dispatchResource.verticalFov());
-        desc.setViewSpaceToMetersFactor(0.0f);
+        desc.setViewSpaceToMetersFactor(1.0f);
         desc.setReset(false);
         desc.setFlags(0);
 

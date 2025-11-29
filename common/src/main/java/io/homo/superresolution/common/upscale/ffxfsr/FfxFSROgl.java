@@ -152,12 +152,10 @@ public class FfxFSROgl extends AbstractAlgorithm {
         desc.setViewSpaceToMetersFactor(0.0f);
         desc.setReset(false);
         desc.setFlags(0);
-        try (GlState state = new GlState()) {
-            SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(
-                    context,
-                    desc
-            );
-        }
+        SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(
+                context,
+                desc
+        );
         return true;
     }
 

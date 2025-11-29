@@ -91,7 +91,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000003);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000002);
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
 
@@ -304,8 +304,8 @@ public class FfxFSR extends AbstractAlgorithm {
         desc.setCameraNear(dispatchResource.cameraNear());
         desc.setCameraFar(dispatchResource.cameraFar());
         desc.setCameraFovAngleVertical(dispatchResource.verticalFov());
-        desc.setViewSpaceToMetersFactor(0.0f);
-        desc.setReset(true);
+        desc.setViewSpaceToMetersFactor(1.0f);
+        desc.setReset(false);
         desc.setFlags(0);
 
         SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(

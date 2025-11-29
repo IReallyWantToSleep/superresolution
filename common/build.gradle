@@ -150,13 +150,9 @@ configurations {
     }
 }
 
-artifacts {
-    commonJava sourceSets.main.java.sourceDirectories.singleFile
-    commonResources sourceSets.main.resources.sourceDirectories.singleFile
-}
 tasks.register("genJNIHeader", JavaCompile) {
     def outputDir = file("../native/cpp/SRNativeMain/include")
-    def sourceFile = file("../common/src/main/java/io/homo/superresolution/core/SuperResolutionNative.java")
+    def sourceFile = file("../common/src/main/java/io/homo/superresolution/shared/SuperResolutionNative.java")
 
     source = fileTree(dir: "../common/src/main/java", include: "**/*.java")
     classpath = configurations.compileClasspath
@@ -184,4 +180,38 @@ processResources {
 
 
 sourceSets {
+    def main = getByName("main")
+    def irisapi = create("irisapi")
+    def shared = create("shared")
+    
+    shared.annotationProcessorPath += main.annotationProcessorPath
+    shared.compileClasspath += main.compileClasspath
+    shared.runtimeClasspath += main.runtimeClasspath
+
+    irisapi.annotationProcessorPath += main.annotationProcessorPath
+    irisapi.compileClasspath += main.compileClasspath
+    irisapi.runtimeClasspath += main.runtimeClasspath
+    irisapi.compileClasspath += shared.output
+    irisapi.runtimeClasspath += shared.output
+
+    main.compileClasspath += irisapi.output
+    main.runtimeClasspath += irisapi.output
+    main.compileClasspath += shared.output
+    main.runtimeClasspath += shared.output
+}
+
+// 确保 irisapi 和 shared 的类被包含到 main 的 jar 中
+tasks.named('jar') {
+    from sourceSets.irisapi.output
+    from sourceSets.shared.output
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonJava sourceSets.irisapi.java.sourceDirectories.singleFile
+    commonJava sourceSets.shared.java.sourceDirectories.singleFile
+    
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+    commonResources sourceSets.irisapi.resources.sourceDirectories.singleFile
+    commonResources sourceSets.shared.resources.sourceDirectories.singleFile
 }

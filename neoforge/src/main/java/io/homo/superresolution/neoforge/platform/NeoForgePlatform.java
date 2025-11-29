@@ -23,7 +23,6 @@ import io.homo.superresolution.api.platform.Platform;
 import net.minecraft.SharedConstants;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.fml.loading.LoadingModList;
 
 import java.nio.file.Path;
 

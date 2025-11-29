@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui.widgets.button;
 
-import io.homo.superresolution.core.gui.MaterialRipple;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialWidgetOverlay;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -31,7 +30,6 @@ import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.BezierInterpolator;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.PropertyValuesHolder;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.TimeInterpolator;
 import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimator;
@@ -91,6 +89,11 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
         this.style.size(size);
         getLayoutNode().setDebugName("MaterialButton");
         updateRectangle();
+        float cornerSize = style.shape() == MaterialButtonShape.Round ?
+                getBounds().height / 2 :
+                style.size().squareCornerSize();
+        pressAnimator.setValues(PropertyValuesHolder.ofFloat(cornerSize, cornerSize));
+
     }
 
     public static MaterialButton create(MaterialButtonSize size) {
@@ -137,7 +140,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     }
 
     private void initAnimators() {
-        pressAnimator = ValueAnimator.ofFloat(0f, 0f);
+        pressAnimator = ValueAnimator.ofFloat(0, 0);
         pressAnimator.setDuration(200);
         pressAnimator.setInterpolator(TimeInterpolator.LINEAR);
     }
@@ -206,13 +209,10 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     }
 
     private float getCornerSize() {
-        float cornerSize = style.shape() == MaterialButtonShape.Round ?
-                getBounds().height / 2 :
-                style.size().squareCornerSize();
-        float deltaValue = style.size().pressedCornerSize() - style.size().squareCornerSize();
-        cornerSize += ((float) pressAnimator.getAnimatedValue()) * deltaValue;
 
-        return cornerSize;
+        float deltaValue = style.size().pressedCornerSize() - style.size().squareCornerSize();
+
+        return (float) pressAnimator.getAnimatedValue();
     }
 
     @Override
@@ -363,13 +363,16 @@ public class MaterialButton extends MaterialWidget<MaterialButton, MaterialButto
     }
 
     private void onPress(Vector2f mousePosition) {
-        animatePressTo(1.0f, 200);
+        animatePressTo(style.size().pressedCornerSize(), 200);
         lastClickPosition = new Vector2f(mousePosition);
         eventBus.post(new WidgetEvent.ClickEvent<>(this));
     }
 
     private void onRelease(Vector2f mousePosition) {
-        animatePressTo(0f, 200);
+        float cornerSize = style.shape() == MaterialButtonShape.Round ?
+                getBounds().height / 2 :
+                style.size().squareCornerSize();
+        animatePressTo(cornerSize, 200);
     }
 
     @Override
