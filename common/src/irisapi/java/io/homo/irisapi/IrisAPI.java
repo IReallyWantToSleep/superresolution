@@ -16,22 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.event;
+package io.homo.irisapi;
 
-/**
- * 世界渲染开始事件，触发位置随配置中的捕获模式改变<br>
- * 捕获模式为A或C时会在GameRenderer::renderLevel触发<br>
- * 捕获模式为B时会在LevelRenderer::renderLevel触发
- */
-public interface LevelRenderStartEvent {
-    Event<LevelRenderStartEvent> EVENT = EventFactory.create(
-            LevelRenderStartEvent.class,
-            (listeners) -> () -> {
-                for (LevelRenderStartEvent listener : listeners) {
-                    listener.onLevelRenderStart();
-                }
-            }
-    );
+import net.neoforged.bus.EventBus;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.bus.api.IEventBus;
 
-    void onLevelRenderStart();
+public class IrisAPI {
+    public static final IEventBus EVENT_BUS = BusBuilder.builder().build();
 }

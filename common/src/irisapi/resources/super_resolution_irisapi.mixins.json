@@ -1,0 +1,21 @@
+{
+    "required": true,
+    "package": "io.homo.irisapi.mixin",
+    "plugin": "io.homo.irisapi.mixin.IrisAPIMixinPlugin",
+    "compatibilityLevel": "JAVA_8",
+    "minVersion": "0.8",
+    "client": [
+    ],
+    "mixins": [
+        "composite.CompositeRendererAccessor",
+        "composite.CompositeRendererPassMixin",
+        "composite.IrisRenderingPipelineAccessor",
+        "composite.after1_21_4.CompositeRendererMixin",
+        "composite.before1_21_1.CompositeRendererMixin",
+        "composite.v1_21_1.CompositeRendererMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "refmap": "super_resolution.refmap.json"
+}

@@ -18,8 +18,6 @@
 
 package io.homo.superresolution.api.platform;
 
-import net.minecraft.SharedConstants;
-
 import java.nio.file.Path;
 
 public abstract class Platform {

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.shadercompat.mixin.core;
 
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -49,10 +50,16 @@ public class ViewportUniformsMixin {
                 "SRRatio",
                 () -> SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getUpscaleRatio() : 1
         );
+
+        //注：这代码改之前因为没讲到对数那一章，误把ln当log2
+        //ln(inputWidth/upscaledWidth) / ln(2) = log2(inputWidth/upscaledWidth)
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
                 "SRRenderScaleLog2",
-                () -> Math.log(SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getUpscaleRatio() : 1)
+                () -> SuperResolutionConfig.isEnableUpscale() ? (Math.log((
+                        (double) SuperResolutionAPI.getRenderWidth() /
+                                SuperResolutionAPI.getScreenWidth()
+                )) / Math.log(2)) : 0
         );
         uniforms.uniform2f(
                 UniformUpdateFrequency.PER_FRAME,
