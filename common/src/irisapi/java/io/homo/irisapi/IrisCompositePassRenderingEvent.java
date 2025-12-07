@@ -28,6 +28,12 @@ public class IrisCompositePassRenderingEvent extends Event {
     protected String passName;
     protected IrisCompositePassType passType;
 
+    public NamedCompositePass getCompositePass() {
+        return compositePass;
+    }
+
+    protected NamedCompositePass compositePass;
+
     public @Nullable CompositeRenderer getCompositeRenderer() {
         return compositeRenderer;
     }
@@ -50,12 +56,14 @@ public class IrisCompositePassRenderingEvent extends Event {
                 @Nullable CompositeRenderer compositeRenderer,
                 IrisCompositeRenderingPhase phase,
                 String passName,
-                IrisCompositePassType passType
+                IrisCompositePassType passType,
+                NamedCompositePass compositePass
         ) {
             this.compositeRenderer = compositeRenderer;
             this.phase = phase;
             this.passName = passName;
             this.passType = passType;
+            this.compositePass = compositePass;
         }
     }
 
@@ -64,12 +72,14 @@ public class IrisCompositePassRenderingEvent extends Event {
                 @Nullable CompositeRenderer compositeRenderer,
                 IrisCompositeRenderingPhase phase,
                 String passName,
-                IrisCompositePassType passType
+                IrisCompositePassType passType,
+                NamedCompositePass compositePass
         ) {
             this.compositeRenderer = compositeRenderer;
             this.phase = phase;
             this.passName = passName;
             this.passType = passType;
+            this.compositePass = compositePass;
         }
     }
 
@@ -78,12 +88,14 @@ public class IrisCompositePassRenderingEvent extends Event {
                 @Nullable CompositeRenderer compositeRenderer,
                 IrisCompositeRenderingPhase phase,
                 String passName,
-                IrisCompositePassType passType
+                IrisCompositePassType passType,
+                NamedCompositePass compositePass
         ) {
             this.compositeRenderer = compositeRenderer;
             this.phase = phase;
             this.passName = passName;
             this.passType = passType;
+            this.compositePass = compositePass;
         }
     }
 
@@ -92,12 +104,14 @@ public class IrisCompositePassRenderingEvent extends Event {
                 @Nullable CompositeRenderer compositeRenderer,
                 IrisCompositeRenderingPhase phase,
                 String passName,
-                IrisCompositePassType passType
+                IrisCompositePassType passType,
+                NamedCompositePass compositePass
         ) {
             this.compositeRenderer = compositeRenderer;
             this.phase = phase;
             this.passName = passName;
             this.passType = passType;
+            this.compositePass = compositePass;
         }
     }
 }

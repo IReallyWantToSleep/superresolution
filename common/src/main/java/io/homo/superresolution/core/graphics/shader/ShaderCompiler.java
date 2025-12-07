@@ -55,32 +55,32 @@ public class ShaderCompiler {
     }
 
     // ========= Vulkan =========
-    public static boolean saveVulkanProgramBinary(IShaderProgram<?> program) {
+    public static boolean saveVulkanProgramBinary(IShaderProgram program) {
         return saveProgramBinaryWithApi(program, "vk");
     }
 
-    public static boolean checkVulkanProgramBinary(IShaderProgram<?> program) {
+    public static boolean checkVulkanProgramBinary(IShaderProgram program) {
         return checkProgramBinaryWithApi(program, "vk");
     }
 
-    public static ShaderBinary getVulkanShaderBinary(IShaderProgram<?> program, ShaderType type) {
+    public static ShaderBinary getVulkanShaderBinary(IShaderProgram program, ShaderType type) {
         return getShaderBinaryWithApi(program, type, "vk");
     }
 
     // ========= OpenGL =========
-    public static boolean saveOpenGLProgramBinary(IShaderProgram<?> program) {
+    public static boolean saveOpenGLProgramBinary(IShaderProgram program) {
         return saveProgramBinaryWithApi(program, "ogl");
     }
 
-    public static boolean checkOpenGLProgramBinary(IShaderProgram<?> program) {
+    public static boolean checkOpenGLProgramBinary(IShaderProgram program) {
         return checkProgramBinaryWithApi(program, "ogl");
     }
 
-    public static ShaderBinary getOpenGLShaderBinary(IShaderProgram<?> program, ShaderType type) {
+    public static ShaderBinary getOpenGLShaderBinary(IShaderProgram program, ShaderType type) {
         return getShaderBinaryWithApi(program, type, "ogl");
     }
 
-    private static boolean saveProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
+    private static boolean saveProgramBinaryWithApi(IShaderProgram program, String apiTag) {
         createCacheDir();
 
         String hash = getShaderProgramMd5(program, apiTag);
@@ -181,7 +181,7 @@ public class ShaderCompiler {
         }
     }
 
-    private static String getShaderProgramMd5(IShaderProgram<?> shaderProgram, String apiTag) {
+    private static String getShaderProgramMd5(IShaderProgram shaderProgram, String apiTag) {
         if (isVulkan(apiTag)) {
             return getVulkanShaderProgramMd5(shaderProgram);
         } else {
@@ -229,7 +229,7 @@ public class ShaderCompiler {
         };
     }
 
-    private static String getVulkanShaderProgramMd5(IShaderProgram<?> shaderProgram) {
+    private static String getVulkanShaderProgramMd5(IShaderProgram shaderProgram) {
         StringBuilder identityBuilder = new StringBuilder();
         ArrayList<String> sortedDefines = new ArrayList<>(new ArrayList<>(shaderProgram.getDescription().definesMap().entrySet()).stream()
                 .map(entry -> entry.getKey() + "=" + entry.getValue()).toList());
@@ -251,7 +251,7 @@ public class ShaderCompiler {
         return Md5CaculateUtil.getMD5(identityBuilder.toString());
     }
 
-    private static String getOpenGLShaderProgramMd5(IShaderProgram<?> shaderProgram) {
+    private static String getOpenGLShaderProgramMd5(IShaderProgram shaderProgram) {
         StringBuilder identityBuilder = new StringBuilder();
 
         for (ShaderType type : ShaderType.values()) {
@@ -271,7 +271,7 @@ public class ShaderCompiler {
         return Md5CaculateUtil.getMD5(identityBuilder.toString());
     }
 
-    private static boolean checkProgramBinaryWithApi(IShaderProgram<?> program, String apiTag) {
+    private static boolean checkProgramBinaryWithApi(IShaderProgram program, String apiTag) {
         createCacheDir();
 
         if (Platform.currentPlatform.isDevelopmentEnvironment()) return false;
@@ -291,7 +291,7 @@ public class ShaderCompiler {
         return true;
     }
 
-    private static ShaderBinary getShaderBinaryWithApi(IShaderProgram<?> program, ShaderType type, String apiTag) {
+    private static ShaderBinary getShaderBinaryWithApi(IShaderProgram program, ShaderType type, String apiTag) {
         createCacheDir();
 
         String hash = getShaderProgramMd5(program, apiTag);

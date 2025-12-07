@@ -19,13 +19,14 @@
 package io.homo.superresolution.thirdparty.fsr2.v233;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import org.joml.Vector3i;
@@ -60,12 +61,15 @@ public class Fsr2v233RCASPipeline extends Fsr2Pipeline {
                         .uniformBuffer("cbRCAS", 4, (int) context.fsr2RcasConstantsUBO.getSize())
                         .uniformSamplerTexture("r_input_exposure", 0)
                         .uniformSamplerTexture("r_internal_upscaled_color", 1)
-                        .uniformStorageTexture("rw_upscaled_output", ShaderUniformAccess.Both, 2)
+                        .uniformStorageTexture("rw_upscaled_output", ShaderResourceAccess.Both, 2)
                         .build()
         );
         program.compile();
-        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                PipelineJobBuilders.compute(program)
+        GlComputePipeline computePipeline = (GlComputePipeline) GlComputePipeline.builder()
+                .shader(program)
+                .build(RenderSystems.opengl().device());
+        GrapeJobBuilders.ComputeJobBuilder jobBuilder =
+                GrapeJobBuilders.compute(computePipeline)
                         .workGroupSupplier(() -> new Vector3i(
                                 (context.dimensions.screenWidth() + (15)) / 16,
                                 (context.dimensions.screenHeight() + (15)) / 16,
@@ -74,18 +78,18 @@ public class Fsr2v233RCASPipeline extends Fsr2Pipeline {
 
         jobBuilder.resource(
                 "cbFSR2",
-                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
         jobBuilder.resource(
                 "cbRCAS",
-                PipelineJobResource.UniformBuffer.create(context.fsr2RcasConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2RcasConstantsUBO)
         );
         jobBuilder.resource(
                 Fsr2PipelineResourceType.INPUT_EXPOSURE.srvShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(0)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -99,7 +103,7 @@ public class Fsr2v233RCASPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.srvShaderName())
                         .binding(1)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -107,10 +111,10 @@ public class Fsr2v233RCASPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.UPSCALED_OUTPUT)
                         .binding(2)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.job("fsr2_rcas", jobBuilder.build());
+        pipeline.add("fsr2_rcas", jobBuilder.build());
     }
 
     @Override

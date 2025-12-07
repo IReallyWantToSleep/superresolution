@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
+import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GL45C;
 
@@ -91,28 +92,23 @@ public class GL45OrEXTDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
-    public void copyTextureSubImage2D(int texture, int level, int xoffset, int yoffset, int x, int y, int width, int height) {
-        GL45C.glCopyTextureSubImage2D(
-                texture,
-                level,
-                xoffset,
-                yoffset,
-                x,
-                y,
-                width,
-                height
-        );
-    }
-
-    @Override
-    public void copyTextureSubImage1D(int texture, int level, int xoffset, int x, int y, int width) {
-        GL45C.glCopyTextureSubImage1D(
-                texture,
-                level,
-                xoffset,
-                x,
-                y,
-                width
+    public void copyImageSubData(int srcName, int srcTarget, int srcLevel, int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
+        GL43C.glCopyImageSubData(
+                srcName,
+                srcTarget,
+                srcLevel,
+                srcX,
+                srcY,
+                srcZ,
+                dstName,
+                dstTarget,
+                dstLevel,
+                dstX,
+                dstY,
+                dstZ,
+                srcWidth,
+                srcHeight,
+                srcDepth
         );
     }
 

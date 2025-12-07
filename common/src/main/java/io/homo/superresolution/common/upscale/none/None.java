@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.common.upscale.none;
 
+import io.homo.superresolution.core.graphics.impl.framebuffer.ColorAttachment;
+import io.homo.superresolution.core.graphics.impl.framebuffer.DepthStencilAttachment;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -32,6 +34,8 @@ import org.lwjgl.opengl.GL43;
 import static io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.resolveBindTarget;
 import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.opengl.GL30.*;
+
+import java.util.List;
 
 public class None extends AbstractAlgorithm {
     private static int cachedFrameBufferId = -1;
@@ -163,7 +167,16 @@ public class None extends AbstractAlgorithm {
 
         @Override
         public void destroy() {
-            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<ColorAttachment> getColorAttachments() {
+            return List.of(new ColorAttachment(0, colorTex));
+        }
+
+        @Override
+        public DepthStencilAttachment getDepthStencilAttachment() {
+            return null;
         }
     }
 }

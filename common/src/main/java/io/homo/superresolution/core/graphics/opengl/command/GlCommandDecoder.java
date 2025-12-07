@@ -19,46 +19,34 @@
 package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.DrawObject;
-import io.homo.superresolution.core.graphics.impl.GpuObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
-import io.homo.superresolution.core.graphics.impl.command.commands.DrawCommand;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.opengl.*;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderBaseUniform;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformBuffer;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformSamplerTexture;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniformStorageTexture;
-import io.homo.superresolution.core.graphics.system.IRenderState;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
+import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 import org.lwjgl.opengl.GL44;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import static io.homo.superresolution.core.graphics.opengl.GlDebug.*;
 import static org.lwjgl.opengl.GL43.*;
 
 public class GlCommandDecoder implements ICommandDecoder {
     private final GlDevice device;
-    private final GlCommandEncoder commandEncoder;
+    private GlCommandBuffer currentCommandBuffer;
 
-
-    public GlCommandDecoder(GlDevice device, GlCommandEncoder commandEncoder) {
+    public GlCommandDecoder(GlDevice device) {
         this.device = device;
-        this.commandEncoder = commandEncoder;
     }
 
     private void putGlCommand(ICommandBuffer commandBuffer, Runnable glCalls) {
@@ -339,206 +327,145 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void decodeDraw(ICommandBuffer commandBuffer, DrawCommand command) {
-        IRenderState.StateSnapshot stateSnapshot = commandEncoder.renderState().get();
-        ICommandDecoder.super.decodeDraw(commandBuffer, command);
-        commandEncoder.renderState().apply(stateSnapshot);
+    public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
+        putGlCommand(commandBuffer, () -> {
+            glViewport((int) x, (int) y, (int) width, (int) height);
+        });
+    }
+
+    @Override
+    public void setScissor(ICommandBuffer commandBuffer, int x, int y, int width, int height) {
+        putGlCommand(commandBuffer, () -> {
+            glScissor(x, y, width, height);
+        });
+    }
+
+    @Override
+    public void setLineWidth(ICommandBuffer commandBuffer, float width) {
+        putGlCommand(commandBuffer, () -> {
+            glLineWidth(width);
+        });
+    }
+
+    @Override
+    public void setBlendConstants(ICommandBuffer commandBuffer, float r, float g, float b, float a) {
+        putGlCommand(commandBuffer, () -> {
+            glBlendColor(r, g, b, a);
+        });
     }
 
     @Override
     public void draw(
             ICommandBuffer commandBuffer,
-            IShaderProgram<?> shaderProgram,
-            IFrameBuffer frameBuffer,
-            DrawObject drawObject,
-            int firstVertex,
-            int vertexCount
+            RenderPass renderPass,
+            PrimitiveType primitiveType,
+            IVertexBuffer vertexBuffer,
+            int vertexCount,
+            int firstVertex
     ) {
-        if (shaderProgram == null) {
-            throw new OpenGLException("draw: 着色器程序为null");
-        }
-
-        final int debugId = nextDrawId();
-        final String debugName = String.format("draw: %s (%d verts)",
-                drawObject.getPrimitiveType(), vertexCount);
-
-        List<ResourcesBindingSnapshot> resourcesSnapshot = createResourcesBindingSnapshot((GlShaderProgram) shaderProgram);
-
         putGlCommand(commandBuffer, () -> {
-            pushGroup(debugId, debugName);
-            try (GlState ig = new GlState(
-                    GlState.STATE_DRAW_FBO |
-                            GlState.STATE_ACTIVE_TEXTURE |
-                            GlState.STATE_TEXTURES |
-                            GlState.STATE_PROGRAM |
-                            GlState.STATE_VERTEX_OPERATIONS
-            )) {
+            GlRenderPass glRenderPass = (GlRenderPass) renderPass;
+            glRenderPass.bind();
+            glRenderPass.begin((GlCommandBuffer) commandBuffer);
 
-                if (frameBuffer != null) {
-                    if (frameBuffer instanceof GlFrameBuffer) {
-                        ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.All, true);
-                    } else {
-                        throw new OpenGLException("draw: 目标帧缓冲区不是由OpenGL创建的");
-                    }
-                }
-                setupShaderProgram(shaderProgram, resourcesSnapshot);
-                glBindBuffer(GL_ARRAY_BUFFER, (int) drawObject.getVertexBuffer().handle());
-                glBindVertexArray((int) drawObject.getVertexArray().handle());
-
-                int glPrimitive = switch (drawObject.getPrimitiveType()) {
-                    case Triangle -> GL_TRIANGLES;
-                    case TriangleStrip -> GL_TRIANGLE_STRIP;
-                    case Lines -> GL_LINES;
-                    case Points -> GL_POINTS;
-                };
-                glDrawArrays(glPrimitive, firstVertex, vertexCount);
-                if (drawObject.isOnce()) {
-                    drawObject.destroy();
-                }
-            } finally {
-                popGroup();
+            GraphicsPipeline pipeline = renderPass.pipeline();
+            if (pipeline instanceof GlGraphicsPipeline glPipeline) {
+                glUseProgram((int) glPipeline.shader().handle());
+                glPipeline.setupRenderStates();
+                glPipeline.descriptorSet().update();
+                glPipeline.descriptorSet().apply();
             }
-        });
-    }
 
-    private List<ResourcesBindingSnapshot> createResourcesBindingSnapshot(GlShaderProgram shaderProgram) {
-        List<ResourcesBindingSnapshot> resourcesBindingSnapshot = new ArrayList<>();
-        Map<String, GlShaderBaseUniform<?, ?>> uniformMap = shaderProgram.uniforms().getUniformMap();
-        uniformMap.forEach((name, uniform) -> {
-            if (uniform instanceof GlShaderUniformBuffer) {
-                if (((GlShaderUniformBuffer) uniform).buffer() != null) {
-                    resourcesBindingSnapshot.add(new ResourcesBindingSnapshot(
-                            uniform.name(),
-                            uniform.binding(),
-                            uniform.type(),
-                            uniform.access(),
-                            ((GlShaderUniformBuffer) uniform).buffer()
-                    ));
-                }
-            } else if (uniform instanceof GlShaderUniformStorageTexture) {
-                if (((GlShaderUniformStorageTexture) uniform).texture() != null) {
-                    resourcesBindingSnapshot.add(new ResourcesBindingSnapshot(
-                            uniform.name(),
-                            uniform.binding(),
-                            uniform.type(),
-                            uniform.access(),
-                            ((GlShaderUniformStorageTexture) uniform).texture()
-                    ));
-                }
-            } else if (uniform instanceof GlShaderUniformSamplerTexture) {
-                if (((GlShaderUniformSamplerTexture) uniform).texture() != null) {
-                    resourcesBindingSnapshot.add(new ResourcesBindingSnapshot(
-                            uniform.name(),
-                            uniform.binding(),
-                            uniform.type(),
-                            uniform.access(),
-                            ((GlShaderUniformSamplerTexture) uniform).texture()
-                    ));
-                }
+            if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
+                glVertexBuffer.getVao().bind();
+                glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
             }
-        });
-        return resourcesBindingSnapshot;
-    }
 
-    private void setupShaderProgram(IShaderProgram<?> shaderProgram, List<ResourcesBindingSnapshot> resourcesBindingSnapshots) {
-        glUseProgram((int) shaderProgram.handle());
-        resourcesBindingSnapshots.forEach((uniform) -> {
-            switch (uniform.resourcesType()) {
-                case UniformBuffer -> {
-                    if (Gl.isLegacy()) {
-                        int blockIndex = glGetUniformBlockIndex(
-                                (int) shaderProgram.handle(),
-                                uniform.name()
-                        );
-                        if (blockIndex == GL_INVALID_INDEX) {
-                            throw new RuntimeException("Uniform block '%s' not found".formatted(uniform.name()));
-                        }
-                        glUniformBlockBinding((int) shaderProgram.handle(), blockIndex, uniform.binding());
-                        glBindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), (int) uniform.object().handle());
-                    } else {
-                        Gl.DSA.bindBufferBase(GL_UNIFORM_BUFFER, uniform.binding(), (int) uniform.object().handle());
-                    }
-                }
-                case StorageTexture -> Gl.DSA.bindImageTexture(
-                        uniform.binding(),
-                        (int) uniform.object().handle(),
-                        0,
-                        false,
-                        0,
-                        switch (uniform.access()) {
-                            case Read -> GL_READ_ONLY;
-                            case Write -> GL_WRITE_ONLY;
-                            case Both -> GL_READ_WRITE;
-                        },
-                        ((ITexture) uniform.object()).getTextureFormat().gl()
-                );
-                case SamplerTexture -> {
-                    ITexture texture = (ITexture) uniform.object();
-                    glActiveTexture(GL_TEXTURE0 + uniform.binding());
+            glDrawArrays(switch (primitiveType) {
+                case Lines -> GL_LINES;
+                case Triangle -> GL_TRIANGLES;
+                case TriangleStrip -> GL_TRIANGLE_STRIP;
+                case Points -> GL_POINTS;
+            }, firstVertex, vertexCount);
 
-                    if (texture.getTextureType() == TextureType.Texture1D) {
-                        glBindTexture(GL_TEXTURE_1D, (int) texture.handle());
-                    } else if (texture.getTextureType() == TextureType.Texture2D) {
-                        glBindTexture(GL_TEXTURE_2D, (int) texture.handle());
-                    } else {
-                        glBindTexture(GL_TEXTURE_2D, (int) texture.handle());
-                    }
-                    glUniform1i(glGetUniformLocation((int) shaderProgram.handle(), uniform.name()), uniform.binding());
-                }
-
+            if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
+                glVertexBuffer.getVao().unbind();
             }
+            glRenderPass.end((GlCommandBuffer) commandBuffer);
         });
     }
 
     @Override
-    public void dispatchCompute(
+    public void dispatch(
             ICommandBuffer commandBuffer,
-            IShaderProgram<?> shaderProgram,
-            int x,
-            int y,
-            int z
+            ComputePipeline computePipeline,
+            int groupCountX,
+            int groupCountY,
+            int groupCountZ
     ) {
-        if (shaderProgram == null) {
-            throw new OpenGLException("dispatchCompute: 着色器程序为null");
-        }
-
-        final int debugId = nextComputeId();
-        final String debugName = String.format("dispatchCompute: %dx%dx%d", x, y, z);
-
-        List<ResourcesBindingSnapshot> resourcesSnapshot = createResourcesBindingSnapshot((GlShaderProgram) shaderProgram);
-
         putGlCommand(commandBuffer, () -> {
-            pushGroup(debugId, debugName);
-            setupShaderProgram(shaderProgram, resourcesSnapshot);
-            glDispatchCompute(x, y, z);
+            if (computePipeline instanceof GlComputePipeline glPipeline) {
+                glUseProgram((int) glPipeline.shader().handle());
+                glPipeline.descriptorSet().update();
+                glPipeline.descriptorSet().apply();
+            }
+
+            glDispatchCompute(groupCountX, groupCountY, groupCountZ);
             glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-            popGroup();
         });
     }
 
     @Override
-    public void applyRenderState(ICommandBuffer commandBuffer, IRenderState.StateSnapshot stateSnapshot) {
-        final int debugId = nextStateId();
-        final String debugName = "applyRenderState";
-        putGlCommand(commandBuffer, () -> {
-            pushGroup(debugId, debugName);
-            commandEncoder.renderState().apply(stateSnapshot);
-            popGroup();
-        });
+    public ICommandBuffer beginCommandBuffer() {
+        currentCommandBuffer = (GlCommandBuffer) device.createCommandBuffer();
+        return currentCommandBuffer;
+    }
+
+    @Override
+    public ICommandBuffer endCommandBuffer() {
+        return currentCommandBuffer;
+    }
+
+    @Override
+    public ICommandBuffer endAndSubmitCommandBuffer() {
+        currentCommandBuffer.submit(device);
+        return currentCommandBuffer;
+    }
+
+    @Override
+    public ICommandBuffer currentCommandBuffer() {
+        return currentCommandBuffer;
+    }
+
+    private int getGlType(VertexAttributeFormat format) {
+        return switch (format) {
+            case VertexAttributeFormat.FLOAT, VertexAttributeFormat.FLOAT2, VertexAttributeFormat.FLOAT3,
+                 VertexAttributeFormat.FLOAT4 -> GL_FLOAT;
+            case VertexAttributeFormat.INT, INT2, INT3, INT4 -> GL_INT;
+            case VertexAttributeFormat.UINT, UINT2, UINT3, UINT4 -> GL_UNSIGNED_INT;
+            case VertexAttributeFormat.BYTE4_NORMALIZED -> GL_BYTE;
+            case VertexAttributeFormat.UBYTE4_NORMALIZED -> GL_UNSIGNED_BYTE;
+            case VertexAttributeFormat.SHORT2, SHORT4 -> GL_SHORT;
+            case VertexAttributeFormat.USHORT2, USHORT4 -> GL_UNSIGNED_SHORT;
+        };
+    }
+
+    private boolean isNormalized(VertexAttributeFormat format) {
+        return switch (format) {
+            case BYTE4_NORMALIZED, UBYTE4_NORMALIZED -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isIntegerType(VertexAttributeFormat format) {
+        return switch (format) {
+            case INT, INT2, INT3, INT4, UINT, UINT2, UINT3, UINT4 -> true;
+            default -> false;
+        };
     }
 
     @Override
     public IDevice getDevice() {
         return device;
-    }
-
-    private record ResourcesBindingSnapshot(
-            String name,
-            int binding,
-            ShaderUniformType resourcesType,
-            ShaderUniformAccess access,
-            GpuObject object
-    ) {
-
     }
 }

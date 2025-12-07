@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.opengl.dsa;
 
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL43;
 
 import java.nio.*;
@@ -115,21 +116,27 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
-    public void copyTextureSubImage2D(int texture, int level, int xoffset, int yoffset,
-                                      int x, int y, int width, int height) {
-        int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glCopyTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, x, y, width, height);
-        glBindTexture(GL_TEXTURE_2D, prevTex);
-    }
-
-    @Override
-    public void copyTextureSubImage1D(int texture, int level, int xoffset,
-                                      int x, int y, int width) {
-        int prevTex = glGetInteger(GL_TEXTURE_BINDING_1D);
-        glBindTexture(GL_TEXTURE_1D, texture);
-        glCopyTexSubImage1D(GL_TEXTURE_1D, level, xoffset, x, y, width);
-        glBindTexture(GL_TEXTURE_1D, prevTex);
+    public void copyImageSubData(int srcName, int srcTarget, int srcLevel, int srcX, int srcY, int srcZ, int dstName, int dstTarget, int dstLevel, int dstX, int dstY, int dstZ, int srcWidth, int srcHeight, int srcDepth) {
+        if (gl43) {
+            GL43.glCopyImageSubData(
+                    srcName, srcTarget,
+                    srcLevel,
+                    srcX,
+                    srcY,
+                    srcZ,
+                    dstName,
+                    dstTarget,
+                    dstLevel,
+                    dstX,
+                    dstY,
+                    dstZ,
+                    srcWidth,
+                    srcHeight,
+                    srcDepth
+            );
+        } else {
+            throw new UnsupportedOperationException("copyImageSubData not available in OpenGL 4.1");
+        }
     }
 
     @Override

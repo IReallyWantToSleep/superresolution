@@ -1,0 +1,60 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.core.graphics.impl.vertex;
+
+public enum VertexAttributeFormat {
+    FLOAT(4, 1),
+    FLOAT2(4, 2),
+    FLOAT3(4, 3),
+    FLOAT4(4, 4),
+    INT(4, 1),
+    INT2(4, 2),
+    INT3(4, 3),
+    INT4(4, 4),
+    UINT(4, 1),
+    UINT2(4, 2),
+    UINT3(4, 3),
+    UINT4(4, 4),
+    BYTE4_NORMALIZED(1, 4),
+    UBYTE4_NORMALIZED(1, 4),
+    SHORT2(2, 2),
+    SHORT4(2, 4),
+    USHORT2(2, 2),
+    USHORT4(2, 4);
+
+    private final int componentSize;
+    private final int componentCount;
+
+    VertexAttributeFormat(int componentSize, int componentCount) {
+        this.componentSize = componentSize;
+        this.componentCount = componentCount;
+    }
+
+    public int getSize() {
+        return componentSize * componentCount;
+    }
+
+    public int getComponentSize() {
+        return componentSize;
+    }
+
+    public int getComponentCount() {
+        return componentCount;
+    }
+}

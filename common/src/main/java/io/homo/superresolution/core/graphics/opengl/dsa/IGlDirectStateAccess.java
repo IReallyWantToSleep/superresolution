@@ -97,13 +97,21 @@ public interface IGlDirectStateAccess {
     void clearFramebuffer(int framebuffer, int buffer,
                           int drawbuffer, float[] value);
 
-    void copyTextureSubImage2D(int texture, int level,
-                               int xoffset, int yoffset,
-                               int x, int y, int width, int height);
-
-    void copyTextureSubImage1D(int texture, int level,
-                               int xoffset,
-                               int x, int y, int width);
+    void copyImageSubData(int srcName,
+                          int srcTarget,
+                          int srcLevel,
+                          int srcX,
+                          int srcY,
+                          int srcZ,
+                          int dstName,
+                          int dstTarget,
+                          int dstLevel,
+                          int dstX,
+                          int dstY,
+                          int dstZ,
+                          int srcWidth,
+                          int srcHeight,
+                          int srcDepth);
 
     // Buffer相关
     int createBuffer();

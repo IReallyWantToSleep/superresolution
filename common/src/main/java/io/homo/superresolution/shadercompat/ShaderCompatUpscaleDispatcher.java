@@ -26,7 +26,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
-import io.homo.superresolution.common.minecraft.handler.TextureInfo;
+import io.homo.superresolution.common.minecraft.handler.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -39,6 +39,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -50,6 +51,7 @@ import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL41;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -62,9 +64,9 @@ import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 public class ShaderCompatUpscaleDispatcher {
     public static Map<String, Object> debugInfo = new HashMap<>();
 
-    public static TextureInfo colorTexture;
-    public static TextureInfo depthTexture;
-    public static TextureInfo motionVectorsTexture;
+    public static ShaderCompatTextureInfo colorTexture;
+    public static ShaderCompatTextureInfo depthTexture;
+    public static ShaderCompatTextureInfo motionVectorsTexture;
 
     private static SRShaderCompatConfig.InputTextureConfig lastColorConfig;
     private static SRShaderCompatConfig.InputTextureConfig lastDepthConfig;
@@ -116,7 +118,7 @@ public class ShaderCompatUpscaleDispatcher {
                 new InputResourceSet(
                         colorTexture.getInternalTexture(),
                         depthTexture.getInternalTexture(),
-                        motionVectorsTexture.getInternalTexture() == null ?
+                        motionVectorsTexture.getInternalTexture() == null || lastMotionConfig.enabled ?
                                 AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
                                 motionVectorsTexture.getInternalTexture()
                 )
@@ -262,17 +264,44 @@ public class ShaderCompatUpscaleDispatcher {
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
         if (currentConfig.output_textures.get("upscaled_color").enabled) {
             for (String targetName : currentConfig.output_textures.get("upscaled_color").target) {
-                ITexture texture = IrisTextureResolver.getIrisTexture(compositeRenderer, targetName);
-                if (texture != null) {
-                    GlTextureCopier.copy(
-                            CopyOperation.create()
-                                    .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
-                                    .dst(texture)
-                                    .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
-                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                                    .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                                    .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-                    );
+                ITexture targetTexture = IrisTextureResolver.getIrisTexture(compositeRenderer, targetName);
+                ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
+                if (targetTexture != null && sourceTexture != null) {
+                    if (targetTexture.getTextureFormat() != sourceTexture.getTextureFormat()) {
+                        GlTextureCopier.copy(
+                                CopyOperation.create()
+                                        .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
+                                        .dst(targetTexture)
+                                        .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
+                                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                        );
+                    } else {
+                        Gl.DSA.copyImageSubData(
+                                (int) sourceTexture.handle(),
+                                GL41.GL_TEXTURE_2D,
+                                0,
+                                0,
+                                0,
+                                0,
+                                (int) targetTexture.handle(),
+                                GL41.GL_TEXTURE_2D,
+                                0,
+                                outputConfig.region.get(0),
+                                outputConfig.region.get(1),
+                                0,
+                                ShaderCompatTextureInfo.resolveRegionValue(
+                                        outputConfig.region.get(2),
+                                        true
+                                ),
+                                ShaderCompatTextureInfo.resolveRegionValue(
+                                        outputConfig.region.get(3),
+                                        false
+                                ),
+                                1
+                        );
+                    }
                 }
             }
         }

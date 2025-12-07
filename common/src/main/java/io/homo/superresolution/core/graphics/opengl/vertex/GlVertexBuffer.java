@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.opengl.vertex;
 
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
+import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
@@ -32,13 +33,22 @@ public class GlVertexBuffer implements IVertexBuffer {
     private final int id;
     private final int size;
     private final boolean dynamic;
+    private final VertexFormat vertexFormat;
     private final ByteBuffer buffer;
+    private final GlVertexArray vao;
 
-    private GlVertexBuffer(int id, int size, boolean dynamic, ByteBuffer buffer) {
+    private GlVertexBuffer(int id, int size, boolean dynamic, VertexFormat vertexFormat, ByteBuffer buffer) {
         this.id = id;
         this.size = size;
         this.dynamic = dynamic;
+        this.vertexFormat = vertexFormat;
         this.buffer = buffer;
+        this.vao = new GlVertexArray();
+        this.vao.setFormat(this);
+    }
+
+    public GlVertexArray getVao() {
+        return vao;
     }
 
     public static GlVertexBuffer create(VertexBufferDescription description) {
@@ -46,7 +56,8 @@ public class GlVertexBuffer implements IVertexBuffer {
         int usage = description.isDynamic() ? GL15.GL_DYNAMIC_DRAW : GL15.GL_STATIC_DRAW;
         ByteBuffer buffer = MemoryUtil.memAlloc(description.getSizeInBytes());
         Gl.DSA.bufferData(bufferId, GL15.GL_ARRAY_BUFFER, buffer, usage);
-        return new GlVertexBuffer(bufferId, description.getSizeInBytes(), description.isDynamic(), buffer);
+        return new GlVertexBuffer(bufferId, description.getSizeInBytes(), description.isDynamic(), 
+                                 description.getVertexFormat(), buffer);
     }
 
 
@@ -66,6 +77,11 @@ public class GlVertexBuffer implements IVertexBuffer {
     }
 
     @Override
+    public VertexFormat getVertexFormat() {
+        return vertexFormat;
+    }
+
+    @Override
     public void updateData(float[] data, int offset, int length) {
         FloatBuffer buffer = BufferUtils.createFloatBuffer(length);
         buffer.put(data, offset, length);
@@ -74,7 +90,16 @@ public class GlVertexBuffer implements IVertexBuffer {
     }
 
     @Override
+    public void updateData(byte[] data, int offset, int length) {
+        ByteBuffer buffer = BufferUtils.createByteBuffer(length);
+        buffer.put(data, offset, length);
+        buffer.flip();
+        Gl.DSA.bufferSubData(this.id, 0, buffer);
+    }
+
+    @Override
     public void destroy() {
+        vao.destroy();
         Gl.DSA.deleteBuffer(id);
         MemoryUtil.memFree(buffer);
     }

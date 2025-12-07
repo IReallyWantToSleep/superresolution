@@ -54,7 +54,12 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     private boolean shouldApplyMixinByName(String name) {
-        return !name.contains("ForceOpenGLVersion_WindowMixin") || !Platform.currentPlatform.isModLoaded("threatengl");
+        if (name.contains("ForceOpenGLVersion_WindowMixin")) {
+            return !(Platform.currentPlatform.isModLoaded("threatengl") ||
+                    Platform.currentPlatform.isModLoaded("gpu_tape") ||
+                    Platform.currentPlatform.isModLoaded("gpu_booster"));
+        }
+        return true;
     }
 
     public void acceptTargets(Set<String> set, Set<String> set1) {

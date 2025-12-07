@@ -18,7 +18,10 @@
 
 package io.homo.superresolution.shadercompat.mixin;
 
+import io.homo.irisapi.IrisAPI;
+import io.homo.irisapi.IrisCompositePassRenderingEvent;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.shadercompat.IrisShaderPipelineHandle;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -29,6 +32,17 @@ import java.util.Set;
 public class ShaderCompatMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String s) {
+        if (Platform.currentPlatform.isInstallIris()) {
+            IrisAPI.EVENT_BUS.addListener(
+                    IrisCompositePassRenderingEvent.AfterPassRender.class,
+                    (event -> {
+                        IrisShaderPipelineHandle.onCompositeRendererRender(
+                                event.getCompositeRenderer(),
+                                event.getCompositePass()
+                        );
+                    })
+            );
+        }
     }
 
     @Override

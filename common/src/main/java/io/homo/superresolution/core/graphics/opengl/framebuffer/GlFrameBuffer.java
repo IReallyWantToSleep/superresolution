@@ -22,15 +22,19 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.minecraft.RenderTargetCache;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
+import io.homo.superresolution.core.graphics.impl.framebuffer.ColorAttachment;
+import io.homo.superresolution.core.graphics.impl.framebuffer.DepthStencilAttachment;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlConst;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.opengl.GL30.*;
 
@@ -353,6 +357,29 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     @Override
     public long handle() {
         return frameBufferId;
+    }
+
+    @Override
+    public List<ColorAttachment> getColorAttachments() {
+        List<ColorAttachment> list = new ArrayList<>();
+        for (GlFrameBufferAttachment attachment : attachments) {
+            if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
+                int index = attachment.type.attachmentId() - GlConst.GL_COLOR_ATTACHMENT0;
+                list.add(new ColorAttachment(index, attachment.texture));
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public DepthStencilAttachment getDepthStencilAttachment() {
+        if (depthStencilAttachment != null) {
+            return new DepthStencilAttachment(depthStencilAttachment.texture);
+        }
+        if (depthAttachment != null) {
+            return new DepthStencilAttachment(depthAttachment.texture);
+        }
+        return null;
     }
 
     @Override

@@ -18,6 +18,7 @@
 
 package io.homo.irisapi.mixin.composite.before1_21_1;
 
+import io.homo.irisapi.IrisCompositePassType;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 
@@ -32,8 +33,11 @@ import net.irisshaders.iris.targets.RenderTargets;
 import net.irisshaders.iris.uniforms.FrameUpdateNotifier;
 import net.irisshaders.iris.uniforms.custom.CustomUniforms;
 import org.spongepowered.asm.mixin.Final;
+
+import java.util.ListIterator;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -52,6 +56,7 @@ import net.irisshaders.iris.gl.buffer.ShaderStorageBufferHolder;
 import net.irisshaders.iris.gl.image.GlImage;
 import net.irisshaders.iris.gl.texture.TextureAccess;
 import net.irisshaders.iris.pathways.CenterDepthSampler;
+
 #endif
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
@@ -113,35 +118,53 @@ public class CompositeRendererMixin {
 
     //===========PassStart============//
     @Inject(method = "renderAll", at = @At(
-            value = "FIELD",
-            target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer$Pass;computes:[Lnet/irisshaders/iris/gl/program/ComputeProgram;",
-            ordinal = 0
+            value = "INVOKE",
+            target = "Ljava/util/Iterator;next()Ljava/lang/Object;",
+            ordinal = 0,
+            shift = At.Shift.AFTER
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onPassStart(
             CallbackInfo ci,
             RenderTarget main,
-            UnmodifiableIterator<?> var2,
-            Object renderPass
+            UnmodifiableIterator<?> var2
     ) {
-        int passIndex = this.passes.indexOf(renderPass);
+        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
         superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassStart);
     }
 
     //===========BeforeRender============//
     @Inject(method = "renderAll", at = @At(
-            value = "FIELD",
-            target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer$Pass;computes:[Lnet/irisshaders/iris/gl/program/ComputeProgram;",
+            value = "INVOKE",
+            target = "Ljava/util/Iterator;next()Ljava/lang/Object;",
             ordinal = 0,
             shift = At.Shift.AFTER
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onBeforeRender(
             CallbackInfo ci,
             RenderTarget main,
-            UnmodifiableIterator<?> var2,
-            Object renderPass
+            UnmodifiableIterator<?> var2
     ) {
-        int passIndex = this.passes.indexOf(renderPass);
-        superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.Common) {
+            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At(
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/program/Program;unbind()V",
+            ordinal = 0,
+            shift = At.Shift.AFTER
+    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
+    private void onBeforeRenderA(
+            CallbackInfo ci,
+            RenderTarget main,
+            UnmodifiableIterator<?> var2
+    ) {
+        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.Common) {
+            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        }
     }
 
     //===========AfterRender============//
@@ -152,17 +175,34 @@ public class CompositeRendererMixin {
     private void onAfterRender(
             CallbackInfo ci,
             RenderTarget main,
-            UnmodifiableIterator<?> var2,
-            Object renderPass
+            UnmodifiableIterator<?> var2
     ) {
-        int passIndex = this.passes.indexOf(renderPass);
-        superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At(
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/pathways/FullScreenQuadRenderer;renderQuad()V",
+            shift = At.Shift.AFTER
+    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
+    private void onAfterRenderA(
+            CallbackInfo ci,
+            RenderTarget main,
+            UnmodifiableIterator<?> var2
+    ) {
+        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        }
     }
 
     //===========PassEnd============//
     @Inject(method = "renderAll", at = @At(
             value = "INVOKE",
-            target = "Lcom/google/common/collect/ImmutableList;get(I)Ljava/lang/Object;",
+            target = "Lnet/irisshaders/iris/gl/program/Program;unbind()V",
             shift = At.Shift.AFTER,
             ordinal = 0
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
@@ -172,8 +212,25 @@ public class CompositeRendererMixin {
             UnmodifiableIterator<?> var2
     ) {
         int passIndex = Math.max(((java.util.ListIterator<?>) var2).previousIndex(), 0);
-        if (passIndex > 0) {
-            superresolution$handlePassEvent(passIndex - 1, IrisRenderingPipelineHandler::onCompositePassEnd);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassEnd);
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At(
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/blending/BlendModeOverride;restore()V",
+            shift = At.Shift.AFTER,
+            ordinal = 0
+    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
+    private void onPassEndA(
+            CallbackInfo ci,
+            RenderTarget main,
+            UnmodifiableIterator<?> var2
+    ) {
+        int passIndex = Math.max(((java.util.ListIterator<?>) var2).previousIndex(), 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassEnd);
         }
     }
     #endif

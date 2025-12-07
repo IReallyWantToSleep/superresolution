@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.minecraft.handler;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetType;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -169,7 +168,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         int renderWidth = RenderHandlerManager.getScreenWidth();
         int renderHeight = RenderHandlerManager.getScreenHeight();
         //修复PostChain中的RenderTarget大小不正确
-        for (RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
+        for (com.mojang.blaze3d.pipeline.RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
             if (renderTarget.width != renderWidth ||
                     renderTarget.height != renderHeight ||
                     ((PostChainAccessor) postChain).getScreenWidth() != renderWidth ||
@@ -214,7 +213,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     public ITexture getColorTexture() {
         try {
             Class<?> dispatcherClass = getShaderCompatUpscaleDispatcher();
-            TextureInfo textureInfo = ((TextureInfo) dispatcherClass.getField("colorTexture").get(null));
+            ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) dispatcherClass.getField("colorTexture").get(null));
             if (textureInfo == null) return null;
             return textureInfo.getInternalTexture();
         } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
@@ -226,7 +225,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     public ITexture getDepthTexture() {
         try {
             Class<?> dispatcherClass = getShaderCompatUpscaleDispatcher();
-            TextureInfo textureInfo = ((TextureInfo) dispatcherClass.getField("depthTexture").get(null));
+            ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) dispatcherClass.getField("depthTexture").get(null));
             if (textureInfo == null) return null;
             return textureInfo.getInternalTexture();
         } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {

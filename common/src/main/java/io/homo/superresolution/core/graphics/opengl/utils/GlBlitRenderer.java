@@ -19,48 +19,155 @@
 package io.homo.superresolution.core.graphics.opengl.utils;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.DrawObject;
+import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
+import io.homo.superresolution.core.graphics.impl.framebuffer.*;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.CullMode;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.DynamicStateFlags;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.shader.GlBlitShader;
-import io.homo.superresolution.core.graphics.system.IRenderState;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+
+import java.util.List;
 
 public class GlBlitRenderer {
-    private static DrawObject fullscreenQuad;
+    private static IVertexBuffer fullscreenQuad;
+    private static RenderPass renderPass;
+    private static IBindableFrameBuffer cachedFrameBuffer = new IBindableFrameBuffer() {
+        @Override
+        public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
+
+        }
+
+        @Override
+        public void bind(FrameBufferBindPoint bindPoint) {
+
+        }
+
+        @Override
+        public void unbind(FrameBufferBindPoint bindPoint) {
+
+        }
+
+        @Override
+        public int getWidth() {
+            return 0;
+        }
+
+        @Override
+        public int getHeight() {
+            return 0;
+        }
+
+        @Override
+        public void clearFrameBuffer() {
+
+        }
+
+        @Override
+        public List<ColorAttachment> getColorAttachments() {
+            return List.of();
+        }
+
+        @Override
+        public DepthStencilAttachment getDepthStencilAttachment() {
+            return null;
+        }
+
+        @Override
+        public void resizeFrameBuffer(int width, int height) {
+
+        }
+
+        @Override
+        public int getTextureId(FrameBufferAttachmentType attachmentType) {
+            return 0;
+        }
+
+        @Override
+        public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
+            return null;
+        }
+
+        @Override
+        public void setClearColorRGBA(float red, float green, float blue, float alpha) {
+
+        }
+
+        @Override
+        public TextureFormat getColorTextureFormat() {
+            return null;
+        }
+
+        @Override
+        public TextureFormat getDepthTextureFormat() {
+            return null;
+        }
+
+        @Override
+        public long handle() {
+            return 0;
+        }
+
+        @Override
+        public void destroy() {
+
+        }
+    };
+
+    private static RenderPass getOrCreateRenderPass() {
+        if (renderPass == null) {
+            GlShaderProgram program = RenderSystems.opengl().device().createShaderProgram(
+                    ShaderDescription.graphics(
+                                    new ShaderSource(ShaderType.Fragment, "/shader/blit.frag.glsl", true),
+                                    new ShaderSource(ShaderType.Vertex, "/shader/blit.vert.glsl", true)
+                            )
+                            .uniformSamplerTexture("uTexture", 0)
+                            .build()
+            );
+            program.compile();
+
+            GlGraphicsPipeline graphicsPipeline = (GlGraphicsPipeline) GlGraphicsPipeline.builder()
+                    .shader(program)
+                    .rasterization(r -> r.cullMode(CullMode.None))
+                    .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
+                    .dynamicStates(DynamicStateFlags.Viewport)
+                    .colorBlend(r -> r.addAttachment(ColorBlendAttachment.noBlend()))
+                    .build(RenderSystems.opengl().device());
+
+            renderPass = RenderPass.builder()
+                    .pipeline(graphicsPipeline)
+                    .frameBuffer(cachedFrameBuffer)
+                    .build(RenderSystems.opengl().device());
+        }
+        return renderPass;
+    }
 
     public static void blitToScreen(ITexture textureId, int viewWidth, int viewHeight) {
-        try (GlState state = new GlState(
-                GlState.STATE_ALL
-        )) {
-            if (fullscreenQuad == null) {
-                fullscreenQuad = DrawObject.fullscreenQuad(RenderSystems.current().device());
-            }
-            var blitShader = GlBlitShader.getShader();
-            blitShader.uniforms().samplerTexture("uTexture").set(
-                    textureId
-            );
-            IRenderState.StateSnapshot stateSnapshot = RenderSystems.opengl().device().commandEncoder().renderState().get();
-
-            RenderSystems.opengl().device().commandEncoder()
-                    .begin()
-                    .renderState()
-                    .colorMask(true, true, true, false)
-                    .depthTest(false)
-                    .depthWrite(false)
-                    .cullFace(false)
-                    .viewport(0, 0, viewWidth, viewHeight);
-            RenderSystems.opengl().device().commandEncoder()
-                    .draw(
-                            blitShader,
-                            null,
-                            DrawObject.fullscreenQuad(RenderSystems.opengl().device()).once(),
-                            0,
-                            DrawObject.fullscreenQuadVertexCount()
-                    );
-            RenderSystems.opengl().device().commandEncoder()
-                    .renderState()
-                    .apply(stateSnapshot);
-            RenderSystems.opengl().device().submitCommandBuffer(RenderSystems.opengl().device().commandEncoder().end());
+        if (fullscreenQuad == null) {
+            fullscreenQuad = FullscreenQuad.create(RenderSystems.opengl().device());
         }
+
+        GlRenderPass pass = (GlRenderPass) getOrCreateRenderPass();
+        pass.pipeline().descriptorSet().samplerTexture("uTexture", textureId);
+
+        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+        RenderSystems.opengl().device().commandDecoder()
+                .draw(
+                        pass,
+                        PrimitiveType.TriangleStrip,
+                        fullscreenQuad,
+                        4,
+                        0
+                );
+        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
     }
 }

@@ -29,7 +29,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.shader.uniform.GlShaderUniforms;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 
 import java.io.IOException;
@@ -42,11 +41,10 @@ import static io.homo.superresolution.common.SuperResolution.LOGGER;
 import static io.homo.superresolution.core.graphics.opengl.GlDebug.objectLabel;
 import static org.lwjgl.opengl.GL46.*;
 
-public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebuggableObject {
+public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
     private final ShaderDescription description;
     private int handle;
     private boolean isCompiled = false;
-    private GlShaderUniforms uniforms;
 
     public GlShaderProgram(ShaderDescription description) {
         this.description = description;
@@ -287,7 +285,6 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
         } finally {
             shaders.forEach(GlShader::destroy);
         }
-        this.uniforms = new GlShaderUniforms(this, this.getDescription());
 
     }
 
@@ -298,9 +295,6 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
 
     @Override
     public void destroy() {
-        if (uniforms != null) {
-            uniforms.destroy();
-        }
         if (handle != 0) {
             glDeleteProgram(this.handle);
             handle = 0;
@@ -310,11 +304,5 @@ public class GlShaderProgram implements IShaderProgram<GlShaderUniforms>, IDebug
     @Override
     public ShaderDescription getDescription() {
         return description;
-    }
-
-    @Override
-    public GlShaderUniforms uniforms() {
-        if (!isCompiled) throw new RuntimeException("着色器尚未编译");
-        return uniforms;
     }
 }

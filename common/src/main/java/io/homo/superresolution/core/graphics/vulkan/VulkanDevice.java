@@ -22,8 +22,11 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
-import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -32,7 +35,6 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandDecoder;
-import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandEncoder;
 import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandManager;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import org.lwjgl.PointerBuffer;
@@ -54,7 +56,6 @@ public class VulkanDevice implements IDevice {
     private final VkQueue graphicsQueue;
     private final int graphicsQueueFamilyIndex;
     private final VulkanCommandManager commandManager;
-    private final VulkanCommandEncoder commandEncoder;
     private final VulkanCommandDecoder commandDecoder;
 
 
@@ -69,9 +70,7 @@ public class VulkanDevice implements IDevice {
             graphicsQueue = new VkQueue(pQueue.get(0), device);
         }
         this.commandManager = new VulkanCommandManager(this);
-        this.commandEncoder = new VulkanCommandEncoder(this);
         this.commandDecoder = new VulkanCommandDecoder(this);
-
     }
 
     @Override
@@ -79,13 +78,13 @@ public class VulkanDevice implements IDevice {
         return new VulkanTexture(this, description);
     }
 
-    public ITexture createTextureFromHandle(TextureDescription description, long memory) {
-        return new VulkanTexture(this, description, memory);
+    @Override
+    public IShaderProgram createShaderProgram(ShaderDescription description) {
+        return null;
     }
 
-    @Override
-    public IShaderProgram<?> createShaderProgram(ShaderDescription description) {
-        return null;
+    public ITexture createTextureFromHandle(TextureDescription description, long memory) {
+        return new VulkanTexture(this, description, memory);
     }
 
     @Override
@@ -99,8 +98,28 @@ public class VulkanDevice implements IDevice {
     }
 
     @Override
-    public ICommandEncoder commandEncoder() {
-        return commandEncoder;
+    public RenderPass createRenderPass(RenderPass.Builder builder) {
+        return null;
+    }
+
+    @Override
+    public PipelineDescriptorSet createDescriptorSet(IShaderProgram shader) {
+        return null;
+    }
+
+    @Override
+    public ComputePipeline createComputePipeline(ComputePipeline.Builder builder) {
+        return null;
+    }
+
+    @Override
+    public GraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder) {
+        return null;
+    }
+
+    @Override
+    public ICommandBuffer createCommandBuffer() {
+        return new VulkanCommandBuffer(this);
     }
 
     @Override

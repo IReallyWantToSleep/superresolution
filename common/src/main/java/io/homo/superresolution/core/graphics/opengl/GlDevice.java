@@ -21,29 +21,34 @@ package io.homo.superresolution.core.graphics.opengl;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
-import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
+import io.homo.superresolution.core.graphics.opengl.command.GlCommandBuffer;
 import io.homo.superresolution.core.graphics.opengl.command.GlCommandDecoder;
-import io.homo.superresolution.core.graphics.opengl.command.GlCommandEncoder;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 
 public class GlDevice implements IDevice {
-    private GlCommandEncoder commandEncoder;
     private GlCommandDecoder commandDecoder;
 
     public GlDevice() {
-        this.commandEncoder = new GlCommandEncoder(this);
-        this.commandDecoder = new GlCommandDecoder(this, this.commandEncoder);
-
+        this.commandDecoder = new GlCommandDecoder(this);
     }
 
     @Override
@@ -73,8 +78,43 @@ public class GlDevice implements IDevice {
     }
 
     @Override
-    public ICommandEncoder commandEncoder() {
-        return commandEncoder;
+    public RenderPass createRenderPass(RenderPass.Builder builder) {
+        return new GlRenderPass(
+                (GraphicsPipeline) builder.getPipeline(),
+                builder.getFrameBuffer(),
+                builder.getClearState()
+        );
+    }
+
+    @Override
+    public PipelineDescriptorSet createDescriptorSet(IShaderProgram shader) {
+        return new GlPipelineDescriptorSet(shader);
+    }
+
+    @Override
+    public ComputePipeline createComputePipeline(ComputePipeline.Builder builder) {
+        return new GlComputePipeline(
+                builder.shader(),
+                createDescriptorSet(builder.shader())
+        );
+    }
+
+    @Override
+    public GraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder) {
+        return new GlGraphicsPipeline(
+                builder.shader(),
+                builder.rasterization(),
+                builder.depthStencil(),
+                builder.colorBlend(),
+                builder.dynamicStates(),
+                builder.vertexFormat(),
+                createDescriptorSet(builder.shader())
+        );
+    }
+
+    @Override
+    public ICommandBuffer createCommandBuffer() {
+        return new GlCommandBuffer(this);
     }
 
     @Override

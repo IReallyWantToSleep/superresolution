@@ -19,13 +19,14 @@
 package io.homo.superresolution.thirdparty.fsr2.v221;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import org.joml.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
@@ -58,13 +59,16 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
                         .name("fsr2_lock")
                         .uniformBuffer("cbFSR2", 3, (int) context.fsr2ConstantsUBO.getSize())
                         .uniformSamplerTexture("r_lock_input_luma", 0)
-                        .uniformStorageTexture("rw_new_locks", ShaderUniformAccess.Both, 1)
-                        .uniformStorageTexture("rw_reconstructed_previous_nearest_depth", ShaderUniformAccess.Both, 2)
+                        .uniformStorageTexture("rw_new_locks", ShaderResourceAccess.Both, 1)
+                        .uniformStorageTexture("rw_reconstructed_previous_nearest_depth", ShaderResourceAccess.Both, 2)
                         .build()
         );
         program.compile();
-        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                PipelineJobBuilders.compute(program)
+        GlComputePipeline computePipeline = (GlComputePipeline) GlComputePipeline.builder()
+                .shader(program)
+                .build(RenderSystems.opengl().device());
+        GrapeJobBuilders.ComputeJobBuilder jobBuilder =
+                GrapeJobBuilders.compute(computePipeline)
                         .workGroupSupplier(() -> new Vector3i(
                                 (context.dimensions.renderWidth() + (7)) / 8,
                                 (context.dimensions.renderHeight() + (7)) / 8,
@@ -73,14 +77,14 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
 
         jobBuilder.resource(
                 "cbFSR2",
-                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
         jobBuilder.resource(
                 Fsr2PipelineResourceType.LOCK_INPUT_LUMA.srvShaderName(),
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.LOCK_INPUT_LUMA)
                         .binding(0)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -88,7 +92,7 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.NEW_LOCKS)
                         .binding(1)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -96,10 +100,10 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH)
                         .binding(2)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.job("fsr2_lock", jobBuilder.build());
+        pipeline.add("fsr2_lock", jobBuilder.build());
     }
 
     @Override

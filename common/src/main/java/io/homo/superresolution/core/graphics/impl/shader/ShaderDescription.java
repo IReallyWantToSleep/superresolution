@@ -18,9 +18,8 @@
 
 package io.homo.superresolution.core.graphics.impl.shader;
 
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformDescription;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformType;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -30,7 +29,7 @@ import java.util.UUID;
 public class ShaderDescription {
     protected final EnumMap<ShaderType, ShaderSource> sourceMap = new EnumMap<>(ShaderType.class);
     protected final Map<String, String> definesMap = new HashMap<>();
-    protected final Map<String, ShaderUniformDescription> shaderUniforms = new HashMap<>();
+    protected final ShaderResourcesLayout resourcesLayout = new ShaderResourcesLayout();
     protected String shaderName = UUID.randomUUID().toString();
 
     public static ShaderDescription.Builder graphics(
@@ -58,8 +57,12 @@ public class ShaderDescription {
         return definesMap;
     }
 
-    public Map<String, ShaderUniformDescription> shaderUniforms() {
-        return shaderUniforms;
+    public Map<String, ShaderResourceDescription> shaderUniforms() {
+        return resourcesLayout.getResources();
+    }
+
+    public ShaderResourcesLayout resourcesLayout() {
+        return resourcesLayout;
     }
 
     public String shaderName() {
@@ -91,30 +94,23 @@ public class ShaderDescription {
         }
 
         public Builder uniformBuffer(String name, int binding, int bufferSize) {
-            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.UniformBuffer)
-                    .binding(binding)
-                    .bufferSize(bufferSize)
-                    .build());
+            description.resourcesLayout.addUniformBuffer(name, binding, bufferSize);
+            return this;
         }
 
         public Builder uniformSamplerTexture(String name, int binding) {
-            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.SamplerTexture)
-                    .binding(binding)
-                    .build());
+            description.resourcesLayout.addSamplerTexture(name, binding);
+            return this;
         }
 
-        public Builder uniformStorageTexture(String name, ShaderUniformAccess access, int binding) {
-            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.StorageTexture)
-                    .binding(binding)
-                    .access(access)
-                    .build());
+        public Builder uniformStorageTexture(String name, ShaderResourceAccess access, int binding) {
+            description.resourcesLayout.addStorageTexture(name, binding, access);
+            return this;
         }
 
         public Builder uniformStorageTexture(String name, int binding) {
-            return uniform(ShaderUniformDescription.builder(name, ShaderUniformType.StorageTexture)
-                    .binding(binding)
-                    .access(ShaderUniformAccess.Both)
-                    .build());
+            description.resourcesLayout.addStorageTexture(name, binding);
+            return this;
         }
 
         public ShaderSource fragmentSource() {
@@ -159,8 +155,8 @@ public class ShaderDescription {
             return this;
         }
 
-        public Builder uniform(ShaderUniformDescription uniform) {
-            description.shaderUniforms.put(uniform.name(), uniform);
+        public Builder uniform(ShaderResourceDescription uniform) {
+            description.resourcesLayout.addResource(uniform);
             return this;
         }
 

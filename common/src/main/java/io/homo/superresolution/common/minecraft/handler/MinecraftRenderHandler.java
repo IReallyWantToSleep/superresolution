@@ -32,9 +32,10 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
@@ -69,11 +70,6 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
     public ITexture colorTexture;
     public ITexture depthTexture;
-    private IFrameBuffer preprocessDepthFrameBuffer;
-    private Pipeline depthPreprocessPipeline;
-    private IShaderProgram<?> depthPreprocessShader;
-    private IBufferData depthPreprocessConfigData;
-    private IBuffer depthPreprocessConfigUBO;
     private IBindableFrameBuffer renderTarget;
 
     public void initialize() {
@@ -121,42 +117,6 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                                 RenderHandlerManager.getRenderWidth(),
                                 RenderHandlerManager.getRenderHeight()
                         )
-                        .build()
-        );
-        preprocessDepthFrameBuffer = GlFrameBuffer.create(
-                depthTexture,
-                null
-        );
-        depthPreprocessConfigData = UniformStructBuilder.start()
-                .floatEntry("near")
-                .floatEntry("far")
-                .build();
-        depthPreprocessConfigUBO = RenderSystems.current().device().createBuffer(
-                BufferDescription.create()
-                        .size(depthPreprocessConfigData.size())
-                        .usage(BufferUsage.Ubo)
-                        .build()
-        );
-        depthPreprocessConfigUBO.setBufferData(depthPreprocessConfigData);
-
-        depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.graphics(
-                                new ShaderSource(ShaderType.Fragment, "/shader/preprocess_depth.frag.glsl", true),
-                                new ShaderSource(ShaderType.Vertex, "/shader/preprocess_depth.vert.glsl", true)
-                        )
-                        .name("SRPreprocessDepthShader")
-                        .uniformBuffer("camera_config", 0, (int) depthPreprocessConfigData.size())
-                        .uniformSamplerTexture("tex", 0)
-                        .build()
-        );
-        depthPreprocessShader.compile();
-        depthPreprocessPipeline = new Pipeline();
-        depthPreprocessPipeline.job(
-                "preprocessDepth",
-                PipelineJobBuilders.graphics(depthPreprocessShader)
-                        .targetFramebuffer(preprocessDepthFrameBuffer)
-                        .resource("tex", PipelineJobResource.SamplerTexture.create(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)))
-                        .resource("camera_config", PipelineJobResource.UniformBuffer.create(depthPreprocessConfigUBO))
                         .build()
         );
     }
@@ -437,13 +397,6 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                     renderHeight
             );
         }
-
-        if (preprocessDepthFrameBuffer.getWidth() != renderWidth || preprocessDepthFrameBuffer.getHeight() != renderHeight) {
-            preprocessDepthFrameBuffer.resizeFrameBuffer(
-                    renderWidth,
-                    renderHeight
-            );
-        }
     }
 
     public void onRenderHandBegin() {
@@ -486,11 +439,6 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     public void destroy() {
         colorTexture.destroy();
         depthTexture.destroy();
-        depthPreprocessConfigUBO.destroy();
-        depthPreprocessShader.destroy();
-        depthPreprocessConfigData.free();
-        depthPreprocessPipeline.destroy();
-        preprocessDepthFrameBuffer.destroy();
         renderTarget.destroy();
     }
 

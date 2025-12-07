@@ -21,15 +21,21 @@ package io.homo.superresolution.common.upscale.sgsr.v1;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
-import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.CullMode;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.DynamicStateFlags;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.api.AbstractAlgorithm;
@@ -39,8 +45,9 @@ import org.lwjgl.opengl.GL41;
 import java.util.Optional;
 
 public class Sgsr1 extends AbstractAlgorithm {
-    private IShaderProgram<?> sgsrShader;
-    private Pipeline pipeline;
+    private IShaderProgram sgsrShader;
+    private GraphicsPipeline sgsrPipeline;
+    private RenderGrape pipeline;
     private ITexture output;
     private IFrameBuffer outputFbo;
     private StructuredUniformBuffer buffer;
@@ -55,8 +62,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 BufferDescription.create()
                         .usage(BufferUsage.Ubo)
                         .size(buffer.size())
-                        .build()
-        );
+                        .build());
         ubo.setBufferData(buffer);
         output = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
@@ -66,14 +72,12 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .format(SuperResolutionConfig.getInternalTextureFormat())
                         .usages(TextureUsages.create().sampler().storage().attachmentColor())
                         .label("Sgsr1Output")
-                        .build()
-        );
+                        .build());
         outputFbo = GlFrameBuffer.create(
                 output,
                 null,
                 RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        );
+                RenderHandlerManager.getScreenHeight());
         outputFbo.label("Sgsr1OutputFbo");
         sgsrShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
@@ -81,28 +85,31 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/sgsr/v1/sgsr1_shader.frag.glsl"))
                         .name("SGSRV1")
                         .addDefine("UseEdgeDirection", "")
-                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT",
+                                SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("sgsr1_data", 0, (int) buffer.size())
                         .uniformSamplerTexture("ps0", 1)
-                        .build()
-        );
+                        .build());
         sgsrShader.compile();
-        pipeline = new Pipeline();
-        pipeline.job("sgsr1_main",
-                PipelineJobBuilders.graphics(sgsrShader)
+        sgsrPipeline = (GraphicsPipeline) GlGraphicsPipeline.builder()
+                .shader(sgsrShader)
+                .rasterization(r -> r.cullMode(CullMode.None))
+                .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
+                .dynamicStates(DynamicStateFlags.Viewport)
+                .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
+                .vertexFormat(FullscreenQuad.getVertexFormat())
+                .build(RenderSystems.opengl().device());
+        pipeline = new RenderGrape();
+        pipeline.add("sgsr1_main",
+                GrapeJobBuilders.graphics(sgsrPipeline)
                         .resource("ps0",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(getResources().colorTexture())
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        () -> Optional.ofNullable(getResources().colorTexture())))
                         .resource("sgsr1_data",
-                                PipelineJobResource.UniformBuffer.create(
-                                        ubo
-                                )
-                        )
+                                GrapeJobResource.UniformBuffer.create(
+                                        ubo))
                         .targetFramebuffer(outputFbo)
-                        .build()
-        );
+                        .build());
 
         this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
     }
@@ -124,14 +131,9 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputFbo.clearFrameBuffer();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);
-        RenderSystems.current().device().commandEncoder().begin();
-        pipeline.execute(RenderSystems.current().device().commandEncoder().getCommandBuffer());
-        RenderSystems.current().device().submitCommandBuffer(
-                RenderSystems.current()
-                        .device()
-                        .commandEncoder()
-                        .end()
-        );
+        RenderSystems.current().device().commandDecoder().beginCommandBuffer();
+        pipeline.execute(RenderSystems.current().device().commandDecoder().currentCommandBuffer());
+        RenderSystems.current().device().commandDecoder().endAndSubmitCommandBuffer();
         GL41.glEnable(GL41.GL_DEPTH_TEST);
         GL41.glEnable(GL41.GL_CULL_FACE);
         return true;
@@ -147,6 +149,8 @@ public class Sgsr1 extends AbstractAlgorithm {
     public void destroy() {
         output.destroy();
         sgsrShader.destroy();
+        sgsrPipeline.destroy();
+        pipeline.destroy();
         outputFbo.destroy();
         buffer.free();
         ubo.destroy();

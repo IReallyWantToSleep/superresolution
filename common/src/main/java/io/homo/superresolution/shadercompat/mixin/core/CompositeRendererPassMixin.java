@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.shadercompat.mixin.core;
 
-import io.homo.superresolution.shadercompat.NamedCompositePass;
+import io.homo.irisapi.NamedCompositePass;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;

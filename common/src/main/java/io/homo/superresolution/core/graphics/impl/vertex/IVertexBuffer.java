@@ -25,7 +25,11 @@ public interface IVertexBuffer extends GpuObject {
 
     boolean isDynamic();
 
+    VertexFormat getVertexFormat();
+
     void updateData(float[] data, int offset, int length);
+
+    void updateData(byte[] data, int offset, int length);
 
     void destroy();
 }

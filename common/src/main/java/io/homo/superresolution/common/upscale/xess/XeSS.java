@@ -267,8 +267,8 @@ public class XeSS extends AbstractAlgorithm {
                         Math.toIntExact(this.inputDepthGlTexture.handle()),
                         Math.toIntExact(this.inputMotionVectorsGlTexture.handle())
                 },
-                new int[]{
-                        GlTextureCopier.getCachedFrameBuffer()
+                GlTextureCopier.getCachedFrameBuffer() == null ? new int[]{} : new int[]{
+                        Math.toIntExact(GlTextureCopier.getCachedFrameBuffer().handle())
                 },
                 new int[]{
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
@@ -277,8 +277,8 @@ public class XeSS extends AbstractAlgorithm {
 
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
-        RenderSystems.vulkan().device().commandEncoder().begin();
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commandEncoder().getCommandBuffer();
+        RenderSystems.vulkan().device().commandDecoder().beginCommandBuffer();
+        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commandDecoder().currentCommandBuffer();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
         desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
                 commandBuffer.getNativeCommandBuffer()
@@ -323,7 +323,7 @@ public class XeSS extends AbstractAlgorithm {
                 desc
         );
 
-        RenderSystems.vulkan().device().commandEncoder().end();
+        RenderSystems.vulkan().device().commandDecoder().endCommandBuffer();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
