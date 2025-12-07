@@ -19,82 +19,116 @@
 package io.homo.superresolution.core.graphics.opengl.vertex;
 
 
-import io.homo.superresolution.core.graphics.impl.vertex.IVertexArray;
+import io.homo.superresolution.core.graphics.impl.GpuObject;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexAttribute;
+import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
+import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import org.lwjgl.opengl.GL45;
 
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL41.*;
 
 
-public class GlVertexArray implements IVertexArray {
+public class GlVertexArray implements GpuObject {
     private final int id;
 
     public GlVertexArray() {
         this.id = Gl.DSA.createVertexArray();
     }
 
-    @Override
     public void destroy() {
         Gl.DSA.deleteVertexArray(id);
     }
 
-    @Override
-    public void setAttributes(VertexAttribute[] attributes, IVertexBuffer vertexBuffer) {
+    public void bind() {
+        glBindVertexArray(id);
+    }
+
+    public void unbind() {
+        glBindVertexArray(0);
+    }
+
+    public void setFormat(IVertexBuffer vertexBuffer) {
+        VertexFormat format = vertexBuffer.getVertexFormat();
         if (!Gl.isSupportDSA()) {
             try (GlState ignored = new GlState(GlState.STATE_VERTEX_OPERATIONS | GlState.STATE_VBO)) {
                 glBindVertexArray(id);
                 glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
-                for (VertexAttribute attr : attributes) {
-                    int loc = attr.getLocation();
-                    int componentCount = attr.getComponentCount();
-                    int stride = attr.getStride();
-                    int offset = attr.getOffset();
 
-                    switch (attr.getDataType()) {
-                        case FLOAT:
-                            glVertexAttribPointer(
-                                    loc,
-                                    componentCount,
-                                    GL_FLOAT,
-                                    false,
-                                    stride,
-                                    offset
-                            );
-                            break;
-                        case INTEGER:
-                            glVertexAttribIPointer(
-                                    loc,
-                                    componentCount,
-                                    GL_INT,
-                                    stride,
-                                    offset
-                            );
-                            break;
+                int stride = format.stride();
+                for (VertexFormat.VertexAttribute attr : format.attributes()) {
+                    int location = attr.location();
+                    VertexAttributeFormat attrFormat = attr.format();
+                    int size = attrFormat.getComponentCount();
+                    int type = getGlType(attrFormat);
+                    boolean normalized = isNormalized(attrFormat);
+                    int offset = attr.offset();
+
+                    if (isIntegerType(attrFormat)) {
+                        glVertexAttribIPointer(location, size, type, stride, offset);
+                    } else {
+                        glVertexAttribPointer(location, size, type, normalized, stride, offset);
                     }
-                    glEnableVertexAttribArray(loc);
+                    glEnableVertexAttribArray(location);
                 }
+
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
                 glBindVertexArray(0);
             }
         } else {
             int bindingIndex = 0;
-            Gl.DSA.vertexArrayVertexBuffer(id, bindingIndex, (int) vertexBuffer.handle(), 0, attributes[0].getStride());
-            for (VertexAttribute attr : attributes) {
-                int loc = attr.getLocation();
-                Gl.DSA.vertexArrayAttribBinding(id, loc, bindingIndex);
-                switch (attr.getDataType()) {
-                    case FLOAT ->
-                            Gl.DSA.vertexArrayAttribFormat(id, loc, attr.getComponentCount(), GL45.GL_FLOAT, false, attr.getOffset());
-                    case INTEGER ->
-                            Gl.DSA.vertexArrayAttribFormat(id, loc, attr.getComponentCount(), GL45.GL_INT, false, attr.getOffset());
+            Gl.DSA.vertexArrayVertexBuffer(id, bindingIndex, (int) vertexBuffer.handle(), 0, format.stride());
+
+            for (VertexFormat.VertexAttribute attr : format.attributes()) {
+                int location = attr.location();
+                VertexAttributeFormat attrFormat = attr.format();
+
+                Gl.DSA.vertexArrayAttribBinding(id, location, bindingIndex);
+
+                int type = getGlType(attrFormat);
+                boolean normalized = isNormalized(attrFormat);
+                int size = attrFormat.getComponentCount();
+
+                if (isIntegerType(attrFormat)) {
+                    GL45.glVertexArrayAttribIFormat(id, location, size, type, attr.offset());
+                } else {
+                    Gl.DSA.vertexArrayAttribFormat(id, location, size, type, normalized, attr.offset());
                 }
-                Gl.DSA.enableVertexArrayAttrib(id, loc);
+                Gl.DSA.enableVertexArrayAttrib(id, location);
             }
         }
+    }
 
+    private int getGlType(VertexAttributeFormat format) {
+        return switch (format) {
+            case VertexAttributeFormat.FLOAT, VertexAttributeFormat.FLOAT2, VertexAttributeFormat.FLOAT3,
+                 VertexAttributeFormat.FLOAT4 -> GL_FLOAT;
+            case VertexAttributeFormat.INT, INT2, INT3, INT4 -> GL_INT;
+            case VertexAttributeFormat.UINT, UINT2, UINT3, UINT4 -> GL_UNSIGNED_INT;
+            case VertexAttributeFormat.BYTE4_NORMALIZED -> GL_BYTE;
+            case VertexAttributeFormat.UBYTE4_NORMALIZED -> GL_UNSIGNED_BYTE;
+            case VertexAttributeFormat.SHORT2, SHORT4 -> GL_SHORT;
+            case VertexAttributeFormat.USHORT2, USHORT4 -> GL_UNSIGNED_SHORT;
+        };
+    }
+
+    private boolean isNormalized(VertexAttributeFormat format) {
+        return switch (format) {
+            case BYTE4_NORMALIZED, UBYTE4_NORMALIZED -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isIntegerType(VertexAttributeFormat format) {
+        return switch (format) {
+            case INT, INT2, INT3, INT4, UINT, UINT2, UINT3, UINT4 -> true;
+            default -> false;
+        };
     }
 
     @Override

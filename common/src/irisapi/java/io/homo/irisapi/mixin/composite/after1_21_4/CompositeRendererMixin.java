@@ -18,6 +18,7 @@
 
 package io.homo.irisapi.mixin.composite.after1_21_4;
 
+import io.homo.irisapi.IrisCompositePassType;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -62,9 +63,9 @@ public class CompositeRendererMixin {
 
     //===========PassStart============//
     @Inject(method = "renderAll", at = @At(
-            value = "FIELD",
-            target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer$Pass;computes:[Lnet/irisshaders/iris/gl/program/ComputeProgram;",
-            ordinal = 0
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/GLDebug;pushGroup(ILjava/lang/String;)V",
+            ordinal = 1
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onPassStart(
             CallbackInfo ci,
@@ -80,9 +81,9 @@ public class CompositeRendererMixin {
 
     //===========BeforeRender============//
     @Inject(method = "renderAll", at = @At(
-            value = "FIELD",
-            target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer$Pass;computes:[Lnet/irisshaders/iris/gl/program/ComputeProgram;",
-            ordinal = 0,
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/GLDebug;pushGroup(ILjava/lang/String;)V",
+            ordinal = 1,
             shift = At.Shift.AFTER
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onBeforeRender(
@@ -94,7 +95,31 @@ public class CompositeRendererMixin {
             int i,
             int passesSize
     ) {
-        superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        int passIndex = Math.max(i, 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.Common) {
+            superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At(
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/program/Program;unbind()V",
+            ordinal = 0,
+            shift = At.Shift.AFTER
+    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
+    private void onBeforeRenderA(
+            CallbackInfo ci,
+            RenderTarget main,
+            GpuBuffer indices,
+            VertexFormat.IndexType type,
+            RenderPass renderPass,
+            int i,
+            int passesSize
+    ) {
+        int passIndex = Math.max(i, 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.Common) {
+            superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        }
     }
 
     //===========AfterRender============//
@@ -111,14 +136,36 @@ public class CompositeRendererMixin {
             int i,
             int passesSize
     ) {
-        superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        int passIndex = Math.max(i, 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At(
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/blending/BlendModeOverride;restore()V",
+            ordinal = 0
+    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
+    private void onAfterRenderA(
+            CallbackInfo ci,
+            RenderTarget main,
+            GpuBuffer indices,
+            VertexFormat.IndexType type,
+            RenderPass renderPass,
+            int i,
+            int passesSize
+    ) {
+        int passIndex = Math.max(i, 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        }
     }
 
     //===========PassEnd============//
     @Inject(method = "renderAll", at = @At(
             value = "INVOKE",
-            target = "Lcom/google/common/collect/ImmutableList;get(I)Ljava/lang/Object;",
-            shift = At.Shift.AFTER,
+            target = "Lnet/irisshaders/iris/gl/GLDebug;popGroup()V",
             ordinal = 0
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onPassEnd(
@@ -130,8 +177,30 @@ public class CompositeRendererMixin {
             int i,
             int passesSize
     ) {
-        if (i > 0) {
-            superresolution$handlePassEvent(i - 1, IrisRenderingPipelineHandler::onCompositePassEnd);
+        int passIndex = Math.max(i, 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassEnd);
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At(
+            value = "INVOKE",
+            target = "Lnet/irisshaders/iris/gl/GLDebug;popGroup()V",
+            ordinal = 1,
+            shift = At.Shift.AFTER
+    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
+    private void onPassEndA(
+            CallbackInfo ci,
+            RenderTarget main,
+            GpuBuffer indices,
+            VertexFormat.IndexType type,
+            RenderPass renderPass,
+            int i,
+            int passesSize
+    ) {
+        int passIndex = Math.max(i, 0);
+        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
+            superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassEnd);
         }
     }
     #endif

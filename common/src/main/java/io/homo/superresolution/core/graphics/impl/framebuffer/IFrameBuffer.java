@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.graphics.impl.framebuffer;
 
+import java.util.List;
+
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.graphics.impl.GpuObject;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -47,6 +49,18 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
      * <p>使用预设的清除颜色/深度值重置所有附件</p>
      */
     void clearFrameBuffer();
+
+    /**
+     * 获取颜色附件列表
+     * @return 颜色附件列表
+     */
+    List<ColorAttachment> getColorAttachments();
+
+    /**
+     * 获取深度/模板附件
+     * @return 深度/模板附件，如果没有则返回null
+     */
+    DepthStencilAttachment getDepthStencilAttachment();
 
     /**
      * 调整帧缓冲区尺寸

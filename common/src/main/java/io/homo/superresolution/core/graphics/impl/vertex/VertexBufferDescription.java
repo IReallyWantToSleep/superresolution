@@ -21,10 +21,23 @@ package io.homo.superresolution.core.graphics.impl.vertex;
 public class VertexBufferDescription {
     private final int sizeInBytes;
     private final boolean dynamic;
+    private final VertexFormat vertexFormat;
 
-    public VertexBufferDescription(int sizeInBytes, boolean dynamic) {
+    public VertexBufferDescription(int sizeInBytes, boolean dynamic, VertexFormat vertexFormat) {
         this.sizeInBytes = sizeInBytes;
         this.dynamic = dynamic;
+        if (vertexFormat == null) {
+            throw new IllegalArgumentException();
+        }
+        this.vertexFormat = vertexFormat;
+    }
+
+    public static VertexBufferDescription create(int sizeInBytes, boolean dynamic, VertexFormat vertexFormat) {
+        return new VertexBufferDescription(sizeInBytes, dynamic, vertexFormat);
+    }
+
+    public static VertexBufferDescription create(int sizeInBytes, VertexFormat vertexFormat) {
+        return new VertexBufferDescription(sizeInBytes, false, vertexFormat);
     }
 
     public int getSizeInBytes() {
@@ -33,5 +46,9 @@ public class VertexBufferDescription {
 
     public boolean isDynamic() {
         return dynamic;
+    }
+
+    public VertexFormat getVertexFormat() {
+        return vertexFormat;
     }
 }

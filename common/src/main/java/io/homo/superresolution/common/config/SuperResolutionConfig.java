@@ -435,8 +435,7 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableCompatShaderCompiler() {
-        return false;
-        //return ENABLE_COMPAT_SHADER_COMPILER.get() || ENABLE_COMPAT_SHADER_COMPILER.getDefault();
+        return ENABLE_COMPAT_SHADER_COMPILER.get() || ENABLE_COMPAT_SHADER_COMPILER.getDefault();
     }
 
     public static void setEnableDatasetGenerator(boolean value) {

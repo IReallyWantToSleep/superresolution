@@ -18,17 +18,20 @@
 
 package io.homo.superresolution.core.graphics.vulkan.command;
 
-import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.system.IRenderState;
+import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
+import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -36,11 +39,13 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 public class VulkanCommandDecoder implements ICommandDecoder {
+    private VulkanDevice vulkanDevice;
+    private VulkanCommandBuffer currentCommandBuffer;
+
     public VulkanCommandDecoder(VulkanDevice vulkanDevice) {
         this.vulkanDevice = vulkanDevice;
     }
 
-    private VulkanDevice vulkanDevice;
 
     @Override
     public void clearTextureRGBA(ICommandBuffer commandBuffer, ITexture texture, float[] color) {
@@ -158,22 +163,111 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
     @Override
     public void copyBuffer(ICommandBuffer commandBuffer, IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size) {
-    }
-
-    @Override
-    public void dispatchCompute(ICommandBuffer commandBuffer, IShaderProgram<?> shaderProgram, int x, int y, int z) {
-
-    }
-
-
-    @Override
-    public void draw(ICommandBuffer commandBuffer, IShaderProgram<?> shaderProgram, IFrameBuffer frameBuffer, DrawObject drawObject, int firstVertex, int vertexCount) {
 
     }
 
     @Override
-    public void applyRenderState(ICommandBuffer commandBuffer, IRenderState.StateSnapshot stateSnapshot) {
+    public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkViewport.Buffer viewport = VkViewport.calloc(1, stack);
+            viewport.x(x);
+            viewport.y(y);
+            viewport.width(width);
+            viewport.height(height);
+            viewport.minDepth(0.0f);
+            viewport.maxDepth(1.0f);
 
+            VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
+            VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+
+            vkCmdSetViewport(
+                    commandBufferHandle,
+                    0,
+                    viewport
+            );
+        }
+    }
+
+    @Override
+    public void setScissor(ICommandBuffer commandBuffer, int x, int y, int width, int height) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkRect2D.Buffer scissor = VkRect2D.calloc(1, stack);
+            scissor.offset().set(x, y);
+            scissor.extent().set(width, height);
+
+            VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
+            VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+
+            vkCmdSetScissor(
+                    commandBufferHandle,
+                    0,
+                    scissor
+            );
+        }
+
+    }
+
+    @Override
+    public void setLineWidth(ICommandBuffer commandBuffer, float width) {
+        VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
+        VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+
+        vkCmdSetLineWidth(
+                commandBufferHandle,
+                width
+        );
+    }
+
+    @Override
+    public void setBlendConstants(ICommandBuffer commandBuffer, float r, float g, float b, float a) {
+        VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
+        VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+
+        float[] blendConstants = new float[]{r, g, b, a};
+        vkCmdSetBlendConstants(
+                commandBufferHandle,
+                blendConstants
+        );
+    }
+
+    @Override
+    public void draw(ICommandBuffer commandBuffer, RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
+
+    }
+
+    @Override
+    public void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ) {
+
+    }
+
+    @Override
+    public ICommandBuffer beginCommandBuffer() {
+        currentCommandBuffer = (VulkanCommandBuffer) vulkanDevice.createCommandBuffer();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
+                    .sType(VK10.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
+                    .flags(VK10.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+            VK_CHECK(VK10.vkBeginCommandBuffer(currentCommandBuffer.getNativeCommandBuffer(), beginInfo));
+        }
+        return currentCommandBuffer;
+    }
+
+    @Override
+    public ICommandBuffer endCommandBuffer() {
+        VK_CHECK(VK10.vkEndCommandBuffer(currentCommandBuffer.getNativeCommandBuffer()));
+        return currentCommandBuffer;
+    }
+
+    @Override
+    public ICommandBuffer endAndSubmitCommandBuffer() {
+        VK_CHECK(VK10.vkEndCommandBuffer(currentCommandBuffer.getNativeCommandBuffer()));
+        vulkanDevice.submitCommandBuffer(currentCommandBuffer);
+        return null;
+    }
+
+    @Override
+    public ICommandBuffer currentCommandBuffer() {
+        return currentCommandBuffer;
     }
 
     @Override

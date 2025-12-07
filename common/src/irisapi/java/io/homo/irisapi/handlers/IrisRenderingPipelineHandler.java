@@ -36,7 +36,8 @@ public class IrisRenderingPipelineHandler {
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
-                        passType
+                        passType,
+                        compositePass
                 )
         );
     }
@@ -54,7 +55,8 @@ public class IrisRenderingPipelineHandler {
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
-                        passType
+                        passType,
+                        compositePass
                 )
         );
     }
@@ -73,7 +75,8 @@ public class IrisRenderingPipelineHandler {
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
-                        passType
+                        passType,
+                        compositePass
                 )
         );
     }
@@ -91,7 +94,8 @@ public class IrisRenderingPipelineHandler {
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
-                        passType
+                        passType,
+                        compositePass
                 )
         );
     }

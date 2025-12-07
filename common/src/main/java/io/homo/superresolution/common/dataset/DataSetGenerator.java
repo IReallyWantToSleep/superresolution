@@ -29,7 +29,7 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
+import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
@@ -75,8 +75,8 @@ public class DataSetGenerator {
     private static ITexture tempDepthTexture;
 
     private static IFrameBuffer preprocessDepthFrameBuffer;
-    private static Pipeline depthPreprocessPipeline;
-    private static IShaderProgram<?> depthPreprocessShader;
+    private static RenderGrape depthPreprocessPipeline;
+    private static IShaderProgram depthPreprocessShader;
     private static IBufferData depthPreprocessConfigData;
     private static IBuffer depthPreprocessConfigUBO;
 

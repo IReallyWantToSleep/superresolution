@@ -31,6 +31,8 @@ import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import net.minecraft.client.Minecraft;
 #endif
 
+import java.util.List;
+
 import static org.lwjgl.opengl.GL43.*;
 
 #if MC_VER < MC_1_21_5
@@ -147,6 +149,16 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
         #else
         this.clear();
         #endif
+    }
+
+    @Override
+    public List<ColorAttachment> getColorAttachments() {
+        return List.of(new ColorAttachment(0, new LegacyFrameBufferTextureAdapter(false, false)));
+    }
+
+    @Override
+    public DepthStencilAttachment getDepthStencilAttachment() {
+        return new DepthStencilAttachment(new LegacyFrameBufferTextureAdapter(true, true));
     }
 
     public void resizeFrameBuffer(int width, int height) {

@@ -19,13 +19,14 @@
 package io.homo.superresolution.thirdparty.fsr2.v221;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
@@ -62,14 +63,17 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .uniformBuffer("cbFSR2", 5, (int) context.fsr2ConstantsUBO.getSize())
                         .uniformBuffer("cbSPD", 6, (int) context.fsr2SpdConstantsUBO.getSize())
                         .uniformSamplerTexture("r_input_color_jittered", 0)
-                        .uniformStorageTexture("rw_spd_global_atomic", ShaderUniformAccess.Both, 1)
-                        .uniformStorageTexture("rw_img_mip_5", ShaderUniformAccess.Both, 3)
-                        .uniformStorageTexture("rw_auto_exposure", ShaderUniformAccess.Both, 4)
+                        .uniformStorageTexture("rw_spd_global_atomic", ShaderResourceAccess.Both, 1)
+                        .uniformStorageTexture("rw_img_mip_5", ShaderResourceAccess.Both, 3)
+                        .uniformStorageTexture("rw_auto_exposure", ShaderResourceAccess.Both, 4)
                         .build()
         );
         program.compile();
-        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                PipelineJobBuilders.compute(program)
+        GlComputePipeline computePipeline = (GlComputePipeline) GlComputePipeline.builder()
+                .shader(program)
+                .build(RenderSystems.opengl().device());
+        GrapeJobBuilders.ComputeJobBuilder jobBuilder =
+                GrapeJobBuilders.compute(computePipeline)
                         .workGroupSupplier(() -> {
                             int[] dispatchThreadGroupCountXY = new int[2];
                             int[] rectInfo = new int[]{
@@ -95,11 +99,11 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
 
         jobBuilder.resource(
                 "cbFSR2",
-                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
         jobBuilder.resource(
                 "cbSPD",
-                PipelineJobResource.UniformBuffer.create(context.fsr2SpdConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2SpdConstantsUBO)
         );
 
         jobBuilder.resource(
@@ -107,7 +111,7 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_COLOR)
                         .binding(0)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -116,7 +120,7 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.SPD_ATOMIC_COUNT)
                         .binding(1)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
         //jobBuilder.resource(
@@ -133,7 +137,7 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5)
                         .binding(3)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -142,10 +146,10 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.AUTO_EXPOSURE)
                         .binding(4)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.job("fsr2_compute_luminance_pyramid", jobBuilder.build());
+        pipeline.add("fsr2_compute_luminance_pyramid", jobBuilder.build());
     }
 
     @Override

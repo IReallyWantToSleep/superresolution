@@ -19,6 +19,7 @@
 package io.homo.superresolution.shadercompat;
 
 import com.google.common.collect.ImmutableList;
+import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;

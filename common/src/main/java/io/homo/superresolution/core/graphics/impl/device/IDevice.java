@@ -22,7 +22,10 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
-import io.homo.superresolution.core.graphics.impl.command.ICommandEncoder;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -45,7 +48,7 @@ public interface IDevice {
      * @param description 着色器描述对象
      * @return 新创建的着色器程序对象
      */
-    IShaderProgram<?> createShaderProgram(ShaderDescription description);
+    IShaderProgram createShaderProgram(ShaderDescription description);
 
     /**
      * 创建顶点缓冲区
@@ -63,10 +66,48 @@ public interface IDevice {
      */
     IBuffer createBuffer(BufferDescription description);
 
-    ICommandEncoder commandEncoder();
+    /**
+     * 创建 RenderPass
+     *
+     * @param builder RenderPass构建器
+     * @return 新创建的RenderPass对象
+     */
+    RenderPass createRenderPass(RenderPass.Builder builder);
 
+    /**
+     * 创建 PipelineDescriptorSet
+     *
+     * @param shader 着色器程序
+     * @return 新创建的 PipelineDescriptorSet 对象
+     */
+    PipelineDescriptorSet createDescriptorSet(IShaderProgram shader);
+
+    /**
+     * 创建 ComputePipeline
+     *
+     * @param builder ComputePipeline构建器
+     * @return 新创建的 ComputePipeline 对象
+     */
+    ComputePipeline createComputePipeline(ComputePipeline.Builder builder);
+
+    /**
+     * 创建 GraphicsPipeline
+     *
+     * @param builder GraphicsPipeline构建器
+     * @return 新创建的 GraphicsPipeline 对象
+     */
+    GraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder);
+
+    ICommandBuffer createCommandBuffer();
+
+    /**
+     * 获取命令解码器
+     */
     ICommandDecoder commandDecoder();
 
+    /**
+     * 提交命令缓冲区
+     */
     void submitCommandBuffer(ICommandBuffer commandBuffer);
 
 }

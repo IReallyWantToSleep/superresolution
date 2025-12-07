@@ -28,6 +28,8 @@ import io.homo.superresolution.core.utils.ColorUtil;
 #if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL30;
+
+import java.util.List;
 #endif
 
 
@@ -60,6 +62,16 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
         #else
         this.renderTarget.clear();
         #endif
+    }
+
+    @Override
+    public List<ColorAttachment> getColorAttachments() {
+        return List.of(new ColorAttachment(0, getTexture(FrameBufferAttachmentType.Color)));
+    }
+
+    @Override
+    public DepthStencilAttachment getDepthStencilAttachment() {
+        return new DepthStencilAttachment(getTexture(FrameBufferAttachmentType.AnyDepth));
     }
 
     public void resizeFrameBuffer(int width, int height) {

@@ -51,7 +51,6 @@ public class MaterialStyleConfigScreen extends NanoVGScreen<MaterialStyleConfigS
     protected OptionCategory currentCategory;
     protected MaterialScheme materialScheme = MaterialScheme.defaultDark;
     protected IBindableFrameBuffer uiFrameBuffer;
-    protected GUIAntiAliasingPostprocessing antiAliasingPostprocessing;
 
     protected ContainerWidget mainContainer;
     protected MaterialScrollableContainerWidget optionsContainer;
@@ -359,14 +358,6 @@ public class MaterialStyleConfigScreen extends NanoVGScreen<MaterialStyleConfigS
     protected void init() {
         //updateLayout();
         initUIFrameBuffer();
-        if (antiAliasingPostprocessing == null) {
-            antiAliasingPostprocessing = new GUIAntiAliasingPostprocessing();
-            antiAliasingPostprocessing.init();
-        }
-        antiAliasingPostprocessing.resize(
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        );
     }
 
     @Override

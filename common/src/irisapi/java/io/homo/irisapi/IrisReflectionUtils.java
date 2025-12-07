@@ -21,27 +21,50 @@ package io.homo.irisapi;
 import java.lang.reflect.Field;
 
 public class IrisReflectionUtils {
+    private static volatile Class<?> passClazz;
+    private static volatile Class<?> computeOnlyPassClazz;
+    private static volatile Field computesField;
+    private static volatile boolean initialized = false;
+
+    private static void ensureInitialized() {
+        if (!initialized) {
+            synchronized (IrisReflectionUtils.class) {
+                if (!initialized) {
+                    try {
+                        passClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$Pass");
+                        computeOnlyPassClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$ComputeOnlyPass");
+                        computesField = passClazz.getDeclaredField("computes");
+                        computesField.setAccessible(true);
+                        initialized = true;
+                    } catch (Throwable e) {
+                        throw new RuntimeException("Failed to initialize IrisReflectionUtils", e);
+                    }
+                }
+            }
+        }
+    }
 
     public static IrisCompositePassType getCompositePassType(Object object) {
+        ensureInitialized();
+        
         try {
-            Class<?> passClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$Pass");
-            Class<?> computeOnlyPassClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$ComputeOnlyPass");
             Class<?> objClazz = object.getClass();
+            if (computeOnlyPassClazz == objClazz) {
+                return IrisCompositePassType.ComputeOnly;
+            }
+            
             if (passClazz.isAssignableFrom(objClazz)) {
-                Field computesField = passClazz.getDeclaredField("computes");
-                computesField.setAccessible(true);
                 Object[] computes = (Object[]) computesField.get(object);
                 if (computes != null && computes.length > 0) {
                     return IrisCompositePassType.Mixed;
                 } else {
                     return IrisCompositePassType.Common;
                 }
-            } else if (computeOnlyPassClazz.isAssignableFrom(objClazz)) {
-                return IrisCompositePassType.ComputeOnly;
             }
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
+            
+            throw new IllegalArgumentException("Unknown pass type: " + objClazz.getName());
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access computes field", e);
         }
-        throw new RuntimeException();
     }
 }

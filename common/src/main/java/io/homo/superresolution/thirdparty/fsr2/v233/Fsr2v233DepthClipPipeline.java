@@ -19,13 +19,14 @@
 package io.homo.superresolution.thirdparty.fsr2.v233;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import org.joml.Vector3i;
@@ -70,13 +71,16 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .uniformSamplerTexture("r_input_color_jittered", 8)
                         .uniformSamplerTexture("r_input_depth", 9)
                         .uniformSamplerTexture("r_input_exposure", 10)
-                        .uniformStorageTexture("rw_dilated_reactive_masks", ShaderUniformAccess.Both, 1)
-                        .uniformStorageTexture("rw_prepared_input_color", ShaderUniformAccess.Both, 2)
+                        .uniformStorageTexture("rw_dilated_reactive_masks", ShaderResourceAccess.Both, 1)
+                        .uniformStorageTexture("rw_prepared_input_color", ShaderResourceAccess.Both, 2)
                         .build()
         );
         program.compile();
-        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                PipelineJobBuilders.compute(program)
+        GlComputePipeline computePipeline = (GlComputePipeline) GlComputePipeline.builder()
+                .shader(program)
+                .build(RenderSystems.opengl().device());
+        GrapeJobBuilders.ComputeJobBuilder jobBuilder =
+                GrapeJobBuilders.compute(computePipeline)
                         .workGroupSupplier(() -> new Vector3i(
                                 (context.dimensions.renderWidth() + (7)) / 8,
                                 (context.dimensions.renderHeight() + (7)) / 8,
@@ -85,7 +89,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
 
         jobBuilder.resource(
                 "cbFSR2",
-                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
 
 
@@ -94,7 +98,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH)
                         .binding(11)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -107,7 +111,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         )
                         .resourceName(Fsr2PipelineResourceType.DILATED_MOTION_VECTORS.srvShaderName())
                         .binding(12)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -115,7 +119,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.DILATED_DEPTH)
                         .binding(13)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -123,7 +127,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_REACTIVE_MASK)
                         .binding(3)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
 
@@ -132,7 +136,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_TRANSPARENCY_AND_COMPOSITION_MASK)
                         .binding(4)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -140,7 +144,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR)
                         .binding(5)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -155,7 +159,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.DILATED_MOTION_VECTORS.srvShaderName())
                         .binding(6)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -163,7 +167,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_MOTION_VECTORS)
                         .binding(7)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -172,7 +176,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_COLOR)
                         .binding(8)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -180,7 +184,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_DEPTH)
                         .binding(9)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -188,7 +192,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(10)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -196,7 +200,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS)
                         .binding(1)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -206,10 +210,10 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .binding(2)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.job("fsr2_depth_clip", jobBuilder.build());
+        pipeline.add("fsr2_depth_clip", jobBuilder.build());
     }
 
     @Override

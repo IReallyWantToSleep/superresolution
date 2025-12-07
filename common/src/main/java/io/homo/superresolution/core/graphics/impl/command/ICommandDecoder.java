@@ -18,14 +18,13 @@
 
 package io.homo.superresolution.core.graphics.impl.command;
 
-import io.homo.superresolution.core.graphics.impl.DrawObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
-import io.homo.superresolution.core.graphics.impl.command.commands.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.system.IRenderState;
+import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 
 public interface ICommandDecoder {
     void clearTextureRGBA(ICommandBuffer commandBuffer, ITexture texture, float[] color);
@@ -38,92 +37,70 @@ public interface ICommandDecoder {
 
     void copyBuffer(ICommandBuffer commandBuffer, IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size);
 
-    void draw(ICommandBuffer commandBuffer, IShaderProgram<?> shaderProgram, IFrameBuffer frameBuffer, DrawObject drawObject, int firstVertex, int vertexCount);
+    void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height);
 
-    void dispatchCompute(ICommandBuffer commandBuffer, IShaderProgram<?> shaderProgram, int x, int y, int z);
+    void setScissor(ICommandBuffer commandBuffer, int x, int y, int width, int height);
+
+    void setLineWidth(ICommandBuffer commandBuffer, float width);
+
+    void setBlendConstants(ICommandBuffer commandBuffer, float r, float g, float b, float a);
+
+    void draw(ICommandBuffer commandBuffer, RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex);
+
+    void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ);
 
 
-    default void decodeClearTexture(ICommandBuffer commandBuffer, ClearCommand command) {
-        switch (command.clearMode) {
-            case 0:
-                clearTextureRGBA(commandBuffer, command.target, command.colorRGBA);
-            case 1:
-                clearTextureDepth(commandBuffer, command.target, command.depth);
-            case 2:
-                clearTextureStencil(commandBuffer, command.target, command.stencil);
-        }
+    default void clearTextureRGBA(ITexture texture, float[] color) {
+        clearTextureRGBA(currentCommandBuffer(), texture, color);
     }
 
-
-    default void decodeCopyTexture(ICommandBuffer commandBuffer, CopyTextureCommand command) {
-        copyTexture(
-                commandBuffer,
-                command.source,
-                command.destination,
-                command.sourceDimensions.x,
-                command.sourceDimensions.y,
-                command.sourceDimensions.z,
-                command.sourceDimensions.w,
-                command.sourceLevel,
-                command.destinationDimensions.x,
-                command.destinationDimensions.y,
-                command.destinationDimensions.z,
-                command.destinationDimensions.w,
-                command.destinationLevel
-
-        );
+    default void clearTextureDepth(ITexture texture, float depth){
+        clearTextureDepth(currentCommandBuffer(), texture, depth);
     }
 
-    default void decodeCopyBuffer(ICommandBuffer commandBuffer, CopyBufferCommand command) {
-        copyBuffer(
-                commandBuffer,
-                command.source,
-                command.destination,
-                command.srcOffset,
-                command.dstOffset,
-                command.size
-        );
+    default void clearTextureStencil(ITexture texture, int stencil) {
+        clearTextureStencil(currentCommandBuffer(), texture, stencil);
     }
 
-    default void decodeDraw(ICommandBuffer commandBuffer, DrawCommand command) {
-        applyRenderState(commandBuffer, command.stateSnapshot);
-        draw(
-                commandBuffer,
-                command.program,
-                command.frameBuffer,
-                command.drawObject,
-                command.firstVertex,
-                command.vertexCount
-        );
+    default void copyTexture(ITexture src, ITexture dst, int srcX0, int srcY0, int srcX1, int srcY1, int srcLevel, int dstX0, int dstY0, int dstX1, int dstY1, int dstLevel) {
+        copyTexture(currentCommandBuffer(), src, dst, srcX0, srcY0, srcX1, srcY1, srcLevel, dstX0, dstY0, dstX1, dstY1, dstLevel);
     }
 
-    default void decodeDispatchCompute(ICommandBuffer commandBuffer, ComputeCommand command) {
-        dispatchCompute(
-                commandBuffer,
-                command.shaderProgram,
-                command.workGroupSize.x,
-                command.workGroupSize.y,
-                command.workGroupSize.z
-        );
+    default void copyBuffer(IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size) {
+        copyBuffer(currentCommandBuffer(), src, dst, srcOffset, dstOffset, size);
     }
 
-    /**
-     * 输入渲染状态快照，CommandDecoder会应用此渲染状态
-     *
-     * @param stateSnapshot 渲染状态快照
-     */
-    void applyRenderState(ICommandBuffer commandBuffer, IRenderState.StateSnapshot stateSnapshot);
-
-    default void decodeCommand(ICommandBuffer commandBuffer, GpuCommand command) {
-        switch (command.getCommandType()) {
-            case Draw -> decodeDraw(commandBuffer, (DrawCommand) command);
-            case Clear -> decodeClearTexture(commandBuffer, (ClearCommand) command);
-            case Compute -> decodeDispatchCompute(commandBuffer, (ComputeCommand) command);
-            case CopyBuffer -> decodeCopyBuffer(commandBuffer, (CopyBufferCommand) command);
-            case CopyTexture -> decodeCopyTexture(commandBuffer, (CopyTextureCommand) command);
-
-        }
+    default void setViewport(float x, float y, float width, float height) {
+        setViewport(currentCommandBuffer(), x, y, width, height);
     }
+
+    default void setScissor(int x, int y, int width, int height) {
+        setScissor(currentCommandBuffer(), x, y, width, height);
+    }
+
+    default void setLineWidth(float width) {
+        setLineWidth(currentCommandBuffer(), width);
+    }
+
+    default void setBlendConstants(float r, float g, float b, float a) {
+        setBlendConstants(currentCommandBuffer(), r, g, b, a);
+    }
+
+    default void draw(RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
+        draw(currentCommandBuffer(), renderPass, primitiveType, vertexBuffer, vertexCount, firstVertex);
+    }
+
+    default void dispatch(ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ) {
+        dispatch(currentCommandBuffer(), computePipeline, groupCountX, groupCountY, groupCountZ);
+    }
+
+    ICommandBuffer beginCommandBuffer();
+
+    ICommandBuffer endCommandBuffer();
+
+    ICommandBuffer endAndSubmitCommandBuffer();
+
+    ICommandBuffer currentCommandBuffer();
 
     IDevice getDevice();
 }

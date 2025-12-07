@@ -22,13 +22,15 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.pipeline.Pipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import org.joml.Vector3i;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
@@ -44,7 +46,10 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     private GlShaderProgram activateShader;
     private GlShaderProgram convertShader;
     private GlShaderProgram upscaleShader;
-    private Pipeline sgsrPipeline;
+    private ComputePipeline activatePipeline;
+    private ComputePipeline convertPipeline;
+    private ComputePipeline upscalePipeline;
+    private RenderGrape sgsrPipeline;
     private ITexture PrevLumaHistory;
     private ITexture LumaHistory;
     private ITexture YCoCgColor;
@@ -60,45 +65,49 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         return new Vector3i(
                 dispatchX,
                 dispatchY,
-                1
-        );
+                1);
     }
 
     @Override
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         swapHistoryOutput();
         swapLumaHistory();
-        RenderSystems.opengl().device().commandEncoder().begin();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commandEncoder().getCommandBuffer();
-        sgsrPipeline.executeJob(commandBuffer, "convert");
-        sgsrPipeline.executeJob(commandBuffer, "activate");
-        sgsrPipeline.executeJob(commandBuffer, "upscale");
-        RenderSystems.opengl().device().commandEncoder().end();
-        RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
+        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
+        sgsrPipeline.execute(commandBuffer, "convert");
+        sgsrPipeline.execute(commandBuffer, "activate");
+        sgsrPipeline.execute(commandBuffer, "upscale");
+        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
     }
 
     @Override
     public void init(Sgsr2 sgsr) {
         activateShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl",
+                                true))
                         .name("SGSR_3PCS_A")
-                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT",
+                                SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
                         .uniformSamplerTexture("PrevLumaHistory", 1)
                         .uniformSamplerTexture("MotionDepthAlphaBuffer", 2)
                         .uniformSamplerTexture("YCoCgColor", 3)
                         .uniformStorageTexture("MotionDepthClipAlphaBuffer", 4)
                         .uniformStorageTexture("LumaHistory", 5)
-                        .build()
-        );
+                        .build());
         activateShader.compile();
+        activatePipeline = (ComputePipeline) GlComputePipeline.builder()
+                .shader(activateShader)
+                .build(RenderSystems.opengl().device());
 
         convertShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl",
+                                true))
                         .name("SGSR_3PCS_B")
-                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT",
+                                SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
                         .uniformSamplerTexture("InputOpaqueColor", 1)
                         .uniformSamplerTexture("InputColor", 2)
@@ -106,26 +115,32 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                         .uniformSamplerTexture("InputVelocity", 4)
                         .uniformStorageTexture("YCoCgColor", 5)
                         .uniformStorageTexture("MotionDepthAlphaBuffer", 6)
-                        .build()
-        );
+                        .build());
         convertShader.compile();
+        convertPipeline = (ComputePipeline) GlComputePipeline.builder()
+                .shader(convertShader)
+                .build(RenderSystems.opengl().device());
 
         upscaleShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
-                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl", true))
+                        .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl",
+                                true))
                         .name("SGSR_3PCS_C")
-                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
+                        .addDefine("SR_INTERNAL_TEXTURE_FORMAT",
+                                SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
                         .uniformBuffer("Params", 0, (int) sgsr.getParams().getSize())
                         .uniformSamplerTexture("PrevHistoryOutput", 1)
                         .uniformSamplerTexture("MotionDepthClipAlphaBuffer", 2)
                         .uniformSamplerTexture("YCoCgColor", 3)
                         .uniformStorageTexture("HistoryOutput", 4)
                         .uniformStorageTexture("SceneColorOutput", 5)
-                        .build()
-        );
+                        .build());
         upscaleShader.compile();
+        upscalePipeline = (ComputePipeline) GlComputePipeline.builder()
+                .shader(upscaleShader)
+                .build(RenderSystems.opengl().device());
 
-        sgsrPipeline = new Pipeline();
+        sgsrPipeline = new RenderGrape();
         PrevLumaHistory = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(RenderHandlerManager.getRenderWidth())
@@ -176,119 +191,81 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                 .usages(TextureUsages.create().storage().sampler())
                 .build());
 
-        sgsrPipeline.job("convert",
-                PipelineJobBuilders.compute(convertShader)
+        sgsrPipeline.add("convert",
+                GrapeJobBuilders.compute(convertPipeline)
                         .resource("InputOpaqueColor",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())))
                         .resource("InputColor",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().colorTexture())))
                         .resource("InputDepth",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().depthTexture())
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().depthTexture())))
                         .resource("InputVelocity",
-                                PipelineJobResource.SamplerTexture.create(
-                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().motionVectorsTexture())
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        () -> Optional.ofNullable(sgsr.getInputResourceSet().motionVectorsTexture())))
                         .resource("YCoCgColor",
-                                PipelineJobResource.StorageTexture.create(
+                                GrapeJobResource.StorageTexture.create(
                                         YCoCgColor,
-                                        PipelineResourceAccess.Write
-                                )
-                        )
+                                        GrapeResourceAccess.Write))
                         .resource("MotionDepthAlphaBuffer",
-                                PipelineJobResource.StorageTexture.create(
+                                GrapeJobResource.StorageTexture.create(
                                         MotionDepthAlphaBuffer,
-                                        PipelineResourceAccess.Write
-                                )
-                        )
+                                        GrapeResourceAccess.Write))
                         .resource("Params",
-                                PipelineJobResource.UniformBuffer.create(
-                                        sgsr.getParams()
-                                )
-                        )
+                                GrapeJobResource.UniformBuffer.create(
+                                        sgsr.getParams()))
                         .workGroupSupplier(this::getWorkGroupSize)
                         .build());
 
-        sgsrPipeline.job("activate",
-                PipelineJobBuilders.compute(activateShader)
+        sgsrPipeline.add("activate",
+                GrapeJobBuilders.compute(activatePipeline)
                         .resource("PrevLumaHistory",
-                                PipelineJobResource.SamplerTexture.create(
-                                        TextureSupplier.of(() -> PrevLumaHistory)
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        TextureSupplier.of(() -> PrevLumaHistory)))
                         .resource("MotionDepthAlphaBuffer",
-                                PipelineJobResource.SamplerTexture.create(
-                                        MotionDepthAlphaBuffer
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        MotionDepthAlphaBuffer))
                         .resource("YCoCgColor",
-                                PipelineJobResource.SamplerTexture.create(
-                                        YCoCgColor
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        YCoCgColor))
                         .resource("MotionDepthClipAlphaBuffer",
-                                PipelineJobResource.StorageTexture.create(
+                                GrapeJobResource.StorageTexture.create(
                                         MotionDepthClipAlphaBuffer,
-                                        PipelineResourceAccess.Write
-                                )
-                        )
+                                        GrapeResourceAccess.Write))
                         .resource("LumaHistory",
-                                PipelineJobResource.StorageTexture.create(
+                                GrapeJobResource.StorageTexture.create(
                                         TextureSupplier.of(() -> LumaHistory),
-                                        PipelineResourceAccess.Write
-                                )
-                        )
+                                        GrapeResourceAccess.Write))
                         .resource("Params",
-                                PipelineJobResource.UniformBuffer.create(
-                                        sgsr.getParams()
-                                )
-                        )
+                                GrapeJobResource.UniformBuffer.create(
+                                        sgsr.getParams()))
                         .workGroupSupplier(this::getWorkGroupSize)
                         .build());
 
-        sgsrPipeline.job("upscale",
-                PipelineJobBuilders.compute(upscaleShader)
+        sgsrPipeline.add("upscale",
+                GrapeJobBuilders.compute(upscalePipeline)
                         .resource("PrevHistoryOutput",
-                                PipelineJobResource.SamplerTexture.create(
-                                        TextureSupplier.of(() -> PrevHistoryOutput)
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        TextureSupplier.of(() -> PrevHistoryOutput)))
                         .resource("MotionDepthClipAlphaBuffer",
-                                PipelineJobResource.SamplerTexture.create(
-                                        MotionDepthClipAlphaBuffer
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        MotionDepthClipAlphaBuffer))
                         .resource("YCoCgColor",
-                                PipelineJobResource.SamplerTexture.create(
-                                        YCoCgColor
-                                )
-                        )
+                                GrapeJobResource.SamplerTexture.create(
+                                        YCoCgColor))
                         .resource("HistoryOutput",
-                                PipelineJobResource.StorageTexture.create(
+                                GrapeJobResource.StorageTexture.create(
                                         TextureSupplier.of(() -> HistoryOutput),
-                                        PipelineResourceAccess.Write
-                                )
-                        )
+                                        GrapeResourceAccess.Write))
                         .resource("SceneColorOutput",
-                                PipelineJobResource.StorageTexture.create(
+                                GrapeJobResource.StorageTexture.create(
                                         FrameBufferTextureAdapter.ofColor(sgsr.getOutputFrameBuffer()),
-                                        PipelineResourceAccess.Write
-                                )
-                        )
+                                        GrapeResourceAccess.Write))
                         .resource("Params",
-                                PipelineJobResource.UniformBuffer.create(
-                                        sgsr.getParams()
-                                )
-                        )
+                                GrapeJobResource.UniformBuffer.create(
+                                        sgsr.getParams()))
                         .workGroupSupplier(this::getWorkGroupSize)
                         .build());
     }

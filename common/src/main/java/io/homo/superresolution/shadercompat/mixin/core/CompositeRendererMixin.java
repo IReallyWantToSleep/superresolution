@@ -18,34 +18,12 @@
 
 package io.homo.superresolution.shadercompat.mixin.core;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.shadercompat.IrisShaderPipelineHandle;
-import io.homo.superresolution.shadercompat.NamedCompositePass;
-import net.irisshaders.iris.gl.blending.BlendModeOverride;
-import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
-import net.irisshaders.iris.gl.program.Program;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
-import net.irisshaders.iris.shaderpack.programs.ProgramSource;
-import net.irisshaders.iris.shaderpack.properties.ProgramDirectives;
-import net.irisshaders.iris.shadows.ShadowRenderTargets;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
-
-import java.util.Arrays;
-import java.util.ListIterator;
-import java.util.function.Supplier;
 
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
+    /*
     @Shadow(remap = false)
     @Final
     private ImmutableList<Object> passes;
@@ -147,4 +125,5 @@ public class CompositeRendererMixin {
         );
     }
     #endif
+    */
 }

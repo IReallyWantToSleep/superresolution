@@ -19,8 +19,8 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
@@ -30,7 +30,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class Fsr2ShaderResource {
-    public PipelineResourceAccess access = PipelineResourceAccess.Read;
+    public GrapeResourceAccess access = GrapeResourceAccess.Read;
     public int binding = -1;
     public Supplier<Fsr2PipelineResources.Fsr2ResourceEntry> resourceEntry = null;
     public Supplier<Fsr2PipelineResourceType> resourceType = null;
@@ -49,11 +49,11 @@ public class Fsr2ShaderResource {
     public GlSampler sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
 
 
-    public PipelineResourceAccess access() {
+    public GrapeResourceAccess access() {
         return access;
     }
 
-    public Fsr2ShaderResource access(PipelineResourceAccess access) {
+    public Fsr2ShaderResource access(GrapeResourceAccess access) {
         this.access = access;
         return this;
     }
@@ -93,13 +93,13 @@ public class Fsr2ShaderResource {
         return this;
     }
 
-    public PipelineJobResource<?> getResourceDescription(Fsr2Context context) {
+    public GrapeJobResource<?> getResourceDescription(Fsr2Context context) {
         if (this.resourceType != null) {
             this.resourceEntry = () -> context.resources.resource(resourceType.get());
         }
         Fsr2PipelineResourceType resourceType = context.resources.resourceEntriesMap().get(resourceEntry.get());
         if (resourceType == null) throw new RuntimeException();
-        String name = resourceName != null ? resourceName : access == PipelineResourceAccess.Read ? resourceType.srvShaderName() : resourceType.uavShaderName();
+        String name = resourceName != null ? resourceName : access == GrapeResourceAccess.Read ? resourceType.srvShaderName() : resourceType.uavShaderName();
         if (name == null) {
             name = "RESOURCE+" + UUID.randomUUID() + "+" + binding;
         } else if (resourceName == null) {
@@ -107,7 +107,7 @@ public class Fsr2ShaderResource {
         }
         if (resourceEntry.get().type() == Fsr2PipelineResources.Fsr2ResourceType.UBO) {
             return
-                    PipelineJobResource.UniformBuffer.create((GlBuffer) resourceEntry.get().getResource());
+                    GrapeJobResource.UniformBuffer.create((GlBuffer) resourceEntry.get().getResource());
         } else {
             ITexture textureSupplier = TextureSupplier.of(() -> {
                 if (this.resourceType != null) {
@@ -138,10 +138,10 @@ public class Fsr2ShaderResource {
                 }
                 return texture;
             });
-            if (access != PipelineResourceAccess.Read) {
-                return PipelineJobResource.StorageTexture.create(textureSupplier, access);
+            if (access != GrapeResourceAccess.Read) {
+                return GrapeJobResource.StorageTexture.create(textureSupplier, access);
             } else {
-                return PipelineJobResource.SamplerTexture.create(textureSupplier);
+                return GrapeJobResource.SamplerTexture.create(textureSupplier);
             }
         }
     }

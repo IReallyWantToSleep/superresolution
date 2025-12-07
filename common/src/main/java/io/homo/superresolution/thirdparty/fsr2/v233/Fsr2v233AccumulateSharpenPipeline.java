@@ -21,13 +21,14 @@ package io.homo.superresolution.thirdparty.fsr2.v233;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobBuilders;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderUniformAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import org.joml.Vector3i;
@@ -74,16 +75,19 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .uniformSamplerTexture("r_imgMips", 10)
                         .uniformSamplerTexture("r_auto_exposure", 11)
                         .uniformSamplerTexture("r_luma_history", 12)
-                        .uniformStorageTexture("rw_internal_upscaled_color", ShaderUniformAccess.Both, 0)
-                        .uniformStorageTexture("rw_lock_status", ShaderUniformAccess.Both, 1)
-                        .uniformStorageTexture("rw_upscaled_output", ShaderUniformAccess.Both, 2)
-                        .uniformStorageTexture("rw_new_locks", ShaderUniformAccess.Both, 3)
-                        .uniformStorageTexture("rw_luma_history", ShaderUniformAccess.Both, 4)
+                        .uniformStorageTexture("rw_internal_upscaled_color", ShaderResourceAccess.Both, 0)
+                        .uniformStorageTexture("rw_lock_status", ShaderResourceAccess.Both, 1)
+                        .uniformStorageTexture("rw_upscaled_output", ShaderResourceAccess.Both, 2)
+                        .uniformStorageTexture("rw_new_locks", ShaderResourceAccess.Both, 3)
+                        .uniformStorageTexture("rw_luma_history", ShaderResourceAccess.Both, 4)
                         .build()
         );
         program.compile();
-        PipelineJobBuilders.ComputeJobBuilder jobBuilder =
-                PipelineJobBuilders.compute(program)
+        GlComputePipeline computePipeline = (GlComputePipeline) GlComputePipeline.builder()
+                .shader(program)
+                .build(RenderSystems.opengl().device());
+        GrapeJobBuilders.ComputeJobBuilder jobBuilder =
+                GrapeJobBuilders.compute(computePipeline)
                         .workGroupSupplier(() -> new Vector3i(
                                 (context.dimensions.screenWidth() + (7)) / 8,
                                 (context.dimensions.screenHeight() + (7)) / 8,
@@ -92,7 +96,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
 
         jobBuilder.resource(
                 "cbFSR2",
-                PipelineJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
+                GrapeJobResource.UniformBuffer.create(context.fsr2ConstantsUBO)
         );
 
         jobBuilder.resource(
@@ -100,7 +104,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(13)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -108,7 +112,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS)
                         .binding(14)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -135,7 +139,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                                         GlSampler.create(GlSampler.SamplerType.LinearClamp) :
                                         GlSampler.create(GlSampler.SamplerType.NearestClamp)
                         )
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -148,7 +152,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         )
                         .resourceName(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.srvShaderName())
                         .binding(16)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -162,7 +166,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.LOCK_STATUS.srvShaderName())
                         .binding(17)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -171,7 +175,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.PREPARED_INPUT_COLOR)
                         .binding(6)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -179,7 +183,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.LANCZOS_LUT)
                         .binding(8)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -188,7 +192,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT)
                         .binding(9)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -197,7 +201,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.SCENE_LUMINANCE)
                         .binding(10)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .getResourceDescription(context)
         );
@@ -206,7 +210,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.AUTO_EXPOSURE)
                         .binding(11)
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -220,7 +224,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.LUMA_HISTORY.srvShaderName())
                         .binding(12)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        .access(PipelineResourceAccess.Read)
+                        .access(GrapeResourceAccess.Read)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -233,7 +237,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         )
                         .resourceName(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.uavShaderName())
                         .binding(0)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -246,7 +250,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         )
                         .resourceName(Fsr2PipelineResourceType.LOCK_STATUS.uavShaderName())
                         .binding(1)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -254,7 +258,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.UPSCALED_OUTPUT)
                         .binding(2)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -262,7 +266,7 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                 new Fsr2ShaderResource()
                         .resourceType(Fsr2PipelineResourceType.NEW_LOCKS)
                         .binding(3)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
         jobBuilder.resource(
@@ -275,10 +279,10 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                         )
                         .resourceName(Fsr2PipelineResourceType.LUMA_HISTORY.uavShaderName())
                         .binding(4)
-                        .access(PipelineResourceAccess.Both)
+                        .access(GrapeResourceAccess.Both)
                         .getResourceDescription(context)
         );
-        pipeline.job("fsr2_accumulate_sharpen", jobBuilder.build());
+        pipeline.add("fsr2_accumulate_sharpen", jobBuilder.build());
     }
 
     @Override
