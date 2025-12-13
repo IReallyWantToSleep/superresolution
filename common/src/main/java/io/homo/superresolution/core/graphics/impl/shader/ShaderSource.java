@@ -116,28 +116,33 @@ public class ShaderSource {
         if (isFilePath) {
             if (!Platform.currentPlatform.isDevelopmentEnvironment()) {
                 shaderSource = String.join("\n", FileReadHelper.readText(source));
-            }
-            Path commonProjectPath = Path.of(Minecraft.getInstance().gameDirectory.getAbsolutePath())
-                    .getParent()
-                    .getParent()
-                    .resolve("common")
-                    .resolve("src")
-                    .resolve("main")
-                    .resolve("resources");
-            Path shaderPath = Path.of(commonProjectPath.toAbsolutePath().toString(), source);
-            if (shaderPath.toFile().exists()) {
+            } else {
                 try {
-                    shaderSource = Files.readString(shaderPath);
-                    SuperResolution.LOGGER.info("加载Shader {}", shaderPath);
+                    Path commonProjectPath = Path.of(Minecraft.getInstance().gameDirectory.getAbsolutePath())
+                            .getParent()
+                            .getParent()
+                            .resolve("common")
+                            .resolve("src")
+                            .resolve("main")
+                            .resolve("resources");
+                    Path shaderPath = Path.of(commonProjectPath.toAbsolutePath().toString(), source);
+                    if (shaderPath.toFile().exists()) {
+                        try {
+                            shaderSource = Files.readString(shaderPath);
+                            SuperResolution.LOGGER.info("加载Shader {}", shaderPath);
 
+                        } catch (Throwable e) {
+                            shaderSource = String.join("\n", FileReadHelper.readText(source));
+                        }
+                    } else {
+                        shaderSource = String.join("\n", FileReadHelper.readText(source));
+                    }
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     shaderSource = String.join("\n", FileReadHelper.readText(source));
                 }
-            } else {
-                shaderSource = String.join("\n", FileReadHelper.readText(source));
             }
         }
-
         cachedSource = addCustomDefines(shaderSource, shaderDefines);
     }
 
