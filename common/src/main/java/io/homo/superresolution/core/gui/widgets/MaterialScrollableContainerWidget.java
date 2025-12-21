@@ -118,7 +118,7 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
             thumbColor = scheme.controlHighlight();
         }
 
-        drawContext.drawRoundedRect(
+        drawContext.roundedRect(
                 scrollbarX, thumbY,
                 scrollbarWidth, thumbHeight,
                 scrollbarWidth / 2,
@@ -160,7 +160,7 @@ public class MaterialScrollableContainerWidget extends AbstractScrollableContain
             thumbColor = scheme.controlHighlight();
         }
 
-        drawContext.drawRoundedRect(
+        drawContext.roundedRect(
                 thumbX, scrollbarY,
                 thumbWidth, scrollbarHeight,
                 scrollbarHeight / 2,

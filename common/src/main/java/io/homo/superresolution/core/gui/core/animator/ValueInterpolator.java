@@ -16,12 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.event;
+package io.homo.superresolution.core.gui.core.animator;
 
-import java.util.function.Function;
-
-public class EventFactory {
-    public static <T> Event<T> create(Class<T> listenerType, Function<T[], T> invokerFactory) {
-        return new Event<>(listenerType, invokerFactory);
-    }
+@FunctionalInterface
+public interface ValueInterpolator<V> {
+    V interpolation(float progress, V startValue, V targetValue);
 }

@@ -35,27 +35,21 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public abstract class AbstractWidget<
-        T extends AbstractWidget<?, ?, ?>,
-        STYLE extends WidgetStyle<?>,
-        ANIM extends AnimationSet
+        T extends AbstractWidget<T>
         > extends AbstractLayoutElement implements
         GuiEventListener,
         Renderable,
-        TooltipHolder,
+        TooltipHolder<T>,
         Destroyable {
     protected boolean visible = true;
     protected boolean disabled = false;
     protected boolean hovered = false;
     protected boolean pressed = false;
     protected boolean focused = false;
-
-    public IEventBus getEventBus() {
-        return eventBus;
-    }
-
     protected IEventBus eventBus;
-    protected STYLE style;
-    protected ANIM animationSet;
+    protected WidgetStyle<?> style;
+    @Deprecated
+    protected AnimationSet animationSet;
     protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
 
     public AbstractWidget() {
@@ -67,12 +61,16 @@ public abstract class AbstractWidget<
 
     protected abstract void init();
 
-    public STYLE style() {
+    public IEventBus getEventBus() {
+        return eventBus;
+    }
+
+    public WidgetStyle<?> style() {
         return style;
     }
 
     @SuppressWarnings("unchecked")
-    public T style(STYLE style) {
+    public T style(WidgetStyle<?> style) {
         this.style = style;
         return (T) this;
     }
@@ -186,43 +184,69 @@ public abstract class AbstractWidget<
         return (T) this;
     }
 
-    public void onHover(Consumer<WidgetEvent.HoverEvent> listener) {
+    @SuppressWarnings("unchecked")
+    public T onHover(Consumer<WidgetEvent.HoverEvent> listener) {
         eventBus.addListener(WidgetEvent.HoverEvent.class, listener);
+        return (T) this;
     }
 
-    public void onFocus(Consumer<WidgetEvent.FocusEvent> listener) {
+    @SuppressWarnings("unchecked")
+    public T onFocus(Consumer<WidgetEvent.FocusEvent> listener) {
         eventBus.addListener(WidgetEvent.FocusEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onClick(Consumer<WidgetEvent.ClickEvent> listener) {
+        eventBus.addListener(WidgetEvent.ClickEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onChange(Consumer<WidgetEvent.ChangeEvent> listener) {
+        eventBus.addListener(WidgetEvent.ChangeEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onMousePress(Consumer<MouseEvent.MousePressEvent> listener) {
+        eventBus.addListener(MouseEvent.MousePressEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onMouseMove(Consumer<MouseEvent.MouseMoveEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseMoveEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onMouseRelease(Consumer<MouseEvent.MouseReleaseEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseReleaseEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onMouseDrag(Consumer<MouseEvent.MouseDragEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseDragEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onMouseScroll(Consumer<MouseEvent.MouseScrollEvent> listener) {
+        eventBus.addListener(MouseEvent.MouseScrollEvent.class, listener);
+        return (T) this;
     }
 
     protected boolean isInteractive() {
         return false;
     }
 
-    public AbstractWidget<?, ?, ?> findInteractiveWidgetAt(Vector2f absPos) {
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
         if (!hitTest(absPos)) {
             return null;
         }
         return isInteractive() ? this : null;
-    }
-
-    public void onMousePress(Consumer<MouseEvent.MousePressEvent> listener) {
-        eventBus.addListener(MouseEvent.MousePressEvent.class, listener);
-    }
-
-    public void onMouseMove(Consumer<MouseEvent.MouseMoveEvent> listener) {
-        eventBus.addListener(MouseEvent.MouseMoveEvent.class, listener);
-    }
-
-    public void onMouseRelease(Consumer<MouseEvent.MouseReleaseEvent> listener) {
-        eventBus.addListener(MouseEvent.MouseReleaseEvent.class, listener);
-    }
-
-    public void onMouseDrag(Consumer<MouseEvent.MouseDragEvent> listener) {
-        eventBus.addListener(MouseEvent.MouseDragEvent.class, listener);
-    }
-
-    public void onMouseScroll(Consumer<MouseEvent.MouseScrollEvent> listener) {
-        eventBus.addListener(MouseEvent.MouseScrollEvent.class, listener);
     }
 
 
@@ -230,14 +254,27 @@ public abstract class AbstractWidget<
         return disabled;
     }
 
-    public AbstractWidget<T, STYLE, ANIM> setDisabled(boolean disabled) {
+    @SuppressWarnings("unchecked")
+    public T setDisabled(boolean disabled) {
         this.disabled = disabled;
-        return this;
+        return (T) this;
     }
 
+    @SuppressWarnings("unchecked")
+    public T enable() {
+        return setDisabled(false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public T disable() {
+        return setDisabled(true);
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
-    public void setTooltipSupplier(Supplier<Optional<String>> supplier) {
+    public T setTooltipSupplier(Supplier<Optional<String>> supplier) {
         tooltipSupplier = supplier;
+        return (T) this;
     }
 
     @Override
@@ -246,8 +283,10 @@ public abstract class AbstractWidget<
     }
 
     @Override
-    public void setTooltip(String tooltip) {
+    @SuppressWarnings("unchecked")
+    public T setTooltip(String tooltip) {
         this.tooltipSupplier = () -> Optional.ofNullable(tooltip);
+        return (T) this;
     }
 
     @Override

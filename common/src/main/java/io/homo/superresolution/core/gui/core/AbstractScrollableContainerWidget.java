@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui.core;
 
-import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.*;
@@ -29,7 +28,7 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaOverf
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import org.joml.Vector2f;
 
-public abstract class AbstractScrollableContainerWidget extends AbstractContainerWidget<AbstractScrollableContainerWidget, WidgetStyle<?>, AnimationSet> {
+public abstract class AbstractScrollableContainerWidget extends AbstractContainerWidget<AbstractScrollableContainerWidget> {
     protected Vector2f viewRegion = new Vector2f(0, 0);
     protected Vector2f scrollOffset = new Vector2f(0, 0);
     protected boolean horizontalScrollEnabled = true;
@@ -229,14 +228,14 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
 
 
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (region.intersect(widget.getBounds())) {
                     widget.render(drawContext, inputState);
                 }
             }
         }
         drawContext.resetScissor();
-        drawContext.drawRect(
+        drawContext.rect(
                 region.x,
                 region.y,
                 region.width,
@@ -244,7 +243,7 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
                 Color.rgba(255, 0, 0, 255),
                 false
         );
-        drawContext.drawRect(
+        drawContext.rect(
                 getAbsoluteViewRect().x,
                 getAbsoluteViewRect().y,
                 getAbsoluteViewRect().width,

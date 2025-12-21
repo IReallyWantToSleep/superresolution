@@ -16,19 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.widgets.button;
+package io.homo.irisapi;
 
-import io.homo.superresolution.core.gui.core.animator.AnimationSet;
-import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
+import net.irisshaders.iris.helpers.StringPair;
 
-public class MaterialButtonAnimationSet extends AnimationSet {
-    protected NumberAnimator hover;
-    protected NumberAnimator press;
+import java.util.List;
 
-
-    @Override
-    protected void init() {
-        hover = addAnimation();
-        press = addAnimation();
+public class MacroRegistry {
+    public static List<StringPair> collectMacros() {
+        MacroRegistrationEvent event = new MacroRegistrationEvent();
+        IrisAPI.EVENT_BUS.post(event);
+        return event.getMacros();
     }
 }

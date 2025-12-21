@@ -54,11 +54,4 @@ public class IrisRenderingPipelineMixin {
                 colorSpace
         );
     }
-/*
-    @Redirect(method = "finalizeGameRendering", at = @At(value = "INVOKE", target = "Lnet/irisshaders/iris/pathways/colorspace/ColorSpaceConverter;process(I)V"), remap = false)
-    private void cancelColorSpaceConvert(ColorSpaceConverter instance, int i) {
-
-    }
-    */
- 
 }

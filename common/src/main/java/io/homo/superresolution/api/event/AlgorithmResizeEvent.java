@@ -19,20 +19,44 @@
 package io.homo.superresolution.api.event;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import net.neoforged.bus.api.Event;
 
-public interface AlgorithmResizeEvent {
-    Event<AlgorithmResizeEvent> EVENT = EventFactory.create(
-            AlgorithmResizeEvent.class,
-            (listeners) -> (algorithm, screenWidth, screenHeight, renderWidth, renderHeight) -> {
-                for (AlgorithmResizeEvent listener : listeners) {
-                    listener.onAlgorithmResize(algorithm, screenWidth, screenHeight, renderWidth, renderHeight);
-                }
-            }
-    );
+public class AlgorithmResizeEvent extends Event {
+    private final AbstractAlgorithm algorithm;
+    private final int screenWidth;
+    private final int screenHeight;
+    private final int renderWidth;
+    private final int renderHeight;
 
-    void onAlgorithmResize(
+    public AlgorithmResizeEvent(
             AbstractAlgorithm algorithm,
             int screenWidth, int screenHeight,
             int renderWidth, int renderHeight
-    );
+    ) {
+        this.algorithm = algorithm;
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+        this.renderWidth = renderWidth;
+        this.renderHeight = renderHeight;
+    }
+
+    public AbstractAlgorithm getAlgorithm() {
+        return algorithm;
+    }
+
+    public int getScreenWidth() {
+        return screenWidth;
+    }
+
+    public int getScreenHeight() {
+        return screenHeight;
+    }
+
+    public int getRenderWidth() {
+        return renderWidth;
+    }
+
+    public int getRenderHeight() {
+        return renderHeight;
+    }
 }

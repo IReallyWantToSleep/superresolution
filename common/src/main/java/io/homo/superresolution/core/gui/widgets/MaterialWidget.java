@@ -23,11 +23,7 @@ import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.WidgetStyle;
 import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 
-public abstract class MaterialWidget<
-        T extends AbstractWidget<?, ?, ?>,
-        STYLE extends WidgetStyle<?>,
-        ANIM extends AnimationSet
-        > extends AbstractWidget<T, STYLE, ANIM> {
+public abstract class MaterialWidget<T extends MaterialWidget<T>> extends AbstractWidget<T> {
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     public MaterialScheme scheme() {

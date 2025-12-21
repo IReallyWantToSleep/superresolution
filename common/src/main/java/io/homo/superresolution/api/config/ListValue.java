@@ -21,6 +21,8 @@ package io.homo.superresolution.api.config;
 import com.electronwill.nightconfig.core.ConfigSpec;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -37,9 +39,32 @@ public class ListValue<E> extends ConfigValue<List<E>> {
             Function<Object, E> elementConverter,
             Predicate<E> elementValidator
     ) {
-        super(path, defaultSupplier, comment);
+        this(path, defaultSupplier, comment, elementConverter, elementValidator, ListValue::defaultListEquals);
+    }
+
+    public ListValue(
+            List<String> path,
+            Supplier<List<E>> defaultSupplier,
+            String comment,
+            Function<Object, E> elementConverter,
+            Predicate<E> elementValidator,
+            BiPredicate<List<E>, List<E>> equalityChecker
+    ) {
+        super(path, defaultSupplier, comment, equalityChecker);
         this.elementConverter = elementConverter;
         this.elementValidator = elementValidator;
+    }
+
+    private static <E> boolean defaultListEquals(List<E> list1, List<E> list2) {
+        if (list1 == list2) return true;
+        if (list1 == null || list2 == null) return false;
+        if (list1.size() != list2.size()) return false;
+        for (int i = 0; i < list1.size(); i++) {
+            if (!Objects.equals(list1.get(i), list2.get(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
@@ -61,6 +86,7 @@ public class ListValue<E> extends ConfigValue<List<E>> {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     protected void fillSpec(ConfigSpec spec) {
         spec.defineList(
                 path,
@@ -70,7 +96,6 @@ public class ListValue<E> extends ConfigValue<List<E>> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected List<E> convertType(Object value) {
         if (value == null) return getDefault();
         if (value instanceof List) {

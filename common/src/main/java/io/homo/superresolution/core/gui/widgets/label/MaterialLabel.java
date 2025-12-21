@@ -24,12 +24,13 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonStyle;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
 import java.util.function.Supplier;
 
-public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelStyle, MaterialLabelAnimationSet> {
+public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     private Supplier<String> textSupplier = () -> "";
 
     public MaterialLabel() {
@@ -37,6 +38,11 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
         this.animationSet = new MaterialLabelAnimationSet();
         getLayoutNode().setDebugName("MaterialLabel");
 
+    }
+
+    @Override
+    public MaterialLabelStyle style() {
+        return (MaterialLabelStyle) style;
     }
 
     public static MaterialLabel create() {
@@ -59,12 +65,12 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
     }
 
     public MaterialLabel color(Color color) {
-        this.style.color(color);
+        style().color(color);
         return this;
     }
 
     public MaterialLabel fontSize(float fontSize) {
-        this.style.fontSize(fontSize);
+        style().fontSize(fontSize);
         return this;
     }
 
@@ -76,7 +82,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         drawContext.beginBatch();
-        Vector2f textSize = drawContext.measureText(textSupplier.get(), style.fontSize());
+        Vector2f textSize = drawContext.measureText(textSupplier.get(), style().fontSize());
         setElementSize(textSize.x, textSize.y);
         Rectangle bounds = getBounds();
         String text = textSupplier.get();
@@ -84,7 +90,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
             Color textColor = getTextColor();
             drawContext.drawAlignedText(
                     drawContext.font(),
-                    style.fontSize(),
+                    style().fontSize(),
                     text,
                     bounds.x,
                     bounds.y,
@@ -99,10 +105,10 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel, MaterialLabelSt
     }
 
     private Color getTextColor() {
-        if (style.color() != null) {
+        if (style().color() != null) {
             return isDisabled() ?
-                    style.color().copy().alpha((int) (255 * 0.38)) :
-                    style.color();
+                    style().color().copy().alpha((int) (255 * 0.38)) :
+                    style().color();
         } else {
             return isDisabled() ?
                     scheme().onSurface().copy().alpha((int) (255 * 0.38)) :

@@ -86,9 +86,9 @@ public class GlPipelineDescriptorSet extends PipelineDescriptorSet {
                             false,
                             0,
                             switch (shader.getDescription().resourcesLayout().getResource(name).access()) {
-                                case ShaderResourceAccess.Read -> GL_READ_ONLY;
-                                case ShaderResourceAccess.Write -> GL_WRITE_ONLY;
-                                case ShaderResourceAccess.Both -> GL_READ_WRITE;
+                                case Read -> GL_READ_ONLY;
+                                case Write -> GL_WRITE_ONLY;
+                                case Both -> GL_READ_WRITE;
                             },
                             ((ITexture) binding.resource()).getTextureFormat().gl()
                     );

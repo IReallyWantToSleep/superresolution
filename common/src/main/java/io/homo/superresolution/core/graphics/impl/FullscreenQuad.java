@@ -19,26 +19,25 @@
 package io.homo.superresolution.core.graphics.impl;
 
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
-import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
+import io.homo.superresolution.core.graphics.impl.vertex.*;
 
 public class FullscreenQuad {
     public static IVertexBuffer create(IDevice device) {
-        float[] verticesData = {
-                -1f, 1f, 0f, 1f,
-                1f, 1f, 1f, 1f,
-                -1f, -1f, 0f, 0f,
-                1f, -1f, 1f, 0f
-        };
         VertexBufferDescription desc = new VertexBufferDescription(
-                verticesData.length * Float.BYTES,
+                ((
+                        2 * Float.BYTES // per vec2
+                ) * 2 // per vertex
+                ) * 4,
                 false,
                 getVertexFormat()
         );
         IVertexBuffer vertices = device.createVertexBuffer(desc);
-        vertices.updateData(verticesData, 0, verticesData.length);
+        VertexBuilder.of(vertices)
+                .addVertex().attribute(0, -1f, 1f).attribute(1, 0f, 1f).endVertex()
+                .addVertex().attribute(0, 1f, 1f).attribute(1, 1f, 1f).endVertex()
+                .addVertex().attribute(0, -1f, -1f).attribute(1, 0f, 0f).endVertex()
+                .addVertex().attribute(0, 1f, -1f).attribute(1, 1f, 0f).endVertex()
+                .upload();
         return vertices;
     }
 

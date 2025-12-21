@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.upscale;
 
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmRegisterEvent;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
@@ -145,6 +146,6 @@ public class AlgorithmDescriptions {
         }
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
-        AlgorithmRegisterEvent.EVENT.invoker().onAlgorithmRegister();
+        SuperResolutionAPI.EVENT_BUS.post(new AlgorithmRegisterEvent());
     }
 }

@@ -23,8 +23,11 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
+import net.neoforged.bus.api.BusBuilder;
+import net.neoforged.bus.api.IEventBus;
 
 public class SuperResolutionAPI {
+    public static final IEventBus EVENT_BUS = BusBuilder.builder().build();
     public static IFrameBuffer getOriginMinecraftFrameBuffer() {
         return RenderHandlerManager.getOriginRenderTarget();
     }

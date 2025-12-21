@@ -18,6 +18,11 @@
 
 package io.homo.irisapi;
 
-public class IrisUniformsBuilder {
+import net.irisshaders.iris.gl.uniform.UniformHolder;
 
+public class UniformRegistry {
+    public static void registerUniforms(UniformHolder uniforms) {
+        UniformRegistrationEvent event = new UniformRegistrationEvent(uniforms);
+        IrisAPI.EVENT_BUS.post(event);
+    }
 }

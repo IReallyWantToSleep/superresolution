@@ -30,7 +30,7 @@ import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimat
 import net.neoforged.bus.api.SubscribeEvent;
 import org.joml.Vector2f;
 
-public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?, ?, ?>> {
+public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     private final MaterialRipple ripple;
     private ValueAnimator hoverAnimator;
     private boolean shouldFadeOutAfterRipple = false;

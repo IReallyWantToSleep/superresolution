@@ -282,7 +282,7 @@ public class MaterialStyleConfigScreen extends NanoVGScreen<MaterialStyleConfigS
         Vector2f screenSize = MinecraftWindow.getWindowSize();
         drawContext.beginBatch();
 
-        drawContext.drawRect(0, 0, screenSize.x, screenSize.y, materialScheme.background(), true);
+        drawContext.rect(0, 0, screenSize.x, screenSize.y, materialScheme.background(), true);
 
         drawHeaderBackground(drawContext, screenSize);
 

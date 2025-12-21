@@ -29,6 +29,8 @@ public class SuperResolutionConstants {
 
     public static Path CONFIG_FILE = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution", "config.toml");
 
+    public static Path NATIVE_LIBRARIES_DIR = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution", "libraries");
+
     public static Path SHADER_CACHE_FILE = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution", "shader_caches");
 
     static {

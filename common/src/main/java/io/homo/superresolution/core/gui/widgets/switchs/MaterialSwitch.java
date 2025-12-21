@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui.widgets.switchs;
 
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.animator.Easing;
+import io.homo.superresolution.core.gui.core.animator.*;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -29,16 +29,15 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
 
-import java.util.function.Consumer;
-
-public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitchStyle, MaterialSwitchAnimationSet> {
+public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
+    protected Animator.FloatAnimator hoverAnimator;
+    protected Animator.FloatAnimator pressAnimator;
+    protected Animator.FloatAnimator handlePositionAnimator;
+    protected Animator.FloatAnimator changeAnimator;
+    protected Animator.FloatAnimator handleSizeAnimator;
     private boolean checked;
 
     public MaterialSwitch() {
-        this.style = new MaterialSwitchStyle();
-        updateRectangle();
-        getLayoutNode().setDebugName("MaterialSwitch");
-
     }
 
     public static MaterialSwitch create() {
@@ -47,6 +46,12 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
 
     public boolean isChecked() {
         return checked;
+    }
+
+    public MaterialSwitch setChecked(boolean checked) {
+        if (checked != isChecked())
+            toggleChecked();
+        return this;
     }
 
     @Override
@@ -59,148 +64,188 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
         eventBus.post(new WidgetEvent.ChangeEvent<>(newChecked));
         if (newChecked) {
             // 打开开关
-            animationSet.handlePosition
-                    .ease(Easing.LINEAR)
-                    .animateTo(getBounds().width - 32, 200);
-            animationSet.handleSize
-                    .ease(Easing.LINEAR)
-                    .animateTo(
-                            (style.showCheckedIconWhenEnable() || style.showCheckedIconAlways()) ?
-                                    MaterialSwitchSize.Default.handleSizeCheckedWithIcon() :
-                                    MaterialSwitchSize.Default.handleSizeChecked(),
-                            150
-                    );
+            handlePositionAnimator
+                    .timeInterpolator(new BezierInterpolator(0.175, 0.885, 0.32, 1.275))
+                    .duration(250)
+                    .to(getBounds().width - 32)
+                    .start();
+            handleSizeAnimator
+                    .timeInterpolator(new BezierInterpolator(0.2, 0, 0, 1))
+                    .duration(200)
+                    .to(
+                            (style().showCheckedIconWhenEnable()
+                                    || style().showCheckedIconAlways())
+                                    ? MaterialSwitchSize.Default
+                                    .handleSizeCheckedWithIcon()
+                                    : MaterialSwitchSize.Default
+                                    .handleSizeChecked())
+                    .start();
         } else {
             // 关闭开关
-            animationSet.handlePosition
-                    .ease(Easing.LINEAR)
-                    .animateTo(0, 200);
-            animationSet.handleSize
-                    .ease(Easing.LINEAR)
-                    .animateTo(
-                            (style.showUncheckedIconWhenEnable() || style.showUncheckedIconAlways()) ?
-                                    MaterialSwitchSize.Default.handleSizeWithIcon() :
-                                    MaterialSwitchSize.Default.handleSize(),
-                            150
-                    );
+            handlePositionAnimator
+                    .timeInterpolator(new BezierInterpolator(0.175, 0.885, 0.32, 1.275))
+                    .duration(250)
+                    .to(0f)
+                    .start();
+            handleSizeAnimator
+                    .timeInterpolator(new BezierInterpolator(0.2, 0, 0, 1))
+                    .duration(200)
+                    .to(
+                            (style().showUncheckedIconWhenEnable()
+                                    || style().showUncheckedIconAlways())
+                                    ? MaterialSwitchSize.Default
+                                    .handleSizeWithIcon()
+                                    : MaterialSwitchSize.Default
+                                    .handleSize())
+                    .start();
         }
 
-        animationSet.change.set(0);
-        animationSet.change.animateTo(1, 200);
+        changeAnimator
+                .timeInterpolator(TimeInterpolator.linear())
+                .duration(200)
+                .fromTo(0f, 1f)
+                .start();
         this.checked = newChecked;
         return this;
     }
 
     @Override
     protected void init() {
-        this.animationSet = new MaterialSwitchAnimationSet();
+        this.style = new MaterialSwitchStyle();
+        updateRectangle();
+        getLayoutNode().setDebugName("MaterialSwitch");
+        this.hoverAnimator = new Animator.FloatAnimator();
+        this.hoverAnimator.set(0f);
+
+        this.pressAnimator = new Animator.FloatAnimator();
+        this.pressAnimator.set(0f);
+
+        this.handlePositionAnimator = new Animator.FloatAnimator();
+        this.handlePositionAnimator.set(isChecked() ? getBounds().width - 32 : 0f);
+
+        this.changeAnimator = new Animator.FloatAnimator();
+        this.changeAnimator.set(0f);
+
+        float initialHandleSize = (style().showUncheckedIconWhenEnable() || style().showUncheckedIconAlways())
+                ? MaterialSwitchSize.Default.handleSizeWithIcon()
+                : MaterialSwitchSize.Default.handleSize();
+        this.handleSizeAnimator = new Animator.FloatAnimator();
+        this.handleSizeAnimator.set(initialHandleSize);
+
         onHover((event) -> onHover(event.getMousePosition(), event.isHovering()));
         onMouseRelease((event) -> onRelease(event.getMousePosition()));
         onMousePress((event) -> onPress(event.getMousePosition()));
     }
 
-
     private void updateRectangle() {
         setElementSize(MaterialSwitchSize.Default.trackWidth(), MaterialSwitchSize.Default.trackHeight());
-        ;
-    }
 
-    public void onChange(Consumer<WidgetEvent.ChangeEvent<Boolean>> listener) {
-        eventBus.addListener(listener);
     }
 
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        Animator.updateAll(
+                hoverAnimator,
+                pressAnimator,
+                handlePositionAnimator,
+                changeAnimator,
+                handleSizeAnimator);
         drawContext.beginBatch();
         updateRectangle();
         Rectangle bounds = getBounds();
-        if (animationSet.handleSize.floatValue() <
-                ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways())) ||
-                        (!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways())) ?
-                        MaterialSwitchSize.Default.handleSizeWithIcon() : MaterialSwitchSize.Default.handleSize())
-        ) {
-            animationSet.handleSize.set(
-                    ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways())) ||
-                            (!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways())) ?
-                            MaterialSwitchSize.Default.handleSizeWithIcon() : MaterialSwitchSize.Default.handleSize())
-            );
+        if (handleSizeAnimator
+                .get() < ((isChecked() && (style().showCheckedIconWhenEnable() && isChecked()
+                || style().showCheckedIconAlways())) ||
+                (!isChecked() && (style().showUncheckedIconWhenEnable() && !isChecked()
+                        || style().showUncheckedIconAlways()))
+                ? MaterialSwitchSize.Default
+                .handleSizeWithIcon()
+                : MaterialSwitchSize.Default
+                .handleSize())) {
+            handleSizeAnimator.set(
+                    ((isChecked() && (style().showCheckedIconWhenEnable() && isChecked()
+                            || style().showCheckedIconAlways())) ||
+                            (!isChecked() && (style().showUncheckedIconWhenEnable()
+                                    && !isChecked()
+                                    || style().showUncheckedIconAlways()))
+                            ? MaterialSwitchSize.Default
+                            .handleSizeWithIcon()
+                            : MaterialSwitchSize.Default
+                            .handleSize()));
         }
-        animationSet.update();
         SwitchColors colors = getSwitchColors();
-
-        drawContext.drawRoundedRect(
+        drawContext.roundedRect(
                 bounds.x,
                 bounds.y,
                 MaterialSwitchSize.Default.trackWidth(),
                 MaterialSwitchSize.Default.trackHeight(),
                 MaterialSwitchSize.Default.trackHeight() / 2,
                 colors.trackColor,
-                true
-        );
+                true);
 
         if (!isChecked()) {
             drawContext.beginPath();
             drawContext.strokeColor(
-                    isDisabled() ?
-                            scheme().onSurface().copy().alpha((int) (255 * 0.08)) :
-                            scheme().outline()
-            );
+                    isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.08))
+                            : scheme().outline());
             drawContext.strokeWidth(MaterialSwitchSize.Default.trackOutlineWidth());
             drawContext.roundedRect(
                     bounds.x,
                     bounds.y,
                     MaterialSwitchSize.Default.trackWidth(),
                     MaterialSwitchSize.Default.trackHeight(),
-                    MaterialSwitchSize.Default.trackHeight() / 2
-            );
+                    MaterialSwitchSize.Default.trackHeight() / 2);
             drawContext.endPath(false);
         }
-        float handleSize = animationSet.handleSize.floatValue();
-        float handleX = bounds.x + 16 + animationSet.handlePosition.floatValue();
+        float handleSize = handleSizeAnimator.get();
+        float handleX = bounds.x + 16 + handlePositionAnimator.get();
 
-        drawContext.drawArc(
+        drawContext.arc(
                 handleX,
                 bounds.getCenterY(),
                 handleSize / 2,
                 colors.handleColor,
-                true
-        );
+                true);
 
-        if (isHovered() || animationSet.hover.floatValue() > 0.001) {
-            drawContext.drawArc(
+        if (isHovered() || hoverAnimator.get() > 0.001) {
+            drawContext.arc(
                     handleX,
                     bounds.getCenterY(),
                     20,
-                    scheme().onSurface().copy().alpha((int) (0.1 * 255 * animationSet.hover.floatValue())),
-                    true
-            );
+                    scheme().onSurface().copy()
+                            .alpha((int) (0.1 * 255 * hoverAnimator.get())),
+                    true);
         }
-        if ((isChecked() && (style.showCheckedIconWhenEnable() && isChecked() || style.showCheckedIconAlways()))) {
+        if ((isChecked() && (style().showCheckedIconWhenEnable() && isChecked()
+                || style().showCheckedIconAlways()))) {
             float checkedIconX = bounds.x + bounds.width - 16;
             MaterialSymbols.iconCheck().render(
                     drawContext,
                     colors.iconColor.copy().alpha(
-                            !animationSet.handlePosition.isRunning() ? 255 : Math.min((int) ((animationSet.handlePosition.progress() * 1.8) * 255), 255)
-                    ),
+                            !handlePositionAnimator.isRunning() ? 255
+                                    : Math.min((int) ((handlePositionAnimator
+                                            .progress() * 1.8) * 255),
+                                    255)),
                     MaterialSwitchSize.Default.iconSize(),
                     new Vector2f(
                             checkedIconX,
-                            bounds.getCenterY()
-                    )
-            );
+                            bounds.getCenterY()));
         }
-        if ((!isChecked() && (style.showUncheckedIconWhenEnable() && !isChecked() || style.showUncheckedIconAlways()))) {
+        if ((!isChecked() && (style().showUncheckedIconWhenEnable() && !isChecked()
+                || style().showUncheckedIconAlways()))) {
             float closeIconX = bounds.x + 16;
-            float alpha = isDisabled() ? 1 : clamp(!animationSet.handlePosition.isRunning() ? 255f : Math.min(((animationSet.handlePosition.progress() * 1.8f) * 255f), 255f) / 255f, 0, 1);
+            float alpha = isDisabled() ? 1
+                    : clamp(!handlePositionAnimator.isRunning() ? 255f
+                            : Math.min(((handlePositionAnimator.progress() * 1.8f)
+                            * 255f), 255f) / 255f,
+                    0, 1);
             MaterialSymbols.iconClose().render(
                     drawContext,
                     colors.iconColor,
                     MaterialSwitchSize.Default.iconSize(),
                     new Vector2f(
                             closeIconX,
-                            bounds.getCenterY()
-                    )
-            );
+                            bounds.getCenterY()));
         }
         drawContext.endBatch(getZIndex());
     }
@@ -211,79 +256,81 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch, MaterialSwitc
 
     private SwitchColors getSwitchColors() {
         SwitchColors colors = new SwitchColors();
-        colors.trackColor = isDisabled() ?
-                (isChecked() ?
-                        scheme().onSurface().copy().alpha((int) (255 * 0.1)) :
-                        scheme().surfaceVariant()).copy().alpha((int) (255 * 0.1)) :
-                (isChecked() ?
-                        scheme().primary() :
-                        scheme().surfaceContainerHighest());
-        colors.handleColor = isDisabled() ?
-                (isChecked() ?
-                        scheme().surface() :
-                        scheme().onSurface().copy().alpha((int) (255 * 0.38))) :
-                (isChecked() ?
-                        scheme().onPrimary() :
-                        scheme().outline());
-        colors.iconColor = isDisabled() ?
-                (isChecked() ?
-                        scheme().surfaceContainerHighest().copy().alpha((int) (0 * 0.38)) :
-                        scheme().surfaceContainerHighest().copy().alpha((int) (255 * 0.38))) :
-                (isChecked() ?
-                        scheme().primary() :
-                        scheme().surfaceContainerHighest());
+        colors.trackColor = isDisabled()
+                ? (isChecked() ? scheme().onSurface().copy().alpha((int) (255 * 0.1))
+                : scheme().surfaceVariant()).copy().alpha((int) (255 * 0.1))
+                : (isChecked() ? scheme().primary() : scheme().surfaceContainerHighest());
+        colors.handleColor = isDisabled()
+                ? (isChecked() ? scheme().surface()
+                : scheme().onSurface().copy().alpha((int) (255 * 0.38)))
+                : (isChecked() ? scheme().onPrimary() : scheme().outline());
+        colors.iconColor = isDisabled()
+                ? (isChecked() ? scheme().surfaceContainerHighest().copy().alpha((int) (0 * 0.38))
+                : scheme().surfaceContainerHighest().copy().alpha((int) (255 * 0.38)))
+                : (isChecked() ? scheme().primary() : scheme().surfaceContainerHighest());
         return colors;
     }
 
     private void onHover(Vector2f mousePosition, boolean hover) {
         if (hover) {
-            animationSet.hover
-                    .ease(Easing.LINEAR)
-                    .animateTo(1, 200);
+            hoverAnimator
+                    .timeInterpolator(TimeInterpolator.linear())
+                    .to(1f)
+                    .duration(200)
+                    .start();
             MouseCursor.HAND.use();
         } else {
-            animationSet.hover
-                    .ease(Easing.LINEAR)
-                    .animateTo(0, 200);
+            hoverAnimator
+                    .timeInterpolator(TimeInterpolator.linear())
+                    .to(0f)
+                    .duration(200)
+                    .start();
             MouseCursor.ARROW.use();
         }
 
     }
 
+    @Override
+    public MaterialSwitchStyle style() {
+        return (MaterialSwitchStyle) style;
+    }
+
     private void onPress(Vector2f mousePosition) {
-        animationSet.handleSize
-                .ease(Easing.LINEAR)
-                .animateTo(
-                        (style.showCheckedIconWhenEnable() && isChecked()) || style.showCheckedIconAlways() ?
-                                MaterialSwitchSize.Default.handleSizePressWithIcon() :
-                                MaterialSwitchSize.Default.handleSizePress(),
-                        150
-                );
-        animationSet.hover
-                .ease(Easing.LINEAR)
-                .animateTo(1, 200);
-        animationSet.press
-                .ease(Easing.LINEAR)
-                .animateTo(1, 200);
+        handleSizeAnimator
+                .timeInterpolator(TimeInterpolator.linear())
+                .duration(150)
+                .to((style().showCheckedIconWhenEnable() && isChecked()) || style()
+                        .showCheckedIconAlways() ? MaterialSwitchSize.Default
+                        .handleSizePressWithIcon()
+                        : MaterialSwitchSize.Default
+                        .handleSizePress())
+                .start();
+        hoverAnimator
+                .timeInterpolator(new BezierInterpolator(0.2, 0, 0, 1))
+                .duration(200)
+                .to(1f)
+                .start();
+        pressAnimator
+                .timeInterpolator(TimeInterpolator.linear())
+                .duration(200)
+                .to(1f)
+                .start();
     }
 
     private void onRelease(Vector2f mousePosition) {
         toggleChecked();
-        animationSet.handleSize
-                .ease(Easing.LINEAR)
-                .animateTo(
-                        (style.showUncheckedIconWhenEnable() && !isChecked()) || style.showUncheckedIconAlways() ?
-                                !isChecked() ? MaterialSwitchSize.Default.handleSizeCheckedWithIcon() : MaterialSwitchSize.Default.handleSizeWithIcon() :
-                                isChecked() ? MaterialSwitchSize.Default.handleSizeChecked() : MaterialSwitchSize.Default.handleSize(),
-                        150
-                );
-        animationSet.hover
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(isHovered() ? 1 : 0, 200);
-        animationSet.press
-                .ease(Easing.cubicBezier(0.2f, 0, 0, 1))
-                .animateTo(0, 200);
-
+        if (isHovered()) {
+            hoverAnimator
+                    .timeInterpolator(TimeInterpolator.linear())
+                    .duration(200)
+                    .to(1f)
+                    .start();
+        }
+        pressAnimator
+                .timeInterpolator(new BezierInterpolator(0.2f, 0, 0, 1))
+                .to(0f)
+                .duration(200)
+                .start();
     }
 
     private static class SwitchColors {

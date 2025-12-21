@@ -89,6 +89,12 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
+        ENABLE_UPSCALE.onChange((oldValue, newValue) -> {
+            if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
+                ShaderCompatHandler.irisApiReloadShader();
+            }
+        });
+
 
         UPSCALE_RATIO = builder.defineFloat(
                 "upscale_ratio",
@@ -208,6 +214,9 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Force disable shader pack compatibility mode."
         );
+        FORCE_DISABLE_SHADER_COMPAT.onChange((oldValue, newValue) -> {
+            ShaderCompatHandler.irisApiReloadShader();
+        });
         DISABLE_UPSCALE_ON_VANILLA = builder.defineBoolean(
                 "disable_upscale_on_vanilla",
                 () -> false,
@@ -219,6 +228,10 @@ public class SuperResolutionConfig {
                 InternalTextureFormat.class,
                 () -> InternalTextureFormat.R11B11G10F,
                 "The precision of the internal texture format affects video memory consumption: higher precision results in greater consumption, while lower precision leads to smaller consumption. Note: Excessively low precision may cause noticeable color banding in the image."
+        );
+        INTERNAL_TEXTURE_FORMAT.onChange(
+                (oldValue, newValue) ->
+                        SuperResolution.recreateAlgorithm()
         );
 
         SPECIAL = new SpecialConfigs(builder);

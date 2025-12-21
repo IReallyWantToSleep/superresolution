@@ -20,16 +20,22 @@ package io.homo.superresolution.api.event;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import net.neoforged.bus.api.Event;
 
-public interface AlgorithmDispatchEvent {
-    Event<AlgorithmDispatchEvent> EVENT = EventFactory.create(
-            AlgorithmDispatchEvent.class,
-            (listeners) -> (algorithm, dispatchResource) -> {
-                for (AlgorithmDispatchEvent listener : listeners) {
-                    listener.onAlgorithmDispatch(algorithm, dispatchResource);
-                }
-            }
-    );
+public class AlgorithmDispatchEvent extends Event {
+    private final AbstractAlgorithm algorithm;
+    private final DispatchResource dispatchResource;
 
-    void onAlgorithmDispatch(AbstractAlgorithm algorithm, DispatchResource dispatchResource);
+    public AlgorithmDispatchEvent(AbstractAlgorithm algorithm, DispatchResource dispatchResource) {
+        this.algorithm = algorithm;
+        this.dispatchResource = dispatchResource;
+    }
+
+    public AbstractAlgorithm getAlgorithm() {
+        return algorithm;
+    }
+
+    public DispatchResource getDispatchResource() {
+        return dispatchResource;
+    }
 }

@@ -34,17 +34,19 @@ public class GlVertexBuffer implements IVertexBuffer {
     private final int size;
     private final boolean dynamic;
     private final VertexFormat vertexFormat;
-    private final ByteBuffer buffer;
     private final GlVertexArray vao;
+    private ByteBuffer mappedBuffer;
+    private boolean isMapped;
 
-    private GlVertexBuffer(int id, int size, boolean dynamic, VertexFormat vertexFormat, ByteBuffer buffer) {
+    private GlVertexBuffer(int id, int size, boolean dynamic, VertexFormat vertexFormat) {
         this.id = id;
         this.size = size;
         this.dynamic = dynamic;
         this.vertexFormat = vertexFormat;
-        this.buffer = buffer;
         this.vao = new GlVertexArray();
         this.vao.setFormat(this);
+        this.mappedBuffer = null;
+        this.isMapped = false;
     }
 
     public GlVertexArray getVao() {
@@ -54,10 +56,9 @@ public class GlVertexBuffer implements IVertexBuffer {
     public static GlVertexBuffer create(VertexBufferDescription description) {
         int bufferId = Gl.DSA.createBuffer();
         int usage = description.isDynamic() ? GL15.GL_DYNAMIC_DRAW : GL15.GL_STATIC_DRAW;
-        ByteBuffer buffer = MemoryUtil.memAlloc(description.getSizeInBytes());
-        Gl.DSA.bufferData(bufferId, GL15.GL_ARRAY_BUFFER, buffer, usage);
-        return new GlVertexBuffer(bufferId, description.getSizeInBytes(), description.isDynamic(), 
-                                 description.getVertexFormat(), buffer);
+        Gl.DSA.bufferData(bufferId, GL15.GL_ARRAY_BUFFER, description.getSizeInBytes(), usage);
+        return new GlVertexBuffer(bufferId, description.getSizeInBytes(), description.isDynamic(),
+                description.getVertexFormat());
     }
 
 
@@ -67,7 +68,7 @@ public class GlVertexBuffer implements IVertexBuffer {
     }
 
     @Override
-    public int getSize() {
+    public int getSizeInBytes() {
         return size;
     }
 
@@ -82,25 +83,65 @@ public class GlVertexBuffer implements IVertexBuffer {
     }
 
     @Override
-    public void updateData(float[] data, int offset, int length) {
-        FloatBuffer buffer = BufferUtils.createFloatBuffer(length);
-        buffer.put(data, offset, length);
-        buffer.flip();
-        Gl.DSA.bufferSubData(this.id, 0, buffer);
+    public ByteBuffer map(int offsetInBytes, int lengthInBytes, boolean write) {
+        if (isMapped) {
+            throw new IllegalStateException("Buffer is already mapped");
+        }
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, id);
+        int access = write ? GL15.GL_WRITE_ONLY : GL15.GL_READ_ONLY;
+        mappedBuffer = org.lwjgl.opengl.GL30.glMapBufferRange(
+                GL15.GL_ARRAY_BUFFER,
+                offsetInBytes,
+                lengthInBytes,
+                write ? org.lwjgl.opengl.GL30.GL_MAP_WRITE_BIT : org.lwjgl.opengl.GL30.GL_MAP_READ_BIT
+        );
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (mappedBuffer == null) {
+            throw new RuntimeException("Failed to map buffer");
+        }
+
+        isMapped = true;
+        return mappedBuffer;
     }
 
     @Override
-    public void updateData(byte[] data, int offset, int length) {
-        ByteBuffer buffer = BufferUtils.createByteBuffer(length);
-        buffer.put(data, offset, length);
-        buffer.flip();
-        Gl.DSA.bufferSubData(this.id, 0, buffer);
+    public void unmap() {
+        if (!isMapped) {
+            throw new IllegalStateException("Buffer is not mapped");
+        }
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, id);
+        boolean success = GL15.glUnmapBuffer(GL15.GL_ARRAY_BUFFER);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (!success) {
+            throw new RuntimeException("Failed to unmap buffer");
+        }
+
+        mappedBuffer = null;
+        isMapped = false;
+    }
+
+    @Override
+    public void updateData(ByteBuffer data, int offsetInBytes) {
+        Gl.DSA.bufferSubData(this.id, offsetInBytes, data);
+    }
+
+    @Override
+    public void updateData(byte[] data, int offsetInBytes, int lengthInBytes) {
+        ByteBuffer tempBuffer = BufferUtils.createByteBuffer(lengthInBytes);
+        tempBuffer.put(data, offsetInBytes, lengthInBytes);
+        tempBuffer.flip();
+        Gl.DSA.bufferSubData(this.id, offsetInBytes, tempBuffer);
     }
 
     @Override
     public void destroy() {
+        if (isMapped) {
+            unmap();
+        }
         vao.destroy();
         Gl.DSA.deleteBuffer(id);
-        MemoryUtil.memFree(buffer);
     }
 }

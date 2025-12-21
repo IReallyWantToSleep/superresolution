@@ -20,6 +20,7 @@ package io.homo.superresolution.shadercompat;
 
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
@@ -72,8 +73,6 @@ public class ShaderCompatUpscaleDispatcher {
     private static SRShaderCompatConfig.InputTextureConfig lastDepthConfig;
     private static SRShaderCompatConfig.InputTextureConfig lastMotionConfig;
 
-    private static GlShaderProgram copyProgram;
-    private static GlFrameBuffer copyDstFrameBuffer;
     private static CompositeRenderer cachedCompositeRenderer;
 
     public static SRShaderCompatConfig.WorldConfig getCurrentConfig() {
@@ -154,27 +153,6 @@ public class ShaderCompatUpscaleDispatcher {
         PerformanceRecorder.beginUpscale();
 
         SRShaderCompatConfig.WorldUpscaleConfig currentConfig = getCurrentConfig().upscale_config;
-        /*
-          检查用于复制纹理的着色器是否可用，不可用就初始化
-         */
-        {
-            if (copyProgram == null) {
-                copyProgram = RenderSystems.opengl().device().createShaderProgram(
-                        ShaderDescription.graphics(
-                                        new ShaderSource(ShaderType.Fragment, "/shader/copy.frag.glsl", true),
-                                        new ShaderSource(ShaderType.Vertex, "/shader/copy.vert.glsl", true)
-                                )
-                                .addDefine("COPY_CHANCEL", "4")
-                                .addDefine("COPY_SRC_CHANCEL0", "0").addDefine("COPY_DST_CHANCEL0", "0")
-                                .addDefine("COPY_SRC_CHANCEL1", "1").addDefine("COPY_DST_CHANCEL1", "1")
-                                .addDefine("COPY_SRC_CHANCEL2", "2").addDefine("COPY_DST_CHANCEL2", "2")
-                                .addDefine("COPY_SRC_CHANCEL3", "3").addDefine("COPY_DST_CHANCEL3", "3")
-                                .uniformSamplerTexture("tex", 0)
-                                .build()
-                );
-                copyProgram.compile();
-            }
-        }
         boolean needUpdate = false;
 
         if (!compositeRenderer.equals(cachedCompositeRenderer)) {
@@ -242,18 +220,22 @@ public class ShaderCompatUpscaleDispatcher {
         }
         DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
         if (SuperResolution.currentAlgorithm != null) {
-            AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
-                    SuperResolution.currentAlgorithm,
-                    dispatchResource
+            SuperResolutionAPI.EVENT_BUS.post(
+                    new AlgorithmDispatchEvent(
+                            SuperResolution.currentAlgorithm,
+                            dispatchResource
+                    )
             );
         }
         try (GlState ignored_ = new GlState()) {
             SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
         }
         if (SuperResolution.currentAlgorithm != null) {
-            AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
-                    SuperResolution.currentAlgorithm,
-                    SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+            SuperResolutionAPI.EVENT_BUS.post(
+                    new AlgorithmDispatchFinishEvent(
+                            SuperResolution.currentAlgorithm,
+                            SuperResolution.currentAlgorithm.getOutputFrameBuffer()
+                    )
             );
         }
         GlDebug.popGroup();

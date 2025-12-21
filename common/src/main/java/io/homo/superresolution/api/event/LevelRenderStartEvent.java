@@ -18,20 +18,12 @@
 
 package io.homo.superresolution.api.event;
 
+import net.neoforged.bus.api.Event;
+
 /**
  * 世界渲染开始事件，触发位置随配置中的捕获模式改变<br>
  * 捕获模式为A或C时会在GameRenderer::renderLevel触发<br>
  * 捕获模式为B时会在LevelRenderer::renderLevel触发
  */
-public interface LevelRenderStartEvent {
-    Event<LevelRenderStartEvent> EVENT = EventFactory.create(
-            LevelRenderStartEvent.class,
-            (listeners) -> () -> {
-                for (LevelRenderStartEvent listener : listeners) {
-                    listener.onLevelRenderStart();
-                }
-            }
-    );
-
-    void onLevelRenderStart();
+public class LevelRenderStartEvent extends Event {
 }

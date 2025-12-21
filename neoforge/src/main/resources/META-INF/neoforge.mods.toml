@@ -40,10 +40,10 @@ side = "BOTH"
 [[mixins]]
 config = "super_resolution.mixins.json"
 [[mixins]]
-config = "super_resolution.shadercompat.mixins.json"
-[[mixins]]
 config = "super_resolution-neoforge.mixins.json"
 [[mixins]]
 config = "super_resolution-neoforge-compat.mixins.json"
 [[mixins]]
 config = "super_resolution_irisapi.mixins.json"
+[[mixins]]
+config = "super_resolution.shadercompat.mixins.json"

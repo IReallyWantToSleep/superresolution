@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.minecraft.handler;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
@@ -286,17 +287,21 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                     }
 
 
-                    if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchEvent.EVENT.hasEvent()) {
-                        AlgorithmDispatchEvent.EVENT.invoker().onAlgorithmDispatch(
-                                SuperResolution.currentAlgorithm,
-                                dispatchResource
+                    if (SuperResolution.currentAlgorithm != null) {
+                        SuperResolutionAPI.EVENT_BUS.post(
+                                new AlgorithmDispatchEvent(
+                                        SuperResolution.currentAlgorithm,
+                                        dispatchResource
+                                )
                         );
                     }
                     SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
-                    if (SuperResolution.currentAlgorithm != null && AlgorithmDispatchFinishEvent.EVENT.hasEvent()) {
-                        AlgorithmDispatchFinishEvent.EVENT.invoker().onAlgorithmDispatchFinish(
-                                SuperResolution.currentAlgorithm,
-                                SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                    if (SuperResolution.currentAlgorithm != null) {
+                        SuperResolutionAPI.EVENT_BUS.post(
+                                new AlgorithmDispatchFinishEvent(
+                                        SuperResolution.currentAlgorithm,
+                                        SuperResolution.currentAlgorithm.getOutputFrameBuffer()
+                                )
                         );
                     }
 

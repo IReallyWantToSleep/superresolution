@@ -19,17 +19,24 @@
 package io.homo.superresolution.api.event;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import net.neoforged.bus.api.Event;
 
-public interface AlgorithmDispatchFinishEvent {
-    Event<AlgorithmDispatchFinishEvent> EVENT = EventFactory.create(
-            AlgorithmDispatchFinishEvent.class,
-            (listeners) -> (algorithm, outputTexture) -> {
-                for (AlgorithmDispatchFinishEvent listener : listeners) {
-                    listener.onAlgorithmDispatchFinish(algorithm, outputTexture);
-                }
-            }
-    );
+public class AlgorithmDispatchFinishEvent extends Event {
+    private final AbstractAlgorithm algorithm;
+    private final IFrameBuffer output;
 
-    void onAlgorithmDispatchFinish(AbstractAlgorithm algorithm, ITexture outputTexture);
+    public AlgorithmDispatchFinishEvent(AbstractAlgorithm algorithm, IFrameBuffer output) {
+        this.algorithm = algorithm;
+        this.output = output;
+    }
+
+    public AbstractAlgorithm getAlgorithm() {
+        return algorithm;
+    }
+
+    public IFrameBuffer getOutput() {
+        return output;
+    }
 }
