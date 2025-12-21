@@ -20,16 +20,38 @@ package io.homo.superresolution.core.graphics.impl.vertex;
 
 import io.homo.superresolution.core.graphics.impl.GpuObject;
 
+import java.nio.ByteBuffer;
+
 public interface IVertexBuffer extends GpuObject {
-    int getSize();
+    int getSizeInBytes();
+
+    default int getVertexCount() {
+        return getSizeInBytes() / getVertexFormat().stride();
+    }
 
     boolean isDynamic();
 
     VertexFormat getVertexFormat();
 
-    void updateData(float[] data, int offset, int length);
+    ByteBuffer map(int offsetInBytes, int lengthInBytes, boolean write);
 
-    void updateData(byte[] data, int offset, int length);
+    default ByteBuffer map(boolean write) {
+        return map(0, getSizeInBytes(), write);
+    }
 
+    void unmap();
+
+    void updateData(ByteBuffer data, int offsetInBytes);
+
+    void updateData(byte[] data, int offsetInBytes, int lengthInBytes);
+
+    default void updateData(ByteBuffer data) {
+        updateData(data, 0);
+    }
+
+    default void updateData(byte[] data) {
+        updateData(data, 0, data.length);
+    }
+    
     void destroy();
 }

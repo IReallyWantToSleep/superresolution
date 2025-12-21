@@ -111,12 +111,22 @@ public class VkGlInteropSemaphore {
         }
     }
 
-    public void signalOpenGL(int[] textures, int[] framebuffers, int[] buffers) {
-        glSignalSemaphoreEXT((int) glSemaphoreHandle, textures, framebuffers, buffers);
+    public void signalOpenGL(int[] textures, int[] buffers, int[] dstLayouts) {
+        glSignalSemaphoreEXT(
+                (int) glSemaphoreHandle,
+                buffers == null ? new int[]{} : buffers,
+                textures == null ? new int[]{} : textures,
+                dstLayouts == null ? new int[]{} : dstLayouts
+        );
     }
 
-    public void waitOpenGL(int[] textures, int[] framebuffers, int[] buffers) {
-        glWaitSemaphoreEXT((int) glSemaphoreHandle, textures, framebuffers, buffers);
+    public void waitOpenGL(int[] textures, int[] buffers, int[] srcLayouts) {
+        glWaitSemaphoreEXT(
+                (int) glSemaphoreHandle,
+                buffers == null ? new int[]{} : buffers,
+                textures == null ? new int[]{} : textures,
+                srcLayouts == null ? new int[]{} : srcLayouts
+        );
     }
 
     public void signalVulkan() {

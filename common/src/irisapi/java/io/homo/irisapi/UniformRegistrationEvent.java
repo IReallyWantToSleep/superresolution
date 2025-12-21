@@ -16,11 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.shadercompat.mixin.core;
+package io.homo.irisapi;
 
-import net.irisshaders.iris.Iris;
-import org.spongepowered.asm.mixin.Mixin;
+import net.irisshaders.iris.gl.uniform.UniformHolder;
+import net.neoforged.bus.api.Event;
 
-@Mixin(Iris.class)
-public class IrisMixin {
+public class UniformRegistrationEvent extends Event {
+    private final UniformHolder uniforms;
+
+    public UniformRegistrationEvent(UniformHolder uniforms) {
+        this.uniforms = uniforms;
+    }
+    public UniformHolder getUniforms() {
+        return uniforms;
+    }
 }

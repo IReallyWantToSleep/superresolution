@@ -30,7 +30,7 @@ public abstract class NanoVGScreen<T> extends Screen {
     protected final NanoVGContext nvg;
     protected final ArrayList<Renderable> renderable = new ArrayList<>();
     protected final ArrayList<GuiEventListener> eventListener = new ArrayList<>();
-    protected final ArrayList<AbstractWidget<?, ?, ?>> widget = new ArrayList<>();
+    protected final ArrayList<AbstractWidget<?>> widget = new ArrayList<>();
     protected boolean transparent = false;
 
     protected NanoVGScreen(Component title) {
@@ -145,7 +145,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         }
     }
 
-    protected <T extends AbstractWidget<?, ?, ?>> T addWidget(T w) {
+    protected <T extends AbstractWidget<?>> T addWidget(T w) {
         widget.add(w);
         eventListener.add(w);
         return w;
@@ -161,7 +161,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         return renderable;
     }
 
-    protected <T extends AbstractWidget<?, ?, ?>> T addRenderableWidget(T widget) {
+    protected <T extends AbstractWidget<?>> T addRenderableWidget(T widget) {
         renderable.add(widget);
         eventListener.add(widget);
         return widget;

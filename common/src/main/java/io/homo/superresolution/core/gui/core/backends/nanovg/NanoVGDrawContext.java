@@ -264,10 +264,12 @@ public class NanoVGDrawContext implements IUIDrawContext {
     @Override
     public void beginBatch() {
         batchManager.beginBatch();
+        save();
     }
 
     @Override
     public void endBatch(int zIndex) {
+        restore();
         batchManager.endBatch(zIndex);
     }
 

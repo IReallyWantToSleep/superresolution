@@ -20,19 +20,31 @@ package io.homo.superresolution.api.config;
 
 import com.electronwill.nightconfig.core.ConfigSpec;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public abstract class ConfigValue<T> {
     protected final List<String> path;
     protected final Supplier<T> defaultSupplier;
     protected final String comment;
+    protected final BiPredicate<T, T> equalityChecker;
+    protected final List<BiConsumer<T, T>> changeListeners = new ArrayList<>();
     protected ModConfigSpec configSpec;
 
     public ConfigValue(List<String> path, Supplier<T> defaultSupplier, String comment) {
+        this(path, defaultSupplier, comment, Objects::equals);
+    }
+
+    public ConfigValue(List<String> path, Supplier<T> defaultSupplier, String comment, BiPredicate<T, T> equalityChecker) {
         this.path = path;
         this.defaultSupplier = defaultSupplier;
         this.comment = comment;
+        this.equalityChecker = equalityChecker;
     }
 
     public T get() {
@@ -41,7 +53,13 @@ public abstract class ConfigValue<T> {
 
     public void set(Object value) {
         if (isValid(value)) {
+            T oldValue = get();
             configSpec.configData.set(path, value);
+            T newValue = get();
+
+            if (!equalityChecker.test(oldValue, newValue)) {
+                notifyListeners(oldValue, newValue);
+            }
         } else {
             throw new IllegalArgumentException("Invalid value for config path " + path + ": " + value);
         }
@@ -57,6 +75,32 @@ public abstract class ConfigValue<T> {
 
     public String getComment() {
         return comment;
+    }
+
+    public ConfigValue<T> onChange(BiConsumer<T, T> listener) {
+        if (listener != null) {
+            changeListeners.add(listener);
+        }
+        return this;
+    }
+
+    public ConfigValue<T> removeChangeListener(BiConsumer<T, T> listener) {
+        changeListeners.remove(listener);
+        return this;
+    }
+
+    public void clearChangeListeners() {
+        changeListeners.clear();
+    }
+
+    protected void notifyListeners(T oldValue, T newValue) {
+        for (BiConsumer<T, T> listener : changeListeners) {
+            try {
+                listener.accept(oldValue, newValue);
+            } catch (Exception e) {
+                ModConfigSpec.LOGGER.error("Error notifying config change listener for path {}", path, e);
+            }
+        }
     }
 
     public abstract boolean isValid(Object value);

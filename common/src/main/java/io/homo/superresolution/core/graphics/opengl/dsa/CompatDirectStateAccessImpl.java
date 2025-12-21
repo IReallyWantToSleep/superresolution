@@ -169,6 +169,14 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
+    public void bufferData(int buffer, int target, long size, int usage) {
+        int prevBuffer = glGetInteger(target);
+        glBindBuffer(target, buffer);
+        glBufferData(target, size, usage);
+        glBindBuffer(target, prevBuffer);
+    }
+
+    @Override
     public void bufferSubData(int buffer, int offset, Buffer data) {
         int prevBuffer = glGetInteger(GL_ARRAY_BUFFER);
         glBindBuffer(GL_ARRAY_BUFFER, buffer);

@@ -21,10 +21,10 @@ package io.homo.superresolution.core.gui.core.impl;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public interface TooltipHolder {
-    void setTooltipSupplier(Supplier<Optional<String>> supplier);
+public interface TooltipHolder<SELF> {
+    SELF setTooltipSupplier(Supplier<Optional<String>> supplier);
 
     Optional<String> getTooltip();
 
-    void setTooltip(String tooltip);
+    SELF setTooltip(String tooltip);
 }

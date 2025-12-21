@@ -24,6 +24,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.common.upscale.InteropCoordinateConverter;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
@@ -91,7 +92,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000002);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000003);
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
 
@@ -142,7 +143,7 @@ public class FfxFSR extends AbstractAlgorithm {
         this.inputColorVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
-                        .usages(TextureUsages.create().sampler())
+                        .usages(TextureUsages.create().sampler().storage())
                         .format(SuperResolutionConfig.getInternalTextureFormat())
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
@@ -158,7 +159,7 @@ public class FfxFSR extends AbstractAlgorithm {
         this.inputDepthVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
-                        .usages(TextureUsages.create().sampler())
+                        .usages(TextureUsages.create().sampler().storage())
                         .format(TextureFormat.R16F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
@@ -174,7 +175,7 @@ public class FfxFSR extends AbstractAlgorithm {
         this.inputMotionVectorsVkTexture = new VulkanTexture(
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
-                        .usages(TextureUsages.create().sampler())
+                        .usages(TextureUsages.create().sampler().storage())
                         .format(TextureFormat.RG16F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
@@ -212,7 +213,7 @@ public class FfxFSR extends AbstractAlgorithm {
                         .label("SRUpscaleOutputColorGlTexture_FfxFsr")
                         .build()
         );
-        this.outputFrameBuffer = GlFrameBuffer.create(this.outputColorGlTexture, null);
+        this.outputFrameBuffer = GlFrameBuffer.create(this.outputColorTexture, null);
     }
 
     @Override
@@ -230,38 +231,27 @@ public class FfxFSR extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(dispatchResource.resources().colorTexture())
-                        .dst(this.inputColorGlTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-        );
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(dispatchResource.resources().depthTexture())
-                        .dst(this.inputDepthGlTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-        );
+        InteropCoordinateConverter.flipY(
+                dispatchResource.resources().colorTexture(),
+                this.inputColorGlTexture);
+        InteropCoordinateConverter.flipY(
+                dispatchResource.resources().depthTexture(),
+                this.inputDepthGlTexture);
+
         if (dispatchResource.resources().motionVectorsTexture() != null)
-            GlTextureCopier.copy(
-                    CopyOperation.create()
-                            .src(dispatchResource.resources().motionVectorsTexture())
-                            .dst(this.inputMotionVectorsGlTexture)
-                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                            .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-            );
+            InteropCoordinateConverter.flipMotionVectorY(
+                    dispatchResource.resources().motionVectorsTexture(),
+                    this.inputMotionVectorsGlTexture);
         syncSemaphore.signalOpenGL(
                 new int[]{
                         Math.toIntExact(this.inputColorGlTexture.handle()),
                         Math.toIntExact(this.inputDepthGlTexture.handle()),
                         Math.toIntExact(this.inputMotionVectorsGlTexture.handle())
                 },
-                GlTextureCopier.getCachedFrameBuffer() == null ? new int[]{} : new int[]{
-                        Math.toIntExact(GlTextureCopier.getCachedFrameBuffer().handle())
-                },
+                null,
                 new int[]{
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 }
         );
@@ -281,8 +271,8 @@ public class FfxFSR extends AbstractAlgorithm {
                 getOriginJitterOffset(
                         dispatchResource.frameCount(),
                         dispatchResource.renderSize(),
-                        dispatchResource.screenSize()
-                )
+                        dispatchResource.screenSize())
+                        .mul(new Vector2f(1, -1))
         );
         desc.setMotionVectorScale(new Vector2f(1));
         desc.setRenderSize(
@@ -332,9 +322,11 @@ public class FfxFSR extends AbstractAlgorithm {
         }
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
-                new int[]{Math.toIntExact(this.outputFrameBuffer.handle())},
-                new int[]{GL_LAYOUT_GENERAL_EXT}
-        );
+                new int[]{},
+                new int[]{GL_LAYOUT_GENERAL_EXT});
+        InteropCoordinateConverter.flipY(
+                this.outputColorGlTexture,
+                this.outputColorTexture);
         return true;
     }
 

@@ -98,49 +98,6 @@ public class GlslangShaderCompiler {
 
 
     public static void main(String[] args) {
-        NativeLibManager.extract("I:\\super_resolution_moddev\\superresolution\\run");
-        NativeLibManager.load("I:\\super_resolution_moddev\\superresolution\\run");
-        init();
-        Map<String, String> defines = new HashMap<>();
-        defines.put("A", "114");
-        String shaderSrc = addCustomDefines("""
-                            //#version 430
-                            #version 430
-                         #extension GL_GOOGLE_include_directive : enable
-                        #include "a.h"
-                        precision mediump float;
-                        
-                        layout (location = 0) in vec2 aPosition;
-                        layout (location = 1) in vec2 aTexCoord;
-                        layout (location = 0) out vec2 vTexCoord;
-                        void main() {
-                            vTexCoord = aTexCoord;
-                            gl_Position = vec4(aPosition, A, 1.0);
-                        }
-                        """,
-                defines
-        );
-/*
-        GlslangCompileShaderResult result =
-                SuperResolutionNative.compileShaderToSpirv(
-                        shaderSrc,
-                        "I:\\super_resolution_moddev\\superresolution\\run\\test.spv",
-                        EShLanguage.EShLangVertex.getValue(),
-                        EShSource.EShSourceGlsl.getValue(),
-                        EShClient.EShClientOpenGL.getValue(),
-                        EShTargetClientVersion.EShTargetOpenGL_450.getValue(),
-                        EShTargetLanguage.EShTargetSpv.getValue(),
-                        EShTargetLanguageVersion.EShTargetSpv_1_0.getValue(),
-                        430,
-                        EProfile.ENoProfile.getValue(),
-                        true,
-                        false
-                );
-        System.out.println(result.preprocessedCode());
-        System.out.println(result.sourceCode());
-        System.out.println(result.spirVDataSize());
-        System.out.println(result.spirVFilePath());
-        System.out.println(result.log());
-        System.out.println(result.error().getValue());*/
+
     }
 }

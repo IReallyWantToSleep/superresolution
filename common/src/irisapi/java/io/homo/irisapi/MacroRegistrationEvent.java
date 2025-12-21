@@ -16,25 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.widgets.switchs;
+package io.homo.irisapi;
 
-import io.homo.superresolution.core.gui.core.animator.AnimationSet;
-import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
+import net.irisshaders.iris.helpers.StringPair;
+import net.neoforged.bus.api.Event;
 
-public class MaterialSwitchAnimationSet extends AnimationSet {
-    protected NumberAnimator hover;
-    protected NumberAnimator press;
-    protected NumberAnimator handlePosition;
-    protected NumberAnimator change;
+import java.util.ArrayList;
+import java.util.List;
 
-    protected NumberAnimator handleSize;
+public class MacroRegistrationEvent extends Event {
+    private final List<StringPair> macros = new ArrayList<>();
 
-    @Override
-    protected void init() {
-        hover = addAnimation();
-        press = addAnimation();
-        handleSize = addAnimation();
-        handlePosition = addAnimation();
-        change = addAnimation();
+    public void registerMacro(String name, String value) {
+        macros.add(new StringPair(name, value));
+    }
+
+    public void registerMacros(List<StringPair> macros) {
+        this.macros.addAll(macros);
+    }
+
+    public List<StringPair> getMacros() {
+        return new ArrayList<>(macros);
     }
 }

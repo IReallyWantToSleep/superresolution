@@ -118,6 +118,8 @@ public interface IGlDirectStateAccess {
 
     void bufferData(int buffer, int target, Buffer data, int usage);
 
+    void bufferData(int buffer, int target, long size, int usage);
+
     void bufferSubData(int buffer, int offset, Buffer data);
 
     void deleteBuffer(int buffer);

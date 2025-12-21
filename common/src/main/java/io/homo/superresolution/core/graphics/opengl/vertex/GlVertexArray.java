@@ -106,14 +106,14 @@ public class GlVertexArray implements GpuObject {
 
     private int getGlType(VertexAttributeFormat format) {
         return switch (format) {
-            case VertexAttributeFormat.FLOAT, VertexAttributeFormat.FLOAT2, VertexAttributeFormat.FLOAT3,
-                 VertexAttributeFormat.FLOAT4 -> GL_FLOAT;
-            case VertexAttributeFormat.INT, INT2, INT3, INT4 -> GL_INT;
-            case VertexAttributeFormat.UINT, UINT2, UINT3, UINT4 -> GL_UNSIGNED_INT;
-            case VertexAttributeFormat.BYTE4_NORMALIZED -> GL_BYTE;
-            case VertexAttributeFormat.UBYTE4_NORMALIZED -> GL_UNSIGNED_BYTE;
-            case VertexAttributeFormat.SHORT2, SHORT4 -> GL_SHORT;
-            case VertexAttributeFormat.USHORT2, USHORT4 -> GL_UNSIGNED_SHORT;
+            case FLOAT, FLOAT2, FLOAT3,
+                 FLOAT4 -> GL_FLOAT;
+            case INT, INT2, INT3, INT4 -> GL_INT;
+            case UINT, UINT2, UINT3, UINT4 -> GL_UNSIGNED_INT;
+            case BYTE4_NORMALIZED -> GL_BYTE;
+            case UBYTE4_NORMALIZED -> GL_UNSIGNED_BYTE;
+            case SHORT2, SHORT4 -> GL_SHORT;
+            case USHORT2, USHORT4 -> GL_UNSIGNED_SHORT;
         };
     }
 

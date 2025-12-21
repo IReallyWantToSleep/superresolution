@@ -23,6 +23,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
@@ -33,6 +34,7 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.gui.MaterialUI;
@@ -149,11 +151,10 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static void preInit() {
         if (minecraft == null) minecraft = Minecraft.getInstance();
-        File gameDir = Platform.currentPlatform.getGameFolder().toFile();
         if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
-        NativeLibManager.extract(gameDir.getAbsolutePath());
-        NativeLibManager.load(gameDir.getAbsolutePath());
+        NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
+        NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
         GlslangShaderCompiler.init();
         isPreInit = true;
     }
@@ -259,12 +260,14 @@ public final class SuperResolution implements Resizable, Destroyable {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.init();
                 currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
-                AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
-                        currentAlgorithm,
-                        RenderHandlerManager.getScreenWidth(),
-                        RenderHandlerManager.getScreenHeight(),
-                        RenderHandlerManager.getRenderWidth(),
-                        RenderHandlerManager.getRenderHeight()
+                SuperResolutionAPI.EVENT_BUS.post(
+                        new AlgorithmResizeEvent(
+                                currentAlgorithm,
+                                RenderHandlerManager.getScreenWidth(),
+                                RenderHandlerManager.getScreenHeight(),
+                                RenderHandlerManager.getRenderWidth(),
+                                RenderHandlerManager.getRenderHeight()
+                        )
                 );
 
                 return true;
@@ -298,12 +301,14 @@ public final class SuperResolution implements Resizable, Destroyable {
         cachedWidth = MinecraftWindow.getWindowWidth();
         cachedHeight = MinecraftWindow.getWindowHeight();
         if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscale()) {
-            AlgorithmResizeEvent.EVENT.invoker().onAlgorithmResize(
-                    currentAlgorithm,
-                    RenderHandlerManager.getScreenWidth(),
-                    RenderHandlerManager.getScreenHeight(),
-                    RenderHandlerManager.getRenderWidth(),
-                    RenderHandlerManager.getRenderHeight()
+            SuperResolutionAPI.EVENT_BUS.post(
+                    new AlgorithmResizeEvent(
+                            currentAlgorithm,
+                            RenderHandlerManager.getScreenWidth(),
+                            RenderHandlerManager.getScreenHeight(),
+                            RenderHandlerManager.getRenderWidth(),
+                            RenderHandlerManager.getRenderHeight()
+                    )
             );
             currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
         }

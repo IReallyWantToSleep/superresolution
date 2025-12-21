@@ -140,6 +140,11 @@ public class GL45OrEXTDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
+    public void bufferData(int buffer, int target, long size, int usage) {
+        GL45C.glNamedBufferData(buffer, size, usage);
+    }
+
+    @Override
     public void bufferSubData(int buffer, int offset, Buffer data) {
         if (data instanceof ByteBuffer) {
             GL45C.glNamedBufferSubData(buffer, offset, (ByteBuffer) data);

@@ -30,19 +30,19 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSliderStyle, MaterialSliderAnimationSet> {
+public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     private Number value = 0.0;
     private Number step = 0.0;
     private Number max = 1.0;
     private Number min = 0.0;
     private Function<Number, String> valueIndicatorTextFormater = Object::toString;
+    protected MaterialSliderAnimationSet animationSet;
 
     public MaterialSlider(MaterialSliderSize size, float width) {
         this.style = new MaterialSliderStyle();
-        this.style.size(size);
+        style().size(size);
         setElementWidth(width);
         updateRectangle();
         getLayoutNode().setDebugName("MaterialSlider");
@@ -53,12 +53,49 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         return new MaterialSlider(MaterialSliderSize.Medium, 354);
     }
 
+    public static MaterialSlider create(float width) {
+        return new MaterialSlider(MaterialSliderSize.Medium, width);
+    }
+
+    public static MaterialSlider create(MaterialSliderSize size, float width) {
+        return new MaterialSlider(size, width);
+    }
+
+    public static MaterialSlider of(Number min, Number max, Number value, Number step, float width) {
+        MaterialSlider slider = new MaterialSlider(MaterialSliderSize.Medium, width);
+        slider.min = min;
+        slider.max = max;
+        slider.value = value;
+        slider.step = step;
+        return slider;
+    }
+
+    @Override
+    public MaterialSliderStyle style() {
+        return (MaterialSliderStyle) style;
+    }
+
     public Function<Number, String> getValueIndicatorTextFormater() {
         return valueIndicatorTextFormater;
     }
 
     public MaterialSlider setValueIndicatorTextFormater(Function<Number, String> valueIndicatorTextFormater) {
         this.valueIndicatorTextFormater = valueIndicatorTextFormater;
+        return this;
+    }
+
+    public MaterialSlider usePercentageFormatter() {
+        this.valueIndicatorTextFormater = v -> String.format("%.0f%%", v.doubleValue() * 100);
+        return this;
+    }
+
+    public MaterialSlider useDecimalFormatter(int decimalPlaces) {
+        this.valueIndicatorTextFormater = v -> String.format("%." + decimalPlaces + "f", v.doubleValue());
+        return this;
+    }
+
+    public MaterialSlider useIntegerFormatter() {
+        this.valueIndicatorTextFormater = v -> String.valueOf(v.intValue());
         return this;
     }
 
@@ -99,12 +136,14 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         return this;
     }
 
-    public float width() {
-        return getBounds().width;
+    public MaterialSlider range(Number min, Number max) {
+        this.min = min;
+        this.max = max;
+        return this;
     }
 
-    public void onChange(Consumer<WidgetEvent.ChangeEvent<Number>> listener) {
-        eventBus.addListener(listener);
+    public float width() {
+        return getBounds().width;
     }
 
     @Override
@@ -123,13 +162,13 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
     }
 
     private void updateRectangle() {
-        setElementHeight(style.size().handleHeight());
+        setElementHeight(style().size().handleHeight());
     }
 
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        if (animationSet.handleSize.floatValue() < style.size().handleWidthPress())
-            animationSet.handleSize.set(style.size().handleWidth());
+        if (animationSet.handleSize.floatValue() < style().size().handleWidthPress())
+            animationSet.handleSize.set(style().size().handleWidth());
         updateRectangle();
         drawContext.beginBatch();
         animationSet.update();
@@ -137,65 +176,65 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         Rectangle bounds = getBounds();
         float progress = (float) ((value.doubleValue() - min.doubleValue()) / (max.doubleValue() - min.doubleValue()));
         //滑块中间X
-        float availableWidth = bounds.width - style.size().stepsHorizontalPadding() * 2;
+        float availableWidth = bounds.width - style().size().stepsHorizontalPadding() * 2;
         float handleXPosition = bounds.x + availableWidth * progress;
         float handleWidth = animationSet.handleSize.floatValue();
-        float activeTrackWidth = (availableWidth * progress) - (handleWidth / 2) - style.size().handleHorizontalPadding() + style.size().stepsSize();
+        float activeTrackWidth = (availableWidth * progress) - (handleWidth / 2) - style().size().handleHorizontalPadding() + style().size().stepsSize();
         if (activeTrackWidth > 1) {
             drawContext.beginPath();
             drawContext.fillColor(colors.activeTrackColor);
             drawContext.roundedRectComplex(
                     bounds.x,
-                    bounds.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
+                    bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2),
                     activeTrackWidth,
-                    style.size().trackHeight(),
-                    Math.min(style.size().trackCornerSize(), activeTrackWidth / 2),
+                    style().size().trackHeight(),
+                    Math.min(style().size().trackCornerSize(), activeTrackWidth / 2),
                     Math.min(2, activeTrackWidth / 2),
-                    Math.min(style.size().trackCornerSize(), activeTrackWidth / 2),
+                    Math.min(style().size().trackCornerSize(), activeTrackWidth / 2),
                     Math.min(2, activeTrackWidth / 2)
             );
             drawContext.endPath();
         }
-        drawContext.drawRoundedRect(
-                handleXPosition - (handleWidth / 2) + style.size().stepsSize(),
+        drawContext.roundedRect(
+                handleXPosition - (handleWidth / 2) + style().size().stepsSize(),
                 bounds.y,
                 handleWidth,
-                style.size().handleHeight(),
+                style().size().handleHeight(),
                 Math.min(2, handleWidth / 2),
                 colors.handleColor,
                 true
         );
-        float inactiveTrackWidth = bounds.width - activeTrackWidth - handleWidth - style.size().handleHorizontalPadding() - style.size().handleHorizontalPadding();
+        float inactiveTrackWidth = bounds.width - activeTrackWidth - handleWidth - style().size().handleHorizontalPadding() - style().size().handleHorizontalPadding();
         if (inactiveTrackWidth > 1) {
             drawContext.beginPath();
             drawContext.fillColor(colors.inactiveTrackColor);
             drawContext.roundedRectComplex(
                     bounds.getLimitX() - inactiveTrackWidth,
-                    bounds.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
+                    bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2),
                     inactiveTrackWidth,
-                    style.size().trackHeight(),
+                    style().size().trackHeight(),
                     Math.min(2, inactiveTrackWidth / 2),
-                    Math.min(style.size().trackCornerSize(), inactiveTrackWidth / 2),
+                    Math.min(style().size().trackCornerSize(), inactiveTrackWidth / 2),
                     Math.min(2, inactiveTrackWidth / 2),
-                    Math.min(style.size().trackCornerSize(), inactiveTrackWidth / 2)
+                    Math.min(style().size().trackCornerSize(), inactiveTrackWidth / 2)
             );
             drawContext.endPath();
         }
-        if (step.doubleValue() > 0 && style.steps()) {
+        if (step.doubleValue() > 0 && style().steps()) {
             int steps = (int) Math.floor((max.doubleValue() - min.doubleValue()) / step().doubleValue());
             //float availableWidth = rectangle.width - style.size().stepsHorizontalPadding() * 2;
             float stepSpacing = availableWidth / (steps);
 
             for (int stepIndex = 0; stepIndex <= steps; stepIndex++) {
-                float stepXPosition = bounds.x + style.size().stepsHorizontalPadding() + stepSpacing * stepIndex;
+                float stepXPosition = bounds.x + style().size().stepsHorizontalPadding() + stepSpacing * stepIndex;
                 if (Math.abs(stepXPosition - handleXPosition) < stepSpacing / 2) continue;
                 double stepValue = min.doubleValue() + stepIndex * step.doubleValue();
                 Color stepColor = value.doubleValue() >= stepValue ?
                         colors.stepActiveIndicatorsColor : colors.stepInactiveIndicatorsColor;
-                drawContext.drawArc(
+                drawContext.arc(
                         stepXPosition,
-                        bounds.y + (style.size().trackHeight() / 2) + ((style.size().handleHeight() - style.size().trackHeight()) / 2),
-                        style.size().stepsSize() / 2,
+                        bounds.y + (style().size().trackHeight() / 2) + ((style().size().handleHeight() - style().size().trackHeight()) / 2),
+                        style().size().stepsSize() / 2,
                         stepColor,
                         true
                 );
@@ -204,14 +243,14 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
         drawContext.endBatch(getZIndex());
 
         drawContext.beginBatch();
-        if (style.valueIndicator() && animationSet.hover.doubleValue() > 0.01) {
+        if (style().valueIndicator() && animationSet.hover.doubleValue() > 0.01) {
             String valueIndicatorString = valueIndicatorTextFormater == null ? String.valueOf(value()) : valueIndicatorTextFormater.apply(value());
             Vector2f valueIndicatorStringRegion = drawContext.measureText(valueIndicatorString, 14f);
             Rectangle valueIndicatorRegion = new Rectangle();
-            valueIndicatorRegion.width = style.size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;
-            valueIndicatorRegion.height = style.size().valueIndicatorTextVerticalPadding() * 2 + 20;
+            valueIndicatorRegion.width = style().size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;
+            valueIndicatorRegion.height = style().size().valueIndicatorTextVerticalPadding() * 2 + 20;
             valueIndicatorRegion.x = handleXPosition - valueIndicatorRegion.width / 2;
-            valueIndicatorRegion.y = bounds.y + ((style.size().handleHeight() - style.size().trackHeight()) / 2) - ((style.size().handleHeight() - style.size().trackHeight()) / 2) - style.size().valueIndicatorBottomPadding() - bounds.height;
+            valueIndicatorRegion.y = bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2) - ((style().size().handleHeight() - style().size().trackHeight()) / 2) - style().size().valueIndicatorBottomPadding() - bounds.height;
             drawContext.transform().push();
             drawContext.transform().last().scaleAt(
                     animationSet.hover.floatValue(),
@@ -220,7 +259,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
                     valueIndicatorRegion.getLimitY()
             );
             drawContext.transform().translate(0, 0);
-            drawContext.drawRoundedRect(
+            drawContext.roundedRect(
                     valueIndicatorRegion.x,
                     valueIndicatorRegion.y,
                     valueIndicatorRegion.width,
@@ -298,7 +337,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
                 .animateTo(1, 200);
         animationSet.handleSize
                 .ease(Easing.LINEAR)
-                .animateTo(style.size().handleWidthPress(), 200);
+                .animateTo(style().size().handleWidthPress(), 200);
         float progress = calcProgressFromMouse(mousePosition);
         double range = max.doubleValue() - min.doubleValue();
         double newValue = min.doubleValue() + (range * progress);
@@ -350,7 +389,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider, MaterialSlide
                 .animateTo(0, 200);
         animationSet.handleSize
                 .ease(Easing.LINEAR)
-                .animateTo(style.size().handleWidth(), 200);
+                .animateTo(style().size().handleWidth(), 200);
     }
 
     private static class SliderColors {

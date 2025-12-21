@@ -21,6 +21,7 @@ package io.homo.superresolution.common.minecraft.handler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.sun.jna.Pointer;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
@@ -131,9 +132,7 @@ public class RenderHandlerManager {
                 }
             }
         }
-        if (LevelRenderStartEvent.EVENT.hasEvent()) {
-            LevelRenderStartEvent.EVENT.invoker().onLevelRenderStart();
-        }
+        SuperResolutionAPI.EVENT_BUS.post(new LevelRenderStartEvent());
         handler.onRenderWorldBegin(type);
     }
 
@@ -142,9 +141,7 @@ public class RenderHandlerManager {
         if (checkRenderWorldCallPos(type)) {
             PerformanceRecorder.endWorld();
             handler.onRenderWorldEnd(type);
-            if (LevelRenderEndEvent.EVENT.hasEvent()) {
-                LevelRenderEndEvent.EVENT.invoker().onLevelRenderEnd();
-            }
+            SuperResolutionAPI.EVENT_BUS.post(new LevelRenderEndEvent());
             if (RenderHandlerManager.needCapture) {
                 if (RenderDoc.renderdoc != null) {
                     RenderHandlerManager.needCapture = false;

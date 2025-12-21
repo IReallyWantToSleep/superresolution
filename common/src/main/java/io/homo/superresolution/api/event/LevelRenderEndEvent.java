@@ -18,20 +18,12 @@
 
 package io.homo.superresolution.api.event;
 
+import net.neoforged.bus.api.Event;
+
 /**
  * 世界渲染结束事件，触发位置随配置中的捕获模式改变<br>
  * 捕获模式为A或C时会在GameRenderer::renderLevel触发<br>
  * 捕获模式为B时会在LevelRenderer::renderLevel触发
  */
-public interface LevelRenderEndEvent {
-    Event<LevelRenderEndEvent> EVENT = EventFactory.create(
-            LevelRenderEndEvent.class,
-            (listeners) -> () -> {
-                for (LevelRenderEndEvent listener : listeners) {
-                    listener.onLevelRenderEnd();
-                }
-            }
-    );
-
-    void onLevelRenderEnd();
+public class LevelRenderEndEvent extends Event {
 }

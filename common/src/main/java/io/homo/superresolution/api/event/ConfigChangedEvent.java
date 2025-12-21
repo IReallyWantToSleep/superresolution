@@ -18,15 +18,7 @@
 
 package io.homo.superresolution.api.event;
 
-public interface ConfigChangedEvent {
-    Event<ConfigChangedEvent> EVENT = EventFactory.create(
-            ConfigChangedEvent.class,
-            (listeners) -> () -> {
-                for (ConfigChangedEvent listener : listeners) {
-                    listener.onConfigReload();
-                }
-            }
-    );
+import net.neoforged.bus.api.Event;
 
-    void onConfigReload();
+public class ConfigChangedEvent extends Event {
 }

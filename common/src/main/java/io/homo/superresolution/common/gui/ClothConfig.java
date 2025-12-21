@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.ConfigChangedEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
@@ -73,14 +74,7 @@ public class ClothConfig {
         commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.enable_upscale"), SuperResolutionConfig.isEnableUpscaleOriginal())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                 .setDefaultValue(true)
-                .setSaveConsumer((newValue) -> {
-                    boolean oldValue = SuperResolutionConfig.isEnableUpscale();
-                    SuperResolutionConfig.setEnableUpscale(newValue);
-                    if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
-                    if (oldValue != newValue) {
-                        ShaderCompatHandler.irisApiReloadShader();
-                    }
-                })
+                .setSaveConsumer((newValue) -> SuperResolutionConfig.setEnableUpscale(newValue))
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(Component.translatable("superresolution.screen.config.options.label.disable_upscale_on_vanilla"), SuperResolutionConfig.isDisableUpscaleOnVanilla())
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla"))
@@ -220,12 +214,7 @@ public class ClothConfig {
                 )
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.internal_texture_format"))
                 .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
-                .setSaveConsumer((newValue) -> {
-                    if (SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get() != newValue) {
-                        SuperResolutionConfig.setInternalTextureFormat(newValue);
-                        SuperResolution.recreateAlgorithm();
-                    }
-                })
+                .setSaveConsumer((newValue) -> SuperResolutionConfig.setInternalTextureFormat(newValue))
                 .build());
         commonCategory.addEntry(entryBuilder.startBooleanToggle(
                         Component.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
@@ -233,11 +222,7 @@ public class ClothConfig {
                 )
                 .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
                 .setDefaultValue(false)
-                .setSaveConsumer((newValue) -> {
-                    SuperResolutionConfig.setForceDisableShaderCompat(newValue);
-                    if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
-                    ShaderCompatHandler.irisApiReloadShader();
-                })
+                .setSaveConsumer((newValue) -> SuperResolutionConfig.setForceDisableShaderCompat(newValue))
                 .build());
 
         List<String> injectPostChainBlackList = new ArrayList<>();
@@ -273,7 +258,7 @@ public class ClothConfig {
         addDebug(builder, entryBuilder);
         builder.setSavingRunnable(() -> {
             SuperResolutionConfig.SPEC.save();
-            ConfigChangedEvent.EVENT.invoker().onConfigReload();
+            SuperResolutionAPI.EVENT_BUS.post(new ConfigChangedEvent());
         });
     }
 

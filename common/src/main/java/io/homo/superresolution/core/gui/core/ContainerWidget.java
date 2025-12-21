@@ -22,7 +22,7 @@ import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 
-public class ContainerWidget extends AbstractContainerWidget<ContainerWidget, WidgetStyle<?>, AnimationSet> {
+public class ContainerWidget extends AbstractContainerWidget<ContainerWidget> {
 
     public static ContainerWidget create() {
         return new ContainerWidget();

@@ -30,12 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class AbstractContainerWidget<
-        T extends AbstractWidget<?, ?, ?>,
-        STYLE extends WidgetStyle<?>,
-        ANIM extends AnimationSet
-        > extends AbstractWidget<T, STYLE, ANIM> implements ILayoutContainer {
-
+public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<T>> extends AbstractWidget<T> implements ILayoutContainer {
     protected final List<ILayoutElement> children = new ArrayList<>();
 
     @Override
@@ -59,11 +54,11 @@ public abstract class AbstractContainerWidget<
         return Collections.unmodifiableList(children);
     }
 
-    public void addChild(AbstractWidget<?, ?, ?> widget) {
+    public void addChild(AbstractWidget<?> widget) {
         addChild((ILayoutElement) widget);
     }
 
-    public void removeChild(AbstractWidget<?, ?, ?> widget) {
+    public void removeChild(AbstractWidget<?> widget) {
         removeChild((ILayoutElement) widget);
     }
 
@@ -73,7 +68,7 @@ public abstract class AbstractContainerWidget<
 
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() &&
                         !widget.isDisabled() && (!isOutsideView(widget))
                 ) {
@@ -89,7 +84,7 @@ public abstract class AbstractContainerWidget<
 
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget, new Vector2f(x, y))) {
                     widget.mousePress(x, y, button);
                 }
@@ -103,7 +98,7 @@ public abstract class AbstractContainerWidget<
         if (isDisabled() || !isVisible()) return;
 
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget)) {
                     widget.mouseRelease(x, y, button);
                 }
@@ -116,7 +111,7 @@ public abstract class AbstractContainerWidget<
         super.mouseDrag(mouseX, mouseY, dragX, dragY, button);
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget)) {
                     widget.mouseDrag(mouseX, mouseY, dragX, dragY, button);
                 }
@@ -129,7 +124,7 @@ public abstract class AbstractContainerWidget<
         super.mouseScroll(x, y, scrollX);
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget, new Vector2f(x, y))) {
                     widget.mouseScroll(x, y, scrollX);
                 }
@@ -143,7 +138,7 @@ public abstract class AbstractContainerWidget<
         if (isDisabled() || !isVisible()) return;
 
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
                     widget.keyPress(keyCode, scancode, modifiers);
                 }
@@ -156,7 +151,7 @@ public abstract class AbstractContainerWidget<
         super.keyRelease(keyCode, scancode, modifiers);
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
                     widget.keyRelease(keyCode, scancode, modifiers);
                 }
@@ -169,7 +164,7 @@ public abstract class AbstractContainerWidget<
         super.charTyped(codePoint, modifiers);
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?, ?, ?> widget) {
+            if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
                     widget.charTyped(codePoint, modifiers);
                 }
@@ -192,15 +187,15 @@ public abstract class AbstractContainerWidget<
     }
 
     @Override
-    public AbstractWidget<?, ?, ?> findInteractiveWidgetAt(Vector2f absPos) {
-        if (!isVisible() || isDisabled() || !hitTest(absPos)) {
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
+        if (!hitTest(absPos)) {
             return null;
         }
 
         for (int i = children.size() - 1; i >= 0; i--) {
             ILayoutElement child = children.get(i);
-            if (child instanceof AbstractWidget<?, ?, ?> widget && widget.isVisible() && !widget.isDisabled()) {
-                AbstractWidget<?, ?, ?> interactive = widget.findInteractiveWidgetAt(absPos);
+            if (child instanceof AbstractWidget<?> widget && widget.isVisible() && !widget.isDisabled()) {
+                AbstractWidget<?> interactive = widget.findInteractiveWidgetAt(absPos);
                 if (interactive != null) {
                     return interactive;
                 }
@@ -218,7 +213,7 @@ public abstract class AbstractContainerWidget<
                 getBounds().height);
     }
 
-    private boolean isOutsideView(AbstractWidget<?, ?, ?> child) {
+    private boolean isOutsideView(AbstractWidget<?> child) {
         Rectangle view = getAbsoluteViewRect();
         Rectangle childAbs = new Rectangle(
                 child.getAbsolutePosition().x,
@@ -229,7 +224,7 @@ public abstract class AbstractContainerWidget<
         return !view.intersect(childAbs);
     }
 
-    private boolean isOutsideView(AbstractWidget<?, ?, ?> child, Vector2f position) {
+    private boolean isOutsideView(AbstractWidget<?> child, Vector2f position) {
         Rectangle view = getAbsoluteViewRect();
 
         Rectangle childAbs = new Rectangle(

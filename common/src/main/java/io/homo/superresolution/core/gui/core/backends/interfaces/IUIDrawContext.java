@@ -58,28 +58,35 @@ public interface IUIDrawContext extends ITextRenderer {
         endPath(true);
     }
 
-    default void drawLine(float x1, float y1, float x2, float y2, float lineWidth, Color color) {
+    default void line(float x1, float y1, float x2, float y2, float lineWidth, Color color) {
         beginPath();
         drawColor(false, color);
         line(x1, y1, x2, y2);
         endPath(false);
     }
 
-    default void drawRect(float x, float y, float width, float height, Color color, boolean fill) {
+    default void rect(float x, float y, float width, float height, Color color, boolean fill) {
         beginPath();
         drawColor(fill, color);
         rect(x, y, width, height);
         endPath(fill);
     }
 
-    default void drawRoundedRect(float x, float y, float width, float height, float radius, Color color, boolean fill) {
+    default void roundedRect(float x, float y, float width, float height, float radius, Color color, boolean fill) {
         beginPath();
         drawColor(fill, color);
         roundedRect(x, y, width, height, radius);
         endPath(fill);
     }
 
-    default void drawArc(
+    default void roundedRect(float x, float y, float width, float height, float bottomLeftRadius, float bottomRightRadius, float topLeftRadius, float topRightRadius, Color color, boolean fill) {
+        beginPath();
+        drawColor(fill, color);
+        roundedRectComplex(x, y, width, height, bottomLeftRadius, bottomRightRadius, topLeftRadius, topRightRadius);
+        endPath(fill);
+    }
+
+    default void arc(
             float x,
             float y,
             float radius,

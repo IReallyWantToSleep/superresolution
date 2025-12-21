@@ -23,8 +23,18 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 
-public class MaterialMenuItem extends AbstractWidget<MaterialMenuItem, MaterialMenuItemStyle, MaterialMenuItemAnimationSet> {
+public class MaterialMenuItem extends AbstractWidget<MaterialMenuItem> {
     private Rectangle rectangle = new Rectangle();
+
+    public MaterialMenuItem() {
+        this.style = new MaterialMenuItemStyle();
+        this.animationSet = new MaterialMenuItemAnimationSet();
+    }
+
+    @Override
+    public MaterialMenuItemStyle style() {
+        return (MaterialMenuItemStyle) super.style();
+    }
 
     @Override
     protected void init() {

@@ -18,18 +18,10 @@
 
 package io.homo.superresolution.api.event;
 
+import net.neoforged.bus.api.Event;
+
 /**
  * 注册算法事件，当内置算法注册后被触发
  */
-public interface AlgorithmRegisterEvent {
-    Event<AlgorithmRegisterEvent> EVENT = EventFactory.create(
-            AlgorithmRegisterEvent.class,
-            (listeners) -> () -> {
-                for (AlgorithmRegisterEvent listener : listeners) {
-                    listener.onAlgorithmRegister();
-                }
-            }
-    );
-
-    void onAlgorithmRegister();
+public class AlgorithmRegisterEvent extends Event {
 }

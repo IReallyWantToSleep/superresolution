@@ -20,6 +20,7 @@ package io.homo.superresolution.common.dataset;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
@@ -86,8 +87,8 @@ public class DataSetGenerator {
 
     public static void init() {
         KeyMappingRegistry.register(SAVE_KEYMAPPING);
-        LevelRenderStartEvent.EVENT.register(DataSetGenerator::onLevelBegin);
-        LevelRenderEndEvent.EVENT.register(DataSetGenerator::onLevelEnd);
+        SuperResolutionAPI.EVENT_BUS.addListener(DataSetGenerator::onLevelBegin);
+        SuperResolutionAPI.EVENT_BUS.addListener(DataSetGenerator::onLevelEnd);
     }
 
     private static void writeImage(ITexture texture, String path) {
@@ -131,7 +132,7 @@ public class DataSetGenerator {
         }
     }
 
-    private static void onLevelBegin() {
+    private static void onLevelBegin(LevelRenderStartEvent event) {
         int frameCount = RenderHandlerManager.getFrameCount();
         if (!SAVE_KEYMAPPING.isDown()) {
             previousId = id;
@@ -230,7 +231,7 @@ public class DataSetGenerator {
         );
     }
 
-    private static void onLevelEnd() {
+    private static void onLevelEnd(LevelRenderEndEvent event) {
         int frameCount = RenderHandlerManager.getFrameCount();
         if (!SAVE_KEYMAPPING.isDown()) {
             previousId = id;

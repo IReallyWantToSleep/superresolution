@@ -52,23 +52,6 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_DLSS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSRGL = null;
 
-    public interface ExtendedKernel32 extends com.sun.jna.platform.win32.Kernel32 {
-        class DllDirectoryCookie extends PointerType {
-            public DllDirectoryCookie() {
-                super();
-            }
-
-            public DllDirectoryCookie(Pointer p) {
-                super(p);
-            }
-        }
-
-        DllDirectoryCookie AddDllDirectory(String lpPathName);
-
-    }
-
-    private static ExtendedKernel32 kernel32Instance;
-
     static {
         OperatingSystem operatingSystem = new OperatingSystem();
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
@@ -121,8 +104,16 @@ public class NativeLibManager {
         return nativeApiAvailable;
     }
 
-    public static void extract(String path) {
+    public static void createLibraryDir(Path path) {
+        File dir = path.toFile();
+        if (!dir.exists() && !dir.mkdirs()) {
+            LOGGER.error("无法创建目录: {}", dir);
+        }
+    }
+
+    public static void extract(Path path) {
         LOGGER.info("开始提取依赖库文件");
+        createLibraryDir(path);
         List<String> requiredFailures = new ArrayList<>();
         List<String> optionalFailures = new ArrayList<>();
 
@@ -166,7 +157,8 @@ public class NativeLibManager {
         LOGGER.info("依赖库文件已提取到 {}", path);
     }
 
-    public static void load(String path) {
+    public static void load(Path path) {
+        createLibraryDir(path);
         for (NativeLib lib : libs) {
             if (lib.extractedPath == null) {
                 if (lib.required) {
@@ -178,7 +170,7 @@ public class NativeLibManager {
                 }
             }
 
-            File f = lib.getTargetPath(Path.of(path)).toFile();
+            File f = lib.getTargetPath(path).toFile();
             if (lib.loadAtStartup) {
                 try {
                     LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
@@ -205,9 +197,9 @@ public class NativeLibManager {
         return true;
     }
 
-    private static boolean extractLibrary(String path, NativeLib library) throws IOException {
+    private static boolean extractLibrary(Path path, NativeLib library) throws IOException {
         Path sourcePath = Paths.get(BASE_PATH, library.fileName);
-        Path targetPath = library.getTargetPath(Path.of(path));
+        Path targetPath = library.getTargetPath(path);
 
         try (InputStream in = NativeLibManager.class.getClassLoader()
                 .getResourceAsStream(sourcePath.toString().replace("\\", "/"))) {

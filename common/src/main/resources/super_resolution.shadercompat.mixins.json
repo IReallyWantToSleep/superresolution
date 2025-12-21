@@ -6,14 +6,9 @@
     "minVersion": "0.8",
     "client": [
         "core.CompositeRendererAccessor",
-        "core.CompositeRendererMixin",
-        "core.IrisMixin",
         "core.IrisRenderingPipelineAccessor",
         "core.IrisRenderingPipelineMixin",
         "core.ShaderPackAccessor",
-        "core.StandardMacrosMixin",
-        "core.ViewportUniformsMixin",
-        "core.CompositeRendererPassMixin",
         "core.RenderTargetsAccessor",
         "core.ShaderPackMixin"
     ],

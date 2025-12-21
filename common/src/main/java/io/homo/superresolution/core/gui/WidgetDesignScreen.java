@@ -11,12 +11,10 @@ import io.homo.superresolution.core.gui.widgets.MaterialScrollableContainerWidge
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.Animator;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.AnimatorListener;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimator;
+import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
+import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test.CaptureTree;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import net.minecraft.network.chat.Component;
@@ -42,31 +40,23 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         lineContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
         lineContainer.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
         lineContainer.layout().setAlignItems(YogaAlign.STRETCH);
-
-        MaterialButton btnElevated = MaterialButton.create()
-                .text("Elevated " + line)
-                .scheme(materialScheme)
-                .size(MaterialButtonSize.ExtraSmall);
-        btnElevated.style().variant(MaterialButtonVariant.Elevated);
-        btnElevated.layout().setAlignSelf(YogaAlign.FLEX_START);
-
-        MaterialButton btnFilled = MaterialButton.create()
-                .text("Filled " + line)
-                .scheme(materialScheme)
-                .size(MaterialButtonSize.Medium);
-        btnFilled.style().variant(MaterialButtonVariant.Filled);
+        MaterialSlider btnFilled = MaterialSlider.create()
+                .setMax(100)
+                .setMin(-100)
+                .setStep(0.1f)
+                .setValue(-10)
+                .scheme(materialScheme);
+        btnFilled.style().valueIndicator(true);
         btnFilled.layout().setAlignSelf(YogaAlign.CENTER);
-
-        MaterialButton btnTonal = MaterialButton.create()
-                .text("Tonal " + line)
+        btnFilled.layout().setMargin(YogaEdge.RIGHT, 5);
+        MaterialSwitch switch0 = MaterialSwitch.create()
                 .scheme(materialScheme)
-                .size(MaterialButtonSize.ExtraSmall);
-        btnTonal.style().variant(MaterialButtonVariant.Tonal);
-        btnTonal.layout().setAlignSelf(YogaAlign.FLEX_END);
-
-        lineContainer.addChild(btnElevated);
+                .setChecked(true);
+        switch0.style().showCheckedIconWhenEnable(false);
+        switch0.layout().setAlignSelf(YogaAlign.CENTER);
         lineContainer.addChild(btnFilled);
-        lineContainer.addChild(btnTonal);
+        lineContainer.addChild(switch0);
+
         return lineContainer;
     }
 
@@ -109,15 +99,8 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         rootContainer.getLayoutNode().setHeight(screenSize.y);
         rootContainer.getLayoutNode().setPosition(YogaEdge.TOP, 100);
         rootContainer.getLayoutNode().calculateLayout(screenSize.x, screenSize.y);
-        CaptureTree.calculateLayoutWithCapture(
-                rootContainer.getLayoutNode(),
-                screenSize.x,
-                screenSize.y,
-                YogaDirection.LTR,
-                Path.of("test_layout.json")
-        );
         drawContext.beginBatch();
-        drawContext.drawRect(
+        drawContext.rect(
                 0,
                 0,
                 MinecraftWindow.getWindowSize().x,
@@ -245,7 +228,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
     }
 
     private void drawRibbonWithText(IUIDrawContext drawContext, Rectangle rectangle, Color color, String str) {
-        drawContext.drawRect(
+        drawContext.rect(
                 rectangle.x / nvg.globalScale,
                 rectangle.y / nvg.globalScale,
                 rectangle.width / nvg.globalScale,
