@@ -18,19 +18,19 @@
 
 package io.homo.superresolution.shadercompat;
 
-import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
-import io.homo.superresolution.common.minecraft.handler.ShaderCompatTextureInfo;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 
-public class TextureConfigResolver {
+public class IrisTextureConfigResolver {
 
-    public static ShaderCompatTextureInfo createForInput(CompositeRenderer renderer, SRShaderCompatConfig.InputTextureConfig config) {
+    public static ShaderCompatTextureInfo createForInput(CompositeRenderer renderer, SRShaderCompatData.InputTexture config) {
         return new ShaderCompatTextureInfo(
                 () -> IrisTextureResolver.getIrisTexture(
-                        renderer, config.src
+                        renderer, config.sourceName
                 ), config.region,
                 false,
-                config.src
+                config.sourceName
         );
     }
 }

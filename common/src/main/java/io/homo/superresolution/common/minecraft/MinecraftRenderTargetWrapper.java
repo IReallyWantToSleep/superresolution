@@ -25,6 +25,8 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.utils.ColorUtil;
 
+import java.util.List;
+
 #if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL30;
