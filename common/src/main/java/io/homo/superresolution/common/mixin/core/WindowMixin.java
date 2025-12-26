@@ -41,12 +41,14 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getGuiScaledWidth", cancellable = true)
     private void getGuiScaledWidth(CallbackInfoReturnable<Integer> ci) {
+        if (!SuperResolution.isPreInit) return;
         if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
     @Inject(at = @At("RETURN"), method = "getGuiScaledHeight", cancellable = true)
     private void getGuiScaledHeight(CallbackInfoReturnable<Integer> ci) {
+        if (!SuperResolution.isPreInit) return;
         if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
@@ -54,6 +56,8 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getWidth", cancellable = true)
     private void getFramebufferWidth(CallbackInfoReturnable<Integer> ci) {
+        if (!SuperResolution.isPreInit) return;
+
         if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValue())));
     }
@@ -65,6 +69,8 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getHeight", cancellable = true)
     private void getFramebufferHeight(CallbackInfoReturnable<Integer> ci) {
+        if (!SuperResolution.isPreInit) return;
+
         if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
             ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValue())));
     }
@@ -79,12 +85,16 @@ public class WindowMixin {
 
     @Inject(at = @At("RETURN"), method = "getGuiScale", cancellable = true)
     private void getScaleFactor(CallbackInfoReturnable<Double> ci) {
+        if (!SuperResolution.isPreInit) return;
+
         if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
             ci.setReturnValue(ci.getReturnValue() * RenderHandlerManager.getCurrentScaleFactor());
     }
     #else
     @Inject(at = @At("RETURN"), method = "getGuiScale", cancellable = true)
     private void getScaleFactor(CallbackInfoReturnable<Integer> ci) {
+                if (!SuperResolution.isPreInit) return;
+
         if (!ShaderCompatHandler.isShaderPackCompatSuperResolution())
             ci.setReturnValue((int) (ci.getReturnValue() * RenderHandlerManager.getCurrentScaleFactor()));
     }
@@ -94,6 +104,8 @@ public class WindowMixin {
     private void onFramebufferSizeChanged(CallbackInfo ci) {
         SuperResolution.framebufferWidth = framebufferWidth;
         SuperResolution.framebufferHeight = framebufferHeight;
+        if (!SuperResolution.isPreInit) return;
+
         RenderHandlerManager.resize();
     }
 
@@ -101,7 +113,9 @@ public class WindowMixin {
     private void onUpdateFramebufferSize(CallbackInfo ci) {
         SuperResolution.framebufferWidth = framebufferWidth;
         SuperResolution.framebufferHeight = framebufferHeight;
+        if (!SuperResolution.isPreInit) return;
+
         RenderHandlerManager.resize();
     }
-    
+
 }

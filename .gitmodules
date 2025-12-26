@@ -4,3 +4,6 @@
 [submodule "native/cpp/SRNativeMain/third_party/freetype"]
 	path = native/cpp/SRNativeMain/third_party/freetype
 	url = https://github.com/freetype/freetype
+[submodule "native/cpp/SRNativeMain/third_party/glslang"]
+	path = native/cpp/SRNativeMain/third_party/glslang
+	url = https://github.com/187J3X1-114514/glslang-sr
