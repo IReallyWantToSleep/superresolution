@@ -112,37 +112,32 @@ public class ShaderSource {
     }
 
     public void updateSource() {
-        String shaderSource = source;
-        if (isFilePath) {
-            if (!Platform.currentPlatform.isDevelopmentEnvironment()) {
-                shaderSource = String.join("\n", FileReadHelper.readText(source));
-            } else {
-                try {
-                    Path commonProjectPath = Path.of(Minecraft.getInstance().gameDirectory.getAbsolutePath())
-                            .getParent()
-                            .getParent()
-                            .resolve("common")
-                            .resolve("src")
-                            .resolve("main")
-                            .resolve("resources");
-                    Path shaderPath = Path.of(commonProjectPath.toAbsolutePath().toString(), source);
-                    if (shaderPath.toFile().exists()) {
-                        try {
-                            shaderSource = Files.readString(shaderPath);
-                            SuperResolution.LOGGER.info("加载Shader {}", shaderPath);
+        String shaderSource = null;
 
-                        } catch (Throwable e) {
-                            shaderSource = String.join("\n", FileReadHelper.readText(source));
-                        }
-                    } else {
-                        shaderSource = String.join("\n", FileReadHelper.readText(source));
+        if (isFilePath) {
+            if (Platform.currentPlatform.isDevelopmentEnvironment()) {
+                try {
+                    Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+                    Path commonResources = gameDir.getParent().getParent()
+                            .resolve("common/src/main/resources");
+                    Path shaderPath = commonResources.resolve(source).toAbsolutePath();
+
+                    if (Files.exists(shaderPath)) {
+                        shaderSource = Files.readString(shaderPath);
+                        SuperResolution.LOGGER.info("加载Shader (Dev): {}", shaderPath);
                     }
                 } catch (Throwable e) {
-                    e.printStackTrace();
-                    shaderSource = String.join("\n", FileReadHelper.readText(source));
+                    SuperResolution.LOGGER.warn("开发环境Shader热加载失败: {}", e.getMessage());
                 }
             }
+
+            if (shaderSource == null) {
+                shaderSource = String.join("\n", FileReadHelper.readText(source));
+            }
+        } else {
+            shaderSource = source;
         }
+
         cachedSource = addCustomDefines(shaderSource, shaderDefines);
     }
 

@@ -16,8 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.minecraft.handler;
+package io.homo.superresolution.common.minecraft.handler.shadercompat;
 
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
@@ -32,12 +33,12 @@ import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 
 public class ShaderCompatTextureInfo {
     private final Supplier<ITexture> sourceTextureSupplier;
-    private final List<Integer> region;
+    private final TextureRegion region;
     private final boolean isOutput;
     private GlTexture2D internalTexture;
-    private String name;
+    private final String name;
 
-    public ShaderCompatTextureInfo(Supplier<ITexture> sourceTextureSupplier, List<Integer> region, boolean isOutput, String name) {
+    public ShaderCompatTextureInfo(Supplier<ITexture> sourceTextureSupplier, TextureRegion region, boolean isOutput, String name) {
         this.sourceTextureSupplier = sourceTextureSupplier;
         this.region = region;
         this.isOutput = isOutput;
@@ -56,8 +57,8 @@ public class ShaderCompatTextureInfo {
         ITexture sourceTexture = sourceTextureSupplier.get();
         if (sourceTexture == null) return;
 
-        int width = resolveRegionValue(region.get(2), true);
-        int height = resolveRegionValue(region.get(3), false);
+        int width = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2];
+        int height = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[3];
 
         if (internalTexture == null) {
             createInternalTexture(width, height);
@@ -71,11 +72,11 @@ public class ShaderCompatTextureInfo {
         if (isOutput) {
             copyTextureRegion(
                     internalTexture, 0, 0, width, height,
-                    sourceTexture, region.get(0), region.get(1)
+                    sourceTexture, region.getX(), region.getY()
             );
         } else {
             copyTextureRegion(
-                    sourceTexture, region.get(0), region.get(1), width, height,
+                    sourceTexture, region.getX(), region.getY(), width, height,
                     internalTexture, 0, 0
             );
         }

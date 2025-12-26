@@ -21,7 +21,7 @@ package io.homo.superresolution.common.upscale.fsr2;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -222,7 +222,7 @@ public class FSR2 extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.isShaderPackCompatSuperResolution()) return new Vector2f(0);
+        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return new Vector2f(0);
         //halton
         int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);

@@ -29,6 +29,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.api.platform.Platform;
@@ -40,6 +41,7 @@ import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector2i;
 
 public class RenderHandlerManager {
     public static boolean needCapture = false;
@@ -70,12 +72,12 @@ public class RenderHandlerManager {
         if (handler == null) return true;
         if (
                 handler instanceof MinecraftRenderHandler &&
-                        ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
+                        ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             return true;
         }
         if (
                 handler instanceof ShaderCompatHandler &&
-                        !ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
+                        !ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             return true;
         }
         return false;
@@ -87,7 +89,7 @@ public class RenderHandlerManager {
                 handler.destroy();
                 handler = null;
             }
-            if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
+            if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
                 handler = new ShaderCompatHandler();
             } else {
                 handler = new MinecraftRenderHandler();
@@ -240,6 +242,20 @@ public class RenderHandlerManager {
 
     public static int getScreenWidth() {
         return Math.max(MinecraftWindow.getWindowWidth(), 1);
+    }
+
+    public static Vector2i getScreenSize() {
+        return new Vector2i(
+                getScreenWidth(),
+                getScreenHeight()
+        );
+    }
+
+    public static Vector2i getRenderSize() {
+        return new Vector2i(
+                getRenderWidth(),
+                getRenderHeight()
+        );
     }
 
     public static IBindableFrameBuffer getOriginRenderTarget() {

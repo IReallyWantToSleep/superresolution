@@ -18,10 +18,10 @@
 
 package io.homo.superresolution.shadercompat;
 
-import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 
-public interface SRCompatShaderPack {
-    SRShaderCompatConfig superresolution$getSuperResolutionComaptConfig();
+public interface IrisSRCompatShaderPack {
+    SRShaderCompatData superresolution$getSuperResolutionComaptConfig();
 
     boolean superresolution$isSupportsSuperResolution();
 }

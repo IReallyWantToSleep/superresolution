@@ -21,8 +21,7 @@ package io.homo.superresolution.shadercompat.mixin;
 import io.homo.irisapi.IrisAPI;
 import io.homo.irisapi.IrisCompositePassRenderingEvent;
 import io.homo.superresolution.api.platform.Platform;
-import io.homo.superresolution.shadercompat.IrisShaderPipelineHandle;
-import io.homo.superresolution.shadercompat.ShaderCompatEventHandler;
+import io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -30,21 +29,11 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.util.List;
 import java.util.Set;
 
-public class ShaderCompatMixinPlugin implements IMixinConfigPlugin {
+public class IrisShaderCompatMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String s) {
         if (Platform.currentPlatform.isInstallIris()) {
-            ShaderCompatEventHandler.registerEventListeners();
-            
-            IrisAPI.EVENT_BUS.addListener(
-                    IrisCompositePassRenderingEvent.AfterPassRender.class,
-                    (event -> {
-                        IrisShaderPipelineHandle.onCompositeRendererRender(
-                                event.getCompositeRenderer(),
-                                event.getCompositePass()
-                        );
-                    })
-            );
+            IrisShaderCompatEventHandler.registerEventListeners();
         }
     }
 
@@ -55,6 +44,8 @@ public class ShaderCompatMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String s, String s1) {
+        if (s1.contains("PackRenderTargetDirectivesMixin"))
+            return !Platform.currentPlatform.isModLoaded("voxy");
         return Platform.currentPlatform.isInstallIris();
     }
 

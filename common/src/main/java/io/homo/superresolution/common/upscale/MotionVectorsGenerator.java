@@ -22,6 +22,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
+import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
@@ -80,12 +81,13 @@ public class MotionVectorsGenerator {
                         .uniformSamplerTexture("tex_current", 1)
                         .build());
         preprocessShader.compile();
-        preprocessPipeline = (GraphicsPipeline) GlGraphicsPipeline.builder()
+        preprocessPipeline = GlGraphicsPipeline.builder()
                 .shader(preprocessShader)
                 .rasterization(r -> r.cullMode(CullMode.None))
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
+                .vertexFormat(FullscreenQuad.getVertexFormat())
                 .build(RenderSystems.opengl().device());
 
         pass1Shader = RenderSystems.current().device().createShaderProgram(
@@ -97,12 +99,13 @@ public class MotionVectorsGenerator {
                         .uniformSamplerTexture("tex_current", 1)
                         .build());
         pass1Shader.compile();
-        pass1Pipeline = (GraphicsPipeline) GlGraphicsPipeline.builder()
+        pass1Pipeline = GlGraphicsPipeline.builder()
                 .shader(pass1Shader)
                 .rasterization(r -> r.cullMode(CullMode.None))
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
+                .vertexFormat(FullscreenQuad.getVertexFormat())
                 .build(RenderSystems.opengl().device());
 
         pass2Shader = RenderSystems.current().device().createShaderProgram(
@@ -121,6 +124,7 @@ public class MotionVectorsGenerator {
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
+                .vertexFormat(FullscreenQuad.getVertexFormat())
                 .build(RenderSystems.opengl().device());
 
         pass3Shader = RenderSystems.current().device().createShaderProgram(
@@ -133,12 +137,13 @@ public class MotionVectorsGenerator {
                         .uniformSamplerTexture("delta_time", 2)
                         .build());
         pass3Shader.compile();
-        pass3Pipeline = (GraphicsPipeline) GlGraphicsPipeline.builder()
+        pass3Pipeline = GlGraphicsPipeline.builder()
                 .shader(pass3Shader)
                 .rasterization(r -> r.cullMode(CullMode.None))
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
+                .vertexFormat(FullscreenQuad.getVertexFormat())
                 .build(RenderSystems.opengl().device());
     }
 

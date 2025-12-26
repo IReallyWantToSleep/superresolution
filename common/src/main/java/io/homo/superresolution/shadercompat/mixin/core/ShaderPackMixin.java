@@ -21,8 +21,9 @@ package io.homo.superresolution.shadercompat.mixin.core;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
-import io.homo.superresolution.shadercompat.SRCompatShaderPack;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatConfigParser;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.shadercompat.IrisSRCompatShaderPack;
 import net.irisshaders.iris.shaderpack.ShaderPack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -36,9 +37,9 @@ import java.nio.file.Path;
 import java.util.Map;
 
 @Mixin(value = ShaderPack.class, remap = false)
-public class ShaderPackMixin implements SRCompatShaderPack {
+public class ShaderPackMixin implements IrisSRCompatShaderPack {
     @Unique
-    private SRShaderCompatConfig superresolution$config;
+    private SRShaderCompatData superresolution$config;
 
     #if MC_VER > MC_1_20_6
     @Inject(method = "<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V", at = @At("RETURN"), remap = false)
@@ -62,11 +63,10 @@ public class ShaderPackMixin implements SRCompatShaderPack {
             Path srConfigPath = root.resolve("superresolution.json");
             if (Files.exists(srConfigPath)) {
 
-                superresolution$config = SRShaderCompatConfig.loadFromJson(srConfigPath);
+                superresolution$config = SRCompatConfigParser.load(srConfigPath);
                 SuperResolution.LOGGER.info("光影包 {} 支持超分辨率功能", root);
                 return;
             }
-        } catch (NoSuchFileException ignored) {
         } catch (Throwable throwable) {
             throwable.printStackTrace();
             SuperResolution.LOGGER.warn("加载 {} 光影包中的 superresolution.json 时发生错误", root);
@@ -75,12 +75,12 @@ public class ShaderPackMixin implements SRCompatShaderPack {
     }
 
     @Unique
-    public SRShaderCompatConfig superresolution$getSuperResolutionComaptConfig() {
+    public SRShaderCompatData superresolution$getSuperResolutionComaptConfig() {
         return SuperResolutionConfig.isForceDisableShaderCompat() ? null : superresolution$config;
     }
 
     @Unique
     public boolean superresolution$isSupportsSuperResolution() {
-        return !SuperResolutionConfig.isForceDisableShaderCompat() && superresolution$config != null && superresolution$config.sr.enabled;
+        return !SuperResolutionConfig.isForceDisableShaderCompat() && superresolution$config != null;
     }
 }

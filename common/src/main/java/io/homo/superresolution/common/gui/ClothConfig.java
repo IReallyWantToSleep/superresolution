@@ -35,7 +35,6 @@ import io.homo.superresolution.common.gui.entries.ClothButtonEntry;
 import io.homo.superresolution.common.gui.entries.ClothTextListEntry;
 import io.homo.superresolution.common.gui.widgets.Line;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.gui.WidgetDesignScreen;

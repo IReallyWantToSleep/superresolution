@@ -34,8 +34,8 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
-import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.api.platform.OperatingSystem;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
@@ -90,7 +90,7 @@ public class SuperResolutionConfig {
                 "Enable super-resolution upscaling"
         );
         ENABLE_UPSCALE.onChange((oldValue, newValue) -> {
-            if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
+            if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
                 ShaderCompatHandler.irisApiReloadShader();
             }
         });
@@ -508,10 +508,10 @@ public class SuperResolutionConfig {
     public static TextureFormat getInternalTextureFormat() {
         //user settings > shaderPack > default
         if (INTERNAL_TEXTURE_FORMAT.get() == InternalTextureFormat.AUTO) {
-            Optional<SRShaderCompatConfig.WorldConfig> currentLevelCompatConfig = ShaderCompatHandler.getCurrentLevelCompatConfig();
+            Optional<SRShaderCompatData.WorldProfile> currentLevelCompatConfig = ShaderCompatHandler.getCurrentLevelCompatConfig();
             if (currentLevelCompatConfig.isPresent()) {
                 if (currentLevelCompatConfig.get().enabled) {
-                    return currentLevelCompatConfig.get().upscale_config.getSrInternalTextureFormat();
+                    return currentLevelCompatConfig.get().upscale.internalFormat;
                 }
             }
             return TextureFormat.R11G11B10F;
@@ -520,7 +520,7 @@ public class SuperResolutionConfig {
     }
 
     public static float getMinUpscaleRatio() {
-        if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) return 1.0f;
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return 1.0f;
         return 0.5f;
         /*
         int maxSize = 16384;

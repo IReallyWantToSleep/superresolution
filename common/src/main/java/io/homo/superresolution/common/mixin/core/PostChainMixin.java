@@ -23,7 +23,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.ShaderCompatHandler;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
@@ -66,7 +66,7 @@ public abstract class PostChainMixin {
             TextureManager textureManager, net.minecraft.server.packs.resources.ResourceProvider resourceProvider, RenderTarget screenTarget, ResourceLocation resourceLocation, CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
         if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
 
         if (!screenTarget.equals(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -91,7 +91,7 @@ public abstract class PostChainMixin {
             CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
         if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
 
         if (!screenTarget.equals(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -119,7 +119,7 @@ public abstract class PostChainMixin {
     @Inject(method = "resize", at = @At("HEAD"), cancellable = true)
     public void onResize(int width, int height, CallbackInfo ci) {
         if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) return;
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
         if (
                 width != RenderHandlerManager.getRenderWidth() ||
                         height != RenderHandlerManager.getRenderHeight()
@@ -132,7 +132,7 @@ public abstract class PostChainMixin {
     @Inject(method = "process", at = @At("HEAD"))
     public void onProcess(float partialTicks, CallbackInfo ci) {
         if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.isShaderPackCompatSuperResolution()) {
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
             return;
         }

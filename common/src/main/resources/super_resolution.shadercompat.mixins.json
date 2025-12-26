@@ -1,18 +1,19 @@
 {
     "required": true,
     "package": "io.homo.superresolution.shadercompat.mixin",
-    "plugin": "io.homo.superresolution.shadercompat.mixin.ShaderCompatMixinPlugin",
+    "plugin": "io.homo.superresolution.shadercompat.mixin.IrisShaderCompatMixinPlugin",
     "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
         "core.CompositeRendererAccessor",
         "core.IrisRenderingPipelineAccessor",
         "core.IrisRenderingPipelineMixin",
-        "core.ShaderPackAccessor",
         "core.RenderTargetsAccessor",
+        "core.ShaderPackAccessor",
         "core.ShaderPackMixin"
     ],
     "mixins": [
+        "core.PackRenderTargetDirectivesMixin"
     ],
     "injectors": {
         "defaultRequire": 1

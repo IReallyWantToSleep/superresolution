@@ -26,25 +26,20 @@ import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.SRShaderCompatConfig;
-import io.homo.superresolution.common.minecraft.handler.ShaderCompatTextureInfo;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import org.joml.Vector2f;
@@ -62,30 +57,18 @@ import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 /**
  * 狗屎一坨，以至于我不得不写注释
  */
-public class ShaderCompatUpscaleDispatcher {
+public class IrisShaderCompatUpscaleDispatcher {
     public static Map<String, Object> debugInfo = new HashMap<>();
 
     public static ShaderCompatTextureInfo colorTexture;
     public static ShaderCompatTextureInfo depthTexture;
     public static ShaderCompatTextureInfo motionVectorsTexture;
 
-    private static SRShaderCompatConfig.InputTextureConfig lastColorConfig;
-    private static SRShaderCompatConfig.InputTextureConfig lastDepthConfig;
-    private static SRShaderCompatConfig.InputTextureConfig lastMotionConfig;
+    private static SRShaderCompatData.InputTexture lastColorConfig;
+    private static SRShaderCompatData.InputTexture lastDepthConfig;
+    private static SRShaderCompatData.InputTexture lastMotionConfig;
 
     private static CompositeRenderer cachedCompositeRenderer;
-
-    public static SRShaderCompatConfig.WorldConfig getCurrentConfig() {
-        if (!IrisShaderPipelineHandle.shouldApplySuperResolutionChanges()) {
-            return null;
-        }
-        String currentWorldId = ((ShaderPackAccessor) Iris.getCurrentPack().get())
-                .getDimensionMap()
-                .get(Iris.getCurrentDimension());
-        return IrisShaderPipelineHandle.getCurrentShaderPack().isPresent() ?
-                ((SRCompatShaderPack) IrisShaderPipelineHandle.getCurrentShaderPack().get())
-                        .superresolution$getSuperResolutionComaptConfig().getUpscaleConfigForWorld(currentWorldId) : null;
-    }
 
 
     public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer) {
@@ -117,42 +100,43 @@ public class ShaderCompatUpscaleDispatcher {
                 new InputResourceSet(
                         colorTexture.getInternalTexture(),
                         depthTexture.getInternalTexture(),
-                        motionVectorsTexture.getInternalTexture() == null || lastMotionConfig.enabled ?
-                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
-                                motionVectorsTexture.getInternalTexture()
+                        motionVectorsTexture.getInternalTexture() != null && lastMotionConfig.enabled ?
+                                motionVectorsTexture.getInternalTexture() :
+                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+
                 )
 
         );
     }
 
-    private static boolean configEquals(SRShaderCompatConfig.OutputTextureConfig c1,
-                                        SRShaderCompatConfig.OutputTextureConfig c2) {
+    private static boolean configEquals(SRShaderCompatData.OutputTexture c1,
+                                        SRShaderCompatData.OutputTexture c2) {
         if (c1 == c2) return true;
         if (c1 == null || c2 == null) return false;
 
         return c1.enabled == c2.enabled &&
-                c1.target.equals(c2.target) &&
+                c1.targetNames.equals(c2.targetNames) &&
                 c1.region.equals(c2.region);
     }
 
 
-    private static boolean configEquals(SRShaderCompatConfig.InputTextureConfig c1,
-                                        SRShaderCompatConfig.InputTextureConfig c2) {
+    private static boolean configEquals(SRShaderCompatData.InputTexture c1,
+                                        SRShaderCompatData.InputTexture c2) {
         if (c1 == c2) return true;
         if (c1 == null || c2 == null) return false;
 
         return c1.enabled == c2.enabled &&
-                c1.src.equals(c2.src) &&
+                c1.sourceName.equals(c2.sourceName) &&
                 c1.region.equals(c2.region);
     }
 
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
         if (!SuperResolutionConfig.isEnableUpscale()) return;
-        if (getCurrentConfig() == null) return;
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return;
 
         PerformanceRecorder.beginUpscale();
 
-        SRShaderCompatConfig.WorldUpscaleConfig currentConfig = getCurrentConfig().upscale_config;
+        SRShaderCompatData.UpscaleConfig currentConfig = IrisShaderCompatUtils.getCurrentConfig().get().upscale;
         boolean needUpdate = false;
 
         if (!compositeRenderer.equals(cachedCompositeRenderer)) {
@@ -165,32 +149,32 @@ public class ShaderCompatUpscaleDispatcher {
         createForInput使用getIrisTexture方法会从Iris拿到纹理然后从纹理ID创建超分自己的ITexture对象
         updateTexture内部会把Iris纹理复制到内部纹理，便于读写（其实只有读）
          */
-        SRShaderCompatConfig.InputTextureConfig colorConfig;
-        SRShaderCompatConfig.InputTextureConfig depthConfig;
-        SRShaderCompatConfig.InputTextureConfig motionConfig;
-        SRShaderCompatConfig.OutputTextureConfig outputConfig;
+        SRShaderCompatData.InputTexture colorConfig;
+        SRShaderCompatData.InputTexture depthConfig;
+        SRShaderCompatData.InputTexture motionConfig;
+        SRShaderCompatData.OutputTexture outputConfig;
         {
-            colorConfig = currentConfig.input_textures.get("color");
-            depthConfig = currentConfig.input_textures.get("depth");
-            motionConfig = currentConfig.input_textures.get("motion_vectors");
-            outputConfig = currentConfig.output_textures.get("upscaled_color");
+            colorConfig = currentConfig.inputTextures.get("color");
+            depthConfig = currentConfig.inputTextures.get("depth");
+            motionConfig = currentConfig.inputTextures.get("motion_vectors");
+            outputConfig = currentConfig.outputTextures.get("upscaled_color");
 
             if (colorTexture == null || !configEquals(colorConfig, lastColorConfig) || needUpdate) {
                 if (colorTexture != null && colorTexture.getInternalTexture() != null)
                     colorTexture.getInternalTexture().destroy();
-                colorTexture = TextureConfigResolver.createForInput(compositeRenderer, colorConfig);
+                colorTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, colorConfig);
                 lastColorConfig = colorConfig;
             }
             if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig) || needUpdate) {
                 if (depthTexture != null && depthTexture.getInternalTexture() != null)
                     depthTexture.getInternalTexture().destroy();
-                depthTexture = TextureConfigResolver.createForInput(compositeRenderer, depthConfig);
+                depthTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, depthConfig);
                 lastDepthConfig = depthConfig;
             }
             if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig) || needUpdate) {
                 if (motionVectorsTexture != null && motionVectorsTexture.getInternalTexture() != null)
                     motionVectorsTexture.getInternalTexture().destroy();
-                motionVectorsTexture = TextureConfigResolver.createForInput(compositeRenderer, motionConfig);
+                motionVectorsTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, motionConfig);
                 lastMotionConfig = motionConfig;
             }
             GlDebug.pushGroup(64108436, "SRUpscale-CopyInput");
@@ -244,8 +228,8 @@ public class ShaderCompatUpscaleDispatcher {
          */
         GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        if (currentConfig.output_textures.get("upscaled_color").enabled) {
-            for (String targetName : currentConfig.output_textures.get("upscaled_color").target) {
+        if (currentConfig.outputTextures.get("upscaled_color").enabled) {
+            for (String targetName : currentConfig.outputTextures.get("upscaled_color").targetNames) {
                 ITexture targetTexture = IrisTextureResolver.getIrisTexture(compositeRenderer, targetName);
                 ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
                 if (targetTexture != null && sourceTexture != null) {
@@ -270,17 +254,11 @@ public class ShaderCompatUpscaleDispatcher {
                                 (int) targetTexture.handle(),
                                 GL41.GL_TEXTURE_2D,
                                 0,
-                                outputConfig.region.get(0),
-                                outputConfig.region.get(1),
+                                outputConfig.region.getX(),
+                                outputConfig.region.getY(),
                                 0,
-                                ShaderCompatTextureInfo.resolveRegionValue(
-                                        outputConfig.region.get(2),
-                                        true
-                                ),
-                                ShaderCompatTextureInfo.resolveRegionValue(
-                                        outputConfig.region.get(3),
-                                        false
-                                ),
+                                outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2],
+                                outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[3],
                                 1
                         );
                     }

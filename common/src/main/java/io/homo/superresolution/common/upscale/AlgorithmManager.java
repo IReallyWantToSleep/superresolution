@@ -107,7 +107,7 @@ public class AlgorithmManager {
     }
 
     public static Vector2f getJitterOffset() {
-        if (SuperResolutionAPI.getCurrentAlgorithm() != null) {
+        if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
             Vector2f jitter = SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
                     RenderHandlerManager.getFrameCount(),
                     new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
@@ -120,12 +120,13 @@ public class AlgorithmManager {
 
 
     public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
+        Matrix4f jitteredProj = new Matrix4f(proj);
         float jx_ndc = (2.0f * jitter.x) / RenderHandlerManager.getRenderWidth();
         float jy_ndc = (2.0f * jitter.y) / RenderHandlerManager.getRenderHeight();
-        proj.m20(proj.m20() + jx_ndc);
-        proj.m21(proj.m21() + jy_ndc);
+        jitteredProj.m20(jitteredProj.m20() + jx_ndc);
+        jitteredProj.m21(jitteredProj.m21() + jy_ndc);
 
-        return proj;
+        return jitteredProj;
     }
 
 
