@@ -9,7 +9,6 @@ set(GLSLANG_DIR "${THIRD_PARTY_DIR}/glslang")
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/src
-    ${FT_DIR}/include
     ${GLSLANG_DIR}
     #${TGFX_DIR}/include
 )

@@ -23,16 +23,14 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.BezierInterpolator;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.PropertyValuesHolder;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.TimeInterpolator;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.ValueAnimator;
+import io.homo.superresolution.core.gui.core.animator.BezierInterpolator;
+import io.homo.superresolution.core.gui.core.animator.Animator;
 import net.neoforged.bus.api.SubscribeEvent;
 import org.joml.Vector2f;
 
 public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     private final MaterialRipple ripple;
-    private ValueAnimator hoverAnimator;
+    private Animator.FloatAnimator hoverAnimator;
     private boolean shouldFadeOutAfterRipple = false;
     private boolean isHovered = false;
     private Vector2f lastPressPosition = null;
@@ -54,9 +52,9 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     }
 
     private void initAnimators() {
-        hoverAnimator = ValueAnimator.ofFloat(0f, 0f);
-        hoverAnimator.setDuration(hoverEnterDuration);
-        hoverAnimator.setInterpolator(new BezierInterpolator(0.2f, 0, 0, 1));
+        hoverAnimator = new Animator.FloatAnimator(0f, 0f);
+        hoverAnimator.duration(hoverEnterDuration);
+        hoverAnimator.timeInterpolator(new BezierInterpolator(0.2f, 0, 0, 1));
     }
 
     protected abstract void drawShape(IUIDrawContext drawContext, T widget, Color color);
@@ -69,13 +67,14 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     }
 
     public void update() {
+        if (hoverAnimator != null) hoverAnimator.update();
         ripple.update();
         checkDeferredFadeOut();
     }
 
     public void renderHoverOverlay(IUIDrawContext drawContext, Color hoverColor) {
         if (shouldRenderHover()) {
-            float currentAlpha = (float) hoverAnimator.getAnimatedValue();
+            float currentAlpha = hoverAnimator.get();
             if (currentAlpha > 0.001f) {
                 Color overlayColor = hoverColor.copy().alpha((int) (255 * currentAlpha * hoverNormalAlpha));
                 drawShape(drawContext, widget, overlayColor);
@@ -157,16 +156,16 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
             hoverAnimator.cancel();
         }
 
-        hoverAnimator.setValues(PropertyValuesHolder.ofFloat(
-                (float) hoverAnimator.getAnimatedValue(),
+        hoverAnimator.fromTo(
+                hoverAnimator.get(),
                 targetValue
-        ));
-        hoverAnimator.setDuration(duration);
+        );
+        hoverAnimator.duration(duration);
         hoverAnimator.start();
     }
 
     private boolean shouldRenderHover() {
-        return hoverAnimator.isRunning() || (float) hoverAnimator.getAnimatedValue() > 0.001f;
+        return hoverAnimator.isRunning() || hoverAnimator.get() > 0.001f;
     }
 
     private boolean shouldRenderRipple() {
@@ -174,7 +173,7 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     }
 
     public float getHoverProgress() {
-        return (float) hoverAnimator.getAnimatedValue();
+        return hoverAnimator.get();
     }
 
     public MaterialRipple getRipple() {

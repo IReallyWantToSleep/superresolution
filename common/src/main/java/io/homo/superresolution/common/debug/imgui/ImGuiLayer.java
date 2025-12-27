@@ -24,6 +24,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
@@ -35,6 +36,7 @@ import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
 import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 public class ImGuiLayer {
@@ -91,6 +93,15 @@ public class ImGuiLayer {
         if (RenderHandlerManager.getDepthTexture() != null) {
             drawImage("Input Depth Texture", (int) RenderHandlerManager.getDepthTexture().handle(),
                     RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
+        }
+        try {
+            DispatchResource dispatchResource = (DispatchResource) Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher").getMethod("getDispatchResource", Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer")).invoke(null, (Object) null);
+            if (dispatchResource.resources().motionVectorsTexture() != null) {
+                drawImage("Input Motion Vectors Texture", (int) dispatchResource.resources().motionVectorsTexture().handle(),
+                        RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
+            }
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException |
+                 ClassNotFoundException ignored) {
         }
 
         if (AlgorithmManager.getMotionVectorsFrameBuffer() != null)

@@ -18,23 +18,31 @@
 
 package io.homo.superresolution.core.gui.widgets.sliders;
 
-import io.homo.superresolution.core.gui.core.animator.AnimationSet;
-import io.homo.superresolution.core.gui.core.animator.NumberAnimator;
+import io.homo.superresolution.core.gui.core.animator.Animator;
 
-public class MaterialSliderAnimationSet extends AnimationSet {
-    protected NumberAnimator hover;
-    protected NumberAnimator press;
-    protected NumberAnimator change;
+public class MaterialSliderAnimationSet {
+    public Animator.FloatAnimator hover;
+    public Animator.FloatAnimator press;
+    public Animator.FloatAnimator change;
 
-    protected NumberAnimator handleSize;
-    protected NumberAnimator handlePosition;
+    public Animator.FloatAnimator handleSize;
+    public Animator.FloatAnimator handlePosition;
 
-    @Override
-    protected void init() {
-        hover = addAnimation();
-        press = addAnimation();
-        handleSize = addAnimation();
-        handlePosition = addAnimation();
-        change = addAnimation();
+    public void init() {
+        hover = new Animator.FloatAnimator();
+        press = new Animator.FloatAnimator();
+        handleSize = new Animator.FloatAnimator();
+        handlePosition = new Animator.FloatAnimator();
+        change = new Animator.FloatAnimator();
+
+        hover.set(0f);
+        press.set(0f);
+        handleSize.set(0f);
+        handlePosition.set(0f);
+        change.set(0f);
+    }
+
+    public void update() {
+        Animator.updateAll(hover, press, handleSize, handlePosition, change);
     }
 }

@@ -46,7 +46,6 @@ public class NativeLibManager {
 
 
     public static NativeLib LIB_SUPER_RESOLUTION = null;
-    public static NativeLib LIB_NANOVG = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_DLSS = null;
@@ -59,16 +58,6 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
             LIB_SUPER_RESOLUTION_DLSS = new NativeLib("SuperResolutionDLSS", false, false);
-            LIB_NANOVG = new NativeLib(
-                    "lwjgl_nanovg",
-                    false,
-                    false,
-                    true,
-                    Configuration.LIBRARY_PATH.get() == null ?
-                            null :
-                            Path.of(Configuration.LIBRARY_PATH.get())
-            );
-            libs.add(LIB_NANOVG);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
@@ -81,16 +70,6 @@ public class NativeLibManager {
         } else if (operatingSystem.type == OperatingSystemType.LINUX && operatingSystem.arch == SystemArchitecture.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
-            LIB_NANOVG = new NativeLib(
-                    "liblwjgl_nanovg",
-                    false,
-                    false,
-                    true,
-                    Configuration.LIBRARY_PATH.get() == null ?
-                            null :
-                            Path.of(Configuration.LIBRARY_PATH.get())
-            );
-            libs.add(LIB_NANOVG);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
 

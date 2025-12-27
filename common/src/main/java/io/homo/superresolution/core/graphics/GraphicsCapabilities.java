@@ -105,6 +105,7 @@ public class GraphicsCapabilities {
                 glVersions.add(Pair.of(actualMajor, actualMinor));
                 GLFW.glfwDestroyWindow(testWindow);
                 LOGGER.info("添加可用OpenGL版本 {}.{}", actualMajor, actualMinor);
+                break;
             }
         }
         LOGGER.info("最高OpenGL版本 {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());

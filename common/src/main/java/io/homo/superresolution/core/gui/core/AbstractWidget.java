@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.gui.core;
 
 import io.homo.superresolution.core.gui.MaterialUI;
-import io.homo.superresolution.core.gui.core.animator.AnimationSet;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -48,8 +47,6 @@ public abstract class AbstractWidget<
     protected boolean focused = false;
     protected IEventBus eventBus;
     protected WidgetStyle<?> style;
-    @Deprecated
-    protected AnimationSet animationSet;
     protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
 
     public AbstractWidget() {

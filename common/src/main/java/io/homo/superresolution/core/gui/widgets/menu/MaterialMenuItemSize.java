@@ -19,7 +19,11 @@
 package io.homo.superresolution.core.gui.widgets.menu;
 
 public record MaterialMenuItemSize(
-
+        float height,
+        float horizontalPadding,
+        float iconSize,
+        float iconTextGap,
+        float fontSize
 ) {
-
+    public static final MaterialMenuItemSize Standard = new MaterialMenuItemSize(48, 12, 20, 8, 14);
 }

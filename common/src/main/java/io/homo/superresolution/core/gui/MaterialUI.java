@@ -34,7 +34,6 @@ public class MaterialUI {
     public static void init() {
         NanoVG.init();
         MaterialSymbols.init();
-        AnimationSystem.initialize();
         EVENT_BUS.start();
     }
 
