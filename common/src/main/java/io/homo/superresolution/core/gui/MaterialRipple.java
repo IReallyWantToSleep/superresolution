@@ -4,7 +4,8 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.icyllis.modernui.animation.*;
+import io.homo.superresolution.core.gui.core.animator.Animator;
+import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
 
@@ -44,8 +45,9 @@ public class MaterialRipple {
 
         while (iterator.hasNext()) {
             SingleRipple ripple = iterator.next();
+            ripple.update();
 
-            if (ripple.isDestroy() ||
+            if (ripple.isDestroy() &&
                     (currentTime - ripple.getCreationTime()) > MAX_RIPPLE_AGE) {
                 ripple.destroy();
                 iterator.remove();
@@ -154,13 +156,13 @@ public class MaterialRipple {
     }
 
     public static class SingleRipple {
-        private static final float PRESSED_ALPHA = 0.12f;
-        private ValueAnimator radiusAnimator;
-        private ValueAnimator originAnimator;
-        private ValueAnimator alphaAnimator;
+        private static final float PRESSED_ALPHA = 0.08f;
+        private Animator.FloatAnimator radiusAnimator;
+        private Animator.FloatAnimator originAnimator;
+        private Animator.FloatAnimator alphaAnimator;
 
-        private AnimatorListener radiusListener;
-        private AnimatorListener alphaListener;
+        private Animator.AnimatorLifecycleListener radiusListener;
+        private Animator.AnimatorLifecycleListener alphaListener;
 
         private final Vector2f rippleStartCenter;
         private final Vector2f rippleTargetCenter;
@@ -199,26 +201,25 @@ public class MaterialRipple {
         }
 
         private void initAnimators() {
-            radiusAnimator = ValueAnimator.ofFloat(0f, 1f);
-            radiusAnimator.setDuration(RIPPLE_ENTER_DURATION);
-            radiusAnimator.setInterpolator(TimeInterpolator.LINEAR);
+            radiusAnimator = new Animator.FloatAnimator(0f, 1f);
+            radiusAnimator.duration(RIPPLE_ENTER_DURATION);
+            radiusAnimator.timeInterpolator(TimeInterpolator.linear());
 
-            originAnimator = ValueAnimator.ofFloat(0f, 1f);
-            originAnimator.setDuration(RIPPLE_ORIGIN_DURATION);
-            originAnimator.setInterpolator(TimeInterpolator.LINEAR);
-            originAnimator.addUpdateListener(animation -> {
-                float progress = (float) animation.getAnimatedValue();
+            originAnimator = new Animator.FloatAnimator(0f, 1f);
+            originAnimator.duration(RIPPLE_ORIGIN_DURATION);
+            originAnimator.timeInterpolator(TimeInterpolator.linear());
+            originAnimator.onUpdate(progress -> {
                 currentCenter.x = lerp(rippleStartCenter.x, rippleTargetCenter.x, progress);
                 currentCenter.y = lerp(rippleStartCenter.y, rippleTargetCenter.y, progress);
             });
 
-            alphaAnimator = ValueAnimator.ofFloat(0f, 1f);
-            alphaAnimator.setDuration(OPACITY_ENTER_DURATION);
-            alphaAnimator.setInterpolator(TimeInterpolator.LINEAR);
+            alphaAnimator = new Animator.FloatAnimator(0f, 1f);
+            alphaAnimator.duration(OPACITY_ENTER_DURATION);
+            alphaAnimator.timeInterpolator(TimeInterpolator.linear());
 
-            radiusListener = new AnimatorListener() {
+            radiusListener = new Animator.AnimatorLifecycleListener() {
                 @Override
-                public void onAnimationEnd(@NotNull Animator animation, boolean isReverse) {
+                public void onEnd() {
                     if (isProcessingCallback || isDestroy || state != RippleState.EXPANDING) {
                         return;
                     }
@@ -231,9 +232,9 @@ public class MaterialRipple {
                 }
             };
 
-            alphaListener = new AnimatorListener() {
+            alphaListener = new Animator.AnimatorLifecycleListener() {
                 @Override
-                public void onAnimationEnd(@NotNull Animator animation, boolean isReverse) {
+                public void onEnd() {
                     if (isProcessingCallback || isDestroy || state != RippleState.FADING_OUT) {
                         return;
                     }
@@ -281,19 +282,19 @@ public class MaterialRipple {
             if (originAnimator.isRunning()) originAnimator.cancel();
             if (alphaAnimator.isRunning()) alphaAnimator.cancel();
 
-            radiusAnimator.removeListener(radiusListener);
-            alphaAnimator.removeListener(alphaListener);
+            radiusAnimator.removeLifecycleListener(radiusListener);
+            alphaAnimator.removeLifecycleListener(alphaListener);
 
-            radiusAnimator.setValues(PropertyValuesHolder.ofFloat(0f, 1f));
-            radiusAnimator.setDuration(RIPPLE_ENTER_DURATION);
+            radiusAnimator.fromTo(0f, 1f);
+            radiusAnimator.duration(RIPPLE_ENTER_DURATION);
 
-            originAnimator.setValues(PropertyValuesHolder.ofFloat(0f, 1f));
-            originAnimator.setDuration(RIPPLE_ORIGIN_DURATION);
+            originAnimator.fromTo(0f, 1f);
+            originAnimator.duration(RIPPLE_ORIGIN_DURATION);
 
-            alphaAnimator.setValues(PropertyValuesHolder.ofFloat(0f, 1f));
-            alphaAnimator.setDuration(OPACITY_ENTER_DURATION);
+            alphaAnimator.fromTo(0f, 1f);
+            alphaAnimator.duration(OPACITY_ENTER_DURATION);
 
-            radiusAnimator.addListener(radiusListener);
+            radiusAnimator.onLifecycle(radiusListener);
 
             radiusAnimator.start();
             originAnimator.start();
@@ -328,12 +329,12 @@ public class MaterialRipple {
             if (alphaAnimator.isRunning()) {
                 alphaAnimator.cancel();
             }
-            alphaAnimator.removeListener(alphaListener);
-            alphaAnimator.setValues(PropertyValuesHolder.ofFloat(1f, 0f));
-            alphaAnimator.setDuration(OPACITY_EXIT_DURATION);
-            alphaAnimator.setStartDelay(delay);
-            alphaAnimator.setInterpolator(TimeInterpolator.LINEAR);
-            alphaAnimator.addListener(alphaListener);
+            alphaAnimator.removeLifecycleListener(alphaListener);
+            alphaAnimator.fromTo(1f, 0f);
+            alphaAnimator.duration(OPACITY_EXIT_DURATION);
+            alphaAnimator.startDelay(delay);
+            alphaAnimator.timeInterpolator(TimeInterpolator.linear());
+            alphaAnimator.onLifecycle(alphaListener);
             alphaAnimator.start();
         }
 
@@ -365,8 +366,8 @@ public class MaterialRipple {
                 return null;
             }
 
-            float radiusProgress = (float) radiusAnimator.getAnimatedValue();
-            float alphaProgress = (float) alphaAnimator.getAnimatedValue();
+            float radiusProgress = radiusAnimator.get();
+            float alphaProgress = alphaAnimator.get();
 
             float currentRadius = lerp(startRippleRadius, maxRippleRadius, radiusProgress);
             float currentAlpha = PRESSED_ALPHA * alphaProgress;
@@ -420,6 +421,12 @@ public class MaterialRipple {
             return new Vector2f(currentCenter);
         }
 
+        public void update() {
+            if (radiusAnimator != null) radiusAnimator.update();
+            if (originAnimator != null) originAnimator.update();
+            if (alphaAnimator != null) alphaAnimator.update();
+        }
+
         public void destroy() {
             if (isDestroy) return;
             isDestroy = true;
@@ -427,7 +434,7 @@ public class MaterialRipple {
 
             if (radiusAnimator != null) {
                 if (radiusListener != null) {
-                    radiusAnimator.removeListener(radiusListener);
+                    radiusAnimator.removeLifecycleListener(radiusListener);
                 }
                 if (radiusAnimator.isRunning()) {
                     radiusAnimator.cancel();
@@ -444,7 +451,7 @@ public class MaterialRipple {
 
             if (alphaAnimator != null) {
                 if (alphaListener != null) {
-                    alphaAnimator.removeListener(alphaListener);
+                    alphaAnimator.removeLifecycleListener(alphaListener);
                 }
                 if (alphaAnimator.isRunning()) {
                     alphaAnimator.cancel();

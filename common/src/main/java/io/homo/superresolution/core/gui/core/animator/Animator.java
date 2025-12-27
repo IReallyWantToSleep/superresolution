@@ -47,7 +47,6 @@ public abstract class Animator<T extends Animator<T, V>, V> {
     @SuppressWarnings("unchecked")
     public T start() {
         if (state == State.RUNNING || state == State.PAUSED) {
-            // 使用 cancel() 而不是 end()，保持当前值避免突变
             cancel();
         }
 
@@ -55,7 +54,6 @@ public abstract class Animator<T extends Animator<T, V>, V> {
         startTimeMs = System.currentTimeMillis();
         pausedElapsedMs = 0;
 
-        // 总是使用当前值作为起始值，确保动画连续
         if (currentValue != null) {
             startValue = currentValue;
         }
@@ -222,37 +220,37 @@ public abstract class Animator<T extends Animator<T, V>, V> {
     }
 
     protected void notifyUpdate(V value) {
-        for (AnimatorUpdateListener<V> listener : updateListeners) {
+        for (AnimatorUpdateListener<V> listener : new ArrayList<>(updateListeners)) {
             listener.onUpdate(value);
         }
     }
 
     protected void notifyStart() {
-        for (AnimatorLifecycleListener listener : lifecycleListeners) {
+        for (AnimatorLifecycleListener listener : new ArrayList<>(lifecycleListeners)) {
             listener.onStart();
         }
     }
 
     protected void notifyCancel() {
-        for (AnimatorLifecycleListener listener : lifecycleListeners) {
+        for (AnimatorLifecycleListener listener : new ArrayList<>(lifecycleListeners)) {
             listener.onCancel();
         }
     }
 
     protected void notifyEnd() {
-        for (AnimatorLifecycleListener listener : lifecycleListeners) {
+        for (AnimatorLifecycleListener listener : new ArrayList<>(lifecycleListeners)) {
             listener.onEnd();
         }
     }
 
     protected void notifyPause() {
-        for (AnimatorLifecycleListener listener : lifecycleListeners) {
+        for (AnimatorLifecycleListener listener : new ArrayList<>(lifecycleListeners)) {
             listener.onPause();
         }
     }
 
     protected void notifyResume() {
-        for (AnimatorLifecycleListener listener : lifecycleListeners) {
+        for (AnimatorLifecycleListener listener : new ArrayList<>(lifecycleListeners)) {
             listener.onResume();
         }
     }

@@ -174,4 +174,17 @@ public class Color {
         );
     }
 
+    public Color lerp(Color other, float t) {
+        t = Math.max(0, Math.min(1, t));
+        color[0] = (int) (color[0] + (other.red() - color[0]) * t);
+        color[1] = (int) (color[1] + (other.green() - color[1]) * t);
+        color[2] = (int) (color[2] + (other.blue() - color[2]) * t);
+        color[3] = (int) (color[3] + (other.alpha() - color[3]) * t);
+        return this;
+    }
+
+    public static Color lerp(Color from, Color to, float t) {
+        return from.copy().lerp(to, t);
+    }
+
 }

@@ -19,9 +19,10 @@
 package io.homo.superresolution.core.gui.widgets;
 
 import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.core.AbstractWidget;
+import io.homo.superresolution.core.gui.core.AbstractContainerWidget;
+import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 
-public abstract class MaterialWidget<T extends MaterialWidget<T>> extends AbstractWidget<T> {
+public abstract class MaterialContainerWidget<T extends MaterialContainerWidget<T>> extends AbstractContainerWidget<T> {
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     public MaterialScheme scheme() {
@@ -31,6 +32,23 @@ public abstract class MaterialWidget<T extends MaterialWidget<T>> extends Abstra
     @SuppressWarnings("unchecked")
     public T scheme(MaterialScheme scheme) {
         this.scheme = scheme;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialWidget<?> w) {
+                w.scheme(scheme);
+            } else if (child instanceof MaterialContainerWidget<?> w) {
+                w.scheme(scheme);
+            }
+        }
         return (T) this;
+    }
+
+    @Override
+    public void addChild(ILayoutElement element) {
+        super.addChild(element);
+        if (element instanceof MaterialWidget<?> w) {
+            w.scheme(scheme());
+        } else if (element instanceof MaterialContainerWidget<?> w) {
+            w.scheme(scheme());
+        }
     }
 }

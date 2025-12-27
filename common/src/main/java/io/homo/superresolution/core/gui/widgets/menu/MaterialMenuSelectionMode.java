@@ -16,28 +16,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.core.animator;
+package io.homo.superresolution.core.gui.widgets.menu;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public abstract class AnimationSet {
-    private List<NumberAnimator> animations = new ArrayList<>();
-
-    public AnimationSet() {
-        this.init();
-    }
-
-
-    protected NumberAnimator addAnimation() {
-        NumberAnimator animation = new NumberAnimator();
-        animations.add(animation);
-        return animation;
-    }
-
-    public void update() {
-        animations.forEach(NumberAnimator::update);
-    }
-
-    protected abstract void init();
+public enum MaterialMenuSelectionMode {
+    /**
+     * 不允许选择
+     */
+    None,
+    /**
+     * 仅允许选择一个（整个菜单只能有一个被选中）
+     */
+    Single,
+    /**
+     * 仅允许选择一个，但至少选择一个
+     */
+    SingleAtLeastOne,
+    /**
+     * 每个组仅允许选择一个
+     */
+    SinglePerGroup,
+    /**
+     * 允许多选
+     */
+    Multiple,
+    /**
+     * 允许多选，但至少选择一个
+     */
+    MultipleAtLeastOne
 }

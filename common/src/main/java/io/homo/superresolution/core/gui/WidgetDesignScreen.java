@@ -10,18 +10,14 @@ import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.widgets.MaterialScrollableContainerWidget;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
+import io.homo.superresolution.core.gui.widgets.menu.*;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
+import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test.CaptureTree;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
 import net.minecraft.network.chat.Component;
-
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
@@ -35,25 +31,32 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
     private ContainerWidget createLine(int line) {
         ContainerWidget lineContainer = new ContainerWidget();
-        lineContainer.setElementSize(400, 60);
-
+        lineContainer.layout().setWidthPercent(100);
+        lineContainer.setElementHeight(60);
         lineContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
         lineContainer.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
         lineContainer.layout().setAlignItems(YogaAlign.STRETCH);
+        MaterialButton btn = MaterialButton.filled("嘻嘻 😋", materialScheme)
+                .size(MaterialButtonSize.Medium);
         MaterialSlider btnFilled = MaterialSlider.create()
                 .setMax(100)
                 .setMin(-100)
                 .setStep(0.1f)
                 .setValue(-10)
                 .scheme(materialScheme);
+        btnFilled.setValueIndicatorTextFormater((value) -> String.format("%.1f%%", value.doubleValue()));
         btnFilled.style().valueIndicator(true);
+        btnFilled.style().size(MaterialSliderSize.Small);
+        btn.layout().setAlignSelf(YogaAlign.CENTER);
         btnFilled.layout().setAlignSelf(YogaAlign.CENTER);
         btnFilled.layout().setMargin(YogaEdge.RIGHT, 5);
+        btn.layout().setMargin(YogaEdge.RIGHT, 5);
         MaterialSwitch switch0 = MaterialSwitch.create()
                 .scheme(materialScheme)
                 .setChecked(true);
         switch0.style().showCheckedIconWhenEnable(false);
         switch0.layout().setAlignSelf(YogaAlign.CENTER);
+        lineContainer.addChild(btn);
         lineContainer.addChild(btnFilled);
         lineContainer.addChild(switch0);
 
@@ -66,25 +69,103 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         rootContainer = new ContainerWidget();
         MaterialScrollableContainerWidget scrollableContainer = new MaterialScrollableContainerWidget();
         scrollableContainer.scheme(materialScheme);
-        scrollableContainer.setElementSize(400, 700);
-        scrollableContainer.setViewRegion(new Vector2f(400, 500));
+        scrollableContainer.setElementSize(750, 480);
+        scrollableContainer.setViewRegion(new Vector2f(750, 480));
 
         scrollableContainer.setHorizontalScrollEnabled(false);
         scrollableContainer.setVerticalScrollEnabled(true);
 
         scrollableContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         scrollableContainer.layout().setGap(YogaGutter.COLUMN, 4);
-
-        List<ContainerWidget> lines = new ArrayList<>();
-        for (int i = 0; i < 40; i++) {
+        for (int i = 0; i < 20; i++) {
             ContainerWidget line = createLine(i);
-            lines.add(line);
             scrollableContainer.addChild(line);
         }
+        {
+            MaterialMenuGroup group1 = MaterialMenuGroup.create()
+                    .addItem(MaterialMenuItem.create()
+                            .text("Option 1")
+                            .selectable(true)
+                            .value("option1")
+                            .onSelectionChanged(selected -> System.out.println("Option 1: " + selected)))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Option 2")
+                            .selectable(true)
+                            .value("option2"))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Action 3")
+                            .selectable(false)
+                            .value("action3"));
+            MaterialMenuGroup group2 = MaterialMenuGroup.create()
+                    .addItem(MaterialMenuItem.create()
+                            .text("Action 1")
+                            .selectable(false)
+                            .value("action1")
+                            .onClick(event -> System.out.println("Action 1 clicked")))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Action 2")
+                            .selectable(false)
+                            .value("action2"))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Option 3")
+                            .selectable(true)
+                            .value("option3"));
+            MaterialMenu menu = MaterialMenu.create()
+                    .selectionMode(MaterialMenuSelectionMode.SingleAtLeastOne)
+                    .addGroup(group1)
+                    .addGroup(group2)
+                    .selectItemQuietly("option2");
+            menu.style().colors(MaterialMenuColors.VIBRANT);
+            menu.layout().setWidth(200);
+            menu.layout().setAlignSelf(YogaAlign.CENTER);
+            menu.scheme(materialScheme);
+            scrollableContainer.addChild(menu);
+        }
+        {
+            MaterialMenuGroup group1 = MaterialMenuGroup.create()
+                    .addItem(MaterialMenuItem.create()
+                            .text("Option 1")
+                            .selectable(true)
+                            .value("option1")
+                            .onSelectionChanged(selected -> System.out.println("Option 1: " + selected)))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Option 2")
+                            .selectable(true)
+                            .value("option2"))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Action 3")
+                            .selectable(false)
+                            .value("action3"));
+            MaterialMenuGroup group2 = MaterialMenuGroup.create()
+                    .addItem(MaterialMenuItem.create()
+                            .text("Action 1")
+                            .selectable(false)
+                            .value("action1")
+                            .onClick(event -> System.out.println("Action 1 clicked")))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Action 2")
+                            .selectable(false)
+                            .value("action2"))
+                    .addItem(MaterialMenuItem.create()
+                            .text("Option 3")
+                            .selectable(true)
+                            .value("option3"));
+            MaterialMenu menu = MaterialMenu.create()
+                    .selectionMode(MaterialMenuSelectionMode.SingleAtLeastOne)
+                    .addGroup(group1)
+                    .addGroup(group2)
+                    .selectItemQuietly("option2");
+            menu.style().colors(MaterialMenuColors.STANDARD);
+            menu.layout().setWidth(200);
+            menu.layout().setAlignSelf(YogaAlign.CENTER);
+            menu.scheme(materialScheme);
+            scrollableContainer.addChild(menu);
+        }
+
 
         rootContainer.addChild(scrollableContainer);
         //rootContainer.layout().setPositionType(YogaPositionType.ABSOLUTE);
-        rootContainer.layout().setPosition(YogaEdge.LEFT, 0);
+        rootContainer.layout().setPosition(YogaEdge.LEFT, 50);
         rootContainer.layout().setPosition(YogaEdge.TOP, 100);
         Vector2f screenSize = MinecraftWindow.getWindowSize();
         rootContainer.setElementSize(screenSize.x, screenSize.y);

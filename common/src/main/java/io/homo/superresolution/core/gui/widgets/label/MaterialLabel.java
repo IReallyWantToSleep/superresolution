@@ -35,7 +35,6 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
 
     public MaterialLabel() {
         this.style = new MaterialLabelStyle();
-        this.animationSet = new MaterialLabelAnimationSet();
         getLayoutNode().setDebugName("MaterialLabel");
 
     }
