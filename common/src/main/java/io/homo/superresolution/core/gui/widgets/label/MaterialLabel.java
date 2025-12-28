@@ -77,7 +77,6 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     protected void init() {
     }
 
-
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         drawContext.beginBatch();

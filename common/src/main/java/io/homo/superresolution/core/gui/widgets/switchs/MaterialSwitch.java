@@ -137,6 +137,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         onMousePress((event) -> onPress(event.getMousePosition()));
     }
 
+
     private void updateRectangle() {
         setElementSize(MaterialSwitchSize.Default.trackWidth(), MaterialSwitchSize.Default.trackHeight());
 

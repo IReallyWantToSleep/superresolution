@@ -371,7 +371,7 @@ public class MaterialStyleConfigScreen extends NanoVGScreen<MaterialStyleConfigS
         float mouseY = (float) (Minecraft.getInstance().getWindow().getGuiScale() * mouseY_);
         drawBefore(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
         uiFrameBuffer.bind(FrameBufferBindPoint.Write);
-        nvg.begin(transparent);
+        nvg.begin(true);
         nvg.resetGlobalTransform();
         nvg.resetTransform();
         nvg.globalAlpha(1.0f);

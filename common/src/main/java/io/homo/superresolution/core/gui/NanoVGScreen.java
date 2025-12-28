@@ -1,13 +1,16 @@
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGDrawContext;
-import io.homo.superresolution.core.gui.core.event.GuiEventListener;
-import io.homo.superresolution.core.gui.core.impl.Renderable;
+import io.homo.superresolution.core.gui.core.frame.Frame;
+import io.homo.superresolution.core.gui.core.view.View;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
@@ -21,30 +24,22 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 public abstract class NanoVGScreen<T> extends Screen {
     protected final NanoVGContext nvg;
-    protected final ArrayList<Renderable> renderable = new ArrayList<>();
-    protected final ArrayList<GuiEventListener> eventListener = new ArrayList<>();
-    protected final ArrayList<AbstractWidget<?>> widget = new ArrayList<>();
-    protected boolean transparent = false;
+    protected View view = new View();
+    protected Frame defaultFrame = new Frame();
+    protected YogaNode defaultFrameLayout;
 
     protected NanoVGScreen(Component title) {
         super(title);
         nvg = NanoVG.context;
+        defaultFrameLayout = view.addFrame(defaultFrame);
+        defaultFrameLayout.setWidthPercent(100);
+        defaultFrameLayout.setHeightPercent(100);
         buildWidgets();
     }
 
-    public boolean isTransparent() {
-        return transparent;
-    }
-
     public NanoVGScreen setTransparent(boolean transparent) {
-        this.transparent = transparent;
         return this;
     }
 
@@ -58,10 +53,10 @@ public abstract class NanoVGScreen<T> extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX_, int mouseY_, float partialTick) {
-        float mouseX = (float) (Minecraft.getInstance().getWindow().getGuiScale() * mouseX_);
-        float mouseY = (float) (Minecraft.getInstance().getWindow().getGuiScale() * mouseY_);
+        float mouseX = (float) transformPos(mouseX_);
+        float mouseY = (float) transformPos(mouseY_);
         drawBefore(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
-        nvg.begin(transparent);
+        nvg.begin(true);
         nvg.resetGlobalTransform();
         nvg.resetTransform();
         nvg.globalAlpha(1.0f);
@@ -112,147 +107,152 @@ public abstract class NanoVGScreen<T> extends Screen {
     }
 
     public void drawWidgets(IUIDrawContext drawContext, UIInputState inputState) {
-        Map<Integer, List<Renderable>> layers = Stream.concat(renderable.stream(), widget.stream())
-                .collect(Collectors.groupingBy(
-                        Renderable::getZIndex,
-                        TreeMap::new,
-                        Collectors.toList()
-                ));
+        Vector2f screenSize = MinecraftWindow.getWindowSize();
+        view.setViewport(screenSize.x, screenSize.y);
 
-        layers.values().forEach(layer ->
-                layer.forEach(r -> r.render(drawContext, inputState))
-        );
+        defaultFrame.updateHitTestDebug(inputState.mousePosition());
+
+        view.render(drawContext, inputState);
     }
 
-
-    @Override
-    protected void clearWidgets() {
-        super.clearWidgets();
-        renderable.clear();
-        widget.clear();
-        eventListener.clear();
+    protected void setRoot(AbstractWidget<?> root) {
+        this.defaultFrame.setRoot(root);
     }
 
-    protected void removeWidget(Object widget) {
-        if (widget instanceof Renderable) {
-            renderable.remove(widget);
-        }
-        if (widget instanceof AbstractWidget) {
-            this.widget.remove(widget);
-        }
-        if (widget instanceof GuiEventListener) {
-            this.eventListener.remove(widget);
-        }
+    protected void enableDebugRender(boolean enabled) {
+        view.setDebugRenderEnabled(enabled);
     }
 
-    protected <T extends AbstractWidget<?>> T addWidget(T w) {
-        widget.add(w);
-        eventListener.add(w);
-        return w;
+    protected void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
+        view.setDebugBoundsVisible(layout, render, hitTest);
     }
 
-    @Override
-    protected void rebuildWidgets() {
+    /**
+     * 获取 View 实例，用于添加多个 Frame
+     */
+    protected View getView() {
+        return view;
     }
 
-
-    protected <T extends Renderable> T addRenderableOnly(T renderable) {
-        this.renderable.add(renderable);
-        return renderable;
+    /**
+     * 获取默认 Frame，用于兼容旧代码
+     */
+    protected Frame getDefaultFrame() {
+        return defaultFrame;
     }
 
-    protected <T extends AbstractWidget<?>> T addRenderableWidget(T widget) {
-        renderable.add(widget);
-        eventListener.add(widget);
-        return widget;
+    protected void dispatchMouseMoveToFrame(float x, float y) {
+        view.dispatchMouseMove(x, y);
     }
 
-    protected void invokeEventHandle(Consumer<GuiEventListener> consumer) {
-        for (GuiEventListener handle : eventListener) {
-            consumer.accept(handle);
-        }
+    protected void dispatchMousePressToFrame(float x, float y, int button) {
+        view.dispatchMousePress(x, y, button);
+    }
+
+    protected void dispatchMouseReleaseToFrame(float x, float y, int button) {
+        view.dispatchMouseRelease(x, y, button);
+    }
+
+    protected void dispatchMouseScrollToFrame(float x, float y, double scroll) {
+        view.dispatchMouseScroll(x, y, scroll);
+    }
+
+    protected void dispatchMouseDragToFrame(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        view.dispatchMouseDrag(mouseX, mouseY, dragX, dragY, button);
+    }
+
+    protected void dispatchKeyPressToFrame(int keyCode, int scancode, int modifiers) {
+        view.dispatchKeyPress(keyCode, scancode, modifiers);
+    }
+
+    protected void dispatchKeyReleaseToFrame(int keyCode, int scancode, int modifiers) {
+        view.dispatchKeyRelease(keyCode, scancode, modifiers);
+    }
+
+    protected void dispatchCharTypedToFrame(char codePoint, int modifiers) {
+        view.dispatchCharTyped(codePoint, modifiers);
     }
 
     #if MC_VER > MC_1_21_6
     @Override
     public boolean charTyped(CharacterEvent event) {
-        invokeEventHandle((handle) -> handle.charTyped(((char) event.codepoint()), event.modifiers()));
+        dispatchCharTypedToFrame(((char) event.codepoint()), event.modifiers());
         return true;
     }
 
     @Override
     public boolean keyReleased(KeyEvent event) {
-        invokeEventHandle((handle) -> handle.keyPress(event.key(), event.scancode(), event.modifiers()));
+        dispatchKeyReleaseToFrame(event.key(), event.scancode(), event.modifiers());
         super.keyPressed(event);
         return true;
     }
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        invokeEventHandle((handle) -> handle.keyPress(event.key(), event.scancode(), event.modifiers()));
+        dispatchKeyPressToFrame(event.key(), event.scancode(), event.modifiers());
         super.keyPressed(event);
         return true;
     }
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        invokeEventHandle((handle) -> handle.mouseDrag((float) transformPos(event.x()), (float) transformPos(event.y()), (float) transformPos(dragX), (float) transformPos(dragY), event.button()));
+        dispatchMouseDragToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), (float) transformPos(dragX), (float) transformPos(dragY), event.button());
         super.mouseDragged(event, dragX, dragY);
         return true;
     }
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        invokeEventHandle((handle) -> handle.mouseRelease((float) transformPos(event.x()), (float) transformPos(event.y()), event.button()));
+        dispatchMouseReleaseToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
         super.mouseReleased(event);
         return true;
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean idk) {
-        invokeEventHandle((handle) -> handle.mousePress((float) transformPos(event.x()), (float) transformPos(event.y()), event.button()));
+        dispatchMousePressToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
         super.mouseClicked(event, idk);
         return true;
     }
     #else
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        invokeEventHandle((handle) -> handle.mousePress((float) transformPos(mouseX), (float) transformPos(mouseY), button));
+        dispatchMousePressToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), button);
         super.mouseClicked(mouseX, mouseY, button);
         return true;
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        invokeEventHandle((handle) -> handle.mouseRelease((float) transformPos(mouseX), (float) transformPos(mouseY), button));
+        dispatchMouseReleaseToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), button);
         super.mouseReleased(mouseX, mouseY, button);
         return true;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        invokeEventHandle((handle) -> handle.mouseDrag((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(dragX), (float) transformPos(dragY), button));
+        dispatchMouseDragToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(dragX), (float) transformPos(dragY), button);
         super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         return true;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        invokeEventHandle((handle) -> handle.keyRelease(keyCode, scanCode, modifiers));
+        dispatchKeyReleaseToFrame(keyCode, scanCode, modifiers);
         super.keyReleased(keyCode, scanCode, modifiers);
         return true;
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        invokeEventHandle((handle) -> handle.keyPress(keyCode, scanCode, modifiers));
+        dispatchKeyPressToFrame(keyCode, scanCode, modifiers);
         super.keyPressed(keyCode, scanCode, modifiers);
         return true;
     }
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        invokeEventHandle((handle) -> handle.charTyped(codePoint, modifiers));
+        dispatchCharTypedToFrame(codePoint, modifiers);
         return true;
     }
     #endif
@@ -260,14 +260,14 @@ public abstract class NanoVGScreen<T> extends Screen {
     #if MC_VER > MC_1_20_1
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollY)));
+        dispatchMouseScrollToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), transformPos(scrollY));
         super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         return true;
     }
     #else
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX) {
-        invokeEventHandle((handle) -> handle.mouseScroll((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(scrollX)));
+        dispatchMouseScrollToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), transformPos(scrollX));
         super.mouseScrolled(mouseX, mouseY, scrollX);
         return true;
     }
@@ -276,7 +276,7 @@ public abstract class NanoVGScreen<T> extends Screen {
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
-        invokeEventHandle((handle) -> handle.mouseMove((float) transformPos(mouseX), (float) transformPos(mouseY)));
+        dispatchMouseMoveToFrame((float) transformPos(mouseX), (float) transformPos(mouseY));
         super.mouseMoved(mouseX, mouseY);
     }
 

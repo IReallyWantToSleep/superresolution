@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.gui.core.layout;
 
 import io.homo.superresolution.core.gui.core.IHitTest;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaProps;
@@ -46,20 +47,73 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
         setElementSize(elementSize.x, height);
     }
 
-    @Override
-    public Rectangle getBounds() {
+    public Transform getTransform() {
+        return Transform.identity();
+    }
+
+    public Transform getFullTransform() {
+        Transform selfTransform = getTransform();
+        if (parent instanceof AbstractLayoutElement parentElement) {
+            Transform parentFullTransform = parentElement.getFullTransform();
+
+            if (parentFullTransform.isIdentity()) {
+                return selfTransform;
+            }
+            if (selfTransform.isIdentity()) {
+                return parentFullTransform;
+            }
+            float[] combined = Transform.multiply(parentFullTransform.getMatrix(), selfTransform.getMatrix());
+            return new Transform(combined);
+        }
+
+        return selfTransform;
+    }
+
+    public Rectangle getRawBounds() {
         return new Rectangle(
-                getAbsolutePosition(),
+                getRawAbsolutePosition(),
                 (elementSize.x <= 0 || elementSize.y <= 0) ? new Vector2f(layoutNode.getLayoutWidth(), layoutNode.getLayoutHeight()) : elementSize
         );
     }
 
-    @Override
-    public Vector2f getAbsolutePosition() {
+    public Vector2f getRawAbsolutePosition() {
         return new Vector2f(
                 getLayoutNode().getAbsolutePositionX(),
                 getLayoutNode().getAbsolutePositionY()
         );
+    }
+
+    @Override
+    public Rectangle getBounds() {
+        Rectangle rawBounds = getRawBounds();
+        Transform fullTransform = getFullTransform();
+
+        if (fullTransform.isIdentity()) {
+            return rawBounds;
+        }
+
+        Vector2f topLeft = fullTransform.transformPoint(new Vector2f(rawBounds.x, rawBounds.y));
+        Vector2f topRight = fullTransform.transformPoint(new Vector2f(rawBounds.x + rawBounds.width, rawBounds.y));
+        Vector2f bottomLeft = fullTransform.transformPoint(new Vector2f(rawBounds.x, rawBounds.y + rawBounds.height));
+        Vector2f bottomRight = fullTransform.transformPoint(new Vector2f(rawBounds.x + rawBounds.width, rawBounds.y + rawBounds.height));
+        float minX = Math.min(Math.min(topLeft.x, topRight.x), Math.min(bottomLeft.x, bottomRight.x));
+        float minY = Math.min(Math.min(topLeft.y, topRight.y), Math.min(bottomLeft.y, bottomRight.y));
+        float maxX = Math.max(Math.max(topLeft.x, topRight.x), Math.max(bottomLeft.x, bottomRight.x));
+        float maxY = Math.max(Math.max(topLeft.y, topRight.y), Math.max(bottomLeft.y, bottomRight.y));
+
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    @Override
+    public Vector2f getAbsolutePosition() {
+        Vector2f rawPos = getRawAbsolutePosition();
+        Transform fullTransform = getFullTransform();
+
+        if (fullTransform.isIdentity()) {
+            return rawPos;
+        }
+
+        return fullTransform.transformPoint(rawPos);
     }
 
     @Override
@@ -74,10 +128,18 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
 
     @Override
     public boolean hitTest(Vector2f absolutePos) {
-        Rectangle absBounds = getBounds();
-        boolean result = absBounds.in(absolutePos);
-        return result;
+        Transform fullTransform = getFullTransform();
+
+        if (fullTransform.isIdentity()) {
+            Rectangle rawBounds = getRawBounds();
+            return rawBounds.in(absolutePos);
+        }
+
+        Vector2f localPos = fullTransform.inverseTransformPoint(absolutePos);
+        Rectangle rawBounds = getRawBounds();
+        return rawBounds.in(localPos);
     }
+
 
     public YogaNode getLayoutNode() {
         return layoutNode;
@@ -87,4 +149,5 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
     public YogaProps layout() {
         return layoutNode;
     }
+
 }

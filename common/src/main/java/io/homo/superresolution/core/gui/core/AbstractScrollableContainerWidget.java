@@ -230,7 +230,7 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (region.intersect(widget.getBounds())) {
-                    widget.render(drawContext, inputState);
+                    widget.renderWithChildren(drawContext, inputState);
                 }
             }
         }
@@ -253,6 +253,11 @@ public abstract class AbstractScrollableContainerWidget extends AbstractContaine
         );
         renderScrollbar(drawContext, inputState);
         drawContext.endBatch(getZIndex());
+    }
+
+    @Override
+    public boolean managesChildRendering() {
+        return true;
     }
 
     protected abstract void renderScrollbar(IUIDrawContext drawContext, UIInputState inputState);

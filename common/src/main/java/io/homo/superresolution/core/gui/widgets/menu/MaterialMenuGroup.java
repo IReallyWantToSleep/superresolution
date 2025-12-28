@@ -30,6 +30,8 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutte
 
 public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup> {
 
+    private float expandProgress = 1f;
+
     public MaterialMenuGroup() {
         this.style = new MaterialMenuStyle();
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
@@ -76,12 +78,28 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         return this;
     }
 
+    void setExpandProgress(float progress) {
+        this.expandProgress = progress;
+    }
+
+    public float getExpandProgress() {
+        return expandProgress;
+    }
+
+    @Override
+    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        renderSelf(drawContext, inputState);
+    }
+
     @Override
     protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
         MaterialMenuSize size = style().size();
         Color backgroundColor = style().colors().menuBackground(scheme());
-        Rectangle bounds = getBounds();
+        Rectangle bounds = getRawBounds();
         updateSize();
+        if (!isVisible()) return;
+        if (expandProgress <= 0) return;
+
         for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuItem item) {
                 item.style().colors = style().colors();
@@ -95,21 +113,18 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
             int index = menu.getChildren().indexOf(this);
             int count = menu.getChildren().size();
 
-            //第一个组
             if (index == 0) {
                 topLeft = radius;
                 topRight = radius;
                 bottomLeft = 8;
                 bottomRight = 8;
             }
-            //最后一个组
             if (index == count - 1) {
                 topLeft = 8;
                 topRight = 8;
                 bottomLeft = radius;
                 bottomRight = radius;
             }
-            //唯一组
             if (count == 1) {
                 topLeft = radius;
                 topRight = radius;
@@ -120,9 +135,16 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
             throw new IllegalStateException();
         }
 
+        float animatedHeight = bounds.height * expandProgress;
+
+        drawContext.beginBatch();
+        drawContext.transform().push();
         drawContext.beginPath();
-        drawContext.roundedRectComplex(bounds.x, bounds.y, bounds.width, bounds.height, bottomLeft, bottomRight, topLeft, topRight);
+        drawContext.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
+                Math.min(bottomLeft, animatedHeight / 2), Math.min(bottomRight, animatedHeight / 2), Math.min(topLeft, animatedHeight / 2), Math.min(topRight, animatedHeight / 2));
         drawContext.fillColor(backgroundColor);
         drawContext.endPath(true);
+        drawContext.transform().pop();
+        drawContext.endBatch(-1);
     }
 }

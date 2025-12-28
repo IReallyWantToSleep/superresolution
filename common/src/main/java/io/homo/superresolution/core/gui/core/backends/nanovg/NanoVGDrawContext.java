@@ -342,5 +342,17 @@ public class NanoVGDrawContext implements IUIDrawContext {
             transformStack.setIdentity();
             applyTransformStack();
         }
+
+        @Override
+        public void set(Transform transform) {
+            transformStack.set(transform);
+            applyTransformStack();
+        }
+
+        @Override
+        public void apply(Transform transform) {
+            transformStack.apply(transform);
+            applyTransformStack();
+        }
     }
 }

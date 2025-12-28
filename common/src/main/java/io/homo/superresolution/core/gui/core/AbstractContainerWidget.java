@@ -19,8 +19,10 @@
 package io.homo.superresolution.core.gui.core;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
+import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import org.joml.Vector2f;
@@ -65,12 +67,14 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     public void mouseMove(float x, float y) {
         super.mouseMove(x, y);
 
+        if (managesChildRendering()) {
+            return;
+        }
+
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() &&
-                        !widget.isDisabled() && (!isOutsideView(widget))
-                ) {
+                if (widget.isVisible() && !widget.isDisabled()) {
                     widget.mouseMove(x, y);
                 }
             }
@@ -81,10 +85,15 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     public void mousePress(float x, float y, int button) {
         super.mousePress(x, y, button);
 
+        if (managesChildRendering()) {
+            return;
+        }
+
         if (isDisabled() || !isVisible()) return;
+
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget, new Vector2f(x, y))) {
+                if (widget.isVisible() && !widget.isDisabled()) {
                     widget.mousePress(x, y, button);
                 }
             }
@@ -98,7 +107,7 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
 
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget)) {
+                if (widget.isVisible() && !widget.isDisabled()) {
                     widget.mouseRelease(x, y, button);
                 }
             }
@@ -111,7 +120,7 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
         if (isDisabled() || !isVisible()) return;
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget)) {
+                if (widget.isVisible() && !widget.isDisabled()) {
                     widget.mouseDrag(mouseX, mouseY, dragX, dragY, button);
                 }
             }
@@ -121,10 +130,16 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
         super.mouseScroll(x, y, scrollX);
+
+        if (managesChildRendering()) {
+            return;
+        }
+
         if (isDisabled() || !isVisible()) return;
+
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled() && !isOutsideView(widget, new Vector2f(x, y))) {
+                if (widget.isVisible() && !widget.isDisabled()) {
                     widget.mouseScroll(x, y, scrollX);
                 }
             }
@@ -169,20 +184,6 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
                 }
             }
         }
-    }
-
-    @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        if (!isVisible()) return;
-
-        renderSelf(drawContext, inputState);
-
-        for (ILayoutElement child : children) {
-            if (child instanceof Renderable renderableChild) {
-                renderableChild.render(drawContext, inputState);
-            }
-        }
-
     }
 
     @Override
@@ -240,6 +241,12 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
 
     protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
 
+    }
+
+    @Override
+    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        if (!isVisible()) return;
+        renderSelf(drawContext, inputState);
     }
 
 }
