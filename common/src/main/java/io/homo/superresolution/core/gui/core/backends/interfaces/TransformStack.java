@@ -43,6 +43,18 @@ public class TransformStack {
         return stack.getLast();
     }
 
+    public void set(Transform transform) {
+        stack.getLast().setMatrix(transform.getMatrix());
+    }
+
+    public void apply(Transform transform) {
+        stack.getLast().setMatrix(Transform.multiply(
+                stack.getLast().getMatrix(),
+                transform.getMatrix()
+        ));
+    }
+
+
     public void translate(float x, float y) {
         last().translate(x, y);
     }

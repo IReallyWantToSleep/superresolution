@@ -152,6 +152,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         return true;
     }
 
+
     @Override
     protected void init() {
         this.animationSet = new MaterialSliderAnimationSet();
@@ -169,7 +170,6 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        // Update Animation State
         if (animationSet.handleSize.get() < style().size().handleWidthPress()) {
             animationSet.handleSize.set(style().size().handleWidth());
         }
@@ -186,7 +186,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         float availableWidth = bounds.width - style().size().stepsHorizontalPadding() * 2;
         float handleXPosition = bounds.x + availableWidth * progress;
         float handleWidth = animationSet.handleSize.get();
-
+        drawContext.transform().push();
         float activeTrackWidth = drawTrack(drawContext, bounds, colors, progress, handleWidth, availableWidth);
         drawHandle(drawContext, bounds, colors, handleXPosition, handleWidth);
         drawInactiveTrack(drawContext, bounds, colors, activeTrackWidth, handleWidth);
@@ -194,7 +194,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         if (step.doubleValue() > 0 && style().steps()) {
             drawSteps(drawContext, bounds, colors, handleXPosition, availableWidth);
         }
-
+        drawContext.transform().pop();
         drawContext.endBatch(getZIndex());
         if (style().valueIndicator() && animationSet.hover.get() > 0.01) {
             drawContext.beginBatch();
@@ -282,7 +282,6 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         valueIndicatorRegion.height = style().size().valueIndicatorTextVerticalPadding() * 2 + 20;
         valueIndicatorRegion.x = handleXPosition - valueIndicatorRegion.width / 2;
         valueIndicatorRegion.y = bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2) - ((style().size().handleHeight() - style().size().trackHeight()) / 2) - style().size().valueIndicatorBottomPadding() - bounds.height;
-
         drawContext.transform().push();
         drawContext.transform().last().scaleAt(
                 animationSet.hover.get(),

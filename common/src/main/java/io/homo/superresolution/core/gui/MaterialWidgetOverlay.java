@@ -87,8 +87,8 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
             IPaint[] ripplePaints = ripple.getPaints(
                     rippleColor,
                     drawContext,
-                    widget.getBounds().getPosition(),
-                    widget.getBounds().getSize()
+                    widget.getRawBounds().getPosition(),
+                    widget.getRawBounds().getSize()
             );
             for (IPaint paint : ripplePaints) {
                 if (paint != null) {
@@ -99,7 +99,7 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     }
 
     public void onMouseMove(MouseEvent.MouseMoveEvent event) {
-        boolean isHovering = widget.getBounds().in(event.getMousePosition());
+        boolean isHovering = widget.getRawBounds().in(event.getMousePosition());
         if (isHovering != this.isHovered) {
             if (isHovering) {
                 onMouseEnter();
@@ -112,7 +112,7 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     public void onMousePress(MouseEvent.MousePressEvent event) {
         lastPressPosition = new Vector2f(event.getMousePosition());
         animateHoverTo(1.25f, hoverEnterDuration);
-        ripple.setPressed(true, lastPressPosition, widget.getBounds());
+        ripple.setPressed(true, lastPressPosition, widget.getRawBounds());
     }
 
     public void onMouseRelease(MouseEvent.MouseReleaseEvent event) {
@@ -124,7 +124,7 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
             shouldFadeOutAfterRipple = false;
         }
 
-        ripple.setPressed(false, lastPressPosition, widget.getBounds());
+        ripple.setPressed(false, lastPressPosition, widget.getRawBounds());
     }
 
     public void onMouseEnter() {

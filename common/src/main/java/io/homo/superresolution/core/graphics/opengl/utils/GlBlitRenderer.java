@@ -141,6 +141,7 @@ public class GlBlitRenderer {
                     .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                     .dynamicStates(DynamicStateFlags.Viewport)
                     .colorBlend(r -> r.addAttachment(ColorBlendAttachment.noBlend()))
+                    .vertexFormat(FullscreenQuad.getVertexFormat())
                     .build(RenderSystems.opengl().device());
 
             renderPass = RenderPass.builder()

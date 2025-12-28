@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 
 public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
     private static final long ANIMATION_DURATION = 200;
+    private static final long FADE_DURATION = 200;
 
     private Supplier<String> textSupplier = () -> "";
     private Supplier<MaterialSymbol> iconSupplier = () -> null;
@@ -53,13 +54,20 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
     private Object value = null;
     private Consumer<Boolean> onSelectionChanged;
 
+    private final Animator.FloatAnimator fadeAnimator = Animator.ofFloat(1f, 1f)
+            .duration(FADE_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
+
+    private boolean fadeInStarted = false;
+    private boolean fadeOutStarted = false;
+
     private final Animator.FloatAnimator selectionAnimator = Animator.ofFloat(0f, 0f)
             .duration(ANIMATION_DURATION)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     private final MaterialWidgetOverlay<MaterialMenuItem> overlay = new MaterialWidgetOverlay<>(this) {
         private void drawPath(IUIDrawContext drawContext, MaterialMenuItem widget) {
-            Rectangle bounds = getBounds();
+            Rectangle bounds = getRawBounds();
             float baseRadius = 4;
             float selectedRadius = 12;
             float animProgress = selectionAnimator.get();
@@ -131,10 +139,9 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         return (MaterialMenuItemStyle) super.style();
     }
 
-
     private void onPress(MouseEvent.MousePressEvent event) {
         if (event.getButton() == MouseButton.Left.id()) {
-            if (getBounds().in(event.getMousePosition()) && isVisible() && !isDisabled()) {
+            if (isVisible() && !isDisabled()) {
                 eventBus.post(new WidgetEvent.ClickEvent<>(this));
             }
         }
@@ -154,6 +161,11 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         eventBus.addListener(this::onPress);
         eventBus.addListener(this::onRelease);
         eventBus.addListener(this::_onClick);
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return true;
     }
 
     private void handleSelectionClick() {
@@ -226,23 +238,59 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         return this;
     }
 
+    void startFadeIn() {
+        if (!fadeInStarted) {
+            fadeInStarted = true;
+            fadeOutStarted = false;
+            fadeAnimator.fromTo(fadeAnimator.get(), 1f).start();
+        }
+    }
+
+    void startFadeOut() {
+        if (!fadeOutStarted) {
+            fadeOutStarted = true;
+            fadeInStarted = false;
+            fadeAnimator.fromTo(fadeAnimator.get(), 0f).start();
+        }
+    }
+
+    void resetFadeState(boolean visible) {
+        fadeInStarted = visible;
+        fadeOutStarted = !visible;
+        fadeAnimator.set(visible ? 1f : 0f);
+    }
+
+    public float getFadeProgress() {
+        return fadeAnimator.get();
+    }
+
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
         updateSize();
         selectionAnimator.update();
+        fadeAnimator.update();
+        overlay.update();
+        if (!isVisible())
+            return;
+
+        float fadeProgress = fadeAnimator.get();
+        if (fadeProgress <= 0)
+            return;
+
         float animProgress = selectionAnimator.get();
 
         drawContext.beginBatch();
-        overlay.update();
+        float savedAlpha = drawContext.globalAlpha();
+        drawContext.globalAlpha(savedAlpha * fadeProgress);
         MaterialMenuItemSize size = style().size();
         Color contentColor = style().colors().itemText(scheme());
         Color iconColor = style().colors().itemIcon(scheme());
         Color selectedContentColor = style().colors().selectedItemText(scheme());
         Color selectedIconColor = style().colors().selectedItemIcon(scheme());
-        Rectangle bounds = getBounds();
+        Rectangle bounds = getRawBounds();
 
         if (selectable && animProgress > 0) {
-            int alpha = (int) (animProgress * 0.8f * 255);
+            int alpha = isDisabled() ? (int) (0.15 * 255) : (int) (animProgress * 0.8f * 255);
             drawContext.roundedRect(
                     bounds.x,
                     bounds.y,
@@ -250,8 +298,7 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
                     bounds.height,
                     12,
                     style().colors().selectedItemBackground(scheme()).copy().alpha(alpha),
-                    true
-            );
+                    true);
             contentColor = contentColor.copy().lerp(selectedContentColor, animProgress);
             iconColor = iconColor.copy().lerp(selectedIconColor, animProgress);
         }
@@ -262,7 +309,11 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         float textOffset = animProgress * checkIconOffset;
 
         float currentX = bounds.x + size.horizontalPadding();
-
+        drawContext.save();
+        drawContext.transform().push();
+        float lastAlpha = drawContext.globalAlpha();
+        if (isDisabled())
+            drawContext.globalAlpha(0.38f * lastAlpha);
         if (selectable && animProgress > 0) {
             MaterialSymbol checkIcon = MaterialSymbols.iconCheck();
             float iconCenterX = currentX + size.iconSize() / 2f;
@@ -308,7 +359,9 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             float iconCenterY = bounds.y + bounds.height / 2f;
             rightIcon.render(drawContext, iconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
         }
-
+        drawContext.globalAlpha(savedAlpha);
+        drawContext.transform().pop();
+        drawContext.restore();
         drawContext.endBatch(getZIndex());
     }
 

@@ -34,4 +34,9 @@ public interface ITransformStack {
     void rotate(float radians);
 
     void identity();
+
+    void set(Transform transform);
+
+    void apply(Transform transform);
+
 }

@@ -19,12 +19,16 @@
 package io.homo.superresolution.core.gui.core;
 
 import io.homo.superresolution.core.gui.MaterialUI;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
 import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
+import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
+import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.impl.Destroyable;
 import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;
@@ -73,9 +77,17 @@ public abstract class AbstractWidget<
     }
 
     @Override
+    public Transform getTransform() {
+        if (style != null) {
+            return style.transform();
+        }
+        return super.getTransform();
+    }
+
+    @Override
     public void mouseMove(float x, float y) {
         Vector2f mousePos = new Vector2f(x, y);
-        boolean isHovering = getBounds().in(x, y);
+        boolean isHovering = getRawBounds().in(x, y);
         eventBus.post(new MouseEvent.MouseMoveEvent(mousePos));
         if (isHovering != this.hovered) {
             eventBus.post(new WidgetEvent.HoverEvent(mousePos, isHovering));
@@ -85,13 +97,11 @@ public abstract class AbstractWidget<
 
     @Override
     public void mousePress(float x, float y, int button) {
-        if (getBounds().in(x, y)) {
-            Vector2f mousePos = new Vector2f(x, y);
-            if (button == MouseButton.Left.id()) {
-                setPressed(true);
-            }
-            eventBus.post(new MouseEvent.MousePressEvent(mousePos, button));
+        Vector2f mousePos = new Vector2f(x, y);
+        if (button == MouseButton.Left.id()) {
+            setPressed(true);
         }
+        eventBus.post(new MouseEvent.MousePressEvent(mousePos, button));
     }
 
     @Override
@@ -236,6 +246,34 @@ public abstract class AbstractWidget<
     }
 
     protected boolean isInteractive() {
+        return false;
+    }
+
+    public boolean checkInteractive() {
+        return isInteractive();
+    }
+
+    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    }
+
+    public void renderWithChildren(IUIDrawContext drawContext, UIInputState inputState) {
+        if (!isVisible()) return;
+        render(drawContext, inputState);
+
+        if (managesChildRendering()) {
+            return;
+        }
+
+        if (this instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    childWidget.renderWithChildren(drawContext, inputState);
+                }
+            }
+        }
+    }
+
+    public boolean managesChildRendering() {
         return false;
     }
 

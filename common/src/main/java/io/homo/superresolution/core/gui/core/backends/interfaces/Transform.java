@@ -132,6 +132,58 @@ public class Transform {
         return getMatrix();
     }
 
+    public Vector2f transformPoint(Vector2f point) {
+        float x = mat[0] * point.x + mat[2] * point.y + mat[4];
+        float y = mat[1] * point.x + mat[3] * point.y + mat[5];
+        return new Vector2f(x, y);
+    }
+
+    public Vector2f inverseTransformPoint(Vector2f point) {
+        float a = mat[0], b = mat[1], c = mat[2], d = mat[3], e = mat[4], f = mat[5];
+        float det = a * d - b * c;
+        if (Math.abs(det) < 1e-10f) {
+            return new Vector2f(point);
+        }
+        float invDet = 1.0f / det;
+        float ia = d * invDet;
+        float ib = -b * invDet;
+        float ic = -c * invDet;
+        float id = a * invDet;
+        float ie = (c * f - d * e) * invDet;
+        float ig = (b * e - a * f) * invDet;
+
+        float x = ia * point.x + ic * point.y + ie;
+        float y = ib * point.x + id * point.y + ig;
+        return new Vector2f(x, y);
+    }
+
+    public Transform inverse() {
+        float a = mat[0], b = mat[1], c = mat[2], d = mat[3], e = mat[4], f = mat[5];
+        float det = a * d - b * c;
+        if (Math.abs(det) < 1e-10f) {
+            return Transform.identity();
+        }
+        float invDet = 1.0f / det;
+        float[] invMat = new float[]{
+                d * invDet,
+                -b * invDet,
+                -c * invDet,
+                a * invDet,
+                (c * f - d * e) * invDet,
+                (b * e - a * f) * invDet
+        };
+        return new Transform(invMat);
+    }
+
+    public boolean isIdentity() {
+        return Math.abs(mat[0] - 1) < 1e-6f &&
+                Math.abs(mat[1]) < 1e-6f &&
+                Math.abs(mat[2]) < 1e-6f &&
+                Math.abs(mat[3] - 1) < 1e-6f &&
+                Math.abs(mat[4]) < 1e-6f &&
+                Math.abs(mat[5]) < 1e-6f;
+    }
+
     @Override
     public String toString() {
         float[] m = getMatrix();

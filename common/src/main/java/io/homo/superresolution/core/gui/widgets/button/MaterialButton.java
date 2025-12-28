@@ -54,7 +54,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                     bounds.y,
                     bounds.width,
                     bounds.height,
-                    getCornerSize(),
+                    Math.min(getCornerSize(), (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
+                            : style().size().squareCornerSize())),
                     color,
                     true);
         }
@@ -69,7 +70,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                     bounds.y,
                     bounds.width,
                     bounds.height,
-                    getCornerSize());
+                    Math.min(getCornerSize(), (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
+                            : style().size().squareCornerSize())));
             drawContext.endPath();
         }
     };
@@ -81,9 +83,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         updateRectangle();
         float cornerSize = style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
                 : style().size().squareCornerSize();
-        if (pressAnimator == null)
-            initAnimators();
-        pressAnimator.fromTo(cornerSize, cornerSize);
+        initAnimators();
+        pressAnimator.fromTo(cornerSize, cornerSize).duration(1).start();
     }
 
     public static MaterialButton create(MaterialButtonSize size) {
@@ -210,8 +211,6 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
     @Override
     protected void init() {
-        initAnimators();
-
         onHover((event) -> onHover(event.getMousePosition(), event.isHovering()));
         onMouseMove((event) -> onMouseMove(event.getMousePosition()));
         onMouseRelease((event) -> onRelease(event.getMousePosition()));
@@ -254,7 +253,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                     bounds.y,
                     bounds.width,
                     bounds.height,
-                    cornerSize,
+                    Math.min(cornerSize, bounds.height / 2),
                     colors.backgroundColor,
                     true);
         }
@@ -330,7 +329,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     private float getCornerSize() {
-        return pressAnimator.get();
+        return pressAnimator == null ? (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
+                : style().size().squareCornerSize()) : pressAnimator.get();
     }
 
     private ButtonColors getButtonColors() {
@@ -423,7 +423,11 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     private void initAnimators() {
-        pressAnimator = new Animator.FloatAnimator(0f, 0f);
+        pressAnimator = new Animator.FloatAnimator(
+                (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
+                        : style().size().squareCornerSize()),
+                (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
+                        : style().size().squareCornerSize()));
         pressAnimator.duration(100);
         pressAnimator.timeInterpolator(TimeInterpolator.easeInOutQuart());
         pressAnimator.onLifecycle(new Animator.AnimatorLifecycleListener() {

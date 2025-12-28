@@ -11,9 +11,7 @@ public class BatchManager {
 
     public CommandsBatch beginBatch() {
         CommandsBatch batch = new CommandsBatch();
-        if (!stack.isEmpty()) {
-            stack.peek().addChildBatch(batch);
-        } else {
+        if (stack.isEmpty()) {
             rootBatches.add(batch);
         }
         stack.push(batch);
@@ -29,19 +27,7 @@ public class BatchManager {
 
         if (!stack.isEmpty()) {
             CommandsBatch parent = stack.peek();
-
-            if (zIndex > parent.zIndex()) {
-                CommandsBatch grandParent = stack.size() >= 2 ? stack.get(stack.size() - 2) : null;
-                if (grandParent != null) {
-                    grandParent.addChildBatch(current);
-                } else {
-                    rootBatches.add(current);
-                }
-            } else {
-                parent.addChildBatch(current);
-            }
-        } else {
-            rootBatches.add(current);
+            parent.addChildBatch(current);
         }
     }
 

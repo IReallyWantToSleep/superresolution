@@ -18,8 +18,12 @@
 
 package io.homo.superresolution.core.gui.widgets.menu;
 
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.animator.Animator;
+import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
@@ -29,9 +33,20 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutte
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
+    private static final long EXPAND_ANIMATION_DURATION = 400;
+
     private MaterialMenuSelectionMode selectionMode = MaterialMenuSelectionMode.None;
+    private boolean expanded = true;
+    private Consumer<Boolean> onExpandChanged;
+
+    private float fullExpandedHeight = 0;
+
+    private final Animator.FloatAnimator expandAnimator = Animator.ofFloat(1f, 1f)
+            .duration(EXPAND_ANIMATION_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     public MaterialMenu() {
         this.style = new MaterialMenuStyle();
@@ -42,6 +57,7 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
     public void updateSize() {
         MaterialMenuSize size = style().size();
+        float animProgress = expandAnimator.get();
 
         float maxItemWidth = 0;
         for (io.homo.superresolution.core.gui.core.layout.ILayoutElement child : getChildren()) {
@@ -54,18 +70,125 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
         layout().setWidth(finalWidth);
         layout().setGap(YogaGutter.ALL, size.verticalPadding());
+        if (animProgress < 1) {
+            layout().setHeightAuto();
+            layout().setMaxHeightPercent(animProgress * 100);
+        } else {
+            layout().setHeightAuto();
+            layout().setMaxHeightPercent(100);
+        }
+    }
+
+    private void cacheFullExpandedHeight() {
+        Rectangle rawBounds = getRawBounds();
+        if (rawBounds.height > 0) {
+            fullExpandedHeight = rawBounds.height;
+        }
     }
 
     @Override
     public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        expandAnimator.update();
+        float animProgress = expandAnimator.get();
+
+        if (animProgress <= 0) {
+            return;
+        }
+
         for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuGroup group) {
                 group.style().colors(style().colors());
                 group.scheme(scheme());
             }
         }
+
         updateSize();
-        super.render(drawContext, inputState);
+
+        if (animProgress >= 1) {
+            cacheFullExpandedHeight();
+        }
+
+        if (fullExpandedHeight <= 0) {
+            cacheFullExpandedHeight();
+        }
+
+        float currentExpandedHeight = fullExpandedHeight * animProgress;
+
+        updateExpandState(currentExpandedHeight, animProgress);
+        drawContext.beginBatch();
+        Rectangle rawBounds = getRawBounds();
+        drawContext.save();
+        drawContext.transform().push();
+        drawContext.transform().apply(style().transform());
+        drawContext.scissor(
+                rawBounds.x,
+                rawBounds.y,
+                rawBounds.width,
+                currentExpandedHeight
+        );
+        renderSelf(drawContext, inputState);
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget && widget.isVisible()) {
+                widget.renderWithChildren(drawContext, inputState);
+            }
+        }
+        drawContext.transform().pop();
+        drawContext.restore();
+        drawContext.endBatch(style().zIndex());
+    }
+
+    private void updateExpandState(float currentExpandedHeight, float animProgress) {
+        Rectangle menuBounds = getRawBounds();
+        float menuTop = menuBounds.y;
+
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialMenuGroup group) {
+                Rectangle groupBounds = group.getRawBounds();
+                float groupRelativeTop = groupBounds.y - menuTop;
+                float groupRelativeBottom = groupRelativeTop + groupBounds.height;
+
+                float groupExpandProgress;
+                if (expanded) {
+                    if (currentExpandedHeight >= groupRelativeBottom) {
+                        groupExpandProgress = 1f;
+                    } else if (currentExpandedHeight <= groupRelativeTop) {
+                        groupExpandProgress = 0f;
+                    } else {
+                        groupExpandProgress = (currentExpandedHeight - groupRelativeTop) / groupBounds.height;
+                    }
+                } else {
+                    float collapseHeight = fullExpandedHeight - currentExpandedHeight;
+                    float groupDistanceFromBottom = fullExpandedHeight - groupRelativeBottom;
+                    if (collapseHeight <= groupDistanceFromBottom) {
+                        groupExpandProgress = 1f;
+                    } else if (collapseHeight >= fullExpandedHeight - groupRelativeTop) {
+                        groupExpandProgress = 0f;
+                    } else {
+                        groupExpandProgress = 1f - (collapseHeight - groupDistanceFromBottom) / groupBounds.height;
+                    }
+                }
+                group.setExpandProgress(groupExpandProgress);
+
+                for (ILayoutElement groupChild : group.getChildren()) {
+                    if (groupChild instanceof MaterialMenuItem item) {
+                        Rectangle itemBounds = item.getRawBounds();
+                        float itemRelativeTop = itemBounds.y - menuTop;
+                        float itemRelativeBottom = itemRelativeTop + itemBounds.height;
+
+                        if (expanded) {
+                            if (currentExpandedHeight + 25 >= itemRelativeBottom) {
+                                item.startFadeIn();
+                            }
+                        } else {
+                            float collapseHeight = fullExpandedHeight - currentExpandedHeight;
+                            if (collapseHeight + 25 >= fullExpandedHeight - itemRelativeTop) {
+                                item.startFadeOut();
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static MaterialMenu create() {
@@ -77,9 +200,154 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         return getAbsoluteViewRect();
     }
 
+    public MaterialMenu expand() {
+        if (!expanded) {
+            expanded = true;
+            resetItemFadeStates(false);
+            expandAnimator.fromTo(expandAnimator.get(), 1f).start();
+            if (onExpandChanged != null) {
+                onExpandChanged.accept(true);
+            }
+        }
+        return this;
+    }
+
+    public MaterialMenu collapse() {
+        if (expanded) {
+            expanded = false;
+            resetItemFadeStates(true);
+            expandAnimator.fromTo(expandAnimator.get(), 0f).start();
+            if (onExpandChanged != null) {
+                onExpandChanged.accept(false);
+            }
+        }
+        return this;
+    }
+
+    private void resetItemFadeStates(boolean visible) {
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialMenuGroup group) {
+                for (ILayoutElement groupChild : group.getChildren()) {
+                    if (groupChild instanceof MaterialMenuItem item) {
+                        item.resetFadeState(visible);
+                    }
+                }
+            }
+        }
+    }
+
+    public MaterialMenu toggle() {
+        if (expanded) {
+            collapse();
+        } else {
+            expand();
+        }
+        return this;
+    }
+
+    public MaterialMenu setExpanded(boolean expanded) {
+        this.expanded = expanded;
+        expandAnimator.set(expanded ? 1f : 0f);
+        float progress = expanded ? 1f : 0f;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialMenuGroup group) {
+                group.setExpandProgress(progress);
+                for (ILayoutElement groupChild : group.getChildren()) {
+                    if (groupChild instanceof MaterialMenuItem item) {
+                        item.resetFadeState(expanded);
+                    }
+                }
+            }
+        }
+        return this;
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public MaterialMenu onExpandChanged(Consumer<Boolean> onExpandChanged) {
+        this.onExpandChanged = onExpandChanged;
+        return this;
+    }
+
     @Override
     public MaterialMenuStyle style() {
         return (MaterialMenuStyle) super.style();
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return expanded || expandAnimator.isRunning();
+    }
+
+    @Override
+    public boolean managesChildRendering() {
+        return true;
+    }
+
+    @Override
+    public Transform getFullTransform() {
+        Transform selfTransform = style().transform();
+
+        if (getParent() instanceof AbstractLayoutElement parentElement) {
+            Transform parentFullTransform = parentElement.getFullTransform();
+
+            if (parentFullTransform.isIdentity()) {
+                return selfTransform;
+            }
+            if (selfTransform.isIdentity()) {
+                return parentFullTransform;
+            }
+            float[] combined = Transform.multiply(parentFullTransform.getMatrix(), selfTransform.getMatrix());
+            return new Transform(combined);
+        }
+
+        return selfTransform;
+    }
+
+    private Rectangle getVisibleBounds() {
+        Rectangle rawBounds = getRawBounds();
+        float animProgress = expandAnimator.get();
+        float currentHeight = fullExpandedHeight > 0 ? fullExpandedHeight * animProgress : rawBounds.height * animProgress;
+        return new Rectangle(rawBounds.x, rawBounds.y, rawBounds.width, currentHeight);
+    }
+
+    @Override
+    public boolean hitTest(org.joml.Vector2f absolutePos) {
+        if (!isInteractive()) {
+            return false;
+        }
+
+        Transform fullTransform = getFullTransform();
+        org.joml.Vector2f testPos = absolutePos;
+
+        if (!fullTransform.isIdentity()) {
+            testPos = fullTransform.inverseTransformPoint(absolutePos);
+        }
+
+        Rectangle visibleBounds = getVisibleBounds();
+        return visibleBounds.in(testPos);
+    }
+
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(org.joml.Vector2f absPos) {
+        if (!hitTest(absPos)) {
+            return null;
+        }
+
+        java.util.List<ILayoutElement> children = getChildren();
+        for (int i = children.size() - 1; i >= 0; i--) {
+            ILayoutElement child = children.get(i);
+            if (child instanceof AbstractWidget<?> widget && widget.isVisible() && !widget.isDisabled()) {
+                AbstractWidget<?> interactive = widget.findInteractiveWidgetAt(absPos);
+                if (interactive != null) {
+                    return interactive;
+                }
+            }
+        }
+
+        return isInteractive() ? this : null;
     }
 
     @Override
