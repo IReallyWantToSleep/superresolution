@@ -11,7 +11,9 @@ void main() {
     if (texelCoord.x >= texSize.x || texelCoord.y >= texSize.y) {
         return;
     }
-    vec2 motionVector = texelFetch(inputMotionVector, texelCoord, 0).rg;
+    int flippedY = texSize.y - 1 - texelCoord.y;
+    ivec2 flippedCoord = ivec2(texelCoord.x, flippedY);
+    vec2 motionVector = texelFetch(inputMotionVector, flippedCoord, 0).rg;
     motionVector.y = -motionVector.y;
     imageStore(outputMotionVector, texelCoord, vec4(motionVector, 0.0, 0.0));
 }

@@ -8,6 +8,7 @@
 #include <iostream>
 #include "DLSS/include/nvsdk_ngx_vk.h"
 #include "DLSS/include/nvsdk_ngx_helpers_vk.h"
+#include "DLSS/include/nvsdk_ngx_defs.h"
 
 struct SRDLSSPrivateData
 {
@@ -15,6 +16,11 @@ struct SRDLSSPrivateData
     NVSDK_NGX_Parameter *ngxParams;
     SRMessageCallback messageCallback;
 };
+
+// Map to store callbacks for each context to support multiple concurrent contexts
+static std::unordered_map<uintptr_t, SRMessageCallback> g_contextCallbacks;
+static std::mutex g_callbackMutex;
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -36,15 +42,66 @@ extern "C"
         SRVulkanDeviceInfo vulkanDevice = desc->renderDeviceInfo.vulkan;
         privateData->messageCallback = desc->messageCallback;
         context->userContext = privateData;
-        auto result = NVSDK_NGX_VULKAN_Init(
-            0x0000000000000000,
+        g_ngxLoggingCallback = desc->messageCallback;
+
+        NVSDK_NGX_FeatureCommonInfo featureInfo = {};
+        featureInfo.LoggingInfo = {};
+
+        static auto ngxLogger = [](const char *message, NVSDK_NGX_Logging_Level loggingLevel, NVSDK_NGX_Feature sourceComponent) -> void
+        {
+            if (!g_ngxLoggingCallback || !message)
+                return;
+
+            size_t len = std::strlen(message) + 1;
+            wchar_t *wideMessage = new wchar_t[len];
+            std::mbstowcs(wideMessage, message, len);
+
+            SRMessageType msgType = SR_MESSAGE_TYPE_INFO;
+            if (loggingLevel <= NVSDK_NGX_LOGGING_LEVEL_ON)
+            {
+                msgType = SR_MESSAGE_TYPE_ERROR;
+            }
+
+            g_ngxLoggingCallback(msgType, wideMessage);
+            delete[] wideMessage;
+        };
+
+        featureInfo.LoggingInfo.LoggingCallback = desc->messageCallback ? ngxLogger : nullptr;
+        featureInfo.LoggingInfo.MinimumLoggingLevel = NVSDK_NGX_LOGGING_LEVEL_ON;
+        if (srFindParam(&desc->extraParams, "NGX_FEATURE_DLL_PATH") != nullptr)
+        {
+            const SRContextExtraParam *param = srFindParam(&desc->extraParams, "NGX_FEATURE_DLL_PATH");
+            if (param && param->valueType == SR_PARAM_VALUE_TYPE_STRING && param->value.stringValue)
+            {
+                size_t len = std::strlen(param->value.stringValue) + 1;
+                wchar_t *widePath = new wchar_t[len];
+                std::mbstowcs(widePath, param->value.stringValue, len);
+
+                wchar_t const *const paths[] = {widePath};
+                NVSDK_NGX_PathListInfo pathListInfo = {};
+                pathListInfo.Path = paths;
+                pathListInfo.Length = 1;
+                featureInfo.PathListInfo = pathListInfo;
+            }
+        }
+        NVSDK_NGX_FeatureDiscoveryInfo featureDiscoveryInfo = {};
+        featureDiscoveryInfo.ApplicationDataPath = L".";
+        featureDiscoveryInfo.FeatureID = NVSDK_NGX_Feature_SuperSampling;
+        featureDiscoveryInfo.FeatureInfo = &featureInfo;
+        featureDiscoveryInfo.SDKVersion = NVSDK_NGX_Version_API;
+
+        const char *projectId = "3a799712-b54a-407c-82b0-eb3366f0f1e3";
+        auto result = NVSDK_NGX_VULKAN_Init_with_ProjectID(
+            projectId,
+            NVSDK_NGX_ENGINE_TYPE_CUSTOM,
+            "1.0.0",
             L".",
             (VkInstance)(vulkanDevice.instance),
             (VkPhysicalDevice)(vulkanDevice.physicalDevice),
             (VkDevice)(vulkanDevice.device),
             (PFN_vkGetInstanceProcAddr)(vulkanDevice.instanceProcAddr),
             (PFN_vkGetDeviceProcAddr)(vulkanDevice.deviceProcAddr),
-            nullptr,
+            &featureInfo,
             NVSDK_NGX_Version_API);
         if (!NVSDK_NGX_SUCCEED(result))
         {
@@ -53,6 +110,55 @@ extern "C"
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
             return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
+        NVSDK_NGX_FeatureRequirement featureRequirement = {};
+        result = NVSDK_NGX_VULKAN_GetFeatureRequirements(
+            vulkanDevice.instance,
+            vulkanDevice.physicalDevice,
+            &featureDiscoveryInfo,
+            &featureRequirement);
+        if (!NVSDK_NGX_SUCCEED(result))
+        {
+            std::wstring msg = L"NVSDK_NGX_VULKAN_GetFeatureRequirements failed. Code:";
+            msg += GetNGXResultAsString(result);
+            privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
+            // return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+        }
+        if (NVSDK_NGX_SUCCEED(result))
+        {
+            if (featureRequirement.FeatureSupported != NVSDK_NGX_FeatureSupportResult_Supported)
+            {
+                /*
+                NVSDK_NGX_FeatureSupportResult_Supported
+                NVSDK_NGX_FeatureSupportResult_CheckNotPresent
+                NVSDK_NGX_FeatureSupportResult_DriverVersionUnsupported
+                NVSDK_NGX_FeatureSupportResult_AdapterUnsupported
+                NVSDK_NGX_FeatureSupportResult_OSVersionBelowMinimumSupported
+                NVSDK_NGX_FeatureSupportResult_NotImplemented
+                */
+                std::wstring msg;
+                switch (featureRequirement.FeatureSupported)
+                {
+                case NVSDK_NGX_FeatureSupportResult_CheckNotPresent:
+                    msg = L"DLSS not supported: Check Not Present.";
+                    break;
+                case NVSDK_NGX_FeatureSupportResult_DriverVersionUnsupported:
+                    msg = L"DLSS not supported: Driver Version Unsupported.";
+                    break;
+                case NVSDK_NGX_FeatureSupportResult_AdapterUnsupported:
+                    msg = L"DLSS not supported: Adapter Unsupported.";
+                    break;
+                case NVSDK_NGX_FeatureSupportResult_OSVersionBelowMinimumSupported:
+                    msg = L"DLSS not supported: OS Version Below Minimum Supported.";
+                    break;
+                case NVSDK_NGX_FeatureSupportResult_NotImplemented:
+                    msg = L"DLSS not supported: Not Implemented.";
+                    break;
+                }
+                privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
+                return (SRReturnCode)SR_RETURN_CODE_UNSUPPORTED;
+            }
+        }
+
         result = NVSDK_NGX_VULKAN_GetCapabilityParameters(&privateData->ngxParams);
         if (!NVSDK_NGX_SUCCEED(result))
         {
@@ -237,6 +343,8 @@ extern "C"
             },
             .pInDepth = &depthAttachment,
             .pInMotionVectors = &motionVectors,
+            .InJitterOffsetX = desc->jitterOffset.x,
+            .InJitterOffsetY = desc->jitterOffset.y,
             .InRenderSubrectDimensions = {
                 .Width = desc->renderSize.x,
                 .Height = desc->renderSize.y,
@@ -248,6 +356,7 @@ extern "C"
             .InFrameTimeDeltaInMsec = static_cast<float>(desc->frameTimeDelta),
         };
         auto result = NGX_VULKAN_EVALUATE_DLSS_EXT((VkCommandBuffer)desc->commandList.apiCommandBuffer.vulkan.commandBuffer, privateData->dlssHandle, params, &dlssEval);
+        NVSDK_NGX_VULKAN_DestroyParameters(params);
         if (!NVSDK_NGX_SUCCEED(result))
         {
             std::wstring msg = L"NVSDK_NGX_VULKAN_EVALUATE_DLSS_EXT failed. Code:";

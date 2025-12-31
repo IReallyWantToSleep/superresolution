@@ -259,8 +259,7 @@ public final class SuperResolution implements Resizable, Destroyable {
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.init();
-                currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
-                SuperResolutionAPI.EVENT_BUS.post(
+                /*SuperResolutionAPI.EVENT_BUS.post(
                         new AlgorithmResizeEvent(
                                 currentAlgorithm,
                                 RenderHandlerManager.getScreenWidth(),
@@ -268,7 +267,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                                 RenderHandlerManager.getRenderWidth(),
                                 RenderHandlerManager.getRenderHeight()
                         )
-                );
+                );*/
 
                 return true;
             } catch (Exception e) {

@@ -24,6 +24,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.upscale.dlss.DLSS;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSROgl;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
@@ -91,6 +92,16 @@ public class AlgorithmDescriptions {
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
                             .requireVulkan(true)
             );
+    public static final AlgorithmDescription<DLSS> DLSS =
+            new AlgorithmDescription<>(
+                    DLSS.class,
+                    "DLSS",
+                    "dlss",
+                    "NVIDIA DLSS",
+                    Requirement.nothing()
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .requireVulkan(true)
+            );
     public static final AlgorithmDescription<FfxFSROgl> FSROgl =
             new AlgorithmDescription<>(
                     FfxFSROgl.class,
@@ -142,6 +153,7 @@ public class AlgorithmDescriptions {
         if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
             AlgorithmRegistry.registry(FSR);
             AlgorithmRegistry.registry(XESS);
+            AlgorithmRegistry.registry(DLSS);
             //AlgorithmRegistry.registry(FSROgl);
         }
         AlgorithmRegistry.registry(SGSR1);

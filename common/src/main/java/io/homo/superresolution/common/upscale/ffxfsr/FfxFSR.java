@@ -216,10 +216,12 @@ public class FfxFSR extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        updateFsr();
         createSharedTexture();
         syncSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
         syncVkSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
+        resize(RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
+        );
     }
 
     @Override
