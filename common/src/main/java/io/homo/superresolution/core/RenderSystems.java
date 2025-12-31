@@ -37,6 +37,7 @@ import static org.lwjgl.vulkan.KHRExternalSemaphoreWin32.VK_KHR_EXTERNAL_SEMAPHO
 import static org.lwjgl.vulkan.KHRGetMemoryRequirements2.VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRShaderFloat16Int8.VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPushDescriptor.VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME;
 
 public class RenderSystems {
     private static VkRenderSystem vulkan;
@@ -87,7 +88,10 @@ public class RenderSystems {
                 .addDeviceExtension(VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME)//XeSS
                 .addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME)
-                .addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+                .addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
+                .addDeviceExtension("VK_NVX_binary_import")
+                .addDeviceExtension("VK_NVX_image_view_handle")
+                .addDeviceExtension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                     .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);

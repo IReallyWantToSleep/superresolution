@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.upscale.xess;
+package io.homo.superresolution.common.upscale.dlss;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.SuperResolution;
@@ -41,11 +41,11 @@ import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.semaphore.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import net.minecraft.client.Minecraft;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
@@ -55,7 +55,7 @@ import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 import static org.lwjgl.vulkan.VK10.*;
 
-public class XeSS extends AbstractAlgorithm {
+public class DLSS extends AbstractAlgorithm {
     private SRUpscaleContext context;
 
     private GlImportableTexture2D inputColorGlTexture;
@@ -76,10 +76,10 @@ public class XeSS extends AbstractAlgorithm {
     private VkGlInteropSemaphore syncSemaphore;
     private VkGlInteropSemaphore syncVkSemaphore;
 
-    public void updateXeSS() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_XESS == null)
+    public void updateDLSS() {
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_DLSS == null)
             return;
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_XESS
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_DLSS
                 .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
         if (!(lib.toFile().isFile() && lib.toFile().canRead()))
             return;
@@ -92,24 +92,24 @@ public class XeSS extends AbstractAlgorithm {
         }
         SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                 lib.toAbsolutePath().toString(),
-                "srGetXeSSUpscaleProviders",
-                "srGetXeSSUpscaleProvidersCount");
+                "srGetDLSSUpscaleProviders",
+                "srGetDLSSUpscaleProvidersCount");
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
         SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
                 SuperResolutionNativeAPI.srGetUpscaleProvider(
                         provider,
-                        0x8000004));
+                        0x8000005));
 
         this.context = new SRUpscaleContext(0);
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
-
+        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) vulkanDevice.createCommandBuffer();
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
                         vulkanDevice.getPhysicalDevice(),
                         vulkanDevice.getVkDevice(),
-                        null,
+                        commandBuffer.getNativeCommandBuffer(),
                         vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
                         VkReflectionHelper.getVkGetInstanceProcAddr()),
                 new Vector2i(RenderHandlerManager.getScreenWidth(),
@@ -117,15 +117,18 @@ public class XeSS extends AbstractAlgorithm {
                 new Vector2i(RenderHandlerManager.getRenderWidth(),
                         RenderHandlerManager.getRenderHeight()),
                 SRUpscaleContextCreateFlags.VULKAN.value);
+        upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH", SuperResolutionConstants.NATIVE_LIBRARIES_DIR.toAbsolutePath().toString());
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
                 upscaleContextDesc);
+        /*
         SRUpscaleContextQueryAvailabilityResult result = new SRUpscaleContextQueryAvailabilityResult(0);
         SuperResolutionNativeAPI.srQueryUpscaleContext(context, result, SRUpscaleContextQueryType.AVAILABLE);
         System.out.printf(String.valueOf(result.isAvailable));
-        SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(
-                context);
+        */
+        SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(context);
+        commandBuffer.submit(RenderSystems.vulkan().device());
         SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code);
         SuperResolution.LOGGER.info("'srInitUpscaleContext' return code: {}", code0);
         SuperResolution.LOGGER.info("'SRUpscaleContext' pointer: {}", context.nativePtr);
@@ -351,7 +354,7 @@ public class XeSS extends AbstractAlgorithm {
     @Override
     public void resize(int width, int height) {
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
-        updateXeSS();
+        updateDLSS();
         destroySharedTexture();
         createSharedTexture();
     }
