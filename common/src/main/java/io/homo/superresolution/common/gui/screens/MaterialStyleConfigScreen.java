@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,6 @@ import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGDrawContext;
-import io.homo.superresolution.core.gui.widgets.MaterialScrollableContainerWidget;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -53,7 +52,6 @@ public class MaterialStyleConfigScreen extends NanoVGScreen<MaterialStyleConfigS
     protected IBindableFrameBuffer uiFrameBuffer;
 
     protected ContainerWidget mainContainer;
-    protected MaterialScrollableContainerWidget optionsContainer;
     protected ContainerWidget actionContainer;
     protected ContainerWidget headerContainer;
 

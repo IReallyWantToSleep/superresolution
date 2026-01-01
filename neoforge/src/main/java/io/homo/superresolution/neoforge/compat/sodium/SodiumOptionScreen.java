@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package io.homo.superresolution.neoforge.compat.sodium;
 
 #if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
+
 import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 import toni.sodiumoptionsapi.api.OptionIdentifier;
 import toni.sodiumoptionsapi.util.IOptionGroupIdAccessor;

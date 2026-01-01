@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +54,6 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +67,8 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static None defaultAlgorithm = new None();
     public static boolean isInit;
     public static boolean isPreInit;
-    public static boolean gameIsLoad = false;
+    public static boolean gameIsLoaded = false;
+    public static boolean gameIsStarted = false;
     public static AlgorithmDescription<?> algorithmDescription;
     public static int framebufferWidth = 0;
     public static int framebufferHeight = 0;
@@ -118,6 +118,16 @@ public final class SuperResolution implements Resizable, Destroyable {
         );
         ClientLifecycleEvent.CLIENT_STARTED.register(
                 (minecraft) -> {
+                    SuperResolution.LOGGER.warn("初始化SR");
+                    List.of(Thread.currentThread().getStackTrace()).forEach((element) -> {
+                        SuperResolution.LOGGER.warn(" at {}", element);
+                    });
+                    if (gameIsStarted) {
+                        SuperResolution.LOGGER.warn("似乎有什么东西重复初始化SR");
+
+                        return;
+                    }
+                    gameIsStarted = true;
                     registerKeyMapping();
                     instance = new SuperResolution();
                     SuperResolution.check();
@@ -150,6 +160,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void preInit() {
+        if (isPreInit) return;
         if (minecraft == null) minecraft = Minecraft.getInstance();
         if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
