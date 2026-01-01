@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ public class FileIncluder {
     ) {
         String resolvedPath = resolveRelativePath(headerName, includerName);
         String fullPath = LOCAL_INCLUDE_BASE_PATH + resolvedPath;
-        
+
         String source = loadSource(fullPath);
         if (source != null) {
             return source;
@@ -56,7 +56,7 @@ public class FileIncluder {
             int inclusionDepth
     ) {
         String fullPath = SYSTEM_INCLUDE_BASE_PATH + headerName;
-        
+
         String source = loadSource(fullPath);
         if (source != null) {
             return source;
@@ -72,10 +72,10 @@ public class FileIncluder {
 
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {
             try {
-                Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+                Path gameDir = Minecraft.getInstance().gameDirectory.toPath().toAbsolutePath();
                 Path commonResources = gameDir.getParent().getParent()
                         .resolve("common/src/main/resources");
-                
+
                 String relativePath = path.startsWith("/") ? path.substring(1) : path;
                 Path includePath = commonResources.resolve(relativePath).toAbsolutePath();
 
@@ -85,6 +85,7 @@ public class FileIncluder {
                 }
             } catch (Throwable e) {
                 SuperResolution.LOGGER.warn("开发环境ShaderInclude热加载失败: {}", e.getMessage());
+                e.printStackTrace();
             }
         }
 
@@ -94,7 +95,7 @@ public class FileIncluder {
             } catch (Exception e) {
             }
         }
-        
+
         return source;
     }
 

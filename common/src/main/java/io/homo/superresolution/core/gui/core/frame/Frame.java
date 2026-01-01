@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ public class Frame implements IFrame {
     private static final Color DEBUG_LAYOUT_COLOR = Color.rgb(0, 120, 255);
     private static final Color DEBUG_RENDER_COLOR = Color.rgb(255, 50, 50);
     private static final Color DEBUG_HITTEST_COLOR = Color.rgb(255, 220, 0);
-    private static final float DEBUG_STROKE_WIDTH = 2.0f;
+    private static final float DEBUG_STROKE_WIDTH = 1.0f;
 
     private record RenderEntry(AbstractWidget<?> widget, Transform accumulatedTransform, int zIndex) {
     }
@@ -264,6 +264,7 @@ public class Frame implements IFrame {
             Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
             topInteractive.mousePress(localPos.x, localPos.y, button);
         }
+
     }
 
     @Override

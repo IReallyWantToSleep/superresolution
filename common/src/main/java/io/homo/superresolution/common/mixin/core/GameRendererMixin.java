@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,18 +18,12 @@
 
 package io.homo.superresolution.common.mixin.core;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import net.minecraft.client.Camera;
-import org.joml.Matrix4f;
-import org.joml.Vector2f;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.Minecraft;
@@ -51,7 +45,7 @@ public abstract class GameRendererMixin {
     #endif
     @Inject(method = "resize", at = @At(value = "HEAD"))
     private void onResize(int i, int j, CallbackInfo ci) {
-        if (SuperResolution.isInit && SuperResolution.gameIsLoad) {
+        if (SuperResolution.isInit && SuperResolution.gameIsLoaded) {
             SuperResolution.getInstance().resize(i, j);
         }
     }

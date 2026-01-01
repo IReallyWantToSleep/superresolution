@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ public class ShaderSource {
         if (isFilePath) {
             if (Platform.currentPlatform.isDevelopmentEnvironment()) {
                 try {
-                    Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+                    Path gameDir = Minecraft.getInstance().gameDirectory.toPath().toAbsolutePath();
                     Path commonResources = gameDir.getParent().getParent()
                             .resolve("common/src/main/resources");
                     Path shaderPath = commonResources.resolve(source).toAbsolutePath();

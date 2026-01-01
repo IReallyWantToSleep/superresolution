@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -7,16 +25,15 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.frame.Frame;
+import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
-import io.homo.superresolution.core.gui.widgets.MaterialScrollableContainerWidget;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.menu.*;
+import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
-import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import org.joml.Vector2f;
@@ -36,11 +53,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         materialScheme = MaterialScheme.from(MaterialTheme.Dark, Color.from("#6750A4"));
 
         getView().removeFrame(getDefaultFrame());
-
+        Frame navigationDrawerFrame = createNavigationDrawerFrame();
+        YogaNode navigationDrawerLayout = getView().addFrame(navigationDrawerFrame);
+        navigationDrawerLayout.setWidthPercent(17.1f);
+        navigationDrawerLayout.setHeightPercent(100);
+        navigationDrawerLayout.setPadding(YogaEdge.ALL, 0);
         Frame buttonFrame = createButtonFrame();
         YogaNode buttonLayout = getView().addFrame(buttonFrame);
         buttonLayout.setWidthPercent(25);
-        buttonLayout.setHeightPercent(100);
         buttonLayout.setPadding(YogaEdge.ALL, 10);
 
         Frame sliderSwitchFrame = createSliderSwitchFrame();
@@ -49,22 +69,20 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         sliderSwitchLayout.setHeightPercent(100);
         sliderSwitchLayout.setPadding(YogaEdge.ALL, 10);
 
-        Frame menuLabelFrame = createMenuLabelFrame();
-        YogaNode menuLabelLayout = getView().addFrame(menuLabelFrame);
-        menuLabelLayout.setWidthPercent(25);
-        menuLabelLayout.setHeightPercent(100);
-        menuLabelLayout.setPadding(YogaEdge.ALL, 10);
 
         view.setDebugRenderEnabled(true);
     }
 
     private Frame createButtonFrame() {
-        Frame frame = new Frame();
+        ScrollableFrame frame = new ScrollableFrame();
+        frame.setContentPadding(10);
+        frame.setVerticalScrollEnabled(true);
+        frame.setHorizontalScrollEnabled(false);
+
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100);
-        container.layout().setHeightPercent(100);
-        container.layout().setGap(YogaGutter.COLUMN, 20);
+        container.layout().setGap(YogaGutter.COLUMN, 15);
         container.layout().setAlignItems(YogaAlign.CENTER);
         container.layout().setJustifyContent(YogaJustify.FLEX_START);
 
@@ -75,6 +93,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .scheme(materialScheme);
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
+
+        MaterialLabel typeLabel = MaterialLabel.create()
+                .text("Button Types")
+                .fontSize(18)
+                .color(materialScheme.onSurface())
+                .scheme(materialScheme);
+        typeLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
+        container.addChild(typeLabel);
 
         MaterialButton filledBtn = MaterialButton.filled("Filled Button", materialScheme)
                 .size(MaterialButtonSize.Medium);
@@ -101,11 +127,38 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         textBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(textBtn);
 
-        MaterialButton iconBtn = MaterialButton.filled("Icon Button", materialScheme)
+        MaterialLabel iconLabel = MaterialLabel.create()
+                .text("Icon Buttons")
+                .fontSize(18)
+                .color(materialScheme.onSurface())
+                .scheme(materialScheme);
+        iconLabel.layout().setMargin(YogaEdge.TOP, 20);
+        iconLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
+        container.addChild(iconLabel);
+
+        MaterialButton iconBtn1 = MaterialButton.filled("Add Item", materialScheme)
                 .icon(MaterialSymbols.iconAdd())
                 .size(MaterialButtonSize.Medium);
-        iconBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
-        container.addChild(iconBtn);
+        iconBtn1.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(iconBtn1);
+
+        MaterialButton iconBtn2 = MaterialButton.outlined("Edit", materialScheme)
+                .icon(MaterialSymbols.iconEdit())
+                .size(MaterialButtonSize.Medium);
+        iconBtn2.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(iconBtn2);
+
+        MaterialButton iconBtn3 = MaterialButton.tonal("Delete", materialScheme)
+                .icon(MaterialSymbols.iconDelete())
+                .size(MaterialButtonSize.Medium);
+        iconBtn3.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(iconBtn3);
+
+        MaterialButton iconBtn4 = MaterialButton.text("Settings", materialScheme)
+                .icon(MaterialSymbols.iconSettings())
+                .size(MaterialButtonSize.Medium);
+        iconBtn4.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(iconBtn4);
 
         MaterialLabel sizeLabel = MaterialLabel.create()
                 .text("Button Sizes")
@@ -131,13 +184,75 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         largeBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(largeBtn);
 
+        MaterialLabel interactiveLabel = MaterialLabel.create()
+                .text("Interactive Buttons")
+                .fontSize(18)
+                .color(materialScheme.onSurface())
+                .scheme(materialScheme);
+        interactiveLabel.layout().setMargin(YogaEdge.TOP, 20);
+        interactiveLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
+        container.addChild(interactiveLabel);
+
+        MaterialButton clickCounterBtn = MaterialButton.elevated("Click Count: 0", materialScheme)
+                .size(MaterialButtonSize.Medium);
+        final int[] clickCount = {0};
+        clickCounterBtn.onClick(e -> {
+            clickCount[0]++;
+            clickCounterBtn.text("Click Count: " + clickCount[0]);
+        });
+        clickCounterBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(clickCounterBtn);
+
+        MaterialButton toggleBtn = MaterialButton.tonal("Toggle State", materialScheme)
+                .size(MaterialButtonSize.Medium);
+        final boolean[] toggleState = {false};
+        toggleBtn.onClick(e -> {
+            toggleState[0] = !toggleState[0];
+            toggleBtn.text(toggleState[0] ? "State: ON" : "State: OFF");
+        });
+        toggleBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(toggleBtn);
+
+        MaterialLabel combinationLabel = MaterialLabel.create()
+                .text("Button Combinations")
+                .fontSize(18)
+                .color(materialScheme.onSurface())
+                .scheme(materialScheme);
+        combinationLabel.layout().setMargin(YogaEdge.TOP, 20);
+        combinationLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
+        container.addChild(combinationLabel);
+
+        ContainerWidget buttonRow = new ContainerWidget();
+        buttonRow.layout().setFlexDirection(YogaFlexDirection.ROW);
+        buttonRow.layout().setGap(YogaGutter.ROW, 10);
+        buttonRow.layout().setJustifyContent(YogaJustify.CENTER);
+
+        MaterialButton btn1 = MaterialButton.filled("A", materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton btn2 = MaterialButton.filled("B", materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton btn3 = MaterialButton.filled("C", materialScheme).size(MaterialButtonSize.Small);
+        buttonRow.addChild(btn1);
+        buttonRow.addChild(btn2);
+        buttonRow.addChild(btn3);
+        buttonRow.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(buttonRow);
+
+        for (int i = 1; i <= 5; i++) {
+            MaterialButton extraBtn = MaterialButton.outlined("Extra Button " + i, materialScheme)
+                    .size(MaterialButtonSize.Medium);
+            extraBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
+            container.addChild(extraBtn);
+        }
+
+        MaterialLabel spacer = MaterialLabel.create()
+                .text("")
+                .scheme(materialScheme);
+        spacer.layout().setHeight(20);
+        container.addChild(spacer);
+
         frame.setRoot(container);
         return frame;
     }
 
-    /**
-     * 创建 Slider 和 Switch 示例 Frame
-     */
     private Frame createSliderSwitchFrame() {
         Frame frame = new Frame();
         ContainerWidget container = new ContainerWidget();
@@ -238,116 +353,35 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         return frame;
     }
 
-    /**
-     * 创建 Menu 和 Label 示例 Frame
-     */
-    private Frame createMenuLabelFrame() {
+    private Frame createNavigationDrawerFrame() {
         Frame frame = new Frame();
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100);
         container.layout().setHeightPercent(100);
-        container.layout().setGap(YogaGutter.COLUMN, 20);
-        container.layout().setAlignItems(YogaAlign.CENTER);
-        container.layout().setJustifyContent(YogaJustify.FLEX_START);
 
-        MaterialLabel labelTitle = MaterialLabel.create()
-                .text("Material Labels")
-                .fontSize(24)
-                .color(materialScheme.primary())
+        MaterialNavigationDrawer drawer = MaterialNavigationDrawer.create()
+                .addHeader("Super Resolution", MaterialSymbols.iconSettings())
+                .addSectionHeader("配置")
+                .addItem("通用", MaterialSymbols.iconSettings(), "general")
+                .addItem("算法", MaterialSymbols.iconSettings(), "algorithm")
+                .addItem("界面", MaterialSymbols.iconSettings(), "interface")
+                .addItem("调试", MaterialSymbols.iconSettings(), "debug")
+                .addDivider()
+                .addSectionHeader("信息")
+                .addItem("性能信息", MaterialSymbols.iconSettings(), "performance")
+                .addItem("环境信息", MaterialSymbols.iconSettings(), "environment")
+                .addDivider()
+                .onItemSelected(item -> {
+                    System.out.println("Selected: " + item.getValue());
+                })
+                .setSelectedByValue("general")
+                .addFlexibleSpacer()
+                .addItem("关于", MaterialSymbols.iconSettings(), "about")
                 .scheme(materialScheme);
-        labelTitle.layout().setMargin(YogaEdge.BOTTOM, 20);
-        container.addChild(labelTitle);
-
-        MaterialLabel label1 = MaterialLabel.create()
-                .text("Primary Color Label")
-                .fontSize(18)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
-        label1.layout().setMargin(YogaEdge.VERTICAL, 5);
-        container.addChild(label1);
-
-        MaterialLabel label2 = MaterialLabel.create()
-                .text("Secondary Color Label")
-                .fontSize(18)
-                .color(materialScheme.secondary())
-                .scheme(materialScheme);
-        label2.layout().setMargin(YogaEdge.VERTICAL, 5);
-        container.addChild(label2);
-
-        MaterialLabel label3 = MaterialLabel.create()
-                .text("Error Color Label")
-                .fontSize(18)
-                .color(materialScheme.error())
-                .scheme(materialScheme);
-        label3.layout().setMargin(YogaEdge.VERTICAL, 5);
-        container.addChild(label3);
-
-        MaterialLabel label4 = MaterialLabel.create()
-                .text("Default OnSurface Label")
-                .fontSize(16)
-                .scheme(materialScheme);
-        label4.layout().setMargin(YogaEdge.VERTICAL, 5);
-        container.addChild(label4);
-
-        MaterialLabel menuTitle = MaterialLabel.create()
-                .text("Material Menu")
-                .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
-        menuTitle.layout().setMargin(YogaEdge.TOP, 40);
-        menuTitle.layout().setMargin(YogaEdge.BOTTOM, 20);
-        container.addChild(menuTitle);
-
-        MaterialMenuGroup group1 = MaterialMenuGroup.create()
-                .addItem(MaterialMenuItem.create()
-                        .text("Option 1")
-                        .selectable(true)
-                        .value("option1")
-                        .icon(MaterialSymbols.iconAdd()))
-                .addItem(MaterialMenuItem.create()
-                        .text("Option 2")
-                        .selectable(true)
-                        .value("option2")
-                        .icon(MaterialSymbols.iconEdit()))
-                .addItem(MaterialMenuItem.create()
-                        .text("Option 3")
-                        .selectable(true)
-                        .value("option3")
-                        .icon(MaterialSymbols.iconDelete()));
-
-        MaterialMenuGroup group2 = MaterialMenuGroup.create()
-                .addItem(MaterialMenuItem.create()
-                        .text("Action 1")
-                        .selectable(false)
-                        .value("action1")
-                        .onClick(event -> System.out.println("Action 1 clicked")))
-                .addItem(MaterialMenuItem.create()
-                        .text("Action 2")
-                        .selectable(false)
-                        .value("action2"))
-                .addItem(MaterialMenuItem.create()
-                        .text("Disabled")
-                        .selectable(false)
-                        .setDisabled(true)
-                        .value("disabled"));
-
-        MaterialMenu menu = MaterialMenu.create()
-                .selectionMode(MaterialMenuSelectionMode.Single)
-                .addGroup(group1)
-                .addGroup(group2)
-                .selectItemQuietly("option1")
-                .scheme(materialScheme);
-        menu.style().colors(MaterialMenuColors.STANDARD);
-        menu.layout().setWidth(250);
-        menu.layout().setMargin(YogaEdge.VERTICAL, 10);
-
-        MaterialButton toggleBtn = MaterialButton.elevated("Toggle Menu", materialScheme)
-                .size(MaterialButtonSize.Small);
-        toggleBtn.onClick(e -> menu.toggle());
-        toggleBtn.layout().setMargin(YogaEdge.TOP, 20);
-        container.addChild(toggleBtn);
-        container.addChild(menu);
+        drawer.layout().setWidthPercent(100);
+        drawer.layout().setHeightPercent(100);
+        container.addChild(drawer);
 
         frame.setRoot(container);
         return frame;
