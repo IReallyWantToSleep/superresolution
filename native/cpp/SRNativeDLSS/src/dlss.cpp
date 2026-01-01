@@ -17,9 +17,8 @@ struct SRDLSSPrivateData
     SRMessageCallback messageCallback;
 };
 
-// Map to store callbacks for each context to support multiple concurrent contexts
-static std::unordered_map<uintptr_t, SRMessageCallback> g_contextCallbacks;
-static std::mutex g_callbackMutex;
+static thread_local SRMessageCallback g_ngxLoggingCallback = nullptr;
+static thread_local bool g_ngxInitialized = false;
 
 #ifdef __cplusplus
 extern "C"
@@ -90,28 +89,32 @@ extern "C"
         featureDiscoveryInfo.FeatureInfo = &featureInfo;
         featureDiscoveryInfo.SDKVersion = NVSDK_NGX_Version_API;
 
-        const char *projectId = "3a799712-b54a-407c-82b0-eb3366f0f1e3";
-        auto result = NVSDK_NGX_VULKAN_Init_with_ProjectID(
-            projectId,
-            NVSDK_NGX_ENGINE_TYPE_CUSTOM,
-            "1.0.0",
-            L".",
-            (VkInstance)(vulkanDevice.instance),
-            (VkPhysicalDevice)(vulkanDevice.physicalDevice),
-            (VkDevice)(vulkanDevice.device),
-            (PFN_vkGetInstanceProcAddr)(vulkanDevice.instanceProcAddr),
-            (PFN_vkGetDeviceProcAddr)(vulkanDevice.deviceProcAddr),
-            &featureInfo,
-            NVSDK_NGX_Version_API);
-        if (!NVSDK_NGX_SUCCEED(result))
+        if (!g_ngxInitialized)
         {
-            std::wstring msg = L"NVSDK_NGX_VULKAN_Init failed. Code:";
-            msg += GetNGXResultAsString(result);
-            privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
-            return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+            g_ngxInitialized = true;
+            const char *projectId = "3a799712-b54a-407c-82b0-eb3366f0f1e3";
+            auto result = NVSDK_NGX_VULKAN_Init_with_ProjectID(
+                projectId,
+                NVSDK_NGX_ENGINE_TYPE_CUSTOM,
+                "1.0.0",
+                L".",
+                (VkInstance)(vulkanDevice.instance),
+                (VkPhysicalDevice)(vulkanDevice.physicalDevice),
+                (VkDevice)(vulkanDevice.device),
+                (PFN_vkGetInstanceProcAddr)(vulkanDevice.instanceProcAddr),
+                (PFN_vkGetDeviceProcAddr)(vulkanDevice.deviceProcAddr),
+                &featureInfo,
+                NVSDK_NGX_Version_API);
+            if (!NVSDK_NGX_SUCCEED(result))
+            {
+                std::wstring msg = L"NVSDK_NGX_VULKAN_Init failed. Code:";
+                msg += GetNGXResultAsString(result);
+                privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
+                return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+            }
         }
         NVSDK_NGX_FeatureRequirement featureRequirement = {};
-        result = NVSDK_NGX_VULKAN_GetFeatureRequirements(
+        auto result = NVSDK_NGX_VULKAN_GetFeatureRequirements(
             vulkanDevice.instance,
             vulkanDevice.physicalDevice,
             &featureDiscoveryInfo,
@@ -183,6 +186,19 @@ extern "C"
         dlssCreateParams.Feature.InTargetHeight = desc->upscaledSize.y;
         SRVulkanDeviceInfo vulkanDevice = desc->renderDeviceInfo.vulkan;
         VkCommandBuffer cmd = (VkCommandBuffer)vulkanDevice.initCommandBuffer;
+        if (srFindParam(&desc->extraParams, "DLSS_RENDER_PRESET") != nullptr)
+        {
+            const SRContextExtraParam *param = srFindParam(&desc->extraParams, "DLSS_RENDER_PRESET");
+            if (param && param->valueType == SR_PARAM_VALUE_TYPE_INT32 && param->value.int32Value >= 0)
+            {
+                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+            }
+        }
         auto result = NGX_VULKAN_CREATE_DLSS_EXT1(
             vulkanDevice.device,
             cmd,
@@ -211,7 +227,16 @@ extern "C"
             privateData->dlssHandle = nullptr;
         }
         SRVulkanDeviceInfo vulkanDevice = context->desc.renderDeviceInfo.vulkan;
-        NVSDK_NGX_VULKAN_Shutdown1((VkDevice)vulkanDevice.device);
+        if (srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX") != nullptr)
+        {
+
+            const SRContextExtraParam *param = srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX");
+            if (param && param->valueType == SR_PARAM_VALUE_TYPE_BOOL && param->value.boolValue == true)
+            {
+                NVSDK_NGX_VULKAN_Shutdown1((VkDevice)vulkanDevice.device);
+                g_ngxInitialized = false;
+            }
+        }
         delete privateData;
         context->userContext = nullptr;
         return (SRReturnCode)SR_RETURN_CODE_OK;
@@ -339,7 +364,7 @@ extern "C"
             .Feature = {
                 .pInColor = &colorInput,
                 .pInOutput = &colorOutput,
-                .InSharpness = 0.35f, // Some random value that works?
+                .InSharpness = desc->sharpness,
             },
             .pInDepth = &depthAttachment,
             .pInMotionVectors = &motionVectors,
@@ -349,9 +374,10 @@ extern "C"
                 .Width = desc->renderSize.x,
                 .Height = desc->renderSize.y,
             },
-            .InMVScaleX = 1.f,
-            .InMVScaleY = 1.f,
-            .InPreExposure = 1.f,
+            .InReset = desc->reset ? 1 : 0,
+            .InMVScaleX = desc->motionVectorScale.x,
+            .InMVScaleY = desc->motionVectorScale.y,
+            .InPreExposure = desc->preExposure,
             .InExposureScale = 1.f,
             .InFrameTimeDeltaInMsec = static_cast<float>(desc->frameTimeDelta),
         };

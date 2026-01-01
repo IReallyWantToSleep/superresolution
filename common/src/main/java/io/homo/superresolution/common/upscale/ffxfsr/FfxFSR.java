@@ -27,6 +27,7 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropCoordinateConverter;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -75,7 +76,7 @@ public class FfxFSR extends AbstractAlgorithm {
 
     public void updateFsr() {
         if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return;
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) return;
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 

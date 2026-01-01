@@ -20,7 +20,7 @@ extern "C"
         SRXeSSPrivateData *privateData = (SRXeSSPrivateData *)context->userContext;
         xess_result_t status;
         const SRCreateUpscaleContextDesc *desc = &context->desc;
-        float upscaleRatio = desc->upscaledSize.x / desc->renderSize.x;
+        float upscaleRatio = static_cast<float>(desc->upscaledSize.x) / static_cast<float>(desc->renderSize.x);
         xess_quality_settings_t quality_settings = XESS_QUALITY_SETTING_AA;
         if (upscaleRatio < 1.0f)
             upscaleRatio = 1.0f;
