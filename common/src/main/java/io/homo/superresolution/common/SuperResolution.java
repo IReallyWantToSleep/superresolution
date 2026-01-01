@@ -118,13 +118,8 @@ public final class SuperResolution implements Resizable, Destroyable {
         );
         ClientLifecycleEvent.CLIENT_STARTED.register(
                 (minecraft) -> {
-                    SuperResolution.LOGGER.warn("初始化SR");
-                    List.of(Thread.currentThread().getStackTrace()).forEach((element) -> {
-                        SuperResolution.LOGGER.warn(" at {}", element);
-                    });
                     if (gameIsStarted) {
-                        SuperResolution.LOGGER.warn("似乎有什么东西重复初始化SR");
-
+                        SuperResolution.LOGGER.warn("似乎有什么东西在重复初始化SR");
                         return;
                     }
                     gameIsStarted = true;

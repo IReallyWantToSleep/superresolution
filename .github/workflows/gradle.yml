@@ -25,6 +25,14 @@ jobs:
           platform: x64
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            wrapper
+          gradle-home-cache-excludes: |
+            caches/build-cache-1
 
       - name: Build
         id: build
