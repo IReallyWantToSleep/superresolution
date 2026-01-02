@@ -19,12 +19,32 @@
 package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.core.ContainerWidget;
+import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 选项构建器
+ * 用于构建选项UI，将选项组件添加到容器中
+ */
 public class OptionBuilder {
     protected OptionCategory category;
+    protected MaterialScheme scheme = MaterialScheme.defaultLight;
+    protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
 
     public OptionBuilder(OptionCategory category) {
         this.category = category;
+    }
+
+    public OptionBuilder scheme(MaterialScheme scheme) {
+        this.scheme = scheme;
+        return this;
     }
 
     public <T extends Enum<T>> EnumSelectorBuilder<T> enumSelectorOption(
@@ -57,5 +77,96 @@ public class OptionBuilder {
             Number min
     ) {
         return new NumberSliderBuilder(name, value, max, min).setCategory(category);
+    }
+
+    /**
+     * 添加选项条目
+     */
+    public OptionBuilder addEntry(AbstractOptionEntry<?, ?> entry) {
+        entries.add(entry);
+        entry.setScheme(scheme);
+        return this;
+    }
+
+    /**
+     * 构建选项容器
+     *
+     * @return 包含所有选项的容器组件
+     */
+    public OptionsContainer build() {
+        OptionsContainer container = new OptionsContainer(scheme);
+
+        for (AbstractOptionEntry<?, ?> entry : category.getEntries()) {
+            entry.setScheme(scheme);
+            container.addEntry(entry);
+        }
+
+        for (AbstractOptionEntry<?, ?> entry : entries) {
+            entry.setScheme(scheme);
+            container.addEntry(entry);
+        }
+
+        return container;
+    }
+
+    /**
+     * 选项容器组件
+     * 背景使用 Material3 的 surfaceContainerLow 颜色
+     */
+    public static class OptionsContainer extends ContainerWidget {
+        private final MaterialScheme scheme;
+        private final List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
+
+        private static final float CORNER_RADIUS = 16f;
+        private static final float PADDING = 8f;
+        private static final float GAP = 8f;
+
+        public OptionsContainer(MaterialScheme scheme) {
+            this.scheme = scheme;
+            initLayout();
+        }
+
+        private void initLayout() {
+            layout().setFlexDirection(YogaFlexDirection.COLUMN);
+            layout().setWidthPercent(100);
+            layout().setPadding(YogaEdge.ALL, PADDING);
+            layout().setGap(YogaGutter.COLUMN, GAP);
+        }
+
+        public void addEntry(AbstractOptionEntry<?, ?> entry) {
+            entries.add(entry);
+            addChild(entry.getContainer());
+            entry.setScheme(scheme);
+        }
+
+        public List<AbstractOptionEntry<?, ?>> getEntries() {
+            return entries;
+        }
+
+        @Override
+        protected void renderSelf(RenderContext ctx, UIInputState inputState) {
+            Rectangle bounds = getBounds();
+            // 绘制容器背景
+            ctx.roundedRect(
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                    CORNER_RADIUS,
+                    scheme.surfaceContainerLow(),
+                    true
+            );
+        }
+
+        /**
+         * 保存所有选项
+         */
+        public void saveAll() {
+            for (AbstractOptionEntry<?, ?> entry : entries) {
+                if (entry.getSaveConsumer() != null) {
+                    ((java.util.function.Consumer<Object>) entry.getSaveConsumer()).accept(entry.value());
+                }
+            }
+        }
     }
 }

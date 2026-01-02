@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -69,14 +69,13 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
-        drawContext.beginBatch();
 
         String title = titleSupplier.get();
         if (title != null && !title.isEmpty()) {
-            drawContext.drawAlignedText(
-                    drawContext.font(),
+            ctx.drawAlignedText(
+                    ctx.font(),
                     FONT_SIZE,
                     title,
                     bounds.x + PADDING_LEFT,
@@ -88,7 +87,5 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
                     false
             );
         }
-
-        drawContext.endBatch(getZIndex());
     }
 }

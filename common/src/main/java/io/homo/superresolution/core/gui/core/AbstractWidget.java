@@ -19,8 +19,8 @@
 package io.homo.superresolution.core.gui.core;
 
 import io.homo.superresolution.core.gui.MaterialUI;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -253,12 +253,12 @@ public abstract class AbstractWidget<
         return isInteractive();
     }
 
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
     }
 
-    public void renderWithChildren(IUIDrawContext drawContext, UIInputState inputState) {
+    public void renderWithChildren(RenderContext ctx, UIInputState inputState) {
         if (!isVisible()) return;
-        render(drawContext, inputState);
+        render(ctx, inputState);
 
         if (managesChildRendering()) {
             return;
@@ -267,7 +267,7 @@ public abstract class AbstractWidget<
         if (this instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    childWidget.renderWithChildren(drawContext, inputState);
+                    childWidget.renderWithChildren(ctx, inputState);
                 }
             }
         }

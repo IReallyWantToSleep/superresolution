@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -80,9 +80,8 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
-        drawContext.beginBatch();
 
         float contentX = bounds.x + ICON_MARGIN_LEFT;
         float centerY = bounds.y + bounds.height / 2;
@@ -90,14 +89,14 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
         MaterialSymbol icon = iconSupplier.get();
         if (icon != null) {
             Vector2f iconPos = new Vector2f(contentX + ICON_SIZE / 2, centerY);
-            icon.render(drawContext, scheme().onSurface(), ICON_SIZE, iconPos);
+            icon.render(ctx, scheme().onSurface(), ICON_SIZE, iconPos);
             contentX += ICON_SIZE + ICON_TEXT_GAP;
         }
 
         String title = titleSupplier.get();
         if (title != null && !title.isEmpty()) {
-            drawContext.drawAlignedText(
-                    drawContext.font(),
+            ctx.drawAlignedText(
+                    ctx.font(),
                     FONT_SIZE,
                     title,
                     contentX,
@@ -109,7 +108,5 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
                     false
             );
         }
-
-        drawContext.endBatch(getZIndex());
     }
 }

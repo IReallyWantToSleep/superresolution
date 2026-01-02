@@ -20,21 +20,26 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
 import java.util.function.Function;
 
 public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberSliderOptionEntry> {
     protected MaterialSlider slider;
-    protected MaterialLabel label;
+    protected MaterialLabel valueLabel;
+    protected ContainerWidget sliderContainer;
     protected Number max;
     protected Number min;
     protected Number step;
     protected Function<Number, String> valueFormater;
+    
+    private static final float SLIDER_WIDTH = 200f;
 
     public NumberSliderOptionEntry(
             Text name,
@@ -57,40 +62,82 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
 
     @Override
     protected void initLayout() {
-
     }
 
     @Override
     protected NumberSliderOptionEntry setScheme(MaterialScheme scheme) {
         slider.scheme(scheme);
-        label.scheme(scheme);
+        valueLabel.scheme(scheme).color(scheme.onSurfaceVariant());
         return super.setScheme(scheme);
     }
 
     @Override
     protected void initWidget() {
-        slider = MaterialSlider.create()
+        // 滑块容器 - 包含滑块和值标签
+        sliderContainer = new ContainerWidget();
+        sliderContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
+        sliderContainer.layout().setAlignItems(YogaAlign.CENTER);
+        sliderContainer.layout().setGap(YogaGutter.ALL, 12);
+        
+        // 值显示标签
+        valueLabel = MaterialLabel.create()
+                .text(() -> formatValue(slider.value()))
+                .fontSize(14)
                 .scheme(scheme);
-        label = MaterialLabel.create()
-                .text(() -> this.name.getString());
-        container.addChild(slider);
-        container.addChild(label);
-        container.scheme(scheme);
-
+        valueLabel.layout().setMinWidth(50);
+        
+        // 滑块
+        slider = MaterialSlider.create(MaterialSliderSize.Small, SLIDER_WIDTH)
+                .scheme(scheme);
         slider.style().valueIndicator(true);
         if (step != null && step.doubleValue() != 0) {
             slider.style().steps(true);
             slider.setStep(step);
         }
-        slider.style().size(MaterialSliderSize.ExtraSmall);
-        slider.setValueIndicatorTextFormater(valueFormater);
         slider.setMin(min);
         slider.setMax(max);
         slider.setValue(value);
+        slider.onChange(event -> {
+            this.value = (Number) event.getNewValue();
+            if (saveConsumer != null) {
+                saveConsumer.accept(this.value);
+            }
+        });
+        
+        sliderContainer.addChild(valueLabel);
+        sliderContainer.addChild(slider);
+        
+        container.addControl(sliderContainer);
+        container.scheme(scheme);
+    }
+    
+    private String formatValue(Number value) {
+        if (valueFormater != null) {
+            return valueFormater.apply(value);
+        }
+        return String.format("%.2f", value.doubleValue());
+    }
+    
+    public NumberSliderOptionEntry setValueFormatter(Function<Number, String> formatter) {
+        this.valueFormater = formatter;
+        if (slider != null) {
+            slider.setValueIndicatorTextFormater(formatter);
+        }
+        return this;
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        container.render(drawContext, inputState);
+    public void render(RenderContext ctx, UIInputState inputState) {
+        container.render(ctx, inputState);
+    }
+    
+    @Override
+    public Number value() {
+        return slider != null ? slider.value() : value;
+    }
+    
+    @Override
+    public float getEntryHeight() {
+        return 72f; // 滑块选项需要更多高度
     }
 }

@@ -21,7 +21,7 @@ package io.homo.superresolution.core.gui.widgets.sliders;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.BezierInterpolator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -105,8 +105,9 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     }
 
     public MaterialSlider setValue(Number value) {
+        Number oldValue = this.value;
         this.value = value;
-        eventBus.post(new WidgetEvent.ChangeEvent<>(value));
+        eventBus.post(new WidgetEvent.ChangeEvent<>(oldValue, value));
         return this;
     }
 
@@ -169,15 +170,13 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         if (animationSet.handleSize.get() < style().size().handleWidthPress()) {
             animationSet.handleSize.set(style().size().handleWidth());
         }
         animationSet.update();
 
         updateRectangle();
-
-        drawContext.beginBatch();
 
         SliderColors colors = getSliderColors();
         Rectangle bounds = getBounds();
@@ -186,29 +185,26 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         float availableWidth = bounds.width - style().size().stepsHorizontalPadding() * 2;
         float handleXPosition = bounds.x + availableWidth * progress;
         float handleWidth = animationSet.handleSize.get();
-        drawContext.transform().push();
-        float activeTrackWidth = drawTrack(drawContext, bounds, colors, progress, handleWidth, availableWidth);
-        drawHandle(drawContext, bounds, colors, handleXPosition, handleWidth);
-        drawInactiveTrack(drawContext, bounds, colors, activeTrackWidth, handleWidth);
+        ctx.save();
+        float activeTrackWidth = drawTrack(ctx, bounds, colors, progress, handleWidth, availableWidth);
+        drawHandle(ctx, bounds, colors, handleXPosition, handleWidth);
+        drawInactiveTrack(ctx, bounds, colors, activeTrackWidth, handleWidth);
 
         if (step.doubleValue() > 0 && style().steps()) {
-            drawSteps(drawContext, bounds, colors, handleXPosition, availableWidth);
+            drawSteps(ctx, bounds, colors, handleXPosition, availableWidth);
         }
-        drawContext.transform().pop();
-        drawContext.endBatch(getZIndex());
+        ctx.restore();
         if (style().valueIndicator() && animationSet.hover.get() > 0.01) {
-            drawContext.beginBatch();
-            drawValueIndicator(drawContext, bounds, colors, handleXPosition);
-            drawContext.endBatch(1000);
+            drawValueIndicator(ctx, bounds, colors, handleXPosition);
         }
     }
 
-    private float drawTrack(IUIDrawContext drawContext, Rectangle bounds, SliderColors colors, float progress, float handleWidth, float availableWidth) {
+    private float drawTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float progress, float handleWidth, float availableWidth) {
         float activeTrackWidth = (availableWidth * progress) - (handleWidth / 2) - style().size().handleHorizontalPadding() + style().size().stepsSize();
         if (activeTrackWidth > 1) {
-            drawContext.beginPath();
-            drawContext.fillColor(colors.activeTrackColor);
-            drawContext.roundedRectComplex(
+            ctx.beginPath();
+            ctx.fillColor(colors.activeTrackColor);
+            ctx.roundedRectComplex(
                     bounds.x,
                     bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2),
                     activeTrackWidth,
@@ -218,13 +214,13 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                     Math.min(style().size().trackCornerSize(), activeTrackWidth / 2),
                     Math.min(2, activeTrackWidth / 2)
             );
-            drawContext.endPath();
+            ctx.endPath();
         }
         return activeTrackWidth;
     }
 
-    private void drawHandle(IUIDrawContext drawContext, Rectangle bounds, SliderColors colors, float handleXPosition, float handleWidth) {
-        drawContext.roundedRect(
+    private void drawHandle(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition, float handleWidth) {
+        ctx.roundedRect(
                 handleXPosition - (handleWidth / 2) + style().size().stepsSize(),
                 bounds.y,
                 handleWidth,
@@ -235,12 +231,12 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         );
     }
 
-    private void drawInactiveTrack(IUIDrawContext drawContext, Rectangle bounds, SliderColors colors, float activeTrackWidth, float handleWidth) {
+    private void drawInactiveTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float activeTrackWidth, float handleWidth) {
         float inactiveTrackWidth = bounds.width - activeTrackWidth - handleWidth - style().size().handleHorizontalPadding() - style().size().handleHorizontalPadding();
         if (inactiveTrackWidth > 1) {
-            drawContext.beginPath();
-            drawContext.fillColor(colors.inactiveTrackColor);
-            drawContext.roundedRectComplex(
+            ctx.beginPath();
+            ctx.fillColor(colors.inactiveTrackColor);
+            ctx.roundedRectComplex(
                     bounds.getLimitX() - inactiveTrackWidth,
                     bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2),
                     inactiveTrackWidth,
@@ -250,11 +246,11 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                     Math.min(2, inactiveTrackWidth / 2),
                     Math.min(style().size().trackCornerSize(), inactiveTrackWidth / 2)
             );
-            drawContext.endPath();
+            ctx.endPath();
         }
     }
 
-    private void drawSteps(IUIDrawContext drawContext, Rectangle bounds, SliderColors colors, float handleXPosition, float availableWidth) {
+    private void drawSteps(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition, float availableWidth) {
         int steps = (int) Math.floor((max.doubleValue() - min.doubleValue()) / step().doubleValue());
         float stepSpacing = availableWidth / (steps);
 
@@ -264,7 +260,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
             double stepValue = min.doubleValue() + stepIndex * step.doubleValue();
             Color stepColor = value.doubleValue() >= stepValue ?
                     colors.stepActiveIndicatorsColor : colors.stepInactiveIndicatorsColor;
-            drawContext.arc(
+            ctx.arc(
                     stepXPosition,
                     bounds.y + (style().size().trackHeight() / 2) + ((style().size().handleHeight() - style().size().trackHeight()) / 2),
                     style().size().stepsSize() / 2,
@@ -274,23 +270,22 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         }
     }
 
-    private void drawValueIndicator(IUIDrawContext drawContext, Rectangle bounds, SliderColors colors, float handleXPosition) {
+    private void drawValueIndicator(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition) {
         String valueIndicatorString = valueIndicatorTextFormater == null ? String.valueOf(value()) : valueIndicatorTextFormater.apply(value());
-        Vector2f valueIndicatorStringRegion = drawContext.measureText(valueIndicatorString, 14f);
+        Vector2f valueIndicatorStringRegion = ctx.measureText(valueIndicatorString, 14f);
         Rectangle valueIndicatorRegion = new Rectangle();
         valueIndicatorRegion.width = style().size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;
         valueIndicatorRegion.height = style().size().valueIndicatorTextVerticalPadding() * 2 + 20;
         valueIndicatorRegion.x = handleXPosition - valueIndicatorRegion.width / 2;
         valueIndicatorRegion.y = bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2) - ((style().size().handleHeight() - style().size().trackHeight()) / 2) - style().size().valueIndicatorBottomPadding() - bounds.height;
-        drawContext.transform().push();
-        drawContext.transform().last().scaleAt(
-                animationSet.hover.get(),
-                animationSet.hover.get(),
-                valueIndicatorRegion.getCenterX(),
-                valueIndicatorRegion.getLimitY()
-        );
-        drawContext.transform().translate(0, 0);
-        drawContext.roundedRect(
+        ctx.save();
+        float pivotX = valueIndicatorRegion.getCenterX();
+        float pivotY = valueIndicatorRegion.getLimitY();
+        float scaleValue = animationSet.hover.get();
+        ctx.translate(pivotX, pivotY);
+        ctx.scale(scaleValue, scaleValue);
+        ctx.translate(-pivotX, -pivotY);
+        ctx.roundedRect(
                 valueIndicatorRegion.x,
                 valueIndicatorRegion.y,
                 valueIndicatorRegion.width,
@@ -299,8 +294,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                 colors.valueIndicatorColor,
                 true
         );
-        drawContext.drawAlignedText(
-                drawContext.font(),
+        ctx.drawAlignedText(
+                ctx.font(),
                 14,
                 valueIndicatorString,
                 valueIndicatorRegion.getCenterX(),
@@ -311,7 +306,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                 TextAlign.of(TextAlignType.ALIGN_CENTER, TextAlignType.ALIGN_MIDDLE),
                 false
         );
-        drawContext.transform().pop();
+        ctx.restore();
     }
 
     private SliderColors getSliderColors() {

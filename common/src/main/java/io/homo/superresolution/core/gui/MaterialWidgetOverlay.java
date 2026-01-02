@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.gui.core.animator.BezierInterpolator;
@@ -57,13 +57,13 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
         hoverAnimator.timeInterpolator(new BezierInterpolator(0.2f, 0, 0, 1));
     }
 
-    protected abstract void drawShape(IUIDrawContext drawContext, T widget, Color color);
+    protected abstract void drawShape(RenderContext ctx, T widget, Color color);
 
-    protected abstract void drawShape(IUIDrawContext drawContext, T widget, IPaint paint);
+    protected abstract void drawShape(RenderContext ctx, T widget, IPaint paint);
 
-    public void render(IUIDrawContext drawContext, Color hoverColor, Color rippleColor) {
-        renderHoverOverlay(drawContext, hoverColor);
-        renderRippleOverlay(drawContext, rippleColor);
+    public void render(RenderContext ctx, Color hoverColor, Color rippleColor) {
+        renderHoverOverlay(ctx, hoverColor);
+        renderRippleOverlay(ctx, rippleColor);
     }
 
     public void update() {
@@ -72,27 +72,27 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
         checkDeferredFadeOut();
     }
 
-    public void renderHoverOverlay(IUIDrawContext drawContext, Color hoverColor) {
+    public void renderHoverOverlay(RenderContext ctx, Color hoverColor) {
         if (shouldRenderHover()) {
             float currentAlpha = hoverAnimator.get();
             if (currentAlpha > 0.001f) {
                 Color overlayColor = hoverColor.copy().alpha((int) (255 * currentAlpha * hoverNormalAlpha));
-                drawShape(drawContext, widget, overlayColor);
+                drawShape(ctx, widget, overlayColor);
             }
         }
     }
 
-    public void renderRippleOverlay(IUIDrawContext drawContext, Color rippleColor) {
+    public void renderRippleOverlay(RenderContext ctx, Color rippleColor) {
         if (shouldRenderRipple()) {
             IPaint[] ripplePaints = ripple.getPaints(
                     rippleColor,
-                    drawContext,
+                    ctx,
                     widget.getRawBounds().getPosition(),
                     widget.getRawBounds().getSize()
             );
             for (IPaint paint : ripplePaints) {
                 if (paint != null) {
-                    drawShape(drawContext, widget, paint);
+                    drawShape(ctx, widget, paint);
                 }
             }
         }

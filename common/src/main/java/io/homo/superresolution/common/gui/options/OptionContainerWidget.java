@@ -21,17 +21,105 @@ package io.homo.superresolution.common.gui.options;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
+import io.homo.superresolution.core.gui.widgets.*;
 
-public class OptionContainerWidget extends ContainerWidget {
-    protected MaterialScheme scheme = MaterialScheme.defaultLight;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+
+/**
+ * 选项容器组件
+ * 布局：左侧为名称和描述，右侧为控件
+ * 背景使用 Material3 的 surface 颜色
+ */
+public class OptionContainerWidget extends MaterialContainerWidget<OptionContainerWidget> {
+    protected AbstractOptionEntry<?, ?> entry;
+
+    // 左侧文本区域
+    protected ContainerWidget leftContainer;
+    protected MaterialLabel nameLabel;
+    protected MaterialLabel descriptionLabel;
+
+    // 右侧控件区域
+    protected ContainerWidget rightContainer;
+
+    // 圆角大小
+    private static final float CORNER_RADIUS = 12f;
+    private static final float PADDING_HORIZONTAL = 16f;
+    private static final float PADDING_VERTICAL = 12f;
 
     public OptionContainerWidget(AbstractOptionEntry<?, ?> entry) {
         this.entry = entry;
+        initLayout();
     }
 
-    protected AbstractOptionEntry<?, ?> entry;
+    private void initLayout() {
+        // 主容器横向布局
+        layout().setFlexDirection(YogaFlexDirection.ROW);
+        layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+        layout().setAlignItems(YogaAlign.CENTER);
+        layout().setWidthPercent(100);
+        layout().setPadding(YogaEdge.HORIZONTAL, PADDING_HORIZONTAL);
+        layout().setPadding(YogaEdge.VERTICAL, PADDING_VERTICAL);
+
+        // 左侧容器 - 名称和描述
+        leftContainer = new ContainerWidget();
+        leftContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        leftContainer.layout().setFlexGrow(1f);
+        leftContainer.layout().setFlexShrink(1f);
+        leftContainer.layout().setAlignItems(YogaAlign.FLEX_START);
+        leftContainer.layout().setJustifyContent(YogaJustify.CENTER);
+
+        nameLabel = MaterialLabel.create()
+                .text(() -> entry.getName().getString())
+                .fontSize(16)
+                .scheme(scheme);
+        leftContainer.addChild(nameLabel);
+
+        descriptionLabel = MaterialLabel.create()
+                .text(() -> getDescriptionText())
+                .fontSize(12)
+                .scheme(scheme);
+        descriptionLabel.layout().setMargin(YogaEdge.TOP, 4);
+        leftContainer.addChild(descriptionLabel);
+
+        super.addChild(leftContainer);
+
+        // 右侧容器 - 控件
+        rightContainer = new ContainerWidget();
+        rightContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
+        rightContainer.layout().setAlignItems(YogaAlign.CENTER);
+        rightContainer.layout().setJustifyContent(YogaJustify.FLEX_END);
+        rightContainer.layout().setMargin(YogaEdge.LEFT, 16);
+
+        super.addChild(rightContainer);
+    }
+
+    private String getDescriptionText() {
+        if (entry.getTooltipSupplier() != null) {
+            var tooltipOpt = ((AbstractOptionEntry<Object, Object>) entry).getTooltipSupplier().apply(entry.value());
+            if (tooltipOpt.isPresent()) {
+                var texts = tooltipOpt.get();
+                if (texts.length > 0) {
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < texts.length; i++) {
+                        if (i > 0) sb.append("\n");
+                        sb.append(texts[i].getString());
+                    }
+                    return sb.toString();
+                }
+            }
+        }
+        return "";
+    }
+
+    /**
+     * 添加控件到右侧区域
+     */
+    public void addControl(io.homo.superresolution.core.gui.core.layout.ILayoutElement control) {
+        rightContainer.addChild(control);
+    }
 
     public MaterialScheme scheme() {
         return scheme;
@@ -39,32 +127,27 @@ public class OptionContainerWidget extends ContainerWidget {
 
     public OptionContainerWidget scheme(MaterialScheme scheme) {
         this.scheme = scheme;
-        entry.setScheme(scheme);
+        nameLabel.scheme(scheme).color(scheme.onSurface());
+        descriptionLabel.scheme(scheme).color(scheme.onSurfaceVariant());
         return this;
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        setElementHeight(entry.getEntryHeight());
-        super.render(drawContext, inputState);
+    public void render(RenderContext ctx, UIInputState inputState) {
+        // 更新描述文本显示状态
+        String desc = getDescriptionText();
+        boolean hasDescription = desc != null && !desc.isEmpty();
+        descriptionLabel.setVisible(hasDescription);
+
+        // 根据是否有描述动态调整高度
+        float height = hasDescription ? entry.getEntryHeight() : entry.getEntryHeight() - 16;
+        setElementHeight(height);
+
+        super.render(ctx, inputState);
     }
 
     @Override
-    protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
-        /*
-        drawContext.beginBatch();
-        Rectangle bounds = getBounds();
-        drawContext.drawRect(
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                bounds.height,
-                Color.black(),
-                false
-        );
-        drawContext.endBatch(0);
-         */
-
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
     }
 
     @Override
@@ -74,6 +157,22 @@ public class OptionContainerWidget extends ContainerWidget {
 
     @Override
     protected Rectangle getViewRegion() {
-        return super.getViewRegion();
+        return getBounds();
+    }
+
+    public ContainerWidget getLeftContainer() {
+        return leftContainer;
+    }
+
+    public ContainerWidget getRightContainer() {
+        return rightContainer;
+    }
+
+    public MaterialLabel getNameLabel() {
+        return nameLabel;
+    }
+
+    public MaterialLabel getDescriptionLabel() {
+        return descriptionLabel;
     }
 }

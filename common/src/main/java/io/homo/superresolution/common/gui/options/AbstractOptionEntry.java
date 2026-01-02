@@ -48,6 +48,7 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
 
     protected SELF setScheme(MaterialScheme scheme) {
         this.scheme = scheme;
+        container.scheme(scheme);
         return (SELF) this;
     }
 

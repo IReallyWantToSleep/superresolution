@@ -21,7 +21,7 @@ package io.homo.superresolution.core.gui.widgets.switchs;
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.*;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
@@ -61,7 +61,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
 
     public MaterialSwitch toggleChecked() {
         boolean newChecked = !this.checked;
-        eventBus.post(new WidgetEvent.ChangeEvent<>(newChecked));
+        eventBus.post(new WidgetEvent.ChangeEvent<>(!newChecked, newChecked));
         if (newChecked) {
             // 打开开关
             handlePositionAnimator
@@ -144,14 +144,13 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         Animator.updateAll(
                 hoverAnimator,
                 pressAnimator,
                 handlePositionAnimator,
                 changeAnimator,
                 handleSizeAnimator);
-        drawContext.beginBatch();
         updateRectangle();
         Rectangle bounds = getBounds();
         if (handleSizeAnimator
@@ -175,7 +174,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                             .handleSize()));
         }
         SwitchColors colors = getSwitchColors();
-        drawContext.roundedRect(
+        ctx.roundedRect(
                 bounds.x,
                 bounds.y,
                 MaterialSwitchSize.Default.trackWidth(),
@@ -185,23 +184,23 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 true);
 
         if (!isChecked()) {
-            drawContext.beginPath();
-            drawContext.strokeColor(
+            ctx.beginPath();
+            ctx.strokeColor(
                     isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.08))
                             : scheme().outline());
-            drawContext.strokeWidth(MaterialSwitchSize.Default.trackOutlineWidth());
-            drawContext.roundedRect(
+            ctx.strokeWidth(MaterialSwitchSize.Default.trackOutlineWidth());
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     MaterialSwitchSize.Default.trackWidth(),
                     MaterialSwitchSize.Default.trackHeight(),
                     MaterialSwitchSize.Default.trackHeight() / 2);
-            drawContext.endPath(false);
+            ctx.endPath(false);
         }
         float handleSize = handleSizeAnimator.get();
         float handleX = bounds.x + 16 + handlePositionAnimator.get();
 
-        drawContext.arc(
+        ctx.arc(
                 handleX,
                 bounds.getCenterY(),
                 handleSize / 2,
@@ -209,7 +208,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 true);
 
         if (isHovered() || hoverAnimator.get() > 0.001) {
-            drawContext.arc(
+            ctx.arc(
                     handleX,
                     bounds.getCenterY(),
                     20,
@@ -221,7 +220,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 || style().showCheckedIconAlways()))) {
             float checkedIconX = bounds.x + bounds.width - 16;
             MaterialSymbols.iconCheck().render(
-                    drawContext,
+                    ctx,
                     colors.iconColor.copy().alpha(
                             !handlePositionAnimator.isRunning() ? 255
                                     : Math.min((int) ((handlePositionAnimator
@@ -241,14 +240,13 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                             * 255f), 255f) / 255f,
                     0, 1);
             MaterialSymbols.iconClose().render(
-                    drawContext,
+                    ctx,
                     colors.iconColor,
                     MaterialSwitchSize.Default.iconSize(),
                     new Vector2f(
                             closeIconX,
                             bounds.getCenterY()));
         }
-        drawContext.endBatch(getZIndex());
     }
 
     private float clamp(float value, float min, float max) {

@@ -20,8 +20,8 @@ package io.homo.superresolution.core.gui.core.frame;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
@@ -112,7 +112,7 @@ public class Frame implements IFrame {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         if (root == null) return;
         if (layoutDirty) {
             calculateLayout();
@@ -121,11 +121,11 @@ public class Frame implements IFrame {
         collectRenderables(root, renderList);
         renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
         for (RenderEntry entry : renderList) {
-            renderWidget(drawContext, inputState, entry);
+            renderWidget(ctx, inputState, entry);
         }
 
         if (debugRenderEnabled) {
-            renderDebugOverlay(drawContext, inputState);
+            renderDebugOverlay(ctx, inputState);
         }
     }
 
@@ -174,14 +174,14 @@ public class Frame implements IFrame {
                 bounds.y < viewportHeight;
     }
 
-    private void renderWidget(IUIDrawContext drawContext, UIInputState inputState, RenderEntry entry) {
+    private void renderWidget(RenderContext ctx, UIInputState inputState, RenderEntry entry) {
         AbstractWidget<?> widget = entry.widget();
         Transform transform = entry.accumulatedTransform();
 
-        drawContext.transform().push();
-        drawContext.transform().apply(transform);
-        widget.render(drawContext, inputState);
-        drawContext.transform().pop();
+        ctx.save();
+        ctx.applyTransform(transform);
+        widget.render(ctx, inputState);
+        ctx.restore();
     }
 
 
@@ -506,109 +506,106 @@ public class Frame implements IFrame {
         lastHitWidget = findInteractiveWidgetAt(mousePos);
     }
 
-    private void renderDebugOverlay(IUIDrawContext drawContext, UIInputState inputState) {
-        drawContext.beginBatch();
-        float oldStrokeWidth = drawContext.strokeWidth();
-        Color oldStrokeColor = drawContext.strokeColor();
+    private void renderDebugOverlay(RenderContext ctx, UIInputState inputState) {
+        float oldStrokeWidth = ctx.strokeWidth();
+        Color oldStrokeColor = ctx.strokeColor();
 
-        drawContext.strokeWidth(DEBUG_STROKE_WIDTH);
+        ctx.strokeWidth(DEBUG_STROKE_WIDTH);
 
         if (debugLayoutBounds) {
-            renderDebugLayoutBounds(drawContext, root);
+            renderDebugLayoutBounds(ctx, root);
         }
 
         if (debugRenderBounds) {
             for (RenderEntry entry : renderList) {
-                renderDebugRenderBounds(drawContext, entry);
+                renderDebugRenderBounds(ctx, entry);
             }
         }
 
         if (debugHitTestBounds && lastHitWidget != null) {
-            renderDebugHitTestBounds(drawContext, lastHitWidget);
+            renderDebugHitTestBounds(ctx, lastHitWidget);
         }
 
-        drawContext.strokeWidth(oldStrokeWidth);
-        drawContext.strokeColor(oldStrokeColor);
-        drawContext.endBatch(10000000);
-
+        ctx.strokeWidth(oldStrokeWidth);
+        ctx.strokeColor(oldStrokeColor);
     }
 
-    private void renderDebugLayoutBounds(IUIDrawContext drawContext, AbstractWidget<?> widget) {
+    private void renderDebugLayoutBounds(RenderContext ctx, AbstractWidget<?> widget) {
         if (!widget.isVisible()) return;
 
         Rectangle layoutBounds = widget.getRawBounds();
 
-        drawContext.transform().push();
-        drawContext.transform().apply(widget.getFullTransform());
+        ctx.save();
+        ctx.applyTransform(widget.getFullTransform());
 
-        drawContext.rect(
+        ctx.rect(
                 layoutBounds.x, layoutBounds.y,
                 layoutBounds.width, layoutBounds.height,
                 DEBUG_LAYOUT_COLOR, false
         );
 
-        drawContext.transform().pop();
+        ctx.restore();
 
 
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    renderDebugLayoutBounds(drawContext, childWidget);
+                    renderDebugLayoutBounds(ctx, childWidget);
                 }
             }
         }
     }
 
-    private void renderDebugRenderBounds(IUIDrawContext drawContext, RenderEntry entry) {
+    private void renderDebugRenderBounds(RenderContext ctx, RenderEntry entry) {
         AbstractWidget<?> widget = entry.widget();
         Transform transform = entry.accumulatedTransform();
 
         Rectangle rawBounds = widget.getRawBounds();
 
         if (transform.isIdentity()) {
-            drawContext.rect(
+            ctx.rect(
                     rawBounds.x + 1, rawBounds.y + 1,
                     rawBounds.width - 2, rawBounds.height - 2,
                     DEBUG_RENDER_COLOR, false
             );
         } else {
-            drawContext.transform().push();
-            drawContext.transform().apply(transform);
+            ctx.save();
+            ctx.applyTransform(transform);
 
-            drawContext.rect(
+            ctx.rect(
                     rawBounds.x + 1, rawBounds.y + 1,
                     rawBounds.width - 2, rawBounds.height - 2,
                     DEBUG_RENDER_COLOR, false
             );
 
-            drawContext.transform().pop();
+            ctx.restore();
         }
     }
 
-    private void renderDebugHitTestBounds(IUIDrawContext drawContext, AbstractWidget<?> widget) {
+    private void renderDebugHitTestBounds(RenderContext ctx, AbstractWidget<?> widget) {
         Transform accumulatedTransform = calculateAccumulatedTransform(widget);
         Rectangle rawBounds = widget.getRawBounds();
-        drawContext.strokeWidth(DEBUG_STROKE_WIDTH + 1);
+        ctx.strokeWidth(DEBUG_STROKE_WIDTH + 1);
 
         if (accumulatedTransform.isIdentity()) {
-            drawContext.rect(
+            ctx.rect(
                     rawBounds.x - 2, rawBounds.y - 2,
                     rawBounds.width + 4, rawBounds.height + 4,
                     DEBUG_HITTEST_COLOR, false
             );
         } else {
-            drawContext.transform().push();
-            drawContext.transform().apply(accumulatedTransform);
+            ctx.save();
+            ctx.applyTransform(accumulatedTransform);
 
-            drawContext.rect(
+            ctx.rect(
                     rawBounds.x - 2, rawBounds.y - 2,
                     rawBounds.width + 4, rawBounds.height + 4,
                     DEBUG_HITTEST_COLOR, false
             );
 
-            drawContext.transform().pop();
+            ctx.restore();
         }
 
-        drawContext.strokeWidth(DEBUG_STROKE_WIDTH);
+        ctx.strokeWidth(DEBUG_STROKE_WIDTH);
     }
 }

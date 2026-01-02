@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
@@ -50,9 +50,8 @@ public class MaterialNavigationDrawerDivider extends MaterialWidget<MaterialNavi
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
-        drawContext.beginBatch();
 
         Color dividerColor = scheme().outlineVariant();
 
@@ -62,7 +61,7 @@ public class MaterialNavigationDrawerDivider extends MaterialWidget<MaterialNavi
         float lineWidth = lineEndX - lineStartX;
 
         if (lineWidth > 0) {
-            drawContext.rect(
+            ctx.rect(
                     lineStartX,
                     lineY - HEIGHT / 2,
                     lineWidth,
@@ -71,7 +70,5 @@ public class MaterialNavigationDrawerDivider extends MaterialWidget<MaterialNavi
                     true
             );
         }
-
-        drawContext.endBatch(getZIndex());
     }
 }

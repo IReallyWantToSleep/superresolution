@@ -19,7 +19,6 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
-import io.homo.superresolution.core.gui.core.backends.interfaces.ITextRenderer;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.utils.Color;
@@ -30,10 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class NanoVGTextRenderer extends NanoVGRendererBase implements ITextRenderer {
+public class NanoVGTextRenderer extends NanoVGRendererBase {
     public static NanoVGTextRenderer INSTANCE;
 
-    public NanoVGTextRenderer(NanoVGContext context) {
+    public NanoVGTextRenderer(NanoVGContextWrapper context) {
         INSTANCE = this;
     }
 

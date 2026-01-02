@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
@@ -239,14 +239,14 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     protected abstract Rectangle getViewRegion();
 
 
-    protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
 
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         if (!isVisible()) return;
-        renderSelf(drawContext, inputState);
+        renderSelf(ctx, inputState);
     }
 
 }

@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 
 public class ContainerWidget extends AbstractContainerWidget<ContainerWidget> {
@@ -38,7 +38,7 @@ public class ContainerWidget extends AbstractContainerWidget<ContainerWidget> {
     }
 
     @Override
-    protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
 
     }
 }

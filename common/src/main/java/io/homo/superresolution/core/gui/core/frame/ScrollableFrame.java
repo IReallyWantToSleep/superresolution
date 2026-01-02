@@ -22,9 +22,7 @@ import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.IScrollHandler;
 import io.homo.superresolution.core.gui.core.SmoothDragScrollHandler;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
@@ -167,9 +165,8 @@ public class ScrollableFrame extends Frame {
         float viewportWidth = viewport.width - contentPaddingLeft - contentPaddingRight;
         float viewportHeight = viewport.height - contentPaddingTop - contentPaddingBottom;
 
-        //TODO: 考虑非NanoVG后端的UI缩放
-        float maxX = enableHorizontalScroll ? Math.max(0, root.getLayoutNode().getLayoutWidth() - (viewportWidth / NanoVG.context.globalScale)) : 0;
-        float maxY = enableVerticalScroll ? Math.max(0, root.getLayoutNode().getLayoutHeight() - (viewportHeight / NanoVG.context.globalScale)) : 0;
+        float maxX = enableHorizontalScroll ? Math.max(0, root.getLayoutNode().getLayoutWidth() - (viewportWidth)) : 0;
+        float maxY = enableVerticalScroll ? Math.max(0, root.getLayoutNode().getLayoutHeight() - (viewportHeight)) : 0;
 
         scrollHandler.setScrollBounds(new Vector2f(0, 0), new Vector2f(maxX, maxY));
     }
@@ -181,7 +178,7 @@ public class ScrollableFrame extends Frame {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         AbstractWidget<?> root = getRoot();
         if (root == null) return;
 
@@ -193,25 +190,23 @@ public class ScrollableFrame extends Frame {
 
         Vector2f contentOrigin = getContentOrigin();
 
-        drawContext.save();
+        ctx.save();
         Rectangle viewport = getViewport();
-        Vector2f scissor = new Vector2f(contentPaddingLeft, contentPaddingTop);
-        scissor = drawContext.transform().last().transformPoint(scissor);
-        drawContext.scissor(
-                scissor.x,
-                scissor.y,
+        ctx.scissor(
+                contentPaddingLeft,
+                contentPaddingTop,
                 viewport.width - contentPaddingLeft - contentPaddingRight,
                 viewport.height - contentPaddingTop - contentPaddingBottom
         );
-        drawContext.transform().push();
-        drawContext.transform().translate(contentOrigin.x, contentOrigin.y);
+        ctx.save();
+        ctx.translate(contentOrigin.x, contentOrigin.y);
 
-        super.render(drawContext, inputState);
+        super.render(ctx, inputState);
 
-        drawContext.transform().pop();
-        drawContext.resetScissor();
+        ctx.restore();
+        ctx.resetScissor();
 
-        drawContext.restore();
+        ctx.restore();
     }
 
     @Override

@@ -22,14 +22,14 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 
 public class NanoVG {
     public static NanoVGRenderers RENDERER;
-    public static NanoVGContext context;
+    public static NanoVGContextWrapper context;
 
-    public static NanoVGContext getContext() {
+    public static NanoVGContextWrapper getContext() {
         return context;
     }
 
     public static void init() {
-        context = new NanoVGContext(1 | 2);
+        context = new NanoVGContextWrapper(1 | 2);
         RENDERER = new NanoVGRenderers();
         NanoVGFontLoader.initAndLoad();
     }
