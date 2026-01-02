@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui.widgets.menu;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
@@ -87,12 +87,12 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        renderSelf(drawContext, inputState);
+    public void render(RenderContext ctx, UIInputState inputState) {
+        renderSelf(ctx, inputState);
     }
 
     @Override
-    protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
         MaterialMenuSize size = style().size();
         Color backgroundColor = style().colors().menuBackground(scheme());
         Rectangle bounds = getRawBounds();
@@ -136,15 +136,13 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         }
 
         float animatedHeight = bounds.height * expandProgress;
-
-        drawContext.beginBatch();
-        drawContext.transform().push();
-        drawContext.beginPath();
-        drawContext.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
                 Math.min(bottomLeft, animatedHeight / 2), Math.min(bottomRight, animatedHeight / 2), Math.min(topLeft, animatedHeight / 2), Math.min(topRight, animatedHeight / 2));
-        drawContext.fillColor(backgroundColor);
-        drawContext.endPath(true);
-        drawContext.transform().pop();
-        drawContext.endBatch(-1);
+        ctx.fillColor(backgroundColor);
+        ctx.endPath(true);
+        ctx.restore();
     }
 }

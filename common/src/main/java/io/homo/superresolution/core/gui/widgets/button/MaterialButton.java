@@ -23,7 +23,7 @@ import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialWidgetOverlay;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
@@ -47,9 +47,9 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
     private MaterialWidgetOverlay<MaterialButton> overlay = new MaterialWidgetOverlay<>(this) {
         @Override
-        protected void drawShape(IUIDrawContext drawContext, MaterialButton widget, Color color) {
+        protected void drawShape(RenderContext ctx, MaterialButton widget, Color color) {
             Rectangle bounds = getBounds();
-            drawContext.roundedRect(
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
@@ -61,18 +61,18 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         }
 
         @Override
-        protected void drawShape(IUIDrawContext drawContext, MaterialButton widget, IPaint paint) {
+        protected void drawShape(RenderContext ctx, MaterialButton widget, IPaint paint) {
             Rectangle bounds = getBounds();
-            drawContext.beginPath();
-            drawContext.paint(paint);
-            drawContext.roundedRect(
+            ctx.beginPath();
+            ctx.paint(paint);
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
                     bounds.height,
                     Math.min(getCornerSize(), (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
                             : style().size().squareCornerSize())));
-            drawContext.endPath();
+            ctx.endPath();
         }
     };
 
@@ -237,8 +237,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        drawContext.beginBatch();
+    public void render(RenderContext ctx, UIInputState inputState) {
         updateRectangle();
         if (pressAnimator != null)
             pressAnimator.update();
@@ -248,7 +247,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
         float cornerSize = getCornerSize();
         if (colors.backgroundColor != null) {
-            drawContext.roundedRect(
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
@@ -259,12 +258,12 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         }
 
         overlay.renderHoverOverlay(
-                drawContext,
+                ctx,
                 colors.coverColor);
 
         if (colors.borderColor != null) {
-            drawContext.strokeWidth(1);
-            drawContext.roundedRect(
+            ctx.strokeWidth(1);
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
@@ -275,7 +274,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         }
 
         overlay.renderRippleOverlay(
-                drawContext,
+                ctx,
                 style().variant() == MaterialButtonVariant.Elevated ? scheme.primary()
                         : style().variant() == MaterialButtonVariant.Filled ? scheme.onPrimary()
                         : style().variant() == MaterialButtonVariant.Tonal ? scheme.onSecondaryContainer()
@@ -286,7 +285,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         if (iconContextSupplier.get() != null && colors.iconColor != null) {
             iconContextWidth = style().size().iconSize();
             iconContextSupplier.get().render(
-                    drawContext,
+                    ctx,
                     colors.iconColor,
                     style().size().iconSize(),
                     new Vector2f(
@@ -294,8 +293,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                             bounds.getCenterY()));
         }
 
-        drawContext.drawAlignedText(
-                drawContext.font(),
+        ctx.drawAlignedText(
+                ctx.font(),
                 size().fontSize(),
                 textContextSupplier.get(),
                 bounds.x + size().padding() + iconContextWidth
@@ -306,8 +305,6 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                 colors.textColor,
                 TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                 false);
-
-        drawContext.endBatch(getZIndex());
     }
 
     private void updateRectangle() {

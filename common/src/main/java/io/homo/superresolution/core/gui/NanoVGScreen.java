@@ -19,12 +19,12 @@
 package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContext;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGDrawContext;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGRenderContext;
+import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.view.View;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
@@ -43,7 +43,8 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class NanoVGScreen<T> extends Screen {
-    protected final NanoVGContext nvg;
+    protected final NanoVGContextWrapper nvg;
+    protected final GuiScaleManager scaleManager;
     protected View view = new View();
     protected Frame defaultFrame = new Frame();
     protected YogaNode defaultFrameLayout;
@@ -51,6 +52,7 @@ public abstract class NanoVGScreen<T> extends Screen {
     protected NanoVGScreen(Component title) {
         super(title);
         nvg = NanoVG.context;
+        scaleManager = GuiScaleManager.getInstance();
         defaultFrameLayout = view.addFrame(defaultFrame);
         defaultFrameLayout.setWidthPercent(100);
         defaultFrameLayout.setHeightPercent(100);
@@ -74,16 +76,24 @@ public abstract class NanoVGScreen<T> extends Screen {
         float mouseX = (float) transformPos(mouseX_);
         float mouseY = (float) transformPos(mouseY_);
         drawBefore(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
+        scaleManager.update();
+
         nvg.begin(true);
         nvg.resetGlobalTransform();
         nvg.resetTransform();
+        nvg.globalScale(scaleManager.guiScale());
         nvg.globalAlpha(1.0f);
-        NanoVGDrawContext drawContext = new NanoVGDrawContext(nvg);
-        draw(drawContext, new UIInputState(
+
+        NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
+        ctx.setGuiScale(scaleManager.guiScale());
+        ctx.setDpiScale(scaleManager.dpiScale());
+
+        draw(ctx, new UIInputState(
                 new Vector2f(mouseX, mouseY),
                 partialTick
         ));
-        drawContext.drawAll();
+
+        ctx.flush();
         nvg.end();
         drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
     }
@@ -96,23 +106,24 @@ public abstract class NanoVGScreen<T> extends Screen {
     @Override
     public void resize(@NotNull Minecraft minecraft, int width, int height) {
         super.resize(minecraft, width, height);
+        scaleManager.update();
     }
 
-    public void draw(IUIDrawContext drawContext, UIInputState inputState) {
-        drawBefore(drawContext, inputState);
-        drawWidgets(drawContext, inputState);
-        drawTooltips(drawContext, inputState);
-        drawAfter(drawContext, inputState);
+    public void draw(RenderContext ctx, UIInputState inputState) {
+        drawBefore(ctx, inputState);
+        drawWidgets(ctx, inputState);
+        drawTooltips(ctx, inputState);
+        drawAfter(ctx, inputState);
     }
 
-    public void drawTooltips(IUIDrawContext drawContext, UIInputState inputState) {
+    public void drawTooltips(RenderContext ctx, UIInputState inputState) {
     }
 
-    public void drawAfter(IUIDrawContext drawContext, UIInputState inputState) {
+    public void drawAfter(RenderContext ctx, UIInputState inputState) {
 
     }
 
-    public void drawBefore(IUIDrawContext drawContext, UIInputState inputState) {
+    public void drawBefore(RenderContext ctx, UIInputState inputState) {
 
     }
 
@@ -124,13 +135,13 @@ public abstract class NanoVGScreen<T> extends Screen {
         //super.renderBackground(guiGraphics, mouseX, mouseY, delta);
     }
 
-    public void drawWidgets(IUIDrawContext drawContext, UIInputState inputState) {
+    public void drawWidgets(RenderContext ctx, UIInputState inputState) {
         Vector2f screenSize = MinecraftWindow.getWindowSize();
-        view.setViewport(screenSize.x, screenSize.y);
+        view.setViewport(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
 
         defaultFrame.updateHitTestDebug(inputState.mousePosition());
 
-        view.render(drawContext, inputState);
+        view.render(ctx, inputState);
     }
 
     protected void setRoot(AbstractWidget<?> root) {
@@ -145,16 +156,10 @@ public abstract class NanoVGScreen<T> extends Screen {
         view.setDebugBoundsVisible(layout, render, hitTest);
     }
 
-    /**
-     * 获取 View 实例，用于添加多个 Frame
-     */
     protected View getView() {
         return view;
     }
 
-    /**
-     * 获取默认 Frame，用于兼容旧代码
-     */
     protected Frame getDefaultFrame() {
         return defaultFrame;
     }

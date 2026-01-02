@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.gui.core.animator.Animator;
@@ -134,12 +134,12 @@ public class MaterialRipple {
         return oldest;
     }
 
-    public IPaint[] getPaints(Color color, IUIDrawContext drawContext, Vector2f position, Vector2f size) {
+    public IPaint[] getPaints(Color color, RenderContext ctx, Vector2f position, Vector2f size) {
         List<IPaint> paints = new ArrayList<>();
 
         for (SingleRipple ripple : activeRipples) {
             if (ripple.shouldRender() && !ripple.isDestroy()) {
-                IPaint paint = ripple.createPaint(color, drawContext);
+                IPaint paint = ripple.createPaint(color, ctx);
                 if (paint != null) {
                     paints.add(paint);
                 }
@@ -379,7 +379,7 @@ public class MaterialRipple {
             return (float) Math.sqrt(dx * dx + dy * dy);
         }
 
-        public IPaint createPaint(Color color, IUIDrawContext drawContext) {
+        public IPaint createPaint(Color color, RenderContext ctx) {
             if (isDestroy || state == RippleState.IDLE) {
                 return null;
             }
@@ -396,7 +396,7 @@ public class MaterialRipple {
                 Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
                 Color edgeColor = color.copy().alpha(0);
 
-                return drawContext.radialGradient(
+                return ctx.radialGradient(
                         currentCenter.x,
                         currentCenter.y,
                         innerRadius,
@@ -408,7 +408,7 @@ public class MaterialRipple {
                 Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
                 Color edgeColor = color.copy().alpha(0);
 
-                return drawContext.radialGradient(
+                return ctx.radialGradient(
                         currentCenter.x,
                         currentCenter.y,
                         0,

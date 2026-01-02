@@ -1,0 +1,474 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.core.gui.core.backends.nanovg;
+
+import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TransformStack;
+import io.homo.superresolution.core.gui.core.backends.render.*;
+import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
+import org.joml.Vector2f;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Stack;
+import java.util.function.Consumer;
+
+public class NanoVGRenderContext implements RenderContext {
+
+    private final NanoVGContextWrapper nvg;
+    private final RenderTree renderTree;
+    private final TransformStack transformStack;
+
+    private final Stack<RenderState> stateStack = new Stack<>();
+    private RenderState currentState = new RenderState();
+    private final List<Float> alphaStack = new ArrayList<>();
+
+    private GroupNode currentGroup = null;
+    private final Stack<GroupNode> groupStack = new Stack<>();
+
+    private float guiScale = 1.0f;
+    private float dpiScale = 1.0f;
+
+    private boolean immediateMode = false;
+
+    public NanoVGRenderContext(NanoVGContextWrapper nvg) {
+        this.nvg = nvg;
+        this.renderTree = new RenderTree();
+        this.transformStack = new TransformStack();
+        this.alphaStack.add(1.0f);
+    }
+
+    public NanoVGContextWrapper nvg() {
+        return nvg;
+    }
+
+    @Override
+    public float guiScale() {
+        return guiScale;
+    }
+
+    @Override
+    public void setGuiScale(float scale) {
+        this.guiScale = scale;
+    }
+
+    public void applyGuiScale() {
+        transformStack.setIdentity();
+        transformStack.scale(guiScale, guiScale);
+        applyTransform();
+    }
+
+    @Override
+    public float dpiScale() {
+        return dpiScale;
+    }
+
+    @Override
+    public void setDpiScale(float dpi) {
+        this.dpiScale = dpi;
+    }
+
+    @Override
+    public void save() {
+        stateStack.push(currentState.copy());
+        transformStack.push();
+        nvg.save();
+    }
+
+    @Override
+    public void restore() {
+        if (!stateStack.isEmpty()) {
+            currentState = stateStack.pop();
+        }
+        transformStack.pop();
+        applyTransform();
+        nvg.restore();
+    }
+
+    @Override
+    public void resetState() {
+        currentState.reset();
+        applyCurrentState();
+    }
+
+    @Override
+    public RenderState currentState() {
+        return currentState.copy();
+    }
+
+    @Override
+    public void applyState(RenderState state) {
+        save();
+        currentState.copyFrom(state);
+        applyCurrentState();
+    }
+
+    @Override
+    public void restoreState() {
+        restore();
+    }
+
+    private void applyCurrentState() {
+        nvg.globalAlpha(currentState.alpha());
+
+        Transform t = currentState.transform();
+        nvg.resetTransform();
+        nvg.transform(t);
+
+        if (currentState.hasScissor()) {
+            RenderState.ScissorRect scissor = currentState.scissor();
+            nvg.contextPtr.resetScissor();
+            nvg.contextPtr.intersectScissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
+        } else {
+            nvg.contextPtr.resetScissor();
+        }
+    }
+
+    @Override
+    public void globalAlpha(float alpha) {
+        currentState.alpha(alpha);
+        nvg.contextPtr.globalAlpha(alpha);
+    }
+
+    @Override
+    public float globalAlpha() {
+        return currentState.alpha();
+    }
+
+    @Override
+    public void pushAlpha(float alpha) {
+        float newAlpha = currentState.alpha() * alpha;
+        alphaStack.add(newAlpha);
+        currentState.alpha(newAlpha);
+        nvg.contextPtr.globalAlpha(newAlpha);
+    }
+
+    @Override
+    public void popAlpha() {
+        if (alphaStack.size() > 1) {
+            alphaStack.remove(alphaStack.size() - 1);
+            float prevAlpha = alphaStack.get(alphaStack.size() - 1);
+            currentState.alpha(prevAlpha);
+            nvg.contextPtr.globalAlpha(prevAlpha);
+        }
+    }
+
+    @Override
+    public Transform transform() {
+        return transformStack.last();
+    }
+
+    @Override
+    public void pushTransform() {
+        transformStack.push();
+    }
+
+    @Override
+    public void popTransform() {
+        transformStack.pop();
+        applyTransform();
+    }
+
+    @Override
+    public void resetTransform() {
+        transformStack.last().setMatrix(Transform.identityMatrix());
+        applyTransform();
+    }
+
+    @Override
+    public void translate(float x, float y) {
+        transformStack.translate(x, y);
+        applyTransform();
+    }
+
+    @Override
+    public void scale(float sx, float sy) {
+        transformStack.scale(sx, sy);
+        applyTransform();
+    }
+
+    @Override
+    public void rotate(float radians) {
+        transformStack.rotate(radians);
+        applyTransform();
+    }
+
+    @Override
+    public void applyTransform(Transform transform) {
+        if (transform == null || transform.isIdentity()) {
+            return;
+        }
+        transformStack.apply(transform);
+        currentState.transform(transformStack.last());
+        applyTransform();
+    }
+
+    @Override
+    public Vector2f transformPoint(float x, float y) {
+        return transformStack.last().transformPoint(new Vector2f(x, y));
+    }
+
+    private void applyTransform() {
+        Transform t = transformStack.last();
+        currentState.transform(t);
+        nvg.resetTransform();
+        nvg.transform(t);
+    }
+
+    @Override
+    public void scissor(float x, float y, float width, float height) {
+        currentState.scissor(x, y, width, height);
+        nvg.contextPtr.intersectScissor(x, y, width, height);
+    }
+
+    @Override
+    public void resetScissor() {
+        currentState.resetScissor();
+        nvg.contextPtr.resetScissor();
+    }
+
+    @Override
+    public void beginPath() {
+        nvg.beginPath();
+    }
+
+    @Override
+    public void endPath(boolean fill) {
+        nvg.endPath(fill);
+    }
+
+    @Override
+    public void line(float x1, float y1, float x2, float y2) {
+        nvg.line(x1, y1, x2, y2);
+    }
+
+    @Override
+    public void rect(float x, float y, float width, float height) {
+        nvg.rect(x, y, width, height);
+    }
+
+    @Override
+    public void arc(float x, float y, float radius, float a0, float a1) {
+        nvg.contextPtr.arc(x, y, radius, a0, a1, 1);
+    }
+
+    @Override
+    public void roundedRectComplex(float x, float y, float width, float height,
+                                   float bottomLeftRadius, float bottomRightRadius,
+                                   float topLeftRadius, float topRightRadius) {
+        nvg.contextPtr.roundedRectVarying(x, y, width, height,
+                topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+    }
+
+
+    @Override
+    public void strokeWidth(float width) {
+        nvg.strokeWidth(width);
+    }
+
+    @Override
+    public void strokeColor(Color color) {
+        nvg.strokeColor(color);
+    }
+
+    @Override
+    public void fillColor(Color color) {
+        nvg.fillColor(color);
+    }
+
+    @Override
+    public Color fillColor() {
+        return nvg.fillColor();
+    }
+
+    @Override
+    public Color strokeColor() {
+        return nvg.strokeColor();
+    }
+
+    @Override
+    public float strokeWidth() {
+        return nvg.strokeWidth();
+    }
+
+    @Override
+    public void paint(IPaint paint) {
+        if (paint instanceof NanoVGPaintWrapper) {
+            nvg.contextPtr.fillPaint(((NanoVGPaintWrapper) paint).get());
+        }
+    }
+
+    @Override
+    public IPaint linearGradient(float startX, float startY, float endX, float endY, Color from, Color to) {
+        return new NanoVGPaintWrapper(nvg.linearGradient(startX, startY, endX, endY, from, to));
+    }
+
+    @Override
+    public IPaint radialGradient(float centerX, float centerY, float radius, Color beginColor, Color endColor) {
+        NanoVGColor nvgBeginColor = nvg.contextPtr.colorRGBA(
+                beginColor.red(), beginColor.green(), beginColor.blue(), beginColor.alpha()
+        );
+        NanoVGColor nvgEndColor = nvg.contextPtr.colorRGBA(
+                endColor.red(), endColor.green(), endColor.blue(), endColor.alpha()
+        );
+        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.contextPtr.radialGradient(centerX, centerY, 0, radius, nvgBeginColor, nvgEndColor));
+        nvgBeginColor.close();
+        nvgEndColor.close();
+        return paint;
+    }
+
+    @Override
+    public IPaint radialGradient(float centerX, float centerY, float innerRadius, float outerRadius,
+                                 Color beginColor, Color endColor) {
+        NanoVGColor nvgBeginColor = nvg.contextPtr.colorRGBA(
+                beginColor.red(), beginColor.green(), beginColor.blue(), beginColor.alpha()
+        );
+        NanoVGColor nvgEndColor = nvg.contextPtr.colorRGBA(
+                endColor.red(), endColor.green(), endColor.blue(), endColor.alpha()
+        );
+        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.contextPtr.radialGradient(centerX, centerY, innerRadius, outerRadius, nvgBeginColor, nvgEndColor));
+        nvgBeginColor.close();
+        nvgEndColor.close();
+        return paint;
+    }
+
+    @Override
+    public IPaint imagePattern(float ox, float oy, float ex, float ey, float width, float height,
+                               float angle, float alpha, int image) {
+        return new NanoVGPaintWrapper(nvg.imagePattern(ox, oy, ex, ey, width, height, angle, alpha, image));
+    }
+
+    @Override
+    public IFont font() {
+        return NanoVGFontLoader.FONT_MAP.get(NanoVGFontLoader.REGULAR_VARIATION);
+    }
+
+    @Override
+    public float measureTextWidth(String text, float fontSize) {
+        return NanoVG.RENDERER.TEXT.measureTextWidth(text, fontSize);
+    }
+
+    @Override
+    public float measureTextHeight(String text, float fontSize) {
+        return NanoVG.RENDERER.TEXT.measureTextHeight(text, fontSize);
+    }
+
+    @Override
+    public Vector2f measureText(String text, float fontSize) {
+        return NanoVG.RENDERER.TEXT.measureText(text, fontSize);
+    }
+
+    @Override
+    public void drawAlignedText(IFont font, float fontSize, String text,
+                                float x, float y, float width, float height,
+                                Color color, TextAlign align, boolean wrap) {
+        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, width, height, color, align, wrap);
+    }
+
+    @Override
+    public RenderTree renderTree() {
+        return renderTree;
+    }
+
+    @Override
+    public void draw(float zIndex, RenderLayer layer, Consumer<RenderContext> drawFunc) {
+        if (immediateMode) {
+            drawFunc.accept(this);
+            return;
+        }
+
+        DrawNode node = new DrawNode(zIndex, layer, drawFunc);
+        node.capturedState(currentState.copy());
+
+        if (currentGroup != null) {
+            currentGroup.addChild(node);
+        } else {
+            renderTree.addNode(node);
+        }
+    }
+
+    @Override
+    public void beginGroup(float zIndex, RenderLayer layer) {
+        GroupNode group = new GroupNode(zIndex, layer);
+        group.capturedState(currentState.copy());
+
+        if (currentGroup != null) {
+            currentGroup.addChild(group);
+            groupStack.push(currentGroup);
+        }
+
+        currentGroup = group;
+    }
+
+    @Override
+    public void endGroup() {
+        if (currentGroup != null) {
+            if (groupStack.isEmpty()) {
+                renderTree.addNode(currentGroup);
+                currentGroup = null;
+            } else {
+                currentGroup = groupStack.pop();
+            }
+        }
+    }
+
+    @Override
+    public void deferToLayer(RenderLayer layer, float zIndex, Consumer<RenderContext> drawFunc) {
+        Vector2f screenPos = transformPoint(0, 0);
+
+        DeferredNode node = new DeferredNode(zIndex, layer, screenPos, drawFunc);
+        renderTree.addNode(node);
+    }
+
+    @Override
+    public void flush() {
+        renderTree.render(this,
+                () -> {
+                    nvg.contextPtr.globalAlpha(1.0f);
+                    nvg.contextPtr.resetScissor();
+                    nvg.resetTransform();
+                    currentState.reset();
+                    alphaStack.clear();
+                    alphaStack.add(1.0f);
+                    transformStack.setIdentity();
+                },
+                null
+        );
+        renderTree.clear();
+    }
+
+    @Override
+    public void beginImmediate() {
+        this.immediateMode = true;
+    }
+
+    @Override
+    public void endImmediate() {
+        this.immediateMode = false;
+    }
+
+    @Override
+    public boolean isImmediate() {
+        return immediateMode;
+    }
+}

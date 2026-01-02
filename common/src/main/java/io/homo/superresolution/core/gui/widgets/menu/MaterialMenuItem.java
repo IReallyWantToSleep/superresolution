@@ -26,7 +26,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
@@ -66,7 +66,7 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     private final MaterialWidgetOverlay<MaterialMenuItem> overlay = new MaterialWidgetOverlay<>(this) {
-        private void drawPath(IUIDrawContext drawContext, MaterialMenuItem widget) {
+        private void drawPath(RenderContext ctx, MaterialMenuItem widget) {
             Rectangle bounds = getRawBounds();
             float baseRadius = 4;
             float selectedRadius = 12;
@@ -105,23 +105,23 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
                 bottomRight = bottomRight + (selectedRadius - bottomRight) * animProgress;
             }
 
-            drawContext.beginPath();
-            drawContext.roundedRectComplex(bounds.x, bounds.y, bounds.width, bounds.height, bottomLeft, bottomRight,
+            ctx.beginPath();
+            ctx.roundedRectComplex(bounds.x, bounds.y, bounds.width, bounds.height, bottomLeft, bottomRight,
                     topLeft, topRight);
         }
 
         @Override
-        protected void drawShape(IUIDrawContext drawContext, MaterialMenuItem widget, Color color) {
-            drawPath(drawContext, widget);
-            drawContext.fillColor(color);
-            drawContext.endPath(true);
+        protected void drawShape(RenderContext ctx, MaterialMenuItem widget, Color color) {
+            drawPath(ctx, widget);
+            ctx.fillColor(color);
+            ctx.endPath(true);
         }
 
         @Override
-        protected void drawShape(IUIDrawContext drawContext, MaterialMenuItem widget, IPaint paint) {
-            drawPath(drawContext, widget);
-            drawContext.paint(paint);
-            drawContext.endPath(true);
+        protected void drawShape(RenderContext ctx, MaterialMenuItem widget, IPaint paint) {
+            drawPath(ctx, widget);
+            ctx.paint(paint);
+            ctx.endPath(true);
         }
     };
 
@@ -265,7 +265,7 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         updateSize();
         selectionAnimator.update();
         fadeAnimator.update();
@@ -279,9 +279,8 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
 
         float animProgress = selectionAnimator.get();
 
-        drawContext.beginBatch();
-        float savedAlpha = drawContext.globalAlpha();
-        drawContext.globalAlpha(savedAlpha * fadeProgress);
+        ctx.save();
+        //ctx.pushAlpha(fadeProgress);
         MaterialMenuItemSize size = style().size();
         Color contentColor = style().colors().itemText(scheme());
         Color iconColor = style().colors().itemIcon(scheme());
@@ -291,7 +290,7 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
 
         if (selectable && animProgress > 0) {
             int alpha = isDisabled() ? (int) (0.15 * 255) : (int) (animProgress * 0.8f * 255);
-            drawContext.roundedRect(
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
@@ -302,24 +301,22 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             contentColor = contentColor.copy().lerp(selectedContentColor, animProgress);
             iconColor = iconColor.copy().lerp(selectedIconColor, animProgress);
         }
-
-        overlay.render(drawContext, style().colors().stateLayer(scheme()), style().colors().stateLayer(scheme()));
-
+        ctx.save();
+        overlay.render(ctx, style().colors().stateLayer(scheme()), style().colors().stateLayer(scheme()));
+        ctx.restore();
         float checkIconOffset = size.iconSize() + size.iconTextGap();
         float textOffset = animProgress * checkIconOffset;
 
         float currentX = bounds.x + size.horizontalPadding();
-        drawContext.save();
-        drawContext.transform().push();
-        float lastAlpha = drawContext.globalAlpha();
-        if (isDisabled())
-            drawContext.globalAlpha(0.38f * lastAlpha);
+        ctx.save();
+        //if (isDisabled())
+        //ctx.pushAlpha(0.38f);
         if (selectable && animProgress > 0) {
             MaterialSymbol checkIcon = MaterialSymbols.iconCheck();
             float iconCenterX = currentX + size.iconSize() / 2f;
             float iconCenterY = bounds.y + bounds.height / 2f;
             Color checkIconColor = iconColor.copy().alpha((int) (animProgress * 255));
-            checkIcon.render(drawContext, checkIconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
+            checkIcon.render(ctx, checkIconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
         }
 
         float textX = currentX + textOffset;
@@ -330,7 +327,7 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             float iconCenterX = currentX + size.iconSize() / 2f;
             float iconCenterY = bounds.y + bounds.height / 2f;
             Color userIconColor = iconColor.copy().alpha((int) (iconAlpha * 255));
-            userIcon.render(drawContext, userIconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
+            userIcon.render(ctx, userIconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
             if (animProgress < 1) {
                 textX = currentX + size.iconSize() + size.iconTextGap();
             }
@@ -340,8 +337,8 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
 
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
-            drawContext.drawAlignedText(
-                    drawContext.font(),
+            ctx.drawAlignedText(
+                    ctx.font(),
                     size.fontSize(),
                     text,
                     textX,
@@ -357,12 +354,11 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         if (rightIcon != null) {
             float iconCenterX = bounds.x + bounds.width - size.horizontalPadding() - size.iconSize() / 2f;
             float iconCenterY = bounds.y + bounds.height / 2f;
-            rightIcon.render(drawContext, iconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
+            rightIcon.render(ctx, iconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
         }
-        drawContext.globalAlpha(savedAlpha);
-        drawContext.transform().pop();
-        drawContext.restore();
-        drawContext.endBatch(getZIndex());
+        //ctx.popAlpha();
+        ctx.restore();
+        ctx.restore();
     }
 
     public float computeContentWidth() {

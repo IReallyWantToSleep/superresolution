@@ -21,7 +21,7 @@ package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
@@ -46,6 +46,7 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         getLayoutNode().setDebugName("MaterialNavigationDrawer");
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
         layout().setGap(YogaGutter.ROW, 1.5f);
+        layout().setPadding(YogaEdge.ALL, 12);
     }
 
     public static MaterialNavigationDrawer create() {
@@ -189,13 +190,11 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        layout().setPadding(YogaEdge.HORIZONTAL, 12);
+    public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
-        drawContext.beginBatch();
 
         Color backgroundColor = scheme().surfaceContainerLow();
-        drawContext.roundedRect(
+        ctx.roundedRect(
                 bounds.x,
                 bounds.y,
                 bounds.width,
@@ -205,19 +204,17 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
                 true
         );
 
-        drawContext.endBatch(getZIndex());
-
-        renderSelf(drawContext, inputState);
+        renderSelf(ctx, inputState);
     }
 
     @Override
-    protected void renderSelf(IUIDrawContext drawContext, UIInputState inputState) {
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
         if (!isVisible()) return;
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?>) {
                 AbstractWidget<?> widget = (AbstractWidget<?>) child;
                 if (widget.isVisible()) {
-                    widget.render(drawContext, inputState);
+                    widget.render(ctx, inputState);
                 }
             }
         }
@@ -241,7 +238,7 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         }
 
         @Override
-        public void render(IUIDrawContext drawContext, UIInputState inputState) {
+        public void render(RenderContext ctx, UIInputState inputState) {
         }
     }
 }

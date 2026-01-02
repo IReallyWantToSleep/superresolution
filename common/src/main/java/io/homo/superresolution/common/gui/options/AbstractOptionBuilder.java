@@ -20,6 +20,7 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.core.gui.MaterialScheme;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -37,6 +38,7 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
     protected Text name;
+    protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     protected OptionCategory getCategory() {
         return category;
@@ -64,6 +66,7 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         option.setRequiresRestartGame(requireRestartGame);
         option.setSaveConsumer(saveConsumer);
         option.setTooltipSupplier(tooltipSupplier);
+        option.setScheme(scheme);
         category.addEntry(option);
         return option;
     }
@@ -110,6 +113,37 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
 
     public SELF setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
         this.tooltipSupplier = tooltipSupplier;
+        return (SELF) this;
+    }
+    
+    /**
+     * 设置选项描述（作为tooltip显示在名称下方）
+     */
+    public SELF setDescription(Text description) {
+        this.tooltipSupplier = (v) -> Optional.of(new Text[]{description});
+        return (SELF) this;
+    }
+    
+    /**
+     * 设置选项描述（作为tooltip显示在名称下方）
+     */
+    public SELF setDescription(String description) {
+        return setDescription(Text.literal(description));
+    }
+    
+    /**
+     * 设置多行描述
+     */
+    public SELF setDescriptions(Text... descriptions) {
+        this.tooltipSupplier = (v) -> Optional.of(descriptions);
+        return (SELF) this;
+    }
+    
+    /**
+     * 设置配色方案
+     */
+    public SELF scheme(MaterialScheme scheme) {
+        this.scheme = scheme;
         return (SELF) this;
     }
 }

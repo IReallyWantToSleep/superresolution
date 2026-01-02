@@ -19,17 +19,13 @@
 package io.homo.superresolution.core.gui.core.view;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test.CaptureTree;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test.CaptureTree;
 import org.joml.Vector2f;
 
-import java.nio.file.Path;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -132,7 +128,7 @@ public class View {
         layoutDirty = false;
     }
 
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         if (layoutDirty) {
             calculateLayout();
         }
@@ -141,14 +137,13 @@ public class View {
             YogaNode node = entry.layoutNode;
             float x = node.getLayoutX();
             float y = node.getLayoutY();
-            drawContext.beginBatch();
-            drawContext.transform().push();
-            drawContext.transform().last().translate(x, y);
+            
+            ctx.save();
+            ctx.translate(x, y);
 
-            entry.frame.render(drawContext, inputState);
+            entry.frame.render(ctx, inputState);
 
-            drawContext.transform().pop();
-            drawContext.endBatch(0);
+            ctx.restore();
         }
     }
 

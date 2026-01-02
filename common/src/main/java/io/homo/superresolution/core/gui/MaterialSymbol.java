@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
@@ -49,11 +49,11 @@ public class MaterialSymbol {
     }
 
     public void render(
-            IUIDrawContext drawContext,
+            RenderContext ctx,
             Color color,
             float iconSize,
             Vector2f position) {
-        drawContext.drawAlignedText(
+        ctx.drawAlignedText(
                 iconFont,
                 iconSize,
                 codepoint,

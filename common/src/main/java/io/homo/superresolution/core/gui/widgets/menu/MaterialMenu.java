@@ -22,7 +22,7 @@ import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
@@ -30,6 +30,7 @@ import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +58,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
     public void updateSize() {
         MaterialMenuSize size = style().size();
-        float animProgress = expandAnimator.get();
 
         float maxItemWidth = 0;
         for (io.homo.superresolution.core.gui.core.layout.ILayoutElement child : getChildren()) {
@@ -70,13 +70,9 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
         layout().setWidth(finalWidth);
         layout().setGap(YogaGutter.ALL, size.verticalPadding());
-        if (animProgress < 1) {
-            layout().setHeightAuto();
-            layout().setMaxHeightPercent(animProgress * 100);
-        } else {
-            layout().setHeightAuto();
-            layout().setMaxHeightPercent(100);
-        }
+
+        layout().setHeightAuto();
+        layout().setMaxHeight(StyleSizeLength.undefined());
     }
 
     private void cacheFullExpandedHeight() {
@@ -87,7 +83,7 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         expandAnimator.update();
         float animProgress = expandAnimator.get();
 
@@ -115,26 +111,25 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         float currentExpandedHeight = fullExpandedHeight * animProgress;
 
         updateExpandState(currentExpandedHeight, animProgress);
-        drawContext.beginBatch();
         Rectangle rawBounds = getRawBounds();
-        drawContext.save();
-        drawContext.transform().push();
-        drawContext.transform().apply(style().transform());
-        drawContext.scissor(
+        ctx.save();
+
+        ctx.scissor(
                 rawBounds.x,
                 rawBounds.y,
                 rawBounds.width,
                 currentExpandedHeight
         );
-        renderSelf(drawContext, inputState);
+
+        renderSelf(ctx, inputState);
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget && widget.isVisible()) {
-                widget.renderWithChildren(drawContext, inputState);
+                widget.renderWithChildren(ctx, inputState);
             }
         }
-        drawContext.transform().pop();
-        drawContext.restore();
-        drawContext.endBatch(style().zIndex());
+
+        ctx.resetScissor();
+        ctx.restore();
     }
 
     private void updateExpandState(float currentExpandedHeight, float animProgress) {

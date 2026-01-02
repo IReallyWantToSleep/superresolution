@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui.widgets.label;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -78,16 +78,15 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        drawContext.beginBatch();
-        Vector2f textSize = drawContext.measureText(textSupplier.get(), style().fontSize());
+    public void render(RenderContext ctx, UIInputState inputState) {
+        Vector2f textSize = ctx.measureText(textSupplier.get(), style().fontSize());
         setElementSize(textSize.x, textSize.y);
         Rectangle bounds = getBounds();
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
             Color textColor = getTextColor();
-            drawContext.drawAlignedText(
-                    drawContext.font(),
+            ctx.drawAlignedText(
+                    ctx.font(),
                     style().fontSize(),
                     text,
                     bounds.x,
@@ -99,7 +98,6 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                     false
             );
         }
-        drawContext.endBatch(getZIndex());
     }
 
     private Color getTextColor() {

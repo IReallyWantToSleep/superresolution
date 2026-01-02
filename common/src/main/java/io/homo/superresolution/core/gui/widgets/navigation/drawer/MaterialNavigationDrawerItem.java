@@ -25,7 +25,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
@@ -58,9 +58,9 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
 
     private final MaterialWidgetOverlay<MaterialNavigationDrawerItem> overlay = new MaterialWidgetOverlay<>(this) {
         @Override
-        protected void drawShape(IUIDrawContext drawContext, MaterialNavigationDrawerItem widget, Color color) {
+        protected void drawShape(RenderContext ctx, MaterialNavigationDrawerItem widget, Color color) {
             Rectangle bounds = getRawBounds();
-            drawContext.roundedRect(
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
@@ -72,18 +72,18 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
         }
 
         @Override
-        protected void drawShape(IUIDrawContext drawContext, MaterialNavigationDrawerItem widget, IPaint paint) {
+        protected void drawShape(RenderContext ctx, MaterialNavigationDrawerItem widget, IPaint paint) {
             Rectangle bounds = getRawBounds();
-            drawContext.beginPath();
-            drawContext.paint(paint);
-            drawContext.roundedRect(
+            ctx.beginPath();
+            ctx.paint(paint);
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
                     bounds.height,
                     CORNER_RADIUS
             );
-            drawContext.endPath(true);
+            ctx.endPath(true);
         }
     };
 
@@ -169,17 +169,16 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
+    public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
         overlay.update();
         selectionAnimator.update();
-        drawContext.beginBatch();
 
         float animProgress = selectionAnimator.get();
 
         if (animProgress > 0) {
             Color selectedBg = scheme().secondaryContainer().copy().alpha((int) (255 * animProgress));
-            drawContext.roundedRect(
+            ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
@@ -198,15 +197,15 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
         if (icon != null) {
             Color iconColor = selected ? scheme().onSecondaryContainer() : scheme().onSurfaceVariant();
             Vector2f iconPos = new Vector2f(contentX + ICON_SIZE / 2, centerY);
-            icon.render(drawContext, iconColor, ICON_SIZE, iconPos);
+            icon.render(ctx, iconColor, ICON_SIZE, iconPos);
             contentX += ICON_SIZE + ICON_TEXT_GAP;
         }
 
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
             Color textColor = selected ? scheme().onSecondaryContainer() : scheme().onSurface();
-            drawContext.drawAlignedText(
-                    drawContext.font(),
+            ctx.drawAlignedText(
+                    ctx.font(),
                     FONT_SIZE,
                     text,
                     contentX,
@@ -218,8 +217,6 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
                     false
             );
         }
-        overlay.render(drawContext, scheme().onSecondaryContainer().copy(), scheme().onSurface().copy());
-
-        drawContext.endBatch(getZIndex());
+        overlay.render(ctx, scheme().onSecondaryContainer().copy(), scheme().onSurface().copy());
     }
 }

@@ -21,14 +21,11 @@ package io.homo.superresolution.common.gui.options;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
-import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 
 public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, BooleanSwitchOptionEntry> {
     protected MaterialSwitch aSwitch;
-    protected MaterialLabel label;
-
 
     public BooleanSwitchOptionEntry(Text name, Boolean value) {
         super(name, value);
@@ -45,7 +42,6 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
     @Override
     protected BooleanSwitchOptionEntry setScheme(MaterialScheme scheme) {
         aSwitch.scheme(scheme);
-        label.scheme(scheme);
         return super.setScheme(scheme);
     }
 
@@ -56,16 +52,25 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
     @Override
     protected void initWidget() {
         aSwitch = MaterialSwitch.create()
+                .setChecked(value)
                 .scheme(scheme);
-        label = MaterialLabel.create()
-                .text(() -> this.name.getString());
-        container.addChild(aSwitch);
-        container.addChild(label);
+        aSwitch.onChange(event -> {
+            this.value = (Boolean) event.getNewValue();
+            if (saveConsumer != null) {
+                saveConsumer.accept(this.value);
+            }
+        });
+        container.addControl(aSwitch);
         container.scheme(scheme);
     }
 
     @Override
-    public void render(IUIDrawContext drawContext, UIInputState inputState) {
-        container.render(drawContext, inputState);
+    public void render(RenderContext ctx, UIInputState inputState) {
+        container.render(ctx, inputState);
+    }
+    
+    @Override
+    public Boolean value() {
+        return aSwitch.isChecked();
     }
 }

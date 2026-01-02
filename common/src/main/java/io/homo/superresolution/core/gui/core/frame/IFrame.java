@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui.core.frame;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IUIDrawContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import org.joml.Vector2f;
 
@@ -36,7 +36,7 @@ public interface IFrame {
     void calculateLayout();
 
 
-    void render(IUIDrawContext drawContext, UIInputState inputState);
+    void render(RenderContext ctx, UIInputState inputState);
 
 
     void dispatchMouseMove(float x, float y);
