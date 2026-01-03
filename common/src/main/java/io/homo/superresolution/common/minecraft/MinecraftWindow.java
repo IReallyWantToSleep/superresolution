@@ -28,7 +28,7 @@ public class MinecraftWindow {
     }
 
     public static long getWindowHandle() {
-        #if MC_VER > MC_1_21_6
+        #if MC_VER > MC_1_21_6 && false
         return hasWindow() ? Minecraft.getInstance().getWindow().handle() : -1;
         #else
         return hasWindow() ? Minecraft.getInstance().getWindow().getWindow() : -1;

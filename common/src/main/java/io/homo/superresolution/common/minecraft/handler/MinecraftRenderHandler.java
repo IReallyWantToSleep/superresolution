@@ -56,6 +56,7 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -194,17 +195,17 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         if (SuperResolutionConfig.isEnableUpscale()) {
             RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
             renderTarget.bind(FrameBufferBindPoint.Write);
-            /*
-            #if MC_VER >= MC_1_21_5
+
+            /*#if MC_VER >= MC_1_21_5
             RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(
                     RenderHandlerManager.getRenderWidth(),
                     RenderHandlerManager.getRenderHeight()
             );
-            #else
+            #else*/
             RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
             renderTarget.bind(FrameBufferBindPoint.Write);
-            #endif
-            */
+            //#endif
+
 
         }
     }

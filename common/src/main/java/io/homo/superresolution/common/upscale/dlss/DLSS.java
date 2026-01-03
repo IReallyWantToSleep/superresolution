@@ -383,7 +383,7 @@ public class DLSS extends AbstractAlgorithm {
         if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
             return new Vector2f(0);
         // halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x) * 8;
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
         // R2 参考PhotonShader
         /*

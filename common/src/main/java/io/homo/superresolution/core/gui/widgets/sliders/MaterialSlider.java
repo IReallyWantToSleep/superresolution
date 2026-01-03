@@ -24,12 +24,14 @@ import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 
 import java.util.function.Function;
 
@@ -194,8 +196,19 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
             drawSteps(ctx, bounds, colors, handleXPosition, availableWidth);
         }
         ctx.restore();
+        final Transform currentTransform = ctx.transform();
         if (style().valueIndicator() && animationSet.hover.get() > 0.01) {
-            drawValueIndicator(ctx, bounds, colors, handleXPosition);
+            ctx.draw(
+                    1000,
+                    RenderLayer.Floating,
+                    c -> {
+                        ctx.pushTransform();
+                        ctx.resetTransform();
+                        ctx.applyTransform(currentTransform);
+                        drawValueIndicator(c, bounds, colors, handleXPosition);
+                        ctx.popTransform();
+                    }
+            );
         }
     }
 

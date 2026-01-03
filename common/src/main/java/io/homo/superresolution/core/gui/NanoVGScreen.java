@@ -34,7 +34,7 @@ import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-#if MC_VER >MC_1_21_6
+#if MC_VER >MC_1_21_6 && false
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -196,7 +196,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         view.dispatchCharTyped(codePoint, modifiers);
     }
 
-    #if MC_VER > MC_1_21_6
+    #if MC_VER > MC_1_21_6 && false
     @Override
     public boolean charTyped(CharacterEvent event) {
         dispatchCharTypedToFrame(((char) event.codepoint()), event.modifiers());
@@ -237,6 +237,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         super.mouseClicked(event, idk);
         return true;
     }
+
     #else
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -287,6 +288,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
         return true;
     }
+
     #else
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX) {
@@ -313,6 +315,7 @@ public abstract class NanoVGScreen<T> extends Screen {
     public void renderBackground(GuiGraphics guiGraphics) {
         return;
     }
+
     #else
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
