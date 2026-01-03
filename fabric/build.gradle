@@ -69,7 +69,7 @@ dependencies {
     include(implementation "net.neoforged:bus:8.0.5")
 
 
-    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.8")) {
         implementation "io.github.douira:glsl-transformer:2.0.1"
     } else {
         implementation "io.github.douira:glsl-transformer:3.0.0-pre3"

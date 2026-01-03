@@ -62,7 +62,7 @@ public class DataSetGenerator {
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F7,
-            SuperResolution.CATEGORY
+            "superresolution.name"
     );
     #else
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(

@@ -25,7 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
-
+#if MC_VER >= MC_1_21_5
+import net.neoforged.fml.loading.FMLConfig;
+import io.homo.superresolution.core.utils.MessageBox;
+#endif
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -38,7 +41,6 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
     }
 
     public void onLoad(String s) {
-
 
         Platform.currentPlatform = new NeoForgePlatform();
         Platform.currentPlatform.init();

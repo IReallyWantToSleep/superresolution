@@ -86,12 +86,12 @@ public final class SuperResolution implements Resizable, Destroyable {
     #if MC_VER > MC_1_21_6
     //??
     //key.category + . + namespace + path
-    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
+    //public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
     public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F6,
-            CATEGORY
+            "superresolution.name"
     );
     #else
     public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(

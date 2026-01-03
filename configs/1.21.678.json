@@ -1,31 +1,29 @@
 {
     "common": {
         "java_version": 21,
-        "minecraft_version": "1.21.6",
-        "parchment_version": "1.21.6:2025.06.29",
+        "minecraft_version": "1.21.8",
+        "parchment_version": "1.21.8:2025.09.14",
         "platforms": [
             "fabric",
             "neoforge"
         ],
         "lwjgl_version": "3.3.3",
-        "architectury_api_version": "17.0.6",
+        "architectury_api_version": "17.0.8",
         "neoforge": {
-            "minecraft_version_range": "[1.21.6,1.21.8)"
+            "minecraft_version_range": "[1.21.8,)"
         },
         "fabric": {
             "minecraft_version_range": [
-                "~1.21.6",
-                "~1.21.7",
                 "~1.21.8"
             ]
         },
         "cloth_config_version": "19.0.147",
-        "mod_artifact_minecraft_ver": "1.21.6..1.21.8",
-        "neoform_version": "1.21.6-20250617.151856"
+        "mod_artifact_minecraft_ver": "1.21.8",
+        "neoform_version": "1.21.8-20250717.133445"
     },
     "fabric": {
-        "loader_version": "0.16.14",
-        "api_version": "0.128.2+1.21.6",
+        "loader_version": "0.18.4",
+        "api_version": "0.136.1+1.21.8",
         "dependencies": {
             "modrinth": [
                 {
@@ -34,15 +32,15 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.9.0+1.21.6-fabric"
+                    "version": "1.9.6+1.21.8-fabric"
                 },
                 {
                     "name": "sodium",
-                    "version": "mc1.21.6-0.6.13-fabric"
+                    "version": "mc1.21.8-0.7.3-fabric"
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.4-b-1.21.6"
+                    "version": "2.4.5-b-1.21.8"
                 },
                 {
                     "name": "spark",
@@ -59,12 +57,12 @@
         "modmenu_version": "15.0.0-beta.3"
     },
     "neoforge": {
-        "loader_version": "21.6.20-beta",
+        "loader_version": "21.8.52",
         "dependencies": {
             "modrinth": [
                 {
                     "name": "sodium",
-                    "version": "mc1.21.6-0.6.13-neoforge"
+                    "version": "mc1.21.8-0.7.3-neoforge"
                 },
                 {
                     "name": "reeses-sodium-options",
@@ -72,11 +70,11 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.9.1+1.21.7-neoforge"
+                    "version": "1.9.6+1.21.8-neoforge"
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.4-b-1.21.6"
+                    "version": "2.4.5-b-1.21.8"
                 }
             ],
             "local": [
