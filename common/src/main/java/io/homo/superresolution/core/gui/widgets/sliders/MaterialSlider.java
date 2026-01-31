@@ -33,6 +33,7 @@ import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MaterialSlider extends MaterialWidget<MaterialSlider> {
@@ -42,6 +43,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     private Number min = 0.0;
     private Function<Number, String> valueIndicatorTextFormater = Object::toString;
     protected MaterialSliderAnimationSet animationSet;
+    protected boolean isInputting;
+    protected Number lastValue;
 
     public MaterialSlider(MaterialSliderSize size, float width) {
         this.style = new MaterialSliderStyle();
@@ -187,6 +190,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         float availableWidth = bounds.width - style().size().stepsHorizontalPadding() * 2;
         float handleXPosition = bounds.x + availableWidth * progress;
         float handleWidth = animationSet.handleSize.get();
+        ctx.beginGroup(style().zIndex());
+
         ctx.save();
         float activeTrackWidth = drawTrack(ctx, bounds, colors, progress, handleWidth, availableWidth);
         drawHandle(ctx, bounds, colors, handleXPosition, handleWidth);
@@ -196,6 +201,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
             drawSteps(ctx, bounds, colors, handleXPosition, availableWidth);
         }
         ctx.restore();
+        ctx.endGroup();
         final Transform currentTransform = ctx.transform();
         if (style().valueIndicator() && animationSet.hover.get() > 0.01) {
             ctx.draw(
@@ -269,7 +275,9 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
         for (int stepIndex = 0; stepIndex <= steps; stepIndex++) {
             float stepXPosition = bounds.x + style().size().stepsHorizontalPadding() + stepSpacing * stepIndex;
-            if (Math.abs(stepXPosition - handleXPosition) < stepSpacing / 2) continue;
+            if (Math.abs(stepXPosition - handleXPosition) < stepSpacing / 2) {
+                continue;
+            }
             double stepValue = min.doubleValue() + stepIndex * step.doubleValue();
             Color stepColor = value.doubleValue() >= stepValue ?
                     colors.stepActiveIndicatorsColor : colors.stepInactiveIndicatorsColor;
@@ -285,7 +293,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
     private void drawValueIndicator(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition) {
         String valueIndicatorString = valueIndicatorTextFormater == null ? String.valueOf(value()) : valueIndicatorTextFormater.apply(value());
-        Vector2f valueIndicatorStringRegion = ctx.measureText(valueIndicatorString, 14f);
+        Vector2f valueIndicatorStringRegion = ctx.measureText(valueIndicatorString, 14f, 14f);
         Rectangle valueIndicatorRegion = new Rectangle();
         valueIndicatorRegion.width = style().size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;
         valueIndicatorRegion.height = style().size().valueIndicatorTextVerticalPadding() * 2 + 20;
@@ -342,14 +350,14 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                     .duration(150)
                     .to(1f)
                     .start();
-            MouseCursor.HAND.use();
         } else {
-            if (!isPressed()) animationSet.hover
-                    .timeInterpolator(TimeInterpolator.easeOutQuart())
-                    .duration(150)
-                    .to(0f)
-                    .start();
-            MouseCursor.ARROW.use();
+            if (!isPressed()) {
+                animationSet.hover
+                        .timeInterpolator(TimeInterpolator.easeOutQuart())
+                        .duration(150)
+                        .to(0f)
+                        .start();
+            }
         }
 
     }
@@ -380,10 +388,13 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         }
 
         newValue = clamp(newValue, min.doubleValue(), max.doubleValue());
-        setValue(newValue);
+        eventBus.post(new WidgetEvent.InputEvent<>(this.value, value));
+        this.value = newValue;
     }
 
     private void onPress(Vector2f mousePosition) {
+        isInputting = true;
+        lastValue = value;
         animationSet.hover
                 .timeInterpolator(TimeInterpolator.linear())
                 .duration(150)
@@ -415,6 +426,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     }
 
     private void onRelease(Vector2f mousePosition) {
+        isInputting = false;
+        eventBus.post(new WidgetEvent.ChangeEvent<>(lastValue, value));
         animationSet.hover
                 .timeInterpolator(BezierInterpolator.of(0.2f, 0, 0, 1))
                 .duration(200)

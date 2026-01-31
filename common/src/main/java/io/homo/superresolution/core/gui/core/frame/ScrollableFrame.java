@@ -56,16 +56,16 @@ public class ScrollableFrame extends Frame {
         scrollHandler = new SmoothDragScrollHandler(this::onScrollOffsetChanged);
     }
 
+    public IScrollHandler getScrollHandler() {
+        return scrollHandler;
+    }
+
     public void setScrollHandler(IScrollHandler handler) {
         if (handler != null) {
             this.scrollHandler = handler;
             this.scrollHandler.setOnOffsetChanged(this::onScrollOffsetChanged);
             updateScrollBounds();
         }
-    }
-
-    public IScrollHandler getScrollHandler() {
-        return scrollHandler;
     }
 
     private void onScrollOffsetChanged(Vector2f newOffset) {
@@ -132,7 +132,9 @@ public class ScrollableFrame extends Frame {
     @Override
     public void calculateLayout() {
         AbstractWidget<?> root = getRoot();
-        if (root == null) return;
+        if (root == null) {
+            return;
+        }
 
         Rectangle viewport = getViewport();
 
@@ -157,30 +159,12 @@ public class ScrollableFrame extends Frame {
 
     }
 
-    private void updateScrollBounds() {
-        AbstractWidget<?> root = getRoot();
-        if (root == null || scrollHandler == null) return;
-        Rectangle viewport = getViewport();
-
-        float viewportWidth = viewport.width - contentPaddingLeft - contentPaddingRight;
-        float viewportHeight = viewport.height - contentPaddingTop - contentPaddingBottom;
-
-        float maxX = enableHorizontalScroll ? Math.max(0, root.getLayoutNode().getLayoutWidth() - (viewportWidth)) : 0;
-        float maxY = enableVerticalScroll ? Math.max(0, root.getLayoutNode().getLayoutHeight() - (viewportHeight)) : 0;
-
-        scrollHandler.setScrollBounds(new Vector2f(0, 0), new Vector2f(maxX, maxY));
-    }
-
-    public void update(float deltaTime) {
-        if (scrollHandler != null) {
-            scrollHandler.update(deltaTime);
-        }
-    }
-
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         AbstractWidget<?> root = getRoot();
-        if (root == null) return;
+        if (root == null) {
+            return;
+        }
 
         if (isLayoutDirty()) {
             calculateLayout();
@@ -266,6 +250,28 @@ public class ScrollableFrame extends Frame {
     @Override
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
         return super.findInteractiveWidgetAt(pos);
+    }
+
+    private void updateScrollBounds() {
+        AbstractWidget<?> root = getRoot();
+        if (root == null || scrollHandler == null) {
+            return;
+        }
+        Rectangle viewport = getViewport();
+
+        float viewportWidth = viewport.width - contentPaddingLeft - contentPaddingRight;
+        float viewportHeight = viewport.height - contentPaddingTop - contentPaddingBottom;
+
+        float maxX = enableHorizontalScroll ? Math.max(0, root.getLayoutNode().getLayoutWidth() - (viewportWidth)) : 0;
+        float maxY = enableVerticalScroll ? Math.max(0, root.getLayoutNode().getLayoutHeight() - (viewportHeight)) : 0;
+
+        scrollHandler.setScrollBounds(new Vector2f(0, 0), new Vector2f(maxX, maxY));
+    }
+
+    public void update(float deltaTime) {
+        if (scrollHandler != null) {
+            scrollHandler.update(deltaTime);
+        }
     }
 
     private Vector2f screenToContent(float screenX, float screenY) {

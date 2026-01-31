@@ -80,7 +80,7 @@ public class XeSS extends AbstractAlgorithm {
         if (NativeLibManager.LIB_SUPER_RESOLUTION_XESS == null)
             return;
         Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_XESS
-                .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
+                .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         if (!(lib.toFile().isFile() && lib.toFile().canRead()))
             return;
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());

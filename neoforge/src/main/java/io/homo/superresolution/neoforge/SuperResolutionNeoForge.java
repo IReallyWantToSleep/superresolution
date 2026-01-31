@@ -20,6 +20,7 @@ package io.homo.superresolution.neoforge;
 
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.neoforge.compat.sodium.SodiumOptionScreen;
@@ -39,6 +40,6 @@ public final class SuperResolutionNeoForge {
             SodiumOptionScreen.register();
         }
         SuperResolution.registerEvents();
-        SuperResolution.registerKeyMapping();
+        SuperResolutionKeyMapping.registerKeyMapping();
     }
 }

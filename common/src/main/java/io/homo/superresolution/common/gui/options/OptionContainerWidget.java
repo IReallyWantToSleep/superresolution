@@ -23,31 +23,24 @@ import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
+import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
-import io.homo.superresolution.core.gui.widgets.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaJustify;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
-
-/**
- * 选项容器组件
- * 布局：左侧为名称和描述，右侧为控件
- * 背景使用 Material3 的 surface 颜色
- */
 public class OptionContainerWidget extends MaterialContainerWidget<OptionContainerWidget> {
-    protected AbstractOptionEntry<?, ?> entry;
-
-    // 左侧文本区域
-    protected ContainerWidget leftContainer;
-    protected MaterialLabel nameLabel;
-    protected MaterialLabel descriptionLabel;
-
-    // 右侧控件区域
-    protected ContainerWidget rightContainer;
-
-    // 圆角大小
     private static final float CORNER_RADIUS = 12f;
     private static final float PADDING_HORIZONTAL = 16f;
     private static final float PADDING_VERTICAL = 12f;
+    private static final float MIN_CONTENT_HEIGHT = 32f; // 56 - 12*2 = 32
+    protected AbstractOptionEntry<?, ?> entry;
+    protected ContainerWidget leftContainer;
+    protected MaterialLabel nameLabel;
+    protected MaterialLabel descriptionLabel;
+    protected ContainerWidget rightContainer;
 
     public OptionContainerWidget(AbstractOptionEntry<?, ?> entry) {
         this.entry = entry;
@@ -55,15 +48,14 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
     }
 
     private void initLayout() {
-        // 主容器横向布局
         layout().setFlexDirection(YogaFlexDirection.ROW);
         layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
         layout().setAlignItems(YogaAlign.CENTER);
         layout().setWidthPercent(100);
         layout().setPadding(YogaEdge.HORIZONTAL, PADDING_HORIZONTAL);
         layout().setPadding(YogaEdge.VERTICAL, PADDING_VERTICAL);
+        layout().setMinHeight(MIN_CONTENT_HEIGHT);
 
-        // 左侧容器 - 名称和描述
         leftContainer = new ContainerWidget();
         leftContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         leftContainer.layout().setFlexGrow(1f);
@@ -80,13 +72,13 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
         descriptionLabel = MaterialLabel.create()
                 .text(() -> getDescriptionText())
                 .fontSize(12)
+                .lineHeight(14)
                 .scheme(scheme);
-        descriptionLabel.layout().setMargin(YogaEdge.TOP, 4);
+        descriptionLabel.layout().setMargin(YogaEdge.TOP, 6);
         leftContainer.addChild(descriptionLabel);
 
         super.addChild(leftContainer);
 
-        // 右侧容器 - 控件
         rightContainer = new ContainerWidget();
         rightContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
         rightContainer.layout().setAlignItems(YogaAlign.CENTER);
@@ -104,7 +96,9 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
                 if (texts.length > 0) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < texts.length; i++) {
-                        if (i > 0) sb.append("\n");
+                        if (i > 0) {
+                            sb.append("\n");
+                        }
                         sb.append(texts[i].getString());
                     }
                     return sb.toString();
@@ -114,10 +108,7 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
         return "";
     }
 
-    /**
-     * 添加控件到右侧区域
-     */
-    public void addControl(io.homo.superresolution.core.gui.core.layout.ILayoutElement control) {
+    public void addControl(ILayoutElement control) {
         rightContainer.addChild(control);
     }
 
@@ -134,14 +125,9 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
 
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
-        // 更新描述文本显示状态
         String desc = getDescriptionText();
         boolean hasDescription = desc != null && !desc.isEmpty();
         descriptionLabel.setVisible(hasDescription);
-
-        // 根据是否有描述动态调整高度
-        float height = hasDescription ? entry.getEntryHeight() : entry.getEntryHeight() - 16;
-        setElementHeight(height);
 
         super.render(ctx, inputState);
     }

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.widgets.menu;
 
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -87,8 +88,78 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     }
 
     @Override
+    public boolean managesChildRendering() {
+        return true;
+    }
+
+    @Override
+    public boolean managesChildEvents() {
+        return true;
+    }
+
+    @Override
+    public void mouseMove(float x, float y) {
+        super.mouseMove(x, y);
+        if (isDisabled() || !isVisible()) return;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    //if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                        widget.mouseMove(x, y);
+                   // }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mouseRelease(float x, float y, int button) {
+        super.mouseRelease(x, y, button);
+        if (isDisabled() || !isVisible()) return;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                        widget.mouseRelease(x, y, button);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mouseScroll(float x, float y, double scrollX) {
+        super.mouseScroll(x, y, scrollX);
+        if (isDisabled() || !isVisible()) return;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                        widget.mouseScroll(x, y, scrollX);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         renderSelf(ctx, inputState);
+    }
+
+    @Override
+    public void mousePress(float x, float y, int button) {
+        super.mousePress(x, y, button);
+        if (isDisabled() || !isVisible()) return;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                        widget.mousePress(x, y, button);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -144,5 +215,13 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         ctx.fillColor(backgroundColor);
         ctx.endPath(true);
         ctx.restore();
+
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible()) {
+                        widget.render(ctx, inputState);
+                }
+            }
+        }
     }
 }

@@ -62,9 +62,9 @@ public class EnumSelectorBuilder<T extends Enum<T>> extends AbstractOptionBuilde
         EnumListEntry<T> entry = new EnumListEntry<>(
                 this.name,
                 this.value,
-                ImmutableList.copyOf(this.clazz.getEnumConstants())
+                ImmutableList.copyOf(this.clazz.getEnumConstants()),
+                (Function<T, String>) enumNameProvider
         );
-        entry.setNameProvider((Function<T, String>) enumNameProvider);
         entry.setTooltipSupplier(v -> tooltipSupplier.apply(v));
         if (errorSupplier != null) {
             entry.setErrorSupplier(v -> errorSupplier.apply(v));

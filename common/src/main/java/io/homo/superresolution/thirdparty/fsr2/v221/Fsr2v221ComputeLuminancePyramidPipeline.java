@@ -54,6 +54,9 @@ public class Fsr2v221ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
 
     @Override
     public void init() {
+        if (program != null) {
+            program.destroy();
+        }
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_HALF", "0");
         program = RenderSystems.current().device().createShaderProgram(

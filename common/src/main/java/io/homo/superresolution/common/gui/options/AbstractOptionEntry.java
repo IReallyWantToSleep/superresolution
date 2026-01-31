@@ -45,18 +45,17 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
     protected VT value;
 
     protected OptionContainerWidget container;
-
-    protected SELF setScheme(MaterialScheme scheme) {
-        this.scheme = scheme;
-        container.scheme(scheme);
-        return (SELF) this;
-    }
-
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     public AbstractOptionEntry(Text name, VT value) {
         this.name = name;
         this.value = value;
+    }
+
+    protected SELF setScheme(MaterialScheme scheme) {
+        this.scheme = scheme;
+        container.scheme(scheme);
+        return (SELF) this;
     }
 
     protected abstract void init();
@@ -186,7 +185,11 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
         return container;
     }
 
+    /**
+     * @deprecated 高度现在由 Yoga 自动计算，此方法已废弃
+     */
+    @Deprecated
     public float getEntryHeight() {
-        return 48;
+        return 56f;
     }
 }

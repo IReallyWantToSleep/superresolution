@@ -19,35 +19,32 @@
 package io.homo.superresolution.common;
 
 import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.platform.InputConstants;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
+import io.homo.superresolution.api.platform.EnvironmentType;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceRecorder;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.upscale.none.None;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
+import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
-import io.homo.superresolution.api.platform.*;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.none.None;
-import net.minecraft.client.KeyMapping;
-import io.homo.superresolution.core.NativeLibManager;
-import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.core.utils.MessageBox;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -61,6 +58,12 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
+    public static final List<String> INCOMPATIBLE_MODS = ImmutableList.<String>builder()
+            .add("resolutioncontrol-plus-plus")
+            .add("resolutioncontrol-plus")
+            .add("resolutioncontrol")
+            .add("renderscale")
+            .build();
     private static final Requirement commonRequirement = Requirement.nothing()
             .glMajorVersion(4).glMinorVersion(1);
     public static AbstractAlgorithm currentAlgorithm;
@@ -77,44 +80,16 @@ public final class SuperResolution implements Resizable, Destroyable {
     public static Thread renderThread;
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
-    public static final List<String> INCOMPATIBLE_MODS = ImmutableList.<String>builder()
-            .add("resolutioncontrol-plus-plus")
-            .add("resolutioncontrol-plus")
-            .add("resolutioncontrol")
-            .add("renderscale")
-            .build();
-    #if MC_VER > MC_1_21_6
-    //??
-    //key.category + . + namespace + path
-    //public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
-    public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
-            "key.super_resolution.open_config",
-            InputConstants.Type.KEYSYM,
-            InputConstants.KEY_F6,
-            "superresolution.name"
-    );
-    #else
-    public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
-            "key.super_resolution.open_config",
-            InputConstants.Type.KEYSYM,
-            InputConstants.KEY_F6,
-            "Super Resolution"
-    );
-    #endif
-    private static boolean registeredKeyMapping = false;
 
-    public static void registerKeyMapping() {
-        if (!registeredKeyMapping) {
-            if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
 
-            KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
-        }
-        registeredKeyMapping = true;
+    public SuperResolution() {
+        instance = this;
+        if (minecraft == null) minecraft = Minecraft.getInstance();
     }
 
     public static void registerEvents() {
         ClientLifecycleEvent.CLIENT_SETUP.register(
-                (minecraft) -> registerKeyMapping()
+                (minecraft) -> SuperResolutionKeyMapping.registerKeyMapping()
         );
         ClientLifecycleEvent.CLIENT_STARTED.register(
                 (minecraft) -> {
@@ -123,7 +98,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                         return;
                     }
                     gameIsStarted = true;
-                    registerKeyMapping();
+                    SuperResolutionKeyMapping.registerKeyMapping();
                     instance = new SuperResolution();
                     SuperResolution.check();
                     SuperResolution.preInit();
@@ -141,7 +116,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                 }
         );
         ClientTickEvent.CLIENT_POST.register(minecraft -> {
-            while (OPENGUI_KEYMAPPING.consumeClick()) {
+            while (SuperResolutionKeyMapping.OPENGUI_KEYMAPPING.consumeClick()) {
                 minecraft.setScreen(
                         ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
                 );
@@ -149,18 +124,13 @@ public final class SuperResolution implements Resizable, Destroyable {
         });
     }
 
-    public SuperResolution() {
-        instance = this;
-        if (minecraft == null) minecraft = Minecraft.getInstance();
-    }
-
     public static void preInit() {
         if (isPreInit) return;
         if (minecraft == null) minecraft = Minecraft.getInstance();
         if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER)
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
-        NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
-        NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
+        NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
+        NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         GlslangShaderCompiler.init();
         isPreInit = true;
     }

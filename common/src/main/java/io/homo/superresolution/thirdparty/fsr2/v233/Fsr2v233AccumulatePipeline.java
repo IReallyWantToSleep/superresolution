@@ -55,6 +55,9 @@ public class Fsr2v233AccumulatePipeline extends Fsr2Pipeline {
 
     @Override
     public void init() {
+        if (program != null) {
+            program.destroy();
+        }
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put(
                 "FFX_HALF",

@@ -19,27 +19,36 @@
 package io.homo.superresolution.core;
 
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.core.utils.DirectoryEnsurer;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class SuperResolutionConstants {
-    public static Path DATA_DIR = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution");
-
-    public static Path CONFIG_FILE = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution", "config.toml");
-
-    public static Path NATIVE_LIBRARIES_DIR = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution", "libraries");
-
-    public static Path SHADER_CACHE_FILE = Path.of(Platform.currentPlatform.getGameFolder().toString(), "config", "super_resolution", "shader_caches");
-
-    static {
-        try {
-            Files.createDirectories(
-                    DATA_DIR
-            );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    public static DirectoryEnsurer DATA_DIR = DirectoryEnsurer.wrapper(Path.of(
+            Platform.currentPlatform.getGameFolder().toString(),
+            "config",
+            "super_resolution"
+    ));
+    public static Path CONFIG_FILE = Path.of(
+            DATA_DIR.getPath().toAbsolutePath().toString(),
+            "config.toml"
+    );
+    public static DirectoryEnsurer NATIVE_LIBRARIES_DIR = DirectoryEnsurer.wrapper(Path.of(
+            DATA_DIR.getPath().toAbsolutePath().toString(),
+            "libraries"
+    ));
+    public static DirectoryEnsurer ERROR_DIR = DirectoryEnsurer.wrapper(Path.of(
+            DATA_DIR.getPath().toAbsolutePath().toString(),
+            "error_logs"
+    ));
+    public static DirectoryEnsurer DEBUG_DIR = DirectoryEnsurer.wrapper(Path.of(
+            DATA_DIR.getPath().toAbsolutePath().toString(),
+            "debug"
+    ));
+    public static DirectoryEnsurer SHADER_CACHE_DIR = DirectoryEnsurer.wrapper(Path.of(
+            DATA_DIR.getPath().toAbsolutePath().toString(),
+            "shader_caches"
+    ));
 }

@@ -21,6 +21,7 @@ package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.WidgetStyle;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
@@ -47,6 +48,7 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
         layout().setGap(YogaGutter.ROW, 1.5f);
         layout().setPadding(YogaEdge.ALL, 12);
+        this.style = new WidgetStyle<>();
     }
 
     public static MaterialNavigationDrawer create() {
@@ -192,24 +194,31 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
+        ctx.beginGroup(style().zIndex());
 
         Color backgroundColor = scheme().surfaceContainerLow();
-        ctx.roundedRect(
+        ctx.beginPath();
+        ctx.fillColor(backgroundColor);
+        ctx.roundedRectComplex(
                 bounds.x,
                 bounds.y,
                 bounds.width,
                 bounds.height,
+                0,
                 CORNER_RADIUS,
-                backgroundColor,
-                true
+                0,
+                CORNER_RADIUS
         );
-
+        ctx.endPath(true);
         renderSelf(ctx, inputState);
+        ctx.endGroup();
     }
 
     @Override
     protected void renderSelf(RenderContext ctx, UIInputState inputState) {
-        if (!isVisible()) return;
+        if (!isVisible()) {
+            return;
+        }
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?>) {
                 AbstractWidget<?> widget = (AbstractWidget<?>) child;

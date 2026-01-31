@@ -239,12 +239,13 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         updateRectangle();
-        if (pressAnimator != null)
+        if (pressAnimator != null) {
             pressAnimator.update();
+        }
         overlay.update();
         Rectangle bounds = getBounds();
         ButtonColors colors = getButtonColors();
-
+        ctx.beginGroup(style().zIndex());
         float cornerSize = getCornerSize();
         if (colors.backgroundColor != null) {
             ctx.roundedRect(
@@ -305,12 +306,13 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                 colors.textColor,
                 TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                 false);
+        ctx.endGroup();
     }
 
     private void updateRectangle() {
         NanoVG.context.save();
         NanoVG.context.fontSize(size().fontSize());
-        float textContextWidth = NanoVG.RENDERER.TEXT.measureTextWidth(textContextSupplier.get(), size().fontSize());
+        float textContextWidth = NanoVG.RENDERER.TEXT.measureTextWidth(textContextSupplier.get(), size().fontSize(), size().fontSize() + 1);
         NanoVG.context.restore();
 
         float iconContextWidth = 0;

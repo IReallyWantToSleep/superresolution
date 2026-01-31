@@ -71,6 +71,16 @@ public class AlgorithmManager {
         param.currentModelViewProjectionMatrix = curViewProjectionMatrix;
 
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        #if MC_VER > MC_1_21_10
+        Matrix4f viewMatrix = new Matrix4f()
+                .lookAt(
+                        (float) camera.position().x, (float) camera.position().y, (float) camera.position().z,
+                        (float) (camera.position().x + camera.forwardVector().x()),
+                        (float) (camera.position().y + camera.forwardVector().y()),
+                        (float) (camera.position().z + camera.forwardVector().z()),
+                        camera.upVector().x(), camera.upVector().y(), camera.upVector().z()
+                );
+        #else
         Matrix4f viewMatrix = new Matrix4f()
                 .lookAt(
                         (float) camera.getPosition().x, (float) camera.getPosition().y, (float) camera.getPosition().z,
@@ -79,6 +89,7 @@ public class AlgorithmManager {
                         (float) (camera.getPosition().z + camera.getLookVector().z),
                         camera.getUpVector().x, camera.getUpVector().y, camera.getUpVector().z
                 );
+        #endif
         if (param.lastViewMatrix == null) {
             param.lastViewMatrix = viewMatrix;
         } else {
@@ -104,6 +115,18 @@ public class AlgorithmManager {
             param.lastModelViewMatrix = param.currentModelViewMatrix;
         }
         param.currentModelViewMatrix = new Matrix4f(cur);
+    }
+
+    public static Vector2f getPreviousJitterOffset() {
+        if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
+            Vector2f jitter = SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
+                    RenderHandlerManager.getFrameCount() - 1,
+                    new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
+                    new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
+            );
+            return jitter;
+        }
+        return new Vector2f(0);
     }
 
     public static Vector2f getJitterOffset() {

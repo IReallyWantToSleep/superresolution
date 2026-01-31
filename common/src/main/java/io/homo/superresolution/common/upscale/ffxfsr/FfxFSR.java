@@ -29,7 +29,10 @@ import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
@@ -38,17 +41,17 @@ import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.semaphore.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
-import net.minecraft.client.Minecraft;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
 
-import static org.lwjgl.opengl.EXTSemaphore.*;
+import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
+import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class FfxFSR extends AbstractAlgorithm {
@@ -75,9 +78,13 @@ public class FfxFSR extends AbstractAlgorithm {
 
 
     public void updateFsr() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) return;
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
-        if (!(lib.toFile().isFile() && lib.toFile().canRead())) return;
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR == null) {
+            return;
+        }
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSR.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
+        if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
+            return;
+        }
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
         if (context != null) {
@@ -91,7 +98,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000003);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000002);
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
 
@@ -125,15 +132,31 @@ public class FfxFSR extends AbstractAlgorithm {
     protected void destroySharedTexture() {
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
-        if (this.inputColorVkTexture != null) this.inputColorVkTexture.destroy();
-        if (this.inputColorGlTexture != null) this.inputColorGlTexture.destroy();
-        if (this.inputDepthVkTexture != null) this.inputDepthVkTexture.destroy();
-        if (this.inputDepthGlTexture != null) this.inputDepthGlTexture.destroy();
-        if (this.outputColorVkTexture != null) this.outputColorVkTexture.destroy();
-        if (this.outputColorGlTexture != null) this.outputColorGlTexture.destroy();
+        if (this.inputColorVkTexture != null) {
+            this.inputColorVkTexture.destroy();
+        }
+        if (this.inputColorGlTexture != null) {
+            this.inputColorGlTexture.destroy();
+        }
+        if (this.inputDepthVkTexture != null) {
+            this.inputDepthVkTexture.destroy();
+        }
+        if (this.inputDepthGlTexture != null) {
+            this.inputDepthGlTexture.destroy();
+        }
+        if (this.outputColorVkTexture != null) {
+            this.outputColorVkTexture.destroy();
+        }
+        if (this.outputColorGlTexture != null) {
+            this.outputColorGlTexture.destroy();
+        }
 
-        if (this.outputFrameBuffer != null) this.outputFrameBuffer.destroy();
-        if (this.outputColorTexture != null) this.outputColorTexture.destroy();
+        if (this.outputFrameBuffer != null) {
+            this.outputFrameBuffer.destroy();
+        }
+        if (this.outputColorTexture != null) {
+            this.outputColorTexture.destroy();
+        }
 
 
     }
@@ -239,10 +262,11 @@ public class FfxFSR extends AbstractAlgorithm {
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
 
-        if (dispatchResource.resources().motionVectorsTexture() != null)
+        if (dispatchResource.resources().motionVectorsTexture() != null) {
             InteropCoordinateConverter.flipMotionVectorY(
                     dispatchResource.resources().motionVectorsTexture(),
                     this.inputMotionVectorsGlTexture);
+        }
         syncSemaphore.signalOpenGL(
                 new int[]{
                         Math.toIntExact(this.inputColorGlTexture.handle()),
@@ -339,8 +363,9 @@ public class FfxFSR extends AbstractAlgorithm {
         syncSemaphore.destroy();
         syncVkSemaphore.destroy();
 
-        if (context != null && context.nativePtr > 0)
+        if (context != null && context.nativePtr > 0) {
             SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+        }
     }
 
     @Override
@@ -373,7 +398,9 @@ public class FfxFSR extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return new Vector2f(0);
+        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return new Vector2f(0);
+        }
         //halton
         int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);

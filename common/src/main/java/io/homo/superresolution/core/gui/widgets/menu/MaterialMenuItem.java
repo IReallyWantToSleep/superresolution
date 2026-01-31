@@ -270,17 +270,19 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         selectionAnimator.update();
         fadeAnimator.update();
         overlay.update();
-        if (!isVisible())
+        if (!isVisible()) {
             return;
+        }
 
         float fadeProgress = fadeAnimator.get();
-        if (fadeProgress <= 0)
+        if (fadeProgress <= 0) {
             return;
+        }
 
         float animProgress = selectionAnimator.get();
 
         ctx.save();
-        //ctx.pushAlpha(fadeProgress);
+        ctx.pushAlpha(fadeProgress);
         MaterialMenuItemSize size = style().size();
         Color contentColor = style().colors().itemText(scheme());
         Color iconColor = style().colors().itemIcon(scheme());
@@ -309,8 +311,9 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
 
         float currentX = bounds.x + size.horizontalPadding();
         ctx.save();
-        //if (isDisabled())
-        //ctx.pushAlpha(0.38f);
+        if (isDisabled()) {
+            ctx.pushAlpha(0.38f);
+        }
         if (selectable && animProgress > 0) {
             MaterialSymbol checkIcon = MaterialSymbols.iconCheck();
             float iconCenterX = currentX + size.iconSize() / 2f;
@@ -356,7 +359,10 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             float iconCenterY = bounds.y + bounds.height / 2f;
             rightIcon.render(ctx, iconColor, size.iconSize(), new Vector2f(iconCenterX, iconCenterY));
         }
-        //ctx.popAlpha();
+        if (isDisabled()) {
+            ctx.popAlpha();
+        }
+        ctx.popAlpha();
         ctx.restore();
         ctx.restore();
     }
@@ -365,7 +371,8 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         MaterialMenuItemSize size = style().size();
         NanoVG.context.save();
         NanoVG.context.fontSize(size.fontSize());
-        float textWidth = NanoVG.RENDERER.TEXT.measureTextWidth(textSupplier.get(), size.fontSize());
+
+        float textWidth = NanoVG.RENDERER.TEXT.measureTextWidth(textSupplier.get(), size.fontSize(), size.fontSize());
         NanoVG.context.restore();
 
         float iconWidth = 0;

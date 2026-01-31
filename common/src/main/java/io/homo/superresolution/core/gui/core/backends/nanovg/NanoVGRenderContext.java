@@ -18,11 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
-import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TransformStack;
+import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.render.*;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
@@ -42,6 +38,7 @@ public class NanoVGRenderContext implements RenderContext {
     private final Stack<RenderState> stateStack = new Stack<>();
     private RenderState currentState = new RenderState();
     private final List<Float> alphaStack = new ArrayList<>();
+    private final Stack<List<Float>> alphaStackSnapshots = new Stack<>();
 
     private GroupNode currentGroup = null;
     private final Stack<GroupNode> groupStack = new Stack<>();
@@ -56,6 +53,14 @@ public class NanoVGRenderContext implements RenderContext {
         this.renderTree = new RenderTree();
         this.transformStack = new TransformStack();
         this.alphaStack.add(1.0f);
+    }
+
+    private void syncAlphaStack(float alpha) {
+        if (alphaStack.isEmpty()) {
+            alphaStack.add(alpha);
+        } else {
+            alphaStack.set(alphaStack.size() - 1, alpha);
+        }
     }
 
     public NanoVGContextWrapper nvg() {
@@ -91,6 +96,7 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public void save() {
         stateStack.push(currentState.copy());
+        alphaStackSnapshots.push(new ArrayList<>(alphaStack));
         transformStack.push();
         nvg.save();
     }
@@ -100,6 +106,11 @@ public class NanoVGRenderContext implements RenderContext {
         if (!stateStack.isEmpty()) {
             currentState = stateStack.pop();
         }
+        if (!alphaStackSnapshots.isEmpty()) {
+            alphaStack.clear();
+            alphaStack.addAll(alphaStackSnapshots.pop());
+            nvg.contextPtr.globalAlpha(currentState.alpha());
+        }
         transformStack.pop();
         applyTransform();
         nvg.restore();
@@ -108,6 +119,8 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public void resetState() {
         currentState.reset();
+        transformStack.setIdentity();
+        syncAlphaStack(currentState.alpha());
         applyCurrentState();
     }
 
@@ -120,6 +133,8 @@ public class NanoVGRenderContext implements RenderContext {
     public void applyState(RenderState state) {
         save();
         currentState.copyFrom(state);
+        transformStack.set(state.transform());
+        syncAlphaStack(currentState.alpha());
         applyCurrentState();
     }
 
@@ -130,23 +145,23 @@ public class NanoVGRenderContext implements RenderContext {
 
     private void applyCurrentState() {
         nvg.globalAlpha(currentState.alpha());
+        syncAlphaStack(currentState.alpha());
 
         Transform t = currentState.transform();
+        transformStack.set(t);
         nvg.resetTransform();
         nvg.transform(t);
 
         if (currentState.hasScissor()) {
             RenderState.ScissorRect scissor = currentState.scissor();
-            nvg.contextPtr.resetScissor();
-            nvg.contextPtr.intersectScissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
-        } else {
-            nvg.contextPtr.resetScissor();
+            nvg.contextPtr.scissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
         }
     }
 
     @Override
     public void globalAlpha(float alpha) {
         currentState.alpha(alpha);
+        syncAlphaStack(alpha);
         nvg.contextPtr.globalAlpha(alpha);
     }
 
@@ -237,7 +252,7 @@ public class NanoVGRenderContext implements RenderContext {
 
     @Override
     public void scissor(float x, float y, float width, float height) {
-        currentState.scissor(x, y, width, height);
+        currentState.intersectScissor(x, y, width, height);
         nvg.contextPtr.intersectScissor(x, y, width, height);
     }
 
@@ -364,25 +379,37 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     @Override
-    public float measureTextWidth(String text, float fontSize) {
-        return NanoVG.RENDERER.TEXT.measureTextWidth(text, fontSize);
+    public float measureTextWidth(String text, float fontSize, float lineHeight) {
+        return NanoVG.RENDERER.TEXT.measureTextWidth(text, fontSize, lineHeight);
     }
 
     @Override
-    public float measureTextHeight(String text, float fontSize) {
-        return NanoVG.RENDERER.TEXT.measureTextHeight(text, fontSize);
+    public float measureTextHeight(String text, float fontSize, float lineHeight) {
+        return NanoVG.RENDERER.TEXT.measureTextHeight(text, fontSize, lineHeight);
     }
 
     @Override
-    public Vector2f measureText(String text, float fontSize) {
-        return NanoVG.RENDERER.TEXT.measureText(text, fontSize);
+    public Vector2f measureText(String text, float fontSize, float lineHeight) {
+        return NanoVG.RENDERER.TEXT.measureText(text, fontSize, lineHeight);
+    }
+
+    @Override
+    public TextMetrics measureTextMetrics(IFont font, float fontSize, String text, float lineMaxWidth, float lineHeight, boolean wrap) {
+        return NanoVG.RENDERER.TEXT.calculateTextMetrics(
+                ((NanoVGFont) font).name,
+                fontSize,
+                text,
+                lineMaxWidth,
+                lineHeight,
+                wrap
+        );
     }
 
     @Override
     public void drawAlignedText(IFont font, float fontSize, String text,
-                                float x, float y, float width, float height,
+                                float x, float y, float lineMaxWidth, float lineHeight,
                                 Color color, TextAlign align, boolean wrap) {
-        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, width, height, color, align, wrap);
+        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, color, align, wrap);
     }
 
     @Override
@@ -435,8 +462,8 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public void deferToLayer(RenderLayer layer, float zIndex, Consumer<RenderContext> drawFunc) {
         Vector2f screenPos = transformPoint(0, 0);
-
         DeferredNode node = new DeferredNode(zIndex, layer, screenPos, drawFunc);
+        node.capturedState(currentState.copy());
         renderTree.addNode(node);
     }
 

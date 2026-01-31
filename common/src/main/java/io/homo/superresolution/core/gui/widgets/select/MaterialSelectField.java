@@ -190,7 +190,9 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
         labelAnimator.update();
         arrowAnimator.update();
 
-        if (!isVisible()) return;
+        if (!isVisible()) {
+            return;
+        }
 
         MaterialSelectSize size = style().size();
         MaterialSelectColors colors = style().colors();
@@ -266,7 +268,7 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
             if (labelProgress > 0) {
                 NanoVG.context.save();
                 NanoVG.context.fontSize(labelFontSize);
-                float labelWidth = NanoVG.RENDERER.TEXT.measureTextWidth(label, labelFontSize);
+                float labelWidth = ctx.measureTextWidth(label, labelFontSize, labelFontSize + 1);
                 NanoVG.context.restore();
 
                 float bgPadding = 4;

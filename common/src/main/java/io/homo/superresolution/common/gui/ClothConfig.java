@@ -246,7 +246,7 @@ public class ClothConfig {
             ));
             commonCategory.addEntry(new ClothButtonEntry(
                     Component.literal("UI Test"),
-                    (button) -> Minecraft.getInstance().setScreen(TestOptionBuilder.build(Minecraft.getInstance().screen)),
+                    (button) -> Minecraft.getInstance().setScreen(new MaterialConfigScreen(Minecraft.getInstance().screen)),
                     true
             ));
         }
@@ -278,7 +278,9 @@ public class ClothConfig {
         Pair<SpecialConfig, String> specialConfigDescription = SuperResolutionConfig.SPECIAL.description.get(key);
         Map<String, SpecialConfigDescription<?>> configDescriptions = specialConfigDescription.left().getDescriptions();
         Set<String> keys = configDescriptions.keySet();
-        if (keys.isEmpty()) return;
+        if (keys.isEmpty()) {
+            return;
+        }
 
         ConfigCategory category = builder.getOrCreateCategory(Component.literal(specialConfigDescription.right()));
         for (String configKey : keys) {
@@ -317,8 +319,10 @@ public class ClothConfig {
                                 .setSaveConsumer((Consumer<Boolean>) configDescription.getSaveConsumer());
                         case OBJECT -> null;
                     };
-            if (configDescription.getTooltip().isPresent()) if (fieldBuilder != null) {
-                fieldBuilder.setTooltip(configDescription.getTooltip().orElse(Component.empty()));
+            if (configDescription.getTooltip().isPresent()) {
+                if (fieldBuilder != null) {
+                    fieldBuilder.setTooltip(configDescription.getTooltip().orElse(Component.empty()));
+                }
             }
             if (fieldBuilder != null) {
                 category.addEntry(fieldBuilder.build());
@@ -397,10 +401,14 @@ public class ClothConfig {
 
         envInfoCategory.addEntry(envInfoEntry);
         envInfoCategory.addEntry(glExtInfoEntry);
-        if (RenderSystems.isSupportVulkan()) envInfoCategory.addEntry(vkExtInfoEntry);
+        if (RenderSystems.isSupportVulkan()) {
+            envInfoCategory.addEntry(vkExtInfoEntry);
+        }
 
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
-            if (algorithmDescription.equals(AlgorithmDescriptions.NONE)) continue;
+            if (algorithmDescription.equals(AlgorithmDescriptions.NONE)) {
+                continue;
+            }
             ClothTextListListEntry algoInfoEntry = new ClothTextListListEntry(
                     MutableComponent.create(Component.literal(algorithmDescription.getDisplayName()).getContents()).withStyle(Style.EMPTY.withColor(
                             AlgorithmManager.isSupportAlgorithm(algorithmDescription) ?

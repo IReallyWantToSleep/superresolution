@@ -11,7 +11,7 @@ authors = "187J3X1"
 description = '''
 喵
 '''
-logoFile = "assets/super_resolution/textures/logo.png"
+logoFile = "assets/super_resolution/textures/gui/logo.png"
 
 [[dependencies.super_resolution]]
 modId = "minecraft"
@@ -36,6 +36,7 @@ side = "BOTH"
 
 [mods."sodium:options"]
 "mixin.features.render.gui.debug" = false
+"mixin.workarounds" = false
 
 [[mixins]]
 config = "super_resolution.mixins.json"

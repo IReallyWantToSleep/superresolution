@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.opengl.shader;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
@@ -200,8 +201,14 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
     private void saveLinkErrorArtifacts(String log) {
         String time = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String baseName = String.format("linkError_%s.%s", description.shaderName(), time);
-        Path logPath = Path.of(baseName + ".log");
-        Path infoPath = Path.of(baseName + ".info");
+        Path logPath = Path.of(
+                SuperResolutionConstants.ERROR_DIR.getPath().toAbsolutePath().toString(),
+                baseName + ".log"
+        );
+        Path infoPath = Path.of(
+                SuperResolutionConstants.ERROR_DIR.getPath().toAbsolutePath().toString(),
+                baseName + ".info"
+        );
 
         try {
             Files.writeString(logPath, log);

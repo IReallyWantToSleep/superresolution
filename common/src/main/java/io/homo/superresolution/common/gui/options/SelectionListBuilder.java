@@ -22,9 +22,7 @@ import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.impl.Text;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionListOptionEntry<T>, SelectionListBuilder<T>> {
     protected ImmutableList<T> values;
@@ -40,9 +38,9 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
         SelectionListOptionEntry<T> entry = new SelectionListOptionEntry<>(
                 this.name,
                 this.value,
-                this.values
+                this.values,
+                nameProvider
         );
-        entry.setNameProvider(nameProvider);
         return finishBuild(entry);
     }
 

@@ -82,7 +82,7 @@ public class NanoVGContextWrapper {
         }
         frameBuffer.bind(FrameBufferBindPoint.All);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        if (false) {
+        if (true) {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
             glBlitFramebuffer(

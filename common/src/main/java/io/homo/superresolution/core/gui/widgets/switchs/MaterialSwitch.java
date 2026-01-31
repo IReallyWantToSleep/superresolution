@@ -49,8 +49,9 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
     }
 
     public MaterialSwitch setChecked(boolean checked) {
-        if (checked != isChecked())
+        if (checked != isChecked()) {
             toggleChecked();
+        }
         return this;
     }
 
@@ -62,6 +63,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
     public MaterialSwitch toggleChecked() {
         boolean newChecked = !this.checked;
         eventBus.post(new WidgetEvent.ChangeEvent<>(!newChecked, newChecked));
+        eventBus.post(new WidgetEvent.InputEvent<>(!newChecked, newChecked));
         if (newChecked) {
             // 打开开关
             handlePositionAnimator
@@ -174,6 +176,8 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                             .handleSize()));
         }
         SwitchColors colors = getSwitchColors();
+        ctx.beginGroup(style().zIndex());
+
         ctx.roundedRect(
                 bounds.x,
                 bounds.y,
@@ -247,6 +251,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                             closeIconX,
                             bounds.getCenterY()));
         }
+        ctx.endGroup();
     }
 
     private float clamp(float value, float min, float max) {
@@ -277,14 +282,12 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                     .to(1f)
                     .duration(200)
                     .start();
-            MouseCursor.HAND.use();
         } else {
             hoverAnimator
                     .timeInterpolator(TimeInterpolator.linear())
                     .to(0f)
                     .duration(200)
                     .start();
-            MouseCursor.ARROW.use();
         }
 
     }

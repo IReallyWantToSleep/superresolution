@@ -1,0 +1,77 @@
+{
+    "skip_build": true,
+    "common": {
+        "java_version": 21,
+        "minecraft_version": "1.21.11",
+        "parchment_version": null,
+        "platforms": [
+            "fabric",
+            "neoforge"
+        ],
+        "lwjgl_version": "3.3.3",
+        "architectury_api_version": "19.0.1",
+        "neoforge": {
+            "minecraft_version_range": "[1.21.11,)"
+        },
+        "fabric": {
+            "minecraft_version_range": [
+                "~1.21.11"
+            ]
+        },
+        "cloth_config_version": "21.11.153",
+        "mod_artifact_minecraft_ver": "1.21.11",
+        "neoform_version": "1.21.11-20251209.172050"
+    },
+    "fabric": {
+        "loader_version": "0.18.4",
+        "api_version": "0.141.1+1.21.11",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "iris",
+                    "version": "1.10.4+1.21.11-fabric"
+                },
+                {
+                    "name": "sodium",
+                    "version": "0.8.2-SNAPSHOT+mc1.21.11-build.813"
+                },
+                {
+                    "name": "spark",
+                    "version": "1.10.156-fabric"
+                },
+                {
+                    "name": "fabric-permissions-api",
+                    "version": "0.4.0",
+                    "minecraft_version": "1.21.6"
+                }
+            ],
+            "local": []
+        },
+        "modmenu_version": "17.0.0-beta.1"
+    },
+    "neoforge": {
+        "loader_version": "21.11.26-beta",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "spark",
+                    "version": "1.10.156-neoforge"
+                },
+                {
+                    "name": "sodium",
+                    "version": "0.8.2-SNAPSHOT+mc1.21.11-build.813"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.10.4+1.21.11-neoforge"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.4.5-b-1.21.11"
+                }
+            ],
+            "local": [
+            ]
+        }
+    }
+}

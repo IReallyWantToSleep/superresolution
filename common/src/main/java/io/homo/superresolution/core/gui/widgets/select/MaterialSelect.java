@@ -32,6 +32,8 @@ import io.homo.superresolution.core.gui.widgets.menu.*;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPhysicalEdge;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 import org.joml.Vector2f;
 
@@ -43,6 +45,11 @@ import java.util.function.Function;
 public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>> {
 
     private final MaterialSelectField field;
+
+    public MaterialMenu getMenu() {
+        return menu;
+    }
+
     private final MaterialMenu menu;
     private final List<SelectOption<T>> options = new ArrayList<>();
 
@@ -236,9 +243,51 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
+    public void mouseMove(float x, float y) {
+        Vector2f absPos = new Vector2f(x, y);
+
+        if (menu.isExpanded() || menu.isVisible()) {
+            menu.mouseMove(x, y);
+        }
+
+        if (field.hitTest(absPos)) {
+            field.mouseMove(x, y);
+        }
+    }
+
+    @Override
+    public void mouseScroll(float x, float y, double scrollX) {
+        Vector2f absPos = new Vector2f(x, y);
+
+        if (menu.isExpanded() || menu.isVisible()) {
+            menu.mouseScroll(x, y, scrollX);
+        }
+
+        if (field.hitTest(absPos)) {
+            field.mouseScroll(x, y, scrollX);
+        }
+    }
+
+    @Override
+    public void mouseRelease(float x, float y, int button) {
+        Vector2f absPos = new Vector2f(x, y);
+
+        if (menu.isExpanded() || menu.isVisible()) {
+            menu.mouseRelease(x, y, button);
+        }
+
+        if (field.hitTest(absPos)) {
+            field.mouseRelease(x, y, button);
+        }
+    }
+
+    @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         updateSize();
-        if (!isVisible()) return;
+        if (!isVisible()) {
+            return;
+        }
+        ctx.beginGroup(style().zIndex());
 
         renderSelf(ctx, inputState);
         field.render(ctx, inputState);
@@ -248,12 +297,11 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             MaterialSelectSize size = style().size();
 
             Vector2f menuPos = new Vector2f(selfBounds.x, selfBounds.y + size.containerHeight() + 4);
-            Vector2f screenPos = menuPos;
+            Vector2f screenPos = getFullTransform().transformPoint(menuPos);
 
             final float menuWidth = width;
             final float menuX = screenPos.x;
             final float menuY = screenPos.y;
-
             ctx.deferToLayer(RenderLayer.Floating, 1000, (deferredCtx) -> {
                 deferredCtx.rect(
                         menuX,
@@ -266,14 +314,17 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
                 menu.layout().setWidth(menuWidth);
                 menu.layout().setHeightAuto();
                 menu.layout().setMaxHeight(StyleSizeLength.undefined());
+
+                menu.layout().setPositionType(YogaPositionType.ABSOLUTE);
+                menu.layout().setPosition(YogaEdge.LEFT, menuX);
+                menu.layout().setPosition(YogaEdge.TOP, menuY);
                 menu.getLayoutNode().calculateLayout(menuWidth, Float.MAX_VALUE);
 
-                menu.getLayoutNode().getLayout().setPosition(YogaPhysicalEdge.LEFT, menuX);
-                menu.getLayoutNode().getLayout().setPosition(YogaPhysicalEdge.TOP, menuY);
-
+                deferredCtx.resetScissor();
                 menu.render(deferredCtx, inputState);
             });
         }
+        ctx.endGroup();
     }
 
     @Override
@@ -286,27 +337,54 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
-        if (menu.isExpanded() || menu.isVisible()) {
-            AbstractWidget<?> menuWidget = menu.findInteractiveWidgetAt(absPos);
-            if (menuWidget != null) {
-                return menuWidget;
-            }
-        }
+    public boolean managesChildEvents() {
+        return true;
+    }
 
+    @Override
+    public boolean isFloatingWidget() {
+        return menu.isExpanded() || menu.isVisible();
+    }
+
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
+        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
+            return this;
+        }
         if (field.hitTest(absPos)) {
-            return field;
+            return this;
         }
 
         return null;
     }
 
     @Override
+    public void mousePress(float x, float y, int button) {
+        Vector2f absPos = new Vector2f(x, y);
+
+        if (menu.isExpanded() || menu.isVisible()) {
+            if (menu.hitTest(absPos)) {
+                menu.mousePress(x, y, button);
+                return;
+            }
+            if (field.hitTest(absPos)) {
+                field.mousePress(x, y, button);
+                return;
+            }
+            closeMenu();
+            return;
+        }
+
+        if (field.hitTest(absPos)) {
+            field.mousePress(x, y, button);
+        }
+    }
+
+    @Override
     public boolean hitTest(Vector2f absolutePos) {
-        Rectangle fieldBounds = field.getRawBounds();
         Rectangle menuBounds = menu.getRawBounds();
 
-        return fieldBounds.in(absolutePos) ||
+        return field.hitTest(absolutePos) ||
                 (menu.isExpanded() && menuBounds.in(absolutePos));
     }
 
@@ -320,7 +398,11 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         }
     }
 
-    private record SelectOption<T>(T value, String displayText, MaterialSymbol icon) {
+    private record SelectOption<T>(T value,
+
+                                   String displayText,
+
+                                   MaterialSymbol icon) {
     }
 
     @Override

@@ -89,7 +89,7 @@ public class ShaderCompiler {
             for (Map.Entry<ShaderType, ShaderSource> entry : program.getDescription().sourceMap().entrySet()) {
                 ShaderType type = entry.getKey();
                 ShaderSource source = entry.getValue();
-                Path path = SuperResolutionConstants.SHADER_CACHE_FILE.resolve(program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv");
+                Path path = SuperResolutionConstants.SHADER_CACHE_DIR.getPath().resolve(program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv");
 
                 EShClient client = isVulkan(apiTag) ?
                         EShClient.EShClientVulkan : EShClient.EShClientOpenGL;
@@ -122,9 +122,9 @@ public class ShaderCompiler {
 
                 if (SuperResolutionConfig.isDebugDumpShader()) {
                     try {
-                        Path srcPath = Path.of(SuperResolutionConstants.SHADER_CACHE_FILE.toAbsolutePath().toString(),
+                        Path srcPath = Path.of(SuperResolutionConstants.DEBUG_DIR.getPath().toAbsolutePath().toString(),
                                 program.getDescription().shaderName() + "." + type.name().toLowerCase() + "." + apiTag + ".source.glsl");
-                        Path prePath = Path.of(SuperResolutionConstants.SHADER_CACHE_FILE.toAbsolutePath().toString(),
+                        Path prePath = Path.of(SuperResolutionConstants.DEBUG_DIR.getPath().toAbsolutePath().toString(),
                                 program.getDescription().shaderName() + "." + type.name().toLowerCase() + "." + apiTag + ".preprocessed.glsl");
                         LOGGER.debug("写出GLSL源码调试文件: {}，{}", srcPath, prePath);
                         Files.writeString(srcPath, currentSourceResult.sourceCode());
@@ -154,11 +154,11 @@ public class ShaderCompiler {
                     LOGGER.debug("着色器编译异常类型: {}", currentSourceResult.error().name());
                     LOGGER.debug("编译日志: {}", currentSourceResult.log());
 
-                    Path errorSourcePath = Path.of(SuperResolutionConstants.SHADER_CACHE_FILE.toString(),
+                    Path errorSourcePath = Path.of(SuperResolutionConstants.ERROR_DIR.toString(),
                             program.getDescription().shaderName() + ".error." + apiTag + ".source.glsl");
-                    Path errorPrePath = Path.of(SuperResolutionConstants.SHADER_CACHE_FILE.toString(),
+                    Path errorPrePath = Path.of(SuperResolutionConstants.ERROR_DIR.toString(),
                             program.getDescription().shaderName() + ".error." + apiTag + ".preprocessed.glsl");
-                    Path errorLogPath = Path.of(SuperResolutionConstants.SHADER_CACHE_FILE.toString(),
+                    Path errorLogPath = Path.of(SuperResolutionConstants.ERROR_DIR.toString(),
                             program.getDescription().shaderName() + ".error." + apiTag + ".log");
 
                     Files.writeString(errorSourcePath, currentSourceResult.sourceCode());
@@ -175,9 +175,9 @@ public class ShaderCompiler {
     }
 
     public static void createCacheDir() {
-        File cacheDir = SuperResolutionConstants.SHADER_CACHE_FILE.toFile();
+        File cacheDir = SuperResolutionConstants.SHADER_CACHE_DIR.getFile();
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            LOGGER.error("无法创建着色器缓存目录: {}", SuperResolutionConstants.SHADER_CACHE_FILE);
+            LOGGER.error("无法创建着色器缓存目录: {}", SuperResolutionConstants.SHADER_CACHE_DIR);
         }
     }
 
@@ -278,7 +278,7 @@ public class ShaderCompiler {
 
         String hash = getShaderProgramMd5(program, apiTag);
         for (ShaderType type : program.getDescription().sourceMap().keySet()) {
-            Path path = SuperResolutionConstants.SHADER_CACHE_FILE.resolve(
+            Path path = SuperResolutionConstants.SHADER_CACHE_DIR.getPath().resolve(
                     program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv"
             );
 
@@ -303,7 +303,7 @@ public class ShaderCompiler {
     private static ShaderBinary loadBinaryWithApi(String filename, String apiTag) {
         createCacheDir();
 
-        Path path = SuperResolutionConstants.SHADER_CACHE_FILE.resolve(filename);
+        Path path = SuperResolutionConstants.SHADER_CACHE_DIR.getPath().resolve(filename);
         try {
             byte[] data = Files.readAllBytes(path);
             if (data.length == 0 || data.length > 1024 * 1024 * 2) { // 最大2mb

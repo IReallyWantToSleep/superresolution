@@ -24,6 +24,7 @@ import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -57,12 +58,12 @@ import static org.lwjgl.opengl.GL33.*;
 
 public class DataSetGenerator {
     public static File OUTPUT_DIR = Paths.get("K:/", "msrDataset").toFile();
-    #if MC_VER > MC_1_21_6
+    #if MC_VER > MC_1_21_8
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F7,
-            "superresolution.name"
+            SuperResolutionKeyMapping.CATEGORY
     );
     #else
     private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(

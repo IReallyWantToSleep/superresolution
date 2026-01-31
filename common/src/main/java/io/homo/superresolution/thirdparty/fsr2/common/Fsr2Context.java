@@ -170,7 +170,6 @@ public class Fsr2Context {
         lockPipeline.init();
         reconstructPreviousDepthPipeline.init();
 
-        resize(this.dimensions);
         maximumBiasTextureUploaded = false;
     }
 

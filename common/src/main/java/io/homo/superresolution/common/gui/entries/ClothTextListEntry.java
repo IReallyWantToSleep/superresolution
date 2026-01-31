@@ -91,7 +91,7 @@ public class ClothTextListEntry extends TooltipListEntry<Object> {
         return lineCount == 0 ? 0 : 14 + lineCount * 12;
     }
 
-    #if MC_VER > MC_1_21_6 && false
+    #if MC_VER > MC_1_21_8
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean idkThis) {
         if (event.button() == 0) {

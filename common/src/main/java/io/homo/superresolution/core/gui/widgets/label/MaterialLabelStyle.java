@@ -24,6 +24,27 @@ import io.homo.superresolution.core.utils.Color;
 public class MaterialLabelStyle extends WidgetStyle<MaterialLabelStyle> {
     private Color color;
     private float fontSize = 14f;
+    private float lineHeight = 15f;
+
+    public boolean wrap() {
+        return wrap;
+    }
+
+    public MaterialLabelStyle wrap(boolean wrap) {
+        this.wrap = wrap;
+        return this;
+    }
+
+    private boolean wrap = false;
+
+    public float lineHeight() {
+        return lineHeight;
+    }
+
+    public MaterialLabelStyle lineHeight(float lineHeight) {
+        this.lineHeight = lineHeight;
+        return this;
+    }
 
     public Color color() {
         return color;

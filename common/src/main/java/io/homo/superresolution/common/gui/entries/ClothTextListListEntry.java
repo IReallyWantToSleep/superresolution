@@ -218,7 +218,7 @@ public class ClothTextListListEntry extends TooltipListEntry<Object> implements 
         return Math.min(Math.max((int) (height * expandAnimator.value()) + (expandAnimator.value() == 1.0 ? 3 + bottom : 24), 24), height + 3 + bottom);
     }
 
-    #if MC_VER > MC_1_21_6 && false
+    #if MC_VER > MC_1_21_8
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean idkThis) {
         if (event.button() == 0) {

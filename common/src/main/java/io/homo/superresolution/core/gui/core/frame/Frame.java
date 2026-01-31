@@ -23,7 +23,6 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.utils.Color;
@@ -31,62 +30,25 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import org.joml.Vector2f;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Frame implements IFrame {
-
+    private static final Color DEBUG_LAYOUT_COLOR = Color.rgb(0, 120, 255);
+    private static final Color DEBUG_RENDER_COLOR = Color.rgb(255, 50, 50);
+    private static final Color DEBUG_HITTEST_COLOR = Color.rgb(255, 220, 0);
+    private static final float DEBUG_STROKE_WIDTH = 1.0f;
+    private final List<RenderEntry> renderList = new ArrayList<>();
     private AbstractWidget<?> root;
     private float viewportWidth;
     private float viewportHeight;
     private float positionX = 0;
     private float positionY = 0;
     private boolean layoutDirty = true;
-
-    private final List<RenderEntry> renderList = new ArrayList<>();
-
     private boolean debugRenderEnabled = false;
     private boolean debugLayoutBounds = true;
     private boolean debugRenderBounds = true;
     private boolean debugHitTestBounds = true;
-
     private AbstractWidget<?> lastHitWidget = null;
-
-    private static final Color DEBUG_LAYOUT_COLOR = Color.rgb(0, 120, 255);
-    private static final Color DEBUG_RENDER_COLOR = Color.rgb(255, 50, 50);
-    private static final Color DEBUG_HITTEST_COLOR = Color.rgb(255, 220, 0);
-    private static final float DEBUG_STROKE_WIDTH = 1.0f;
-
-    private record RenderEntry(AbstractWidget<?> widget, Transform accumulatedTransform, int zIndex) {
-    }
-
-    @Override
-    public void setRoot(AbstractWidget<?> root) {
-        this.root = root;
-        markLayoutDirty();
-    }
-
-    @Override
-    public AbstractWidget<?> getRoot() {
-        return root;
-    }
-
-    @Override
-    public void setViewport(float width, float height) {
-        if (this.viewportWidth != width || this.viewportHeight != height) {
-            this.viewportWidth = width;
-            this.viewportHeight = height;
-            markLayoutDirty();
-        }
-    }
-
-    @Override
-    public Rectangle getViewport() {
-        return new Rectangle(0, 0, viewportWidth, viewportHeight);
-    }
 
     public void setPosition(float x, float y) {
         this.positionX = x;
@@ -97,40 +59,10 @@ public class Frame implements IFrame {
         return new Vector2f(positionX, positionY);
     }
 
-    @Override
-    public void calculateLayout() {
-        if (root == null) return;
-
-        root.getLayoutNode().setWidth(viewportWidth);
-        root.getLayoutNode().setHeight(viewportHeight);
-        root.getLayoutNode().setPosition(YogaEdge.LEFT, 0);
-        root.getLayoutNode().setPosition(YogaEdge.TOP, 0);
-        root.getLayoutNode().setPositionType(YogaPositionType.ABSOLUTE);
-        root.getLayoutNode().calculateLayout(viewportWidth, viewportHeight);
-
-        layoutDirty = false;
-    }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        if (root == null) return;
-        if (layoutDirty) {
-            calculateLayout();
-        }
-        renderList.clear();
-        collectRenderables(root, renderList);
-        renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
-        for (RenderEntry entry : renderList) {
-            renderWidget(ctx, inputState, entry);
-        }
-
-        if (debugRenderEnabled) {
-            renderDebugOverlay(ctx, inputState);
-        }
-    }
-
     private void collectRenderables(AbstractWidget<?> widget, List<RenderEntry> list) {
-        if (!widget.isVisible()) return;
+        if (!widget.isVisible()) {
+            return;
+        }
 
         Transform accumulatedTransform = widget.getFullTransform();
 
@@ -147,6 +79,11 @@ public class Frame implements IFrame {
                 }
             }
         }
+    }
+
+    @Override
+    public AbstractWidget<?> getRoot() {
+        return root;
     }
 
     private Rectangle transformBounds(Rectangle bounds, Transform transform) {
@@ -184,21 +121,10 @@ public class Frame implements IFrame {
         ctx.restore();
     }
 
-
     @Override
-    public void dispatchMouseMove(float x, float y) {
-        if (root == null || !root.isVisible()) return;
-
-        Vector2f mousePos = new Vector2f(x, y);
-
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
-
-        Set<AbstractWidget<?>> allowedWidgets = new HashSet<>();
-        if (topInteractive != null) {
-            collectAncestorChain(topInteractive, allowedWidgets);
-        }
-
-        dispatchMouseMoveRecursive(root, x, y, topInteractive, allowedWidgets);
+    public void setRoot(AbstractWidget<?> root) {
+        this.root = root;
+        markLayoutDirty();
     }
 
     private void collectAncestorChain(AbstractWidget<?> widget, Set<AbstractWidget<?>> chain) {
@@ -214,23 +140,22 @@ public class Frame implements IFrame {
     private void dispatchMouseMoveRecursive(AbstractWidget<?> widget, float x, float y,
                                             AbstractWidget<?> topInteractive,
                                             Set<AbstractWidget<?>> allowedWidgets) {
-        if (!widget.isVisible() || widget.isDisabled()) return;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return;
+        }
 
         Transform accumulatedTransform = widget.getFullTransform();
 
         Vector2f localPos = accumulatedTransform.inverseTransformPoint(new Vector2f(x, y));
-
-        boolean shouldReceive = false;
-
+        boolean shouldReceive;
         if (topInteractive == null) {
             shouldReceive = true;
         } else if (allowedWidgets.contains(widget)) {
             shouldReceive = true;
         } else {
-            Rectangle rawBounds = widget.getRawBounds();
-            boolean isMouseOver = rawBounds.in(localPos);
+            boolean isMouseOver = widget.hitTest(new Vector2f(x, y));
 
-            if (!isMouseOver) {
+            if (!isMouseOver || (topInteractive.getBounds().contains(widget.getBounds()))) {
                 shouldReceive = true;
             } else {
                 widget.mouseMove(-10000, -10000);
@@ -251,31 +176,10 @@ public class Frame implements IFrame {
         }
     }
 
-    @Override
-    public void dispatchMousePress(float x, float y, int button) {
-        if (root == null || !root.isVisible()) return;
-
-        Vector2f mousePos = new Vector2f(x, y);
-
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
-
-        if (topInteractive != null) {
-            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
-            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
-            topInteractive.mousePress(localPos.x, localPos.y, button);
-        }
-
-    }
-
-    @Override
-    public void dispatchMouseRelease(float x, float y, int button) {
-        if (root == null || !root.isVisible()) return;
-
-        dispatchMouseReleaseRecursive(root, x, y, button);
-    }
-
     private void dispatchMouseReleaseRecursive(AbstractWidget<?> widget, float x, float y, int button) {
-        if (!widget.isVisible() || widget.isDisabled()) return;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return;
+        }
 
         Transform accumulatedTransform = widget.getFullTransform();
         Vector2f localPos = accumulatedTransform.inverseTransformPoint(new Vector2f(x, y));
@@ -292,15 +196,19 @@ public class Frame implements IFrame {
     }
 
     @Override
-    public void dispatchMouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
-        if (root == null || !root.isVisible()) return;
-
-        dispatchMouseDragRecursive(root, mouseX, mouseY, dragX, dragY, button);
+    public void setViewport(float width, float height) {
+        if (this.viewportWidth != width || this.viewportHeight != height) {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            markLayoutDirty();
+        }
     }
 
     private void dispatchMouseDragRecursive(AbstractWidget<?> widget, float mouseX, float mouseY,
                                             float dragX, float dragY, int button) {
-        if (!widget.isVisible() || widget.isDisabled()) return;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return;
+        }
 
         Transform accumulatedTransform = widget.getFullTransform();
         Vector2f localPos = accumulatedTransform.inverseTransformPoint(new Vector2f(mouseX, mouseY));
@@ -328,30 +236,10 @@ public class Frame implements IFrame {
         return new Vector2f(delta.x - origin.x, delta.y - origin.y);
     }
 
-    @Override
-    public void dispatchMouseScroll(float x, float y, double scrollX) {
-        if (root == null || !root.isVisible()) return;
-
-        Vector2f mousePos = new Vector2f(x, y);
-
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
-
-        if (topInteractive != null) {
-            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
-            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
-            topInteractive.mouseScroll(localPos.x, localPos.y, scrollX);
-        }
-    }
-
-    @Override
-    public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
-        if (root == null || !root.isVisible()) return;
-
-        dispatchKeyPressRecursive(root, keyCode, scancode, modifiers);
-    }
-
     private void dispatchKeyPressRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
-        if (!widget.isVisible() || widget.isDisabled()) return;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return;
+        }
 
         widget.keyPress(keyCode, scancode, modifiers);
 
@@ -365,14 +253,14 @@ public class Frame implements IFrame {
     }
 
     @Override
-    public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
-        if (root == null || !root.isVisible()) return;
-
-        dispatchKeyReleaseRecursive(root, keyCode, scancode, modifiers);
+    public Rectangle getViewport() {
+        return new Rectangle(0, 0, viewportWidth, viewportHeight);
     }
 
     private void dispatchKeyReleaseRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
-        if (!widget.isVisible() || widget.isDisabled()) return;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return;
+        }
 
         widget.keyRelease(keyCode, scancode, modifiers);
 
@@ -385,15 +273,10 @@ public class Frame implements IFrame {
         }
     }
 
-    @Override
-    public void dispatchCharTyped(char codePoint, int modifiers) {
-        if (root == null || !root.isVisible()) return;
-
-        dispatchCharTypedRecursive(root, codePoint, modifiers);
-    }
-
     private void dispatchCharTypedRecursive(AbstractWidget<?> widget, char codePoint, int modifiers) {
-        if (!widget.isVisible() || widget.isDisabled()) return;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return;
+        }
 
         widget.charTyped(codePoint, modifiers);
 
@@ -406,12 +289,30 @@ public class Frame implements IFrame {
         }
     }
 
+    private AbstractWidget<?> findFloatingWidgetRecursive(AbstractWidget<?> widget, Vector2f pos) {
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return null;
+        }
 
-    @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
-        if (root == null || !root.isVisible()) return null;
+        if (widget.isFloatingWidget() && widget.hitTest(pos)) {
+            AbstractWidget<?> found = widget.findInteractiveWidgetAt(pos);
+            if (found != null) {
+                return found;
+            }
+        }
 
-        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE);
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    AbstractWidget<?> found = findFloatingWidgetRecursive(childWidget, pos);
+                    if (found != null) {
+                        return found;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     private AbstractWidget<?> findInteractiveWidgetAtRecursive(
@@ -420,17 +321,18 @@ public class Frame implements IFrame {
             AbstractWidget<?> currentBest,
             int currentBestZIndex) {
 
-        if (!widget.isVisible() || widget.isDisabled()) return currentBest;
+        if (!widget.isVisible() || widget.isDisabled()) {
+            return currentBest;
+        }
 
         Transform accumulatedTransform = widget.getFullTransform();
 
         Vector2f localPos = accumulatedTransform.inverseTransformPoint(absPos);
 
-        Rectangle rawBounds = widget.getRawBounds();
-        boolean hit = rawBounds.in(localPos);
+        boolean hit = widget.hitTest(absPos);
 
         if (hit) {
-            if (widget.managesChildRendering()) {
+            if (widget.managesChildEvents()) {
                 AbstractWidget<?> found = widget.findInteractiveWidgetAt(absPos);
                 if (found != null) {
                     int foundZIndex = found.getZIndex();
@@ -476,22 +378,27 @@ public class Frame implements IFrame {
     }
 
     @Override
-    public void markLayoutDirty() {
-        layoutDirty = true;
-    }
+    public void calculateLayout() {
+        if (root == null) {
+            return;
+        }
 
-    @Override
-    public boolean isLayoutDirty() {
-        return layoutDirty;
-    }
+        root.getLayoutNode().setWidth(viewportWidth);
+        root.getLayoutNode().setHeight(viewportHeight);
+        root.getLayoutNode().setPosition(YogaEdge.LEFT, 0);
+        root.getLayoutNode().setPosition(YogaEdge.TOP, 0);
+        root.getLayoutNode().setPositionType(YogaPositionType.ABSOLUTE);
+        root.getLayoutNode().calculateLayout(viewportWidth, viewportHeight);
 
-
-    public void setDebugRenderEnabled(boolean enabled) {
-        this.debugRenderEnabled = enabled;
+        layoutDirty = false;
     }
 
     public boolean isDebugRenderEnabled() {
         return debugRenderEnabled;
+    }
+
+    public void setDebugRenderEnabled(boolean enabled) {
+        this.debugRenderEnabled = enabled;
     }
 
     public void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
@@ -500,8 +407,30 @@ public class Frame implements IFrame {
         this.debugHitTestBounds = hitTest;
     }
 
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        if (root == null) {
+            return;
+        }
+        if (layoutDirty) {
+            calculateLayout();
+        }
+        renderList.clear();
+        collectRenderables(root, renderList);
+        renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
+        for (RenderEntry entry : renderList) {
+            renderWidget(ctx, inputState, entry);
+        }
+
+        if (debugRenderEnabled) {
+            renderDebugOverlay(ctx, inputState);
+        }
+    }
+
     public void updateHitTestDebug(Vector2f mousePos) {
-        if (!debugRenderEnabled || !debugHitTestBounds) return;
+        if (!debugRenderEnabled || !debugHitTestBounds) {
+            return;
+        }
 
         lastHitWidget = findInteractiveWidgetAt(mousePos);
     }
@@ -531,7 +460,9 @@ public class Frame implements IFrame {
     }
 
     private void renderDebugLayoutBounds(RenderContext ctx, AbstractWidget<?> widget) {
-        if (!widget.isVisible()) return;
+        if (!widget.isVisible()) {
+            return;
+        }
 
         Rectangle layoutBounds = widget.getRawBounds();
 
@@ -608,4 +539,144 @@ public class Frame implements IFrame {
 
         ctx.strokeWidth(DEBUG_STROKE_WIDTH);
     }
+
+    private record RenderEntry(AbstractWidget<?> widget,
+
+                               Transform accumulatedTransform,
+
+                               int zIndex) {
+    }
+
+    @Override
+    public void dispatchMouseMove(float x, float y) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+
+        Set<AbstractWidget<?>> allowedWidgets = new HashSet<>();
+        if (topInteractive != null) {
+            //collectAncestorChain(topInteractive, allowedWidgets);
+        }
+
+        dispatchMouseMoveRecursive(root, x, y, topInteractive, allowedWidgets);
+    }
+
+
+    @Override
+    public void dispatchMousePress(float x, float y, int button) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+
+        if (topInteractive != null) {
+            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
+            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
+            topInteractive.mousePress(localPos.x, localPos.y, button);
+        }
+
+    }
+
+
+    @Override
+    public void dispatchMouseRelease(float x, float y, int button) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchMouseReleaseRecursive(root, x, y, button);
+    }
+
+
+    @Override
+    public void dispatchMouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchMouseDragRecursive(root, mouseX, mouseY, dragX, dragY, button);
+    }
+
+
+    @Override
+    public void dispatchMouseScroll(float x, float y, double scrollX) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+
+        if (topInteractive != null) {
+            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
+            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
+            topInteractive.mouseScroll(localPos.x, localPos.y, scrollX);
+        }
+    }
+
+
+    @Override
+    public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchKeyPressRecursive(root, keyCode, scancode, modifiers);
+    }
+
+
+    @Override
+    public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchKeyReleaseRecursive(root, keyCode, scancode, modifiers);
+    }
+
+
+    @Override
+    public void dispatchCharTyped(char codePoint, int modifiers) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchCharTypedRecursive(root, codePoint, modifiers);
+    }
+
+
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
+        if (root == null || !root.isVisible()) {
+            return null;
+        }
+
+        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos);
+        if (floatingWidget != null) {
+            return floatingWidget;
+        }
+
+        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE);
+    }
+
+
+    @Override
+    public void markLayoutDirty() {
+        layoutDirty = true;
+    }
+
+    @Override
+    public boolean isLayoutDirty() {
+        return layoutDirty;
+    }
+
+
 }

@@ -18,6 +18,9 @@
 
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
 import io.homo.superresolution.common.gui.options.OptionCategory;
@@ -38,11 +41,12 @@ public class TestOptionBuilder {
                         true)
                 .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
                 .build();
-
-        builder.enumSelectorOption(
+        builder.selectorOption(
                         Text.literal("Super Resolution Algorithm"),
-                        TextureFormat.class,
-                        TextureFormat.R8)
+                        SuperResolutionConfig.getUpscaleAlgorithm(),
+                        AlgorithmRegistry.getAlgorithmMap().values().toArray()
+                )
+                .setNameProvider((algo) -> ((AlgorithmDescription<?>) algo).getBriefName())
                 .setDescription("Choose an algorithm")
                 .build();
 
@@ -70,7 +74,41 @@ public class TestOptionBuilder {
                 .setValueFormater(v -> String.format("%.0f%%", v.doubleValue() * 100))
                 .setDescription("Adjust the sharpness of the upscaled image")
                 .build();
-
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
+        builder.booleanOption(
+                        Text.literal("Enable Super Resolution"),
+                        true)
+                .setDescription("When enabled, the selected algorithm will be used for super resolution upscaling")
+                .build();
         return builder.build();
     }
 

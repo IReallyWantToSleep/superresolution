@@ -2,6 +2,7 @@
     "superresolution.screen.config.name": "Super Resolution Configuration",
     "superresolution.screen.info.name": "Information",
     "superresolution.name": "Super Resolution",
+    "superresolution.config_gui": "Settings",
     "superresolution.screen.warn": "Warning",
     "superresolution.common_requirement.not_support.msg": "SuperResolution Error",
     "superresolution.common_requirement.not_support.version": "OpenGL version does not meet requirements\nRequired version: %s.%s\nActual version: %s.%s",

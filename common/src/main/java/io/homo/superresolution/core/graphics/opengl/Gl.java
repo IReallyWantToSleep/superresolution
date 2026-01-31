@@ -23,7 +23,6 @@ import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.opengl.dsa.CompatDirectStateAccessImpl;
 import io.homo.superresolution.core.graphics.opengl.dsa.GL45OrEXTDirectStateAccessImpl;
 import io.homo.superresolution.core.graphics.opengl.dsa.IGlDirectStateAccess;
-import org.lwjgl.opengl.GL11C;
 
 public class Gl {
     public static final IGlDirectStateAccess DSA;
@@ -45,9 +44,4 @@ public class Gl {
     public static boolean isSupportDSA() {
         return GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] >= 5;
     }
-
-    private static int glGetInteger(int pname) {
-        return GL11C.glGetInteger(pname);
-    }
-
 }

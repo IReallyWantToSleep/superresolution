@@ -106,6 +106,21 @@ public class RenderState {
         return this;
     }
 
+    public RenderState intersectScissor(float x, float y, float width, float height) {
+        if (this.scissor == null) {
+            this.scissor = new ScissorRect(x, y, width, height);
+        } else {
+            float x1 = Math.max(this.scissor.x(), x);
+            float y1 = Math.max(this.scissor.y(), y);
+            float x2 = Math.min(this.scissor.x() + this.scissor.width(), x + width);
+            float y2 = Math.min(this.scissor.y() + this.scissor.height(), y + height);
+            float w = Math.max(0, x2 - x1);
+            float h = Math.max(0, y2 - y1);
+            this.scissor = new ScissorRect(x1, y1, w, h);
+        }
+        return this;
+    }
+
     public RenderState scissor(ScissorRect scissor) {
         this.scissor = scissor != null ? scissor.copy() : null;
         return this;
