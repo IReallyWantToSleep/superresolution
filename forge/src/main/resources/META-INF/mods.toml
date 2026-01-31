@@ -11,7 +11,7 @@ authors = "187J3X1"
 description = '''
 喵
 '''
-logoFile = "super_resolution_logo.png"
+logoFile = "assets/super_resolution/textures/gui/logo.png"
 
 [[dependencies.super_resolution]]
 modId = "minecraft"

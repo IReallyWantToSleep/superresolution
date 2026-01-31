@@ -53,6 +53,17 @@ public class FSR1 extends AbstractAlgorithm {
     private StructuredUniformBuffer fsr1UBOData;
     private IBuffer fsr1UBO;
 
+    public static int checkFP16Support() {
+        if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
+                GraphicsCapabilities.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")) {
+            return 1;
+        }
+        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) {
+            return 2;
+        }
+        return 0;
+    }
+
     @Override
     public void init() {
         fsr1UBOData = UniformStructBuilder.start()
@@ -183,17 +194,6 @@ public class FSR1 extends AbstractAlgorithm {
                 dispatchX,
                 dispatchY,
                 1);
-    }
-
-    public static int checkFP16Support() {
-        if (GraphicsCapabilities.hasGLExtension("GL_EXT_shader_16bit_storage") &&
-                GraphicsCapabilities.hasGLExtension("GL_EXT_shader_explicit_arithmetic_types")) {
-            return 1;
-        }
-        if (GraphicsCapabilities.hasGLExtension("GL_NV_gpu_shader5")) {
-            return 2;
-        }
-        return 0;
     }
 
     @Override

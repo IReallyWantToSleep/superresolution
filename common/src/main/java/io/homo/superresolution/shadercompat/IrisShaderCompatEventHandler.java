@@ -147,6 +147,16 @@ public class IrisShaderCompatEventHandler {
                     idMap.get(SuperResolutionConfig.getUpscaleAlgorithm())));
             event.registerMacro("SR_SHOULD_APPLY_SCALE", "1");
             event.registerMacro("SR_SHOULD_APPLY_JITTER", "1");
+            event.registerMacro("SR_SCALED_WIDTH",
+                    Integer.toString(SuperResolutionAPI.getRenderWidth()));
+            event.registerMacro("SR_SCALED_HEIGHT",
+                    Integer.toString(SuperResolutionAPI.getRenderHeight()));
+
+            event.registerMacro("SR_SCREEN_WIDTH",
+                    Integer.toString(SuperResolutionAPI.getScreenWidth()));
+            event.registerMacro("SR_SCREEN_HEIGHT",
+                    Integer.toString(SuperResolutionAPI.getScreenHeight()));
+
         } else {
             event.registerMacro("SR_ENABLE", "0");
             event.registerMacro("SR_DISABLE", "1");
@@ -154,6 +164,14 @@ public class IrisShaderCompatEventHandler {
             event.registerMacro("SR_USING_ALGO", "0");
             event.registerMacro("SR_SHOULD_APPLY_SCALE", "0");
             event.registerMacro("SR_SHOULD_APPLY_JITTER", "0");
+            event.registerMacro("SR_SCALED_WIDTH",
+                    Integer.toString(SuperResolutionAPI.getScreenWidth()));
+            event.registerMacro("SR_SCALED_HEIGHT",
+                    Integer.toString(SuperResolutionAPI.getScreenHeight()));
+            event.registerMacro("SR_SCREEN_WIDTH",
+                    Integer.toString(SuperResolutionAPI.getScreenWidth()));
+            event.registerMacro("SR_SCREEN_HEIGHT",
+                    Integer.toString(SuperResolutionAPI.getScreenHeight()));
         }
     }
 
@@ -212,6 +230,15 @@ public class IrisShaderCompatEventHandler {
                     if (!SuperResolution.getCurrentAlgorithm().isSupportJitter())
                         return new Vector2f(0);
                     Vector2f jitterOffset = AlgorithmManager.getJitterOffset();
+                    return new Vector2f(jitterOffset.x, jitterOffset.y);
+                });
+        uniforms.uniform2f(
+                UniformUpdateFrequency.PER_FRAME,
+                "SRPreviousJitterOffset",
+                () -> {
+                    if (!SuperResolution.getCurrentAlgorithm().isSupportJitter())
+                        return new Vector2f(0);
+                    Vector2f jitterOffset = AlgorithmManager.getPreviousJitterOffset();
                     return new Vector2f(jitterOffset.x, jitterOffset.y);
                 });
     }

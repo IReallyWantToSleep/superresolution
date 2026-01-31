@@ -28,11 +28,8 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
-/**
- * 选项构建器
- * 用于构建选项UI，将选项组件添加到容器中
- */
 public class OptionBuilder {
     protected OptionCategory category;
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
@@ -79,20 +76,12 @@ public class OptionBuilder {
         return new NumberSliderBuilder(name, value, max, min).setCategory(category);
     }
 
-    /**
-     * 添加选项条目
-     */
     public OptionBuilder addEntry(AbstractOptionEntry<?, ?> entry) {
         entries.add(entry);
         entry.setScheme(scheme);
         return this;
     }
 
-    /**
-     * 构建选项容器
-     *
-     * @return 包含所有选项的容器组件
-     */
     public OptionsContainer build() {
         OptionsContainer container = new OptionsContainer(scheme);
 
@@ -109,17 +98,12 @@ public class OptionBuilder {
         return container;
     }
 
-    /**
-     * 选项容器组件
-     * 背景使用 Material3 的 surfaceContainerLow 颜色
-     */
     public static class OptionsContainer extends ContainerWidget {
-        private final MaterialScheme scheme;
-        private final List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
-
         private static final float CORNER_RADIUS = 16f;
         private static final float PADDING = 8f;
         private static final float GAP = 8f;
+        private final MaterialScheme scheme;
+        private final List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
 
         public OptionsContainer(MaterialScheme scheme) {
             this.scheme = scheme;
@@ -146,7 +130,6 @@ public class OptionBuilder {
         @Override
         protected void renderSelf(RenderContext ctx, UIInputState inputState) {
             Rectangle bounds = getBounds();
-            // 绘制容器背景
             ctx.roundedRect(
                     bounds.x,
                     bounds.y,
@@ -158,13 +141,10 @@ public class OptionBuilder {
             );
         }
 
-        /**
-         * 保存所有选项
-         */
         public void saveAll() {
             for (AbstractOptionEntry<?, ?> entry : entries) {
                 if (entry.getSaveConsumer() != null) {
-                    ((java.util.function.Consumer<Object>) entry.getSaveConsumer()).accept(entry.value());
+                    ((Consumer<Object>) entry.getSaveConsumer()).accept(entry.value());
                 }
             }
         }

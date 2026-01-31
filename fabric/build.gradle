@@ -40,6 +40,15 @@ repositories {
             includeGroup "org.appliedenergistics.yoga"
         }
     }
+    maven {
+        name "CaffeineMC"
+        url "https://maven.caffeinemc.net/releases" // or /snapshots
+    }
+
+    maven {
+        name "CaffeineMC"
+        url "https://maven.caffeinemc.net/snapshots" // or /snapshots
+    }
 }
 String renderdocPath = Paths.get(rootProject.projectDir.getAbsolutePath(), "renderdoc").toString();
 
@@ -67,6 +76,7 @@ dependencies {
     implementation "org.anarres:jcpp:1.4.14"
     implementation "org.antlr:antlr4-runtime:4.13.1"
     include(implementation "net.neoforged:bus:8.0.5")
+    include(implementation('net.jodah:typetools:0.6.3'))
 
 
     if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.8")) {
@@ -86,11 +96,18 @@ dependencies {
     include(implementation('com.electronwill.night-config:toml:3.8.0'))
     include(implementation('com.electronwill.night-config:core:3.8.0'))
 
-    implementation(files(Paths.get(renderdocPath, "render-nurse.jar").toString()))
-
     //额外库/模组
     for (lib in versionConfig.fabric.dependencies.modrinth) {
         def depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}"
+        if (lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) {
+            depName = "net.caffeinemc:sodium-fabric:${lib.version}"
+            if (lib.compileOnly) {
+                compileOnly(depName)
+            } else {
+                implementation(depName)
+            }
+            continue
+        }
         if (lib.compileOnly) {
             modCompileOnly(depName)
         } else {
@@ -121,13 +138,11 @@ loom {
     runs {
         client {
             client()
-            environmentVariables.put("ENABLE_VULKAN_RENDERDOC_CAPTURE", "1")
             vmArgs.add("-XX:+CreateMinidumpOnCrash")
             //vmArgs.add("-javaagent:" + Paths.get(renderdocPath, "render-nurse.jar"))
             vmArgs.add("--enable-preview")
             vmArgs.add("--enable-native-access=ALL-UNNAMED")
 
-            vmArgs.add("-Dneoforge.rendernurse.renderdoc.library=" + Paths.get(renderdocPath, "renderdoc.dll"))
             setConfigName('Fabric Client')
             ideConfigGenerated(true)
             runDir('../runs/fabric')

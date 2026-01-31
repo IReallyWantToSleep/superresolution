@@ -18,10 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.render;
 
-import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
-import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
-import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
@@ -61,7 +58,6 @@ public interface RenderContext {
     void restoreState();
 
     void globalAlpha(float alpha);
-
 
     float globalAlpha();
 
@@ -120,6 +116,20 @@ public interface RenderContext {
     void roundedRectComplex(float x, float y, float width, float height,
                             float bottomLeftRadius, float bottomRightRadius,
                             float topLeftRadius, float topRightRadius);
+
+    default void roundedRectComplex(float x, float y, float width, float height,
+                                    float bottomLeftRadius, float bottomRightRadius,
+                                    float topLeftRadius, float topRightRadius,
+                                    Color color, boolean fill) {
+        beginPath();
+        if (fill) {
+            fillColor(color);
+        } else {
+            strokeColor(color);
+        }
+        roundedRectComplex(x, y, width, height, bottomLeftRadius, bottomRightRadius, topLeftRadius, topRightRadius);
+        endPath(fill);
+    }
 
     default void line(float x1, float y1, float x2, float y2, float lineWidth, Color color) {
         beginPath();
@@ -202,14 +212,19 @@ public interface RenderContext {
 
     IFont font();
 
-    float measureTextWidth(String text, float fontSize);
+    float measureTextWidth(String text, float fontSize, float lineHeight);
 
-    float measureTextHeight(String text, float fontSize);
+    float measureTextHeight(String text, float fontSize, float lineHeight);
 
-    Vector2f measureText(String text, float fontSize);
+    Vector2f measureText(String text, float fontSize, float lineHeight);
+
+    TextMetrics measureTextMetrics(IFont font, float fontSize,
+                                   String text, float maxWidth,
+                                   float lineHeight, boolean wrap);
+
 
     void drawAlignedText(IFont font, float fontSize, String text,
-                         float x, float y, float width, float height,
+                         float x, float y, float lineMaxWidth, float lineHeight,
                          Color color, TextAlign align, boolean wrap);
 
     RenderTree renderTree();

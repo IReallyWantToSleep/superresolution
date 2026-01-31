@@ -30,6 +30,7 @@ import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
+import io.homo.superresolution.core.gui.widgets.SpacerWidget;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
@@ -41,6 +42,7 @@ import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.Color;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
@@ -66,7 +68,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         getView().removeFrame(getDefaultFrame());
         Frame navigationDrawerFrame = createNavigationDrawerFrame();
         navigationDrawerLayout = getView().addFrame(navigationDrawerFrame);
-        navigationDrawerLayout.setWidthPercent(17.1f);
+        navigationDrawerLayout.setMinWidthPercent(17.1f);
         navigationDrawerLayout.setHeightPercent(100);
         navigationDrawerLayout.setPadding(YogaEdge.ALL, 0);
 
@@ -117,8 +119,9 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
     }
 
     private void switchContentFrame(String key) {
-        if (key.equals(currentContentKey))
+        if (key.equals(currentContentKey)) {
             return;
+        }
         if (currentContentFrame != null) {
             getView().removeFrame(currentContentFrame);
         }
@@ -708,11 +711,12 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
     }
 
     private Frame createNavigationDrawerFrame() {
-        Frame frame = new Frame();
+        ScrollableFrame frame = new ScrollableFrame();
+        frame.setHorizontalScrollEnabled(false);
+        frame.setVerticalScrollEnabled(true);
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100);
-        container.layout().setHeightPercent(100);
 
         drawer = MaterialNavigationDrawer.create()
                 .addHeader("Super Resolution", MaterialSymbols.iconSettings())
@@ -721,6 +725,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addItem("算法", MaterialSymbols.iconTune(), "algorithm")
                 .addItem("界面", MaterialSymbols.iconPalette(), "interface")
                 .addItem("调试", MaterialSymbols.iconBugReport(), "debug")
+                .addItem("渲染测试", MaterialSymbols.iconScience(), "render_test")
                 .addDivider()
                 .addSectionHeader("示例")
                 .addItem("选项示例", MaterialSymbols.iconSettings(), "options")
@@ -733,7 +738,11 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addItem("关于", MaterialSymbols.iconInfo(), "about")
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
-                    switchContentFrame(key);
+                    if ("render_test".equals(key)) {
+                        Minecraft.getInstance().setScreen(new RenderTestScreen());
+                    } else {
+                        switchContentFrame(key);
+                    }
                 })
                 .setSelectedByValue("general")
                 .scheme(materialScheme);
@@ -747,9 +756,11 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
     private Frame createOptionsFrame() {
         ScrollableFrame frame = new ScrollableFrame();
-        frame.setContentPadding(20);
+        frame.setContentPadding(20, 0, 20, 0);
         frame.setVerticalScrollEnabled(true);
         frame.setHorizontalScrollEnabled(false);
+        SpacerWidget spacerWidgetTop = SpacerWidget.vertical(20f);
+        SpacerWidget spacerWidgetBottom = SpacerWidget.vertical(20f);
 
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
@@ -763,10 +774,12 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .color(materialScheme.primary())
                 .scheme(materialScheme);
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
+        container.addChild(spacerWidgetTop);
         container.addChild(title);
         OptionBuilder.OptionsContainer optionsContainer = TestOptionBuilder.buildOptionsContainer();
         optionsContainer.layout().setWidthPercent(100);
         container.addChild(optionsContainer);
+        container.addChild(spacerWidgetBottom);
 
         frame.setRoot(container);
         return frame;
@@ -880,7 +893,9 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         container.addChild(numSelect);
 
         MaterialLabel spacer = MaterialLabel.create().text("").scheme(materialScheme);
-        spacer.layout().setHeight(100);
+        spacer.layout().setHeight(1000);
+        spacer.layout().setMargin(YogaEdge.VERTICAL, 1000);
+
         container.addChild(spacer);
 
         frame.setRoot(container);

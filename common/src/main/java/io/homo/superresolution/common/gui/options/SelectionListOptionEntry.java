@@ -21,49 +21,43 @@ package io.homo.superresolution.common.gui.options;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
-import io.homo.superresolution.core.gui.widgets.menu.*;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
+import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
+import io.homo.superresolution.core.gui.widgets.select.MaterialSelectColors;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-/**
- * 选择列表选项条目
- * 使用 Button + Menu 组件实现下拉选择
- */
 public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, SelectionListOptionEntry<T>> {
+    private static final float SELECT_WIDTH = 200f;
     protected final ImmutableList<T> values;
     protected final AtomicInteger index;
     protected final int original;
-
-    // UI组件
     protected ContainerWidget selectorContainer;
-    protected MaterialButton selectButton;
+    protected MaterialSelect<T> materialSelect;
     protected MaterialLabel headerLabel;
-    protected MaterialMenu dropdownMenu;
-    protected boolean menuExpanded = false;
-
     protected Function<T, String> nameProvider;
     protected String headerText = "";
 
-    private static final float BUTTON_MIN_WIDTH = 150f;
-
-    public SelectionListOptionEntry(Text name, T value, ImmutableList<T> values) {
+    public SelectionListOptionEntry(
+            Text name,
+            T value,
+            ImmutableList<T> values,
+            Function<T, String> nameProvider
+    ) {
         super(name, value);
         this.values = values;
         this.index = new AtomicInteger(values.indexOf(value));
         this.index.compareAndSet(-1, 0);
         this.original = values.indexOf(value);
-        this.nameProvider = t -> t.toString();
+        this.nameProvider = nameProvider;
         init();
     }
 
@@ -84,98 +78,41 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         selectorContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         selectorContainer.layout().setAlignItems(YogaAlign.FLEX_END);
 
+        materialSelect = MaterialSelect.<T>create()
+                .width(SELECT_WIDTH)
+                .displayFormatter(nameProvider)
+                .scheme(scheme);
+        materialSelect.getMenu().style().colors(MaterialMenuColors.VIBRANT);
         if (headerText != null && !headerText.isEmpty()) {
-            headerLabel = MaterialLabel.create()
-                    .text(headerText)
-                    .fontSize(12)
-                    .scheme(scheme);
-            headerLabel.layout().setMargin(YogaEdge.BOTTOM, 4);
-            selectorContainer.addChild(headerLabel);
+            materialSelect.label(headerText);
         }
 
-        selectButton = MaterialButton.create(MaterialButtonSize.Small)
-                .text(() -> nameProvider.apply(value()))
-                .icon(MaterialSymbols.iconExpandMore())
-                .variant(MaterialButtonVariant.Outlined)
-                .scheme(scheme);
-        selectButton.layout().setMinWidth(BUTTON_MIN_WIDTH);
-        selectButton.onClick(event -> toggleMenu());
+        for (T itemValue : values) {
+            materialSelect.addOption(itemValue, nameProvider.apply(itemValue));
+        }
+        materialSelect.setValue(value());
 
-        selectorContainer.addChild(selectButton);
-
-        dropdownMenu = MaterialMenu.create()
-                .selectionMode(MaterialMenuSelectionMode.Single)
-                .scheme(scheme);
-        dropdownMenu.setExpanded(false);
-        dropdownMenu.style().zIndex(100);
-        dropdownMenu.layout().setPositionType(YogaPositionType.ABSOLUTE);
-        dropdownMenu.layout().setPosition(YogaEdge.TOP, 0);
-        dropdownMenu.layout().setPosition(YogaEdge.RIGHT, 0f);
-        for (int i = 0; i < values.size(); i++) {
-            T itemValue = values.get(i);
-            MaterialMenuItem menuItem = MaterialMenuItem.create()
-                    .text(nameProvider.apply(itemValue))
-                    .value(i)
-                    .selectable(true)
-                    .scheme(scheme);
-
-            if (i == index.get()) {
-                menuItem.selected(true);
+        materialSelect.onSelectionChanged(newValue -> {
+            int newIndex = values.indexOf(newValue);
+            if (newIndex >= 0) {
+                index.set(newIndex);
+                this.value = newValue;
+                if (saveConsumer != null) {
+                    saveConsumer.accept(value());
+                }
             }
+        });
 
-            final int itemIndex = i;
-            menuItem.onClick(clickEvent -> {
-                selectValue(itemIndex);
-                collapseMenu();
-            });
-
-            dropdownMenu.addItem(menuItem);
-        }
-
-        selectorContainer.addChild(dropdownMenu);
+        selectorContainer.addChild(materialSelect);
 
         container.addControl(selectorContainer);
         container.scheme(scheme);
     }
 
-    private void toggleMenu() {
-        if (menuExpanded) {
-            collapseMenu();
-        } else {
-            expandMenu();
-        }
-    }
-
-    private void expandMenu() {
-        menuExpanded = true;
-        dropdownMenu.expand();
-        selectButton.icon(MaterialSymbols.iconExpandLess());
-    }
-
-    private void collapseMenu() {
-        menuExpanded = false;
-        dropdownMenu.collapse();
-        selectButton.icon(MaterialSymbols.iconExpandMore());
-    }
-
-    private void selectValue(int newIndex) {
-        index.set(newIndex);
-        this.value = values.get(newIndex);
-
-        // 更新菜单选中状态
-        dropdownMenu.selectItemQuietly(newIndex);
-
-        if (saveConsumer != null) {
-            saveConsumer.accept(value());
-        }
-    }
-
     @Override
     protected SelectionListOptionEntry<T> setScheme(MaterialScheme scheme) {
-        selectButton.scheme(scheme);
-        dropdownMenu.scheme(scheme);
-        if (headerLabel != null) {
-            headerLabel.scheme(scheme).color(scheme.onSurfaceVariant());
+        if (materialSelect != null) {
+            materialSelect.scheme(scheme);
         }
         return super.setScheme(scheme);
     }
@@ -206,10 +143,5 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
     public SelectionListOptionEntry<T> setHeaderText(String headerText) {
         this.headerText = headerText;
         return this;
-    }
-
-    @Override
-    public float getEntryHeight() {
-        return 56f;
     }
 }

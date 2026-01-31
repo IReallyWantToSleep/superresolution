@@ -56,6 +56,9 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
 
     @Override
     public void init() {
+        if (program != null) {
+            program.destroy();
+        }
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_FSR2_OPTION_APPLY_SHARPENING", "1");
         shaderDefines.put("FFX_HALF", (!(GraphicsCapabilities.detectGpuVendor() == GpuVendor.Nvidia) && Fsr2DeviceCapabilities.isFp16Supported()) ? "1" : "0");

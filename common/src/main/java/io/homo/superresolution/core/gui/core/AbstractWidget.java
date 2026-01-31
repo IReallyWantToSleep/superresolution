@@ -29,6 +29,7 @@ import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
+import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.impl.Destroyable;
 import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;
@@ -146,7 +147,9 @@ public abstract class AbstractWidget<
 
     @SuppressWarnings("unchecked")
     public T setVisible(boolean visible) {
-        if (visible == this.visible) return (T) this;
+        if (visible == this.visible) {
+            return (T) this;
+        }
 
         this.visible = visible;
         return (T) this;
@@ -159,7 +162,9 @@ public abstract class AbstractWidget<
 
     @SuppressWarnings("unchecked")
     public T setHovered(boolean hovered) {
-        if (hovered == this.hovered) return (T) this;
+        if (hovered == this.hovered) {
+            return (T) this;
+        }
         this.hovered = hovered;
         if (isVisible()) {
             if (hovered) {
@@ -175,7 +180,9 @@ public abstract class AbstractWidget<
 
     @SuppressWarnings("unchecked")
     public T setFocused(boolean focused) {
-        if (focused == this.focused) return (T) this;
+        if (focused == this.focused) {
+            return (T) this;
+        }
 
         this.focused = focused;
         return (T) this;
@@ -212,6 +219,12 @@ public abstract class AbstractWidget<
     @SuppressWarnings("unchecked")
     public T onChange(Consumer<WidgetEvent.ChangeEvent> listener) {
         eventBus.addListener(WidgetEvent.ChangeEvent.class, listener);
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T onInput(Consumer<WidgetEvent.InputEvent> listener) {
+        eventBus.addListener(WidgetEvent.InputEvent.class, listener);
         return (T) this;
     }
 
@@ -257,7 +270,9 @@ public abstract class AbstractWidget<
     }
 
     public void renderWithChildren(RenderContext ctx, UIInputState inputState) {
-        if (!isVisible()) return;
+        if (!isVisible()) {
+            return;
+        }
         render(ctx, inputState);
 
         if (managesChildRendering()) {
@@ -276,6 +291,15 @@ public abstract class AbstractWidget<
     public boolean managesChildRendering() {
         return false;
     }
+
+    public boolean managesChildEvents() {
+        return false;
+    }
+
+    public boolean isFloatingWidget() {
+        return false;
+    }
+
 
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
         if (!hitTest(absPos)) {

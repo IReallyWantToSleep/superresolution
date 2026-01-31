@@ -28,8 +28,10 @@ import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
+import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 
 import java.util.ArrayList;
@@ -42,8 +44,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     private MaterialMenuSelectionMode selectionMode = MaterialMenuSelectionMode.None;
     private boolean expanded = true;
     private Consumer<Boolean> onExpandChanged;
-
-    private float fullExpandedHeight = 0;
 
     private final Animator.FloatAnimator expandAnimator = Animator.ofFloat(1f, 1f)
             .duration(EXPAND_ANIMATION_DURATION)
@@ -60,7 +60,7 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         MaterialMenuSize size = style().size();
 
         float maxItemWidth = 0;
-        for (io.homo.superresolution.core.gui.core.layout.ILayoutElement child : getChildren()) {
+        for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuGroup group) {
                 maxItemWidth = Math.max(maxItemWidth, group.computeContentWidth());
             }
@@ -73,13 +73,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
         layout().setHeightAuto();
         layout().setMaxHeight(StyleSizeLength.undefined());
-    }
-
-    private void cacheFullExpandedHeight() {
-        Rectangle rawBounds = getRawBounds();
-        if (rawBounds.height > 0) {
-            fullExpandedHeight = rawBounds.height;
-        }
     }
 
     @Override
@@ -95,31 +88,20 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
             if (child instanceof MaterialMenuGroup group) {
                 group.style().colors(style().colors());
                 group.scheme(scheme());
+                group.setExpandProgress(1f);
+                for (ILayoutElement groupChild : group.getChildren()) {
+                    if (groupChild instanceof MaterialMenuItem item) {
+                        item.resetFadeState(true);
+                    }
+                }
             }
         }
 
         updateSize();
 
-        if (animProgress >= 1) {
-            cacheFullExpandedHeight();
-        }
-
-        if (fullExpandedHeight <= 0) {
-            cacheFullExpandedHeight();
-        }
-
-        float currentExpandedHeight = fullExpandedHeight * animProgress;
-
-        updateExpandState(currentExpandedHeight, animProgress);
-        Rectangle rawBounds = getRawBounds();
+        ctx.beginGroup(style().zIndex());
         ctx.save();
-
-        ctx.scissor(
-                rawBounds.x,
-                rawBounds.y,
-                rawBounds.width,
-                currentExpandedHeight
-        );
+        ctx.pushAlpha(animProgress);
 
         renderSelf(ctx, inputState);
         for (ILayoutElement child : getChildren()) {
@@ -128,62 +110,9 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
             }
         }
 
-        ctx.resetScissor();
+        ctx.popAlpha();
         ctx.restore();
-    }
-
-    private void updateExpandState(float currentExpandedHeight, float animProgress) {
-        Rectangle menuBounds = getRawBounds();
-        float menuTop = menuBounds.y;
-
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof MaterialMenuGroup group) {
-                Rectangle groupBounds = group.getRawBounds();
-                float groupRelativeTop = groupBounds.y - menuTop;
-                float groupRelativeBottom = groupRelativeTop + groupBounds.height;
-
-                float groupExpandProgress;
-                if (expanded) {
-                    if (currentExpandedHeight >= groupRelativeBottom) {
-                        groupExpandProgress = 1f;
-                    } else if (currentExpandedHeight <= groupRelativeTop) {
-                        groupExpandProgress = 0f;
-                    } else {
-                        groupExpandProgress = (currentExpandedHeight - groupRelativeTop) / groupBounds.height;
-                    }
-                } else {
-                    float collapseHeight = fullExpandedHeight - currentExpandedHeight;
-                    float groupDistanceFromBottom = fullExpandedHeight - groupRelativeBottom;
-                    if (collapseHeight <= groupDistanceFromBottom) {
-                        groupExpandProgress = 1f;
-                    } else if (collapseHeight >= fullExpandedHeight - groupRelativeTop) {
-                        groupExpandProgress = 0f;
-                    } else {
-                        groupExpandProgress = 1f - (collapseHeight - groupDistanceFromBottom) / groupBounds.height;
-                    }
-                }
-                group.setExpandProgress(groupExpandProgress);
-
-                for (ILayoutElement groupChild : group.getChildren()) {
-                    if (groupChild instanceof MaterialMenuItem item) {
-                        Rectangle itemBounds = item.getRawBounds();
-                        float itemRelativeTop = itemBounds.y - menuTop;
-                        float itemRelativeBottom = itemRelativeTop + itemBounds.height;
-
-                        if (expanded) {
-                            if (currentExpandedHeight + 25 >= itemRelativeBottom) {
-                                item.startFadeIn();
-                            }
-                        } else {
-                            float collapseHeight = fullExpandedHeight - currentExpandedHeight;
-                            if (collapseHeight + 25 >= fullExpandedHeight - itemRelativeTop) {
-                                item.startFadeOut();
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        ctx.endGroup();
     }
 
     public static MaterialMenu create() {
@@ -198,7 +127,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     public MaterialMenu expand() {
         if (!expanded) {
             expanded = true;
-            resetItemFadeStates(false);
             expandAnimator.fromTo(expandAnimator.get(), 1f).start();
             if (onExpandChanged != null) {
                 onExpandChanged.accept(true);
@@ -210,25 +138,12 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     public MaterialMenu collapse() {
         if (expanded) {
             expanded = false;
-            resetItemFadeStates(true);
             expandAnimator.fromTo(expandAnimator.get(), 0f).start();
             if (onExpandChanged != null) {
                 onExpandChanged.accept(false);
             }
         }
         return this;
-    }
-
-    private void resetItemFadeStates(boolean visible) {
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof MaterialMenuGroup group) {
-                for (ILayoutElement groupChild : group.getChildren()) {
-                    if (groupChild instanceof MaterialMenuItem item) {
-                        item.resetFadeState(visible);
-                    }
-                }
-            }
-        }
     }
 
     public MaterialMenu toggle() {
@@ -282,7 +197,79 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
+    public boolean managesChildEvents() {
+        return true;
+    }
+
+    @Override
+    public void mouseMove(float x, float y) {
+        super.mouseMove(x, y);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    widget.mouseMove(x, y);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mousePress(float x, float y, int button) {
+        super.mousePress(x, y, button);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                        widget.mousePress(x, y, button);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mouseRelease(float x, float y, int button) {
+        super.mouseRelease(x, y, button);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    widget.mouseRelease(x, y, button);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mouseScroll(float x, float y, double scrollX) {
+        super.mouseScroll(x, y, scrollX);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    widget.mouseScroll(x, y, scrollX);
+                }
+            }
+        }
+    }
+
+    @Override
     public Transform getFullTransform() {
+        if (getLayoutNode().getPositionType() == YogaPositionType.ABSOLUTE) {
+            return Transform.identity();
+        }
+
         Transform selfTransform = style().transform();
 
         if (getParent() instanceof AbstractLayoutElement parentElement) {
@@ -304,7 +291,7 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     private Rectangle getVisibleBounds() {
         Rectangle rawBounds = getRawBounds();
         float animProgress = expandAnimator.get();
-        float currentHeight = fullExpandedHeight > 0 ? fullExpandedHeight * animProgress : rawBounds.height * animProgress;
+        float currentHeight = rawBounds.height;
         return new Rectangle(rawBounds.x, rawBounds.y, rawBounds.width, currentHeight);
     }
 

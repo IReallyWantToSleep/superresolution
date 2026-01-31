@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.mixin.core.accessor.OptionInstanceAccessor;
-import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
 import org.spongepowered.asm.mixin.Final;
@@ -28,9 +27,13 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+#if !MC_VER > MC_1_21_10
+import net.minecraft.client.GraphicsStatus;
 
+#endif
 @Mixin(Options.class)
 public class OptionsMixin {
+    #if !MC_VER > MC_1_21_10
     @Final
     @Shadow
     private OptionInstance<GraphicsStatus> graphicsMode;
@@ -41,4 +44,5 @@ public class OptionsMixin {
             graphicsMode.set(GraphicsStatus.FANCY);
         }
     }
+    #endif
 }

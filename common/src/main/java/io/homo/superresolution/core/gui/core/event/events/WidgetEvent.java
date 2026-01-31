@@ -85,4 +85,26 @@ public class WidgetEvent {
             return newValue;
         }
     }
+
+
+    public static class InputEvent<T> extends Event {
+        private final T newValue;
+
+        public T getOldValue() {
+            return oldValue;
+        }
+
+        private final T oldValue;
+
+
+        public InputEvent(T oldValue, T newValue) {
+            this.newValue = newValue;
+            this.oldValue = oldValue;
+
+        }
+
+        public T getNewValue() {
+            return newValue;
+        }
+    }
 }

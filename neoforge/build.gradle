@@ -36,6 +36,15 @@ repositories {
             includeGroup "org.appliedenergistics.yoga"
         }
     }
+    maven {
+        name "CaffeineMC"
+        url "https://maven.caffeinemc.net/releases" // or /snapshots
+    }
+
+    maven {
+        name "CaffeineMC"
+        url "https://maven.caffeinemc.net/snapshots" // or /snapshots
+    }
 }
 
 configurations {
@@ -157,24 +166,56 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8"
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
         def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}"
+        if (lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) {
+            depName = "net.caffeinemc:sodium-neoforge-mod:${lib.version}"
+            if (lib.compileOnly) {
+                compileOnly(depName)
+            } else {
+                implementation(depName)
+            }
+
+            depName = "net.caffeinemc:sodium-neoforge:${lib.version}"
+            if (lib.compileOnly) {
+                compileOnly(depName)
+            } else {
+                implementation(depName)
+            }
+            continue
+        }
         if (lib.compileOnly) {
-            compileOnly(depName)
+            if (lib.useJarJar) {
+                compileOnly(utils.JarJar.extractJars(project, depName))
+            } else {
+                compileOnly(depName)
+            }
         } else {
-            implementation(depName)
+            if (lib.useJarJar) {
+                implementation(utils.JarJar.extractJars(project, depName))
+            } else {
+                implementation(depName)
+            }
         }
     }
     for (lib in versionConfig.neoforge.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {
-                compileOnly(files("../libs/" + lib.name + ".jar"))
+                if (lib.useJarJar) {
+                    compileOnly(utils.JarJar.extractJars(project, "../libs/" + lib.name + ".jar"))
+                } else {
+                    compileOnly(files("../libs/" + lib.name + ".jar"))
+                }
             } else {
-                implementation(files("../libs/" + lib.name + ".jar"))
+                if (lib.useJarJar) {
+                    implementation(utils.JarJar.extractJars(project, "../libs/" + lib.name + ".jar"))
+                } else {
+                    implementation(files("../libs/" + lib.name + ".jar"))
+                }
             }
         } else {
             if (lib.compileOnly) {
-                libraries(compileOnly(files("../libs/" + lib.name + ".jar")))
+                compileOnly(files("../libs/" + lib.name + ".jar"))
             } else {
-                libraries(implementation(files("../libs/" + lib.name + ".jar")))
+                implementation(files("../libs/" + lib.name + ".jar"))
             }
         }
     }
@@ -188,5 +229,10 @@ processResources {
                 version: project.version,
                 versionRange: versionConfig.common.neoforgeVersionRange
         )
+    }
+
+    // 1.21.5 以下版本排除 SPI 服务文件
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.5")) {
+        exclude("META-INF/services/net.neoforged.neoforgespi.earlywindow.*")
     }
 }

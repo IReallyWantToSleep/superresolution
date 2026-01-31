@@ -37,7 +37,7 @@ public class IrisShaderCompatUtils {
         String key = Optional.ofNullable(
                 ((ShaderPackAccessor) Iris.getCurrentPack().orElseThrow())
                         .getDimensionMap().get(worldName)).orElseGet(() -> {
-                    SuperResolution.LOGGER.warn("无法在当前光影包 {} 的维度映射中找到维度 {} 的名称映射，使用默认名称", Iris.getCurrentPackName(), worldName.getName());
+                    //SuperResolution.LOGGER.warn("无法在当前光影包 {} 的维度映射中找到维度 {} 的名称映射，使用默认名称", Iris.getCurrentPackName(), worldName.getName());
                     return null;
                 }
         );

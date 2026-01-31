@@ -26,6 +26,8 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
     protected Number step;
     protected Number max;
     protected Number min;
+    protected Number value;
+    protected Function<Number, String> valueFormater;
 
     public NumberSliderBuilder(Text name, Number value, Number max, Number min) {
         super(name, value);
@@ -44,8 +46,6 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
         return this;
     }
 
-    protected Number value;
-
     public Function<Number, String> getValueFormater() {
         return valueFormater;
     }
@@ -54,8 +54,6 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
         this.valueFormater = valueFormater;
         return this;
     }
-
-    protected Function<Number, String> valueFormater;
 
     @Override
     public NumberSliderOptionEntry build() {

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OptionCategory {
+    protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
     private Text name;
 
     public OptionCategory(Text name) {
@@ -33,8 +34,6 @@ public class OptionCategory {
     public List<AbstractOptionEntry<?, ?>> getEntries() {
         return entries;
     }
-
-    protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
 
     public Text getCategoryName() {
         return name;

@@ -19,15 +19,19 @@
 package io.homo.superresolution.fabric;
 
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.fabric.compat.sodium.SodiumOptionScreen;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 
 public final class SuperResolutionFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        if (FabricLoader.getInstance().isDevelopmentEnvironment() && SuperResolutionConfig.isEnableRenderDoc())
+            RenderDoc.init();
         if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
-
     }
 }

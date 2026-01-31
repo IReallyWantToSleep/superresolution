@@ -53,6 +53,9 @@ public class Fsr2v221RCASPipeline extends Fsr2Pipeline {
 
     @Override
     public void init() {
+        if (program != null) {
+            program.destroy();
+        }
         program = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v221/ffx_fsr2_rcas_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))

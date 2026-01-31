@@ -19,12 +19,12 @@
 package io.homo.superresolution.core.gui.widgets.label;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonStyle;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
@@ -36,21 +36,10 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     public MaterialLabel() {
         this.style = new MaterialLabelStyle();
         getLayoutNode().setDebugName("MaterialLabel");
-
-    }
-
-    @Override
-    public MaterialLabelStyle style() {
-        return (MaterialLabelStyle) style;
     }
 
     public static MaterialLabel create() {
         return new MaterialLabel();
-    }
-
-    @Override
-    protected boolean isInteractive() {
-        return false;
     }
 
     public MaterialLabel text(String text) {
@@ -73,18 +62,43 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
         return this;
     }
 
+    public MaterialLabel lineHeight(float lineHeight) {
+        style().lineHeight(lineHeight);
+        return this;
+    }
+
     @Override
     protected void init() {
     }
 
     @Override
+    public MaterialLabelStyle style() {
+        return (MaterialLabelStyle) style;
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return false;
+    }
+
+    @Override
     public void render(RenderContext ctx, UIInputState inputState) {
-        Vector2f textSize = ctx.measureText(textSupplier.get(), style().fontSize());
-        setElementSize(textSize.x, textSize.y);
-        Rectangle bounds = getBounds();
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
+            Rectangle bounds = getBounds();
+            TextMetrics textMetrics = ctx.measureTextMetrics(
+                    ctx.font(),
+                    style().fontSize(),
+                    text,
+                    bounds.width,
+                    style().lineHeight(),
+                    style().wrap()
+            );
+            Vector2f textSize = new Vector2f(textMetrics.maxLineWidth, textMetrics.totalHeight);
+            setElementSize(textSize.x, textSize.y);
+
             Color textColor = getTextColor();
+            ctx.beginGroup(style().zIndex());
             ctx.drawAlignedText(
                     ctx.font(),
                     style().fontSize(),
@@ -92,11 +106,12 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                     bounds.x,
                     bounds.y,
                     bounds.width,
-                    bounds.height,
+                    style().lineHeight(),
                     textColor,
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP),
-                    false
+                    style().wrap()
             );
+            ctx.endGroup();
         }
     }
 

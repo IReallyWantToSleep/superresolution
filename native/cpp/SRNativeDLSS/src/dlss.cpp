@@ -61,6 +61,12 @@ extern "C"
                 msgType = SR_MESSAGE_TYPE_ERROR;
             }
 
+            // NGX传进来的日志末尾有换行符，很不美观（划掉）
+            size_t msgLen = std::wcslen(wideMessage);
+            if (msgLen > 0 && wideMessage[msgLen - 1] == L'\n') {
+                wideMessage[msgLen - 1] = L'\0';
+            }
+
             g_ngxLoggingCallback(msgType, wideMessage);
             delete[] wideMessage;
         };
@@ -96,7 +102,7 @@ extern "C"
             auto result = NVSDK_NGX_VULKAN_Init_with_ProjectID(
                 projectId,
                 NVSDK_NGX_ENGINE_TYPE_CUSTOM,
-                "1.0.0",
+                "11.45.14",
                 L".",
                 (VkInstance)(vulkanDevice.instance),
                 (VkPhysicalDevice)(vulkanDevice.physicalDevice),
@@ -178,6 +184,12 @@ extern "C"
     {
         SRDLSSPrivateData *privateData = (SRDLSSPrivateData *)context->userContext;
         const SRCreateUpscaleContextDesc *desc = &context->desc;
+        // 如果已经初始化过，先释放旧的 handle
+        if (privateData->dlssHandle)
+        {
+            NVSDK_NGX_VULKAN_ReleaseFeature(privateData->dlssHandle);
+            privateData->dlssHandle = nullptr;
+        }
         float upscaleRatio = desc->upscaledSize.x / desc->renderSize.x;
         NVSDK_NGX_DLSS_Create_Params dlssCreateParams = {};
         dlssCreateParams.Feature.InWidth = desc->renderSize.x;
@@ -225,6 +237,11 @@ extern "C"
         {
             NVSDK_NGX_VULKAN_ReleaseFeature(privateData->dlssHandle);
             privateData->dlssHandle = nullptr;
+        }
+        if (privateData->ngxParams)
+        {
+            NVSDK_NGX_VULKAN_DestroyParameters(privateData->ngxParams);
+            privateData->ngxParams = nullptr;
         }
         SRVulkanDeviceInfo vulkanDevice = context->desc.renderDeviceInfo.vulkan;
         if (srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX") != nullptr)

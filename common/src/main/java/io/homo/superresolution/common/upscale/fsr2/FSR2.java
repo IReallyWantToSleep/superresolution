@@ -39,7 +39,6 @@ public class FSR2 extends AbstractAlgorithm {
     private GlFrameBuffer outputFbo;
     private GlTexture2D output;
     private GlTexture2D exposureTexture;
-    private GlTexture2D inputTexture;
 
     public FSR2() {
         super();
@@ -48,13 +47,8 @@ public class FSR2 extends AbstractAlgorithm {
 
     public void resize(int width, int height) {
         RenderSystem.assertOnRenderThread();
-        inputTexture.getMipmapSettings().bias((float) (Math.log((double) RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getScreenWidth()) / Math.log(2) - 1f));
         this.output.resize(width, height);
         outputFbo.resizeFrameBuffer(width, height);
-        inputTexture.resize(
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight()
-        );
         fsr2Context.resize(new Fsr2Dimensions(
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight(),
@@ -88,16 +82,6 @@ public class FSR2 extends AbstractAlgorithm {
                 .format(TextureFormat.R8)
                 .usages(TextureUsages.create().sampler().storage())
                 .label("SRFsr2ExposureTexture")
-                .build()
-        );
-        inputTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
-                .type(TextureType.Texture2D)
-                .width(RenderHandlerManager.getRenderWidth())
-                .height(RenderHandlerManager.getRenderHeight())
-                .format(SuperResolutionConfig.getInternalTextureFormat())
-                .mipmapsAuto()
-                .usages(TextureUsages.create().sampler().storage())
-                .label("SRFsr2InputTexture")
                 .build()
         );
         fsr2Context = new Fsr2Context(

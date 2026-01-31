@@ -67,7 +67,7 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     public void mouseMove(float x, float y) {
         super.mouseMove(x, y);
 
-        if (managesChildRendering()) {
+        if (managesChildEvents()) {
             return;
         }
 
@@ -85,7 +85,7 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     public void mousePress(float x, float y, int button) {
         super.mousePress(x, y, button);
 
-        if (managesChildRendering()) {
+        if (managesChildEvents()) {
             return;
         }
 
@@ -131,7 +131,7 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     public void mouseScroll(float x, float y, double scrollX) {
         super.mouseScroll(x, y, scrollX);
 
-        if (managesChildRendering()) {
+        if (managesChildEvents()) {
             return;
         }
 

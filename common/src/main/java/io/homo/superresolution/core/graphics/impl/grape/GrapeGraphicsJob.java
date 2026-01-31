@@ -97,6 +97,11 @@ public class GrapeGraphicsJob extends GpuComputeJob<GrapeGraphicsJob> implements
     public void destroy() {
         pipeline = null;
         frameBuffer = null;
-        cachedVertexBuffer.destroy();
+        if (cachedVertexBuffer != null) {
+            cachedVertexBuffer.destroy();
+        }
+        if (renderPass != null) {
+            renderPass.destroy();
+        }
     }
 }

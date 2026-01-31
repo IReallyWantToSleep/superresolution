@@ -31,12 +31,16 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
     public static final MutableYogaConfig yogaConfig = YogaConfig.create();
     private final Vector2f elementSize = new Vector2f(-1, -1);
     protected ILayoutContainer parent;
-    private YogaNode layoutNode = new YogaNode(yogaConfig);
+    private final YogaNode layoutNode = new YogaNode(yogaConfig);
 
     public void setElementSize(float width, float height) {
         elementSize.set(width, height);
-        if (width > 0) layoutNode.setWidth(width);
-        if (height > 0) layoutNode.setHeight(height);
+        if (width > 0) {
+            layoutNode.setWidth(width);
+        }
+        if (height > 0) {
+            layoutNode.setHeight(height);
+        }
     }
 
     public void setElementWidth(float width) {

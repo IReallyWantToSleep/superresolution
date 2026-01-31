@@ -39,9 +39,9 @@ public class DeferredNode extends RenderNode {
     @Override
     public void render(RenderContext ctx) {
         ctx.save();
-        ctx.resetTransform();
-        ctx.translate(screenPosition.x, screenPosition.y);
+        applyState(ctx);
         drawFunc.accept(ctx);
+        restoreState(ctx);
         ctx.restore();
     }
 }

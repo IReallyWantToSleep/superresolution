@@ -20,6 +20,7 @@ package io.homo.superresolution.forge;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.file.FileConfigBuilder;
+import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
@@ -43,7 +44,7 @@ public final class SuperResolutionForge {
         if (io.homo.superresolution.api.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
-        SuperResolution.registerKeyMapping();
+        SuperResolutionKeyMapping.registerKeyMapping();
         SuperResolution.registerEvents();
     }
 }

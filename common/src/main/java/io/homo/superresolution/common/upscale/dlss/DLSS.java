@@ -43,7 +43,6 @@ import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
-import net.minecraft.client.Minecraft;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.lwjgl.system.MemoryStack;
@@ -56,44 +55,39 @@ import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DLSS extends AbstractAlgorithm {
+    private static boolean providerLoaded = false;
     private SRUpscaleContext context;
-
     private GlImportableTexture2D inputColorGlTexture;
     private VulkanTexture inputColorVkTexture;
-
     private GlImportableTexture2D inputDepthGlTexture;
     private VulkanTexture inputDepthVkTexture;
-
     private GlImportableTexture2D inputMotionVectorsGlTexture;
     private VulkanTexture inputMotionVectorsVkTexture;
-
     private GlImportableTexture2D outputColorGlTexture;
     private GlTexture2D outputColorTexture;
     private VulkanTexture outputColorVkTexture;
-
     private GlFrameBuffer outputFrameBuffer;
-
     private VkGlInteropSemaphore syncSemaphore;
     private VkGlInteropSemaphore syncVkSemaphore;
 
     public void updateDLSS() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_DLSS == null)
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_DLSS == null) {
             return;
+        }
         Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_DLSS
-                .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
-        if (!(lib.toFile().isFile() && lib.toFile().canRead()))
+                .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
+        if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
             return;
+        }
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
-        if (context != null) {
-            if (context.nativePtr > 0) {
-                SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
-            }
+        if (!providerLoaded) {
+            SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
+                    lib.toAbsolutePath().toString(),
+                    "srGetDLSSUpscaleProviders",
+                    "srGetDLSSUpscaleProvidersCount");
+            providerLoaded = true;
         }
-        SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
-                lib.toAbsolutePath().toString(),
-                "srGetDLSSUpscaleProviders",
-                "srGetDLSSUpscaleProvidersCount");
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
         SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
                 SuperResolutionNativeAPI.srGetUpscaleProvider(
@@ -117,7 +111,7 @@ public class DLSS extends AbstractAlgorithm {
                 new Vector2i(RenderHandlerManager.getRenderWidth(),
                         RenderHandlerManager.getRenderHeight()),
                 SRUpscaleContextCreateFlags.VULKAN.value);
-        upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH", SuperResolutionConstants.NATIVE_LIBRARIES_DIR.toAbsolutePath().toString());
+        upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH", SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString());
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
@@ -137,23 +131,31 @@ public class DLSS extends AbstractAlgorithm {
 
     protected void destroySharedTexture() {
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
-        if (this.inputColorVkTexture != null)
+        if (this.inputColorVkTexture != null) {
             this.inputColorVkTexture.destroy();
-        if (this.inputColorGlTexture != null)
+        }
+        if (this.inputColorGlTexture != null) {
             this.inputColorGlTexture.destroy();
-        if (this.inputDepthVkTexture != null)
+        }
+        if (this.inputDepthVkTexture != null) {
             this.inputDepthVkTexture.destroy();
-        if (this.inputDepthGlTexture != null)
+        }
+        if (this.inputDepthGlTexture != null) {
             this.inputDepthGlTexture.destroy();
-        if (this.outputColorVkTexture != null)
+        }
+        if (this.outputColorVkTexture != null) {
             this.outputColorVkTexture.destroy();
-        if (this.outputColorGlTexture != null)
+        }
+        if (this.outputColorGlTexture != null) {
             this.outputColorGlTexture.destroy();
+        }
 
-        if (this.outputFrameBuffer != null)
+        if (this.outputFrameBuffer != null) {
             this.outputFrameBuffer.destroy();
-        if (this.outputColorTexture != null)
+        }
+        if (this.outputColorTexture != null) {
             this.outputColorTexture.destroy();
+        }
     }
 
     protected void createSharedTexture() {
@@ -176,7 +178,7 @@ public class DLSS extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R16F)
+                        .format(TextureFormat.R32F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -230,12 +232,10 @@ public class DLSS extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        createSharedTexture();
         syncSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
         syncVkSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
-        resize(RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        );
+        updateDLSS();
+        createSharedTexture();
     }
 
     @Override
@@ -252,10 +252,11 @@ public class DLSS extends AbstractAlgorithm {
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
 
-        if (dispatchResource.resources().motionVectorsTexture() != null)
+        if (dispatchResource.resources().motionVectorsTexture() != null) {
             InteropCoordinateConverter.flipMotionVectorY(
                     dispatchResource.resources().motionVectorsTexture(),
                     this.inputMotionVectorsGlTexture);
+        }
         syncSemaphore.signalOpenGL(
                 new int[]{
                         Math.toIntExact(this.inputColorGlTexture.handle()),
@@ -269,7 +270,7 @@ public class DLSS extends AbstractAlgorithm {
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 });
 
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        //vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
         RenderSystems.vulkan().device().commandDecoder().beginCommandBuffer();
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device()
@@ -286,7 +287,7 @@ public class DLSS extends AbstractAlgorithm {
                         dispatchResource.frameCount(),
                         dispatchResource.renderSize(),
                         dispatchResource.screenSize())
-                        .mul(new Vector2f(1, -1))
+                        .mul(new Vector2f(1, 1))
         );
         desc.setMotionVectorScale(new Vector2f(1));
         desc.setRenderSize(
@@ -347,15 +348,19 @@ public class DLSS extends AbstractAlgorithm {
         syncSemaphore.destroy();
         syncVkSemaphore.destroy();
 
-        if (context != null && context.nativePtr > 0)
+        if (context != null && context.nativePtr > 0) {
             SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+        }
     }
 
     @Override
     public void resize(int width, int height) {
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
-        updateDLSS();
         destroySharedTexture();
+        if (context != null && context.nativePtr > 0) {
+            SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+        }
+        updateDLSS();
         createSharedTexture();
     }
 
@@ -380,10 +385,11 @@ public class DLSS extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             return new Vector2f(0);
+        }
         // halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x) * 8;
+        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x) * 2;
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
         // R2 参考PhotonShader
         /*

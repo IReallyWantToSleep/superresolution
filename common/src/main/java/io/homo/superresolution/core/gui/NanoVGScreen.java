@@ -103,11 +103,20 @@ public abstract class NanoVGScreen<T> extends Screen {
         super.init();
     }
 
+    #if MC_VER > MC_1_21_10
+    @Override
+    public void resize(int width, int height) {
+        super.resize(width, height);
+        scaleManager.update();
+    }
+
+    #else
     @Override
     public void resize(@NotNull Minecraft minecraft, int width, int height) {
         super.resize(minecraft, width, height);
         scaleManager.update();
     }
+    #endif
 
     public void draw(RenderContext ctx, UIInputState inputState) {
         drawBefore(ctx, inputState);
@@ -196,43 +205,43 @@ public abstract class NanoVGScreen<T> extends Screen {
         view.dispatchCharTyped(codePoint, modifiers);
     }
 
-    #if MC_VER > MC_1_21_6 && false
+    #if MC_VER > MC_1_21_8
     @Override
-    public boolean charTyped(CharacterEvent event) {
+    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
         dispatchCharTypedToFrame(((char) event.codepoint()), event.modifiers());
         return true;
     }
 
     @Override
-    public boolean keyReleased(KeyEvent event) {
+    public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
         dispatchKeyReleaseToFrame(event.key(), event.scancode(), event.modifiers());
         super.keyPressed(event);
         return true;
     }
 
     @Override
-    public boolean keyPressed(KeyEvent event) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
         dispatchKeyPressToFrame(event.key(), event.scancode(), event.modifiers());
         super.keyPressed(event);
         return true;
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
         dispatchMouseDragToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), (float) transformPos(dragX), (float) transformPos(dragY), event.button());
         super.mouseDragged(event, dragX, dragY);
         return true;
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent event) {
+    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
         dispatchMouseReleaseToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
         super.mouseReleased(event);
         return true;
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent event, boolean idk) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean idk) {
         dispatchMousePressToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
         super.mouseClicked(event, idk);
         return true;

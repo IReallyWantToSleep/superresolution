@@ -19,8 +19,8 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
-import org.joml.Vector2f;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 
 public record DispatchResource(
         int renderWidth,

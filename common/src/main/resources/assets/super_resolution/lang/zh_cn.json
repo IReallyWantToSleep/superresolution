@@ -2,6 +2,7 @@
     "superresolution.screen.config.name": "超分辨率配置",
     "superresolution.screen.info.name": "信息",
     "superresolution.name": "超分辨率",
+    "superresolution.config_gui": "设置...",
     "superresolution.screen.warn": "警告",
     "superresolution.common_requirement.not_support.msg": "SuperResolution 错误",
     "superresolution.incompatible_mods": "有不兼容的模组：\n%s\n你必须删除它们才能进入游戏，SuperResolution不兼容它们的原因是SuperResolution已经包括了它们的功能",

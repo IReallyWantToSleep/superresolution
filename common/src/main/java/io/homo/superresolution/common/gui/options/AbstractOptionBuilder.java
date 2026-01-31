@@ -39,6 +39,12 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected VT value;
     protected Text name;
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
+    protected OptionCategory category;
+
+    public AbstractOptionBuilder(Text name, VT value) {
+        this.name = name;
+        this.value = value;
+    }
 
     protected OptionCategory getCategory() {
         return category;
@@ -47,13 +53,6 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected SELF setCategory(OptionCategory category) {
         this.category = category;
         return (SELF) this;
-    }
-
-    protected OptionCategory category;
-
-    public AbstractOptionBuilder(Text name, VT value) {
-        this.name = name;
-        this.value = value;
     }
 
     public abstract OT build();
@@ -111,37 +110,31 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         return (SELF) this;
     }
 
+    @Deprecated
     public SELF setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
         this.tooltipSupplier = tooltipSupplier;
         return (SELF) this;
     }
-    
-    /**
-     * 设置选项描述（作为tooltip显示在名称下方）
-     */
+
     public SELF setDescription(Text description) {
         this.tooltipSupplier = (v) -> Optional.of(new Text[]{description});
         return (SELF) this;
     }
-    
-    /**
-     * 设置选项描述（作为tooltip显示在名称下方）
-     */
+
     public SELF setDescription(String description) {
         return setDescription(Text.literal(description));
     }
-    
-    /**
-     * 设置多行描述
-     */
+
     public SELF setDescriptions(Text... descriptions) {
         this.tooltipSupplier = (v) -> Optional.of(descriptions);
         return (SELF) this;
     }
-    
-    /**
-     * 设置配色方案
-     */
+
+    public SELF setDescriptionsSupplier(Function<VT, Optional<Text[]>> supplier) {
+        this.tooltipSupplier = supplier;
+        return (SELF) this;
+    }
+
     public SELF scheme(MaterialScheme scheme) {
         this.scheme = scheme;
         return (SELF) this;

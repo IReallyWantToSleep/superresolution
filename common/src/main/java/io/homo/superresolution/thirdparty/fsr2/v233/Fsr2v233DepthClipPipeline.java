@@ -55,6 +55,9 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
 
     @Override
     public void init() {
+        if (program != null) {
+            program.destroy();
+        }
         program = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v233/ffx_fsr2_depth_clip_pass.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))

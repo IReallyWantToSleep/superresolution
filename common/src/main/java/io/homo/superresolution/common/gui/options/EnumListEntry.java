@@ -22,9 +22,11 @@ package io.homo.superresolution.common.gui.options;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.impl.Text;
 
+import java.util.function.Function;
+
 public class EnumListEntry<T extends Enum<T>> extends SelectionListOptionEntry<T> {
 
-    public EnumListEntry(Text name, T value, ImmutableList<T> values) {
-        super(name, value, values);
+    public EnumListEntry(Text name, T value, ImmutableList<T> values, Function<T, String> nameProvider) {
+        super(name, value, values, nameProvider);
     }
 }
