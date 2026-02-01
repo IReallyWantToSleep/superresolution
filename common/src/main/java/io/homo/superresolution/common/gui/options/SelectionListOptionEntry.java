@@ -100,6 +100,9 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
                 if (saveConsumer != null) {
                     saveConsumer.accept(value());
                 }
+                if (saveRunnable != null) {
+                    saveRunnable.run();
+                }
             }
         });
 

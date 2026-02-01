@@ -32,7 +32,7 @@ public class NanoVGFontLoader {
     public static Map<String, NanoVGFont> FONT_MAP = new HashMap<>();
 
     public static void initAndLoad() {
-        FONT_MAP.put(REGULAR_VARIATION, new NanoVGFont("NotoSansSC SemiBold", "/assets/super_resolution/font/NotoSansSC-Regular.ttf"));
+        FONT_MAP.put(REGULAR_VARIATION, new NanoVGFont("HarmonyOS Sans", "/assets/super_resolution/font/Font.ttf"));
 
         for (NanoVGFont font : FONT_MAP.values()) {
             font.load();

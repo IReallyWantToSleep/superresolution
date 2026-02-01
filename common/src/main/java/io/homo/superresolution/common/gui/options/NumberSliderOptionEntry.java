@@ -98,6 +98,9 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
             if (saveConsumer != null) {
                 saveConsumer.accept(this.value);
             }
+            if (saveRunnable != null) {
+                saveRunnable.run();
+            }
         });
 
         sliderContainer.addChild(valueLabel);

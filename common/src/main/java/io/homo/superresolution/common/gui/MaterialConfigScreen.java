@@ -28,6 +28,7 @@ import io.homo.superresolution.common.gui.options.OptionBuilder;
 import io.homo.superresolution.common.gui.options.OptionCategory;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.MaterialTheme;
@@ -174,7 +175,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         OptionCategory category = new OptionCategory(Text.translatable("superresolution.screen.config.category.general"));
         OptionBuilder builder = new OptionBuilder(category).scheme(materialScheme);
-
+        builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
                         SuperResolutionConfig.isEnableUpscaleOriginal())
@@ -195,7 +196,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         SuperResolutionConfig.getUpscaleAlgorithm(),
                         AlgorithmRegistry.getAlgorithmMap().values().toArray())
                 .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
-                .setDefaultValue(() -> SuperResolutionConfig.getUpscaleAlgorithm())
+                .setDefaultValue(() -> AlgorithmDescriptions.SGSR1)
                 .setSaveConsumer(algo -> SuperResolutionConfig.setUpscaleAlgorithm((AlgorithmDescription<?>) algo))
                 .build();
         builder.numberOption(
@@ -239,7 +240,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDefaultValue(() -> false)
                 .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
                 .build();
-
 
         builder.enumSelectorOption(
                         Text.translatable("superresolution.screen.config.options.label.capture_mode"),
