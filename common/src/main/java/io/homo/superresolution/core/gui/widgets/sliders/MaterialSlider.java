@@ -297,7 +297,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         Rectangle valueIndicatorRegion = new Rectangle();
         valueIndicatorRegion.width = style().size().valueIndicatorTextHorizontalPadding() * 2 + valueIndicatorStringRegion.x;
         valueIndicatorRegion.height = style().size().valueIndicatorTextVerticalPadding() * 2 + 20;
-        valueIndicatorRegion.x = handleXPosition - valueIndicatorRegion.width / 2;
+        valueIndicatorRegion.x = handleXPosition - valueIndicatorRegion.width / 2 + style().size().stepsSize();
         valueIndicatorRegion.y = bounds.y + ((style().size().handleHeight() - style().size().trackHeight()) / 2) - ((style().size().handleHeight() - style().size().trackHeight()) / 2) - style().size().valueIndicatorBottomPadding() - bounds.height;
         ctx.save();
         float pivotX = valueIndicatorRegion.getCenterX();

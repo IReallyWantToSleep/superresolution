@@ -74,6 +74,8 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
                 .fontSize(12)
                 .lineHeight(14)
                 .scheme(scheme);
+        descriptionLabel.style().wrap(true);
+        descriptionLabel.layout().setWidthPercent(100);
         descriptionLabel.layout().setMargin(YogaEdge.TOP, 6);
         leftContainer.addChild(descriptionLabel);
 

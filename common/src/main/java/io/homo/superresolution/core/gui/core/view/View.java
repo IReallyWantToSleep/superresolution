@@ -152,14 +152,8 @@ public class View {
             YogaNode node = entry.layoutNode;
             float frameX = node.getLayoutX();
             float frameY = node.getLayoutY();
-            float frameWidth = node.getLayoutWidth();
-            float frameHeight = node.getLayoutHeight();
 
-            if (x >= frameX && x < frameX + frameWidth && y >= frameY && y < frameY + frameHeight) {
-                entry.frame.dispatchMouseMove(x - frameX, y - frameY);
-            } else {
-                //entry.frame.dispatchMouseMove(-10000, -10000);
-            }
+            entry.frame.dispatchMouseMove(x - frameX, y - frameY);
         }
     }
 

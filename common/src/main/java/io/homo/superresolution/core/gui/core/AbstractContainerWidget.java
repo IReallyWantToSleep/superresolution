@@ -66,90 +66,34 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     @Override
     public void mouseMove(float x, float y) {
         super.mouseMove(x, y);
-
-        if (managesChildEvents()) {
-            return;
-        }
-
-        if (isDisabled() || !isVisible()) return;
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mouseMove(x, y);
-                }
-            }
-        }
     }
 
     @Override
     public void mousePress(float x, float y, int button) {
         super.mousePress(x, y, button);
-
-        if (managesChildEvents()) {
-            return;
-        }
-
-        if (isDisabled() || !isVisible()) return;
-
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mousePress(x, y, button);
-                }
-            }
-        }
     }
 
     @Override
     public void mouseRelease(float x, float y, int button) {
         super.mouseRelease(x, y, button);
-        if (isDisabled() || !isVisible()) return;
-
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mouseRelease(x, y, button);
-                }
-            }
-        }
     }
 
     @Override
     public void mouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
         super.mouseDrag(mouseX, mouseY, dragX, dragY, button);
-        if (isDisabled() || !isVisible()) return;
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mouseDrag(mouseX, mouseY, dragX, dragY, button);
-                }
-            }
-        }
     }
 
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
         super.mouseScroll(x, y, scrollX);
-
-        if (managesChildEvents()) {
-            return;
-        }
-
-        if (isDisabled() || !isVisible()) return;
-
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mouseScroll(x, y, scrollX);
-                }
-            }
-        }
     }
 
     @Override
     public void keyPress(int keyCode, int scancode, int modifiers) {
         super.keyPress(keyCode, scancode, modifiers);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
 
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
@@ -163,7 +107,9 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     @Override
     public void keyRelease(int keyCode, int scancode, int modifiers) {
         super.keyRelease(keyCode, scancode, modifiers);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
@@ -176,7 +122,9 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     @Override
     public void charTyped(char codePoint, int modifiers) {
         super.charTyped(codePoint, modifiers);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
         for (ILayoutElement child : children) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
@@ -245,7 +193,9 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
 
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
-        if (!isVisible()) return;
+        if (!isVisible()) {
+            return;
+        }
         renderSelf(ctx, inputState);
     }
 

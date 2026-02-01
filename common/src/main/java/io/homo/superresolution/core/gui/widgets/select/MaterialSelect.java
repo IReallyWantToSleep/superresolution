@@ -29,7 +29,6 @@ import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.menu.*;
-import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPhysicalEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
@@ -44,6 +43,66 @@ import java.util.function.Function;
 
 public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>> {
 
+
+    public enum MenuPosition {
+        AUTO(null, MenuAlign.START),
+        AUTO_START(null, MenuAlign.START),
+        AUTO_CENTER(null, MenuAlign.CENTER),
+        AUTO_END(null, MenuAlign.END),
+
+        BELOW(MenuSide.BOTTOM, MenuAlign.START),
+        ABOVE(MenuSide.TOP, MenuAlign.START),
+
+        TOP_START(MenuSide.TOP, MenuAlign.START),
+        TOP_CENTER(MenuSide.TOP, MenuAlign.CENTER),
+        TOP_END(MenuSide.TOP, MenuAlign.END),
+
+        BOTTOM_START(MenuSide.BOTTOM, MenuAlign.START),
+        BOTTOM_CENTER(MenuSide.BOTTOM, MenuAlign.CENTER),
+        BOTTOM_END(MenuSide.BOTTOM, MenuAlign.END),
+
+        LEFT_START(MenuSide.LEFT, MenuAlign.START),
+        LEFT_CENTER(MenuSide.LEFT, MenuAlign.CENTER),
+        LEFT_END(MenuSide.LEFT, MenuAlign.END),
+
+        RIGHT_START(MenuSide.RIGHT, MenuAlign.START),
+        RIGHT_CENTER(MenuSide.RIGHT, MenuAlign.CENTER),
+        RIGHT_END(MenuSide.RIGHT, MenuAlign.END);
+
+        private final MenuSide side;
+        private final MenuAlign align;
+
+        MenuPosition(MenuSide side, MenuAlign align) {
+            this.side = side;
+            this.align = align;
+        }
+
+        public boolean isAuto() {
+            return side == null;
+        }
+
+        public MenuSide side() {
+            return side;
+        }
+
+        public MenuAlign align() {
+            return align;
+        }
+    }
+
+    private enum MenuSide {
+        TOP,
+        BOTTOM,
+        LEFT,
+        RIGHT
+    }
+
+    private enum MenuAlign {
+        START,
+        CENTER,
+        END
+    }
+
     private final MaterialSelectField field;
 
     public MaterialMenu getMenu() {
@@ -57,6 +116,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private Consumer<T> onSelectionChanged;
     private Function<T, String> displayFormatter = Object::toString;
     private float width = 280;
+    private MenuPosition menuPosition = MenuPosition.AUTO_START;
 
     public MaterialSelect() {
         this.style = new MaterialSelectStyle();
@@ -120,6 +180,11 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     public MaterialSelect<T> displayFormatter(Function<T, String> formatter) {
         this.displayFormatter = formatter;
         updateDisplayValue();
+        return this;
+    }
+
+    public MaterialSelect<T> menuPosition(MenuPosition position) {
+        this.menuPosition = position;
         return this;
     }
 
@@ -296,28 +361,107 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             Rectangle selfBounds = getRawBounds();
             MaterialSelectSize size = style().size();
 
-            Vector2f menuPos = new Vector2f(selfBounds.x, selfBounds.y + size.containerHeight() + 4);
-            Vector2f screenPos = getFullTransform().transformPoint(menuPos);
+            menu.layout().setWidth(width);
+            menu.layout().setHeightAuto();
+            menu.layout().setMaxHeight(StyleSizeLength.undefined());
+            menu.getLayoutNode().calculateLayout(width, Float.MAX_VALUE);
+            float naturalMenuHeight = menu.getMenuHeight();
 
+            float viewportHeight = ctx.viewportHeight();
+            float viewportWidth = ctx.viewportWidth();
+            float viewportPadding = 8f;
+
+            Vector2f fieldScreenPos = getFullTransform().transformPoint(new Vector2f(selfBounds.x, selfBounds.y));
+            float fieldX = fieldScreenPos.x;
+            float fieldY = fieldScreenPos.y;
+            float fieldWidth = width;
+            float fieldHeight = size.containerHeight();
+
+            float spaceBelow = viewportHeight - (fieldY + fieldHeight) - viewportPadding;
+            float spaceAbove = fieldY - viewportPadding;
+            float spaceRight = viewportWidth - (fieldX + fieldWidth) - viewportPadding;
+            float spaceLeft = fieldX - viewportPadding;
+
+            MenuSide side = menuPosition.side();
+            MenuAlign align = menuPosition.align();
+
+            if (menuPosition.isAuto()) {
+                if (spaceBelow >= naturalMenuHeight) {
+                    side = MenuSide.BOTTOM;
+                } else if (spaceLeft >= width) {
+                    side = MenuSide.LEFT;
+                } else if (spaceRight >= width) {
+                    side = MenuSide.RIGHT;
+                } else if (spaceAbove >= naturalMenuHeight) {
+                    side = MenuSide.TOP;
+                } else {
+                    float maxSpace = Math.max(Math.max(spaceBelow, spaceAbove), Math.max(spaceLeft, spaceRight));
+                    if (maxSpace == spaceBelow) {
+                        side = MenuSide.BOTTOM;
+                    } else if (maxSpace == spaceLeft) {
+                        side = MenuSide.LEFT;
+                    } else if (maxSpace == spaceRight) {
+                        side = MenuSide.RIGHT;
+                    } else {
+                        side = MenuSide.TOP;
+                    }
+                }
+            }
+
+            float availableHeight;
+            switch (side) {
+                case TOP:
+                    availableHeight = Math.min(spaceAbove, naturalMenuHeight);
+                    break;
+                case BOTTOM:
+                    availableHeight = Math.min(spaceBelow, naturalMenuHeight);
+                    break;
+                case LEFT:
+                case RIGHT:
+                default:
+                    availableHeight = Math.min(naturalMenuHeight, viewportHeight - viewportPadding * 2);
+                    break;
+            }
+
+            float menuHeight = availableHeight;
+
+            float menuX;
+            float menuY;
+
+            switch (side) {
+                case TOP:
+                    menuY = fieldY - menuHeight - 4;
+                    menuX = alignHorizontal(fieldX, fieldWidth, width, align);
+                    break;
+                case LEFT:
+                    menuX = fieldX - width - 4;
+                    menuY = alignVertical(fieldY, fieldHeight, menuHeight, align);
+                    break;
+                case RIGHT:
+                    menuX = fieldX + fieldWidth + 4;
+                    menuY = alignVertical(fieldY, fieldHeight, menuHeight, align);
+                    break;
+                case BOTTOM:
+                default:
+                    menuY = fieldY + fieldHeight + 4;
+                    menuX = alignHorizontal(fieldX, fieldWidth, width, align);
+                    break;
+            }
+
+            menuX = clamp(menuX, viewportPadding, viewportWidth - width - viewportPadding);
+            menuY = clamp(menuY, viewportPadding, viewportHeight - menuHeight - viewportPadding);
+
+            final float finalMenuX = menuX;
+            final float finalMenuY = menuY;
             final float menuWidth = width;
-            final float menuX = screenPos.x;
-            final float menuY = screenPos.y;
+
             ctx.deferToLayer(RenderLayer.Floating, 1000, (deferredCtx) -> {
-                deferredCtx.rect(
-                        menuX,
-                        menuY,
-                        menuWidth,
-                        menu.getLayoutNode().getLayoutHeight(),
-                        Color.black(),
-                        true
-                );
                 menu.layout().setWidth(menuWidth);
-                menu.layout().setHeightAuto();
-                menu.layout().setMaxHeight(StyleSizeLength.undefined());
+                menu.layout().setMaxHeight(Float.MAX_VALUE);
 
                 menu.layout().setPositionType(YogaPositionType.ABSOLUTE);
-                menu.layout().setPosition(YogaEdge.LEFT, menuX);
-                menu.layout().setPosition(YogaEdge.TOP, menuY);
+                menu.layout().setPosition(YogaEdge.LEFT, finalMenuX);
+                menu.layout().setPosition(YogaEdge.TOP, finalMenuY);
                 menu.getLayoutNode().calculateLayout(menuWidth, Float.MAX_VALUE);
 
                 deferredCtx.resetScissor();
@@ -396,6 +540,26 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         if (menu != null) {
             menu.destroy();
         }
+    }
+
+    private float alignHorizontal(float fieldX, float fieldWidth, float menuWidth, MenuAlign align) {
+        return switch (align) {
+            case START -> fieldX;
+            case CENTER -> fieldX + (fieldWidth - menuWidth) / 2f;
+            case END -> fieldX + fieldWidth - menuWidth;
+        };
+    }
+
+    private float alignVertical(float fieldY, float fieldHeight, float menuHeight, MenuAlign align) {
+        return switch (align) {
+            case START -> fieldY;
+            case CENTER -> fieldY + (fieldHeight - menuHeight) / 2f;
+            case END -> fieldY + fieldHeight - menuHeight;
+        };
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.min(max, Math.max(value, min));
     }
 
     private record SelectOption<T>(T value,

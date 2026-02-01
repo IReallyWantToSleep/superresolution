@@ -29,10 +29,9 @@ import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
+import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +72,18 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
         layout().setHeightAuto();
         layout().setMaxHeight(StyleSizeLength.undefined());
+    }
+
+    public float getMenuHeight() {
+        MaterialMenuSize size = style().size();
+        float totalHeight = 0;
+        //TODO: 考虑padding
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialMenuGroup group) {
+                totalHeight += ((YogaNode) group.layout()).getChild(0).getLayout().measuredDimension(YogaDimension.HEIGHT);
+            }
+        }
+        return totalHeight;
     }
 
     @Override
@@ -207,13 +218,48 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         if (isDisabled() || !isVisible()) {
             return;
         }
-        for (ILayoutElement child : getChildren()) {
+
+        Vector2f mousePos = new Vector2f(x, y);
+        AbstractWidget<?> topChild = null;
+
+        for (int i = getChildren().size() - 1; i >= 0; i--) {
+            ILayoutElement child = getChildren().get(i);
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mouseMove(x, y);
+                if (widget.isVisible() && !widget.isDisabled() && widget.hitTest(mousePos)) {
+                    topChild = widget.findInteractiveWidgetAt(mousePos);
+                    if (topChild != null) {
+                        break;
+                    }
                 }
             }
         }
+
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    if (widget == topChild || (topChild != null && isAncestorOf(widget, topChild))) {
+                        widget.mouseMove(x, y);
+                    } else if (widget.isHovered()) {
+                        widget.clearHover();
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isAncestorOf(AbstractWidget<?> potentialAncestor, AbstractWidget<?> descendant) {
+        ILayoutElement current = descendant.getParent();
+        while (current != null) {
+            if (current == potentialAncestor) {
+                return true;
+            }
+            if (current instanceof ILayoutElement) {
+                current = ((ILayoutElement) current).getParent();
+            } else {
+                break;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -222,11 +268,17 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         if (isDisabled() || !isVisible()) {
             return;
         }
-        for (ILayoutElement child : getChildren()) {
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        for (int i = getChildren().size() - 1; i >= 0; i--) {
+            ILayoutElement child = getChildren().get(i);
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                        widget.mousePress(x, y, button);
+                if (widget.isVisible() && !widget.isDisabled() && widget.hitTest(mousePos)) {
+                    AbstractWidget<?> interactive = widget.findInteractiveWidgetAt(mousePos);
+                    if (interactive != null) {
+                        interactive.mousePress(x, y, button);
+                        return;
                     }
                 }
             }
@@ -255,10 +307,17 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
             return;
         }
 
-        for (ILayoutElement child : getChildren()) {
+        org.joml.Vector2f mousePos = new org.joml.Vector2f(x, y);
+
+        for (int i = getChildren().size() - 1; i >= 0; i--) {
+            ILayoutElement child = getChildren().get(i);
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.mouseScroll(x, y, scrollX);
+                if (widget.isVisible() && !widget.isDisabled() && widget.hitTest(mousePos)) {
+                    AbstractWidget<?> interactive = widget.findInteractiveWidgetAt(mousePos);
+                    if (interactive != null) {
+                        interactive.mouseScroll(x, y, scrollX);
+                        return;
+                    }
                 }
             }
         }

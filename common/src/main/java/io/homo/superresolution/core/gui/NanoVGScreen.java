@@ -87,6 +87,8 @@ public abstract class NanoVGScreen<T> extends Screen {
         NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
         ctx.setGuiScale(scaleManager.guiScale());
         ctx.setDpiScale(scaleManager.dpiScale());
+        Vector2f screenSize = MinecraftWindow.getWindowSize();
+        ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
 
         draw(ctx, new UIInputState(
                 new Vector2f(mouseX, mouseY),
