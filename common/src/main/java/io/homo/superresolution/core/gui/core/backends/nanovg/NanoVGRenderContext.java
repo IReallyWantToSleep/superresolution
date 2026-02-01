@@ -45,6 +45,8 @@ public class NanoVGRenderContext implements RenderContext {
 
     private float guiScale = 1.0f;
     private float dpiScale = 1.0f;
+    private float viewportWidth = 0.0f;
+    private float viewportHeight = 0.0f;
 
     private boolean immediateMode = false;
 
@@ -497,5 +499,20 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public boolean isImmediate() {
         return immediateMode;
+    }
+
+    @Override
+    public float viewportWidth() {
+        return viewportWidth;
+    }
+
+    @Override
+    public float viewportHeight() {
+        return viewportHeight;
+    }
+
+    public void setViewportSize(float width, float height) {
+        this.viewportWidth = width;
+        this.viewportHeight = height;
     }
 }

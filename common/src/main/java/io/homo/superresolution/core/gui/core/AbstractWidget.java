@@ -96,6 +96,15 @@ public abstract class AbstractWidget<
         }
     }
 
+    public void clearHover() {
+        if (this.hovered) {
+            Vector2f emptyPos = new Vector2f(-1, -1);
+            eventBus.post(new MouseEvent.MouseMoveEvent(emptyPos));
+            eventBus.post(new WidgetEvent.HoverEvent(emptyPos, false));
+            this.hovered = false;
+        }
+    }
+
     @Override
     public void mousePress(float x, float y, int button) {
         Vector2f mousePos = new Vector2f(x, y);

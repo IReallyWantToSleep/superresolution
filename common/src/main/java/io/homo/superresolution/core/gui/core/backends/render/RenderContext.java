@@ -256,4 +256,13 @@ public interface RenderContext {
     void endImmediate();
 
     boolean isImmediate();
+
+
+    float viewportWidth();
+
+    float viewportHeight();
+
+    default Vector2f viewportSize() {
+        return new Vector2f(viewportWidth(), viewportHeight());
+    }
 }

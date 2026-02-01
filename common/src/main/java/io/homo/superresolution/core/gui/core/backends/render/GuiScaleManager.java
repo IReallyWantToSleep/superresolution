@@ -49,7 +49,7 @@ public class GuiScaleManager {
                     (int) screenSize.y,
                     1.2f
             );
-            this.guiScale = Math.max(calculatedScale, 1.0f) * userScale;
+            this.guiScale = Math.max(calculatedScale, 0.5f) * userScale;
         } else {
             this.guiScale = userScale;
         }

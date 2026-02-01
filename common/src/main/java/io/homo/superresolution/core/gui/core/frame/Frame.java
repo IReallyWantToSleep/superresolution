@@ -140,29 +140,33 @@ public class Frame implements IFrame {
 
     private void dispatchMouseMoveRecursive(AbstractWidget<?> widget, float x, float y,
                                             AbstractWidget<?> topInteractive,
-                                            Set<AbstractWidget<?>> allowedWidgets) {
+                                            Set<AbstractWidget<?>> ancestorChain) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
 
         Transform accumulatedTransform = widget.getFullTransform();
         Vector2f localPos = accumulatedTransform.inverseTransformPoint(new Vector2f(x, y));
-        if ((!(widget instanceof ILayoutContainer && !widget.managesChildEvents()))) {
-            if (topInteractive != null) {
-                if (
-                        !(topInteractive != widget && topInteractive.hitTest(new Vector2f(x, y)))
-                ) {
-                    widget.mouseMove(localPos.x, localPos.y);
-                }
-            } else {
-                widget.mouseMove(localPos.x, localPos.y);
+
+        boolean shouldReceiveEvent = ancestorChain.contains(widget);
+
+        if (shouldReceiveEvent) {
+            widget.mouseMove(localPos.x, localPos.y);
+
+            if (widget.managesChildEvents()) {
+                return;
             }
+        } else {
+            if (widget.isHovered()) {
+                widget.clearHover();
+            }
+
         }
-        
+
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    dispatchMouseMoveRecursive(childWidget, x, y, topInteractive, allowedWidgets);
+                    dispatchMouseMoveRecursive(childWidget, x, y, topInteractive, ancestorChain);
                 }
             }
         }
@@ -549,12 +553,12 @@ public class Frame implements IFrame {
 
         AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
 
-        Set<AbstractWidget<?>> allowedWidgets = new HashSet<>();
+        Set<AbstractWidget<?>> ancestorChain = new HashSet<>();
         if (topInteractive != null) {
-            //collectAncestorChain(topInteractive, allowedWidgets);
+            collectAncestorChain(topInteractive, ancestorChain);
         }
 
-        dispatchMouseMoveRecursive(root, x, y, topInteractive, allowedWidgets);
+        dispatchMouseMoveRecursive(root, x, y, topInteractive, ancestorChain);
     }
 
 

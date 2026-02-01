@@ -86,16 +86,23 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
             Rectangle bounds = getBounds();
+
+            float maxWidth = bounds.width > 0 ? bounds.width : Float.MAX_VALUE;
+
             TextMetrics textMetrics = ctx.measureTextMetrics(
                     ctx.font(),
                     style().fontSize(),
                     text,
-                    bounds.width,
+                    maxWidth,
                     style().lineHeight(),
                     style().wrap()
             );
             Vector2f textSize = new Vector2f(textMetrics.maxLineWidth, textMetrics.totalHeight);
-            setElementSize(textSize.x, textSize.y);
+
+            if (getLayoutNode().getLayoutWidth() <= 0) {
+                setElementWidth(textSize.x);
+            }
+            setElementHeight(textSize.y);
 
             Color textColor = getTextColor();
             ctx.beginGroup(style().zIndex());
@@ -105,7 +112,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                     text,
                     bounds.x,
                     bounds.y,
-                    bounds.width,
+                    maxWidth,
                     style().lineHeight(),
                     textColor,
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP),
