@@ -41,7 +41,7 @@ public class ConfigScreenBuilder {
         clothConfigBuilder.setTitle(Component.translatable("superresolution.screen.config.name"));
         ClothConfig.add(clothConfigBuilder);
         //return TestOptionBuilder.build(parentScreen);
-        return clothConfigBuilder.build(ClothStyleConfigScreen.class);
+        return new MaterialConfigScreen(parentScreen);//clothConfigBuilder.build(ClothStyleConfigScreen.class);
     }
 
     public Screen buildInfoScreen(Screen parentScreen) {

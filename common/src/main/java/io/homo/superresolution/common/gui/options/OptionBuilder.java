@@ -34,9 +34,16 @@ public class OptionBuilder {
     protected OptionCategory category;
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
     protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
+    protected Runnable saveRunnable = () -> {
+    };
 
     public OptionBuilder(OptionCategory category) {
         this.category = category;
+    }
+
+    public OptionBuilder setSaveRunnable(Runnable saveRunnable) {
+        this.saveRunnable = saveRunnable;
+        return this;
     }
 
     public OptionBuilder scheme(MaterialScheme scheme) {
@@ -87,11 +94,13 @@ public class OptionBuilder {
 
         for (AbstractOptionEntry<?, ?> entry : category.getEntries()) {
             entry.setScheme(scheme);
+            entry.setSaveRunnable(saveRunnable);
             container.addEntry(entry);
         }
 
         for (AbstractOptionEntry<?, ?> entry : entries) {
             entry.setScheme(scheme);
+            entry.setSaveRunnable(saveRunnable);
             container.addEntry(entry);
         }
 

@@ -41,15 +41,20 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
     protected @Nullable OptionRequirement enableRequirement = null;
     protected @Nullable OptionRequirement displayRequirement = null;
     protected Consumer<VT> saveConsumer = null;
+    protected Runnable saveRunnable = null;
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
-
     protected OptionContainerWidget container;
     protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     public AbstractOptionEntry(Text name, VT value) {
         this.name = name;
         this.value = value;
+    }
+
+    protected AbstractOptionEntry<VT, SELF> setSaveRunnable(Runnable saveRunnable) {
+        this.saveRunnable = saveRunnable;
+        return this;
     }
 
     protected SELF setScheme(MaterialScheme scheme) {
@@ -183,13 +188,5 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
 
     public OptionContainerWidget getContainer() {
         return container;
-    }
-
-    /**
-     * @deprecated 高度现在由 Yoga 自动计算，此方法已废弃
-     */
-    @Deprecated
-    public float getEntryHeight() {
-        return 56f;
     }
 }

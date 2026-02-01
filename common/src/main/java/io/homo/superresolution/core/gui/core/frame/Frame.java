@@ -25,6 +25,7 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenu;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
@@ -145,28 +146,19 @@ public class Frame implements IFrame {
         }
 
         Transform accumulatedTransform = widget.getFullTransform();
-
         Vector2f localPos = accumulatedTransform.inverseTransformPoint(new Vector2f(x, y));
-        boolean shouldReceive;
-        if (topInteractive == null) {
-            shouldReceive = true;
-        } else if (allowedWidgets.contains(widget)) {
-            shouldReceive = true;
-        } else {
-            boolean isMouseOver = widget.hitTest(new Vector2f(x, y));
-
-            if (!isMouseOver || (topInteractive.getBounds().contains(widget.getBounds()))) {
-                shouldReceive = true;
+        if ((!(widget instanceof ILayoutContainer && !widget.managesChildEvents()))) {
+            if (topInteractive != null) {
+                if (
+                        !(topInteractive != widget && topInteractive.hitTest(new Vector2f(x, y)))
+                ) {
+                    widget.mouseMove(localPos.x, localPos.y);
+                }
             } else {
-                widget.mouseMove(-10000, -10000);
-                shouldReceive = false;
+                widget.mouseMove(localPos.x, localPos.y);
             }
         }
-
-        if (shouldReceive) {
-            widget.mouseMove(localPos.x, localPos.y);
-        }
-
+        
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {

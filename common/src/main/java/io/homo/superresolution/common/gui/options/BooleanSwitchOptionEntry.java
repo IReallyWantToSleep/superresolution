@@ -59,6 +59,9 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
             if (saveConsumer != null) {
                 saveConsumer.accept(this.value);
             }
+            if (saveRunnable != null) {
+                saveRunnable.run();
+            }
         });
         container.addControl(aSwitch);
         container.scheme(scheme);
@@ -68,7 +71,7 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
     public void render(RenderContext ctx, UIInputState inputState) {
         container.render(ctx, inputState);
     }
-    
+
     @Override
     public Boolean value() {
         return aSwitch.isChecked();
