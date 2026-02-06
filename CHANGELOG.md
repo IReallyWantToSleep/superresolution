@@ -1,3 +1,21 @@
+# 0.8.3-alpha.1
+
+* 添加实验性的DLSS（含本机库封装）并优化初始化时间
+* 使FSR3可工作，SRAPI增加额外参数并模块化头文件
+* 新增IrisAPI，重构/优化光影接口与图形管线性能
+* 创建自研NanoVG Java绑定
+* 添加顶点构建器
+* 新增Material风格配置界面与菜单组件，改进GUI缩放与字体
+* Select组件支持设置展开方向
+* 更新glslang版本并优化着色器代码/Include读取逻辑
+* 提升Iris Render targets上限至32
+* 添加不兼容模组检查
+* 修复1.21.10与1.21.8兼容性及部分UI错误
+* 修复XeSS质量预设计算错误
+* 修复Vulkan端运动矢量未翻转问题
+* 修复光影接口SRRenderScaleLog2计算错误与启用运动矢量生成时的崩溃
+* 修复Upscale提供器pQuery实现问题与GpuTape/GpuBooster兼容性
+
 # 0.8.2-alpha.1
 
 * 支持指定内部纹理格式
