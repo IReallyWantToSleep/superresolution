@@ -28,6 +28,10 @@ endif()
 if(MSVC)
     add_compile_options(/utf-8 /ZI)
 endif()
+# Ensure static deps are built with PIC when linking into shared libraries on Linux.
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 #add freetype
 add_subdirectory("${FT_DIR}")
 #add glslang
