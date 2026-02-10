@@ -29,6 +29,9 @@ jobs:
           bash build_linux.sh
           mkdir -p ../native/cpp/SRNativeFSR/libraries/linux64
           cp -a bin/ffx_sdk/. ../native/cpp/SRNativeFSR/libraries/linux64/
+      - name: Initialize
+        working-directory: native/cpp
+        run: python init.py
       - name: Build native libraries
         working-directory: native/cpp
         run: bash build_linux.sh
@@ -38,6 +41,11 @@ jobs:
         with:
           name: native-libraries-linux
           path: native/cpp/output/**/*
+      - name: Upload FFX SDK artifacts (Linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffx-sdk-linux
+          path: ffx_sdk/bin/ffx_sdk/**/*
 
   build-windows:
     runs-on: windows-latest
@@ -61,6 +69,9 @@ jobs:
           $dest = "${{ github.workspace }}\native\cpp\SRNativeFSR\libraries\win64"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
           Copy-Item -Path "${{ github.workspace }}\ffx_sdk\bin\ffx_sdk\*" -Destination $dest -Recurse -Force
+      - name: Initialize
+        working-directory: native/cpp
+        run: python init.py
       - name: Build native libraries
         working-directory: native/cpp
         run: powershell -ExecutionPolicy Bypass -File build_windows.ps1
@@ -70,6 +81,11 @@ jobs:
         with:
           name: native-libraries-windows
           path: native/cpp/output/**/*
+      - name: Upload FFX SDK artifacts (Windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffx-sdk-windows
+          path: ffx_sdk/bin/ffx_sdk/**/*
 
   upload-artifacts:
     needs: [ build-linux, build-windows ]
