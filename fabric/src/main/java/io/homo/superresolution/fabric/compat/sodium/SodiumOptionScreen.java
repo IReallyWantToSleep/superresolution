@@ -25,7 +25,7 @@ import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
-#elif MC_VER < MC_1_21_10
+#elif MC_VER < MC_1_21_8
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;

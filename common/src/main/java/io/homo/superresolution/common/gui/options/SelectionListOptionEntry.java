@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.gui.options;
 
 import com.google.common.collect.ImmutableList;
+import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
@@ -30,20 +31,21 @@ import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelectColors;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, SelectionListOptionEntry<T>> {
-    private static final float SELECT_WIDTH = 200f;
+    private static final float SELECT_MIN_WIDTH = 150f;
     protected final ImmutableList<T> values;
     protected final AtomicInteger index;
     protected final int original;
     protected ContainerWidget selectorContainer;
     protected MaterialSelect<T> materialSelect;
-    protected MaterialLabel headerLabel;
     protected Function<T, String> nameProvider;
+    protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
     protected String headerText = "";
 
     public SelectionListOptionEntry(
@@ -59,6 +61,11 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         this.original = values.indexOf(value);
         this.nameProvider = nameProvider;
         init();
+    }
+
+    public SelectionListOptionEntry<T> setItemEnableRequirement(@Nullable Function<T, OptionRequirement> itemEnableRequirement) {
+        this.itemEnableRequirement = itemEnableRequirement;
+        return this;
     }
 
     @Override
@@ -79,9 +86,9 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         selectorContainer.layout().setAlignItems(YogaAlign.FLEX_END);
 
         materialSelect = MaterialSelect.<T>create()
-                .width(SELECT_WIDTH)
+                .minWidth(SELECT_MIN_WIDTH)
                 .displayFormatter(nameProvider);
-        materialSelect.getMenu().style().colors(MaterialMenuColors.VIBRANT);
+        materialSelect.getMenu().style().colors(MaterialMenuColors.STANDARD);
         if (headerText != null && !headerText.isEmpty()) {
             materialSelect.label(headerText);
         }
@@ -111,17 +118,31 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        container.render(ctx, inputState);
+    public T value() {
+        return values.get(index.get());
+    }
+
+    @Override
+    public void tick(RenderContext ctx) {
+        boolean enabled = updateRequirements();
+        materialSelect.setDisabled(!enabled);
+        for (T itemValue : values) {
+            if (itemEnableRequirement != null) {
+                OptionRequirement requirement = itemEnableRequirement.apply(itemValue);
+                boolean canSelect = requirement.check();
+                materialSelect.getMenu().getItemByValue(
+                        itemValue
+                ).selectable(canSelect).setDisabled(!canSelect);
+            } else {
+                materialSelect.getMenu().getItemByValue(
+                        itemValue
+                ).selectable(true).setDisabled(false);
+            }
+        }
     }
 
     public boolean isEdited() {
         return !Objects.equals(index.get(), original);
-    }
-
-    @Override
-    public T value() {
-        return values.get(index.get());
     }
 
     private int getDefaultIndex() {

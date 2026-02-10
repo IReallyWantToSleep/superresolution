@@ -22,6 +22,7 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.render.*;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGPaint;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -36,13 +37,11 @@ public class NanoVGRenderContext implements RenderContext {
     private final TransformStack transformStack;
 
     private final Stack<RenderState> stateStack = new Stack<>();
-    private RenderState currentState = new RenderState();
     private final List<Float> alphaStack = new ArrayList<>();
     private final Stack<List<Float>> alphaStackSnapshots = new Stack<>();
-
-    private GroupNode currentGroup = null;
     private final Stack<GroupNode> groupStack = new Stack<>();
-
+    private RenderState currentState = new RenderState();
+    private GroupNode currentGroup = null;
     private float guiScale = 1.0f;
     private float dpiScale = 1.0f;
     private float viewportWidth = 0.0f;
@@ -79,12 +78,6 @@ public class NanoVGRenderContext implements RenderContext {
         this.guiScale = scale;
     }
 
-    public void applyGuiScale() {
-        transformStack.setIdentity();
-        transformStack.scale(guiScale, guiScale);
-        applyTransform();
-    }
-
     @Override
     public float dpiScale() {
         return dpiScale;
@@ -111,7 +104,7 @@ public class NanoVGRenderContext implements RenderContext {
         if (!alphaStackSnapshots.isEmpty()) {
             alphaStack.clear();
             alphaStack.addAll(alphaStackSnapshots.pop());
-            nvg.contextPtr.globalAlpha(currentState.alpha());
+            nvg.rawContext.globalAlpha(currentState.alpha());
         }
         transformStack.pop();
         applyTransform();
@@ -145,26 +138,11 @@ public class NanoVGRenderContext implements RenderContext {
         restore();
     }
 
-    private void applyCurrentState() {
-        nvg.globalAlpha(currentState.alpha());
-        syncAlphaStack(currentState.alpha());
-
-        Transform t = currentState.transform();
-        transformStack.set(t);
-        nvg.resetTransform();
-        nvg.transform(t);
-
-        if (currentState.hasScissor()) {
-            RenderState.ScissorRect scissor = currentState.scissor();
-            nvg.contextPtr.scissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
-        }
-    }
-
     @Override
     public void globalAlpha(float alpha) {
         currentState.alpha(alpha);
         syncAlphaStack(alpha);
-        nvg.contextPtr.globalAlpha(alpha);
+        nvg.rawContext.globalAlpha(alpha);
     }
 
     @Override
@@ -177,7 +155,7 @@ public class NanoVGRenderContext implements RenderContext {
         float newAlpha = currentState.alpha() * alpha;
         alphaStack.add(newAlpha);
         currentState.alpha(newAlpha);
-        nvg.contextPtr.globalAlpha(newAlpha);
+        nvg.rawContext.globalAlpha(newAlpha);
     }
 
     @Override
@@ -186,7 +164,7 @@ public class NanoVGRenderContext implements RenderContext {
             alphaStack.remove(alphaStack.size() - 1);
             float prevAlpha = alphaStack.get(alphaStack.size() - 1);
             currentState.alpha(prevAlpha);
-            nvg.contextPtr.globalAlpha(prevAlpha);
+            nvg.rawContext.globalAlpha(prevAlpha);
         }
     }
 
@@ -245,23 +223,16 @@ public class NanoVGRenderContext implements RenderContext {
         return transformStack.last().transformPoint(new Vector2f(x, y));
     }
 
-    private void applyTransform() {
-        Transform t = transformStack.last();
-        currentState.transform(t);
-        nvg.resetTransform();
-        nvg.transform(t);
-    }
-
     @Override
     public void scissor(float x, float y, float width, float height) {
         currentState.intersectScissor(x, y, width, height);
-        nvg.contextPtr.intersectScissor(x, y, width, height);
+        nvg.rawContext.intersectScissor(x, y, width, height);
     }
 
     @Override
     public void resetScissor() {
         currentState.resetScissor();
-        nvg.contextPtr.resetScissor();
+        nvg.rawContext.resetScissor();
     }
 
     @Override
@@ -275,23 +246,36 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     @Override
-    public void line(float x1, float y1, float x2, float y2) {
-        nvg.line(x1, y1, x2, y2);
+    public void move(float x, float y) {
+        nvg.rawContext.moveTo(x, y);
     }
 
     @Override
     public void lineTo(float x, float y) {
-        nvg.contextPtr.lineTo(x, y);
+        nvg.rawContext.lineTo(x, y);
+    }
+
+    public IPaint boxGradient(float x, float y, float width,
+                              float height, float radius,
+                              float feather, Color innerColor,
+                              Color outerColor) {
+        NanoVGColor nvgInnerColor = nvg.rawContext.colorRGBA(
+                innerColor.red(), innerColor.green(), innerColor.blue(), innerColor.alpha()
+        );
+        NanoVGColor nvgOuterColor = nvg.rawContext.colorRGBA(
+                outerColor.red(), outerColor.green(), outerColor.blue(), outerColor.alpha()
+        );
+        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.rawContext.boxGradient(
+                x, y, width, height, radius, feather, nvgInnerColor, nvgOuterColor
+        ));
+        nvgInnerColor.close();
+        nvgOuterColor.close();
+        return paint;
     }
 
     @Override
-    public void bezier(float c1x, float c1y, float c2x, float c2y, float x, float y) {
-        nvg.contextPtr.bezierTo(c1x, c1y, c2x, c2y, x, y);
-    }
-
-    @Override
-    public void move(float x, float y) {
-        nvg.contextPtr.moveTo(x, y);
+    public void line(float x1, float y1, float x2, float y2) {
+        nvg.line(x1, y1, x2, y2);
     }
 
     @Override
@@ -301,17 +285,21 @@ public class NanoVGRenderContext implements RenderContext {
 
     @Override
     public void arc(float x, float y, float radius, float a0, float a1) {
-        nvg.contextPtr.arc(x, y, radius, a0, a1, 1);
+        nvg.rawContext.arc(x, y, radius, a0, a1, 1);
+    }
+
+    @Override
+    public void bezier(float c1x, float c1y, float c2x, float c2y, float x, float y) {
+        nvg.rawContext.bezierTo(c1x, c1y, c2x, c2y, x, y);
     }
 
     @Override
     public void roundedRectComplex(float x, float y, float width, float height,
                                    float bottomLeftRadius, float bottomRightRadius,
                                    float topLeftRadius, float topRightRadius) {
-        nvg.contextPtr.roundedRectVarying(x, y, width, height,
+        nvg.rawContext.roundedRectVarying(x, y, width, height,
                 topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
     }
-
 
     @Override
     public void strokeWidth(float width) {
@@ -346,7 +334,7 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public void paint(IPaint paint) {
         if (paint instanceof NanoVGPaintWrapper) {
-            nvg.contextPtr.fillPaint(((NanoVGPaintWrapper) paint).get());
+            nvg.rawContext.fillPaint(((NanoVGPaintWrapper) paint).get());
         }
     }
 
@@ -357,13 +345,13 @@ public class NanoVGRenderContext implements RenderContext {
 
     @Override
     public IPaint radialGradient(float centerX, float centerY, float radius, Color beginColor, Color endColor) {
-        NanoVGColor nvgBeginColor = nvg.contextPtr.colorRGBA(
+        NanoVGColor nvgBeginColor = nvg.rawContext.colorRGBA(
                 beginColor.red(), beginColor.green(), beginColor.blue(), beginColor.alpha()
         );
-        NanoVGColor nvgEndColor = nvg.contextPtr.colorRGBA(
+        NanoVGColor nvgEndColor = nvg.rawContext.colorRGBA(
                 endColor.red(), endColor.green(), endColor.blue(), endColor.alpha()
         );
-        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.contextPtr.radialGradient(centerX, centerY, 0, radius, nvgBeginColor, nvgEndColor));
+        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.rawContext.radialGradient(centerX, centerY, 0, radius, nvgBeginColor, nvgEndColor));
         nvgBeginColor.close();
         nvgEndColor.close();
         return paint;
@@ -372,13 +360,13 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public IPaint radialGradient(float centerX, float centerY, float innerRadius, float outerRadius,
                                  Color beginColor, Color endColor) {
-        NanoVGColor nvgBeginColor = nvg.contextPtr.colorRGBA(
+        NanoVGColor nvgBeginColor = nvg.rawContext.colorRGBA(
                 beginColor.red(), beginColor.green(), beginColor.blue(), beginColor.alpha()
         );
-        NanoVGColor nvgEndColor = nvg.contextPtr.colorRGBA(
+        NanoVGColor nvgEndColor = nvg.rawContext.colorRGBA(
                 endColor.red(), endColor.green(), endColor.blue(), endColor.alpha()
         );
-        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.contextPtr.radialGradient(centerX, centerY, innerRadius, outerRadius, nvgBeginColor, nvgEndColor));
+        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.rawContext.radialGradient(centerX, centerY, innerRadius, outerRadius, nvgBeginColor, nvgEndColor));
         nvgBeginColor.close();
         nvgEndColor.close();
         return paint;
@@ -488,8 +476,8 @@ public class NanoVGRenderContext implements RenderContext {
     public void flush() {
         renderTree.render(this,
                 () -> {
-                    nvg.contextPtr.globalAlpha(1.0f);
-                    nvg.contextPtr.resetScissor();
+                    nvg.rawContext.globalAlpha(1.0f);
+                    nvg.rawContext.resetScissor();
                     nvg.resetTransform();
                     currentState.reset();
                     alphaStack.clear();
@@ -524,6 +512,34 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public float viewportHeight() {
         return viewportHeight;
+    }
+
+    public void applyGuiScale() {
+        transformStack.setIdentity();
+        transformStack.scale(guiScale, guiScale);
+        applyTransform();
+    }
+
+    private void applyCurrentState() {
+        nvg.globalAlpha(currentState.alpha());
+        syncAlphaStack(currentState.alpha());
+
+        Transform t = currentState.transform();
+        transformStack.set(t);
+        nvg.resetTransform();
+        nvg.transform(t);
+
+        if (currentState.hasScissor()) {
+            RenderState.ScissorRect scissor = currentState.scissor();
+            nvg.rawContext.scissor(scissor.x(), scissor.y(), scissor.width(), scissor.height());
+        }
+    }
+
+    private void applyTransform() {
+        Transform t = transformStack.last();
+        currentState.transform(t);
+        nvg.resetTransform();
+        nvg.transform(t);
     }
 
     public void setViewportSize(float width, float height) {

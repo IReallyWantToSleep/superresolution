@@ -24,6 +24,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.upscale.dlss.DLSS;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSROgl;
@@ -64,7 +65,7 @@ public class AlgorithmDescriptions {
                     FSR2.class,
                     "FSR2",
                     "fsr2",
-                    "AMD FidelityFX Super Resolution 2",
+                    "AMD FidelityFX Super Resolution 2 (OpenGL)",
                     Requirement.nothing()
                             .requiredGlExtension("GL_KHR_shader_subgroup")
                             .glMajorVersion(4)
@@ -80,6 +81,10 @@ public class AlgorithmDescriptions {
                     "AMD FidelityFX Super Resolution",
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .requiredGlExtension("GL_EXT_memory_object")
+                            .requiredGlExtension("GL_EXT_semaphore")
+                            .glMajorVersion(4)
+                            .glMinorVersion(6)
                             .requireVulkan(true)
             );
     public static final AlgorithmDescription<XeSS> XESS =
@@ -90,6 +95,10 @@ public class AlgorithmDescriptions {
                     "Intel Xe Super Sampling",
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .requiredGlExtension("GL_EXT_memory_object")
+                            .requiredGlExtension("GL_EXT_semaphore")
+                            .glMajorVersion(4)
+                            .glMinorVersion(6)
                             .requireVulkan(true)
             );
     public static final AlgorithmDescription<DLSS> DLSS =
@@ -100,29 +109,12 @@ public class AlgorithmDescriptions {
                     "NVIDIA DLSS",
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .requiredGlExtension("GL_EXT_memory_object")
+                            .requiredGlExtension("GL_EXT_semaphore")
+                            .glMajorVersion(4)
+                            .glMinorVersion(6)
                             .requireVulkan(true)
             );
-    public static final AlgorithmDescription<FfxFSROgl> FSROgl =
-            new AlgorithmDescription<>(
-                    FfxFSROgl.class,
-                    "FSR OpenGL",
-                    "fsr_gl",
-                    "AMD FidelityFX Super Resolution OpenGL",
-                    Requirement.nothing()
-                            .glVersion(4, 5)
-            );
-    //public static final AlgorithmDescription<NVIDIAImageScaling> NIS =
-    //        new AlgorithmDescription<>(
-    //                NVIDIAImageScaling.class,
-    //                "NIS",
-    //                "nis",
-    //                "NVIDIA Image Scaling",
-    //                Requirement.nothing()
-    //                        .glMajorVersion(4)
-    //                        .glMinorVersion(3)
-    //                        .requiredGlExtension("GL_ARB_shading_language_420pack")
-    //                        .developmentEnvironment(true)
-    //        );
     public static final AlgorithmDescription<Sgsr1> SGSR1 =
             new AlgorithmDescription<>(
                     Sgsr1.class,
@@ -151,11 +143,8 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
         AlgorithmRegistry.registry(FSR);
-        if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
-            AlgorithmRegistry.registry(XESS);
-            AlgorithmRegistry.registry(DLSS);
-            //AlgorithmRegistry.registry(FSROgl);
-        }
+        AlgorithmRegistry.registry(XESS);
+        AlgorithmRegistry.registry(DLSS);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         SuperResolutionAPI.EVENT_BUS.post(new AlgorithmRegisterEvent());

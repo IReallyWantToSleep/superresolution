@@ -46,7 +46,7 @@ public class NanoVGFont implements IFont {
             }
             Files.copy(fontStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
             fontStream.close();
-            id = NanoVG.context.contextPtr.createFont(name, tempFile.toString());
+            id = NanoVG.context.rawContext.createFont(name, tempFile.toString());
             tempFile.toFile().delete();
         } catch (Exception e) {
             throw new RuntimeException("字体加载失败: " + name, e);

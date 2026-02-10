@@ -37,14 +37,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MaterialSlider extends MaterialWidget<MaterialSlider> {
+    protected MaterialSliderAnimationSet animationSet;
+    protected boolean isInputting;
+    protected Number lastValue;
     private Number value = 0.0;
     private Number step = 0.0;
     private Number max = 1.0;
     private Number min = 0.0;
     private Function<Number, String> valueIndicatorTextFormater = Object::toString;
-    protected MaterialSliderAnimationSet animationSet;
-    protected boolean isInputting;
-    protected Number lastValue;
 
     public MaterialSlider(MaterialSliderSize size, float width) {
         this.style = new MaterialSliderStyle();
@@ -74,11 +74,6 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         slider.value = value;
         slider.step = step;
         return slider;
-    }
-
-    @Override
-    public MaterialSliderStyle style() {
-        return (MaterialSliderStyle) style;
     }
 
     public Function<Number, String> getValueIndicatorTextFormater() {
@@ -154,12 +149,6 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     }
 
     @Override
-    protected boolean isInteractive() {
-        return true;
-    }
-
-
-    @Override
     protected void init() {
         this.animationSet = new MaterialSliderAnimationSet();
         this.animationSet.init();
@@ -170,13 +159,19 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         onMouseDrag((event) -> onMouseDrag(event.getMousePosition(), event.getDragDelta()));
     }
 
-    private void updateRectangle() {
-        setElementHeight(style().size().handleHeight());
-    }
-
     @Override
     public void layouting(RenderContext ctx) {
         updateRectangle();
+    }
+
+    @Override
+    public MaterialSliderStyle style() {
+        return (MaterialSliderStyle) style;
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return true;
     }
 
     @Override
@@ -206,7 +201,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         ctx.restore();
         ctx.endGroup();
         final Transform currentTransform = ctx.transform();
-        if (style().valueIndicator() && animationSet.hover.get() > 0.01) {
+        if (!isDisabled() && style().valueIndicator() && animationSet.hover.get() > 0.01) {
             ctx.draw(
                     1000,
                     RenderLayer.Floating,
@@ -219,6 +214,10 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                     }
             );
         }
+    }
+
+    private void updateRectangle() {
+        setElementHeight(style().size().handleHeight());
     }
 
     private float drawTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float progress, float handleWidth, float availableWidth) {

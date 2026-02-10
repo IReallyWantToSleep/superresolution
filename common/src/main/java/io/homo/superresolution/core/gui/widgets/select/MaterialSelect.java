@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui.widgets.select;
 
-import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -29,8 +28,8 @@ import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.menu.*;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPhysicalEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
@@ -42,80 +41,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>> {
-
-
-    public enum MenuPosition {
-        AUTO(null, MenuAlign.START),
-        AUTO_START(null, MenuAlign.START),
-        AUTO_CENTER(null, MenuAlign.CENTER),
-        AUTO_END(null, MenuAlign.END),
-
-        BELOW(MenuSide.BOTTOM, MenuAlign.START),
-        ABOVE(MenuSide.TOP, MenuAlign.START),
-
-        TOP_START(MenuSide.TOP, MenuAlign.START),
-        TOP_CENTER(MenuSide.TOP, MenuAlign.CENTER),
-        TOP_END(MenuSide.TOP, MenuAlign.END),
-
-        BOTTOM_START(MenuSide.BOTTOM, MenuAlign.START),
-        BOTTOM_CENTER(MenuSide.BOTTOM, MenuAlign.CENTER),
-        BOTTOM_END(MenuSide.BOTTOM, MenuAlign.END),
-
-        LEFT_START(MenuSide.LEFT, MenuAlign.START),
-        LEFT_CENTER(MenuSide.LEFT, MenuAlign.CENTER),
-        LEFT_END(MenuSide.LEFT, MenuAlign.END),
-
-        RIGHT_START(MenuSide.RIGHT, MenuAlign.START),
-        RIGHT_CENTER(MenuSide.RIGHT, MenuAlign.CENTER),
-        RIGHT_END(MenuSide.RIGHT, MenuAlign.END);
-
-        private final MenuSide side;
-        private final MenuAlign align;
-
-        MenuPosition(MenuSide side, MenuAlign align) {
-            this.side = side;
-            this.align = align;
-        }
-
-        public boolean isAuto() {
-            return side == null;
-        }
-
-        public MenuSide side() {
-            return side;
-        }
-
-        public MenuAlign align() {
-            return align;
-        }
-    }
-
-    private enum MenuSide {
-        TOP,
-        BOTTOM,
-        LEFT,
-        RIGHT
-    }
-
-    private enum MenuAlign {
-        START,
-        CENTER,
-        END
-    }
-
     private final MaterialSelectField field;
-
-    public MaterialMenu getMenu() {
-        return menu;
-    }
-
     private final MaterialMenu menu;
     private final List<SelectOption<T>> options = new ArrayList<>();
-
     private T selectedValue = null;
     private Consumer<T> onSelectionChanged;
     private Function<T, String> displayFormatter = Object::toString;
     private float width = 280;
+    private float minWidth = 160;
+    private boolean autoWidth = true;
+    private boolean widthDirty = true;
     private MenuPosition menuPosition = MenuPosition.AUTO_START;
 
     public MaterialSelect() {
@@ -141,167 +76,25 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         return new MaterialSelect<>();
     }
 
-    @Override
-    public MaterialSelectStyle style() {
-        return (MaterialSelectStyle) super.style();
+    public MaterialMenu getMenu() {
+        return menu;
     }
 
     @Override
     protected void init() {
     }
 
-    public MaterialSelect<T> label(String label) {
-        field.label(label);
-        return this;
-    }
-
-    public MaterialSelect<T> placeholder(String placeholder) {
-        field.placeholder(placeholder);
-        return this;
-    }
-
-    public MaterialSelect<T> supportingText(String text) {
-        field.supportingText(text);
-        return this;
-    }
-
-    public MaterialSelect<T> leadingIcon(MaterialSymbol icon) {
-        field.leadingIcon(icon);
-        return this;
-    }
-
-    public MaterialSelect<T> width(float width) {
-        this.width = width;
-        field.width(width);
-        updateSize();
-        return this;
-    }
-
-    public MaterialSelect<T> displayFormatter(Function<T, String> formatter) {
-        this.displayFormatter = formatter;
-        updateDisplayValue();
-        return this;
-    }
-
-    public MaterialSelect<T> menuPosition(MenuPosition position) {
-        this.menuPosition = position;
-        return this;
-    }
-
-    public MaterialSelect<T> addOption(T value, String displayText) {
-        return addOption(value, displayText, null);
-    }
-
-    public MaterialSelect<T> addOption(T value, String displayText, MaterialSymbol icon) {
-        SelectOption<T> option = new SelectOption<>(value, displayText, icon);
-        options.add(option);
-
-        MaterialMenuItem item = MaterialMenuItem.create()
-                .text(displayText)
-                .value(value)
-                .selectable(true);
-
-        if (icon != null) {
-            item.icon(icon);
-        }
-
-        item.onSelectionChanged(selected -> {
-            if (selected) {
-                handleSelection(value, displayText);
-            }
-        });
-
-        menu.addItem(item);
-        return this;
-    }
-
-    public MaterialSelect<T> addOptions(List<T> values) {
-        for (T value : values) {
-            addOption(value, displayFormatter.apply(value));
-        }
-        return this;
-    }
-
-    public MaterialSelect<T> clearOptions() {
-        options.clear();
-        for (ILayoutElement child : new ArrayList<>(menu.getChildren())) {
-            menu.removeChild(child);
-        }
-        return this;
-    }
-
-    public MaterialSelect<T> setValue(T value) {
-        this.selectedValue = value;
-        menu.selectItemQuietly(value);
-        updateDisplayValue();
-        return this;
-    }
-
-    public T getValue() {
-        return selectedValue;
-    }
-
-    public MaterialSelect<T> onSelectionChanged(Consumer<T> listener) {
-        this.onSelectionChanged = listener;
-        return this;
-    }
-
-    private void handleSelection(T value, String displayText) {
-        T oldValue = this.selectedValue;
-        this.selectedValue = value;
-        field.value(displayText);
-        closeMenu();
-        if (onSelectionChanged != null) {
-            onSelectionChanged.accept(value);
-        }
-        eventBus.post(new WidgetEvent.ChangeEvent<>(oldValue, value));
-    }
-
-    private void updateDisplayValue() {
-        if (selectedValue != null) {
-            for (SelectOption<T> option : options) {
-                if (option.value.equals(selectedValue)) {
-                    field.value(option.displayText);
-                    return;
-                }
-            }
-            field.value(displayFormatter.apply(selectedValue));
-        } else {
-            field.value("");
-        }
-    }
-
-    private void toggleMenu() {
-        if (menu.isExpanded()) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
-    }
-
-    private void openMenu() {
-        menu.expand();
-        field.setMenuOpen(true);
-    }
-
-    private void closeMenu() {
-        menu.collapse();
-        field.setMenuOpen(false);
-    }
-
-    public boolean isMenuOpen() {
-        return menu.isExpanded();
-    }
-
-    private void updateSize() {
-        MaterialSelectSize size = style().size();
-        layout().setWidth(width);
-        layout().setHeight(size.containerHeight());
-    }
-
     @Override
     public void mouseMove(float x, float y) {
+        if (isDisabled()) {
+            return;
+        }
         Vector2f absPos = new Vector2f(x, y);
+
+        boolean inArea = hitTest(absPos);
+        if (inArea != isHovered()) {
+            setHovered(inArea);
+        }
 
         if (menu.isExpanded() || menu.isVisible()) {
             menu.mouseMove(x, y);
@@ -313,20 +106,35 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
-    public void mouseScroll(float x, float y, double scrollX) {
+    public void mousePress(float x, float y, int button) {
+        if (isDisabled()) {
+            return;
+        }
         Vector2f absPos = new Vector2f(x, y);
 
         if (menu.isExpanded() || menu.isVisible()) {
-            menu.mouseScroll(x, y, scrollX);
+            if (menu.hitTest(absPos)) {
+                menu.mousePress(x, y, button);
+                return;
+            }
+            if (field.hitTest(absPos)) {
+                field.mousePress(x, y, button);
+                return;
+            }
+            closeMenu();
+            return;
         }
 
         if (field.hitTest(absPos)) {
-            field.mouseScroll(x, y, scrollX);
+            field.mousePress(x, y, button);
         }
     }
 
     @Override
     public void mouseRelease(float x, float y, int button) {
+        if (isDisabled()) {
+            return;
+        }
         Vector2f absPos = new Vector2f(x, y);
 
         if (menu.isExpanded() || menu.isVisible()) {
@@ -339,8 +147,40 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
-    public void layouting(RenderContext ctx) {
-        updateSize();
+    public void mouseScroll(float x, float y, double scrollX) {
+        if (isDisabled()) {
+            return;
+        }
+        Vector2f absPos = new Vector2f(x, y);
+
+        if (menu.isExpanded() || menu.isVisible()) {
+            menu.mouseScroll(x, y, scrollX);
+        }
+
+        if (field.hitTest(absPos)) {
+            field.mouseScroll(x, y, scrollX);
+        }
+    }
+
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
+        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
+            return this;
+        }
+        if (field.hitTest(absPos)) {
+            return this;
+        }
+
+        return null;
+    }
+
+    @Override
+    protected Rectangle getViewRegion() {
+        return getBounds();
+    }
+
+    @Override
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
     }
 
     @Override
@@ -467,8 +307,196 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         ctx.endGroup();
     }
 
+    public MaterialSelect<T> label(String label) {
+        field.label(label);
+        return this;
+    }
+
+    public MaterialSelect<T> placeholder(String placeholder) {
+        field.placeholder(placeholder);
+        return this;
+    }
+
+    public MaterialSelect<T> supportingText(String text) {
+        field.supportingText(text);
+        return this;
+    }
+
+    public MaterialSelect<T> leadingIcon(MaterialSymbol icon) {
+        field.leadingIcon(icon);
+        return this;
+    }
+
+    public MaterialSelect<T> width(float width) {
+        this.width = width;
+        this.minWidth = width;
+        this.autoWidth = false;
+        field.width(width);
+        updateSize();
+        return this;
+    }
+
+    public MaterialSelect<T> minWidth(float minWidth) {
+        this.minWidth = minWidth;
+        this.widthDirty = true;
+        return this;
+    }
+
+    public MaterialSelect<T> autoWidth(boolean autoWidth) {
+        this.autoWidth = autoWidth;
+        this.widthDirty = true;
+        return this;
+    }
+
+    public MaterialSelect<T> displayFormatter(Function<T, String> formatter) {
+        this.displayFormatter = formatter;
+        this.widthDirty = true;
+        updateDisplayValue();
+        return this;
+    }
+
+    public MaterialSelect<T> menuPosition(MenuPosition position) {
+        this.menuPosition = position;
+        return this;
+    }
+
+    public MaterialSelect<T> addOption(T value, String displayText) {
+        return addOption(value, displayText, null);
+    }
+
+    public MaterialSelect<T> addOption(T value, String displayText, MaterialSymbol icon) {
+        SelectOption<T> option = new SelectOption<>(value, displayText, icon);
+        options.add(option);
+
+        MaterialMenuItem item = MaterialMenuItem.create()
+                .text(displayText)
+                .value(value)
+                .selectable(true);
+
+        if (icon != null) {
+            item.icon(icon);
+        }
+
+        item.onSelectionChanged(selected -> {
+            if (selected) {
+                handleSelection(value, displayText);
+            }
+        });
+
+        menu.addItem(item);
+        widthDirty = true;
+        return this;
+    }
+
+    public MaterialSelect<T> addOptions(List<T> values) {
+        for (T value : values) {
+            addOption(value, displayFormatter.apply(value));
+        }
+        return this;
+    }
+
+    public MaterialSelect<T> clearOptions() {
+        options.clear();
+        for (ILayoutElement child : new ArrayList<>(menu.getChildren())) {
+            menu.removeChild(child);
+        }
+        widthDirty = true;
+        return this;
+    }
+
+    public T getValue() {
+        return selectedValue;
+    }
+
+    public MaterialSelect<T> setValue(T value) {
+        this.selectedValue = value;
+        menu.selectItemQuietly(value);
+        updateDisplayValue();
+        return this;
+    }
+
+    public MaterialSelect<T> onSelectionChanged(Consumer<T> listener) {
+        this.onSelectionChanged = listener;
+        return this;
+    }
+
+    private void handleSelection(T value, String displayText) {
+        T oldValue = this.selectedValue;
+        this.selectedValue = value;
+        field.value(displayText);
+        closeMenu();
+        if (onSelectionChanged != null) {
+            onSelectionChanged.accept(value);
+        }
+        eventBus.post(new WidgetEvent.ChangeEvent<>(oldValue, value));
+    }
+
+    private void updateDisplayValue() {
+        if (selectedValue != null) {
+            for (SelectOption<T> option : options) {
+                if (option.value.equals(selectedValue)) {
+                    field.value(option.displayText);
+                    return;
+                }
+            }
+            field.value(displayFormatter.apply(selectedValue));
+        } else {
+            field.value("");
+        }
+    }
+
+    private void toggleMenu() {
+        if (isDisabled()) {
+            return;
+        }
+        if (menu.isExpanded()) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    }
+
+    private void openMenu() {
+        if (isDisabled()) {
+            return;
+        }
+        menu.expand();
+        field.setMenuOpen(true);
+    }
+
+    private void closeMenu() {
+        menu.collapse();
+        field.setMenuOpen(false);
+    }
+
+    public boolean isMenuOpen() {
+        return menu.isExpanded();
+    }
+
+    private void updateSize() {
+        MaterialSelectSize size = style().size();
+        layout().setWidth(width);
+        layout().setHeight(size.containerHeight());
+    }
+
     @Override
-    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
+    public void layouting(RenderContext ctx) {
+        if (autoWidth && widthDirty) {
+            recalculateWidth();
+        }
+        updateSize();
+    }
+
+    @Override
+    public MaterialSelectStyle style() {
+        return (MaterialSelectStyle) super.style();
+    }
+
+    @Override
+    public void clearHover() {
+        super.clearHover();
+        field.clearHover();
+        menu.clearHover();
     }
 
     @Override
@@ -486,46 +514,15 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         return menu.isExpanded() || menu.isVisible();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
-        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
-            return this;
-        }
-        if (field.hitTest(absPos)) {
-            return this;
-        }
-
-        return null;
-    }
-
-    @Override
-    public void mousePress(float x, float y, int button) {
-        Vector2f absPos = new Vector2f(x, y);
-
-        if (menu.isExpanded() || menu.isVisible()) {
-            if (menu.hitTest(absPos)) {
-                menu.mousePress(x, y, button);
-                return;
-            }
-            if (field.hitTest(absPos)) {
-                field.mousePress(x, y, button);
-                return;
-            }
+    public MaterialSelect<T> setDisabled(boolean disabled) {
+        super.setDisabled(disabled);
+        field.setDisabled(disabled);
+        if (disabled && menu.isExpanded()) {
             closeMenu();
-            return;
         }
-
-        if (field.hitTest(absPos)) {
-            field.mousePress(x, y, button);
-        }
-    }
-
-    @Override
-    public boolean hitTest(Vector2f absolutePos) {
-        Rectangle menuBounds = menu.getRawBounds();
-
-        return field.hitTest(absolutePos) ||
-                (menu.isExpanded() && menuBounds.in(absolutePos));
+        return this;
     }
 
     @Override
@@ -536,6 +533,44 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         if (menu != null) {
             menu.destroy();
         }
+    }
+
+    private void recalculateWidth() {
+        if (!autoWidth || options.isEmpty()) {
+            widthDirty = false;
+            return;
+        }
+        MaterialSelectSize size = style().size();
+        float maxTextWidth = 0;
+        try {
+            NanoVG.context.save();
+            NanoVG.context.fontSize(size.inputFontSize());
+            for (SelectOption<T> option : options) {
+                float tw = NanoVG.RENDERER.TEXT.measureTextWidth(
+                        option.displayText(), size.inputFontSize(), size.inputFontSize() + 1);
+                maxTextWidth = Math.max(maxTextWidth, tw);
+            }
+            NanoVG.context.restore();
+        } catch (Exception e) {
+            widthDirty = true;
+            return;
+        }
+
+        float fieldPadding = size.horizontalPadding() * 2;
+        float trailingIconSpace = size.iconSize() + size.iconTextGap();
+        float contentWidth = maxTextWidth + fieldPadding + trailingIconSpace + 12;
+
+        this.width = Math.max(minWidth, contentWidth);
+        field.width(this.width);
+        widthDirty = false;
+    }
+
+    @Override
+    public boolean hitTest(Vector2f absolutePos) {
+        Rectangle menuBounds = menu.getRawBounds();
+
+        return field.hitTest(absolutePos) ||
+                (menu.isExpanded() && menuBounds.in(absolutePos));
     }
 
     private float alignHorizontal(float fieldX, float fieldWidth, float menuWidth, MenuAlign align) {
@@ -558,15 +593,69 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         return Math.min(max, Math.max(value, min));
     }
 
+    public enum MenuPosition {
+        AUTO(null, MenuAlign.START),
+        AUTO_START(null, MenuAlign.START),
+        AUTO_CENTER(null, MenuAlign.CENTER),
+        AUTO_END(null, MenuAlign.END),
+
+        BELOW(MenuSide.BOTTOM, MenuAlign.START),
+        ABOVE(MenuSide.TOP, MenuAlign.START),
+
+        TOP_START(MenuSide.TOP, MenuAlign.START),
+        TOP_CENTER(MenuSide.TOP, MenuAlign.CENTER),
+        TOP_END(MenuSide.TOP, MenuAlign.END),
+
+        BOTTOM_START(MenuSide.BOTTOM, MenuAlign.START),
+        BOTTOM_CENTER(MenuSide.BOTTOM, MenuAlign.CENTER),
+        BOTTOM_END(MenuSide.BOTTOM, MenuAlign.END),
+
+        LEFT_START(MenuSide.LEFT, MenuAlign.START),
+        LEFT_CENTER(MenuSide.LEFT, MenuAlign.CENTER),
+        LEFT_END(MenuSide.LEFT, MenuAlign.END),
+
+        RIGHT_START(MenuSide.RIGHT, MenuAlign.START),
+        RIGHT_CENTER(MenuSide.RIGHT, MenuAlign.CENTER),
+        RIGHT_END(MenuSide.RIGHT, MenuAlign.END);
+
+        private final MenuSide side;
+        private final MenuAlign align;
+
+        MenuPosition(MenuSide side, MenuAlign align) {
+            this.side = side;
+            this.align = align;
+        }
+
+        public boolean isAuto() {
+            return side == null;
+        }
+
+        public MenuSide side() {
+            return side;
+        }
+
+        public MenuAlign align() {
+            return align;
+        }
+    }
+
+    private enum MenuSide {
+        TOP,
+        BOTTOM,
+        LEFT,
+        RIGHT
+    }
+
+    private enum MenuAlign {
+        START,
+        CENTER,
+        END
+    }
+
     private record SelectOption<T>(T value,
 
                                    String displayText,
 
                                    MaterialSymbol icon) {
-    }
-
-    @Override
-    protected Rectangle getViewRegion() {
-        return getBounds();
     }
 }

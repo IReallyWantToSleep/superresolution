@@ -58,6 +58,10 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         return codeName;
     }
 
+    public String getId() {
+        return uuid;
+    }
+
     public String getDisplayName() {
         return displayName;
     }
@@ -73,16 +77,17 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         }
     }
 
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        AlgorithmDescription<?> that = (AlgorithmDescription<?>) o;
-        return Objects.equals(uuid, that.uuid);
-    }
-
     @Override
     public int hashCode() {
         return Objects.hashCode(uuid);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        AlgorithmDescription<?> that = (AlgorithmDescription<?>) o;
+        return Objects.equals(uuid, that.uuid);
     }
 }

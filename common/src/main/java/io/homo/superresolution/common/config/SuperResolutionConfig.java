@@ -79,6 +79,8 @@ public class SuperResolutionConfig {
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
+    public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
+
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
 
@@ -181,6 +183,11 @@ public class SuperResolutionConfig {
                 "debug/enable_debug",
                 () -> false,
                 "Enable debug mode"
+        );
+        ENABLE_EXPERIMENTAL_FEATURES = builder.defineBoolean(
+                "experiment/enable_experimental_features",
+                () -> false,
+                "Enable experimental features"
         );
 
         GENERATE_MOTION_VECTORS = builder.defineBoolean(
@@ -514,6 +521,14 @@ public class SuperResolutionConfig {
 
     public static void setInternalTextureFormat(InternalTextureFormat format) {
         INTERNAL_TEXTURE_FORMAT.set(format);
+    }
+
+    public static boolean isEnableExperimentalFeatures() {
+        return ENABLE_EXPERIMENTAL_FEATURES.get();
+    }
+
+    public static void setEnableExperimentalFeatures(boolean value) {
+        ENABLE_EXPERIMENTAL_FEATURES.set(value);
     }
 
     public static String getInternalTextureFormatGlslFormatQualifier() {

@@ -46,16 +46,9 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
     private static final float ICON_TEXT_GAP = 12f;
     private static final float CORNER_RADIUS = 28f;
     private static final long ANIMATION_DURATION = 200;
-
-    private Supplier<String> textSupplier = () -> "";
-    private Supplier<MaterialSymbol> iconSupplier = () -> null;
-    private boolean selected = false;
-    private Object value = null;
-
     private final Animator.FloatAnimator selectionAnimator = Animator.ofFloat(0f, 0f)
             .duration(ANIMATION_DURATION)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
-
     private final MaterialWidgetOverlay<MaterialNavigationDrawerItem> overlay = new MaterialWidgetOverlay<>(this) {
         @Override
         protected void drawShape(RenderContext ctx, MaterialNavigationDrawerItem widget, Color color) {
@@ -86,6 +79,10 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
             ctx.endPath(true);
         }
     };
+    private Supplier<String> textSupplier = () -> "";
+    private Supplier<MaterialSymbol> iconSupplier = () -> null;
+    private boolean selected = false;
+    private Object value = null;
 
     public MaterialNavigationDrawerItem() {
         getLayoutNode().setDebugName("NavigationDrawerItem");
@@ -107,78 +104,9 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
         eventBus.addListener(this::_onClick);
     }
 
-    private void onPress(MouseEvent.MousePressEvent event) {
-        if (event.getButton() == MouseButton.Left.id()) {
-            if (isVisible() && !isDisabled()) {
-                eventBus.post(new WidgetEvent.ClickEvent<>(this));
-            }
-        }
-    }
-
-    private void _onClick(WidgetEvent.ClickEvent<MaterialNavigationDrawerItem> event) {
-    }
-
     @Override
     protected boolean isInteractive() {
         return true;
-    }
-
-    public MaterialNavigationDrawerItem text(String text) {
-        this.textSupplier = () -> text;
-        return this;
-    }
-
-    public MaterialNavigationDrawerItem text(Supplier<String> supplier) {
-        this.textSupplier = supplier;
-        return this;
-    }
-
-    public MaterialNavigationDrawerItem icon(MaterialSymbol icon) {
-        this.iconSupplier = () -> icon;
-        return this;
-    }
-
-    public MaterialNavigationDrawerItem icon(Supplier<MaterialSymbol> supplier) {
-        this.iconSupplier = supplier;
-        return this;
-    }
-
-    public MaterialNavigationDrawerItem value(Object value) {
-        this.value = value;
-        return this;
-    }
-
-    public Object getValue() {
-        return value;
-    }
-
-    public boolean isSelected() {
-        return selected;
-    }
-
-    public float computeContentWidth(RenderContext ctx) {
-        float width = ICON_MARGIN_LEFT;
-        if (iconSupplier.get() != null) {
-            width += ICON_SIZE + ICON_TEXT_GAP;
-        }
-        String text = textSupplier.get();
-        if (text != null && !text.isEmpty()) {
-            width += ctx.measureTextWidth(text, FONT_SIZE, FONT_SIZE);
-        }
-        width += ICON_MARGIN_LEFT;
-        return width;
-    }
-
-    public MaterialNavigationDrawerItem setSelected(boolean selected) {
-        if (this.selected != selected) {
-            this.selected = selected;
-            if (selected) {
-                selectionAnimator.fromTo(selectionAnimator.get(), 1f).duration(ANIMATION_DURATION).start();
-            } else {
-                selectionAnimator.fromTo(selectionAnimator.get(), 0f).duration(ANIMATION_DURATION).start();
-            }
-        }
-        return this;
     }
 
     @Override
@@ -216,7 +144,7 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
 
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
-            Color textColor = selected ? scheme().onSecondaryContainer() : scheme().onSurface();
+            Color textColor = selected ? scheme().onSecondaryContainer() : scheme().onSurfaceVariant();
             ctx.drawAlignedText(
                     ctx.font(),
                     FONT_SIZE,
@@ -231,5 +159,74 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
             );
         }
         overlay.render(ctx, scheme().onSecondaryContainer().copy(), scheme().onSurface().copy());
+    }
+
+    private void onPress(MouseEvent.MousePressEvent event) {
+        if (event.getButton() == MouseButton.Left.id()) {
+            if (isVisible() && !isDisabled()) {
+                eventBus.post(new WidgetEvent.ClickEvent<>(this));
+            }
+        }
+    }
+
+    private void _onClick(WidgetEvent.ClickEvent<MaterialNavigationDrawerItem> event) {
+    }
+
+    public MaterialNavigationDrawerItem text(String text) {
+        this.textSupplier = () -> text;
+        return this;
+    }
+
+    public MaterialNavigationDrawerItem text(Supplier<String> supplier) {
+        this.textSupplier = supplier;
+        return this;
+    }
+
+    public MaterialNavigationDrawerItem icon(MaterialSymbol icon) {
+        this.iconSupplier = () -> icon;
+        return this;
+    }
+
+    public MaterialNavigationDrawerItem icon(Supplier<MaterialSymbol> supplier) {
+        this.iconSupplier = supplier;
+        return this;
+    }
+
+    public MaterialNavigationDrawerItem value(Object value) {
+        this.value = value;
+        return this;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public MaterialNavigationDrawerItem setSelected(boolean selected) {
+        if (this.selected != selected) {
+            this.selected = selected;
+            if (selected) {
+                selectionAnimator.fromTo(selectionAnimator.get(), 1f).duration(ANIMATION_DURATION).start();
+            } else {
+                selectionAnimator.fromTo(selectionAnimator.get(), 0f).duration(ANIMATION_DURATION).start();
+            }
+        }
+        return this;
+    }
+
+    public float computeContentWidth(RenderContext ctx) {
+        float width = ICON_MARGIN_LEFT;
+        if (iconSupplier.get() != null) {
+            width += ICON_SIZE + ICON_TEXT_GAP;
+        }
+        String text = textSupplier.get();
+        if (text != null && !text.isEmpty()) {
+            width += ctx.measureTextWidth(text, FONT_SIZE, FONT_SIZE);
+        }
+        width += ICON_MARGIN_LEFT;
+        return width;
     }
 }

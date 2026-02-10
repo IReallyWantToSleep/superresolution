@@ -65,11 +65,13 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
 
         nameLabel = MaterialLabel.create()
                 .text(() -> entry.getName().getString())
+                .color((MaterialScheme::onSurface))
                 .fontSize(16);
         leftContainer.addChild(nameLabel);
 
         descriptionLabel = MaterialLabel.create()
                 .text(() -> getDescriptionText())
+                .color((MaterialScheme::onSurfaceVariant))
                 .fontSize(12)
                 .lineHeight(14);
         descriptionLabel.style().wrap(true);
@@ -110,6 +112,12 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
 
     public void addControl(ILayoutElement control) {
         rightContainer.addChild(control);
+    }
+
+    @Override
+    public void layouting(RenderContext ctx) {
+        super.layouting(ctx);
+        entry.tick(ctx);
     }
 
     @Override

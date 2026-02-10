@@ -60,8 +60,9 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        container.render(ctx, inputState);
+    public void tick(RenderContext ctx) {
+        boolean enabled = updateRequirements();
+        aSwitch.setDisabled(!enabled);
     }
 
     @Override

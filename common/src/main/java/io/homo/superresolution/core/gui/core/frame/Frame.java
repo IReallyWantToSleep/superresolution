@@ -140,8 +140,8 @@ public class Frame implements IFrame {
     }
 
     private void dispatchMouseMoveRecursive(AbstractWidget<?> widget, float x, float y,
-            AbstractWidget<?> topInteractive,
-            Set<AbstractWidget<?>> ancestorChain) {
+                                            AbstractWidget<?> topInteractive,
+                                            Set<AbstractWidget<?>> ancestorChain) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
@@ -202,7 +202,7 @@ public class Frame implements IFrame {
     }
 
     private void dispatchMouseDragRecursive(AbstractWidget<?> widget, float mouseX, float mouseY,
-            float dragX, float dragY, int button) {
+                                            float dragX, float dragY, int button) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
@@ -426,11 +426,7 @@ public class Frame implements IFrame {
         }
     }
 
-    private void layoutWidgets(AbstractWidget<?> widget, RenderContext ctx) {
-        if (!widget.isVisible()) {
-            return;
-        }
-
+    protected void layoutWidgets(AbstractWidget<?> widget, RenderContext ctx) {
         widget.layouting(ctx);
 
         if (widget instanceof ILayoutContainer container) {
@@ -551,9 +547,9 @@ public class Frame implements IFrame {
 
     private record RenderEntry(AbstractWidget<?> widget,
 
-            Transform accumulatedTransform,
+                               Transform accumulatedTransform,
 
-            int zIndex) {
+                               int zIndex) {
     }
 
     @Override

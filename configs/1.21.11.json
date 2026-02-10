@@ -1,5 +1,5 @@
 {
-    "skip_build": true,
+    "skip_build": false,
     "common": {
         "java_version": 21,
         "minecraft_version": "1.21.11",

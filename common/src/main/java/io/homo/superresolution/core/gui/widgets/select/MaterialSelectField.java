@@ -39,29 +39,24 @@ import java.util.function.Supplier;
 
 public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
     private static final long ANIMATION_DURATION = 200;
-
+    private final Animator.FloatAnimator focusAnimator = Animator.ofFloat(0f, 0f)
+            .duration(ANIMATION_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
+    private final Animator.FloatAnimator labelAnimator = Animator.ofFloat(0f, 0f)
+            .duration(ANIMATION_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
+    private final Animator.FloatAnimator arrowAnimator = Animator.ofFloat(0f, 0f)
+            .duration(ANIMATION_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
     private Supplier<String> labelSupplier = () -> "";
     private Supplier<String> valueSupplier = () -> "";
     private Supplier<String> placeholderSupplier = () -> "";
     private Supplier<String> supportingTextSupplier = () -> "";
     private Supplier<MaterialSymbol> leadingIconSupplier = () -> null;
     private Supplier<MaterialSymbol> trailingIconSupplier = () -> MaterialSymbols.iconArrowDropDown();
-
     private boolean focused = false;
     private boolean menuOpen = false;
     private float width = 280;
-
-    private final Animator.FloatAnimator focusAnimator = Animator.ofFloat(0f, 0f)
-            .duration(ANIMATION_DURATION)
-            .timeInterpolator(TimeInterpolator.easeOutCubic());
-
-    private final Animator.FloatAnimator labelAnimator = Animator.ofFloat(0f, 0f)
-            .duration(ANIMATION_DURATION)
-            .timeInterpolator(TimeInterpolator.easeOutCubic());
-
-    private final Animator.FloatAnimator arrowAnimator = Animator.ofFloat(0f, 0f)
-            .duration(ANIMATION_DURATION)
-            .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     public MaterialSelectField() {
         this.style = new MaterialSelectStyle();
@@ -73,91 +68,18 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
     }
 
     @Override
-    public MaterialSelectStyle style() {
-        return (MaterialSelectStyle) super.style();
-    }
-
-    @Override
     protected void init() {
         eventBus.addListener(this::onPress);
     }
 
-    private void onPress(MouseEvent.MousePressEvent event) {
-        if (event.getButton() == MouseButton.Left.id()) {
-            if (isVisible() && !isDisabled()) {
-                eventBus.post(new WidgetEvent.ClickEvent<>(this));
-            }
-        }
+    @Override
+    public void layouting(RenderContext ctx) {
+        updateSize();
     }
 
     @Override
-    protected boolean isInteractive() {
-        return true;
-    }
-
-    public MaterialSelectField label(String label) {
-        this.labelSupplier = () -> label;
-        return this;
-    }
-
-    public MaterialSelectField labelSupplier(Supplier<String> supplier) {
-        this.labelSupplier = supplier;
-        return this;
-    }
-
-    public MaterialSelectField value(String value) {
-        this.valueSupplier = () -> value;
-        updateLabelState();
-        return this;
-    }
-
-    public MaterialSelectField valueSupplier(Supplier<String> supplier) {
-        this.valueSupplier = supplier;
-        return this;
-    }
-
-    public MaterialSelectField placeholder(String placeholder) {
-        this.placeholderSupplier = () -> placeholder;
-        return this;
-    }
-
-    public MaterialSelectField supportingText(String text) {
-        this.supportingTextSupplier = () -> text;
-        return this;
-    }
-
-    public MaterialSelectField leadingIcon(MaterialSymbol icon) {
-        this.leadingIconSupplier = () -> icon;
-        return this;
-    }
-
-    public MaterialSelectField trailingIcon(MaterialSymbol icon) {
-        this.trailingIconSupplier = () -> icon;
-        return this;
-    }
-
-    public MaterialSelectField width(float width) {
-        this.width = width;
-        updateSize();
-        return this;
-    }
-
-    public String getValue() {
-        return valueSupplier.get();
-    }
-
-    public String getLabel() {
-        return labelSupplier.get();
-    }
-
-    void setMenuOpen(boolean open) {
-        this.menuOpen = open;
-        setFocused(open);
-        arrowAnimator.fromTo(arrowAnimator.get(), open ? 1f : 0f).start();
-    }
-
-    boolean isMenuOpen() {
-        return menuOpen;
+    public MaterialSelectStyle style() {
+        return (MaterialSelectStyle) super.style();
     }
 
     @Override
@@ -170,22 +92,9 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
         return this;
     }
 
-    private void updateLabelState() {
-        String value = valueSupplier.get();
-        boolean hasValue = value != null && !value.isEmpty();
-        boolean shouldFloat = focused || hasValue;
-        labelAnimator.fromTo(labelAnimator.get(), shouldFloat ? 1f : 0f).start();
-    }
-
-    private void updateSize() {
-        MaterialSelectSize size = style().size();
-        layout().setWidth(width);
-        layout().setHeight(size.containerHeight());
-    }
-
     @Override
-    public void layouting(RenderContext ctx) {
-        updateSize();
+    protected boolean isInteractive() {
+        return true;
     }
 
     @Override
@@ -353,5 +262,91 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
 
     @Override
     public void destroy() {
+    }
+
+    private void onPress(MouseEvent.MousePressEvent event) {
+        if (event.getButton() == MouseButton.Left.id()) {
+            if (isVisible() && !isDisabled()) {
+                eventBus.post(new WidgetEvent.ClickEvent<>(this));
+            }
+        }
+    }
+
+    public MaterialSelectField label(String label) {
+        this.labelSupplier = () -> label;
+        return this;
+    }
+
+    public MaterialSelectField labelSupplier(Supplier<String> supplier) {
+        this.labelSupplier = supplier;
+        return this;
+    }
+
+    public MaterialSelectField value(String value) {
+        this.valueSupplier = () -> value;
+        updateLabelState();
+        return this;
+    }
+
+    public MaterialSelectField valueSupplier(Supplier<String> supplier) {
+        this.valueSupplier = supplier;
+        return this;
+    }
+
+    public MaterialSelectField placeholder(String placeholder) {
+        this.placeholderSupplier = () -> placeholder;
+        return this;
+    }
+
+    public MaterialSelectField supportingText(String text) {
+        this.supportingTextSupplier = () -> text;
+        return this;
+    }
+
+    public MaterialSelectField leadingIcon(MaterialSymbol icon) {
+        this.leadingIconSupplier = () -> icon;
+        return this;
+    }
+
+    public MaterialSelectField trailingIcon(MaterialSymbol icon) {
+        this.trailingIconSupplier = () -> icon;
+        return this;
+    }
+
+    public MaterialSelectField width(float width) {
+        this.width = width;
+        updateSize();
+        return this;
+    }
+
+    public String getValue() {
+        return valueSupplier.get();
+    }
+
+    public String getLabel() {
+        return labelSupplier.get();
+    }
+
+    boolean isMenuOpen() {
+        return menuOpen;
+    }
+
+    void setMenuOpen(boolean open) {
+        this.menuOpen = open;
+        setFocused(open);
+        arrowAnimator.fromTo(arrowAnimator.get(), open ? 1f : 0f).start();
+    }
+
+    private void updateLabelState() {
+        String value = valueSupplier.get();
+        boolean hasValue = value != null && !value.isEmpty();
+        boolean shouldFloat = focused || hasValue;
+        labelAnimator.fromTo(labelAnimator.get(), shouldFloat ? 1f : 0f).start();
+    }
+
+    private void updateSize() {
+        MaterialSelectSize size = style().size();
+        layout().setWidth(width);
+        layout().setHeight(size.containerHeight());
     }
 }

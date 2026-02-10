@@ -45,14 +45,14 @@ import org.joml.Vector2f;
 import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
+import org.lwjgl.opengl.GL42;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
+import static org.lwjgl.opengl.EXTSemaphore.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class XeSS extends AbstractAlgorithm {
@@ -269,6 +269,10 @@ public class XeSS extends AbstractAlgorithm {
                     dispatchResource.resources().motionVectorsTexture(),
                     this.inputMotionVectorsGlTexture);
         }
+        GL42.glMemoryBarrier(
+                GL42.GL_TEXTURE_UPDATE_BARRIER_BIT |
+                        GL42.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
         syncSemaphore.signalOpenGL(
                 new int[]{
                         Math.toIntExact(this.inputColorGlTexture.handle()),
@@ -278,7 +282,7 @@ public class XeSS extends AbstractAlgorithm {
                 null,
                 new int[]{
                         GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                        GL_LAYOUT_DEPTH_STENCIL_READ_ONLY_EXT,
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 });
 
@@ -343,10 +347,16 @@ public class XeSS extends AbstractAlgorithm {
             vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo,
                     VK_NULL_HANDLE);
         }
+
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{},
                 new int[]{GL_LAYOUT_GENERAL_EXT});
+
+        GL42.glMemoryBarrier(
+                GL42.GL_TEXTURE_UPDATE_BARRIER_BIT |
+                        GL42.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
         InteropResourcesConverter.flipY(
                 this.outputColorGlTexture,
                 this.outputColorTexture);

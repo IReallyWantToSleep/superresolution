@@ -24,8 +24,10 @@ import io.homo.superresolution.common.gui.impl.ValueHolder;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.AbstractContainerWidget;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -33,7 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, ValueHolder<VT>, GuiEventListener {
+public abstract class AbstractOptionEntry<VT, SELF> implements ValueHolder<VT>, GuiEventListener {
     protected Text name;
     protected boolean requiresRestartGame;
     protected @Nullable Supplier<VT> defaultValue = null;
@@ -61,6 +63,25 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
     protected abstract void initLayout();
 
     protected abstract void initWidget();
+
+    protected boolean updateRequirements() {
+        if (displayRequirement != null) {
+            boolean shouldDisplay = displayRequirement.check();
+            container.setVisible(shouldDisplay);
+            container.getLayoutNode().getStyle().setDisplay(
+                    shouldDisplay ? YogaDisplay.FLEX : YogaDisplay.NONE);
+            container.getLayoutNode().markDirtyAndPropagate();
+        } else {
+            container.setVisible(true);
+            container.getLayoutNode().getStyle().setDisplay(YogaDisplay.FLEX);
+            container.getLayoutNode().markDirtyAndPropagate();
+        }
+
+        if (enableRequirement != null) {
+            return enableRequirement.check();
+        }
+        return true;
+    }
 
     public Text getName() {
         return name;
@@ -141,26 +162,41 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
 
     @Override
     public void mousePress(float x, float y, int button) {
+        if (!container.isVisible()) {
+            return;
+        }
         container.mousePress(x, y, button);
     }
 
     @Override
     public void mouseRelease(float x, float y, int button) {
+        if (!container.isVisible()) {
+            return;
+        }
         container.mouseRelease(x, y, button);
     }
 
     @Override
     public void mouseMove(float x, float y) {
+        if (!container.isVisible()) {
+            return;
+        }
         container.mouseMove(x, y);
     }
 
     @Override
     public void mouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        if (!container.isVisible()) {
+            return;
+        }
         container.mouseDrag(mouseX, mouseY, dragX, dragY, button);
     }
 
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
+        if (!container.isVisible()) {
+            return;
+        }
         container.mouseScroll(x, y, scrollX);
     }
 
@@ -181,5 +217,8 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
 
     public OptionContainerWidget getContainer() {
         return container;
+    }
+
+    public void tick(RenderContext ctx) {
     }
 }
