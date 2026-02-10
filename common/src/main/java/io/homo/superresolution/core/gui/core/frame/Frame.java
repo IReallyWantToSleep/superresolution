@@ -95,7 +95,8 @@ public class Frame implements IFrame {
         Vector2f topLeft = transform.transformPoint(new Vector2f(bounds.x, bounds.y));
         Vector2f topRight = transform.transformPoint(new Vector2f(bounds.x + bounds.width, bounds.y));
         Vector2f bottomLeft = transform.transformPoint(new Vector2f(bounds.x, bounds.y + bounds.height));
-        Vector2f bottomRight = transform.transformPoint(new Vector2f(bounds.x + bounds.width, bounds.y + bounds.height));
+        Vector2f bottomRight = transform
+                .transformPoint(new Vector2f(bounds.x + bounds.width, bounds.y + bounds.height));
 
         float minX = Math.min(Math.min(topLeft.x, topRight.x), Math.min(bottomLeft.x, bottomRight.x));
         float minY = Math.min(Math.min(topLeft.y, topRight.y), Math.min(bottomLeft.y, bottomRight.y));
@@ -139,8 +140,8 @@ public class Frame implements IFrame {
     }
 
     private void dispatchMouseMoveRecursive(AbstractWidget<?> widget, float x, float y,
-                                            AbstractWidget<?> topInteractive,
-                                            Set<AbstractWidget<?>> ancestorChain) {
+            AbstractWidget<?> topInteractive,
+            Set<AbstractWidget<?>> ancestorChain) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
@@ -201,7 +202,7 @@ public class Frame implements IFrame {
     }
 
     private void dispatchMouseDragRecursive(AbstractWidget<?> widget, float mouseX, float mouseY,
-                                            float dragX, float dragY, int button) {
+            float dragX, float dragY, int button) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
@@ -408,9 +409,11 @@ public class Frame implements IFrame {
         if (root == null) {
             return;
         }
-        if (layoutDirty) {
-            calculateLayout();
-        }
+
+        layoutWidgets(root, ctx);
+
+        calculateLayout();
+
         renderList.clear();
         collectRenderables(root, renderList);
         renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
@@ -420,6 +423,22 @@ public class Frame implements IFrame {
 
         if (debugRenderEnabled) {
             renderDebugOverlay(ctx, inputState);
+        }
+    }
+
+    private void layoutWidgets(AbstractWidget<?> widget, RenderContext ctx) {
+        if (!widget.isVisible()) {
+            return;
+        }
+
+        widget.layouting(ctx);
+
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    layoutWidgets(childWidget, ctx);
+                }
+            }
         }
     }
 
@@ -468,11 +487,9 @@ public class Frame implements IFrame {
         ctx.rect(
                 layoutBounds.x, layoutBounds.y,
                 layoutBounds.width, layoutBounds.height,
-                DEBUG_LAYOUT_COLOR, false
-        );
+                DEBUG_LAYOUT_COLOR, false);
 
         ctx.restore();
-
 
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
@@ -493,8 +510,7 @@ public class Frame implements IFrame {
             ctx.rect(
                     rawBounds.x + 1, rawBounds.y + 1,
                     rawBounds.width - 2, rawBounds.height - 2,
-                    DEBUG_RENDER_COLOR, false
-            );
+                    DEBUG_RENDER_COLOR, false);
         } else {
             ctx.save();
             ctx.applyTransform(transform);
@@ -502,8 +518,7 @@ public class Frame implements IFrame {
             ctx.rect(
                     rawBounds.x + 1, rawBounds.y + 1,
                     rawBounds.width - 2, rawBounds.height - 2,
-                    DEBUG_RENDER_COLOR, false
-            );
+                    DEBUG_RENDER_COLOR, false);
 
             ctx.restore();
         }
@@ -518,8 +533,7 @@ public class Frame implements IFrame {
             ctx.rect(
                     rawBounds.x - 2, rawBounds.y - 2,
                     rawBounds.width + 4, rawBounds.height + 4,
-                    DEBUG_HITTEST_COLOR, false
-            );
+                    DEBUG_HITTEST_COLOR, false);
         } else {
             ctx.save();
             ctx.applyTransform(accumulatedTransform);
@@ -527,8 +541,7 @@ public class Frame implements IFrame {
             ctx.rect(
                     rawBounds.x - 2, rawBounds.y - 2,
                     rawBounds.width + 4, rawBounds.height + 4,
-                    DEBUG_HITTEST_COLOR, false
-            );
+                    DEBUG_HITTEST_COLOR, false);
 
             ctx.restore();
         }
@@ -538,9 +551,9 @@ public class Frame implements IFrame {
 
     private record RenderEntry(AbstractWidget<?> widget,
 
-                               Transform accumulatedTransform,
+            Transform accumulatedTransform,
 
-                               int zIndex) {
+            int zIndex) {
     }
 
     @Override
@@ -561,7 +574,6 @@ public class Frame implements IFrame {
         dispatchMouseMoveRecursive(root, x, y, topInteractive, ancestorChain);
     }
 
-
     @Override
     public void dispatchMousePress(float x, float y, int button) {
         if (root == null || !root.isVisible()) {
@@ -580,7 +592,6 @@ public class Frame implements IFrame {
 
     }
 
-
     @Override
     public void dispatchMouseRelease(float x, float y, int button) {
         if (root == null || !root.isVisible()) {
@@ -590,7 +601,6 @@ public class Frame implements IFrame {
         dispatchMouseReleaseRecursive(root, x, y, button);
     }
 
-
     @Override
     public void dispatchMouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
         if (root == null || !root.isVisible()) {
@@ -599,7 +609,6 @@ public class Frame implements IFrame {
 
         dispatchMouseDragRecursive(root, mouseX, mouseY, dragX, dragY, button);
     }
-
 
     @Override
     public void dispatchMouseScroll(float x, float y, double scrollX) {
@@ -618,7 +627,6 @@ public class Frame implements IFrame {
         }
     }
 
-
     @Override
     public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
         if (root == null || !root.isVisible()) {
@@ -627,7 +635,6 @@ public class Frame implements IFrame {
 
         dispatchKeyPressRecursive(root, keyCode, scancode, modifiers);
     }
-
 
     @Override
     public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
@@ -638,7 +645,6 @@ public class Frame implements IFrame {
         dispatchKeyReleaseRecursive(root, keyCode, scancode, modifiers);
     }
 
-
     @Override
     public void dispatchCharTyped(char codePoint, int modifiers) {
         if (root == null || !root.isVisible()) {
@@ -647,7 +653,6 @@ public class Frame implements IFrame {
 
         dispatchCharTypedRecursive(root, codePoint, modifiers);
     }
-
 
     @Override
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
@@ -663,7 +668,6 @@ public class Frame implements IFrame {
         return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE);
     }
 
-
     @Override
     public void markLayoutDirty() {
         layoutDirty = true;
@@ -673,6 +677,5 @@ public class Frame implements IFrame {
     public boolean isLayoutDirty() {
         return layoutDirty;
     }
-
 
 }

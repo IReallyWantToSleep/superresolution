@@ -24,7 +24,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.InteropCoordinateConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -49,6 +49,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
+import java.util.EnumSet;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
@@ -97,7 +98,7 @@ public class DLSS extends AbstractAlgorithm {
         this.context = new SRUpscaleContext(0);
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) vulkanDevice.createCommandBuffer();
+        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) vulkanDevice.commandDecoder().beginCommandBuffer();
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
@@ -110,19 +111,19 @@ public class DLSS extends AbstractAlgorithm {
                         RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(),
                         RenderHandlerManager.getRenderHeight()),
-                SRUpscaleContextCreateFlags.VULKAN.value);
+                EnumSet.of(
+                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
+                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED,
+                        SRUpscaleContextCreateFlags.ENABLE_DEBUG
+                )
+        );
         upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH", SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString());
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
                 upscaleContextDesc);
-        /*
-        SRUpscaleContextQueryAvailabilityResult result = new SRUpscaleContextQueryAvailabilityResult(0);
-        SuperResolutionNativeAPI.srQueryUpscaleContext(context, result, SRUpscaleContextQueryType.AVAILABLE);
-        System.out.printf(String.valueOf(result.isAvailable));
-        */
         SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(context);
-        commandBuffer.submit(RenderSystems.vulkan().device());
+        vulkanDevice.commandDecoder().endAndSubmitCommandBuffer();
         SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code);
         SuperResolution.LOGGER.info("'srInitUpscaleContext' return code: {}", code0);
         SuperResolution.LOGGER.info("'SRUpscaleContext' pointer: {}", context.nativePtr);
@@ -178,7 +179,7 @@ public class DLSS extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R32F)
+                        .format(TextureFormat.DEPTH32F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -245,15 +246,15 @@ public class DLSS extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 this.inputColorGlTexture);
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.preprocessDepth(
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
 
         if (dispatchResource.resources().motionVectorsTexture() != null) {
-            InteropCoordinateConverter.flipMotionVectorY(
+            InteropResourcesConverter.flipMotionVectorY(
                     dispatchResource.resources().motionVectorsTexture(),
                     this.inputMotionVectorsGlTexture);
         }
@@ -335,7 +336,7 @@ public class DLSS extends AbstractAlgorithm {
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{},
                 new int[]{GL_LAYOUT_GENERAL_EXT});
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.flipY(
                 this.outputColorGlTexture,
                 this.outputColorTexture);
         return true;

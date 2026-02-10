@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui;
 
+/*
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.ConfigChangedEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
@@ -60,8 +61,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.function.Consumer;
-
+*/
 public class ClothConfig {
+    /*
     public static void add(ConfigBuilder builder) {
         ConfigCategory commonCategory = builder.getOrCreateCategory(Component.translatable("superresolution.screen.config.category.general"));
         ConfigEntryBuilder entryBuilder = ConfigEntryBuilderImpl.create();
@@ -134,7 +136,7 @@ public class ClothConfig {
                 entryBuilder.startTextDescription(
                                 Component.translatable("superresolution.screen.config.warn.algorithm_unstable")
                         ).setColor(ColorUtil.color(255, 255, 128, 0))
-                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2 /*AlgorithmDescriptions.NIS*/, AlgorithmDescriptions.SGSR2))
+                        .setDisplayRequirement(Requirement.isValue(algorithmSelector, AlgorithmDescriptions.FSR2 /*AlgorithmDescriptions.NIS, AlgorithmDescriptions.SGSR2))
                         .build()
         );
         commonCategory.addEntry(
@@ -714,5 +716,5 @@ public class ClothConfig {
         #else
         return new ClickEvent(ClickEvent.Action.OPEN_URL, url);
         #endif
-    }
+    }*/
 }

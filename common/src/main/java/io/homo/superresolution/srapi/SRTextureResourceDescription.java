@@ -61,7 +61,7 @@ public class SRTextureResourceDescription {
             case R32F -> SRSurfaceFormat.R32_FLOAT;
             case R32UI -> SRSurfaceFormat.R32_UINT;
             case DEPTH32 -> SRSurfaceFormat.R32_TYPELESS;
-            case DEPTH32F -> SRSurfaceFormat.R32_FLOAT;
+            case DEPTH32F -> SRSurfaceFormat.D32_SFLOAT;
             case DEPTH24_STENCIL8, DEPTH24, DEPTH_COMPONENT, DEPTH32F_STENCIL8 -> SRSurfaceFormat.UNKNOWN;
             case R16_SNORM -> SRSurfaceFormat.R16_SNORM;
             case R11G11B10F -> SRSurfaceFormat.R11G11B10_FLOAT;

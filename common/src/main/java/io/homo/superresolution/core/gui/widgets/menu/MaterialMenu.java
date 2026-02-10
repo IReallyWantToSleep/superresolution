@@ -38,14 +38,14 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
-    private static final long EXPAND_ANIMATION_DURATION = 400;
+    private static final long EXPAND_ANIMATION_DURATION = 300;
 
     private MaterialMenuSelectionMode selectionMode = MaterialMenuSelectionMode.None;
     private boolean expanded = true;
     private Consumer<Boolean> onExpandChanged;
 
     private final Animator.FloatAnimator expandAnimator = Animator.ofFloat(1f, 1f)
-            .duration(EXPAND_ANIMATION_DURATION)
+            .duration(250)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     public MaterialMenu() {
@@ -74,13 +74,18 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         layout().setMaxHeight(StyleSizeLength.undefined());
     }
 
+    @Override
+    public void layouting(RenderContext ctx) {
+        updateSize();
+    }
+
     public float getMenuHeight() {
         MaterialMenuSize size = style().size();
         float totalHeight = 0;
         //TODO: 考虑padding
         for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuGroup group) {
-                totalHeight += ((YogaNode) group.layout()).getChild(0).getLayout().measuredDimension(YogaDimension.HEIGHT);
+                totalHeight += ((YogaNode) group.layout()).getLayout().measuredDimension(YogaDimension.HEIGHT);
             }
         }
         return totalHeight;
@@ -98,7 +103,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuGroup group) {
                 group.style().colors(style().colors());
-                group.scheme(scheme());
                 group.setExpandProgress(1f);
                 for (ILayoutElement groupChild : group.getChildren()) {
                     if (groupChild instanceof MaterialMenuItem item) {
@@ -107,8 +111,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
                 }
             }
         }
-
-        updateSize();
 
         ctx.beginGroup(style().zIndex());
         ctx.save();

@@ -180,15 +180,29 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
     @Override
     public void addChild(ILayoutElement element) {
         super.addChild(element);
-        if (element instanceof MaterialNavigationDrawerHeader header) {
-            header.scheme(scheme());
-        } else if (element instanceof MaterialNavigationDrawerSectionHeader sectionHeader) {
-            sectionHeader.scheme(scheme());
-        } else if (element instanceof MaterialNavigationDrawerItem item) {
-            item.scheme(scheme());
-        } else if (element instanceof MaterialNavigationDrawerDivider divider) {
-            divider.scheme(scheme());
+    }
+
+    @Override
+    public void layouting(RenderContext ctx) {
+        float width = getPreferredWidth(ctx);
+        if (width > 0) {
+            layout().setMinWidth(width);
         }
+    }
+
+    public float getPreferredWidth(RenderContext ctx) {
+        float padding = 12f;
+        float maxContentWidth = 0;
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialNavigationDrawerItem item) {
+                maxContentWidth = Math.max(maxContentWidth, item.computeContentWidth(ctx));
+            } else if (child instanceof MaterialNavigationDrawerHeader header) {
+                maxContentWidth = Math.max(maxContentWidth, header.computeContentWidth(ctx));
+            } else if (child instanceof MaterialNavigationDrawerSectionHeader sectionHeader) {
+                maxContentWidth = Math.max(maxContentWidth, sectionHeader.computeContentWidth(ctx));
+            }
+        }
+        return maxContentWidth + padding * 2;
     }
 
     @Override

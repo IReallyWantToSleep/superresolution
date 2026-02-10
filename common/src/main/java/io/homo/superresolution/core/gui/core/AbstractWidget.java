@@ -62,6 +62,8 @@ public abstract class AbstractWidget<
     }
 
     protected abstract void init();
+    public void layouting(RenderContext ctx) {
+    }
 
     public IEventBus getEventBus() {
         return eventBus;

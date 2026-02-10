@@ -146,11 +146,23 @@ extern "C"
             &upscale_size,
             quality_settings,
             &privateData->renderSize);
-
+        uint32_t initializeFlags = XESS_INIT_FLAG_LDR_INPUT_COLOR;
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
+        {
+            initializeFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
+        {
+            initializeFlags |= XESS_INIT_FLAG_INVERTED_DEPTH;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED)
+        {
+            initializeFlags |= XESS_INIT_FLAG_JITTERED_MV;
+        }
         xess_vk_init_params_t params = {
             {desc->upscaledSize.x, desc->upscaledSize.y},
             quality_settings,
-            XESS_INIT_FLAG_LDR_INPUT_COLOR,
+            initializeFlags,
             0,
             0,
             nullptr,

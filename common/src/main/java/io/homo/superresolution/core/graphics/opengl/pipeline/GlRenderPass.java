@@ -40,7 +40,7 @@ public class GlRenderPass extends RenderPass {
 
     public void bind() {
         if (frameBuffer instanceof IBindableFrameBuffer bindableFrameBuffer) {
-            bindableFrameBuffer.bind(FrameBufferBindPoint.All, true);
+            bindableFrameBuffer.bind(FrameBufferBindPoint.All, false);
         } else {
             throw new OpenGLException("FrameBuffer is not bindable");
         }

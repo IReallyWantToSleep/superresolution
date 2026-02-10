@@ -7,12 +7,6 @@ base {
 }
 
 repositories {
-    if (System.getenv().containsKey("SR_DEV")) {
-        maven {
-            name "minecraftdevRepository"
-            url "http://127.0.0.1:8080/releases"
-        }
-    }
     maven {
         url "https://cursemaven.com"
         content {
@@ -70,6 +64,13 @@ legacyForge {
                             group: "org.lwjgl",
                             name: "lwjgl-vulkan",
                             version: "$versionConfig.common.lwjglVersion"
+                    )
+            )
+            additionalRuntimeClasspathConfiguration.dependencies.add(
+                    dependencies.create(
+                            group: "net.neoforged",
+                            name: "bus",
+                            version: "8.0.5"
                     )
             )
             /*

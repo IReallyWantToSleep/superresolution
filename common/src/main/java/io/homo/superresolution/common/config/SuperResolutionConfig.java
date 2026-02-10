@@ -44,6 +44,8 @@ import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.gui.MaterialTheme;
+import io.homo.superresolution.core.gui.MaterialUI;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
 
@@ -76,6 +78,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue DISABLE_UPSCALE_ON_VANILLA;
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
+    public static final EnumValue<MaterialTheme> THEME;
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
 
@@ -108,7 +111,9 @@ public class SuperResolutionConfig {
                 defaultAlgoSupplier,
                 "Algorithm used for upscaling",
                 value -> {
-                    if (value == null) return false;
+                    if (value == null) {
+                        return false;
+                    }
                     AlgorithmDescription<?> algo = AlgorithmRegistry.getDescriptionByID(value);
                     return algo != null;
                 }
@@ -139,6 +144,13 @@ public class SuperResolutionConfig {
                 ArrayList::new,
                 "List of post-processing chains to skip injection",
                 value -> value != null && !value.isEmpty()
+        );
+
+        THEME = builder.defineEnum(
+                "theme",
+                MaterialTheme.class,
+                () -> MaterialTheme.Light,
+                "Interface theme"
         );
 
         DEBUG_DUMP_SHADER = builder.defineBoolean(
@@ -181,7 +193,9 @@ public class SuperResolutionConfig {
                 "compat_shader_compiler",
                 () -> {
                     try {
-                        if (GL.getCapabilities() == null) return false;
+                        if (GL.getCapabilities() == null) {
+                            return false;
+                        }
                     } catch (Exception e) {
                         return false;
                     }
@@ -298,7 +312,9 @@ public class SuperResolutionConfig {
         String algoName = UPSCALE_ALGO.get();
         AlgorithmDescription<?> currentAlgo = AlgorithmRegistry.getDescriptionByID(algoName);
 
-        if (currentAlgo == newAlgo) return;
+        if (currentAlgo == newAlgo) {
+            return;
+        }
 
         AbstractAlgorithm oldAlgorithmInstance = SuperResolution.currentAlgorithm;
         AlgorithmDescription<?> oldDescription = SuperResolution.algorithmDescription;
@@ -350,15 +366,18 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableUpscale() {
-        if (SuperResolutionConfig.isDisableUpscaleOnVanilla())
+        if (SuperResolutionConfig.isDisableUpscaleOnVanilla()) {
             return isEnableUpscaleOriginal() && ShaderCompatHandler.irisApiIsShaderPackInUse();
+        }
         return isEnableUpscaleOriginal();
     }
 
     public static void setEnableUpscale(boolean value) {
         boolean resolutionChanged = isEnableUpscale() != value;
         ENABLE_UPSCALE.set(value);
-        if (resolutionChanged) resolutionChangeCallback.run();
+        if (resolutionChanged) {
+            resolutionChangeCallback.run();
+        }
     }
 
     public static float getSharpness() {
@@ -384,7 +403,9 @@ public class SuperResolutionConfig {
     public static void setUpscaleRatio(float value) {
         boolean resolutionChanged = getUpscaleRatio() != value;
         UPSCALE_RATIO.set(value);
-        if (resolutionChanged) resolutionChangeCallback.run();
+        if (resolutionChanged) {
+            resolutionChangeCallback.run();
+        }
     }
 
     public static boolean isDebugDumpShader() {
@@ -519,8 +540,18 @@ public class SuperResolutionConfig {
         return INTERNAL_TEXTURE_FORMAT.get().format();
     }
 
+    public static MaterialTheme getTheme() {
+        return THEME.get();
+    }
+
+    public static void setTheme(MaterialTheme value) {
+        THEME.set(value);
+    }
+
     public static float getMinUpscaleRatio() {
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return 1.0f;
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return 1.0f;
+        }
         return 0.5f;
         /*
         int maxSize = 16384;

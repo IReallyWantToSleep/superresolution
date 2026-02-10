@@ -8,6 +8,7 @@
         "core.ForceOpenGLVersion_WindowMixin",
         "core.GameRendererMixin",
         "core.GlDebugMixin",
+        "core.GlTextureViewMixin",
         "core.GLXMixin",
         "core.MinecraftMixin",
         "core.OptionsMixin",
@@ -29,9 +30,12 @@
         "debug.ImguiMixin",
         "debug.KeyboardHandlerMixin",
         "gui.AbstractWidgetAccessor",
-        "gui.GameRendererAccessor"
+        "gui.GameRendererAccessor",
+        "gui.GuiGraphicsAccessor",
+        "gui.GuiRendererMixin"
     ],
     "mixins": [
+        "gui.GuiRendererDrawAccessor"
     ],
     "injectors": {
         "defaultRequire": 1

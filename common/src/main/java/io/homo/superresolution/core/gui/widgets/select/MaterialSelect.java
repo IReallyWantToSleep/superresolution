@@ -300,14 +300,6 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
-    public MaterialSelect<T> scheme(MaterialScheme scheme) {
-        super.scheme(scheme);
-        field.scheme(scheme);
-        menu.scheme(scheme);
-        return this;
-    }
-
-    @Override
     public void mouseMove(float x, float y) {
         Vector2f absPos = new Vector2f(x, y);
 
@@ -347,8 +339,12 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
+    public void layouting(RenderContext ctx) {
         updateSize();
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
         if (!isVisible()) {
             return;
         }
@@ -371,11 +367,11 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             float viewportWidth = ctx.viewportWidth();
             float viewportPadding = 8f;
 
-            Vector2f fieldScreenPos = getFullTransform().transformPoint(new Vector2f(selfBounds.x, selfBounds.y));
-            float fieldX = fieldScreenPos.x;
-            float fieldY = fieldScreenPos.y;
-            float fieldWidth = width;
-            float fieldHeight = size.containerHeight();
+            Rectangle fieldBounds = this.getBounds();
+            float fieldX = fieldBounds.x;
+            float fieldY = fieldBounds.y;
+            float fieldWidth = fieldBounds.width;
+            float fieldHeight = fieldBounds.height;
 
             float spaceBelow = viewportHeight - (fieldY + fieldHeight) - viewportPadding;
             float spaceAbove = fieldY - viewportPadding;

@@ -24,6 +24,7 @@ import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
 import java.util.ArrayList;
@@ -32,7 +33,6 @@ import java.util.function.Consumer;
 
 public class OptionBuilder {
     protected OptionCategory category;
-    protected MaterialScheme scheme = MaterialScheme.defaultLight;
     protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
     protected Runnable saveRunnable = () -> {
     };
@@ -43,11 +43,6 @@ public class OptionBuilder {
 
     public OptionBuilder setSaveRunnable(Runnable saveRunnable) {
         this.saveRunnable = saveRunnable;
-        return this;
-    }
-
-    public OptionBuilder scheme(MaterialScheme scheme) {
-        this.scheme = scheme;
         return this;
     }
 
@@ -85,21 +80,18 @@ public class OptionBuilder {
 
     public OptionBuilder addEntry(AbstractOptionEntry<?, ?> entry) {
         entries.add(entry);
-        entry.setScheme(scheme);
         return this;
     }
 
     public OptionsContainer build() {
-        OptionsContainer container = new OptionsContainer(scheme);
+        OptionsContainer container = new OptionsContainer();
 
         for (AbstractOptionEntry<?, ?> entry : category.getEntries()) {
-            entry.setScheme(scheme);
             entry.setSaveRunnable(saveRunnable);
             container.addEntry(entry);
         }
 
         for (AbstractOptionEntry<?, ?> entry : entries) {
-            entry.setScheme(scheme);
             entry.setSaveRunnable(saveRunnable);
             container.addEntry(entry);
         }
@@ -107,16 +99,19 @@ public class OptionBuilder {
         return container;
     }
 
-    public static class OptionsContainer extends ContainerWidget {
+    public static class OptionsContainer extends MaterialContainerWidget<OptionsContainer> {
         private static final float CORNER_RADIUS = 16f;
         private static final float PADDING = 8f;
         private static final float GAP = 8f;
-        private final MaterialScheme scheme;
         private final List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
 
-        public OptionsContainer(MaterialScheme scheme) {
-            this.scheme = scheme;
+        public OptionsContainer() {
             initLayout();
+        }
+
+        @Override
+        protected Rectangle getViewRegion() {
+            return getBounds();
         }
 
         private void initLayout() {
@@ -129,7 +124,6 @@ public class OptionBuilder {
         public void addEntry(AbstractOptionEntry<?, ?> entry) {
             entries.add(entry);
             addChild(entry.getContainer());
-            entry.setScheme(scheme);
         }
 
         public List<AbstractOptionEntry<?, ?>> getEntries() {
@@ -145,7 +139,7 @@ public class OptionBuilder {
                     bounds.width,
                     bounds.height,
                     CORNER_RADIUS,
-                    scheme.surfaceContainerLow(),
+                    scheme().surfaceContainerLow(),
                     true
             );
         }

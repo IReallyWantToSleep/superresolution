@@ -18,7 +18,9 @@
 
 package io.homo.superresolution.core.gui;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -29,6 +31,7 @@ import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.view.View;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
@@ -41,6 +44,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 #endif
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.opengl.GL41;
 
 public abstract class NanoVGScreen<T> extends Screen {
     protected final NanoVGContextWrapper nvg;
@@ -77,26 +81,82 @@ public abstract class NanoVGScreen<T> extends Screen {
         float mouseY = (float) transformPos(mouseY_);
         drawBefore(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
         scaleManager.update();
+        Runnable renderAction = () -> {
+            GL41.glBindSampler(0, 0);
+            nvg.begin(true);
+            nvg.resetGlobalTransform();
+            nvg.resetTransform();
+            nvg.globalScale(scaleManager.guiScale());
+            nvg.globalAlpha(1.0f);
 
-        nvg.begin(true);
-        nvg.resetGlobalTransform();
-        nvg.resetTransform();
-        nvg.globalScale(scaleManager.guiScale());
-        nvg.globalAlpha(1.0f);
+            NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
+            ctx.setGuiScale(scaleManager.guiScale());
+            ctx.setDpiScale(scaleManager.dpiScale());
+            Vector2f screenSize = MinecraftWindow.getWindowSize();
+            ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
 
-        NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
-        ctx.setGuiScale(scaleManager.guiScale());
-        ctx.setDpiScale(scaleManager.dpiScale());
-        Vector2f screenSize = MinecraftWindow.getWindowSize();
-        ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
+            draw(ctx, new UIInputState(
+                    new Vector2f(mouseX, mouseY),
+                    partialTick
+            ));
 
-        draw(ctx, new UIInputState(
-                new Vector2f(mouseX, mouseY),
-                partialTick
-        ));
+            ctx.flush();
+            nvg.end();
+        };
+        #if MC_VER > MC_1_21_5
+        ((io.homo.superresolution.common.mixin.gui.GuiGraphicsAccessor) guiGraphics)
+                .getGuiRenderState().submitGuiElement(
+                        new net.minecraft.client.gui.render.state.GuiElementRenderState() {
+                            @Override
+                            public @Nullable net.minecraft.client.gui.navigation.ScreenRectangle bounds() {
+                                return new net.minecraft.client.gui.navigation.ScreenRectangle(
+                                        0,
+                                        0,
+                                        10000,
+                                        10000
+                                );
+                            }
 
-        ctx.flush();
-        nvg.end();
+
+                            public void buildVertices(VertexConsumer vertexConsumer, float v) {
+                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
+                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
+                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
+                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
+                            }
+
+                            //对于1.21.11+
+                            public void buildVertices(VertexConsumer vertexConsumer) {
+                                buildVertices(vertexConsumer, 0);
+                            }
+
+                            @Override
+                            public com.mojang.blaze3d.pipeline.RenderPipeline pipeline() {
+                                return new io.homo.superresolution.common.gui.CustomActionRenderPipeline(
+                                        renderAction
+                                );
+                            }
+
+                            @Override
+                            public net.minecraft.client.gui.render.TextureSetup textureSetup() {
+                                return net.minecraft.client.gui.render.TextureSetup.noTexture();
+                            }
+
+                            @Override
+                            public @Nullable net.minecraft.client.gui.navigation.ScreenRectangle scissorArea() {
+                                return new net.minecraft.client.gui.navigation.ScreenRectangle(
+                                        0,
+                                        0,
+                                        10000,
+                                        10000
+                                );
+                            }
+                        }
+                );
+        #else
+        renderAction.run();
+        #endif
+
         drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
     }
 

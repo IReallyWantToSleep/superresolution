@@ -5,7 +5,9 @@
     "minVersion": "0.8",
     "client": [
         "core.MinecraftMixin",
-        "neoforge.FuckingValidationMixin"
+        "neoforge.FuckingValidation1218Mixin",
+        "neoforge.FuckingValidationMixin",
+        "neoforge.WindowMixin"
     ],
     "mixins": [
     ],

@@ -21,8 +21,9 @@ package io.homo.superresolution.srapi;
 public enum SRUpscaleContextCreateFlags {
     NONE(0),
     ENABLE_DEBUG(1 << 0),
-    OPENGL(1 << 1),
-    VULKAN(1 << 2);
+    ENABLE_AUTO_EXPOSURE(1 << 1),
+    ENABLE_DEPTH_INVERTED(1 << 2),
+    ENABLE_MOTION_VECTORS_JITTERED(1 << 4);
     public final int value;
 
     SRUpscaleContextCreateFlags(int value) {

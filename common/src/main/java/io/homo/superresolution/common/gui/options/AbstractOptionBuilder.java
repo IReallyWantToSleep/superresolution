@@ -38,7 +38,6 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
     protected Text name;
-    protected MaterialScheme scheme = MaterialScheme.defaultLight;
     protected OptionCategory category;
 
     public AbstractOptionBuilder(Text name, VT value) {
@@ -65,7 +64,7 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         option.setRequiresRestartGame(requireRestartGame);
         option.setSaveConsumer(saveConsumer);
         option.setTooltipSupplier(tooltipSupplier);
-        option.setScheme(scheme);
+
         category.addEntry(option);
         return option;
     }
@@ -132,11 +131,6 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
 
     public SELF setDescriptionsSupplier(Function<VT, Optional<Text[]>> supplier) {
         this.tooltipSupplier = supplier;
-        return (SELF) this;
-    }
-
-    public SELF scheme(MaterialScheme scheme) {
-        this.scheme = scheme;
         return (SELF) this;
     }
 }

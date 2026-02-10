@@ -6,12 +6,6 @@ plugins {
 }
 
 repositories {
-    if (System.getenv().containsKey("SR_DEV")) {
-        maven {
-            name "minecraftdevRepository"
-            url "http://127.0.0.1:8080/releases"
-        }
-    }
     maven {
         url "https://cursemaven.com"
         content {
@@ -232,7 +226,7 @@ processResources {
     }
 
     // 1.21.5 以下版本排除 SPI 服务文件
-    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.5")) {
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.8")) {
         exclude("META-INF/services/net.neoforged.neoforgespi.earlywindow.*")
     }
 }

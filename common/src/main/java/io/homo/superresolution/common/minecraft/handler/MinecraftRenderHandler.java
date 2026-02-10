@@ -79,7 +79,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         #if MC_VER > MC_1_21_4
         renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
                 SuperResolutionConfig.getInternalTextureFormat(),
-                TextureFormat.DEPTH32,
+                TextureFormat.DEPTH32, //mojang用的depth32，为了保证兼容性SR也得用DEPTH32
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight()
         );
@@ -184,107 +184,77 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderWorldBegin(CallType type) {
-        if (!checkRenderWorldCallPos(type)) return;
+        if (!checkRenderWorldCallPos(type)) {
+            return;
+        }
         updateRenderTarget();
         updateRenderTargetSize();
-
-        /*
-        =1.21.5 在渲染世界前后resizeRenderTarget
-        !=1.21.5 在渲染世界前后更换RenderTarget
-        */
         if (SuperResolutionConfig.isEnableUpscale()) {
+            GlDebug.pushGroup(0x7180000, "SR Replace Render Target");
             RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
-            renderTarget.bind(FrameBufferBindPoint.Write);
-
-            /*#if MC_VER >= MC_1_21_5
-            RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(
-                    RenderHandlerManager.getRenderWidth(),
-                    RenderHandlerManager.getRenderHeight()
-            );
-            #else*/
-            RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
-            renderTarget.bind(FrameBufferBindPoint.Write);
-            //#endif
-
-
+            renderTarget.bind(FrameBufferBindPoint.All);
+            GlDebug.popGroup();
+        } else {
+            RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
         }
     }
 
     public void onRenderWorldEnd(CallType type) {
-        if (!checkRenderWorldCallPos(type)) return;
+        if (!checkRenderWorldCallPos(type)) {
+            return;
+        }
 
-        /*
-        =1.21.5 在渲染世界后把MainRenderTarget直接复制到缩放后的RenderTarget
-        !=1.21.5 在渲染世界后还原RenderTarget
-        */
-        //TODO:不用copy直接blitFrameBuffer
         if (SuperResolutionConfig.isEnableUpscale()) {
-            /*#if MC_VER >= MC_1_21_5
-            glEnable(GL_BLEND);
-            GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
-            GlTextureCopier.copy(
-                    CopyOperation.create()
-                            .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.Color))
-                            .dst(colorTexture)
-                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                            .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                            .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-                            .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
-
-            );
-            GlTextureCopier.copy(
-                    CopyOperation.create()
-                            .src(RenderHandlerManager.getOriginRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth))
-                            .dst(depthTexture)
-                            .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-            );
-            RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
-            #else*/
             RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
-            //#endif
         }
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         //push SRUpscale
-        GlDebug.pushGroup(64108435, "SRUpscale");
+        GlDebug.pushGroup(0x7190000, "SR Upscale");
         PerformanceRecorder.beginUpscale();
         try (GlState ignored = new GlState()) {
             AlgorithmManager.update();
             if (SuperResolutionConfig.isEnableUpscale()) {
                 {
-                    //ScaledRenderTarget.ColorTex copy to MinecraftRenderHandler.colorTexture
-                    //#if MC_VER < MC_1_21_5
-                    GlTextureCopier.copy(
-                            CopyOperation.create()
-                                    .src(renderTarget.getTexture(FrameBufferAttachmentType.Color))
-                                    .dst(colorTexture)
-                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                                    .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                                    .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
-                    );
-                    GlTextureCopier.copy(
-                            CopyOperation.create()
-                                    .src(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth))
-                                    .dst(depthTexture)
-                                    .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                    );
-                    //#endif
+                    {
+                        GlDebug.pushGroup(0x7190001, "Copy Resources");
+                        //ScaledRenderTarget.ColorTex copy to MinecraftRenderHandler.colorTexture
+                        GlTextureCopier.copy(
+                                CopyOperation.create()
+                                        .src(renderTarget.getTexture(FrameBufferAttachmentType.Color))
+                                        .dst(colorTexture)
+                                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
+                                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                        );
+                        GlTextureCopier.copy(
+                                CopyOperation.create()
+                                        .src(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth))
+                                        .dst(depthTexture)
+                                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                        );
+                        GlDebug.popGroup();
+                    }
                     DispatchResource dispatchResource;
-                    if (SuperResolutionConfig.isGenerateMotionVectors()) {
-                        MotionVectorsGenerator.update(
-                                colorTexture,
-                                renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
-                        );
-                        dispatchResource = AlgorithmManager.getDispatchResource(
-                                colorTexture,
-                                depthTexture,
-                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
-                        );
-                    } else {
-                        dispatchResource = AlgorithmManager.getDispatchResource(
-                                colorTexture,
-                                depthTexture,
-                                null
-                        );
+                    {
+                        GlDebug.pushGroup(0x7190002, "Prepare Dispatch Resource");
+                        if (SuperResolutionConfig.isGenerateMotionVectors()) {
+                            MotionVectorsGenerator.update(
+                                    colorTexture,
+                                    renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
+                            );
+                            dispatchResource = AlgorithmManager.getDispatchResource(
+                                    colorTexture,
+                                    depthTexture,
+                                    AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                            );
+                        } else {
+                            dispatchResource = AlgorithmManager.getDispatchResource(
+                                    colorTexture,
+                                    depthTexture,
+                                    null
+                            );
+                        }
+                        GlDebug.popGroup();
                     }
 
 
@@ -296,7 +266,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                                 )
                         );
                     }
-                    SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+
+                    {
+                        GlDebug.pushGroup(0x7190003, "Algorithm Dispatch");
+                        SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+                        GlDebug.popGroup();
+                    }
+
                     if (SuperResolution.currentAlgorithm != null) {
                         SuperResolutionAPI.EVENT_BUS.post(
                                 new AlgorithmDispatchFinishEvent(
@@ -308,30 +284,50 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
 
                 }
                 //TODO:允许指定Filter
-                IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-                Gl.DSA.blitFramebuffer(
-                        (int) outFbo.handle(),
-                        (int) RenderHandlerManager.getOriginRenderTarget().handle(),
-                        0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                        0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(),
-                        GL46.GL_COLOR_BUFFER_BIT,
-                        GL46.GL_NEAREST
-                );
+                {
+                    GlDebug.pushGroup(0x7190004, "Blit To Screen");
+                    IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+                    Gl.DSA.blitFramebuffer(
+                            (int) outFbo.handle(),
+                            (int) RenderHandlerManager.getOriginRenderTarget().handle(),
+                            0, 0, outFbo.getWidth(), outFbo.getHeight(),
+                            0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(),
+                            GL46.GL_COLOR_BUFFER_BIT,
+                            GL46.GL_NEAREST
+                    );
+                    GlDebug.popGroup();
+                }
 
-                if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse())
+                if (SuperResolutionConfig.getCaptureMode() == CaptureMode.C && !Platform.currentPlatform.iris().isShaderPackInUse()) {
+                    GlDebug.pushGroup(0x7190005, "Blit Hand Render Target");
                     blitHandRenderTarget();
+                    GlDebug.popGroup();
+                }
             }
         }
-        glViewport(
-                0,
-                0,
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        );
+
+        {
+            GlDebug.pushGroup(0x7190006, "Reset Viewport");
+            glViewport(
+                    0,
+                    0,
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight()
+            );
+            GlDebug.popGroup();
+        }
+
+        {
+            GlDebug.pushGroup(0x7190006, "Clear");
+            renderTarget.clearFrameBuffer();
+            GlDebug.popGroup();
+        }
         PerformanceRecorder.endUpscale();
         //pop SRUpscale
         GlDebug.popGroup();
+        GlDebug.pushGroup(0x7180001, "SR Reset Render Target");
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
+        GlDebug.popGroup();
     }
 
 
@@ -365,7 +361,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
 
     public void callOnRenderTargets(Consumer<IFrameBuffer> callback, boolean includeMainRenderTarget) {
         callOnRenderTargets(callback);
-        if (includeMainRenderTarget && renderTarget != null) callback.accept(renderTarget);
+        if (includeMainRenderTarget && renderTarget != null) {
+            callback.accept(renderTarget);
+        }
     }
 
     public void updateRenderTargetSize() {
@@ -406,7 +404,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderHandBegin() {
-        if (!checkRenderHandCallPos()) return;
+        if (!checkRenderHandCallPos()) {
+            return;
+        }
         GlStates.save("hand");
         RenderHandlerManager.setClientRenderTarget(getRenderTarget(MinecraftRenderTargetType.HAND).asMcRenderTarget());
         getRenderTarget(MinecraftRenderTargetType.HAND).clearFrameBuffer();
@@ -426,7 +426,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderHandEnd() {
-        if (!checkRenderHandCallPos()) return;
+        if (!checkRenderHandCallPos()) {
+            return;
+        }
         RenderHandlerManager.setClientRenderTarget(renderTarget.asMcRenderTarget());
         GlStates.pop("hand").restore();
     }

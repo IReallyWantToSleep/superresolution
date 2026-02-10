@@ -35,12 +35,6 @@ if (isNewVersion) {
 }
 
 repositories {
-    if (System.getenv().containsKey("SR_DEV")) {
-        maven {
-            name "minecraftdevRepository"
-            url "http://127.0.0.1:8080/releases"
-        }
-    }
     mavenCentral()
     maven { url 'https://maven.neoforged.net' }
     maven { url 'https://maven.aliyun.com/repository/central' }
@@ -183,7 +177,7 @@ sourceSets {
     def main = getByName("main")
     def irisapi = create("irisapi")
     def shared = create("shared")
-    
+
     shared.annotationProcessorPath += main.annotationProcessorPath
     shared.compileClasspath += main.compileClasspath
     shared.runtimeClasspath += main.runtimeClasspath
@@ -210,7 +204,7 @@ artifacts {
     commonJava sourceSets.main.java.sourceDirectories.singleFile
     commonJava sourceSets.irisapi.java.sourceDirectories.singleFile
     commonJava sourceSets.shared.java.sourceDirectories.singleFile
-    
+
     commonResources sourceSets.main.resources.sourceDirectories.singleFile
     commonResources sourceSets.irisapi.resources.sourceDirectories.singleFile
     commonResources sourceSets.shared.resources.sourceDirectories.singleFile

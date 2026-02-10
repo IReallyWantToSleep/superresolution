@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui;
 
-import io.homo.superresolution.common.gui.TestOptionBuilder;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -105,9 +104,6 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
             case "about":
                 frame = createAboutFrame();
                 break;
-            case "options":
-                frame = createOptionsFrame();
-                break;
             case "select":
                 frame = createSelectFrame();
                 break;
@@ -150,40 +146,38 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel title = MaterialLabel.create()
                 .text("Material Buttons")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
         MaterialLabel typeLabel = MaterialLabel.create()
                 .text("Button Types")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         typeLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(typeLabel);
 
-        MaterialButton filledBtn = MaterialButton.filled("Filled Button", materialScheme)
+        MaterialButton filledBtn = MaterialButton.filled("Filled Button")
                 .size(MaterialButtonSize.Medium);
         filledBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(filledBtn);
 
-        MaterialButton elevatedBtn = MaterialButton.elevated("Elevated Button", materialScheme)
+        MaterialButton elevatedBtn = MaterialButton.elevated("Elevated Button")
                 .size(MaterialButtonSize.Medium);
         elevatedBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(elevatedBtn);
 
-        MaterialButton tonalBtn = MaterialButton.tonal("Tonal Button", materialScheme)
+        MaterialButton tonalBtn = MaterialButton.tonal("Tonal Button")
                 .size(MaterialButtonSize.Medium);
         tonalBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(tonalBtn);
 
-        MaterialButton outlinedBtn = MaterialButton.outlined("Outlined Button", materialScheme)
+        MaterialButton outlinedBtn = MaterialButton.outlined("Outlined Button")
                 .size(MaterialButtonSize.Medium);
         outlinedBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(outlinedBtn);
 
-        MaterialButton textBtn = MaterialButton.text("Text Button", materialScheme)
+        MaterialButton textBtn = MaterialButton.textButton("Text Button")
                 .size(MaterialButtonSize.Medium);
         textBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(textBtn);
@@ -191,31 +185,30 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel iconLabel = MaterialLabel.create()
                 .text("Icon Buttons")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         iconLabel.layout().setMargin(YogaEdge.TOP, 20);
         iconLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(iconLabel);
 
-        MaterialButton iconBtn1 = MaterialButton.filled("Add Item", materialScheme)
+        MaterialButton iconBtn1 = MaterialButton.filled("Add Item")
                 .icon(MaterialSymbols.iconAdd())
                 .size(MaterialButtonSize.Medium);
         iconBtn1.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(iconBtn1);
 
-        MaterialButton iconBtn2 = MaterialButton.outlined("Edit", materialScheme)
+        MaterialButton iconBtn2 = MaterialButton.outlined("Edit")
                 .icon(MaterialSymbols.iconEdit())
                 .size(MaterialButtonSize.Medium);
         iconBtn2.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(iconBtn2);
 
-        MaterialButton iconBtn3 = MaterialButton.tonal("Delete", materialScheme)
+        MaterialButton iconBtn3 = MaterialButton.tonal("Delete")
                 .icon(MaterialSymbols.iconDelete())
                 .size(MaterialButtonSize.Medium);
         iconBtn3.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(iconBtn3);
 
-        MaterialButton iconBtn4 = MaterialButton.text("Settings", materialScheme)
+        MaterialButton iconBtn4 = MaterialButton.textButton("Settings")
                 .icon(MaterialSymbols.iconSettings())
                 .size(MaterialButtonSize.Medium);
         iconBtn4.layout().setMargin(YogaEdge.VERTICAL, 5);
@@ -224,23 +217,22 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel sizeLabel = MaterialLabel.create()
                 .text("Button Sizes")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         sizeLabel.layout().setMargin(YogaEdge.TOP, 20);
         sizeLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(sizeLabel);
 
-        MaterialButton smallBtn = MaterialButton.filled("Small", materialScheme)
+        MaterialButton smallBtn = MaterialButton.filled("Small")
                 .size(MaterialButtonSize.Small);
         smallBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(smallBtn);
 
-        MaterialButton mediumBtn = MaterialButton.filled("Medium", materialScheme)
+        MaterialButton mediumBtn = MaterialButton.filled("Medium")
                 .size(MaterialButtonSize.Medium);
         mediumBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(mediumBtn);
 
-        MaterialButton largeBtn = MaterialButton.filled("Large", materialScheme)
+        MaterialButton largeBtn = MaterialButton.filled("Large")
                 .size(MaterialButtonSize.Large);
         largeBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(largeBtn);
@@ -248,13 +240,12 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel interactiveLabel = MaterialLabel.create()
                 .text("Interactive Buttons")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         interactiveLabel.layout().setMargin(YogaEdge.TOP, 20);
         interactiveLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(interactiveLabel);
 
-        MaterialButton clickCounterBtn = MaterialButton.elevated("Click Count: 0", materialScheme)
+        MaterialButton clickCounterBtn = MaterialButton.elevated("Click Count: 0")
                 .size(MaterialButtonSize.Medium);
         final int[] clickCount = {0};
         clickCounterBtn.onClick(e -> {
@@ -264,7 +255,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         clickCounterBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
         container.addChild(clickCounterBtn);
 
-        MaterialButton toggleBtn = MaterialButton.tonal("Toggle State", materialScheme)
+        MaterialButton toggleBtn = MaterialButton.tonal("Toggle State")
                 .size(MaterialButtonSize.Medium);
         final boolean[] toggleState = {false};
         toggleBtn.onClick(e -> {
@@ -277,8 +268,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel combinationLabel = MaterialLabel.create()
                 .text("Button Combinations")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         combinationLabel.layout().setMargin(YogaEdge.TOP, 20);
         combinationLabel.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(combinationLabel);
@@ -288,9 +278,9 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         buttonRow.layout().setGap(YogaGutter.ROW, 10);
         buttonRow.layout().setJustifyContent(YogaJustify.CENTER);
 
-        MaterialButton btn1 = MaterialButton.filled("A", materialScheme).size(MaterialButtonSize.Small);
-        MaterialButton btn2 = MaterialButton.filled("B", materialScheme).size(MaterialButtonSize.Small);
-        MaterialButton btn3 = MaterialButton.filled("C", materialScheme).size(MaterialButtonSize.Small);
+        MaterialButton btn1 = MaterialButton.filled("A").size(MaterialButtonSize.Small);
+        MaterialButton btn2 = MaterialButton.filled("B").size(MaterialButtonSize.Small);
+        MaterialButton btn3 = MaterialButton.filled("C").size(MaterialButtonSize.Small);
         buttonRow.addChild(btn1);
         buttonRow.addChild(btn2);
         buttonRow.addChild(btn3);
@@ -298,15 +288,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         container.addChild(buttonRow);
 
         for (int i = 1; i <= 5; i++) {
-            MaterialButton extraBtn = MaterialButton.outlined("Extra Button " + i, materialScheme)
+            MaterialButton extraBtn = MaterialButton.outlined("Extra Button " + i)
                     .size(MaterialButtonSize.Medium);
             extraBtn.layout().setMargin(YogaEdge.VERTICAL, 5);
             container.addChild(extraBtn);
         }
 
         MaterialLabel spacer = MaterialLabel.create()
-                .text("")
-                .scheme(materialScheme);
+                .text("");
         spacer.layout().setHeight(20);
         container.addChild(spacer);
 
@@ -327,16 +316,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel sliderTitle = MaterialLabel.create()
                 .text("Material Sliders")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         sliderTitle.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(sliderTitle);
 
         MaterialSlider slider1 = MaterialSlider.create(300)
                 .setMax(100)
                 .setMin(0)
-                .setValue(50)
-                .scheme(materialScheme);
+                .setValue(50);
         slider1.layout().setMargin(YogaEdge.VERTICAL, 10);
         container.addChild(slider1);
 
@@ -345,8 +332,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .setMin(0)
                 .setStep(1)
                 .setValue(75)
-                .useIntegerFormatter()
-                .scheme(materialScheme);
+                .useIntegerFormatter();
         slider2.style().valueIndicator(true);
         slider2.layout().setMargin(YogaEdge.VERTICAL, 10);
         container.addChild(slider2);
@@ -355,8 +341,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .setMax(100)
                 .setMin(0)
                 .setStep(10)
-                .setValue(30)
-                .scheme(materialScheme);
+                .setValue(30);
         slider3.style().steps(true);
         slider3.style().valueIndicator(true);
         slider3.usePercentageFormatter();
@@ -366,8 +351,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel switchTitle = MaterialLabel.create()
                 .text("Material Switches")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         switchTitle.layout().setMargin(YogaEdge.TOP, 40);
         switchTitle.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(switchTitle);
@@ -379,10 +363,8 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
         MaterialLabel switchLabel1 = MaterialLabel.create()
                 .text("Basic Switch:")
-                .fontSize(16)
-                .scheme(materialScheme);
+                .fontSize(16);
         MaterialSwitch switch1 = MaterialSwitch.create()
-                .scheme(materialScheme)
                 .setChecked(true);
         switchRow1.addChild(switchLabel1);
         switchRow1.addChild(switch1);
@@ -397,10 +379,8 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
         MaterialLabel switchLabel2 = MaterialLabel.create()
                 .text("With Icons:")
-                .fontSize(16)
-                .scheme(materialScheme);
+                .fontSize(16);
         MaterialSwitch switch2 = MaterialSwitch.create()
-                .scheme(materialScheme)
                 .setChecked(false);
         switch2.style().showCheckedIconWhenEnable(true);
         switch2.style().showUncheckedIconWhenEnable(true);
@@ -429,26 +409,23 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel title = MaterialLabel.create()
                 .text("通用设置")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
         ContainerWidget enableRow = createSettingRow("启用超分辨率", "开启或关闭超分辨率功能");
-        MaterialSwitch enableSwitch = MaterialSwitch.create().setChecked(true).scheme(materialScheme);
+        MaterialSwitch enableSwitch = MaterialSwitch.create().setChecked(true);
         enableRow.addChild(enableSwitch);
         container.addChild(enableRow);
         MaterialLabel scaleLabel = MaterialLabel.create()
                 .text("渲染比例")
                 .fontSize(16)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         scaleLabel.layout().setMargin(YogaEdge.TOP, 10);
         container.addChild(scaleLabel);
 
         MaterialSlider scaleSlider = MaterialSlider.of(0.25, 1.0, 0.5, 0.05, 300)
-                .usePercentageFormatter()
-                .scheme(materialScheme);
+                .usePercentageFormatter();
         scaleSlider.layout().setMargin(YogaEdge.TOP, 5);
         container.addChild(scaleSlider);
 
@@ -471,25 +448,23 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel title = MaterialLabel.create()
                 .text("算法设置")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
         MaterialLabel algoLabel = MaterialLabel.create()
                 .text("超分辨率算法")
                 .fontSize(16)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         container.addChild(algoLabel);
 
         ContainerWidget algoRow = new ContainerWidget();
         algoRow.layout().setFlexDirection(YogaFlexDirection.ROW);
         algoRow.layout().setGap(YogaGutter.ALL, 10);
 
-        MaterialButton dlssBtn = MaterialButton.tonal("DLSS", materialScheme);
-        MaterialButton fsrBtn = MaterialButton.outlined("FSR", materialScheme);
-        MaterialButton xessBtn = MaterialButton.outlined("XeSS", materialScheme);
+        MaterialButton dlssBtn = MaterialButton.tonal("DLSS");
+        MaterialButton fsrBtn = MaterialButton.outlined("FSR");
+        MaterialButton xessBtn = MaterialButton.outlined("XeSS");
         algoRow.addChild(dlssBtn);
         algoRow.addChild(fsrBtn);
         algoRow.addChild(xessBtn);
@@ -498,8 +473,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel qualityLabel = MaterialLabel.create()
                 .text("质量预设")
                 .fontSize(16)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         qualityLabel.layout().setMargin(YogaEdge.TOP, 15);
         container.addChild(qualityLabel);
 
@@ -507,10 +481,10 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         qualityRow.layout().setFlexDirection(YogaFlexDirection.ROW);
         qualityRow.layout().setGap(YogaGutter.ALL, 8);
 
-        MaterialButton ultraBtn = MaterialButton.outlined("Ultra Quality", materialScheme);
-        MaterialButton qualityBtn = MaterialButton.tonal("Quality", materialScheme);
-        MaterialButton balancedBtn = MaterialButton.outlined("Balanced", materialScheme);
-        MaterialButton performanceBtn = MaterialButton.outlined("Performance", materialScheme);
+        MaterialButton ultraBtn = MaterialButton.outlined("Ultra Quality");
+        MaterialButton qualityBtn = MaterialButton.tonal("Quality");
+        MaterialButton balancedBtn = MaterialButton.outlined("Balanced");
+        MaterialButton performanceBtn = MaterialButton.outlined("Performance");
         qualityRow.addChild(ultraBtn);
         qualityRow.addChild(qualityBtn);
         qualityRow.addChild(balancedBtn);
@@ -520,14 +494,12 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel sharpnessLabel = MaterialLabel.create()
                 .text("锐化强度")
                 .fontSize(16)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         sharpnessLabel.layout().setMargin(YogaEdge.TOP, 15);
         container.addChild(sharpnessLabel);
 
         MaterialSlider sharpnessSlider = MaterialSlider.of(0.0, 1.0, 0.5, 0.1, 300)
-                .usePercentageFormatter()
-                .scheme(materialScheme);
+                .usePercentageFormatter();
         container.addChild(sharpnessSlider);
 
         frame.setRoot(container);
@@ -566,8 +538,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel title = MaterialLabel.create()
                 .text("性能信息")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
@@ -582,8 +553,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel gpuTitle = MaterialLabel.create()
                 .text("GPU 信息")
                 .fontSize(18)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         gpuTitle.layout().setMargin(YogaEdge.TOP, 20);
         gpuTitle.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(gpuTitle);
@@ -611,8 +581,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel title = MaterialLabel.create()
                 .text("环境信息")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
@@ -625,8 +594,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel gpuTitle = MaterialLabel.create()
                 .text("GPU 环境")
                 .fontSize(18)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         gpuTitle.layout().setMargin(YogaEdge.TOP, 20);
         gpuTitle.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(gpuTitle);
@@ -638,8 +606,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel srTitle = MaterialLabel.create()
                 .text("超分辨率支持")
                 .fontSize(18)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         srTitle.layout().setMargin(YogaEdge.TOP, 20);
         srTitle.layout().setMargin(YogaEdge.BOTTOM, 10);
         container.addChild(srTitle);
@@ -667,16 +634,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel labelWidget = MaterialLabel.create()
                 .text(label)
                 .fontSize(16)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         textContainer.addChild(labelWidget);
 
         if (description != null && !description.isEmpty()) {
             MaterialLabel descWidget = MaterialLabel.create()
                     .text(description)
                     .fontSize(12)
-                    .color(materialScheme.onSurfaceVariant())
-                    .scheme(materialScheme);
+                    .color(materialScheme.onSurfaceVariant());
             descWidget.layout().setMargin(YogaEdge.TOP, 2);
             textContainer.addChild(descWidget);
         }
@@ -696,15 +661,13 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel labelWidget = MaterialLabel.create()
                 .text(label)
                 .fontSize(14)
-                .color(materialScheme.onSurfaceVariant())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurfaceVariant());
         row.addChild(labelWidget);
 
         MaterialLabel valueWidget = MaterialLabel.create()
                 .text(value)
                 .fontSize(14)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         row.addChild(valueWidget);
 
         return row;
@@ -745,7 +708,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                     }
                 })
                 .setSelectedByValue("general")
-                .scheme(materialScheme);
+        ;
         drawer.layout().setWidthPercent(100);
         drawer.layout().setHeightPercent(100);
         container.addChild(drawer);
@@ -754,36 +717,6 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         return frame;
     }
 
-    private Frame createOptionsFrame() {
-        ScrollableFrame frame = new ScrollableFrame();
-        frame.setContentPadding(20, 0, 20, 0);
-        frame.setVerticalScrollEnabled(true);
-        frame.setHorizontalScrollEnabled(false);
-        SpacerWidget spacerWidgetTop = SpacerWidget.vertical(20f);
-        SpacerWidget spacerWidgetBottom = SpacerWidget.vertical(20f);
-
-        ContainerWidget container = new ContainerWidget();
-        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
-        container.layout().setWidthPercent(100);
-        container.layout().setGap(YogaGutter.COLUMN, 15);
-        container.layout().setAlignItems(YogaAlign.FLEX_START);
-
-        MaterialLabel title = MaterialLabel.create()
-                .text("选项系统示例")
-                .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
-        title.layout().setMargin(YogaEdge.BOTTOM, 20);
-        container.addChild(spacerWidgetTop);
-        container.addChild(title);
-        OptionBuilder.OptionsContainer optionsContainer = TestOptionBuilder.buildOptionsContainer();
-        optionsContainer.layout().setWidthPercent(100);
-        container.addChild(optionsContainer);
-        container.addChild(spacerWidgetBottom);
-
-        frame.setRoot(container);
-        return frame;
-    }
 
     private Frame createSelectFrame() {
         ScrollableFrame frame = new ScrollableFrame();
@@ -801,16 +734,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel title = MaterialLabel.create()
                 .text("Material Select 组件示例")
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(materialScheme.primary());
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
         MaterialLabel basicLabel = MaterialLabel.create()
                 .text("基本选择器")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         container.addChild(basicLabel);
 
         MaterialSelect<String> basicSelect = MaterialSelect.<String>create()
@@ -820,16 +751,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addOption("option1", "Menu item")
                 .addOption("option2", "Menu item")
                 .addOption("option3", "Menu item")
-                .addOption("option4", "Menu item")
-                .scheme(materialScheme);
+                .addOption("option4", "Menu item");
         basicSelect.layout().setMargin(YogaEdge.TOP, 8);
         container.addChild(basicSelect);
 
         MaterialLabel supportLabel = MaterialLabel.create()
                 .text("带支持文本")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         supportLabel.layout().setMargin(YogaEdge.TOP, 30);
         container.addChild(supportLabel);
 
@@ -845,16 +774,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .setValue("dlss")
                 .onSelectionChanged(value -> {
                     System.out.println("选择了: " + value);
-                })
-                .scheme(materialScheme);
+                });
         supportSelect.layout().setMargin(YogaEdge.TOP, 8);
         container.addChild(supportSelect);
 
         MaterialLabel iconLabel = MaterialLabel.create()
                 .text("带前置图标")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         iconLabel.layout().setMargin(YogaEdge.TOP, 30);
         container.addChild(iconLabel);
 
@@ -866,16 +793,14 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addOption("quality", "Quality")
                 .addOption("balanced", "Balanced")
                 .addOption("performance", "Performance")
-                .addOption("ultra_performance", "Ultra Performance")
-                .scheme(materialScheme);
+                .addOption("ultra_performance", "Ultra Performance");
         iconSelect.layout().setMargin(YogaEdge.TOP, 8);
         container.addChild(iconSelect);
 
         MaterialLabel numLabel = MaterialLabel.create()
                 .text("数值选择")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         numLabel.layout().setMargin(YogaEdge.TOP, 30);
         container.addChild(numLabel);
 
@@ -887,12 +812,11 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addOption(50, "50%")
                 .addOption(75, "75%")
                 .addOption(100, "100%")
-                .setValue(75)
-                .scheme(materialScheme);
+                .setValue(75);
         numSelect.layout().setMargin(YogaEdge.TOP, 8);
         container.addChild(numSelect);
 
-        MaterialLabel spacer = MaterialLabel.create().text("").scheme(materialScheme);
+        MaterialLabel spacer = MaterialLabel.create().text("");
         spacer.layout().setHeight(1000);
         spacer.layout().setMargin(YogaEdge.VERTICAL, 1000);
 
@@ -911,8 +835,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         MaterialLabel label = MaterialLabel.create()
                 .text("Super Resolution\nCopyright (c) 2026. 187J3X1-114514\n\n本项目为开源项目，遵循 GPLv3 协议。\nhttps://github.com/187J3X1-114514/SuperResolution")
                 .fontSize(18)
-                .color(materialScheme.onSurface())
-                .scheme(materialScheme);
+                .color(materialScheme.onSurface());
         label.layout().setMargin(YogaEdge.ALL, 30);
         container.addChild(label);
         frame.setRoot(container);

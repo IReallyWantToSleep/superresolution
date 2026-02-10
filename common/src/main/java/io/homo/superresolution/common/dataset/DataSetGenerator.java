@@ -170,16 +170,18 @@ public class DataSetGenerator {
         }
         tempDepthTexture.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
 
-        if (preprocessDepthFrameBuffer == null)
+        if (preprocessDepthFrameBuffer == null) {
             preprocessDepthFrameBuffer = GlFrameBuffer.create(
                     tempDepthTexture,
                     null
             );
-        if (depthPreprocessConfigData == null)
+        }
+        if (depthPreprocessConfigData == null) {
             depthPreprocessConfigData = UniformStructBuilder.start()
                     .floatEntry("near")
                     .floatEntry("far")
                     .build();
+        }
         if (depthPreprocessConfigUBO == null) {
             depthPreprocessConfigUBO = RenderSystems.current().device().createBuffer(
                     BufferDescription.create()

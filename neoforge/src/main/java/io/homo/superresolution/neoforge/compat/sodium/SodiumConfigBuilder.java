@@ -21,24 +21,34 @@ package io.homo.superresolution.neoforge.compat.sodium;
 #if MC_VER > MC_1_21_10
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPointForge;
 import net.caffeinemc.mods.sodium.api.config.structure.ConfigBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 @ConfigEntryPointForge(SuperResolution.MOD_ID)
 public class SodiumConfigBuilder implements ConfigEntryPoint {
     @Override
     public void registerConfigLate(ConfigBuilder configBuilder) {
+        #if MC_VER > MC_1_21_10
         configBuilder.registerOwnModOptions()
-                .setIcon(ResourceLocation.parse("super_resolution:textures/gui/logo.png"))
-                .addPage(configBuilder.createOptionPage()
-                        .setName(Component.translatable("superresolution.name"))
-                        .addOption(configBuilder.createExternalButtonOption(ResourceLocation.fromNamespaceAndPath("superresolution", "settings"))
-                                .setName(Component.translatable("superresolution.config_gui"))
-                        )
+                .setIcon(net.minecraft.resources.Identifier.parse("super_resolution:textures/gui/logo.png"))
+                .addPage(configBuilder
+                        .createExternalPage()
+                        .setName(Component.translatable("superresolution.config_gui"))
+                        .setScreenConsumer((screen -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
                 );
+        #else
+        configBuilder.registerOwnModOptions()
+                .setIcon(net.minecraft.resources.ResourceLocation.parse("super_resolution:textures/gui/logo.png"))
+                .addPage(configBuilder
+                        .createExternalPage()
+                        .setName(Component.translatable("superresolution.config_gui"))
+                        .setScreenConsumer((screen -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
+                );
+        #endif
     }
 }
 

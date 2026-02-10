@@ -25,7 +25,23 @@ extern "C"
         SRFsr2PrivateData *privateData = (SRFsr2PrivateData *)context->userContext;
 
         FfxFsr2ContextDescription fsrContexDesc = {};
-        fsrContexDesc.flags = FFX_FSR2_ENABLE_DEBUG_CHECKING;
+        fsrContexDesc.flags = 0;
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEBUG)
+        {
+            fsrContexDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
+        {
+            fsrContexDesc.flags |= FFX_FSR2_ENABLE_AUTO_EXPOSURE;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
+        {
+            fsrContexDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED)
+        {
+            fsrContexDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+        }
         fsrContexDesc.backendInterface = *(privateData->ffxInterface);
         fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
         fsrContexDesc.displaySize = {desc->upscaledSize.x, desc->upscaledSize.y};
@@ -132,19 +148,110 @@ extern "C"
         dispatchDesc.commandList = ffxGetCommandListVK(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
 
         if (desc->color.exist)
-            dispatchDesc.color = srTextureResourceToFfxResource(&desc->color);
+            dispatchDesc.color = {
+                .resource = (void *)(desc->color.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->color.desc.format),
+                        .width = desc->color.desc.width,
+                        .height = desc->color.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->color.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->color.desc.usage),
+                    },
+            };
         if (desc->depth.exist)
-            dispatchDesc.depth = srTextureResourceToFfxResource(&desc->depth);
+            dispatchDesc.depth = {
+                .resource = (void *)(desc->depth.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->depth.desc.format),
+                        .width = desc->depth.desc.width,
+                        .height = desc->depth.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->depth.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->depth.desc.usage),
+                    },
+            };
         if (desc->motionVectors.exist)
-            dispatchDesc.motionVectors = srTextureResourceToFfxResource(&desc->motionVectors);
+            dispatchDesc.motionVectors = {
+                .resource = (void *)(desc->motionVectors.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->motionVectors.desc.format),
+                        .width = desc->motionVectors.desc.width,
+                        .height = desc->motionVectors.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->motionVectors.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->motionVectors.desc.usage),
+                    },
+            };
         if (desc->exposure.exist)
-            dispatchDesc.exposure = srTextureResourceToFfxResource(&desc->exposure);
+            dispatchDesc.exposure = {
+                .resource = (void *)(desc->exposure.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->exposure.desc.format),
+                        .width = desc->exposure.desc.width,
+                        .height = desc->exposure.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->exposure.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->exposure.desc.usage),
+                    },
+            };
         if (desc->reactive.exist)
-            dispatchDesc.reactive = srTextureResourceToFfxResource(&desc->reactive);
+            dispatchDesc.reactive = {
+                .resource = (void *)(desc->reactive.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->reactive.desc.format),
+                        .width = desc->reactive.desc.width,
+                        .height = desc->reactive.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->reactive.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->reactive.desc.usage),
+                    },
+            };
         if (desc->transparencyAndComposition.exist)
-            dispatchDesc.transparencyAndComposition = srTextureResourceToFfxResource(&desc->transparencyAndComposition);
+            dispatchDesc.transparencyAndComposition = {
+                .resource = (void *)(desc->transparencyAndComposition.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->transparencyAndComposition.desc.format),
+                        .width = desc->transparencyAndComposition.desc.width,
+                        .height = desc->transparencyAndComposition.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->transparencyAndComposition.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->transparencyAndComposition.desc.usage),
+                    },
+            };
         if (desc->output.exist)
-            dispatchDesc.output = srTextureResourceToFfxResource(&desc->output);
+            dispatchDesc.output = {
+                .resource = (void *)(desc->output.handle),
+                .description =
+                    {
+                        .type = FFX_RESOURCE_TYPE_TEXTURE2D,
+                        .format = srTextureFormatToFfxSurfaceFormat(desc->output.desc.format),
+                        .width = desc->output.desc.width,
+                        .height = desc->output.desc.height,
+                        .depth = 1,
+                        .mipCount = desc->output.desc.mipmapCount,
+                        .flags = FFX_RESOURCE_FLAGS_NONE,
+                        .usage = srTextureResourceUsageToFfx(desc->output.desc.usage),
+                    },
+            };
 
         dispatchDesc.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};
         dispatchDesc.motionVectorScale = {desc->motionVectorScale.x, desc->motionVectorScale.y};

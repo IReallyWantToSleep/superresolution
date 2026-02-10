@@ -280,6 +280,21 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     @Override
+    public void lineTo(float x, float y) {
+        nvg.contextPtr.lineTo(x, y);
+    }
+
+    @Override
+    public void bezier(float c1x, float c1y, float c2x, float c2y, float x, float y) {
+        nvg.contextPtr.bezierTo(c1x, c1y, c2x, c2y, x, y);
+    }
+
+    @Override
+    public void move(float x, float y) {
+        nvg.contextPtr.moveTo(x, y);
+    }
+
+    @Override
     public void rect(float x, float y, float width, float height) {
         nvg.rect(x, y, width, height);
     }

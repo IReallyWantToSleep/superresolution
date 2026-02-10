@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.gui.widgets.label;
 
+import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.MaterialTheme;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -28,10 +30,12 @@ import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     private Supplier<String> textSupplier = () -> "";
+    private Function<MaterialScheme, Color> colorSupplier = (scheme) -> scheme.theme() == MaterialTheme.Dark ? Color.rgb(255, 255, 255) : Color.black();
 
     public MaterialLabel() {
         this.style = new MaterialLabelStyle();
@@ -54,8 +58,15 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
 
     public MaterialLabel color(Color color) {
         style().color(color);
+        this.colorSupplier = (scheme) -> color;
         return this;
     }
+
+    public MaterialLabel color(Function<MaterialScheme, Color> color) {
+        this.colorSupplier = color;
+        return this;
+    }
+
 
     public MaterialLabel fontSize(float fontSize) {
         style().fontSize(fontSize);
@@ -82,11 +93,11 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
+    public void layouting(RenderContext ctx) {
         String text = textSupplier.get();
+        style().color(colorSupplier.apply(scheme()));
         if (text != null && !text.isEmpty()) {
             Rectangle bounds = getBounds();
-
             float maxWidth = bounds.width > 0 ? bounds.width : Float.MAX_VALUE;
 
             TextMetrics textMetrics = ctx.measureTextMetrics(
@@ -103,6 +114,15 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                 setElementWidth(textSize.x);
             }
             setElementHeight(textSize.y);
+        }
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        String text = textSupplier.get();
+        if (text != null && !text.isEmpty()) {
+            Rectangle bounds = getBounds();
+            float maxWidth = bounds.width > 0 ? bounds.width : Float.MAX_VALUE;
 
             Color textColor = getTextColor();
             ctx.beginGroup(style().zIndex());

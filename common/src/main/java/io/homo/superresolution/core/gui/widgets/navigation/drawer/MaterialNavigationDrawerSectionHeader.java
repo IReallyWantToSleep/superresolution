@@ -68,6 +68,16 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
         return this;
     }
 
+    public float computeContentWidth(RenderContext ctx) {
+        float width = PADDING_LEFT;
+        String title = titleSupplier.get();
+        if (title != null && !title.isEmpty()) {
+            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE);
+        }
+        width += PADDING_LEFT;
+        return width;
+    }
+
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();

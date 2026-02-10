@@ -45,6 +45,11 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         layout().setGap(YogaGutter.ROW, 4);
     }
 
+    @Override
+    public void layouting(RenderContext ctx) {
+        updateSize();
+    }
+
     public float computeContentWidth() {
         float max = 0;
         for (ILayoutElement child : getChildren()) {
@@ -100,13 +105,15 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     @Override
     public void mouseMove(float x, float y) {
         super.mouseMove(x, y);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
                     //if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                        widget.mouseMove(x, y);
-                   // }
+                    widget.mouseMove(x, y);
+                    // }
                 }
             }
         }
@@ -115,7 +122,9 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     @Override
     public void mouseRelease(float x, float y, int button) {
         super.mouseRelease(x, y, button);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
@@ -130,7 +139,9 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
         super.mouseScroll(x, y, scrollX);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
@@ -150,7 +161,9 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     @Override
     public void mousePress(float x, float y, int button) {
         super.mousePress(x, y, button);
-        if (isDisabled() || !isVisible()) return;
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible() && !widget.isDisabled()) {
@@ -167,14 +180,16 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         MaterialMenuSize size = style().size();
         Color backgroundColor = style().colors().menuBackground(scheme());
         Rectangle bounds = getRawBounds();
-        updateSize();
-        if (!isVisible()) return;
-        if (expandProgress <= 0) return;
+        if (!isVisible()) {
+            return;
+        }
+        if (expandProgress <= 0) {
+            return;
+        }
 
         for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuItem item) {
                 item.style().colors = style().colors();
-                item.scheme(scheme());
             }
         }
         float radius = size.cornerRadius();
@@ -207,7 +222,7 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         }
 
         float animatedHeight = bounds.height * expandProgress;
-        
+
         ctx.save();
         ctx.beginPath();
         ctx.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
@@ -219,7 +234,7 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget) {
                 if (widget.isVisible()) {
-                        widget.render(ctx, inputState);
+                    widget.render(ctx, inputState);
                 }
             }
         }

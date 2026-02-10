@@ -192,6 +192,20 @@ extern "C"
         }
         float upscaleRatio = desc->upscaledSize.x / desc->renderSize.x;
         NVSDK_NGX_DLSS_Create_Params dlssCreateParams = {};
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
+        {
+            dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+        }
+
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED)
+        {
+            dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
+        }
+                if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
+        {
+            dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+        }
+        dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
         dlssCreateParams.Feature.InWidth = desc->renderSize.x;
         dlssCreateParams.Feature.InHeight = desc->renderSize.y;
         dlssCreateParams.Feature.InTargetWidth = desc->upscaledSize.x;

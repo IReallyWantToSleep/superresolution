@@ -19,18 +19,13 @@
 package io.homo.superresolution.core.gui.widgets;
 
 import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 
+import javax.annotation.Nullable;
+
 public abstract class MaterialWidget<T extends MaterialWidget<T>> extends AbstractWidget<T> {
-    protected MaterialScheme scheme = MaterialScheme.defaultLight;
-
     public MaterialScheme scheme() {
-        return scheme;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T scheme(MaterialScheme scheme) {
-        this.scheme = scheme;
-        return (T) this;
+        return MaterialUI.Scheme;
     }
 }

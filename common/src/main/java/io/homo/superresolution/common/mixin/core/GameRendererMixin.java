@@ -18,12 +18,17 @@
 
 package io.homo.superresolution.common.mixin.core;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import net.minecraft.client.Camera;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.Minecraft;
@@ -38,6 +43,10 @@ public abstract class GameRendererMixin {
     @Shadow
     #if MC_VER < MC_1_21_4
     protected abstract double getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
+
+    @Shadow
+    @Final
+    private Minecraft minecraft;
 
     #else
     protected abstract float getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
@@ -57,10 +66,47 @@ public abstract class GameRendererMixin {
         }
     }
 
+    #if MC_VER > MC_1_21_8
+    @Redirect(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/CommandEncoder;clearDepthTexture(Lcom/mojang/blaze3d/textures/GpuTexture;D)V"), method = "renderLevel")
+    private void cancelDepthClear(
+            com.mojang.blaze3d.systems.CommandEncoder commandEncoder,
+            com.mojang.blaze3d.textures.GpuTexture gpuTexture,
+            double depth
+    ) {
+        //这里必需取消深度清除，不然后面捕获不到深度
+        if (
+                !Platform.currentPlatform.iris().isShaderPackInUse() //没启用光影时
+                        ||
+                        !SuperResolutionConfig.isEnableUpscale()//禁用超分时
+        ) {
+            commandEncoder.clearDepthTexture(
+                    gpuTexture,
+                    depth
+            );
+        }
+    }
+    #endif
+
     @Inject(at = @At(value = "RETURN"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
+            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
             RenderHandlerManager.onRenderWorldEnd(CallType.GAME_RENDERER);
+            #if MC_VER > MC_1_21_8
+            if (
+                    !(!Platform.currentPlatform.iris().isShaderPackInUse() //没启用光影时
+                            ||
+                            !SuperResolutionConfig.isEnableUpscale()//禁用超分时
+                    )
+            ) {
+                if (renderTarget.getDepthTexture() != null) {
+                    com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(
+                            renderTarget.getDepthTexture(),
+                            1.0f
+                    );
+                }
+            }
+            #endif
         }
     }
 

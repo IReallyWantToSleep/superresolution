@@ -45,7 +45,6 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
     protected OptionContainerWidget container;
-    protected MaterialScheme scheme = MaterialScheme.defaultLight;
 
     public AbstractOptionEntry(Text name, VT value) {
         this.name = name;
@@ -55,12 +54,6 @@ public abstract class AbstractOptionEntry<VT, SELF> implements Renderable, Value
     protected AbstractOptionEntry<VT, SELF> setSaveRunnable(Runnable saveRunnable) {
         this.saveRunnable = saveRunnable;
         return this;
-    }
-
-    protected SELF setScheme(MaterialScheme scheme) {
-        this.scheme = scheme;
-        container.scheme(scheme);
-        return (SELF) this;
     }
 
     protected abstract void init();

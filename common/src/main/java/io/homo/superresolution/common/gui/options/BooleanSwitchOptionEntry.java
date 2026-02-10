@@ -40,20 +40,13 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
     }
 
     @Override
-    protected BooleanSwitchOptionEntry setScheme(MaterialScheme scheme) {
-        aSwitch.scheme(scheme);
-        return super.setScheme(scheme);
-    }
-
-    @Override
     protected void initLayout() {
     }
 
     @Override
     protected void initWidget() {
         aSwitch = MaterialSwitch.create()
-                .setChecked(value)
-                .scheme(scheme);
+                .setChecked(value);
         aSwitch.onChange(event -> {
             this.value = (Boolean) event.getNewValue();
             if (saveConsumer != null) {
@@ -64,7 +57,6 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
             }
         });
         container.addControl(aSwitch);
-        container.scheme(scheme);
     }
 
     @Override

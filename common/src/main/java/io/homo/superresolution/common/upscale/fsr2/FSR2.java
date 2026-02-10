@@ -86,7 +86,7 @@ public class FSR2 extends AbstractAlgorithm {
         );
         fsr2Context = new Fsr2Context(
                 Fsr2ContextConfig.create()
-                        .flags(new Fsr2ContextFlags())
+                        .flags(new Fsr2ContextFlags().enableDepthInverted(true))
                         .version(SuperResolutionConfig.SPECIAL.FSR2.VERSION.get()),
                 new Fsr2Dimensions(
                         RenderHandlerManager.getRenderWidth(),
@@ -117,7 +117,9 @@ public class FSR2 extends AbstractAlgorithm {
 
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
         super.dispatch(dispatchResource);
-        if (fsr2Context == null) return false;
+        if (fsr2Context == null) {
+            return false;
+        }
         Matrix4f projectionMatrix = dispatchResource.projectionMatrix();
         float m11 = projectionMatrix.m11();
         float cameraFovAngleVertical = dispatchResource.verticalFov();
@@ -206,7 +208,9 @@ public class FSR2 extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return new Vector2f(0);
+        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return new Vector2f(0);
+        }
         //halton
         int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);

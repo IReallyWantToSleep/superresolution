@@ -84,7 +84,9 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public SuperResolution() {
         instance = this;
-        if (minecraft == null) minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            minecraft = Minecraft.getInstance();
+        }
     }
 
     public static void registerEvents() {
@@ -105,9 +107,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                     SuperResolution.initRendering();
                     SuperResolution.createAlgorithm();
                     SuperResolution.getInstance().init();
-                    if (Platform.currentPlatform.isDevelopmentEnvironment()) {
-                        MaterialUI.init();
-                    }
+                    MaterialUI.init();
                 }
         );
         ClientLifecycleEvent.CLIENT_STOPPING.register(
@@ -125,10 +125,15 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void preInit() {
-        if (isPreInit) return;
-        if (minecraft == null) minecraft = Minecraft.getInstance();
-        if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER)
+        if (isPreInit) {
+            return;
+        }
+        if (minecraft == null) {
+            minecraft = Minecraft.getInstance();
+        }
+        if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER) {
             throw new RuntimeException("SuperResolution不支持安装在服务器上！");
+        }
         NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         GlslangShaderCompiler.init();
@@ -140,7 +145,9 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static void check() {
-        if (minecraft == null) minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            minecraft = Minecraft.getInstance();
+        }
 
         if (!commonRequirement.check().glVersionMet()) {
             MessageBox.createError(
@@ -168,7 +175,9 @@ public final class SuperResolution implements Resizable, Destroyable {
 
         INCOMPATIBLE_MODS.forEach((mod) -> {
             List<String> installedMods = new ArrayList<>();
-            if (Platform.currentPlatform.isModLoaded(mod)) installedMods.add(mod);
+            if (Platform.currentPlatform.isModLoaded(mod)) {
+                installedMods.add(mod);
+            }
             if (!installedMods.isEmpty()) {
                 MessageBox.createError(Component.translatable("superresolution.common_requirement.not_support.extension").getString()
                                 .formatted(String.join("\n", installedMods)),
@@ -183,8 +192,12 @@ public final class SuperResolution implements Resizable, Destroyable {
         try (GlState ignored = new GlState()) {
             RenderSystems.init();
 
-            if (minecraft == null) minecraft = Minecraft.getInstance();
-            if (!isPreInit) return;
+            if (minecraft == null) {
+                minecraft = Minecraft.getInstance();
+            }
+            if (!isPreInit) {
+                return;
+            }
             /*
             if (SuperResolutionConfig.isEnableCompatShaderCompiler() == SuperResolutionConfig.ENABLE_COMPAT_SHADER_COMPILER.getDefault()) {
                 if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.Intel) {
@@ -205,8 +218,12 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static boolean createAlgorithm() {
         try (GlState ignored = new GlState()) {
-            if (minecraft == null) minecraft = Minecraft.getInstance();
-            if (!isPreInit) return false;
+            if (minecraft == null) {
+                minecraft = Minecraft.getInstance();
+            }
+            if (!isPreInit) {
+                return false;
+            }
             defaultAlgorithm.init();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             try {
@@ -223,7 +240,9 @@ public final class SuperResolution implements Resizable, Destroyable {
 
     public static boolean recreateAlgorithm() {
         try (GlState ignored = new GlState()) {
-            if (minecraft == null) minecraft = Minecraft.getInstance();
+            if (minecraft == null) {
+                minecraft = Minecraft.getInstance();
+            }
             if (!isPreInit) {
                 return false;
             }
@@ -261,12 +280,16 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void init() {
-        if (minecraft == null) minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
+            minecraft = Minecraft.getInstance();
+        }
 
-        if (isInit)
+        if (isInit) {
             return;
-        if (Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui())
+        }
+        if (Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui()) {
             new ImguiMain();
+        }
 
         isInit = true;
         this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
@@ -291,8 +314,9 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public void destroy() {
-        if (currentAlgorithm != null)
+        if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
+        }
         AlgorithmManager.destroy();
         PerformanceRecorder.cleanup();
         RenderSystems.destroy();

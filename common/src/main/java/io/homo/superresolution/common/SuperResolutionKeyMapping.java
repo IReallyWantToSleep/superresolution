@@ -28,7 +28,16 @@ public class SuperResolutionKeyMapping {
     #if MC_VER > MC_1_21_8
     //??
     //key.category + . + namespace + path
-    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("super_resolution", "keys"));
+    #if MC_VER > MC_1_21_10
+    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+            net.minecraft.resources.Identifier.fromNamespaceAndPath("super_resolution", "keys")
+    );
+    #else
+    public static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("super_resolution", "keys")
+    );
+    #endif
+
     public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
             InputConstants.Type.KEYSYM,
@@ -47,7 +56,9 @@ public class SuperResolutionKeyMapping {
 
     public static void registerKeyMapping() {
         if (!registeredKeyMapping) {
-            if (SuperResolutionConfig.isEnableDatasetGenerator()) DataSetGenerator.init();
+            if (SuperResolutionConfig.isEnableDatasetGenerator()) {
+                DataSetGenerator.init();
+            }
 
             KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
         }

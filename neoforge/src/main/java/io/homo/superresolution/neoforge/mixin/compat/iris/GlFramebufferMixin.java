@@ -48,6 +48,7 @@ public abstract class GlFramebufferMixin extends GlResource {
     #if MC_VER < MC_1_21_5
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
     private void checkFboCompleteness(int texture, CallbackInfo ci) {
+
         int status = io.homo.superresolution.core.graphics.opengl.Gl.DSA.checkNamedFramebufferStatus(
                 getGlId(),
                 GL_FRAMEBUFFER
@@ -72,6 +73,7 @@ public abstract class GlFramebufferMixin extends GlResource {
 
         super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(texture).getInternalFormat());
     }
+
     #else
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
     private void checkFboCompleteness(com.mojang.blaze3d.textures.GpuTexture texture, CallbackInfo ci) {

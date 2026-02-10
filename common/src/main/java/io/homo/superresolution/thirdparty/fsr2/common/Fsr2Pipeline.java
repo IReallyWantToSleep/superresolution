@@ -39,7 +39,9 @@ public abstract class Fsr2Pipeline {
     public abstract void init();
 
     protected Fsr2PipelineResources.Fsr2ResourceEntry getResourcesDescription(String name) {
-        if (!context.resources.shaderNameMap().containsKey(name)) throw new RuntimeException(name);
+        if (!context.resources.shaderNameMap().containsKey(name)) {
+            throw new RuntimeException(name);
+        }
         return context.resources.resource(context.resources.shaderNameMap().get(name));
     }
 
@@ -65,7 +67,9 @@ public abstract class Fsr2Pipeline {
         defines.put("FFX_GLSL", bool(true));
         defines.put("FFX_GPU", bool(true));
         defines.put("FFX_HALF", bool(Fsr2DeviceCapabilities.isFp16Supported()));
-        if (override != null) defines.putAll(override);
+        if (override != null) {
+            defines.putAll(override);
+        }
         return defines;
     }
 

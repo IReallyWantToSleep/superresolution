@@ -63,33 +63,37 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         GlFrameBuffer frameBuffer = new GlFrameBuffer();
         frameBuffer.width = width;
         frameBuffer.height = height;
-        frameBuffer.addAttachment(new GlFrameBufferAttachment(
-                        GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                        RenderSystems.current().device().createTexture(
-                                TextureDescription.create()
-                                        .type(TextureType.Texture2D)
-                                        .format(colorTextureFormat)
-                                        .width(width)
-                                        .height(height)
-                                        .usages(TextureUsages.create().storage().sampler().attachmentColor())
-                                        .build()
-                        )
-                )
-        );
-        if (depthTextureFormat != null) frameBuffer.addAttachment(new GlFrameBufferAttachment(
-                depthTextureFormat.isStencil() ?
-                        GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
-                        GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
-                RenderSystems.current().device().createTexture(
-                        TextureDescription.create()
-                                .type(TextureType.Texture2D)
-                                .format(depthTextureFormat)
-                                .width(width)
-                                .height(height)
-                                .usages(TextureUsages.create().storage().sampler().attachmentDepth())
-                                .build()
-                )
-        ));
+        if (colorTextureFormat != null) {
+            frameBuffer.addAttachment(new GlFrameBufferAttachment(
+                            GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+                            RenderSystems.current().device().createTexture(
+                                    TextureDescription.create()
+                                            .type(TextureType.Texture2D)
+                                            .format(colorTextureFormat)
+                                            .width(width)
+                                            .height(height)
+                                            .usages(TextureUsages.create().storage().sampler().attachmentColor())
+                                            .build()
+                            )
+                    )
+            );
+        }
+        if (depthTextureFormat != null) {
+            frameBuffer.addAttachment(new GlFrameBufferAttachment(
+                    depthTextureFormat.isStencil() ?
+                            GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
+                            GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
+                    RenderSystems.current().device().createTexture(
+                            TextureDescription.create()
+                                    .type(TextureType.Texture2D)
+                                    .format(depthTextureFormat)
+                                    .width(width)
+                                    .height(height)
+                                    .usages(TextureUsages.create().storage().sampler().attachmentDepth())
+                                    .build()
+                    )
+            ));
+        }
         frameBuffer.validate();
         return frameBuffer;
     }
@@ -98,16 +102,20 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         GlFrameBuffer frameBuffer = new GlFrameBuffer();
         frameBuffer.width = width;
         frameBuffer.height = height;
-        frameBuffer.addAttachment(new GlFrameBufferAttachment(
-                GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                colorTexture
-        ));
-        if (depthTexture != null) frameBuffer.addAttachment(new GlFrameBufferAttachment(
-                depthTexture.getTextureFormat().isStencil() ?
-                        GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
-                        GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
-                depthTexture
-        ));
+        if (colorTexture != null) {
+            frameBuffer.addAttachment(new GlFrameBufferAttachment(
+                    GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
+                    colorTexture
+            ));
+        }
+        if (depthTexture != null) {
+            frameBuffer.addAttachment(new GlFrameBufferAttachment(
+                    depthTexture.getTextureFormat().isStencil() ?
+                            GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL :
+                            GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
+                    depthTexture
+            ));
+        }
         frameBuffer.validate();
         return frameBuffer;
     }
@@ -166,8 +174,8 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         return create(
                 colorTexture,
                 depthTexture,
-                colorTexture.getWidth(),
-                colorTexture.getHeight()
+                colorTexture == null ? depthTexture.getWidth() : colorTexture.getWidth(),
+                colorTexture == null ? depthTexture.getHeight() : colorTexture.getHeight()
         );
     }
 
@@ -183,10 +191,14 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
             colorAttachment = attachment;
         } else if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH) {
+            attachments.remove(depthAttachment);
             depthAttachment = attachment;
         } else {
+            attachments.remove(depthStencilAttachment);
             depthStencilAttachment = attachment;
         }
+        width = attachment.texture.getWidth();
+        height = attachment.texture.getHeight();
         Gl.DSA.framebufferTexture(
                 this.frameBufferId,
                 attachment.type.attachmentId(),
@@ -288,7 +300,9 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
         int target = resolveBindTarget(bindPoint);
         glBindFramebuffer(target, frameBufferId);
-        if (setViewport) glViewport(0, 0, width, height);
+        if (setViewport) {
+            glViewport(0, 0, width, height);
+        }
     }
 
     @Override
@@ -335,7 +349,9 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public TextureFormat getColorTextureFormat() {
-        if (colorAttachment == null) return null;
+        if (colorAttachment == null) {
+            return null;
+        }
         return colorAttachment.texture.getTextureFormat();
     }
 

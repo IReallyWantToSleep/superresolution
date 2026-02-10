@@ -184,8 +184,12 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
+    public void layouting(RenderContext ctx) {
         updateSize();
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
         focusAnimator.update();
         labelAnimator.update();
         arrowAnimator.update();

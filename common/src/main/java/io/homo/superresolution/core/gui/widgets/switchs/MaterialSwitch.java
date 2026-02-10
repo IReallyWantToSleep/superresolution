@@ -142,7 +142,11 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
 
     private void updateRectangle() {
         setElementSize(MaterialSwitchSize.Default.trackWidth(), MaterialSwitchSize.Default.trackHeight());
+    }
 
+    @Override
+    public void layouting(RenderContext ctx) {
+        updateRectangle();
     }
 
     @Override
