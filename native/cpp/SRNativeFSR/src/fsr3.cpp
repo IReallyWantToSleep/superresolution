@@ -22,7 +22,23 @@ extern "C"
         SRFsr3PrivateData *privateData = (SRFsr3PrivateData *)context->userContext;
 
         FfxFsr3UpscalerContextDescription fsrContexDesc = {};
-        fsrContexDesc.flags = FFX_FSR3UPSCALER_ENABLE_DEBUG_CHECKING;
+        fsrContexDesc.flags = 0;
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEBUG)
+        {
+            fsrContexDesc.flags |= FFX_FSR3UPSCALER_ENABLE_DEBUG_CHECKING;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
+        {
+            fsrContexDesc.flags |= FFX_FSR3UPSCALER_ENABLE_AUTO_EXPOSURE;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
+        {
+            fsrContexDesc.flags |= FFX_FSR3UPSCALER_ENABLE_DEPTH_INVERTED;
+        }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED)
+        {
+            fsrContexDesc.flags |= FFX_FSR3UPSCALER_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
+        }
         fsrContexDesc.backendInterface = *(privateData->ffxInterface);
         fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
         fsrContexDesc.maxUpscaleSize = {desc->upscaledSize.x, desc->upscaledSize.y};

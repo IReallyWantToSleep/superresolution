@@ -137,5 +137,9 @@
     "superresolution.screen.config.options.label.disable_upscale_on_vanilla": "关闭光影时禁用超分辨率",
     "superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla": "当关闭光影时自动禁用超分辨率",
     "superresolution.screen.config.options.label.force_disable_shader_compat": "强制禁用光影包兼容",
-    "superresolution.screen.config.options.tooltip.force_disable_shader_compat": "启用后模组会忽略光影包的超分辨率兼容配置文件，以普通模式进行缩放"
+    "superresolution.screen.config.options.tooltip.force_disable_shader_compat": "启用后模组会忽略光影包的超分辨率兼容配置文件，以普通模式进行缩放",
+    "superresolution.screen.config.options.label.theme": "界面主题",
+    "superresolution.screen.config.section.config": "配置",
+    "superresolution.screen.config.section.general": "通用设置",
+    "superresolution.screen.config.section.advanced": "高级设置"
 }

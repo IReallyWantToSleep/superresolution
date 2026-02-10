@@ -46,7 +46,7 @@ public class GlCommandBuffer implements ICommandBuffer {
 
     @Override
     public void submit(IDevice device) {
-        GlDebug.pushGroup(GlDebug.nextCommandBufferId(), "GlCommandBuffer");
+        GlDebug.pushGroup(GlDebug.nextCommandBufferId(), "Command Buffer");
         for (Runnable call : glCalls) {
             call.run();
         }

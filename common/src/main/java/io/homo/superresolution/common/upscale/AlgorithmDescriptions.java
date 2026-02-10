@@ -150,8 +150,8 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(NONE);
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
+        AlgorithmRegistry.registry(FSR);
         if (Platform.currentPlatform.isDevelopmentEnvironment() || System.getenv().containsKey("SR_DEV")) {
-            AlgorithmRegistry.registry(FSR);
             AlgorithmRegistry.registry(XESS);
             AlgorithmRegistry.registry(DLSS);
             //AlgorithmRegistry.registry(FSROgl);

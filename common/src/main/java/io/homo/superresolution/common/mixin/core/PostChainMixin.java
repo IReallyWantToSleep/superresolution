@@ -28,7 +28,6 @@ import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -36,7 +35,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
+#if MC_VER > MC_1_21_10
+import net.minecraft.resources.Identifier;
+#else
+import net.minecraft.resources.ResourceLocation;
+#endif
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,10 +66,22 @@ public abstract class PostChainMixin {
     #if MC_VER >= MC_1_20_6
     @Inject(method = "<init>", at = @At(value = "TAIL"))
     public void onInitPostChain(
-            TextureManager textureManager, net.minecraft.server.packs.resources.ResourceProvider resourceProvider, RenderTarget screenTarget, ResourceLocation resourceLocation, CallbackInfo ci
+            TextureManager textureManager,
+            net.minecraft.server.packs.resources.ResourceProvider resourceProvider,
+            RenderTarget screenTarget,
+            #if MC_VER > MC_1_21_10
+            Identifier resourceLocation,
+            #else
+            ResourceLocation resourceLocation,
+            #endif
+            CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
-        if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
+        if (super_resolution$onBlackList()) {
+            return;
+        }
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return;
+        }
 
         if (!screenTarget.equals(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -90,8 +105,12 @@ public abstract class PostChainMixin {
             ResourceLocation name,
             CallbackInfo ci
     ) throws IOException, JsonSyntaxException {
-        if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
+        if (super_resolution$onBlackList()) {
+            return;
+        }
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return;
+        }
 
         if (!screenTarget.equals(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget())) {
             return;
@@ -118,8 +137,12 @@ public abstract class PostChainMixin {
 
     @Inject(method = "resize", at = @At("HEAD"), cancellable = true)
     public void onResize(int width, int height, CallbackInfo ci) {
-        if (super_resolution$onBlackList()) return;
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
+        if (super_resolution$onBlackList()) {
+            return;
+        }
+        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return;
+        }
         if (
                 width != RenderHandlerManager.getRenderWidth() ||
                         height != RenderHandlerManager.getRenderHeight()
@@ -131,7 +154,9 @@ public abstract class PostChainMixin {
 
     @Inject(method = "process", at = @At("HEAD"))
     public void onProcess(float partialTicks, CallbackInfo ci) {
-        if (super_resolution$onBlackList()) return;
+        if (super_resolution$onBlackList()) {
+            return;
+        }
         if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
             return;

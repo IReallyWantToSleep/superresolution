@@ -46,7 +46,7 @@ import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
-    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport() && false;
+    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport();
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
 
     private final List<String> instanceExtensions = new ArrayList<>();
@@ -98,7 +98,9 @@ public class VkRenderSystem implements IRenderSystem {
     public void initRenderSystem() {
         createInstance();
         validationLayers = new VulkanValidationLayers(instance);
-        if (ENABLE_VALIDATION) validationLayers.setupDebugMessenger();
+        if (ENABLE_VALIDATION) {
+            validationLayers.setupDebugMessenger();
+        }
         VkPhysicalDevice physicalDevice = selectPhysicalDevice();
         capabilities.init(instance, physicalDevice);
         this.vulkanDevice = createLogicalDeviceWithCapabilities(physicalDevice);
@@ -174,7 +176,9 @@ public class VkRenderSystem implements IRenderSystem {
     private VulkanDevice createLogicalDeviceWithCapabilities(VkPhysicalDevice physicalDevice) {
         try (MemoryStack stack = stackPush()) {
             int graphicsFamilyIndex = findGraphicsQueueFamilyIndex(stack, physicalDevice);
-            if (graphicsFamilyIndex == -1) throw new RuntimeException("No suitable queue family found");
+            if (graphicsFamilyIndex == -1) {
+                throw new RuntimeException("No suitable queue family found");
+            }
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(1, stack);
             queueCreateInfos.get(0)
@@ -254,8 +258,9 @@ public class VkRenderSystem implements IRenderSystem {
                     .ppEnabledExtensionNames(asPointerBuffer(stack, enableDeviceExts))
                     .pEnabledFeatures(null);
 
-            if (ENABLE_VALIDATION)
+            if (ENABLE_VALIDATION) {
                 createInfo.ppEnabledLayerNames(VulkanValidationLayers.getValidationLayersPointerBuffer(stack));
+            }
 
             PointerBuffer pDevice = stack.mallocPointer(1);
             VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),

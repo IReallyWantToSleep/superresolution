@@ -24,7 +24,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.InteropCoordinateConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -49,6 +49,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
+import java.util.EnumSet;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
@@ -113,7 +114,11 @@ public class FfxFSR extends AbstractAlgorithm {
                 ),
                 new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                SRUpscaleContextCreateFlags.VULKAN.value
+                EnumSet.of(
+                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
+                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED,
+                        SRUpscaleContextCreateFlags.ENABLE_DEBUG
+                )
         );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
@@ -157,8 +162,6 @@ public class FfxFSR extends AbstractAlgorithm {
         if (this.outputColorTexture != null) {
             this.outputColorTexture.destroy();
         }
-
-
     }
 
     protected void createSharedTexture() {
@@ -182,7 +185,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R16F)
+                        .format(TextureFormat.DEPTH32F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -255,15 +258,15 @@ public class FfxFSR extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 this.inputColorGlTexture);
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.preprocessDepth(
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
 
         if (dispatchResource.resources().motionVectorsTexture() != null) {
-            InteropCoordinateConverter.flipMotionVectorY(
+            InteropResourcesConverter.flipMotionVectorY(
                     dispatchResource.resources().motionVectorsTexture(),
                     this.inputMotionVectorsGlTexture);
         }
@@ -280,7 +283,7 @@ public class FfxFSR extends AbstractAlgorithm {
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 }
         );
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        //vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
         RenderSystems.vulkan().device().commandDecoder().beginCommandBuffer();
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device().commandDecoder().currentCommandBuffer();
@@ -349,7 +352,8 @@ public class FfxFSR extends AbstractAlgorithm {
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{},
                 new int[]{GL_LAYOUT_GENERAL_EXT});
-        InteropCoordinateConverter.flipY(
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        InteropResourcesConverter.flipY(
                 this.outputColorGlTexture,
                 this.outputColorTexture);
         return true;

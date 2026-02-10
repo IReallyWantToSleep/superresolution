@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui;
 
+/*
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.gui.widgets.Line;
@@ -32,9 +33,9 @@ import io.homo.superresolution.core.utils.ColorUtil;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
-
+*/
 public class InfoBuilder {
-
+    /*
     private static final int COLOR_WHITE = ColorUtil.color(255, 255, 255, 255);
     private static final int COLOR_RED = ColorUtil.color(255, 255, 0, 0);
 
@@ -216,4 +217,5 @@ public class InfoBuilder {
     public interface LineContainer {
         void addLine(Line line);
     }
+    */
 }

@@ -29,7 +29,7 @@ import static org.lwjgl.glfw.GLFW.*;
 
 @Mixin(value = Window.class)
 public class ForceOpenGLVersion_WindowMixin {
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 5), remap = false)
+    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 4), remap = false)
     private void forceOpenGLVersion(int hint, int value) {
         //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
         //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);

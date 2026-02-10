@@ -79,6 +79,19 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
         return this;
     }
 
+    public float computeContentWidth(RenderContext ctx) {
+        float width = ICON_MARGIN_LEFT;
+        if (iconSupplier.get() != null) {
+            width += ICON_SIZE + ICON_TEXT_GAP;
+        }
+        String title = titleSupplier.get();
+        if (title != null && !title.isEmpty()) {
+            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE);
+        }
+        width += ICON_MARGIN_LEFT;
+        return width;
+    }
+
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();

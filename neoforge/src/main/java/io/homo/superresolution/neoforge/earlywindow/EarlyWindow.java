@@ -26,7 +26,6 @@ import net.neoforged.fml.loading.ProgramArgs;
 #endif
 import net.neoforged.neoforgespi.earlywindow.ImmediateWindowProvider;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -50,6 +49,7 @@ import static org.lwjgl.opengl.GL11C.GL_TRUE;
 
 public class EarlyWindow implements ImmediateWindowProvider {
     public long window;
+    private String pendingWindowTitle = "Minecraft";
 
     @Override
     public String name() {
@@ -57,16 +57,6 @@ public class EarlyWindow implements ImmediateWindowProvider {
     }
 
     #if MC_VER > MC_1_21_10
-    @Override
-    public void crash(String message) {
-
-    }
-
-    @Override
-    public void periodicTick() {
-
-    }
-
     @Override
     public void initialize(ProgramArgs args) {
         if (!glfwInit()) {
@@ -107,16 +97,6 @@ public class EarlyWindow implements ImmediateWindowProvider {
     }
 
     @Override
-    public void periodicTick() {
-
-    }
-
-    @Override
-    public String getGLVersion() {
-        return "";
-    }
-
-    @Override
     public void displayFatalErrorAndExit(List<ModLoadingIssue> issues, @Nullable Path modsFolder, @Nullable Path logFile, @Nullable Path crashReportFile) {
 
     }
@@ -128,6 +108,10 @@ public class EarlyWindow implements ImmediateWindowProvider {
         return window;
     }
 
+    @Override
+    public void periodicTick() {
+        glfwPollEvents();
+    }
 
     @Override
     public void updateProgress(String label) {
@@ -142,33 +126,88 @@ public class EarlyWindow implements ImmediateWindowProvider {
     #else
     @Override
     public Runnable initialize(String[] arguments) {
+        if (!glfwInit()) {
+            throw new IllegalStateException("Unable to initialize GLFW");
+        }
         NeoOpenGLVersionOverride.override();
+
+        GraphicsCapabilities.detectSupportedVersions();
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+        glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
         return () -> {
+            glfwPollEvents();
         };
     }
 
-    @Override
     public void updateFramebufferSize(IntConsumer width, IntConsumer height) {
-
+        if (window == 0L) {
+            return;
+        }
+        int[] fbWidth = new int[1];
+        int[] fbHeight = new int[1];
+        glfwGetFramebufferSize(window, fbWidth, fbHeight);
+        width.accept(fbWidth[0]);
+        height.accept(fbHeight[0]);
     }
 
-    @Override
     public long setupMinecraftWindow(IntSupplier width, IntSupplier height, Supplier<String> title, LongSupplier monitor) {
-        return 0;
+        int windowWidth = width.getAsInt();
+        int windowHeight = height.getAsInt();
+        String windowTitle = title.get();
+        long windowMonitor = monitor.getAsLong();
+
+        this.pendingWindowTitle = windowTitle;
+        this.window = glfwCreateWindow(
+                windowWidth,
+                windowHeight,
+                windowTitle,
+                windowMonitor,
+                0L
+        );
+        return this.window;
     }
 
-    @Override
     public boolean positionWindow(Optional<Object> monitor, IntConsumer widthSetter, IntConsumer heightSetter, IntConsumer xSetter, IntConsumer ySetter) {
         return false;
     }
 
-    @Override
     public <T> Supplier<T> loadingOverlay(Supplier<?> mc, Supplier<?> ri, Consumer<Optional<Throwable>> ex, boolean fade) {
         return null;
     }
 
-    @Override
     public void updateModuleReads(ModuleLayer layer) {
+
+    }
+
+    public long takeOverGlfwWindow() {
+        if (this.window == 0L) {
+            int windowWidth = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_WIDTH);
+            int windowHeight = FMLConfig.getIntConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_HEIGHT);
+            this.window = glfwCreateWindow(
+                    windowWidth,
+                    windowHeight,
+                    pendingWindowTitle,
+                    0L,
+                    0L
+            );
+        }
+        glfwSetWindowAttrib(this.window, GLFW_RESIZABLE, GLFW_TRUE);
+        glfwShowWindow(this.window);
+        return this.window;
+    }
+
+    public void updateProgress(String label) {
+
+    }
+
+    public void completeProgress() {
 
     }
 
@@ -179,12 +218,12 @@ public class EarlyWindow implements ImmediateWindowProvider {
 
     @Override
     public void periodicTick() {
-
+        glfwPollEvents();
     }
 
-    @Override
     public String getGLVersion() {
-        return "";
+        return GraphicsCapabilities.getHighestOpenGLVersion().left() + "." +
+                GraphicsCapabilities.getHighestOpenGLVersion().right();
     }
     #endif
 }

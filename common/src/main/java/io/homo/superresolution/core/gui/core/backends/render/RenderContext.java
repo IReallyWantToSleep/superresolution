@@ -99,11 +99,17 @@ public interface RenderContext {
         endPath(true);
     }
 
+    void move(float x, float y);
+
+    void lineTo(float x, float y);
+
     void line(float x1, float y1, float x2, float y2);
 
     void rect(float x, float y, float width, float height);
 
     void arc(float x, float y, float radius, float a0, float a1);
+
+    void bezier(float c1x, float c1y, float c2x, float c2y, float x, float y);
 
     default void arc(float x, float y, float radius) {
         arc(x, y, radius, 0, (float) (2 * Math.PI));

@@ -115,33 +115,31 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         return new MaterialButton(buttonSize);
     }
 
-    public static MaterialButton of(String text, MaterialButtonSize size, MaterialButtonVariant variant,
-                                    MaterialScheme scheme) {
+    public static MaterialButton of(String text, MaterialButtonSize size, MaterialButtonVariant variant) {
         MaterialButton button = new MaterialButton(size);
         button.style().variant(variant);
         button.text(text);
-        button.scheme(scheme);
         return button;
     }
 
-    public static MaterialButton filled(String text, MaterialScheme scheme) {
-        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Filled, scheme);
+    public static MaterialButton filled(String text) {
+        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Filled);
     }
 
-    public static MaterialButton elevated(String text, MaterialScheme scheme) {
-        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Elevated, scheme);
+    public static MaterialButton elevated(String text) {
+        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Elevated);
     }
 
-    public static MaterialButton tonal(String text, MaterialScheme scheme) {
-        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Tonal, scheme);
+    public static MaterialButton tonal(String text) {
+        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Tonal);
     }
 
-    public static MaterialButton outlined(String text, MaterialScheme scheme) {
-        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Outlined, scheme);
+    public static MaterialButton outlined(String text) {
+        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Outlined);
     }
 
-    public static MaterialButton text(String text, MaterialScheme scheme) {
-        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Text, scheme);
+    public static MaterialButton textButton(String text) {
+        return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Text);
     }
 
     @Override
@@ -237,8 +235,23 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     @Override
+    public void layouting(RenderContext ctx) {
+        float textContextWidth = ctx.measureTextWidth(textContextSupplier.get(), size().fontSize(), size().fontSize() + 1);
+
+        float iconContextWidth = 0;
+        if (iconContextSupplier.get() != null) {
+            iconContextWidth = style().size().iconSize();
+        }
+        float width = style().size().padding() +
+                iconContextWidth +
+                (iconContextWidth == 0 ? 0 : style().size().iconPadding()) +
+                textContextWidth +
+                style().size().padding();
+        setElementSize(width, style().size().height());
+    }
+
+    @Override
     public void render(RenderContext ctx, UIInputState inputState) {
-        updateRectangle();
         if (pressAnimator != null) {
             pressAnimator.update();
         }
@@ -276,11 +289,11 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
         overlay.renderRippleOverlay(
                 ctx,
-                style().variant() == MaterialButtonVariant.Elevated ? scheme.primary()
-                        : style().variant() == MaterialButtonVariant.Filled ? scheme.onPrimary()
-                        : style().variant() == MaterialButtonVariant.Tonal ? scheme.onSecondaryContainer()
-                        : style().variant() == MaterialButtonVariant.Text ? scheme.primary()
-                        : scheme.onSurfaceVariant());
+                style().variant() == MaterialButtonVariant.Elevated ? scheme().primary()
+                        : style().variant() == MaterialButtonVariant.Filled ? scheme().onPrimary()
+                        : style().variant() == MaterialButtonVariant.Tonal ? scheme().onSecondaryContainer()
+                        : style().variant() == MaterialButtonVariant.Text ? scheme().primary()
+                        : scheme().onSurfaceVariant());
 
         float iconContextWidth = 0;
         if (iconContextSupplier.get() != null && colors.iconColor != null) {
@@ -337,56 +350,56 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
         switch (style().variant()) {
             case Elevated:
-                colors.coverColor = scheme.primary();
-                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f))
-                        : scheme.surfaceContainerLow();
-                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.primary();
-                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.primary();
+                colors.coverColor = scheme().primary();
+                colors.backgroundColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1f))
+                        : scheme().surfaceContainerLow();
+                colors.textColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().primary();
+                colors.iconColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().primary();
                 break;
 
             case Filled:
-                colors.coverColor = scheme.onPrimary();
-                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f))
-                        : scheme.primary();
-                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.onPrimary();
-                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.onPrimary();
+                colors.coverColor = scheme().onPrimary();
+                colors.backgroundColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1f))
+                        : scheme().primary();
+                colors.textColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().onPrimary();
+                colors.iconColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().onPrimary();
                 break;
 
             case Tonal:
-                colors.coverColor = scheme.onSecondaryContainer();
-                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f))
-                        : scheme.secondaryContainer();
-                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.onSecondaryContainer();
-                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.onSecondaryContainer();
+                colors.coverColor = scheme().onSecondaryContainer();
+                colors.backgroundColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1f))
+                        : scheme().secondaryContainer();
+                colors.textColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().onSecondaryContainer();
+                colors.iconColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().onSecondaryContainer();
                 break;
 
             case Text:
-                colors.coverColor = scheme.primary();
-                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : null;
-                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.primary();
-                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.primary();
+                colors.coverColor = scheme().primary();
+                colors.backgroundColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1f)) : null;
+                colors.textColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().primary();
+                colors.iconColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().primary();
                 break;
 
             case Outlined:
-                colors.coverColor = scheme.onSurfaceVariant();
-                colors.backgroundColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1f)) : null;
-                colors.borderColor = scheme.outlineVariant();
-                colors.textColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.onSurfaceVariant();
-                colors.iconColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38f))
-                        : scheme.onSurfaceVariant();
+                colors.coverColor = scheme().onSurfaceVariant();
+                colors.backgroundColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1f)) : null;
+                colors.borderColor = scheme().outlineVariant();
+                colors.textColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().onSurfaceVariant();
+                colors.iconColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38f))
+                        : scheme().onSurfaceVariant();
                 break;
             default:
-                colors.backgroundColor = scheme.primary();
-                colors.textColor = scheme.primary();
+                colors.backgroundColor = scheme().primary();
+                colors.textColor = scheme().primary();
                 break;
         }
 

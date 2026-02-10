@@ -156,6 +156,19 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
         return selected;
     }
 
+    public float computeContentWidth(RenderContext ctx) {
+        float width = ICON_MARGIN_LEFT;
+        if (iconSupplier.get() != null) {
+            width += ICON_SIZE + ICON_TEXT_GAP;
+        }
+        String text = textSupplier.get();
+        if (text != null && !text.isEmpty()) {
+            width += ctx.measureTextWidth(text, FONT_SIZE, FONT_SIZE);
+        }
+        width += ICON_MARGIN_LEFT;
+        return width;
+    }
+
     public MaterialNavigationDrawerItem setSelected(boolean selected) {
         if (this.selected != selected) {
             this.selected = selected;

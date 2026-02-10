@@ -175,13 +175,16 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     }
 
     @Override
+    public void layouting(RenderContext ctx) {
+        updateRectangle();
+    }
+
+    @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         if (animationSet.handleSize.get() < style().size().handleWidthPress()) {
             animationSet.handleSize.set(style().size().handleWidth());
         }
         animationSet.update();
-
-        updateRectangle();
 
         SliderColors colors = getSliderColors();
         Rectangle bounds = getBounds();
@@ -332,14 +335,14 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
     private SliderColors getSliderColors() {
         SliderColors colors = new SliderColors();
-        colors.inactiveTrackColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.1)) : scheme.secondaryContainer();
-        colors.activeTrackColor = isDisabled() ? scheme.onSurface() : scheme.primary();
-        colors.handleColor = isDisabled() ? scheme.onSurface().copy().alpha((int) (255 * 0.38)) : scheme.primary();
-        colors.stepInactiveIndicatorsColor = isDisabled() ? scheme.onSurface() : scheme.onSecondaryContainer();
-        colors.stepActiveIndicatorsColor = isDisabled() ? scheme.inverseOnSurface() : scheme.onPrimary();
-        colors.insetIconColor = isDisabled() ? scheme.inverseOnSurface() : scheme.onPrimary();
-        colors.valueIndicatorColor = scheme.inverseSurface();
-        colors.valueIndicatorTextColor = scheme.inverseOnSurface();
+        colors.inactiveTrackColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1)) : scheme().secondaryContainer();
+        colors.activeTrackColor = isDisabled() ? scheme().onSurface() : scheme().primary();
+        colors.handleColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38)) : scheme().primary();
+        colors.stepInactiveIndicatorsColor = isDisabled() ? scheme().onSurface() : scheme().onSecondaryContainer();
+        colors.stepActiveIndicatorsColor = isDisabled() ? scheme().inverseOnSurface() : scheme().onPrimary();
+        colors.insetIconColor = isDisabled() ? scheme().inverseOnSurface() : scheme().onPrimary();
+        colors.valueIndicatorColor = scheme().inverseSurface();
+        colors.valueIndicatorTextColor = scheme().inverseOnSurface();
         return colors;
     }
 

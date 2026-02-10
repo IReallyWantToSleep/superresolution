@@ -20,7 +20,6 @@ package io.homo.superresolution.neoforge.mixin.neoforge;
 
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,8 +27,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.function.BiFunction;
-
-#if MC_VER > MC_1_21_10
+//坏狐狸在高版本引入了ValidationLayer，iris恰好跟这玩意冲突
+#if MC_VER >= MC_1_21_10
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.shaders.ShaderType;
 import com.mojang.blaze3d.systems.GpuDevice;
@@ -38,7 +37,19 @@ import com.mojang.blaze3d.systems.GpuDevice;
 @Mixin(ClientHooks.class)
 public class FuckingValidationMixin {
     @Inject(method = "createGpuDevice", at = @At("HEAD"), cancellable = true)
-    private static void fuckingValidation(long window, int debugLevel, boolean syncDebug, BiFunction<ResourceLocation, ShaderType, String> defaultShaderSource, boolean enableDebugLabels, CallbackInfoReturnable<GpuDevice> cir) {
+    private static void fuckingValidation(
+            long window,
+            int debugLevel,
+            boolean syncDebug,
+            #if MC_VER > MC_1_21_10
+            com.mojang.blaze3d.shaders.ShaderSource defaultShaderSource,
+            #else
+            BiFunction<net.minecraft.resources.ResourceLocation, ShaderType, String> defaultShaderSource,
+            #endif
+            boolean enableDebugLabels,
+            CallbackInfoReturnable<GpuDevice> cir
+    ) {
+        net.neoforged.neoforge.client.config.NeoForgeClientConfig.INSTANCE.enableB3DValidationLayer.set(false);
         cir.setReturnValue(
                 new GlDevice(window, debugLevel, syncDebug, defaultShaderSource, enableDebugLabels)
         );

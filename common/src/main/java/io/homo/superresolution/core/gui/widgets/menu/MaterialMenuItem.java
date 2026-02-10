@@ -266,7 +266,6 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
 
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
-        updateSize();
         selectionAnimator.update();
         fadeAnimator.update();
         overlay.update();
@@ -399,6 +398,11 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         layout().setWidthPercent(100);
         layout().setHeight(size.height());
         layout().setFlexShrink(0);
+    }
+
+    @Override
+    public void layouting(RenderContext ctx) {
+        updateSize();
     }
 
     @Override

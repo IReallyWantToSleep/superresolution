@@ -19,13 +19,13 @@
 package io.homo.superresolution.fabric.compat.sodium;
 
 import com.google.common.collect.ImmutableList;
-#if MC_VER > MC_1_20_6
+#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_6
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
-#else
+#elif MC_VER < MC_1_21_10
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;

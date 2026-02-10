@@ -23,6 +23,9 @@
         ],
         "modmenu": [
             "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
+        ],
+        "sodium:config_api_user": [
+            "io.homo.superresolution.fabric.compat.sodium.SodiumConfigBuilder"
         ]
     },
     "mixins": [

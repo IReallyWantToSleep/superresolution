@@ -5,13 +5,6 @@
 extern "C"
 {
 #endif
-
-    SR_API SRReturnCode srFfxFsr2OglCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc);
-    SR_API SRReturnCode srFfxFsr2OglInitUpscaleContext(SRUpscaleContext *context);
-    SR_API SRReturnCode srFfxFsr2OglDestroyUpscaleContext(SRUpscaleContext *context);
-    SR_API SRReturnCode srFfxFsr2OglQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType);
-    SR_API SRReturnCode srFfxFsr2OglDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc);
-
     SR_API SRReturnCode srFfxFsr2VkCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc);
     SR_API SRReturnCode srFfxFsr2VkInitUpscaleContext(SRUpscaleContext *context);
     SR_API SRReturnCode srFfxFsr2VkDestroyUpscaleContext(SRUpscaleContext *context);

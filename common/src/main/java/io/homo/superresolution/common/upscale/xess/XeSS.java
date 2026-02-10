@@ -24,7 +24,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.InteropCoordinateConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -45,11 +45,11 @@ import org.joml.Vector2f;
 import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
+import java.util.EnumSet;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
@@ -77,12 +77,14 @@ public class XeSS extends AbstractAlgorithm {
     private VkGlInteropSemaphore syncVkSemaphore;
 
     public void updateXeSS() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_XESS == null)
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_XESS == null) {
             return;
+        }
         Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_XESS
                 .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
-        if (!(lib.toFile().isFile() && lib.toFile().canRead()))
+        if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
             return;
+        }
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
         if (context != null) {
@@ -116,7 +118,12 @@ public class XeSS extends AbstractAlgorithm {
                         RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(),
                         RenderHandlerManager.getRenderHeight()),
-                SRUpscaleContextCreateFlags.VULKAN.value);
+                EnumSet.of(
+                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
+                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED,
+                        SRUpscaleContextCreateFlags.ENABLE_DEBUG
+                )
+        );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
@@ -134,23 +141,31 @@ public class XeSS extends AbstractAlgorithm {
 
     protected void destroySharedTexture() {
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
-        if (this.inputColorVkTexture != null)
+        if (this.inputColorVkTexture != null) {
             this.inputColorVkTexture.destroy();
-        if (this.inputColorGlTexture != null)
+        }
+        if (this.inputColorGlTexture != null) {
             this.inputColorGlTexture.destroy();
-        if (this.inputDepthVkTexture != null)
+        }
+        if (this.inputDepthVkTexture != null) {
             this.inputDepthVkTexture.destroy();
-        if (this.inputDepthGlTexture != null)
+        }
+        if (this.inputDepthGlTexture != null) {
             this.inputDepthGlTexture.destroy();
-        if (this.outputColorVkTexture != null)
+        }
+        if (this.outputColorVkTexture != null) {
             this.outputColorVkTexture.destroy();
-        if (this.outputColorGlTexture != null)
+        }
+        if (this.outputColorGlTexture != null) {
             this.outputColorGlTexture.destroy();
+        }
 
-        if (this.outputFrameBuffer != null)
+        if (this.outputFrameBuffer != null) {
             this.outputFrameBuffer.destroy();
-        if (this.outputColorTexture != null)
+        }
+        if (this.outputColorTexture != null) {
             this.outputColorTexture.destroy();
+        }
     }
 
     protected void createSharedTexture() {
@@ -173,7 +188,7 @@ public class XeSS extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R16F)
+                        .format(TextureFormat.DEPTH32F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -242,17 +257,18 @@ public class XeSS extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 this.inputColorGlTexture);
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.preprocessDepth(
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
 
-        if (dispatchResource.resources().motionVectorsTexture() != null)
-            InteropCoordinateConverter.flipMotionVectorY(
+        if (dispatchResource.resources().motionVectorsTexture() != null) {
+            InteropResourcesConverter.flipMotionVectorY(
                     dispatchResource.resources().motionVectorsTexture(),
                     this.inputMotionVectorsGlTexture);
+        }
         syncSemaphore.signalOpenGL(
                 new int[]{
                         Math.toIntExact(this.inputColorGlTexture.handle()),
@@ -266,7 +282,7 @@ public class XeSS extends AbstractAlgorithm {
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 });
 
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        //vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
         RenderSystems.vulkan().device().commandDecoder().beginCommandBuffer();
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device()
@@ -331,7 +347,7 @@ public class XeSS extends AbstractAlgorithm {
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{},
                 new int[]{GL_LAYOUT_GENERAL_EXT});
-        InteropCoordinateConverter.flipY(
+        InteropResourcesConverter.flipY(
                 this.outputColorGlTexture,
                 this.outputColorTexture);
         return true;
@@ -344,8 +360,9 @@ public class XeSS extends AbstractAlgorithm {
         syncSemaphore.destroy();
         syncVkSemaphore.destroy();
 
-        if (context != null && context.nativePtr > 0)
+        if (context != null && context.nativePtr > 0) {
             SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+        }
     }
 
     @Override
@@ -377,8 +394,9 @@ public class XeSS extends AbstractAlgorithm {
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             return new Vector2f(0);
+        }
         // halton
         int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
         return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);

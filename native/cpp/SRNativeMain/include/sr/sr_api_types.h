@@ -48,7 +48,7 @@ extern "C"
 
     typedef enum SRTextureFormat
     {
-
+        //Colors
         SR_TEXTURE_FORMAT_UNKNOWN,
         SR_TEXTURE_FORMAT_R32G32B32A32_TYPELESS,
         SR_TEXTURE_FORMAT_R32G32B32A32_UINT,
@@ -87,6 +87,8 @@ extern "C"
         SR_TEXTURE_FORMAT_R8_TYPELESS,
         SR_TEXTURE_FORMAT_R8G8_TYPELESS,
         SR_TEXTURE_FORMAT_R32_TYPELESS,
+        //Depths
+        SR_TEXTURE_FORMAT_D32_SFLOAT,
     } SRTextureFormat;
 
     typedef struct SRTextureResourceDescription

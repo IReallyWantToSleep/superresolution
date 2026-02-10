@@ -20,6 +20,8 @@ package io.homo.superresolution.srapi;
 
 import org.joml.Vector2i;
 
+import java.util.EnumSet;
+
 /**
  * 创建Upscale上下文的描述符
  */
@@ -62,7 +64,7 @@ public class SRCreateUpscaleContextDesc {
     /**
      * 标志位
      */
-    public int flags;
+    public EnumSet<SRUpscaleContextCreateFlags> flags;
 
     /**
      * 创建OpenGL上下文描述符
@@ -71,7 +73,7 @@ public class SRCreateUpscaleContextDesc {
             SROpenGLDeviceInfo deviceInfo,
             Vector2i upscaledSize,
             Vector2i renderSize,
-            int flags) {
+            EnumSet<SRUpscaleContextCreateFlags> flags) {
         SRCreateUpscaleContextDesc desc = new SRCreateUpscaleContextDesc();
         desc.renderApiType = SRRenderApiType.OPENGL;
         desc.openglDeviceInfo = deviceInfo;
@@ -89,7 +91,7 @@ public class SRCreateUpscaleContextDesc {
             SRVulkanDeviceInfo deviceInfo,
             Vector2i upscaledSize,
             Vector2i renderSize,
-            int flags) {
+            EnumSet<SRUpscaleContextCreateFlags> flags) {
         SRCreateUpscaleContextDesc desc = new SRCreateUpscaleContextDesc();
         desc.renderApiType = SRRenderApiType.VULKAN;
         desc.vulkanDeviceInfo = deviceInfo;
@@ -148,11 +150,11 @@ public class SRCreateUpscaleContextDesc {
         this.extraParams = extraParams;
     }
 
-    public int getFlags() {
+    public EnumSet<SRUpscaleContextCreateFlags> getFlags() {
         return flags;
     }
 
-    public void setFlags(int flags) {
+    public void setFlags(EnumSet<SRUpscaleContextCreateFlags> flags) {
         this.flags = flags;
     }
 }

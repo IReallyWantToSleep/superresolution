@@ -29,10 +29,7 @@ import io.homo.superresolution.common.gui.options.OptionCategory;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.MaterialSymbols;
-import io.homo.superresolution.core.gui.MaterialTheme;
-import io.homo.superresolution.core.gui.NanoVGScreen;
+import io.homo.superresolution.core.gui.*;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -69,7 +66,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     protected void buildWidgets() {
-        materialScheme = MaterialScheme.from(MaterialTheme.Dark, Color.from("#6750A4"));
+        MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), Color.from("#6750A4")));
+        materialScheme = MaterialUI.Scheme;
         contentFrames = new HashMap<>();
         currentContentKey = "general";
 
@@ -77,15 +75,16 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         Frame navigationDrawerFrame = createNavigationDrawerFrame();
         navigationDrawerLayout = getView().addFrame(navigationDrawerFrame);
-        navigationDrawerLayout.setMinWidthPercent(17.1f);
         navigationDrawerLayout.setMinHeightPercent(100);
+        navigationDrawerLayout.setFlexShrink(0);
         navigationDrawerLayout.setPadding(YogaEdge.ALL, 0);
 
         currentContentFrame = getOrCreateContentFrame(currentContentKey);
         contentLayout = getView().addFrame(currentContentFrame);
-        contentLayout.setWidthPercent(82.9f);
+        contentLayout.setFlexGrow(1f);
         contentLayout.setHeightPercent(100);
         contentLayout.setPadding(YogaEdge.ALL, 0);
+        SuperResolutionConfig.SPEC.load();
     }
 
     private Frame getOrCreateContentFrame(String key) {
@@ -117,7 +116,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         currentContentKey = key;
         currentContentFrame = getOrCreateContentFrame(key);
         contentLayout = getView().addFrame(currentContentFrame);
-        contentLayout.setWidthPercent(82.9f);
+        contentLayout.setFlexGrow(1f);
         contentLayout.setHeightPercent(100);
         contentLayout.setPadding(YogaEdge.ALL, 0);
         view.markLayoutDirty();
@@ -132,16 +131,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         container.layout().setWidthPercent(100);
 
         drawer = MaterialNavigationDrawer.create()
-                .addHeader("Super Resolution", MaterialSymbols.iconSettings())
-                .addSectionHeader("配置")
-                .addItem("通用设置", MaterialSymbols.iconSettings(), "general")
-                .addItem("高级设置", MaterialSymbols.iconTune(), "advanced")
+                .addHeader("Super Resolution", LogoRenderer.Logo)
+                .addSectionHeader(Text.translatable("superresolution.screen.config.section.config").getString())
+                .addItem(Text.translatable("superresolution.screen.config.section.general").getString(), MaterialSymbols.iconSettings(), "general")
+                .addItem(Text.translatable("superresolution.screen.config.section.advanced").getString(), MaterialSymbols.iconTune(), "advanced")
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
                     switchContentFrame(key);
                 })
-                .setSelectedByValue("general")
-                .scheme(materialScheme);
+                .setSelectedByValue("general");
         drawer.layout().setWidthPercent(100);
         drawer.layout().setHeightPercent(100);
         container.addChild(drawer);
@@ -166,16 +164,29 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         container.addChild(spacerTop);
 
         MaterialLabel title = MaterialLabel.create()
-                .text("通用设置")
+                .text(Text.translatable("superresolution.screen.config.section.general").getString())
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(MaterialScheme::primary);
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
         OptionCategory category = new OptionCategory(Text.translatable("superresolution.screen.config.category.general"));
-        OptionBuilder builder = new OptionBuilder(category).scheme(materialScheme);
+        OptionBuilder builder = new OptionBuilder(category);
         builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
+
+        builder.enumSelectorOption(
+                        Text.translatable("superresolution.screen.config.options.label.theme"),
+                        MaterialTheme.class,
+                        SuperResolutionConfig.getTheme())
+                .setDefaultValue(MaterialTheme.Light)
+                .setEnumNameProvider(Enum::name)
+                .setSaveConsumer(value -> {
+                    SuperResolutionConfig.setTheme(value);
+                    MaterialUI.setScheme(MaterialScheme.from(value, Color.from("#6750A4")));
+                    this.materialScheme = MaterialUI.Scheme;
+                })
+                .build();
+
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
                         SuperResolutionConfig.isEnableUpscaleOriginal())
@@ -282,15 +293,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         container.addChild(spacerTop);
 
         MaterialLabel title = MaterialLabel.create()
-                .text("高级设置")
+                .text(Text.translatable("superresolution.screen.config.section.advanced").getString())
                 .fontSize(24)
-                .color(materialScheme.primary())
-                .scheme(materialScheme);
+                .color(MaterialScheme::primary);
         title.layout().setMargin(YogaEdge.BOTTOM, 20);
         container.addChild(title);
 
         OptionCategory category = new OptionCategory(Text.translatable("superresolution.screen.config.category.advanced"));
-        OptionBuilder builder = new OptionBuilder(category).scheme(materialScheme);
+        OptionBuilder builder = new OptionBuilder(category);
+        builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
 
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
@@ -367,7 +378,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     true);
         }
 
+        float drawerWidth = drawer.getPreferredWidth(ctx);
+        if (drawerWidth > 0) {
+            navigationDrawerLayout.setWidth(drawerWidth);
+            view.markLayoutDirty();
+        }
+
         super.draw(ctx, inputState);
+    }
+
+    public void setMaterialScheme(MaterialScheme scheme) {
+        this.materialScheme = scheme;
     }
 
     public boolean isPauseScreen() {

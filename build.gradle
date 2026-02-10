@@ -19,7 +19,7 @@
 import utils.ModrinthUploader
 
 plugins {
-    id 'fabric-loom' version '1.14-SNAPSHOT' apply false
+    id 'fabric-loom' version '1.15-SNAPSHOT' apply false
     id 'net.neoforged.moddev' version '2.0.139' apply false
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id 'multiversion'
@@ -41,12 +41,6 @@ allprojects {
     }
 
     repositories {
-        if (System.getenv().containsKey("SR_DEV")) {
-            maven {
-                name "minecraftdevRepository"
-                url "http://127.0.0.1:8080/releases"
-            }
-        }
         mavenCentral()
         maven { url 'https://maven.neoforged.net' }
         maven { url 'https://maven.aliyun.com/repository/central' }

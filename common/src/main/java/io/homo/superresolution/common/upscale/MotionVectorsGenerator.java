@@ -148,16 +148,18 @@ public class MotionVectorsGenerator {
     }
 
     public static void init() {
-        if (isInit || !SuperResolutionConfig.isGenerateMotionVectors())
+        if (isInit || !SuperResolutionConfig.isGenerateMotionVectors()) {
             return;
+        }
         motionVectorsFrameBuffer = GlFrameBuffer.create(
                 TextureFormat.RG16F,
                 null,
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight());
         motionVectorsFrameBuffer.label("SRMotionVectorsGenerator-MotionVectorsFrameBuffer");
-        if (!SuperResolutionConfig.isGenerateMotionVectors())
+        if (!SuperResolutionConfig.isGenerateMotionVectors()) {
             return;
+        }
 
         structuredUniformBuffer = UniformStructBuilder.start()
                 .floatEntry("exposure")
@@ -282,8 +284,9 @@ public class MotionVectorsGenerator {
     }
 
     public static void resize() {
-        if (!isInit)
+        if (!isInit) {
             return;
+        }
 
         int width = RenderHandlerManager.getRenderWidth();
         int height = RenderHandlerManager.getRenderHeight();
@@ -300,10 +303,12 @@ public class MotionVectorsGenerator {
     public static void update(
             ITexture colorTexture,
             ITexture depthTexture) {
-        if (!isInit)
+        if (!isInit) {
             init();
-        if (!isInit)
+        }
+        if (!isInit) {
             return;
+        }
         motionVectorsFrameBuffer.clearFrameBuffer();
         GlTextureCopier.copy(
                 CopyOperation.create()

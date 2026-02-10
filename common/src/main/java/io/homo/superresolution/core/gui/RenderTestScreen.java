@@ -77,12 +77,25 @@ public class RenderTestScreen extends NanoVGScreen<RenderTestScreen> {
         super.draw(ctx, inputState);
     }
 
+
+    #if MC_VER > MC_1_21_8
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (event.key() == 292) { // GLFW_KEY_F3
+            testMode = (testMode + 1) % 4;
+            return true;
+        }
+        return false;
+    }
+
+    #else
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == 292) { // GLFW_KEY_F3
             testMode = (testMode + 1) % 4;
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
+    #endif
+
 }

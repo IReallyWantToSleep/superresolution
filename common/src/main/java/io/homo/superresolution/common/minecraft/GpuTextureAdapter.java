@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 
 public class GpuTextureAdapter extends GlTexture {
     private final ITexture texture;
-    private IFrameBuffer frameBuffer;
+    public IFrameBuffer frameBuffer;
 
     GpuTextureAdapter(ITexture texture) {
         #if MC_VER > MC_1_21_5
@@ -65,6 +65,14 @@ public class GpuTextureAdapter extends GlTexture {
         this.texture = texture;
     }
 
+    public int getWidth(int mipLevel) {
+        return texture.getWidth();
+    }
+
+    public int getHeight(int mipLevel) {
+        return texture.getHeight();
+    }
+
     public static GlTexture ofTexture(ITexture texture) {
         return new GpuTextureAdapter(texture);
     }
@@ -84,7 +92,9 @@ public class GpuTextureAdapter extends GlTexture {
         return this.closed;
     }
 
-    public int getFbo(DirectStateAccess directStateAccess, @Nullable GpuTexture gpuTexture) {
+    public int getFbo(DirectStateAccess directStateAccess,
+                      @Nullable
+                      GpuTexture gpuTexture) {
         return Math.toIntExact(frameBuffer != null ? frameBuffer.handle() : -1);
     }
 
@@ -110,6 +120,7 @@ public class GpuTextureAdapter extends GlTexture {
     }
     #endif
 }
+
 #else
 public class GpuTextureAdapter {
     private final ITexture texture;

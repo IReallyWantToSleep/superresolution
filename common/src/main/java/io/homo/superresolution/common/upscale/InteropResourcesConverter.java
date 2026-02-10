@@ -19,31 +19,48 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
 import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
 import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
 import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.CompareOp;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.CullMode;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.DynamicStateFlags;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import org.lwjgl.opengl.GL41;
 
 import java.util.HashMap;
 import java.util.Map;
 
 
-public class InteropCoordinateConverter {
+public class InteropResourcesConverter {
     private static final Map<String, ComputePipeline> flipYPipelineCache = new HashMap<>();
     private static ComputePipeline flipMotionVectorYPipeline;
     private static IShaderProgram flipMotionVectorYShader;
 
-    private static RenderGrape pipeline;
+    private static GraphicsPipeline depthPreprocessPipeline;
+    private static IShaderProgram depthPreprocessShader;
+    private static RenderPass depthPreprocessRenderPass;
+    private static IFrameBuffer depthPreprocessFrameBuffer;
+
+    private static RenderGrape renderGrape;
     private static boolean isInit = false;
 
     private static String toComputeShaderFormatQualifier(TextureFormat format) {
@@ -107,28 +124,55 @@ public class InteropCoordinateConverter {
         flipMotionVectorYPipeline = GlComputePipeline.builder()
                 .shader(flipMotionVectorYShader)
                 .build(RenderSystems.opengl().device());
+
+        depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
+                ShaderDescription.create()
+                        .fragment(
+                                ShaderSource.file(
+                                        ShaderType.Fragment,
+                                        "/shader/interop/depth_preprocess.frag.glsl"
+                                )
+                        )
+                        .vertex(
+                                ShaderSource.file(
+                                        ShaderType.Vertex,
+                                        "/shader/blit.vert.glsl"
+                                )
+                        )
+                        .name("depth_preprocess")
+                        .uniformSamplerTexture("inputDepth", 0)
+                        .build()
+        );
+        depthPreprocessShader.compile();
+        depthPreprocessPipeline = RenderSystems.current().device().createGraphicsPipeline(
+                GraphicsPipeline.builder()
+                        .shader(depthPreprocessShader)
+                        .rasterization((r) -> r.cullMode(CullMode.None))
+                        .depthStencil((r) -> r.depthCompareOp(CompareOp.Always).depthTestEnable(true).depthWriteEnable(true))
+                        .dynamicStates(DynamicStateFlags.Viewport)
+                        .vertexFormat(FullscreenQuad.getVertexFormat())
+        );
+        depthPreprocessRenderPass = RenderSystems.current().device().createRenderPass(
+                RenderPass.builder()
+                        .pipeline(depthPreprocessPipeline)
+                        .frameBuffer(depthPreprocessFrameBuffer)
+                        .clearDepthOnBegin(1.0f)
+        );
     }
 
-    private static void init() {
-        if (isInit)
-            return;
-
-        initShaders();
-        pipeline = new RenderGrape();
-        isInit = true;
-    }
 
     public static void flipY(ITexture input, ITexture output) {
-        if (!isInit)
+        if (!isInit) {
             init();
+        }
 
         TextureFormat outputFormat = output.getTextureFormat();
         ComputePipeline computePipeline = getOrCreateFlipYPipeline(outputFormat);
 
         RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
         ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
-        pipeline.remove("flip_y");
-        pipeline.add("flip_y",
+        renderGrape.remove("flip_y");
+        renderGrape.add("flip_y",
                 GrapeJobBuilders.compute(computePipeline)
                         .resource("inputTexture", GrapeJobResource.SamplerTexture.create(input))
                         .resource("outputTexture",
@@ -139,18 +183,63 @@ public class InteropCoordinateConverter {
                                 1)
                         .build());
 
-        pipeline.execute(commandBuffer, "flip_y");
+        renderGrape.execute(commandBuffer, "flip_y");
         RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
     }
 
-    public static void flipMotionVectorY(ITexture input, ITexture output) {
-        if (!isInit)
+    private static void init() {
+        if (isInit) {
+            return;
+        }
+        depthPreprocessFrameBuffer = GlFrameBuffer.create(null, TextureFormat.DEPTH32F, 16, 16);
+        initShaders();
+        renderGrape = new RenderGrape();
+        isInit = true;
+    }
+
+    public static void preprocessDepth(ITexture inputDepth, ITexture outputDepth) {
+        if (!isInit) {
             init();
+        }
+        if (depthPreprocessFrameBuffer.getDepthStencilAttachment().texture() != inputDepth) {
+            ((GlFrameBuffer) depthPreprocessFrameBuffer).addAttachment(
+                    new GlFrameBufferAttachment(
+                            outputDepth.getTextureFormat().isStencil() ? GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH_STENCIL : GlFrameBufferAttachment.FrameBufferAttachmentType.DEPTH,
+                            outputDepth
+                    )
+            );
+
+        }
+        depthPreprocessPipeline.descriptorSet().samplerTexture("inputDepth", 0, inputDepth);
+        try (GlState state = new GlState(GlState.STATE_DEPTH_TEST)) {
+            RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+            RenderSystems.opengl().device().commandDecoder().setViewport(
+                    0,
+                    0,
+                    outputDepth.getWidth(),
+                    outputDepth.getHeight()
+            );
+            RenderSystems.opengl().device().commandDecoder().draw(
+                    depthPreprocessRenderPass,
+                    PrimitiveType.TriangleStrip,
+                    FullscreenQuad.create(RenderSystems.opengl().device()),
+                    4,
+                    0
+            );
+            RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+        }
+        GL41.glDepthFunc(GL41.GL_LEQUAL);
+    }
+
+    public static void flipMotionVectorY(ITexture input, ITexture output) {
+        if (!isInit) {
+            init();
+        }
 
         RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
         ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
-        pipeline.remove("flip_motion_vector_y");
-        pipeline.add("flip_motion_vector_y",
+        renderGrape.remove("flip_motion_vector_y");
+        renderGrape.add("flip_motion_vector_y",
                 GrapeJobBuilders.compute(flipMotionVectorYPipeline)
                         .resource("inputMotionVector", GrapeJobResource.SamplerTexture.create(input))
                         .resource("outputMotionVector",
@@ -161,7 +250,7 @@ public class InteropCoordinateConverter {
                                 1)
                         .build());
 
-        pipeline.execute(commandBuffer, "flip_motion_vector_y");
+        renderGrape.execute(commandBuffer, "flip_motion_vector_y");
         RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
     }
 }

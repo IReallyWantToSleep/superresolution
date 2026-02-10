@@ -13,15 +13,11 @@ extern "C"
         {
             return srFfxFsr2VkCreateUpscaleContext(context, desc);
         }
-        else if (desc->renderApiType == SR_RENDER_API_TYPE_OPENGL)
-        {
-            return srFfxFsr2OglCreateUpscaleContext(context, desc);
-        }
         else
         {
             if (desc->messageCallback)
             {
-                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 only supports Vulkan and OpenGL");
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 only supports Vulkan");
             }
             return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
         }
@@ -33,10 +29,6 @@ extern "C"
         {
             return srFfxFsr2VkInitUpscaleContext(context);
         }
-        else if (context->desc.renderApiType == SR_RENDER_API_TYPE_OPENGL)
-        {
-            return srFfxFsr2OglInitUpscaleContext(context);
-        }
         return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
     }
 
@@ -45,10 +37,6 @@ extern "C"
         if (context->desc.renderApiType == SR_RENDER_API_TYPE_VULKAN)
         {
             return srFfxFsr2VkDestroyUpscaleContext(context);
-        }
-        else if (context->desc.renderApiType == SR_RENDER_API_TYPE_OPENGL)
-        {
-            return srFfxFsr2OglDestroyUpscaleContext(context);
         }
         return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
     }
@@ -59,10 +47,6 @@ extern "C"
         {
             return srFfxFsr2VkQueryUpscale(context, result, queryType);
         }
-        else if (context->desc.renderApiType == SR_RENDER_API_TYPE_OPENGL)
-        {
-            return srFfxFsr2OglQueryUpscale(context, result, queryType);
-        }
         return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
     }
 
@@ -71,10 +55,6 @@ extern "C"
         if (context->desc.renderApiType == SR_RENDER_API_TYPE_VULKAN)
         {
             return srFfxFsr2VkDispatchUpscale(context, desc);
-        }
-        else if (context->desc.renderApiType == SR_RENDER_API_TYPE_OPENGL)
-        {
-            return srFfxFsr2OglDispatchUpscale(context, desc);
         }
         return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
     }

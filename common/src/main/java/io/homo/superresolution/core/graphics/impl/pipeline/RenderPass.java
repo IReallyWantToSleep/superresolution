@@ -68,8 +68,10 @@ public abstract class RenderPass implements Destroyable {
         return clearState;
     }
 
+    @Deprecated
     public abstract void execute(ICommandBuffer cmd, IVertexBuffer vertexBuffer);
 
+    @Deprecated
     public abstract void execute(ICommandBuffer cmd);
 
     @Override

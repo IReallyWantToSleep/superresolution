@@ -43,31 +43,4 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #endif
 @Mixin(value = IrisRenderingPipeline.class, remap = false)
 public class IrisRenderingPipelineMixin {
-    @Shadow
-    @Final
-    private PackDirectives packDirectives;
-
-    @Shadow
-    @Final
-    private RenderTargets renderTargets;
-
-    #if MC_VER > MC_1_21_5
-    @Inject(method = "<init>", at = @At(value = "TAIL"))
-    public void replaceRenderTarget(ProgramSet programSet, CallbackInfo ci) {
-        RenderTarget main = RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget();
-        GpuTexture depthTexture = main.getDepthTexture();
-        DepthBufferFormat depthBufferFormat = DepthBufferFormat.fromGlEnumOrDefault(GlConst.toGlInternalId(main.getDepthTexture().getFormat()));
-        this.renderTargets.resizeIfNeeded(((Blaze3dRenderTargetExt) main).iris$getDepthBufferVersion(), depthTexture, main.width, main.height, depthBufferFormat, this.packDirectives);
-    }
-
-    @Redirect(method = "beginLevelRendering", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getMainRenderTarget()Lcom/mojang/blaze3d/pipeline/RenderTarget;"))
-    public RenderTarget replaceRenderTarget_(Minecraft instance) {
-        return RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget();
-    }
-
-    @Redirect(method = "finalizeGameRendering", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getMainRenderTarget()Lcom/mojang/blaze3d/pipeline/RenderTarget;"))
-    public RenderTarget replaceRenderTarget__(Minecraft instance) {
-        return RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget();
-    }
-    #endif
 }

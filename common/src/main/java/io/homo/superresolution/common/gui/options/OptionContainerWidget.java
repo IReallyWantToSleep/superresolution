@@ -65,15 +65,13 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
 
         nameLabel = MaterialLabel.create()
                 .text(() -> entry.getName().getString())
-                .fontSize(16)
-                .scheme(scheme);
+                .fontSize(16);
         leftContainer.addChild(nameLabel);
 
         descriptionLabel = MaterialLabel.create()
                 .text(() -> getDescriptionText())
                 .fontSize(12)
-                .lineHeight(14)
-                .scheme(scheme);
+                .lineHeight(14);
         descriptionLabel.style().wrap(true);
         descriptionLabel.layout().setWidthPercent(100);
         descriptionLabel.layout().setMargin(YogaEdge.TOP, 6);
@@ -112,17 +110,6 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
 
     public void addControl(ILayoutElement control) {
         rightContainer.addChild(control);
-    }
-
-    public MaterialScheme scheme() {
-        return scheme;
-    }
-
-    public OptionContainerWidget scheme(MaterialScheme scheme) {
-        this.scheme = scheme;
-        nameLabel.scheme(scheme).color(scheme.onSurface());
-        descriptionLabel.scheme(scheme).color(scheme.onSurfaceVariant());
-        return this;
     }
 
     @Override

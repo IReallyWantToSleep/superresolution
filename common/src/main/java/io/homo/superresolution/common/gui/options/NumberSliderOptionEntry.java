@@ -64,13 +64,6 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
     }
 
     @Override
-    protected NumberSliderOptionEntry setScheme(MaterialScheme scheme) {
-        slider.scheme(scheme);
-        valueLabel.scheme(scheme).color(scheme.onSurfaceVariant());
-        return super.setScheme(scheme);
-    }
-
-    @Override
     protected void initWidget() {
         sliderContainer = new ContainerWidget();
         sliderContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
@@ -79,12 +72,10 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
 
         valueLabel = MaterialLabel.create()
                 .text(() -> formatValue(slider.value()))
-                .fontSize(14)
-                .scheme(scheme);
+                .fontSize(14);
         valueLabel.layout().setMinWidth(50);
 
-        slider = MaterialSlider.create(MaterialSliderSize.Small, SLIDER_WIDTH)
-                .scheme(scheme);
+        slider = MaterialSlider.create(MaterialSliderSize.Small, SLIDER_WIDTH);
         slider.style().valueIndicator(true);
         if (step != null && step.doubleValue() != 0) {
             slider.style().steps(true);
@@ -107,7 +98,6 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
         sliderContainer.addChild(slider);
 
         container.addControl(sliderContainer);
-        container.scheme(scheme);
     }
 
     private String formatValue(Number value) {

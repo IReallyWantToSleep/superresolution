@@ -80,8 +80,7 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
 
         materialSelect = MaterialSelect.<T>create()
                 .width(SELECT_WIDTH)
-                .displayFormatter(nameProvider)
-                .scheme(scheme);
+                .displayFormatter(nameProvider);
         materialSelect.getMenu().style().colors(MaterialMenuColors.VIBRANT);
         if (headerText != null && !headerText.isEmpty()) {
             materialSelect.label(headerText);
@@ -109,15 +108,6 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         selectorContainer.addChild(materialSelect);
 
         container.addControl(selectorContainer);
-        container.scheme(scheme);
-    }
-
-    @Override
-    protected SelectionListOptionEntry<T> setScheme(MaterialScheme scheme) {
-        if (materialSelect != null) {
-            materialSelect.scheme(scheme);
-        }
-        return super.setScheme(scheme);
     }
 
     @Override

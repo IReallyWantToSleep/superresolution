@@ -20,12 +20,12 @@ package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
-import net.neoforged.bus.EventBus;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.IEventBus;
 
 public class MaterialUI {
     public static final IEventBus EVENT_BUS;
+    public static MaterialScheme Scheme = MaterialScheme.defaultDark;
 
     static {
         EVENT_BUS = createEventBus("UI Main");
@@ -55,5 +55,9 @@ public class MaterialUI {
                     throwable.printStackTrace();
                 })
                 .build();
+    }
+
+    public static void setScheme(MaterialScheme scheme) {
+        Scheme = scheme;
     }
 }

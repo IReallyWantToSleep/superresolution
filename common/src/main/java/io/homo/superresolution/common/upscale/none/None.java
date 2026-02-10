@@ -74,7 +74,7 @@ public class None extends AbstractAlgorithm {
     }
 
     public int getOutputTextureId() {
-        return cachedFrameBuffer.getTextureId(FrameBufferAttachmentType.Color);
+        return cachedFrameBuffer == null ? 0 : cachedFrameBuffer.getTextureId(FrameBufferAttachmentType.Color);
     }
 
     @Override
@@ -98,7 +98,9 @@ public class None extends AbstractAlgorithm {
         public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
             int target = resolveBindTarget(bindPoint);
             glBindFramebuffer(target, fboId);
-            if (setViewport) glViewport(0, 0, colorTex.getWidth(), colorTex.getHeight());
+            if (setViewport) {
+                glViewport(0, 0, colorTex.getWidth(), colorTex.getHeight());
+            }
         }
 
         @Override
@@ -133,15 +135,17 @@ public class None extends AbstractAlgorithm {
 
         @Override
         public int getTextureId(FrameBufferAttachmentType attachmentType) {
-            if (attachmentType == FrameBufferAttachmentType.Color)
+            if (attachmentType == FrameBufferAttachmentType.Color) {
                 return Math.toIntExact(colorTex.handle());
+            }
             throw new UnsupportedOperationException();
         }
 
         @Override
         public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
-            if (attachmentType == FrameBufferAttachmentType.Color)
+            if (attachmentType == FrameBufferAttachmentType.Color) {
                 return colorTex;
+            }
             throw new UnsupportedOperationException();
         }
 

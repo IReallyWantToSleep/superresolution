@@ -18,12 +18,11 @@
 
 package io.homo.superresolution.fabric.mixin.compat.sodium;
 
-#if MC_VER > MC_1_20_6
+#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_8
 
 import io.homo.superresolution.api.platform.Platform;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
-#else
-
+#elif MC_VER < MC_1_21_10
 import io.homo.superresolution.api.platform.Platform;
 import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 #endif
@@ -31,13 +30,13 @@ import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-#if MC_VER > MC_1_20_6
+#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_10
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
-#else
+#elif MC_VER < MC_1_21_9
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
@@ -60,6 +59,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+#if MC_VER < MC_1_21_9
 @Mixin(SodiumOptionsGUI.class)
 public class SodiumOptionsGUIMixin extends Screen {
     @Shadow(remap = false)
@@ -77,7 +77,9 @@ public class SodiumOptionsGUIMixin extends Screen {
             at = {@At("RETURN")}
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
-        if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) return;
+        if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
+            return;
+        }
         this.page = new OptionPage(
                 Component.translatable("superresolution.screen.config.name"), ImmutableList.of(
                 OptionGroup.createBuilder()
@@ -110,3 +112,9 @@ public class SodiumOptionsGUIMixin extends Screen {
         }
     }
 }
+
+#else
+@Mixin(Minecraft.class)
+public class SodiumOptionsGUIMixin {
+}
+#endif
