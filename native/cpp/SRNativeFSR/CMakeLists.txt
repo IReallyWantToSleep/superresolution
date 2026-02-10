@@ -13,6 +13,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_definitions(-DON_WIN64)
     add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
     add_definitions(-DON_ANDROID)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
@@ -21,7 +22,6 @@ else()
     message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
 find_package(Vulkan REQUIRED)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
     ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}
