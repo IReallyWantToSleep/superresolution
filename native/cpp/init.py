@@ -7,7 +7,3 @@ path = Path(__file__).resolve().parent
 print("Initializing glslang...")
 os.chdir(path / "SRNativeMain/third_party/glslang")
 os.system(f"{python_executable} update_glslang_sources.py")
-#############tgfx#############
-print("Initializing tgfx...")
-os.chdir(path / "SRNativeMain/third_party/tgfx")
-os.system(f"depsync")
