@@ -62,6 +62,7 @@ public abstract class AbstractWidget<
     }
 
     protected abstract void init();
+
     public void layouting(RenderContext ctx) {
     }
 
@@ -87,17 +88,6 @@ public abstract class AbstractWidget<
         return super.getTransform();
     }
 
-    @Override
-    public void mouseMove(float x, float y) {
-        Vector2f mousePos = new Vector2f(x, y);
-        boolean isHovering = getRawBounds().in(x, y);
-        eventBus.post(new MouseEvent.MouseMoveEvent(mousePos));
-        if (isHovering != this.hovered) {
-            eventBus.post(new WidgetEvent.HoverEvent(mousePos, isHovering));
-            setHovered(isHovering);
-        }
-    }
-
     public void clearHover() {
         if (this.hovered) {
             Vector2f emptyPos = new Vector2f(-1, -1);
@@ -109,6 +99,9 @@ public abstract class AbstractWidget<
 
     @Override
     public void mousePress(float x, float y, int button) {
+        if (isDisabled()) {
+            return;
+        }
         Vector2f mousePos = new Vector2f(x, y);
         if (button == MouseButton.Left.id()) {
             setPressed(true);
@@ -118,6 +111,10 @@ public abstract class AbstractWidget<
 
     @Override
     public void mouseRelease(float x, float y, int button) {
+        if (isDisabled()) {
+            setPressed(false);
+            return;
+        }
         if (button == MouseButton.Left.id()) {
             Vector2f mousePos = new Vector2f(x, y);
             if (isPressed()) {
@@ -128,27 +125,61 @@ public abstract class AbstractWidget<
     }
 
     @Override
+    public void mouseMove(float x, float y) {
+        if (isDisabled()) {
+            if (this.hovered) {
+                Vector2f mousePos = new Vector2f(x, y);
+                eventBus.post(new WidgetEvent.HoverEvent(mousePos, false));
+                setHovered(false);
+            }
+            return;
+        }
+        Vector2f mousePos = new Vector2f(x, y);
+        boolean isHovering = getRawBounds().in(x, y);
+        eventBus.post(new MouseEvent.MouseMoveEvent(mousePos));
+        if (isHovering != this.hovered) {
+            eventBus.post(new WidgetEvent.HoverEvent(mousePos, isHovering));
+            setHovered(isHovering);
+        }
+    }
+
+    @Override
     public void mouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        if (isDisabled()) {
+            return;
+        }
         eventBus.post(new MouseEvent.MouseDragEvent(button, new Vector2f(mouseX, mouseY), new Vector2f(dragX, dragY)));
     }
 
     @Override
     public void mouseScroll(float x, float y, double scrollX) {
+        if (isDisabled()) {
+            return;
+        }
         eventBus.post(new MouseEvent.MouseScrollEvent(new Vector2f(x, y), (float) scrollX));
     }
 
     @Override
     public void keyPress(int keyCode, int scancode, int modifiers) {
+        if (isDisabled()) {
+            return;
+        }
         GuiEventListener.super.keyPress(keyCode, scancode, modifiers);
     }
 
     @Override
     public void keyRelease(int keyCode, int scancode, int modifiers) {
+        if (isDisabled()) {
+            return;
+        }
         GuiEventListener.super.keyRelease(keyCode, scancode, modifiers);
     }
 
     @Override
     public void charTyped(char codePoint, int modifiers) {
+        if (isDisabled()) {
+            return;
+        }
         GuiEventListener.super.charTyped(codePoint, modifiers);
     }
 
@@ -280,6 +311,11 @@ public abstract class AbstractWidget<
     public void render(RenderContext ctx, UIInputState inputState) {
     }
 
+    @Override
+    public int getZIndex() {
+        return style == null ? 0 : style.zIndex();
+    }
+
     public void renderWithChildren(RenderContext ctx, UIInputState inputState) {
         if (!isVisible()) {
             return;
@@ -311,14 +347,12 @@ public abstract class AbstractWidget<
         return false;
     }
 
-
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
         if (!hitTest(absPos)) {
             return null;
         }
         return isInteractive() ? this : null;
     }
-
 
     public boolean isDisabled() {
         return disabled;
@@ -357,11 +391,6 @@ public abstract class AbstractWidget<
     public T setTooltip(String tooltip) {
         this.tooltipSupplier = () -> Optional.ofNullable(tooltip);
         return (T) this;
-    }
-
-    @Override
-    public int getZIndex() {
-        return style == null ? 0 : style.zIndex();
     }
 
     public void destroy() {

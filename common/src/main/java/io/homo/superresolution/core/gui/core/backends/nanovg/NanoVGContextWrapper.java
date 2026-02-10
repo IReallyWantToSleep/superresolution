@@ -40,7 +40,7 @@ public class NanoVGContextWrapper {
     private static Transform S_currentTransform;
     private static Transform S_globalTransform;
     public GlFrameBuffer frameBuffer;
-    public io.homo.superresolution.thirdparty.nanovg.NanoVGContext contextPtr;
+    public io.homo.superresolution.thirdparty.nanovg.NanoVGContext rawContext;
     public long rastPtr = -1;
     public float globalScale = 1.0f;
     /// 状态
@@ -50,7 +50,7 @@ public class NanoVGContextWrapper {
     private float S_alpha = 1f;
 
     public NanoVGContextWrapper(int nvgFlags) {
-        contextPtr = new io.homo.superresolution.thirdparty.nanovg.NanoVGContext(nvgFlags);
+        rawContext = new io.homo.superresolution.thirdparty.nanovg.NanoVGContext(nvgFlags);
         rastPtr = 0;
         frameBuffer = GlFrameBuffer.create(
                 TextureFormat.R11G11B10F,
@@ -99,18 +99,18 @@ public class NanoVGContextWrapper {
             );
         }
         globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
-        contextPtr.beginFrame(
+        rawContext.beginFrame(
                 screenSize.x,
                 screenSize.y,
                 globalScale
         );
-        contextPtr.reset();
-        contextPtr.scale(1, 1);
+        rawContext.reset();
+        rawContext.scale(1, 1);
     }
 
     public void end() {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
-        contextPtr.endFrame();
+        rawContext.endFrame();
         glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) frameBuffer.handle());
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
         glEnable(GL_BLEND);
@@ -133,26 +133,26 @@ public class NanoVGContextWrapper {
     }
 
     public void save() {
-        contextPtr.save();
+        rawContext.save();
     }
 
     public void restore() {
-        contextPtr.restore();
+        rawContext.restore();
     }
 
     public void line(
             float x1, float y1,
             float x2, float y2
     ) {
-        contextPtr.moveTo(x1, y1);
-        contextPtr.lineTo(x2, y2);
+        rawContext.moveTo(x1, y1);
+        rawContext.lineTo(x2, y2);
     }
 
     public void rect(
             float x, float y,
             float width, float height
     ) {
-        contextPtr.rect(x, y, width, height);
+        rawContext.rect(x, y, width, height);
     }
 
     public void roundedRect(
@@ -160,23 +160,23 @@ public class NanoVGContextWrapper {
             float width, float height,
             float radius
     ) {
-        contextPtr.roundedRect(x, y, width, height, radius);
+        rawContext.roundedRect(x, y, width, height, radius);
     }
 
     public void beginPath() {
-        contextPtr.beginPath();
+        rawContext.beginPath();
     }
 
     public void endPath(boolean fill) {
         if (fill) {
-            contextPtr.fill();
+            rawContext.fill();
         } else {
-            contextPtr.stroke();
+            rawContext.stroke();
         }
     }
 
     public void endPath() {
-        contextPtr.fill();
+        rawContext.fill();
     }
 
     public void drawLine(
@@ -228,7 +228,7 @@ public class NanoVGContextWrapper {
             float alpha,
             int image
     ) {
-        return contextPtr.imagePattern(
+        return rawContext.imagePattern(
                 ox,
                 oy,
                 ex,
@@ -248,7 +248,7 @@ public class NanoVGContextWrapper {
     }
 
     public void resetScissor() {
-        contextPtr.resetScissor();
+        rawContext.resetScissor();
     }
 
     public void scissor(
@@ -257,7 +257,7 @@ public class NanoVGContextWrapper {
             float width,
             float height
     ) {
-        contextPtr.scissor(
+        rawContext.scissor(
                 x,
                 y,
                 width,
@@ -269,13 +269,13 @@ public class NanoVGContextWrapper {
         resetTransform();
         if (S_globalTransform != null) {
             float[] globalMat = S_globalTransform.transformMatrix();
-            contextPtr.transform(globalMat[0], globalMat[1], globalMat[2],
+            rawContext.transform(globalMat[0], globalMat[1], globalMat[2],
                     globalMat[3], globalMat[4], globalMat[5]);
         }
 
         if (transform != null) {
             float[] mat = transform.transformMatrix();
-            contextPtr.transform(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
+            rawContext.transform(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
             S_currentTransform = transform;
         }
     }
@@ -293,23 +293,23 @@ public class NanoVGContextWrapper {
     }
 
     public void resetTransform() {
-        contextPtr.resetTransform();
+        rawContext.resetTransform();
         float[] globalScaleMat = Transform.identity().scale(globalScale).transformMatrix();
-        contextPtr.transform(globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
+        rawContext.transform(globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
                 globalScaleMat[3], globalScaleMat[4], globalScaleMat[5]);
         S_currentTransform = null;
     }
 
     public void resetGlobalTransform() {
-        contextPtr.resetTransform();
+        rawContext.resetTransform();
         float[] globalScaleMat = Transform.identity().scale(globalScale).transformMatrix();
-        contextPtr.transform(globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
+        rawContext.transform(globalScaleMat[0], globalScaleMat[1], globalScaleMat[2],
                 globalScaleMat[3], globalScaleMat[4], globalScaleMat[5]);
         S_globalTransform = null;
     }
 
     public NanoVGColor color(Color color) {
-        return contextPtr.colorRGBA(
+        return rawContext.colorRGBA(
                 color.red(),
                 color.green(),
                 color.blue(),
@@ -328,7 +328,7 @@ public class NanoVGContextWrapper {
         NanoVGColor fromNVG = color(from.copy().alpha((int) (globalAlpha() * from.alpha())));
         NanoVGColor toNVG = color(to.copy().alpha((int) (globalAlpha() * to.alpha())));
 
-        NanoVGPaint paint = contextPtr.linearGradient(
+        NanoVGPaint paint = rawContext.linearGradient(
                 startX,
                 startY,
                 endX,
@@ -336,19 +336,21 @@ public class NanoVGContextWrapper {
                 fromNVG,
                 toNVG
         );
+        fromNVG.close();
+        toNVG.close();
         return paint;
     }
 
     public void strokeWidth(float width) {
         S_strokeWidth = width;
-        contextPtr.strokeWidth(width);
+        rawContext.strokeWidth(width);
     }
 
     public void strokeColor(Color color) {
         color = color.copy().alpha((int) (globalAlpha() * color.alpha()));
         S_strokeColor = Color.rgba(color.integer());
         try (NanoVGColor vgColor = color(color)) {
-            contextPtr.strokeColor(vgColor);
+            rawContext.strokeColor(vgColor);
         }
     }
 
@@ -356,7 +358,7 @@ public class NanoVGContextWrapper {
         color = color.copy().alpha((int) (globalAlpha() * color.alpha()));
         S_fillColor = Color.rgba(color.integer());
         try (NanoVGColor vgColor = color(color)) {
-            contextPtr.fillColor(vgColor);
+            rawContext.fillColor(vgColor);
         }
     }
 
@@ -370,7 +372,7 @@ public class NanoVGContextWrapper {
     }
 
     public void fontSize(float size) {
-        contextPtr.fontSize(size);
+        rawContext.fontSize(size);
     }
 
     public Color fillColor() {

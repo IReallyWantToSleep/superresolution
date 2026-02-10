@@ -59,6 +59,37 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
         return false;
     }
 
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        Rectangle bounds = getBounds();
+
+        float contentX = bounds.x + ICON_MARGIN_LEFT;
+        float centerY = bounds.y + bounds.height / 2;
+
+        MaterialSymbol icon = iconSupplier.get();
+        if (icon != null) {
+            Vector2f iconPos = new Vector2f(contentX + ICON_SIZE / 2, centerY);
+            icon.render(ctx, scheme().onSurface(), ICON_SIZE, iconPos);
+            contentX += ICON_SIZE + ICON_TEXT_GAP;
+        }
+
+        String title = titleSupplier.get();
+        if (title != null && !title.isEmpty()) {
+            ctx.drawAlignedText(
+                    ctx.font(),
+                    FONT_SIZE,
+                    title,
+                    contentX,
+                    centerY,
+                    bounds.width - contentX + bounds.x,
+                    bounds.height,
+                    scheme().onSurfaceVariant(),
+                    TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
+                    false
+            );
+        }
+    }
+
     public MaterialNavigationDrawerHeader title(String title) {
         this.titleSupplier = () -> title;
         return this;
@@ -90,36 +121,5 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
         }
         width += ICON_MARGIN_LEFT;
         return width;
-    }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        Rectangle bounds = getBounds();
-
-        float contentX = bounds.x + ICON_MARGIN_LEFT;
-        float centerY = bounds.y + bounds.height / 2;
-
-        MaterialSymbol icon = iconSupplier.get();
-        if (icon != null) {
-            Vector2f iconPos = new Vector2f(contentX + ICON_SIZE / 2, centerY);
-            icon.render(ctx, scheme().onSurface(), ICON_SIZE, iconPos);
-            contentX += ICON_SIZE + ICON_TEXT_GAP;
-        }
-
-        String title = titleSupplier.get();
-        if (title != null && !title.isEmpty()) {
-            ctx.drawAlignedText(
-                    ctx.font(),
-                    FONT_SIZE,
-                    title,
-                    contentX,
-                    centerY,
-                    bounds.width - contentX + bounds.x,
-                    bounds.height,
-                    scheme().onSurface(),
-                    TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
-                    false
-            );
-        }
     }
 }

@@ -55,11 +55,6 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         return this;
     }
 
-    @Override
-    protected boolean isInteractive() {
-        return true;
-    }
-
     public MaterialSwitch toggleChecked() {
         boolean newChecked = !this.checked;
         eventBus.post(new WidgetEvent.ChangeEvent<>(!newChecked, newChecked));
@@ -139,14 +134,19 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         onMousePress((event) -> onPress(event.getMousePosition()));
     }
 
-
-    private void updateRectangle() {
-        setElementSize(MaterialSwitchSize.Default.trackWidth(), MaterialSwitchSize.Default.trackHeight());
-    }
-
     @Override
     public void layouting(RenderContext ctx) {
         updateRectangle();
+    }
+
+    @Override
+    public MaterialSwitchStyle style() {
+        return (MaterialSwitchStyle) style;
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return true;
     }
 
     @Override
@@ -215,7 +215,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 colors.handleColor,
                 true);
 
-        if (isHovered() || hoverAnimator.get() > 0.001) {
+        if (!isDisabled() && (isHovered() || hoverAnimator.get() > 0.001)) {
             ctx.arc(
                     handleX,
                     bounds.getCenterY(),
@@ -258,6 +258,10 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         ctx.endGroup();
     }
 
+    private void updateRectangle() {
+        setElementSize(MaterialSwitchSize.Default.trackWidth(), MaterialSwitchSize.Default.trackHeight());
+    }
+
     private float clamp(float value, float min, float max) {
         return Math.min(max, Math.max(value, min));
     }
@@ -294,11 +298,6 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                     .start();
         }
 
-    }
-
-    @Override
-    public MaterialSwitchStyle style() {
-        return (MaterialSwitchStyle) style;
     }
 
     private void onPress(Vector2f mousePosition) {

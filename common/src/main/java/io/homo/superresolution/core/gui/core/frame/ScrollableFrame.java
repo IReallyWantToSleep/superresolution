@@ -165,10 +165,9 @@ public class ScrollableFrame extends Frame {
         if (root == null) {
             return;
         }
+        layoutWidgets(root, ctx);
 
-        if (isLayoutDirty()) {
-            calculateLayout();
-        }
+        calculateLayout();
 
         update(inputState.frameTime());
 

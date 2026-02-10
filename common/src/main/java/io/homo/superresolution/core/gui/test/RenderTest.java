@@ -20,6 +20,8 @@ package io.homo.superresolution.core.gui.test;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGPaintWrapper;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.utils.Color;
@@ -222,7 +224,7 @@ public class RenderTest {
         float gap = 20;
 
         context.drawAlignedText(context.font(), 16, "不透明栈测试", x, y - 25, 300, 20, Color.rgb(0xFFFFFF), TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_BOTTOM), false);
-        
+
         drawAlphaBox(context, x, y, w, h, "1.0");
 
         x += w + gap;

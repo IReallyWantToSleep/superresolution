@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -133,13 +134,22 @@ public class OptionBuilder {
         @Override
         protected void renderSelf(RenderContext ctx, UIInputState inputState) {
             Rectangle bounds = getBounds();
+            MaterialElevation.draw(
+                    ctx,
+                    1,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                    CORNER_RADIUS
+            );
             ctx.roundedRect(
                     bounds.x,
                     bounds.y,
                     bounds.width,
                     bounds.height,
                     CORNER_RADIUS,
-                    scheme().surfaceContainerLow(),
+                    scheme().surfaceContainer(),
                     true
             );
         }

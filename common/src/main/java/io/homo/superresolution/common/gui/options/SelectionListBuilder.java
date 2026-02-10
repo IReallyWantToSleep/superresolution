@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.gui.options;
 
 import com.google.common.collect.ImmutableList;
+import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,10 +28,20 @@ import java.util.function.Function;
 public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionListOptionEntry<T>, SelectionListBuilder<T>> {
     protected ImmutableList<T> values;
     protected Function<T, String> nameProvider;
+    protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
 
     public SelectionListBuilder(Text name, T value, T[] valuesArray) {
         super(name, value);
         this.values = ImmutableList.copyOf(valuesArray);
+    }
+
+    public @Nullable Function<T, OptionRequirement> getItemEnableRequirement() {
+        return itemEnableRequirement;
+    }
+
+    public SelectionListBuilder<T> setItemEnableRequirement(@Nullable Function<T, OptionRequirement> itemEnableRequirement) {
+        this.itemEnableRequirement = itemEnableRequirement;
+        return this;
     }
 
     @Override
@@ -41,6 +52,7 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
                 this.values,
                 nameProvider
         );
+        entry.setItemEnableRequirement(itemEnableRequirement);
         return finishBuild(entry);
     }
 

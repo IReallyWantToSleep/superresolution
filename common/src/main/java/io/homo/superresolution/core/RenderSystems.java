@@ -89,6 +89,7 @@ public class RenderSystems {
                 .addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
+                .addDeviceExtension("VK_EXT_descriptor_indexing")
                 .addDeviceExtension("VK_NVX_binary_import")
                 .addDeviceExtension("VK_NVX_image_view_handle")
                 .addDeviceExtension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);

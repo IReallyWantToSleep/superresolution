@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-#if MC_VER > MC_1_21_5
+#if MC_VER > MC_1_21_8
 @Mixin(com.mojang.blaze3d.opengl.GlTextureView.class)
 public abstract class GlTextureViewMixin {
     @Shadow

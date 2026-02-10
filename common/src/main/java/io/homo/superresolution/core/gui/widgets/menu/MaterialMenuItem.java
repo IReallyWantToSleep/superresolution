@@ -303,7 +303,9 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             iconColor = iconColor.copy().lerp(selectedIconColor, animProgress);
         }
         ctx.save();
-        overlay.render(ctx, style().colors().stateLayer(scheme()), style().colors().stateLayer(scheme()));
+        if (!isDisabled()) {
+            overlay.render(ctx, style().colors().stateLayer(scheme()), style().colors().stateLayer(scheme()));
+        }
         ctx.restore();
         float checkIconOffset = size.iconSize() + size.iconTextGap();
         float textOffset = animProgress * checkIconOffset;

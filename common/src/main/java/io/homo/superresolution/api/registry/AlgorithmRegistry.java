@@ -20,11 +20,14 @@ package io.homo.superresolution.api.registry;
 
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 
-import java.util.HashMap;
 import java.util.Map;
 
+import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+
 public class AlgorithmRegistry {
-    private static final Map<String, AlgorithmDescription<?>> algorithmMap = new HashMap<>();
+    private static final Map<String, AlgorithmDescription<?>> algorithmMap = new Object2ObjectLinkedOpenHashMap<>();
+    private static final Map<String, Boolean> algorithmSupportCache = new Object2BooleanArrayMap<>();
 
     static {
         AlgorithmDescriptions.registryAlgorithms();
@@ -41,5 +44,18 @@ public class AlgorithmRegistry {
 
     public static AlgorithmDescription<?> getDescriptionByID(String id) {
         return algorithmMap.get(id);
+    }
+
+    public static boolean isAlgorithmSupported(AlgorithmDescription<?> algorithmDescription) {
+        if (!algorithmSupportCache.containsKey(algorithmDescription.getCodeName())) {
+            AlgorithmDescription<?> description = getDescriptionByID(algorithmDescription.getCodeName());
+            if (description == null) {
+                algorithmSupportCache.put(algorithmDescription.getCodeName(), false);
+            } else {
+                boolean supported = description.getRequirement().check().support();
+                algorithmSupportCache.put(algorithmDescription.getCodeName(), supported);
+            }
+        }
+        return algorithmSupportCache.get(algorithmDescription.getCodeName());
     }
 }

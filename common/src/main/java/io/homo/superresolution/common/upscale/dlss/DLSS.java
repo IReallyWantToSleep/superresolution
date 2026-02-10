@@ -209,7 +209,7 @@ public class DLSS extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .usages(TextureUsages.create().sampler().storage())
+                        .usages(TextureUsages.create().sampler().storage().transferDestination())
                         .format(SuperResolutionConfig.getInternalTextureFormat())
                         .width(RenderHandlerManager.getScreenWidth())
                         .height(RenderHandlerManager.getScreenHeight())

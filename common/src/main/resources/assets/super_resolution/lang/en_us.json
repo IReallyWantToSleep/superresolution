@@ -138,5 +138,8 @@
     "superresolution.screen.config.section.config": "Settings",
     "superresolution.screen.config.section.general": "General Settings",
     "superresolution.screen.config.section.advanced": "Advanced Settings",
+    "superresolution.screen.config.section.algorithm": "Algorithm Settings",
+    "superresolution.enum.theme.light": "Light",
+    "superresolution.enum.theme.dark": "Dark",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

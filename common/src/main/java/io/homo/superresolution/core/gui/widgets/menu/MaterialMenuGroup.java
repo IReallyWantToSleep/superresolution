@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.widgets.menu;
 
+import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -39,6 +40,10 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         updateSize();
     }
 
+    public static MaterialMenuGroup create() {
+        return new MaterialMenuGroup();
+    }
+
     public void updateSize() {
         layout().setWidthPercent(100);
         layout().setPadding(YogaEdge.ALL, 4);
@@ -48,6 +53,31 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     @Override
     public void layouting(RenderContext ctx) {
         updateSize();
+    }
+
+    @Override
+    public MaterialMenuStyle style() {
+        return (MaterialMenuStyle) super.style();
+    }
+
+    @Override
+    public void clearHover() {
+        super.clearHover();
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                widget.clearHover();
+            }
+        }
+    }
+
+    @Override
+    public boolean managesChildRendering() {
+        return true;
+    }
+
+    @Override
+    public boolean managesChildEvents() {
+        return true;
     }
 
     public float computeContentWidth() {
@@ -60,46 +90,9 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         return max;
     }
 
-    public static MaterialMenuGroup create() {
-        return new MaterialMenuGroup();
-    }
-
-    @Override
-    protected Rectangle getViewRegion() {
-        return getAbsoluteViewRect();
-    }
-
-    @Override
-    public MaterialMenuStyle style() {
-        return (MaterialMenuStyle) super.style();
-    }
-
     @Override
     protected void init() {
 
-    }
-
-    public MaterialMenuGroup addItem(MaterialMenuItem item) {
-        addChild(item);
-        return this;
-    }
-
-    void setExpandProgress(float progress) {
-        this.expandProgress = progress;
-    }
-
-    public float getExpandProgress() {
-        return expandProgress;
-    }
-
-    @Override
-    public boolean managesChildRendering() {
-        return true;
-    }
-
-    @Override
-    public boolean managesChildEvents() {
-        return true;
     }
 
     @Override
@@ -114,6 +107,23 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
                     //if (widget.hitTest(new org.joml.Vector2f(x, y))) {
                     widget.mouseMove(x, y);
                     // }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void mousePress(float x, float y, int button) {
+        super.mousePress(x, y, button);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                        widget.mousePress(x, y, button);
+                    }
                 }
             }
         }
@@ -154,25 +164,8 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        renderSelf(ctx, inputState);
-    }
-
-    @Override
-    public void mousePress(float x, float y, int button) {
-        super.mousePress(x, y, button);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                        widget.mousePress(x, y, button);
-                    }
-                }
-            }
-        }
+    protected Rectangle getViewRegion() {
+        return getAbsoluteViewRect();
     }
 
     @Override
@@ -224,6 +217,18 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         float animatedHeight = bounds.height * expandProgress;
 
         ctx.save();
+        MaterialElevation.draw(
+                ctx,
+                2,
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                Math.min(bottomLeft, animatedHeight / 2),
+                Math.min(bottomRight, animatedHeight / 2),
+                Math.min(topLeft, animatedHeight / 2),
+                Math.min(topRight, animatedHeight / 2)
+        );
         ctx.beginPath();
         ctx.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
                 Math.min(bottomLeft, animatedHeight / 2), Math.min(bottomRight, animatedHeight / 2), Math.min(topLeft, animatedHeight / 2), Math.min(topRight, animatedHeight / 2));
@@ -238,5 +243,23 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
                 }
             }
         }
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        renderSelf(ctx, inputState);
+    }
+
+    public MaterialMenuGroup addItem(MaterialMenuItem item) {
+        addChild(item);
+        return this;
+    }
+
+    public float getExpandProgress() {
+        return expandProgress;
+    }
+
+    void setExpandProgress(float progress) {
+        this.expandProgress = progress;
     }
 }

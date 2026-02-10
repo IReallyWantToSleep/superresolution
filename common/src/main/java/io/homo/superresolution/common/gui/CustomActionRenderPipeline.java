@@ -17,9 +17,6 @@
  */
 
 package io.homo.superresolution.common.gui;
-
-
-
 #if MC_VER > MC_1_21_5
 
 import net.minecraft.client.renderer.ShaderDefines;
@@ -86,6 +83,5 @@ public class CustomActionRenderPipeline extends RenderPipeline {
 
 #else
 public class CustomActionRenderPipeline {
-
 }
 #endif

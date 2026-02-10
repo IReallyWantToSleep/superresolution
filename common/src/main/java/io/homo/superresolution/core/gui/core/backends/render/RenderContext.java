@@ -103,6 +103,11 @@ public interface RenderContext {
 
     void lineTo(float x, float y);
 
+    IPaint boxGradient(float x, float y, float width,
+                       float height, float radius,
+                       float feather, Color innerColor,
+                       Color outerColor);
+
     void line(float x1, float y1, float x2, float y2);
 
     void rect(float x, float y, float width, float height);

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.widgets.menu;
 
+import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
@@ -39,20 +40,22 @@ import java.util.function.Consumer;
 
 public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     private static final long EXPAND_ANIMATION_DURATION = 300;
-
-    private MaterialMenuSelectionMode selectionMode = MaterialMenuSelectionMode.None;
-    private boolean expanded = true;
-    private Consumer<Boolean> onExpandChanged;
-
     private final Animator.FloatAnimator expandAnimator = Animator.ofFloat(1f, 1f)
             .duration(250)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
+    private MaterialMenuSelectionMode selectionMode = MaterialMenuSelectionMode.None;
+    private boolean expanded = true;
+    private Consumer<Boolean> onExpandChanged;
 
     public MaterialMenu() {
         this.style = new MaterialMenuStyle();
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
         layout().setGap(YogaGutter.COLUMN, 2);
         updateSize();
+    }
+
+    public static MaterialMenu create() {
+        return new MaterialMenu();
     }
 
     public void updateSize() {
@@ -79,6 +82,36 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         updateSize();
     }
 
+    @Override
+    public MaterialMenuStyle style() {
+        return (MaterialMenuStyle) super.style();
+    }
+
+    @Override
+    public void clearHover() {
+        super.clearHover();
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                widget.clearHover();
+            }
+        }
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return expanded || expandAnimator.isRunning();
+    }
+
+    @Override
+    public boolean managesChildRendering() {
+        return true;
+    }
+
+    @Override
+    public boolean managesChildEvents() {
+        return true;
+    }
+
     public float getMenuHeight() {
         MaterialMenuSize size = style().size();
         float totalHeight = 0;
@@ -89,52 +122,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
             }
         }
         return totalHeight;
-    }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        expandAnimator.update();
-        float animProgress = expandAnimator.get();
-
-        if (animProgress <= 0) {
-            return;
-        }
-
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof MaterialMenuGroup group) {
-                group.style().colors(style().colors());
-                group.setExpandProgress(1f);
-                for (ILayoutElement groupChild : group.getChildren()) {
-                    if (groupChild instanceof MaterialMenuItem item) {
-                        item.resetFadeState(true);
-                    }
-                }
-            }
-        }
-
-        ctx.beginGroup(style().zIndex());
-        ctx.save();
-        ctx.pushAlpha(animProgress);
-
-        renderSelf(ctx, inputState);
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget && widget.isVisible()) {
-                widget.renderWithChildren(ctx, inputState);
-            }
-        }
-
-        ctx.popAlpha();
-        ctx.restore();
-        ctx.endGroup();
-    }
-
-    public static MaterialMenu create() {
-        return new MaterialMenu();
-    }
-
-    @Override
-    protected Rectangle getViewRegion() {
-        return getAbsoluteViewRect();
     }
 
     public MaterialMenu expand() {
@@ -168,6 +155,10 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         return this;
     }
 
+    public boolean isExpanded() {
+        return expanded;
+    }
+
     public MaterialMenu setExpanded(boolean expanded) {
         this.expanded = expanded;
         expandAnimator.set(expanded ? 1f : 0f);
@@ -185,33 +176,76 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         return this;
     }
 
-    public boolean isExpanded() {
-        return expanded;
-    }
-
     public MaterialMenu onExpandChanged(Consumer<Boolean> onExpandChanged) {
         this.onExpandChanged = onExpandChanged;
         return this;
     }
 
-    @Override
-    public MaterialMenuStyle style() {
-        return (MaterialMenuStyle) super.style();
+    private boolean isAncestorOf(AbstractWidget<?> potentialAncestor, AbstractWidget<?> descendant) {
+        ILayoutElement current = descendant.getParent();
+        while (current != null) {
+            if (current == potentialAncestor) {
+                return true;
+            }
+            if (current instanceof ILayoutElement) {
+                current = ((ILayoutElement) current).getParent();
+            } else {
+                break;
+            }
+        }
+        return false;
     }
 
     @Override
-    protected boolean isInteractive() {
-        return expanded || expandAnimator.isRunning();
+    public Transform getFullTransform() {
+        if (getLayoutNode().getPositionType() == YogaPositionType.ABSOLUTE) {
+            return Transform.identity();
+        }
+
+        Transform selfTransform = style().transform();
+
+        if (getParent() instanceof AbstractLayoutElement parentElement) {
+            Transform parentFullTransform = parentElement.getFullTransform();
+
+            if (parentFullTransform.isIdentity()) {
+                return selfTransform;
+            }
+            if (selfTransform.isIdentity()) {
+                return parentFullTransform;
+            }
+            float[] combined = Transform.multiply(parentFullTransform.getMatrix(), selfTransform.getMatrix());
+            return new Transform(combined);
+        }
+
+        return selfTransform;
     }
 
     @Override
-    public boolean managesChildRendering() {
-        return true;
+    public boolean hitTest(org.joml.Vector2f absolutePos) {
+        if (!isInteractive()) {
+            return false;
+        }
+
+        Transform fullTransform = getFullTransform();
+        org.joml.Vector2f testPos = absolutePos;
+
+        if (!fullTransform.isIdentity()) {
+            testPos = fullTransform.inverseTransformPoint(absolutePos);
+        }
+
+        Rectangle visibleBounds = getVisibleBounds();
+        return visibleBounds.in(testPos);
+    }
+
+    private Rectangle getVisibleBounds() {
+        Rectangle rawBounds = getRawBounds();
+        float animProgress = expandAnimator.get();
+        float currentHeight = rawBounds.height;
+        return new Rectangle(rawBounds.x, rawBounds.y, rawBounds.width, currentHeight);
     }
 
     @Override
-    public boolean managesChildEvents() {
-        return true;
+    protected void init() {
     }
 
     @Override
@@ -238,7 +272,7 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
         for (ILayoutElement child : getChildren()) {
             if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
+                if (widget.isVisible()) {
                     if (widget == topChild || (topChild != null && isAncestorOf(widget, topChild))) {
                         widget.mouseMove(x, y);
                     } else if (widget.isHovered()) {
@@ -247,21 +281,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
                 }
             }
         }
-    }
-
-    private boolean isAncestorOf(AbstractWidget<?> potentialAncestor, AbstractWidget<?> descendant) {
-        ILayoutElement current = descendant.getParent();
-        while (current != null) {
-            if (current == potentialAncestor) {
-                return true;
-            }
-            if (current instanceof ILayoutElement) {
-                current = ((ILayoutElement) current).getParent();
-            } else {
-                break;
-            }
-        }
-        return false;
     }
 
     @Override
@@ -326,54 +345,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
-    public Transform getFullTransform() {
-        if (getLayoutNode().getPositionType() == YogaPositionType.ABSOLUTE) {
-            return Transform.identity();
-        }
-
-        Transform selfTransform = style().transform();
-
-        if (getParent() instanceof AbstractLayoutElement parentElement) {
-            Transform parentFullTransform = parentElement.getFullTransform();
-
-            if (parentFullTransform.isIdentity()) {
-                return selfTransform;
-            }
-            if (selfTransform.isIdentity()) {
-                return parentFullTransform;
-            }
-            float[] combined = Transform.multiply(parentFullTransform.getMatrix(), selfTransform.getMatrix());
-            return new Transform(combined);
-        }
-
-        return selfTransform;
-    }
-
-    private Rectangle getVisibleBounds() {
-        Rectangle rawBounds = getRawBounds();
-        float animProgress = expandAnimator.get();
-        float currentHeight = rawBounds.height;
-        return new Rectangle(rawBounds.x, rawBounds.y, rawBounds.width, currentHeight);
-    }
-
-    @Override
-    public boolean hitTest(org.joml.Vector2f absolutePos) {
-        if (!isInteractive()) {
-            return false;
-        }
-
-        Transform fullTransform = getFullTransform();
-        org.joml.Vector2f testPos = absolutePos;
-
-        if (!fullTransform.isIdentity()) {
-            testPos = fullTransform.inverseTransformPoint(absolutePos);
-        }
-
-        Rectangle visibleBounds = getVisibleBounds();
-        return visibleBounds.in(testPos);
-    }
-
-    @Override
     public AbstractWidget<?> findInteractiveWidgetAt(org.joml.Vector2f absPos) {
         if (!hitTest(absPos)) {
             return null;
@@ -394,7 +365,47 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
-    protected void init() {
+    protected Rectangle getViewRegion() {
+        return getAbsoluteViewRect();
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        expandAnimator.update();
+        float animProgress = expandAnimator.get();
+
+        if (animProgress <= 0) {
+            return;
+        }
+
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialMenuGroup group) {
+                group.style().colors(style().colors());
+                group.setExpandProgress(1f);
+                for (ILayoutElement groupChild : group.getChildren()) {
+                    if (groupChild instanceof MaterialMenuItem item) {
+                        item.resetFadeState(true);
+                    }
+                }
+            }
+        }
+
+        ctx.beginGroup(style().zIndex());
+        ctx.save();
+        ctx.pushAlpha(animProgress);
+
+
+        renderSelf(ctx, inputState);
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget && widget.isVisible()) {
+                widget.renderWithChildren(ctx, inputState);
+            }
+        }
+
+
+        ctx.popAlpha();
+        ctx.restore();
+        ctx.endGroup();
     }
 
     public MaterialMenu addGroup(MaterialMenuGroup group) {

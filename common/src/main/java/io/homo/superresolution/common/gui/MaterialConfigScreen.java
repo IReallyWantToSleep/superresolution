@@ -20,10 +20,15 @@ package io.homo.superresolution.common.gui;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
+import io.homo.superresolution.common.config.special.SpecialConfig;
+import io.homo.superresolution.common.config.special.SpecialConfigDescription;
+import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.common.gui.options.EnumSelectorBuilder;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
 import io.homo.superresolution.common.gui.options.OptionCategory;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -35,6 +40,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
+import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.gui.widgets.SpacerWidget;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
@@ -48,8 +54,11 @@ import org.joml.Vector2f;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
+    private final Screen parentScreen;
     private MaterialScheme materialScheme;
     private String currentContentKey = "general";
     private Map<String, Frame> contentFrames;
@@ -57,7 +66,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private YogaNode contentLayout;
     private Frame currentContentFrame;
     private MaterialNavigationDrawer drawer;
-    private final Screen parentScreen;
 
     public MaterialConfigScreen(Screen parentScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
@@ -87,6 +95,35 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         SuperResolutionConfig.SPEC.load();
     }
 
+    @Override
+    public void onClose() {
+        if (minecraft != null) {
+            minecraft.setScreen(parentScreen);
+        }
+    }
+
+    @Override
+    public void draw(RenderContext ctx, UIInputState inputState) {
+        if (Minecraft.getInstance().level == null) {
+            Vector2f screenSize = MinecraftWindow.getWindowSize();
+            ctx.rect(
+                    0,
+                    0,
+                    screenSize.x,
+                    screenSize.y,
+                    materialScheme.background(),
+                    true);
+        }
+
+        float drawerWidth = drawer.getPreferredWidth(ctx);
+        if (drawerWidth > 0) {
+            navigationDrawerLayout.setWidth(drawerWidth);
+            view.markLayoutDirty();
+        }
+
+        super.draw(ctx, inputState);
+    }
+
     private Frame getOrCreateContentFrame(String key) {
         if (contentFrames.containsKey(key)) {
             return contentFrames.get(key);
@@ -98,6 +135,16 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 break;
             case "advanced":
                 frame = createAdvancedFrame();
+                break;
+            case "algorithm":
+                frame = createAlgorithmFrame();
+                break;
+            case "experimental":
+                frame = createExperimentalFrame();
+                break;
+            case "appearance":
+                frame = createAppearanceFrame();
+                //frame = createEmptyFrame();
                 break;
             default:
                 frame = createEmptyFrame();
@@ -131,10 +178,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         container.layout().setWidthPercent(100);
 
         drawer = MaterialNavigationDrawer.create()
-                .addHeader("Super Resolution", LogoRenderer.Logo)
+                .addHeader(Text.literal("Super Resolution").getString(), LogoRenderer.Logo)
                 .addSectionHeader(Text.translatable("superresolution.screen.config.section.config").getString())
                 .addItem(Text.translatable("superresolution.screen.config.section.general").getString(), MaterialSymbols.iconSettings(), "general")
                 .addItem(Text.translatable("superresolution.screen.config.section.advanced").getString(), MaterialSymbols.iconTune(), "advanced")
+                .addItem(Text.translatable("superresolution.screen.config.section.algorithm").getString(), MaterialSymbols.iconMemory(), "algorithm")
+                .addItem(Text.translatable("superresolution.screen.config.section.appearance").getString(), MaterialSymbols.iconPalette(), "appearance")
+                .addItem(Text.translatable("superresolution.screen.config.section.experimental").getString(), MaterialSymbols.iconScience(), "experimental")
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
                     switchContentFrame(key);
@@ -148,38 +198,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
-    private Frame createGeneralFrame() {
-        ScrollableFrame frame = new ScrollableFrame();
-        frame.setContentPadding(20, 0, 20, 0);
-        frame.setVerticalScrollEnabled(true);
-        frame.setHorizontalScrollEnabled(false);
-
-        ContainerWidget container = new ContainerWidget();
-        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
-        container.layout().setWidthPercent(100);
-        container.layout().setGap(YogaGutter.COLUMN, 15);
-        container.layout().setAlignItems(YogaAlign.FLEX_START);
-
-        SpacerWidget spacerTop = SpacerWidget.vertical(20f);
-        container.addChild(spacerTop);
-
-        MaterialLabel title = MaterialLabel.create()
-                .text(Text.translatable("superresolution.screen.config.section.general").getString())
-                .fontSize(24)
-                .color(MaterialScheme::primary);
-        title.layout().setMargin(YogaEdge.BOTTOM, 20);
-        container.addChild(title);
-
-        OptionCategory category = new OptionCategory(Text.translatable("superresolution.screen.config.category.general"));
-        OptionBuilder builder = new OptionBuilder(category);
-        builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
-
+    private Frame createAppearanceFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.appearance"));
+        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.appearance"));
         builder.enumSelectorOption(
                         Text.translatable("superresolution.screen.config.options.label.theme"),
                         MaterialTheme.class,
                         SuperResolutionConfig.getTheme())
                 .setDefaultValue(MaterialTheme.Light)
-                .setEnumNameProvider(Enum::name)
+                .setEnumNameProvider(t -> Text.translatable("superresolution.enum.theme." + t.name().toLowerCase()).getString())
                 .setSaveConsumer(value -> {
                     SuperResolutionConfig.setTheme(value);
                     MaterialUI.setScheme(MaterialScheme.from(value, Color.from("#6750A4")));
@@ -187,6 +216,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 })
                 .build();
 
+        addOptionGroupToContainer(container, builder);
+        finalizeFrame(frame, container);
+        return frame;
+    }
+
+    private Frame createGeneralFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.general"));
+
+        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.general"));
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
                         SuperResolutionConfig.isEnableUpscaleOriginal())
@@ -209,6 +249,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
                 .setDefaultValue(() -> AlgorithmDescriptions.SGSR1)
                 .setSaveConsumer(algo -> SuperResolutionConfig.setUpscaleAlgorithm((AlgorithmDescription<?>) algo))
+                .setItemEnableRequirement((value) -> {
+                    AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) value;
+                    return OptionRequirement.all(
+                            () -> AlgorithmRegistry.isAlgorithmSupported(algorithmDescription),
+                            () -> {
+                                if (algorithmDescription.equals(AlgorithmDescriptions.DLSS) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
+                                    return false;
+                                }
+                                if (algorithmDescription.equals(AlgorithmDescriptions.XESS) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
+                                    return false;
+                                }
+                                return true;
+                            }
+                    );
+                })
                 .build();
         builder.numberOption(
                         Text.translatable("superresolution.screen.config.options.label.upscale_ratio"),
@@ -244,13 +299,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     SuperResolutionConfig.setSharpness(value.floatValue());
                 })
                 .build();
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.generate_motion_vectors"),
-                        SuperResolutionConfig.isGenerateMotionVectors())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
-                .build();
 
         builder.enumSelectorOption(
                         Text.translatable("superresolution.screen.config.options.label.capture_mode"),
@@ -266,42 +314,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDefaultValue(() -> false)
                 .setSaveConsumer(SuperResolutionConfig::setPauseGameOnGui)
                 .build();
-        OptionBuilder.OptionsContainer optionsContainer = builder.build();
-        optionsContainer.layout().setWidthPercent(100);
-        container.addChild(optionsContainer);
 
-        SpacerWidget spacerBottom = SpacerWidget.vertical(20f);
-        container.addChild(spacerBottom);
-
-        frame.setRoot(container);
+        addOptionGroupToContainer(container, builder);
+        finalizeFrame(frame, container);
         return frame;
     }
 
     private Frame createAdvancedFrame() {
-        ScrollableFrame frame = new ScrollableFrame();
-        frame.setContentPadding(20, 0, 20, 0);
-        frame.setVerticalScrollEnabled(true);
-        frame.setHorizontalScrollEnabled(false);
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.advanced"));
 
-        ContainerWidget container = new ContainerWidget();
-        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
-        container.layout().setWidthPercent(100);
-        container.layout().setGap(YogaGutter.COLUMN, 15);
-        container.layout().setAlignItems(YogaAlign.FLEX_START);
-
-        SpacerWidget spacerTop = SpacerWidget.vertical(20f);
-        container.addChild(spacerTop);
-
-        MaterialLabel title = MaterialLabel.create()
-                .text(Text.translatable("superresolution.screen.config.section.advanced").getString())
-                .fontSize(24)
-                .color(MaterialScheme::primary);
-        title.layout().setMargin(YogaEdge.BOTTOM, 20);
-        container.addChild(title);
-
-        OptionCategory category = new OptionCategory(Text.translatable("superresolution.screen.config.category.advanced"));
-        OptionBuilder builder = new OptionBuilder(category);
-        builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
+        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.advanced"));
 
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
@@ -345,15 +369,194 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
                 .build();
 
+        addOptionGroupToContainer(container, builder);
+        finalizeFrame(frame, container);
+        return frame;
+    }
+
+    private Frame createExperimentalFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.experimental"));
+
+        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.experimental"));
+
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_experimental_features"),
+                        SuperResolutionConfig.isEnableExperimentalFeatures())
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_experimental_features"))
+                .setDefaultValue(() -> false)
+                .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalFeatures)
+                .build();
+
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.generate_motion_vectors"),
+                        SuperResolutionConfig.isGenerateMotionVectors())
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
+                .setDefaultValue(() -> false)
+                .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
+                .setEnableRequirement(SuperResolutionConfig::isEnableExperimentalFeatures)
+                .build();
+        addOptionGroupToContainer(container, builder);
+        finalizeFrame(frame, container);
+        return frame;
+    }
+
+    private ScrollableFrame createStandardScrollableFrame() {
+        ScrollableFrame frame = new ScrollableFrame();
+        frame.setContentPadding(20, 0, 20, 0);
+        frame.setVerticalScrollEnabled(true);
+        frame.setHorizontalScrollEnabled(false);
+        return frame;
+    }
+
+    private ContainerWidget createStandardContainer() {
+        ContainerWidget container = new ContainerWidget();
+        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        container.layout().setWidthPercent(100);
+        container.layout().setGap(YogaGutter.COLUMN, 15);
+        container.layout().setAlignItems(YogaAlign.FLEX_START);
+        return container;
+    }
+
+    private void addFrameTitle(ContainerWidget container, Text title) {
+        container.addChild(SpacerWidget.vertical(20f));
+        MaterialLabel titleLabel = MaterialLabel.create()
+                .text(title.getString())
+                .fontSize(24)
+                .color(MaterialScheme::primary);
+        titleLabel.layout().setMargin(YogaEdge.BOTTOM, 20);
+        container.addChild(titleLabel);
+    }
+
+    private OptionBuilder createOptionBuilder(Text categoryName) {
+        OptionCategory category = new OptionCategory(categoryName);
+        OptionBuilder builder = new OptionBuilder(category);
+        builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
+        return builder;
+    }
+
+    private void addOptionGroupToContainer(ContainerWidget container, OptionBuilder builder) {
         OptionBuilder.OptionsContainer optionsContainer = builder.build();
         optionsContainer.layout().setWidthPercent(100);
         container.addChild(optionsContainer);
+    }
 
-        SpacerWidget spacerBottom = SpacerWidget.vertical(20f);
-        container.addChild(spacerBottom);
+    // --- Algorithm special config frame ---
 
+    private void addLabeledOptionGroup(ContainerWidget container, Text groupLabel, Consumer<OptionBuilder> configurator) {
+        MaterialLabel label = MaterialLabel.create()
+                .text(groupLabel.getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        label.layout().setMargin(YogaEdge.TOP, 8);
+        label.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(label);
+
+        OptionBuilder builder = createOptionBuilder(groupLabel);
+        configurator.accept(builder);
+        addOptionGroupToContainer(container, builder);
+    }
+
+    private void finalizeFrame(ScrollableFrame frame, ContainerWidget container) {
+        container.addChild(SpacerWidget.vertical(20f));
         frame.setRoot(container);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Frame createAlgorithmFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.algorithm"));
+
+        for (String key : SuperResolutionConfig.SPECIAL.description.keySet()) {
+            Pair<SpecialConfig, String> specialConfigPair = SuperResolutionConfig.SPECIAL.description.get(key);
+            SpecialConfig specialConfig = specialConfigPair.left();
+            String displayName = specialConfigPair.right();
+            Map<String, SpecialConfigDescription<?>> configDescriptions = specialConfig.getDescriptions();
+
+            if (configDescriptions.isEmpty()) {
+                continue;
+            }
+
+            addLabeledOptionGroup(container, Text.literal(displayName), builder -> {
+                for (String configKey : configDescriptions.keySet()) {
+                    SpecialConfigDescription<?> desc = configDescriptions.get(configKey);
+                    buildSpecialConfigOption(builder, desc);
+                }
+            });
+        }
+
+        finalizeFrame(frame, container);
         return frame;
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void buildSpecialConfigOption(OptionBuilder builder, SpecialConfigDescription<?> desc) {
+        Text optionName = Text.literal(desc.getName().getString());
+        Optional<Component> tooltip = desc.getTooltip();
+
+        switch (desc.getType()) {
+            case BOOLEAN: {
+                SpecialConfigDescription<Boolean> boolDesc = (SpecialConfigDescription<Boolean>) desc;
+                var opt = builder.booleanOption(optionName, boolDesc.getValue())
+                        .setDefaultValue(() -> boolDesc.getDefaultValue())
+                        .setSaveConsumer(boolDesc.getSaveConsumer());
+                if (tooltip.isPresent()) {
+                    opt.setDescription(Text.literal(tooltip.get().getString()));
+                }
+                opt.build();
+                break;
+            }
+            case ENUM: {
+                SpecialConfigDescription enumDesc = (SpecialConfigDescription) desc;
+                Class enumClass = enumDesc.getClazz();
+                Enum enumValue = (Enum) enumDesc.getValue();
+                Enum defaultEnumValue = (Enum) enumDesc.getDefaultValue();
+                EnumSelectorBuilder<?> opt = (EnumSelectorBuilder<?>) builder.enumSelectorOption(optionName, enumClass, enumValue)
+                        .setDefaultValue(defaultEnumValue)
+                        .setSaveConsumer(enumDesc.getSaveConsumer());
+                if (enumDesc.isValueNameIsSupplier()) {
+                    opt.setEnumNameProvider(e ->
+                            ((Function<Object, Optional<Component>>) enumDesc.getValueNameSupplierAsObject())
+                                    .apply(e).orElse(Component.empty()).getString()
+                    );
+                }
+                if (tooltip.isPresent()) {
+                    opt.setDescription(Text.literal(tooltip.get().getString()));
+                }
+                opt.build();
+                break;
+            }
+            case FLOAT: {
+                SpecialConfigDescription<Float> floatDesc = (SpecialConfigDescription<Float>) desc;
+                var opt = builder.numberOption(
+                                optionName,
+                                floatDesc.getValue(),
+                                floatDesc.getValueRange().right(),
+                                floatDesc.getValueRange().left()
+                        )
+                        .setStep(0.01)
+                        .setDefaultValue(() -> floatDesc.getDefaultValue())
+                        .setSaveConsumer(v -> floatDesc.getSaveConsumer().accept(v.floatValue()));
+                if (floatDesc.isValueNameIsSupplier()) {
+                    opt.setValueFormater(v ->
+                            floatDesc.getValueNameSupplierAsObject().apply(v)
+                                    .map(c -> c.getString())
+                                    .orElse(String.format("%.2f", v.doubleValue()))
+                    );
+                } else {
+                    opt.setValueFormater(v -> String.format("%.2f", v.doubleValue()));
+                }
+                if (tooltip.isPresent()) {
+                    opt.setDescription(Text.literal(tooltip.get().getString()));
+                }
+                opt.build();
+                break;
+            }
+            default:
+                break;
+        }
     }
 
     private Frame createEmptyFrame() {
@@ -365,40 +568,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
-    @Override
-    public void draw(RenderContext ctx, UIInputState inputState) {
-        if (Minecraft.getInstance().level == null) {
-            Vector2f screenSize = MinecraftWindow.getWindowSize();
-            ctx.rect(
-                    0,
-                    0,
-                    screenSize.x,
-                    screenSize.y,
-                    materialScheme.background(),
-                    true);
-        }
-
-        float drawerWidth = drawer.getPreferredWidth(ctx);
-        if (drawerWidth > 0) {
-            navigationDrawerLayout.setWidth(drawerWidth);
-            view.markLayoutDirty();
-        }
-
-        super.draw(ctx, inputState);
-    }
-
     public void setMaterialScheme(MaterialScheme scheme) {
         this.materialScheme = scheme;
     }
 
     public boolean isPauseScreen() {
         return SuperResolutionConfig.isPauseGameOnGui();
-    }
-
-    @Override
-    public void onClose() {
-        if (minecraft != null) {
-            minecraft.setScreen(parentScreen);
-        }
     }
 }

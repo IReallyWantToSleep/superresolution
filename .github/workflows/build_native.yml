@@ -20,7 +20,7 @@ jobs:
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
           vulkan-query-version: 1.4.321.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader,SPIRV-Cross,Glslang,SPIRV-Tools
+          vulkan-components: Vulkan-Headers, Vulkan-Loader,SPIRV-Cross,Glslang
           vulkan-use-cache: true
       - name: Build FFX SDK (Linux)
         run: |
@@ -58,7 +58,7 @@ jobs:
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
           vulkan-query-version: 1.4.321.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader,SPIRV-Cross,Glslang,SPIRV-Tools
+          vulkan-components: Vulkan-Headers, Vulkan-Loader,SPIRV-Cross,Glslang
           vulkan-use-cache: true
       - name: Build FFX SDK (Windows)
         shell: powershell

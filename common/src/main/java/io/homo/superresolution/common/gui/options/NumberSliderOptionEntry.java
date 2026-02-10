@@ -119,9 +119,9 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        container.render(ctx, inputState);
-
+    public void tick(RenderContext ctx) {
+        boolean enabled = updateRequirements();
+        slider.setDisabled(!enabled);
     }
 
     @Override

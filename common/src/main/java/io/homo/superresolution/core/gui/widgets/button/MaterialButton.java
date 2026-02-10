@@ -142,11 +142,6 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         return of(text, MaterialButtonSize.Medium, MaterialButtonVariant.Text);
     }
 
-    @Override
-    public MaterialButtonStyle style() {
-        return (MaterialButtonStyle) style;
-    }
-
     public MaterialButtonSize size() {
         return style().size();
     }
@@ -216,25 +211,6 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     @Override
-    public void destroy() {
-        if (overlay != null) {
-            overlay.destroy();
-            overlay = null;
-        }
-        if (pressAnimator != null) {
-            if (pressAnimator.isRunning()) {
-                pressAnimator.cancel();
-            }
-            pressAnimator = null;
-        }
-    }
-
-    @Override
-    protected boolean isInteractive() {
-        return true;
-    }
-
-    @Override
     public void layouting(RenderContext ctx) {
         float textContextWidth = ctx.measureTextWidth(textContextSupplier.get(), size().fontSize(), size().fontSize() + 1);
 
@@ -248,6 +224,16 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                 textContextWidth +
                 style().size().padding();
         setElementSize(width, style().size().height());
+    }
+
+    @Override
+    public MaterialButtonStyle style() {
+        return (MaterialButtonStyle) style;
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return true;
     }
 
     @Override
@@ -271,9 +257,11 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                     true);
         }
 
-        overlay.renderHoverOverlay(
-                ctx,
-                colors.coverColor);
+        if (!isDisabled()) {
+            overlay.renderHoverOverlay(
+                    ctx,
+                    colors.coverColor);
+        }
 
         if (colors.borderColor != null) {
             ctx.strokeWidth(1);
@@ -287,13 +275,15 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                     false);
         }
 
-        overlay.renderRippleOverlay(
-                ctx,
-                style().variant() == MaterialButtonVariant.Elevated ? scheme().primary()
-                        : style().variant() == MaterialButtonVariant.Filled ? scheme().onPrimary()
-                        : style().variant() == MaterialButtonVariant.Tonal ? scheme().onSecondaryContainer()
-                        : style().variant() == MaterialButtonVariant.Text ? scheme().primary()
-                        : scheme().onSurfaceVariant());
+        if (!isDisabled()) {
+            overlay.renderRippleOverlay(
+                    ctx,
+                    style().variant() == MaterialButtonVariant.Elevated ? scheme().primary()
+                            : style().variant() == MaterialButtonVariant.Filled ? scheme().onPrimary()
+                            : style().variant() == MaterialButtonVariant.Tonal ? scheme().onSecondaryContainer()
+                            : style().variant() == MaterialButtonVariant.Text ? scheme().primary()
+                            : scheme().onSurfaceVariant());
+        }
 
         float iconContextWidth = 0;
         if (iconContextSupplier.get() != null && colors.iconColor != null) {
@@ -320,6 +310,20 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
                 TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                 false);
         ctx.endGroup();
+    }
+
+    @Override
+    public void destroy() {
+        if (overlay != null) {
+            overlay.destroy();
+            overlay = null;
+        }
+        if (pressAnimator != null) {
+            if (pressAnimator.isRunning()) {
+                pressAnimator.cancel();
+            }
+            pressAnimator = null;
+        }
     }
 
     private void updateRectangle() {
