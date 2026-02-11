@@ -26,21 +26,12 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.minecraft.*;
-import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
-import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
-import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
@@ -48,7 +39,6 @@ import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
@@ -56,7 +46,6 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
-import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -203,14 +192,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         if (!checkRenderWorldCallPos(type)) {
             return;
         }
-
+        PerformanceTracker.push("Upscale");
         if (SuperResolutionConfig.isEnableUpscale()) {
             RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
         }
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write, true);
         //push SRUpscale
         GlDebug.pushGroup(0x7190000, "SR Upscale");
-        PerformanceRecorder.beginUpscale();
         try (GlState ignored = new GlState()) {
             AlgorithmManager.update();
             if (SuperResolutionConfig.isEnableUpscale()) {
@@ -322,12 +310,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
             renderTarget.clearFrameBuffer();
             GlDebug.popGroup();
         }
-        PerformanceRecorder.endUpscale();
         //pop SRUpscale
         GlDebug.popGroup();
         GlDebug.pushGroup(0x7180001, "SR Reset Render Target");
         RenderHandlerManager.getOriginRenderTarget().bind(FrameBufferBindPoint.Write);
         GlDebug.popGroup();
+
+        PerformanceTracker.pop("Upscale");
     }
 
 

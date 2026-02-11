@@ -28,8 +28,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
-import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
-import io.homo.superresolution.common.perf.PerformanceRecorder;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
@@ -43,8 +42,6 @@ import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import org.joml.Vector2f;
-import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
-import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL41;
@@ -82,7 +79,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
                 RenderHandlerManager.getFrameCount(),
-                PerformanceRecorder.getCpuFrameTimeMs(),
+                PerformanceTracker.getLastResultCPU("Frame"),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,
@@ -111,8 +108,12 @@ public class IrisShaderCompatUpscaleDispatcher {
 
     private static boolean configEquals(SRShaderCompatData.OutputTexture c1,
                                         SRShaderCompatData.OutputTexture c2) {
-        if (c1 == c2) return true;
-        if (c1 == null || c2 == null) return false;
+        if (c1 == c2) {
+            return true;
+        }
+        if (c1 == null || c2 == null) {
+            return false;
+        }
 
         return c1.enabled == c2.enabled &&
                 c1.targetNames.equals(c2.targetNames) &&
@@ -122,8 +123,12 @@ public class IrisShaderCompatUpscaleDispatcher {
 
     private static boolean configEquals(SRShaderCompatData.InputTexture c1,
                                         SRShaderCompatData.InputTexture c2) {
-        if (c1 == c2) return true;
-        if (c1 == null || c2 == null) return false;
+        if (c1 == c2) {
+            return true;
+        }
+        if (c1 == null || c2 == null) {
+            return false;
+        }
 
         return c1.enabled == c2.enabled &&
                 c1.sourceName.equals(c2.sourceName) &&
@@ -131,10 +136,14 @@ public class IrisShaderCompatUpscaleDispatcher {
     }
 
     public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
-        if (!SuperResolutionConfig.isEnableUpscale()) return;
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return;
+        if (!SuperResolutionConfig.isEnableUpscale()) {
+            return;
+        }
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
+            return;
+        }
 
-        PerformanceRecorder.beginUpscale();
+        PerformanceTracker.push("Upscale");
 
         SRShaderCompatData.UpscaleConfig currentConfig = IrisShaderCompatUtils.getCurrentConfig().get().upscale;
         boolean needUpdate = false;
@@ -160,20 +169,23 @@ public class IrisShaderCompatUpscaleDispatcher {
             outputConfig = currentConfig.outputTextures.get("upscaled_color");
 
             if (colorTexture == null || !configEquals(colorConfig, lastColorConfig) || needUpdate) {
-                if (colorTexture != null && colorTexture.getInternalTexture() != null)
+                if (colorTexture != null && colorTexture.getInternalTexture() != null) {
                     colorTexture.getInternalTexture().destroy();
+                }
                 colorTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, colorConfig);
                 lastColorConfig = colorConfig;
             }
             if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig) || needUpdate) {
-                if (depthTexture != null && depthTexture.getInternalTexture() != null)
+                if (depthTexture != null && depthTexture.getInternalTexture() != null) {
                     depthTexture.getInternalTexture().destroy();
+                }
                 depthTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, depthConfig);
                 lastDepthConfig = depthConfig;
             }
             if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig) || needUpdate) {
-                if (motionVectorsTexture != null && motionVectorsTexture.getInternalTexture() != null)
+                if (motionVectorsTexture != null && motionVectorsTexture.getInternalTexture() != null) {
                     motionVectorsTexture.getInternalTexture().destroy();
+                }
                 motionVectorsTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, motionConfig);
                 lastMotionConfig = motionConfig;
             }
@@ -194,7 +206,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 }
             }
         }
-        GlDebug.pushGroup(64108436, "SRUpscale");
+        GlDebug.pushGroup(64108436, "SR Upscale");
         AlgorithmManager.update();
         if (SuperResolutionConfig.isGenerateMotionVectors()) {
             MotionVectorsGenerator.update(
@@ -274,6 +286,6 @@ public class IrisShaderCompatUpscaleDispatcher {
                 }
             }
         }
-        PerformanceRecorder.endUpscale();
+        PerformanceTracker.pop("Upscale");
     }
 }

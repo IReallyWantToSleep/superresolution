@@ -146,12 +146,10 @@ public class ScrollableFrame extends Frame {
         tempNode.addChildAt(root.getLayoutNode(), 0);
         float layoutWidth = enableHorizontalScroll ? Float.NaN : viewportWidth;
         float layoutHeight = enableVerticalScroll ? Float.NaN : viewportHeight;
-        CaptureTree.calculateLayoutWithCapture(
-                tempNode,
+        tempNode.calculateLayout(
                 layoutWidth,
                 layoutHeight,
-                YogaDirection.LTR,
-                Path.of("test.capture.json")
+                YogaDirection.LTR
         );
         tempNode.calculateLayout(layoutWidth, layoutHeight);
 

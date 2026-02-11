@@ -25,6 +25,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import net.minecraft.client.Camera;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
@@ -62,6 +63,7 @@ public abstract class GameRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
+            PerformanceTracker.push("Level Render");
             RenderHandlerManager.onRenderWorldBegin(CallType.GAME_RENDERER);
         }
     }
@@ -107,6 +109,7 @@ public abstract class GameRendererMixin {
                 }
             }
             #endif
+            PerformanceTracker.pop("Level Render");
         }
     }
 
@@ -117,12 +120,12 @@ public abstract class GameRendererMixin {
             ci.cancel();
         }
         //#endif
-        PerformanceInfo.begin("gameRenderer");
+        PerformanceTracker.push("Main Render");
     }
 
     @Inject(at = @At(value = "RETURN"), method = "render")
     private void onRenderEnd(CallbackInfo ci) {
-        PerformanceInfo.end("gameRenderer");
+        PerformanceTracker.pop("Main Render");
     }
 
     @Inject(at = @At(value = "HEAD"), method = "renderItemInHand")

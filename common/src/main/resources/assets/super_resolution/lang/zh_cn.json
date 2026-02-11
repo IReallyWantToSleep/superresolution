@@ -147,6 +147,15 @@
     "superresolution.screen.config.section.experimental": "实验性功能",
     "superresolution.screen.config.options.label.enable_experimental_features": "启用实验性功能",
     "superresolution.screen.config.options.tooltip.enable_experimental_features": "启用后将开放某些不完善的功能（比如DLSS,XeSS），这些功能可能会出现不稳定或未知的问题，甚至导致游戏崩溃",
+    "superresolution.screen.config.section.profiling": "性能分析",
+    "superresolution.screen.config.section.performance": "性能数据",
+    "superresolution.screen.config.section.information": "信息",
+    "superresolution.screen.config.section.environment": "硬件与环境",
+    "superresolution.screen.config.section.about": "关于",
+    "superresolution.screen.config.section.performance.chart.frame": "帧",
+    "superresolution.screen.config.section.performance.chart.main_render": "主渲染",
+    "superresolution.screen.config.section.performance.chart.level_render": "世界渲染",
+    "superresolution.screen.config.section.performance.chart.upscale": "升采样",
     "superresolution.enum.theme.light": "浅色",
     "superresolution.enum.theme.dark": "深色"
 }

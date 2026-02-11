@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,18 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.upscale.nis.enums;
+package io.homo.superresolution.core.gui.widgets.chart;
 
-public enum NISGPUArchitecture {
-    NVIDIA_Generic(0),
-    AMD_Generic(1),
-    Intel_Generic(2),
-    NVIDIA_Generic_fp16(3);
-    private final int value;
-    NISGPUArchitecture(int value) {
-        this.value = value;
-    }
-    public int getValue() {
-        return value;
-    }
+public enum MaterialChartType {
+    Bar,
+    Line,
+    Curve
 }

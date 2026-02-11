@@ -657,6 +657,14 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGC
 JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBreakLines
   (JNIEnv *, jclass, jlong, jstring, jfloat);
 
+/*
+ * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
+ * Method:    nLineStyle
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineStyle
+  (JNIEnv *, jclass, jlong, jint);
+
 #ifdef __cplusplus
 }
 #endif

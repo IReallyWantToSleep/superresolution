@@ -28,6 +28,9 @@ public class IrisFramebufferUtils {
         int prevRead = glGetInteger(GL_READ_FRAMEBUFFER_BINDING);
         int prevDraw = glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
 
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fboId);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboId);
+
         int id = GL41.glGetFramebufferAttachmentParameteri(
                 GL_FRAMEBUFFER,
                 GL_DEPTH_ATTACHMENT,

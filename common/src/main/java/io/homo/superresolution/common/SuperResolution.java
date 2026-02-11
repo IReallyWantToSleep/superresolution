@@ -33,7 +33,6 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.core.NativeLibManager;
@@ -318,7 +317,6 @@ public final class SuperResolution implements Resizable, Destroyable {
             currentAlgorithm.destroy();
         }
         AlgorithmManager.destroy();
-        PerformanceRecorder.cleanup();
         RenderSystems.destroy();
     }
 }

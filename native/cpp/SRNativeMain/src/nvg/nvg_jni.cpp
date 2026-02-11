@@ -723,6 +723,12 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
     ctx->FontFaceId(font);
 }
 
+JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineStyle(JNIEnv *, jclass, jlong ptr, jint lineStyle)
+{
+    NanoVGContext *ctx = (NanoVGContext *)ptr;
+    ctx->LineStyle(lineStyle);
+}
+
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontFace(JNIEnv *env, jclass, jlong ptr, jstring font)
 {
     NanoVGContext *ctx = (NanoVGContext *)ptr;
@@ -825,13 +831,13 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGC
     return env->NewObject(resultClass, constructor, result.ascender, result.descender, result.lineHeight);
 }
 
-JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBreakLines(JNIEnv *env, jclass, jlong ptr, jstring string, jfloat breakRowWidth)
+JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBreakLines(
+    JNIEnv *env, jclass, jlong ptr, jstring string, jfloat breakRowWidth)
 {
     NanoVGContext *ctx = (NanoVGContext *)ptr;
     const char *stringStr = env->GetStringUTFChars(string, nullptr);
-
-    std::vector<NVGtextRow> rows = ctx->TextBreakLines(stringStr, nullptr, breakRowWidth);
-
+    std::string cppStr(stringStr);
+    std::vector<NVGtextRow> rows = ctx->TextBreakLines(cppStr, nullptr, breakRowWidth);
     env->ReleaseStringUTFChars(string, stringStr);
 
     jclass rowClass = env->FindClass("io/homo/superresolution/thirdparty/nanovg/NVGtextRow");

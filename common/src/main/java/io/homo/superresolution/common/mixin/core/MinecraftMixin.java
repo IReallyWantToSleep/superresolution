@@ -22,6 +22,7 @@ import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -63,14 +64,14 @@ public abstract class MinecraftMixin {
             Minecraft.getInstance().resizeDisplay();
         }
         org.lwjgl.opengl.GL11.glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
-        PerformanceInfo.begin("runTick");
-        RenderHandlerManager.onRenderBegin();
+        PerformanceTracker.push("Frame");
+        RenderHandlerManager.onFrameBegin();
     }
 
     @Inject(at = @At(value = "RETURN"), method = "runTick")
     private void onRenderEnd(CallbackInfo ci) {
-        PerformanceInfo.end("runTick");
-        RenderHandlerManager.onRenderEnd();
+        RenderHandlerManager.onFrameEnd();
+        PerformanceTracker.pop("Frame");
     }
 
     @Inject(method = "resizeDisplay", at = @At(value = "HEAD"), cancellable = true)

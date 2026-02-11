@@ -72,7 +72,7 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
         descriptionLabel = MaterialLabel.create()
                 .text(() -> getDescriptionText())
                 .color((MaterialScheme::onSurfaceVariant))
-                .fontSize(12)
+                .fontSize(11.5f)
                 .lineHeight(14);
         descriptionLabel.style().wrap(true);
         descriptionLabel.layout().setWidthPercent(100);
