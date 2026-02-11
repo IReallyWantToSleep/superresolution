@@ -427,3 +427,8 @@ void NanoVGContext::RoundedRectEllipse(float x, float y, float w, float h, float
 {
     nvgRoundedRectEllipse(ctx, x, y, w, h, rw, rh);
 }
+
+void NanoVGContext::LineStyle(int lineStyle)
+{
+    
+}

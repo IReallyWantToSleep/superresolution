@@ -20,7 +20,6 @@ package io.homo.superresolution.common.gui;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
-import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
@@ -35,6 +34,7 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.gui.*;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -42,6 +42,9 @@ import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.gui.widgets.SpacerWidget;
+import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
+import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
+import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
 import io.homo.superresolution.core.utils.Color;
@@ -83,7 +86,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         Frame navigationDrawerFrame = createNavigationDrawerFrame();
         navigationDrawerLayout = getView().addFrame(navigationDrawerFrame);
-        navigationDrawerLayout.setMinHeightPercent(100);
         navigationDrawerLayout.setFlexShrink(0);
         navigationDrawerLayout.setPadding(YogaEdge.ALL, 0);
 
@@ -120,6 +122,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             navigationDrawerLayout.setWidth(drawerWidth);
             view.markLayoutDirty();
         }
+        drawer.layout().setMinHeight(ctx.viewportHeight());
+        view.markLayoutDirty();
 
         super.draw(ctx, inputState);
     }
@@ -146,6 +150,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 frame = createAppearanceFrame();
                 //frame = createEmptyFrame();
                 break;
+            case "performance":
+                frame = createPerformanceFrame();
+                break;
             default:
                 frame = createEmptyFrame();
         }
@@ -170,7 +177,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private Frame createNavigationDrawerFrame() {
-        Frame frame = new Frame();
+        Frame frame = new ScrollableFrame();
         //frame.setHorizontalScrollEnabled(false);
         //frame.setVerticalScrollEnabled(true);
         ContainerWidget container = new ContainerWidget();
@@ -185,6 +192,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .addItem(Text.translatable("superresolution.screen.config.section.algorithm").getString(), MaterialSymbols.iconMemory(), "algorithm")
                 .addItem(Text.translatable("superresolution.screen.config.section.appearance").getString(), MaterialSymbols.iconPalette(), "appearance")
                 .addItem(Text.translatable("superresolution.screen.config.section.experimental").getString(), MaterialSymbols.iconScience(), "experimental")
+                .addSectionHeader(Text.translatable("superresolution.screen.config.section.profiling").getString())
+                .addItem(Text.translatable("superresolution.screen.config.section.performance").getString(), MaterialSymbols.iconSpeed(), "performance")
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
                     switchContentFrame(key);
@@ -442,8 +451,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         container.addChild(optionsContainer);
     }
 
-    // --- Algorithm special config frame ---
-
     private void addLabeledOptionGroup(ContainerWidget container, Text groupLabel, Consumer<OptionBuilder> configurator) {
         MaterialLabel label = MaterialLabel.create()
                 .text(groupLabel.getString())
@@ -557,6 +564,64 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             default:
                 break;
         }
+    }
+
+    private Frame createPerformanceFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.performance"));
+
+        boolean detailedProfiling = SuperResolutionConfig.isEnableDetailedProfiling();
+
+        Pair<String, Text>[] operations = new Pair[]{
+                Pair.of("Frame", Text.translatable("superresolution.screen.config.section.performance.chart.frame")),
+                Pair.of("Main Render", Text.translatable("superresolution.screen.config.section.performance.chart.main_render")),
+                Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
+                Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),
+        };
+
+        for (Pair<String, Text> operation : operations) {
+            MaterialLabel sectionLabel = MaterialLabel.create()
+                    .text(operation.right().getString())
+                    .fontSize(18)
+                    .color(MaterialScheme::secondary);
+            sectionLabel.layout().setMargin(YogaEdge.TOP, 12);
+            sectionLabel.layout().setMargin(YogaEdge.BOTTOM, 6);
+            container.addChild(sectionLabel);
+
+            MaterialChart cpuChart = MaterialChart.create()
+                    .title(operation.right().getString())
+                    .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Curve, 128))
+                    .addSeries(new MaterialChartDataSeries("GPU (ms)", Color.from("#BA53FF"), MaterialChartType.Curve, 128))
+                    .autoRange()
+                    .valueFormatter(v -> String.format("%.2f ms", v))
+                    .updateCallback(chart -> {
+                        long[] cpuData = PerformanceTracker.getAllResultsCPU(operation.left());
+                        MaterialChartDataSeries cpuSeries = chart.getSeries(0);
+                        float[] msData = new float[cpuData.length];
+                        for (int i = 0; i < cpuData.length; i++) {
+                            msData[i] = cpuData[i] / 1_000_000f;
+                        }
+                        cpuSeries.setData(msData);
+                        long[] gpuData = PerformanceTracker.getAllResultsGPU(operation.left());
+                        MaterialChartDataSeries gpuSeries = chart.getSeries(1);
+                        msData = new float[gpuData.length];
+                        for (int i = 0; i < gpuData.length; i++) {
+                            msData[i] = gpuData[i] / 1_000_000f;
+                        }
+                        gpuSeries.setData(msData);
+                    })
+                    .updateInterval(0); //每帧
+            cpuChart.style()
+                    .showAverage(true)
+                    .showGrid(true)
+                    .showLegend(true);
+            cpuChart.layout().setWidthPercent(100);
+            cpuChart.setElementHeight(180);
+            container.addChild(cpuChart);
+        }
+        finalizeFrame(frame, container);
+        return frame;
     }
 
     private Frame createEmptyFrame() {

@@ -384,13 +384,13 @@ public class XeSS extends AbstractAlgorithm {
     }
 
     @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(outputColorGlTexture.handle());
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputFrameBuffer;
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFrameBuffer;
+    public int getOutputTextureId() {
+        return Math.toIntExact(outputColorGlTexture.handle());
     }
 
     @Override
@@ -401,6 +401,11 @@ public class XeSS extends AbstractAlgorithm {
                 originJitter.x,
                 originJitter.y // Y轴取反
         );
+    }
+
+    @Override
+    public boolean isSupportJitter() {
+        return true;
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
@@ -417,10 +422,5 @@ public class XeSS extends AbstractAlgorithm {
          * (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
          * );
          */
-    }
-
-    @Override
-    public boolean isSupportJitter() {
-        return true;
     }
 }

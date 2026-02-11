@@ -31,7 +31,6 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
-import io.homo.superresolution.common.perf.PerformanceRecorder;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
@@ -58,7 +57,6 @@ public class RenderHandlerManager {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
-        PerformanceRecorder.initialize();
         updateHandler();
     }
 
@@ -69,7 +67,9 @@ public class RenderHandlerManager {
 
 
     private static boolean needUpdateHandler() {
-        if (handler == null) return true;
+        if (handler == null) {
+            return true;
+        }
         if (
                 handler instanceof MinecraftRenderHandler &&
                         ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
@@ -99,12 +99,10 @@ public class RenderHandlerManager {
         }
     }
 
-    public static void onRenderBegin() {
-        PerformanceRecorder.beginFrame();
+    public static void onFrameBegin() {
     }
 
-    public static void onRenderEnd() {
-        PerformanceRecorder.endFrame();
+    public static void onFrameEnd() {
         frameCount++;
     }
 
@@ -114,9 +112,12 @@ public class RenderHandlerManager {
         if (SuperResolution.cachedWidth != RenderHandlerManager.getScreenWidth() || SuperResolution.cachedHeight != RenderHandlerManager.getScreenHeight()) {
             SuperResolution.getInstance().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         }
-        if (type == CallType.LEVEL_RENDERER) isRenderingWorld = true;
-        if (!checkRenderWorldCallPos(type)) return;
-        PerformanceRecorder.beginWorld();
+        if (type == CallType.LEVEL_RENDERER) {
+            isRenderingWorld = true;
+        }
+        if (!checkRenderWorldCallPos(type)) {
+            return;
+        }
 
         shouldApplyScale = true;
         if (RenderHandlerManager.needCapture) {
@@ -139,9 +140,10 @@ public class RenderHandlerManager {
     }
 
     public static void onRenderWorldEnd(CallType type) {
-        if (type == CallType.LEVEL_RENDERER) isRenderingWorld = false;
+        if (type == CallType.LEVEL_RENDERER) {
+            isRenderingWorld = false;
+        }
         if (checkRenderWorldCallPos(type)) {
-            PerformanceRecorder.endWorld();
             handler.onRenderWorldEnd(type);
             SuperResolutionAPI.EVENT_BUS.post(new LevelRenderEndEvent());
             if (RenderHandlerManager.needCapture) {

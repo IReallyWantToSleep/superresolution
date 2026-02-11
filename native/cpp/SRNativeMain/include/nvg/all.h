@@ -132,4 +132,5 @@ public:
     std::vector<NVGtextRow> TextBreakLines(const std::string &string, const std::string *end, float breakRowWidth);
     void RoundedRectComplex(float x, float y, float w, float h, float tl, float tr, float bl, float br);
     void RoundedRectEllipse(float x, float y, float w, float h, float rw, float rh);
+    void LineStyle(int lineStyle);
 };

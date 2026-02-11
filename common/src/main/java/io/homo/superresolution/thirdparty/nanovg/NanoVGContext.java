@@ -342,6 +342,10 @@ public class NanoVGContext {
         nTextBox(nativeHandle, x, y, breakRowWidth, string);
     }
 
+    public void lineStyle(int lineStyle) {
+        nLineStyle(nativeHandle, lineStyle);
+    }
+
     public TextBoundsResult textBounds(float x, float y, String string) {
         return nTextBounds(nativeHandle, x, y, string);
     }
@@ -530,4 +534,6 @@ public class NanoVGContext {
     private static native TextMetricsResult nTextMetrics(long ctx);
 
     private static native NVGtextRow[] nTextBreakLines(long ctx, String string, float breakRowWidth);
+
+    private static native void nLineStyle(long ctx, int lineStyle);
 }

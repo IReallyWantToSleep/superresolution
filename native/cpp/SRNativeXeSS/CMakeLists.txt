@@ -18,7 +18,7 @@ if(MSVC)
     add_compile_options(/utf-8 /ZI)
 endif()
 find_package(Vulkan REQUIRED)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
     ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}

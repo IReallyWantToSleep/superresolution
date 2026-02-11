@@ -146,10 +146,10 @@ configurations {
 
 tasks.register("genJNIHeader", JavaCompile) {
     def outputDir = file("../native/cpp/SRNativeMain/include")
-    def sourceFile = file("../common/src/main/java/io/homo/superresolution/shared/SuperResolutionNative.java")
+    def sourceFile = file("../common/src/main/java/io/homo/superresolution/core/SuperResolutionNative.java")
 
-    source = fileTree(dir: "../common/src/main/java", include: "**/*.java")
-    classpath = configurations.compileClasspath
+    source = fileTree(dir: "../common/src/main/java", include: ["SuperResolutionNative.java", "**/thirdparty/nanovg/*.java"])
+    classpath = sourceSets.getByName("main").compileClasspath
     destinationDirectory.set(file("${buildDir}/jni-temp"))
     options.headerOutputDirectory.set(outputDir)
     options.annotationProcessorPath = configurations.annotationProcessor

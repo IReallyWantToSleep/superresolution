@@ -15,7 +15,6 @@ else()
     message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
 find_package(Vulkan REQUIRED)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
     ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}
@@ -34,7 +33,7 @@ set_target_properties(SR_DLSS_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionDLSS
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(SR_DLSS_LIB
         SR_MAIN_LIB
-        nvsdk_ngx_s
+        nvsdk_ngx_s_dbg
         ${Vulkan_LIBRARIES}
     )
 else()
