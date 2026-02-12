@@ -218,6 +218,7 @@ extern "C"
         {
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context create failed");
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            delete privateData;
             return SR_RETURN_CODE_ERROR;
         }
         else
@@ -231,6 +232,9 @@ extern "C"
         else
         {
             privateData->isAvailable = false;
+            context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
+            privateData->messageCallback = desc->messageCallback;
+            context->userContext = privateData;
             return (SRReturnCode)SR_RETURN_CODE_OK;
         }
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
@@ -250,8 +254,13 @@ extern "C"
 
     SR_API SRReturnCode srXeSSDestroyUpscaleContext(SRUpscaleContext *context)
     {
+        if (!context || !context->userContext)
+        {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
         SRXeSSPrivateData *privateData = (SRXeSSPrivateData *)context->userContext;
         g_xessFunctions.xessDestroyContext(privateData->xessContext);
+        delete privateData;
         context->userContext = nullptr;
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
@@ -264,7 +273,7 @@ extern "C"
         {
             xess_version_t version;
             g_xessFunctions.xessGetVersion(&version);
-            SRQueryVersionResult outResult = {};
+            static SRQueryVersionResult outResult = {};
             outResult.versionId = SR_MAKE_VERSION(version.major, version.minor, version.patch);
             outResult.versionNumber = SR_MAKE_VERSION(version.major, version.minor, version.patch);
             result->data = &outResult;
@@ -278,14 +287,14 @@ extern "C"
                 ((SRXeSSPrivateData *)(context->userContext))->xessContext,
                 &pOutputResolution,
                 &pBindingProperties);
-            SRQueryGpuMemoryResult outResult = {};
+            static SRQueryGpuMemoryResult outResult = {};
             outResult.gpuMemory = pBindingProperties.tempBufferHeapSize + pBindingProperties.tempTextureHeapSize;
             result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
         {
-            SRQueryAvailabilityResult outResult = {};
+            static SRQueryAvailabilityResult outResult = {};
             outResult.isAvailable = ((SRXeSSPrivateData *)(context->userContext))->isAvailable;
             result->data = &outResult;
             break;

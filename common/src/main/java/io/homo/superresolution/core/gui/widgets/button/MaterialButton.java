@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.widgets.button;
 
+import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialWidgetOverlay;
@@ -246,6 +247,17 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         ButtonColors colors = getButtonColors();
         ctx.beginGroup(style().zIndex());
         float cornerSize = getCornerSize();
+        if (style().variant() == MaterialButtonVariant.Elevated) {
+            MaterialElevation.draw(
+                    ctx,
+                    1,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                    Math.min(cornerSize, bounds.height / 2)
+            );
+        }
         if (colors.backgroundColor != null) {
             ctx.roundedRect(
                     bounds.x,

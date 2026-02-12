@@ -99,7 +99,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000002);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000003);
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
 

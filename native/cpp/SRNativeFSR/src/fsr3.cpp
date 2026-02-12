@@ -77,7 +77,12 @@ extern "C"
         size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
         void *scratchBuffer = calloc(1, scratchBufferSize);
         FfxInterface *ffxInterface = new FfxInterface();
-        SRFSR_CHECK(ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1));
+        if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1); _rc != FFX_OK)
+        {
+            free(scratchBuffer);
+            delete ffxInterface;
+            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        }
 
         FfxFsr3UpscalerContext *fsr3Context = new FfxFsr3UpscalerContext();
 
@@ -93,14 +98,53 @@ extern "C"
 
     SR_API SRReturnCode srFfxFsr3DestroyUpscaleContext(SRUpscaleContext *context)
     {
+        if (!context || !context->userContext)
+        {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+
         SRFsr3PrivateData *privateData = (SRFsr3PrivateData *)context->userContext;
-        ffxFsr3UpscalerContextDestroy(privateData->context);
-        free(privateData->scratchBuffer);
+        
+        if (!privateData->context)
+        {
+            if (privateData->scratchBuffer)
+            {
+                free(privateData->scratchBuffer);
+                privateData->scratchBuffer = nullptr;
+            }
+            delete privateData->ffxInterface;
+            delete privateData;
+            context->userContext = nullptr;
+            return SR_RETURN_CODE_ERROR;
+        }
+
+        FfxErrorCode errorCode = ffxFsr3UpscalerContextDestroy(privateData->context);
+        
+        if (errorCode != FFX_OK)
+        {
+            if (context->desc.messageCallback)
+            {
+                context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context destroy failed");
+                context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(errorCode).c_str());
+            }
+        }
+        
+        if (privateData->scratchBuffer)
+        {
+            free(privateData->scratchBuffer);
+            privateData->scratchBuffer = nullptr;
+        }
+        
         delete privateData->context;
-        // delete privateData->interface;
-        // delete privateData;
+        privateData->context = nullptr;
+        
+        delete privateData->ffxInterface;
+        privateData->ffxInterface = nullptr;
+        
+        delete privateData;
         context->userContext = nullptr;
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        
+        return (errorCode != FFX_OK) ? (SRReturnCode)SR_RETURN_CODE_ERROR : (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3QueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
@@ -109,7 +153,7 @@ extern "C"
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
         {
-            SRQueryVersionResult outResult = {};
+            static SRQueryVersionResult outResult = {};
             outResult.versionId = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
             outResult.versionNumber = SR_MAKE_VERSION(FFX_FSR3UPSCALER_VERSION_MAJOR, FFX_FSR3UPSCALER_VERSION_MINOR, FFX_FSR3UPSCALER_VERSION_PATCH);
             result->data = &outResult;
@@ -119,14 +163,14 @@ extern "C"
         {
             FfxEffectMemoryUsage usage = {};
             ffxFsr3UpscalerContextGetGpuMemoryUsage(((SRFsr3PrivateData *)context->userContext)->context, &usage);
-            SRQueryGpuMemoryResult outResult = {};
+            static SRQueryGpuMemoryResult outResult = {};
             outResult.gpuMemory = usage.totalUsageInBytes;
             result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
         {
-            SRQueryAvailabilityResult outResult = {};
+            static SRQueryAvailabilityResult outResult = {};
             outResult.isAvailable = true;
             result->data = &outResult;
             break;
