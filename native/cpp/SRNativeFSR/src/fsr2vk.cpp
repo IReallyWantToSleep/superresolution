@@ -80,7 +80,12 @@ extern "C"
         size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
         void *scratchBuffer = calloc(1, scratchBufferSize);
         FfxInterface *ffxInterface = new FfxInterface();
-        SRFSR_CHECK(ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1));
+        if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1); _rc != FFX_OK)
+        {
+            free(scratchBuffer);
+            delete ffxInterface;
+            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+        }
 
         FfxFsr2Context *fsr2Context = new FfxFsr2Context();
 
@@ -96,14 +101,52 @@ extern "C"
 
     SR_API SRReturnCode srFfxFsr2VkDestroyUpscaleContext(SRUpscaleContext *context)
     {
+        if (!context || !context->userContext)
+        {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+
         SRFsr2PrivateData *privateData = (SRFsr2PrivateData *)context->userContext;
-        ffxFsr2ContextDestroy(privateData->context);
-        free(privateData->scratchBuffer);
+        
+        if (!privateData->context)
+        {
+            if (privateData->scratchBuffer)
+            {
+                free(privateData->scratchBuffer);
+                privateData->scratchBuffer = nullptr;
+            }
+            delete privateData->ffxInterface;
+            delete privateData;
+            context->userContext = nullptr;
+            return SR_RETURN_CODE_ERROR;
+        }
+
+        FfxErrorCode errorCode = ffxFsr2ContextDestroy(privateData->context);
+        
+        if (errorCode != FFX_OK)
+        {
+            if (context->desc.messageCallback)
+            {
+                context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 Context destroy failed");
+            }
+        }
+        
+        if (privateData->scratchBuffer)
+        {
+            free(privateData->scratchBuffer);
+            privateData->scratchBuffer = nullptr;
+        }
+        
         delete privateData->context;
+        privateData->context = nullptr;
+        
         delete privateData->ffxInterface;
+        privateData->ffxInterface = nullptr;
+        
         delete privateData;
         context->userContext = nullptr;
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        
+        return (errorCode != FFX_OK) ? (SRReturnCode)SR_RETURN_CODE_ERROR : (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr2VkQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
@@ -112,7 +155,7 @@ extern "C"
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
         {
-            SRQueryVersionResult outResult = {};
+            static SRQueryVersionResult outResult = {};
             outResult.versionId = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
             outResult.versionNumber = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
             result->data = &outResult;
@@ -122,14 +165,14 @@ extern "C"
         {
             FfxEffectMemoryUsage usage = {};
             ffxFsr2ContextGetGpuMemoryUsage(((SRFsr2PrivateData *)context->userContext)->context, &usage);
-            SRQueryGpuMemoryResult outResult = {};
+            static SRQueryGpuMemoryResult outResult = {};
             outResult.gpuMemory = usage.totalUsageInBytes;
             result->data = &outResult;
             break;
         }
         case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
         {
-            SRQueryAvailabilityResult outResult = {};
+            static SRQueryAvailabilityResult outResult = {};
             outResult.isAvailable = true;
             result->data = &outResult;
             break;
@@ -161,6 +204,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->color.desc.usage),
                     },
+                     .state = FFX_RESOURCE_STATE_GENERIC_READ
             };
         if (desc->depth.exist)
             dispatchDesc.depth = {
@@ -176,6 +220,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->depth.desc.usage),
                     },
+                     .state = FFX_RESOURCE_STATE_GENERIC_READ
             };
         if (desc->motionVectors.exist)
             dispatchDesc.motionVectors = {
@@ -191,6 +236,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->motionVectors.desc.usage),
                     },
+                     .state = FFX_RESOURCE_STATE_GENERIC_READ
             };
         if (desc->exposure.exist)
             dispatchDesc.exposure = {
@@ -206,6 +252,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->exposure.desc.usage),
                     },
+                     .state = FFX_RESOURCE_STATE_GENERIC_READ
             };
         if (desc->reactive.exist)
             dispatchDesc.reactive = {
@@ -221,6 +268,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->reactive.desc.usage),
                     },
+                     .state = FFX_RESOURCE_STATE_GENERIC_READ
             };
         if (desc->transparencyAndComposition.exist)
             dispatchDesc.transparencyAndComposition = {
@@ -236,6 +284,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->transparencyAndComposition.desc.usage),
                     },
+                    .state = FFX_RESOURCE_STATE_GENERIC_READ
             };
         if (desc->output.exist)
             dispatchDesc.output = {
@@ -251,6 +300,7 @@ extern "C"
                         .flags = FFX_RESOURCE_FLAGS_NONE,
                         .usage = srTextureResourceUsageToFfx(desc->output.desc.usage),
                     },
+                .state = FFX_RESOURCE_STATE_UNORDERED_ACCESS
             };
 
         dispatchDesc.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};

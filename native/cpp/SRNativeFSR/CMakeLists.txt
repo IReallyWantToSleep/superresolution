@@ -21,6 +21,9 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 else()
     message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
+if(MSVC)
+    add_compile_options(/utf-8 /ZI)
+endif()
 find_package(Vulkan REQUIRED)
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
@@ -57,7 +60,4 @@ else()
         ffx_fsr3upscaler_x64
         ${Vulkan_LIBRARIES}
     )
-endif()
-if(MSVC)
-    add_compile_options(/utf-8 /ZI)
 endif()

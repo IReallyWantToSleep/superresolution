@@ -22,6 +22,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 import org.joml.Vector2f;
@@ -31,31 +32,20 @@ import java.util.List;
 
 public class View {
     private final List<FrameEntry> frames = new ArrayList<>();
-
-    public YogaNode getRootNode() {
-        return rootNode;
-    }
-
     private final YogaNode rootNode;
-
     private float viewportWidth;
     private float viewportHeight;
     private boolean layoutDirty = true;
-
-    private static class FrameEntry {
-        final Frame frame;
-        final YogaNode layoutNode;
-
-        FrameEntry(Frame frame, YogaNode layoutNode) {
-            this.frame = frame;
-            this.layoutNode = layoutNode;
-        }
-    }
+    private MaterialDialog activeDialog;
 
     public View() {
         this.rootNode = new YogaNode();
         this.rootNode.setDebugName("ViewRoot");
         this.rootNode.setFlexDirection(YogaFlexDirection.ROW);
+    }
+
+    public YogaNode getRootNode() {
+        return rootNode;
     }
 
     public void setViewport(float width, float height) {
@@ -102,7 +92,9 @@ public class View {
     }
 
     public void calculateLayout() {
-        if (!layoutDirty) return;
+        if (!layoutDirty) {
+            return;
+        }
 
         rootNode.setWidth(viewportWidth);
         rootNode.setHeight(viewportHeight);
@@ -137,7 +129,7 @@ public class View {
             YogaNode node = entry.layoutNode;
             float x = node.getLayoutX();
             float y = node.getLayoutY();
-            
+
             ctx.save();
             ctx.translate(x, y);
 
@@ -145,9 +137,38 @@ public class View {
 
             ctx.restore();
         }
+
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
+            activeDialog.render(ctx, inputState);
+        }
+    }
+
+    public void showDialog(MaterialDialog dialog) {
+        this.activeDialog = dialog;
+        dialog.show(this);
+    }
+
+    public void dismissDialog() {
+        if (activeDialog != null) {
+            activeDialog.dismiss();
+            activeDialog = null;
+        }
+    }
+
+    public MaterialDialog getActiveDialog() {
+        return activeDialog;
+    }
+
+    public void onDialogDismissed(MaterialDialog dialog) {
+        if (activeDialog == dialog) {
+            activeDialog = null;
+        }
     }
 
     public void dispatchMouseMove(float x, float y) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseMove(x, y)) {
+            return;
+        }
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
             float frameX = node.getLayoutX();
@@ -158,6 +179,13 @@ public class View {
     }
 
     public void dispatchMousePress(float x, float y, int button) {
+        if (activeDialog != null) {
+            activeDialog.handleMousePress(x, y, button);
+            //正在淡入时依旧让Frame接受事件
+            if (!(!activeDialog.isDismissing() && activeDialog.isShowing())) {
+                return;
+            }
+        }
         for (int i = frames.size() - 1; i >= 0; i--) {
             FrameEntry entry = frames.get(i);
             YogaNode node = entry.layoutNode;
@@ -174,6 +202,13 @@ public class View {
     }
 
     public void dispatchMouseRelease(float x, float y, int button) {
+        if (activeDialog != null) {
+            activeDialog.handleMouseRelease(x, y, button);
+            //正在淡入时依旧让Frame接受事件，避免类似于按钮被点击后正常接收Press事件但未接收Release事件的问题
+            if (!(!activeDialog.isDismissing() && activeDialog.isShowing())) {
+                return;
+            }
+        }
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
             float frameX = node.getLayoutX();
@@ -184,6 +219,9 @@ public class View {
     }
 
     public void dispatchMouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseDrag(mouseX, mouseY, dragX, dragY, button)) {
+            return;
+        }
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
             float frameX = node.getLayoutX();
@@ -194,6 +232,9 @@ public class View {
     }
 
     public void dispatchMouseScroll(float x, float y, double scrollX) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseScroll(x, y, scrollX)) {
+            return;
+        }
         for (int i = frames.size() - 1; i >= 0; i--) {
             FrameEntry entry = frames.get(i);
             YogaNode node = entry.layoutNode;
@@ -210,18 +251,27 @@ public class View {
     }
 
     public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleKeyPress(keyCode, scancode, modifiers)) {
+            return;
+        }
         for (FrameEntry entry : frames) {
             entry.frame.dispatchKeyPress(keyCode, scancode, modifiers);
         }
     }
 
     public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleKeyRelease(keyCode, scancode, modifiers)) {
+            return;
+        }
         for (FrameEntry entry : frames) {
             entry.frame.dispatchKeyRelease(keyCode, scancode, modifiers);
         }
     }
 
     public void dispatchCharTyped(char codePoint, int modifiers) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleCharTyped(codePoint, modifiers)) {
+            return;
+        }
         for (FrameEntry entry : frames) {
             entry.frame.dispatchCharTyped(codePoint, modifiers);
         }
@@ -231,9 +281,18 @@ public class View {
         frames.forEach((frameEntry -> frameEntry.frame.setDebugRenderEnabled(enabled)));
     }
 
-
     public void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
         frames.forEach((frameEntry -> frameEntry.frame.setDebugBoundsVisible(layout, render, hitTest)));
 
+    }
+
+    private static class FrameEntry {
+        final Frame frame;
+        final YogaNode layoutNode;
+
+        FrameEntry(Frame frame, YogaNode layoutNode) {
+            this.frame = frame;
+            this.layoutNode = layoutNode;
+        }
     }
 }

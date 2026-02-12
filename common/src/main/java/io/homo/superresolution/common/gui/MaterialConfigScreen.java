@@ -45,6 +45,10 @@ import io.homo.superresolution.core.gui.widgets.SpacerWidget;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
+import io.homo.superresolution.core.gui.widgets.dialog.DialogAction;
+import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
 import io.homo.superresolution.core.utils.Color;
@@ -153,6 +157,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             case "performance":
                 frame = createPerformanceFrame();
                 break;
+            case "dialog_test":
+                frame = createDialogTestFrame();
+                break;
             default:
                 frame = createEmptyFrame();
         }
@@ -194,6 +201,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .addItem(Text.translatable("superresolution.screen.config.section.experimental").getString(), MaterialSymbols.iconScience(), "experimental")
                 .addSectionHeader(Text.translatable("superresolution.screen.config.section.profiling").getString())
                 .addItem(Text.translatable("superresolution.screen.config.section.performance").getString(), MaterialSymbols.iconSpeed(), "performance")
+                .addSectionHeader("Debug")
+                .addItem("Dialog Test", MaterialSymbols.iconBuild(), "dialog_test")
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
                     switchContentFrame(key);
@@ -620,6 +629,49 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             cpuChart.setElementHeight(180);
             container.addChild(cpuChart);
         }
+        finalizeFrame(frame, container);
+        return frame;
+    }
+
+    private Frame createDialogTestFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.literal("Dialog Test"));
+
+        MaterialButton openDialogBtn = MaterialButton.elevated("WOW");
+        openDialogBtn.onClick(e -> {
+            MaterialDialog dialog = MaterialDialog.create()
+                    .icon(MaterialSymbols.iconSettings())
+                    .headline("要来我的米奇妙妙屋吗？")
+                    .supportingText("""
+                            “嘿~大家好，是我米老鼠。要不要进我的妙妙屋？”
+                            “哦，太好了，我们走吧！”
+                            “哦，我差点忘了，要让妙妙屋出现，我们必须要念奇妙的咒语：米斯嘎，木斯嘎，米老鼠！跟我说一次：米斯嘎，木斯嘎，米老鼠！”""")
+                    .divider(true)
+                    .addAction("俺不要", MaterialButtonVariant.Text, MaterialDialog::dismiss)
+                    .addAction("接受", MaterialButtonVariant.Text, d -> {
+                        d.dismiss();
+                    });
+            getView().showDialog(dialog);
+        });
+        openDialogBtn.layout().setMargin(YogaEdge.TOP, 12);
+        container.addChild(openDialogBtn);
+
+        MaterialButton openSimpleBtn = MaterialButton.tonal("？");
+        openSimpleBtn.onClick(e -> {
+            MaterialDialog dialog = MaterialDialog.create()
+                    .headline("要来我的米奇妙妙屋吗？")
+                    .supportingText("""
+                            “嘿~大家好，是我米老鼠。要不要进我的妙妙屋？”
+                            “哦，太好了，我们走吧！”
+                            “哦，我差点忘了，要让妙妙屋出现，我们必须要念奇妙的咒语：米斯嘎，木斯嘎，米老鼠！跟我说一次：米斯嘎，木斯嘎，米老鼠！”""")
+                    .addAction("俺不要", MaterialButtonVariant.Text, MaterialDialog::dismiss)
+                    .addAction("接受", MaterialButtonVariant.Text, MaterialDialog::dismiss);
+            getView().showDialog(dialog);
+        });
+        openSimpleBtn.layout().setMargin(YogaEdge.TOP, 12);
+        container.addChild(openSimpleBtn);
+
         finalizeFrame(frame, container);
         return frame;
     }

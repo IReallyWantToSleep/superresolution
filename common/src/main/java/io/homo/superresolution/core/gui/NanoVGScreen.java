@@ -20,6 +20,7 @@ package io.homo.superresolution.core.gui;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
@@ -97,7 +98,7 @@ public abstract class NanoVGScreen<T> extends Screen {
 
             draw(ctx, new UIInputState(
                     new Vector2f(mouseX, mouseY),
-                    partialTick
+                    PerformanceTracker.getLastResultCPU("Frame") / 1_000_000f
             ));
 
             ctx.flush();
