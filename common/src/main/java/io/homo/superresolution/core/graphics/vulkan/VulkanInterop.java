@@ -93,7 +93,7 @@ public class VulkanInterop {
         @Override
         public long vkGetSemaphoreHandleKHR(MemoryStack stack, VkDevice device, Struct pGetHandleInfo) {
             int[] fd = new int[]{0};
-            KHRExternalSemaphoreFd.vkGetSemaphoreFdKHR(device, (VkSemaphoreGetFdInfoKHR) pGetHandleInfo, fd);
+            VK_CHECK(KHRExternalSemaphoreFd.vkGetSemaphoreFdKHR(device, (VkSemaphoreGetFdInfoKHR) pGetHandleInfo, fd),"Failed to export Linux semaphore handle");
             return fd[0];
         }
 
@@ -156,17 +156,17 @@ public class VulkanInterop {
 
         @Override
         public void glImportSemaphoreHandleEXT(MemoryStack stack, int semaphore, long handle) {
-            EXTSemaphoreWin32.glImportSemaphoreWin32HandleEXT(semaphore, EXTSemaphoreWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, (int) handle);
+            EXTSemaphoreWin32.glImportSemaphoreWin32HandleEXT(semaphore, EXTSemaphoreWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, handle);
         }
 
         @Override
         public long vkGetSemaphoreHandleKHR(MemoryStack stack, VkDevice device, Struct pGetHandleInfo) {
             PointerBuffer fd = stack.callocPointer(1);
-            KHRExternalSemaphoreWin32.vkGetSemaphoreWin32HandleKHR(
+            VK_CHECK(KHRExternalSemaphoreWin32.vkGetSemaphoreWin32HandleKHR(
                     device,
                     (VkSemaphoreGetWin32HandleInfoKHR) pGetHandleInfo,
                     fd
-            );
+            ),"Failed to export Windows memory handle");
             return fd.get(0);
         }
 

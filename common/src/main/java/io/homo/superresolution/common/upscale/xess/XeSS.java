@@ -52,6 +52,7 @@ import org.lwjgl.vulkan.VkSubmitInfo;
 import java.nio.file.Path;
 import java.util.EnumSet;
 
+import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.opengl.EXTSemaphore.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -105,7 +106,6 @@ public class XeSS extends AbstractAlgorithm {
         this.context = new SRUpscaleContext(0);
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
-
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
@@ -124,6 +124,12 @@ public class XeSS extends AbstractAlgorithm {
                         SRUpscaleContextCreateFlags.ENABLE_DEBUG
                 )
         );
+        SRContextExtraParams extraParams = new SRContextExtraParams();
+        upscaleContextDesc.setExtraParams(extraParams);
+        extraParams.setString(
+                "XESS_DLL_PATH",
+                SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().resolve("libxess.dll").toAbsolutePath().toString()
+                );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
@@ -344,8 +350,8 @@ public class XeSS extends AbstractAlgorithm {
                     .pSignalSemaphores(stack.longs(syncVkSemaphore.getVkSemaphoreHandle()))
                     .pWaitSemaphores(stack.longs(syncSemaphore.getVkSemaphoreHandle()))
                     .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
-            vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo,
-                    VK_NULL_HANDLE);
+            VK_CHECK(vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo,
+                    VK_NULL_HANDLE));
         }
 
         syncVkSemaphore.waitOpenGL(

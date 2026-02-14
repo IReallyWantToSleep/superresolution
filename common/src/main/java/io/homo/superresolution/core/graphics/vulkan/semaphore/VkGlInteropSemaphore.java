@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.vulkan.semaphore;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
 import org.lwjgl.vulkan.VkSubmitInfo;
@@ -118,6 +119,7 @@ public class VkGlInteropSemaphore {
                 textures == null ? new int[]{} : textures,
                 dstLayouts == null ? new int[]{} : dstLayouts
         );
+        GL20.glFlush();
     }
 
     public void waitOpenGL(int[] textures, int[] buffers, int[] srcLayouts) {
