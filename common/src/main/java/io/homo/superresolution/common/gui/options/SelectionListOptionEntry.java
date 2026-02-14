@@ -25,6 +25,7 @@ import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
@@ -35,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, SelectionListOptionEntry<T>> {
@@ -79,6 +81,7 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
     protected void initLayout() {
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void initWidget() {
         selectorContainer = new ContainerWidget();
@@ -98,13 +101,23 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         }
         materialSelect.setValue(value());
 
-        materialSelect.onSelectionChanged(newValue -> {
-            int newIndex = values.indexOf(newValue);
+
+        materialSelect.onChange((WidgetEvent.ChangeEvent event) -> {
+            if (Objects.equals(event.getNewValue(), this.value) || Objects.equals(event.getNewValue(), event.getOldValue())) {
+                return;
+            }
+            int newIndex = values.indexOf(((T) event.getNewValue()));
             if (newIndex >= 0) {
                 index.set(newIndex);
-                this.value = newValue;
+                this.value = ((T) event.getNewValue());
                 if (saveConsumer != null) {
-                    saveConsumer.accept(value());
+                    if (!saveConsumer.apply(((T) event.getNewValue()))) {
+                        materialSelect.getMenu().deselectItemQuietly(event.getNewValue());
+                        materialSelect.setValue((T) event.getOldValue());
+
+                        index.set(values.indexOf(((T) event.getOldValue())));
+                        this.value = ((T) event.getOldValue());
+                    }
                 }
                 if (saveRunnable != null) {
                     saveRunnable.run();

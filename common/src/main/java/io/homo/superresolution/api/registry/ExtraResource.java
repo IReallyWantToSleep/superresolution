@@ -188,8 +188,7 @@ public class ExtraResource {
                 long downloaded = 0;
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     if (isCancelled(errorListener)) {
-                        deletePartialFile(targetFile);
-                        return false;
+                        break;
                     }
                     outputStream.write(buffer, 0, bytesRead);
                     downloaded += bytesRead;
@@ -207,6 +206,10 @@ public class ExtraResource {
                 }
                 deletePartialFile(targetFile);
                 e.printStackTrace();
+                return false;
+            }
+            if (isCancelled(errorListener)) {
+                deletePartialFile(targetFile);
                 return false;
             }
             finishListener.onFinish(targetFile);

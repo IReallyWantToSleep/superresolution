@@ -45,7 +45,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private final MaterialMenu menu;
     private final List<SelectOption<T>> options = new ArrayList<>();
     private T selectedValue = null;
-    private Consumer<T> onSelectionChanged;
+    private Consumer<WidgetEvent.ChangeEvent<T>> onSelectionChanged;
     private Function<T, String> displayFormatter = Object::toString;
     private float width = 280;
     private float minWidth = 160;
@@ -85,24 +85,12 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
-    public void mouseMove(float x, float y) {
-        if (isDisabled()) {
-            return;
+    public void layouting(RenderContext ctx) {
+        if (autoWidth && widthDirty) {
+            recalculateWidth();
         }
-        Vector2f absPos = new Vector2f(x, y);
-
-        boolean inArea = hitTest(absPos);
-        if (inArea != isHovered()) {
-            setHovered(inArea);
-        }
-
-        if (menu.isExpanded() || menu.isVisible()) {
-            menu.mouseMove(x, y);
-        }
-
-        if (field.hitTest(absPos)) {
-            field.mouseMove(x, y);
-        }
+        updateSize();
+        super.layouting(ctx);
     }
 
     @Override
@@ -147,6 +135,27 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     @Override
+    public void mouseMove(float x, float y) {
+        if (isDisabled()) {
+            return;
+        }
+        Vector2f absPos = new Vector2f(x, y);
+
+        boolean inArea = hitTest(absPos);
+        if (inArea != isHovered()) {
+            setHovered(inArea);
+        }
+
+        if (menu.isExpanded() || menu.isVisible()) {
+            menu.mouseMove(x, y);
+        }
+
+        if (field.hitTest(absPos)) {
+            field.mouseMove(x, y);
+        }
+    }
+
+    @Override
     public void mouseScroll(float x, float y, double scrollX) {
         if (isDisabled()) {
             return;
@@ -160,27 +169,6 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         if (field.hitTest(absPos)) {
             field.mouseScroll(x, y, scrollX);
         }
-    }
-
-    @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
-        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
-            return this;
-        }
-        if (field.hitTest(absPos)) {
-            return this;
-        }
-
-        return null;
-    }
-
-    @Override
-    protected Rectangle getViewRegion() {
-        return getBounds();
-    }
-
-    @Override
-    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
     }
 
     @Override
@@ -307,6 +295,27 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         ctx.endGroup();
     }
 
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
+        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
+            return this;
+        }
+        if (field.hitTest(absPos)) {
+            return this;
+        }
+
+        return null;
+    }
+
+    @Override
+    protected Rectangle getViewRegion() {
+        return getBounds();
+    }
+
+    @Override
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
+    }
+
     public MaterialSelect<T> label(String label) {
         field.label(label);
         return this;
@@ -416,7 +425,9 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     public MaterialSelect<T> onSelectionChanged(Consumer<T> listener) {
-        this.onSelectionChanged = listener;
+        this.onSelectionChanged = (event) -> {
+            listener.accept(event.getNewValue());
+        };
         return this;
     }
 
@@ -426,7 +437,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         field.value(displayText);
         closeMenu();
         if (onSelectionChanged != null) {
-            onSelectionChanged.accept(value);
+            onSelectionChanged.accept(new WidgetEvent.ChangeEvent<>(oldValue, value));
         }
         eventBus.post(new WidgetEvent.ChangeEvent<>(oldValue, value));
     }
@@ -477,15 +488,6 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         MaterialSelectSize size = style().size();
         layout().setWidth(width);
         layout().setHeight(size.containerHeight());
-    }
-
-    @Override
-    public void layouting(RenderContext ctx) {
-        if (autoWidth && widthDirty) {
-            recalculateWidth();
-        }
-        updateSize();
-        super.layouting(ctx);
     }
 
     @Override

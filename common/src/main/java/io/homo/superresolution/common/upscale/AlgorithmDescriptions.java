@@ -23,6 +23,8 @@ import io.homo.superresolution.api.event.AlgorithmRegisterEvent;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.api.registry.ExtraResource;
+import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.upscale.dlss.DLSS;
@@ -99,7 +101,16 @@ public class AlgorithmDescriptions {
                             .requiredGlExtension("GL_EXT_semaphore")
                             .glMajorVersion(4)
                             .glMinorVersion(6)
-                            .requireVulkan(true)
+                            .requireVulkan(true),
+                    ExtraResources.builder()
+                            .add(ExtraResource.builder("libxess.dll")
+                                    .addRemote(
+                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/libxess.dll",
+                                            "CNB Mirror"
+                                    )
+                                    .build()
+                            )
+                            .build()
             );
     public static final AlgorithmDescription<DLSS> DLSS =
             new AlgorithmDescription<>(
@@ -113,7 +124,16 @@ public class AlgorithmDescriptions {
                             .requiredGlExtension("GL_EXT_semaphore")
                             .glMajorVersion(4)
                             .glMinorVersion(6)
-                            .requireVulkan(true)
+                            .requireVulkan(true),
+                    ExtraResources.builder()
+                            .add(ExtraResource.builder("nvngx_dlss.dll")
+                                    .addRemote(
+                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
+                                            "CNB Mirror"
+                                    )
+                                    .build()
+                            )
+                            .build()
             );
     public static final AlgorithmDescription<Sgsr1> SGSR1 =
             new AlgorithmDescription<>(

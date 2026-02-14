@@ -50,7 +50,10 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
         aSwitch.onChange(event -> {
             this.value = (Boolean) event.getNewValue();
             if (saveConsumer != null) {
-                saveConsumer.accept(this.value);
+                if (!saveConsumer.apply(this.value)) {
+                    aSwitch.toggleChecked();
+                    this.value = (Boolean) event.getOldValue();
+                }
             }
             if (saveRunnable != null) {
                 saveRunnable.run();
@@ -60,13 +63,13 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
     }
 
     @Override
-    public void tick(RenderContext ctx) {
-        boolean enabled = updateRequirements();
-        aSwitch.setDisabled(!enabled);
+    public Boolean value() {
+        return aSwitch.isChecked();
     }
 
     @Override
-    public Boolean value() {
-        return aSwitch.isChecked();
+    public void tick(RenderContext ctx) {
+        boolean enabled = updateRequirements();
+        aSwitch.setDisabled(!enabled);
     }
 }

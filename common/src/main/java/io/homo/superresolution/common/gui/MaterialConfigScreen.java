@@ -273,7 +273,16 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         AlgorithmRegistry.getAlgorithmMap().values().toArray())
                 .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
                 .setDefaultValue(() -> AlgorithmDescriptions.SGSR1)
-                .setSaveConsumer(algo -> SuperResolutionConfig.setUpscaleAlgorithm((AlgorithmDescription<?>) algo))
+                .setSaveConsumer((obj) -> {
+                    AlgorithmDescription<?> algo = (AlgorithmDescription<?>) obj;
+                    List<ExtraResource> lostResources = algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
+                    if (!lostResources.isEmpty()) {
+                        openLostResourceDialog(lostResources);
+                        return false;
+                    }
+                    SuperResolutionConfig.setUpscaleAlgorithm(algo);
+                    return true;
+                })
                 .setItemEnableRequirement((value) -> {
                     AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) value;
                     return OptionRequirement.all(
@@ -343,6 +352,36 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
         return frame;
+    }
+
+    private void openLostResourceDialog(List<ExtraResource> resources) {
+        MaterialDownloadList downloadList = MaterialDownloadList.create(
+                ExtraResources.builder().addAll(resources).build(),
+                SuperResolutionConstants.NATIVE_LIBRARIES_DIR
+        );
+        downloadList.layout().setWidthPercent(100);
+
+        MaterialDialog downloadDialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconInfo())
+                .headline("下载资源")
+                .supportingText("该算法需要一些额外的资源才能正常工作，在完成前，你可能无法使用此算法。\n\n如果你执意使用那么你的游戏可能会崩溃哦~")
+                .content(downloadList)
+                .addAction("取消下载", MaterialButtonVariant.Text, d -> {
+                    downloadList.cancelDownload();
+                })
+                .addAction("重试", MaterialButtonVariant.Text, d -> {
+                    downloadList.retryDownload();
+                })
+                .addAction("退出", MaterialButtonVariant.Text, d -> {
+                    downloadList.cancelDownload();
+                    d.dismiss();
+                })
+                .onDismiss(d -> {
+                    downloadList.cancelDownload();
+                });
+
+        getView().showDialog(downloadDialog);
+        downloadList.startDownload();
     }
 
     private Frame createAdvancedFrame() {
@@ -561,7 +600,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         )
                         .setStep(0.01)
                         .setDefaultValue(() -> floatDesc.getDefaultValue())
-                        .setSaveConsumer(v -> floatDesc.getSaveConsumer().accept(v.floatValue()));
+                        .setSaveConsumer((v) -> {
+                            floatDesc.getSaveConsumer().accept(v.floatValue());
+                            return true;
+                        });
                 if (floatDesc.isValueNameIsSupplier()) {
                     opt.setValueFormater(v ->
                             floatDesc.getValueNameSupplierAsObject().apply(v)
@@ -729,50 +771,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             MaterialButton downloadTestBtn = MaterialButton.elevated("Download Test");
             downloadTestBtn.layout().setMargin(YogaEdge.TOP, 12);
             downloadTestBtn.onClick(e -> {
-                ExtraResources testResources = new ExtraResources(Arrays.asList(
-                        new ExtraResource("libxess.dll", List.of(
-                                new ExtraResource.ResourceSource(
-                                        "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/libxess.dll",
-                                        ExtraResource.ResourceSource.Type.Remote,
-                                        "CNB"
-                                )
-                        )),
-                        new ExtraResource("nvngx_dlss.dll", List.of(
-                                new ExtraResource.ResourceSource(
-                                        "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
-                                        ExtraResource.ResourceSource.Type.Remote,
-                                        "CNB"
-                                )
-                        ))
-                ));
-
-                MaterialDownloadList downloadList = MaterialDownloadList.create(
-                        testResources,
-                        SuperResolutionConstants.NATIVE_LIBRARIES_DIR
-                );
-                downloadList.layout().setWidthPercent(100);
-
-                MaterialDialog downloadDialog = MaterialDialog.create()
-                        .icon(MaterialSymbols.iconCloudDownload())
-                        .headline("下载资源")
-                        .supportingText("以下资源需要从远程服务器下载，请确保网络连接正常。下载完成后资源将保存至本地。")
-                        .content(downloadList)
-                        .addAction("取消下载", MaterialButtonVariant.Text, d -> {
-                            downloadList.cancelDownload();
-                        })
-                        .addAction("重试", MaterialButtonVariant.Text, d -> {
-                            downloadList.retryDownload();
-                        })
-                        .addAction("退出", MaterialButtonVariant.Text, d -> {
-                            downloadList.cancelDownload();
-                            d.dismiss();
-                        })
-                        .onDismiss(d -> {
-                            downloadList.cancelDownload();
-                        });
-
-                getView().showDialog(downloadDialog);
-                downloadList.startDownload();
             });
             container.addChild(downloadTestBtn);
         }

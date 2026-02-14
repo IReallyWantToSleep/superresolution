@@ -46,7 +46,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
                 codeName,
                 displayName,
                 requirement,
-                null
+                ExtraResources.builder().build()
         );
     }
 

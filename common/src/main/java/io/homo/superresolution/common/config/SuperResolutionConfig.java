@@ -117,7 +117,7 @@ public class SuperResolutionConfig {
                         return false;
                     }
                     AlgorithmDescription<?> algo = AlgorithmRegistry.getDescriptionByID(value);
-                    return algo != null;
+                    return algo != null && algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR).isEmpty();
                 }
         );
 
@@ -471,20 +471,20 @@ public class SuperResolutionConfig {
         INJECT_POST_CHAIN_BLACKLIST.set(value);
     }
 
-    public static void setEnableCompatShaderCompiler(boolean value) {
-        ENABLE_COMPAT_SHADER_COMPILER.set(value);
-    }
-
     public static boolean isEnableCompatShaderCompiler() {
         return ENABLE_COMPAT_SHADER_COMPILER.get() || ENABLE_COMPAT_SHADER_COMPILER.getDefault();
     }
 
-    public static void setEnableDatasetGenerator(boolean value) {
-        ENABLE_DATASET_GENERATOR.set(value);
+    public static void setEnableCompatShaderCompiler(boolean value) {
+        ENABLE_COMPAT_SHADER_COMPILER.set(value);
     }
 
     public static boolean isEnableDatasetGenerator() {
         return ENABLE_DATASET_GENERATOR.get();
+    }
+
+    public static void setEnableDatasetGenerator(boolean value) {
+        ENABLE_DATASET_GENERATOR.set(value);
     }
 
     public static boolean isEnableDetailedProfiling() {
@@ -519,10 +519,6 @@ public class SuperResolutionConfig {
         DISABLE_UPSCALE_ON_VANILLA.set(value);
     }
 
-    public static void setInternalTextureFormat(InternalTextureFormat format) {
-        INTERNAL_TEXTURE_FORMAT.set(format);
-    }
-
     public static boolean isEnableExperimentalFeatures() {
         return ENABLE_EXPERIMENTAL_FEATURES.get();
     }
@@ -553,6 +549,10 @@ public class SuperResolutionConfig {
             return TextureFormat.R11G11B10F;
         }
         return INTERNAL_TEXTURE_FORMAT.get().format();
+    }
+
+    public static void setInternalTextureFormat(InternalTextureFormat format) {
+        INTERNAL_TEXTURE_FORMAT.set(format);
     }
 
     public static MaterialTheme getTheme() {
