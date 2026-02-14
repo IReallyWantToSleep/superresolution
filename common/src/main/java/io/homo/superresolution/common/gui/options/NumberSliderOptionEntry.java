@@ -87,7 +87,10 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
         slider.onChange(event -> {
             this.value = (Number) event.getNewValue();
             if (saveConsumer != null) {
-                saveConsumer.accept(this.value);
+                if (!saveConsumer.apply(this.value)) {
+                    slider.setValue((Number) event.getOldValue());
+                    this.value = (Number) event.getOldValue();
+                }
             }
             if (saveRunnable != null) {
                 saveRunnable.run();

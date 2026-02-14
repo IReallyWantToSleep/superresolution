@@ -42,7 +42,7 @@ public abstract class AbstractOptionEntry<VT, SELF> implements ValueHolder<VT>, 
     protected @Nullable Function<VT, Optional<Text>> errorSupplier;
     protected @Nullable OptionRequirement enableRequirement = null;
     protected @Nullable OptionRequirement displayRequirement = null;
-    protected Consumer<VT> saveConsumer = null;
+    protected Function<VT, Boolean> saveConsumer = null;
     protected Runnable saveRunnable = null;
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
@@ -97,14 +97,22 @@ public abstract class AbstractOptionEntry<VT, SELF> implements ValueHolder<VT>, 
         return value;
     }
 
-    public Consumer<VT> getSaveConsumer() {
+    public Function<VT, Boolean> getSaveConsumer() {
         return saveConsumer;
     }
 
     public SELF setSaveConsumer(Consumer<VT> saveConsumer) {
+        return setSaveConsumer((VT v) -> {
+            saveConsumer.accept(v);
+            return true;
+        });
+    }
+
+    public SELF setSaveConsumer(Function<VT, Boolean> saveConsumer) {
         this.saveConsumer = saveConsumer;
         return (SELF) this;
     }
+
 
     public Function<VT, Optional<Text[]>> getTooltipSupplier() {
         return tooltipSupplier;

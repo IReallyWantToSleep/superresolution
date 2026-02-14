@@ -46,7 +46,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(SR_FSR_LIB
         SR_MAIN_LIB
         ffx_backend_vk_x64d
-        ffx_fsr1_x64d
         ffx_fsr2_x64d
         ffx_fsr3upscaler_x64d
         ${Vulkan_LIBRARIES}
@@ -55,7 +54,6 @@ else()
     target_link_libraries(SR_FSR_LIB
         SR_MAIN_LIB
         ffx_backend_vk_x64
-        ffx_fsr1_x64
         ffx_fsr2_x64
         ffx_fsr3upscaler_x64
         ${Vulkan_LIBRARIES}

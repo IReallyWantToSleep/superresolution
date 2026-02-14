@@ -34,7 +34,7 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected @Nullable Function<VT, Optional<Text>> errorSupplier;
     protected @Nullable OptionRequirement enableRequirement = null;
     protected @Nullable OptionRequirement displayRequirement = null;
-    protected Consumer<VT> saveConsumer = null;
+    protected Function<VT, Boolean> saveConsumer = null;
     protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
     protected VT value;
     protected Text name;
@@ -104,8 +104,16 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         return (SELF) this;
     }
 
-    public SELF setSaveConsumer(Consumer<VT> saveConsumer) {
+    public SELF setSaveConsumer(Function<VT, Boolean> saveConsumer) {
         this.saveConsumer = saveConsumer;
+        return (SELF) this;
+    }
+
+    public SELF setSaveConsumer(Consumer<VT> saveConsumer) {
+        this.saveConsumer = (v) -> {
+            saveConsumer.accept(v);
+            return true;
+        };
         return (SELF) this;
     }
 
