@@ -485,6 +485,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             recalculateWidth();
         }
         updateSize();
+        super.layouting(ctx);
     }
 
     @Override

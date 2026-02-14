@@ -53,6 +53,7 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     @Override
     public void layouting(RenderContext ctx) {
         updateSize();
+        super.layouting(ctx);
     }
 
     @Override

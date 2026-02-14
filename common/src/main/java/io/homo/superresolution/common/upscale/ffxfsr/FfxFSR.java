@@ -93,6 +93,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
             }
         }
+
         SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                 lib.toAbsolutePath().toString(),
                 "srGetFfxFSRUpscaleProviders",

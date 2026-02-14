@@ -39,33 +39,15 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
         super.getLayoutNode().setDebugName("ContainerNode");
     }
 
-    public void addChild(ILayoutElement element) {
-        children.add(element);
-        element.setParent(this);
-        getLayoutNode().addChildAt(element.getLayoutNode(), getLayoutNode().getChildCount());
-    }
-
-    public void removeChild(ILayoutElement element) {
-        children.remove(element);
-        element.setParent(null);
-        getLayoutNode().removeChild(element.getLayoutNode());
-    }
-
-    public List<ILayoutElement> getChildren() {
-        return Collections.unmodifiableList(children);
-    }
-
-    public void addChild(AbstractWidget<?> widget) {
-        addChild((ILayoutElement) widget);
-    }
-
-    public void removeChild(AbstractWidget<?> widget) {
-        removeChild((ILayoutElement) widget);
-    }
-
     @Override
-    public void mouseMove(float x, float y) {
-        super.mouseMove(x, y);
+    public void layouting(RenderContext ctx) {
+        super.layouting(ctx);
+
+        for (ILayoutElement child : children) {
+            if (child instanceof AbstractWidget<?> widget) {
+                widget.layouting(ctx);
+            }
+        }
     }
 
     @Override
@@ -76,6 +58,11 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     @Override
     public void mouseRelease(float x, float y, int button) {
         super.mouseRelease(x, y, button);
+    }
+
+    @Override
+    public void mouseMove(float x, float y) {
+        super.mouseMove(x, y);
     }
 
     @Override
@@ -135,6 +122,14 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     }
 
     @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        if (!isVisible()) {
+            return;
+        }
+        renderSelf(ctx, inputState);
+    }
+
+    @Override
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
         if (!hitTest(absPos)) {
             return null;
@@ -151,6 +146,30 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
         }
 
         return isInteractive() ? this : null;
+    }
+
+    public void addChild(ILayoutElement element) {
+        children.add(element);
+        element.setParent(this);
+        getLayoutNode().addChildAt(element.getLayoutNode(), getLayoutNode().getChildCount());
+    }
+
+    public void removeChild(ILayoutElement element) {
+        children.remove(element);
+        element.setParent(null);
+        getLayoutNode().removeChild(element.getLayoutNode());
+    }
+
+    public List<ILayoutElement> getChildren() {
+        return Collections.unmodifiableList(children);
+    }
+
+    public void addChild(AbstractWidget<?> widget) {
+        addChild((ILayoutElement) widget);
+    }
+
+    public void removeChild(AbstractWidget<?> widget) {
+        removeChild((ILayoutElement) widget);
     }
 
     protected Rectangle getAbsoluteViewRect() {
@@ -186,17 +205,7 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
 
     protected abstract Rectangle getViewRegion();
 
-
     protected void renderSelf(RenderContext ctx, UIInputState inputState) {
 
     }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        if (!isVisible()) {
-            return;
-        }
-        renderSelf(ctx, inputState);
-    }
-
 }

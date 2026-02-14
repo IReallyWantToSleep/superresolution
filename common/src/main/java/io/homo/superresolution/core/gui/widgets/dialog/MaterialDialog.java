@@ -26,6 +26,7 @@ import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.core.view.View;
@@ -38,6 +39,7 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -76,6 +78,39 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
     }
 
     @Override
+    public void layouting(RenderContext ctx) {
+        super.layouting(ctx);
+        for (ILayoutElement child : this.getChildren()) {
+            if (child instanceof AbstractWidget<?> childWidget) {
+                childWidget.layouting(ctx);
+            }
+        }
+        this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
+        //TODO:如果只计算一次布局，那么Label会莫名其妙错位一次，解决方法没找到，这就当临时的解决方法
+        this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        if (!showing && !dismissPending) {
+            return;
+        }
+
+        if (fadeAnimator != null) {
+            fadeAnimator.update();
+        }
+        float alpha = fadeAnimator != null ? fadeAnimator.get() : 1f;
+        ctx.pushAlpha(alpha);
+        renderSelf(ctx, inputState);
+        for (ILayoutElement child : this.getChildren()) {
+            if (child instanceof AbstractWidget<?> childWidget) {
+                childWidget.renderWithChildren(ctx, inputState);
+            }
+        }
+        ctx.popAlpha();
+    }
+
+    @Override
     protected Rectangle getViewRegion() {
         return getBounds();
     }
@@ -94,35 +129,6 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
                 style().cornerRadius(), scheme().surfaceContainerHigh(), true);
 
         ctx.restore();
-
-    }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        if (!showing && !dismissPending) {
-            return;
-        }
-        this.layouting(ctx);
-        for (ILayoutElement child : this.getChildren()) {
-            if (child instanceof AbstractWidget<?> childWidget) {
-                childWidget.layouting(ctx);
-            }
-        }
-        this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
-        //TODO:如果只计算一次布局，那么Label会莫名其妙错位一次，解决方法没找到，这就当临时的解决方法
-        this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
-        if (fadeAnimator != null) {
-            fadeAnimator.update();
-        }
-        float alpha = fadeAnimator != null ? fadeAnimator.get() : 1f;
-        ctx.pushAlpha(alpha);
-        renderSelf(ctx, inputState);
-        for (ILayoutElement child : this.getChildren()) {
-            if (child instanceof AbstractWidget<?> childWidget) {
-                childWidget.renderWithChildren(ctx, inputState);
-            }
-        }
-        ctx.popAlpha();
 
     }
 
@@ -180,6 +186,11 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
 
     public MaterialDialog onDismiss(Consumer<MaterialDialog> onDismiss) {
         this.onDismiss = onDismiss;
+        return this;
+    }
+
+    public MaterialDialog scrimDismiss(boolean dismiss) {
+        style().scrimDismiss(dismiss);
         return this;
     }
 
@@ -263,6 +274,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
                 headlineLabel.layout().setWidthPercent(100);
             }
             headlineLabel.layout().setMargin(YogaEdge.BOTTOM, s.sectionSpacing());
+            headlineLabel.style().sizeToContent(true);
             addChild(headlineLabel);
         }
 
@@ -280,6 +292,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
 
         if (contentWidget != null) {
             contentWidget.layout().setMargin(YogaEdge.BOTTOM, s.sectionSpacing());
+            contentWidget.layout().setWidthPercent(100);
             addChild(contentWidget);
         }
 
@@ -298,7 +311,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
             actionsRow.layout().setGap(YogaGutter.COLUMN, s.buttonSpacing());
 
             for (DialogAction action : actions) {
-                MaterialButton btn = MaterialButton.create(MaterialButtonSize.ExtraSmall)
+                MaterialButton btn = MaterialButton.create(MaterialButtonSize.Small)
                         .text(action.getText())
                         .variant(action.getVariant());
                 btn.onClick(event -> action.getOnClick().accept(this));
@@ -310,7 +323,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
         }
     }
 
-    public void prepareLayout(RenderContext ctx, float viewportWidth, float viewportHeight) {
+    private void prepareLayout(RenderContext ctx, float viewportWidth, float viewportHeight) {
         if (layoutWrapper == null) {
             layoutWrapper = new YogaNode();
             layoutWrapper.setDebugName("DialogLayoutWrapper");
@@ -346,7 +359,9 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
     }
 
     private void layoutWidgetsRecursive(AbstractWidget<?> widget, RenderContext ctx) {
-        widget.layouting(ctx);
+        if (widget != this) {
+            widget.layouting(ctx);
+        }
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
@@ -364,9 +379,11 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
             return true;
         }
 
-        Rectangle bounds = getBounds();
+        Rectangle bounds = getRawBounds();
         if (!bounds.in(x, y)) {
-            dismiss();
+            if (style().scrimDismiss()) {
+                dismiss();
+            }
             return true;
         }
 

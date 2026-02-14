@@ -78,11 +78,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
-    public void layouting(RenderContext ctx) {
-        updateSize();
-    }
-
-    @Override
     public MaterialMenuStyle style() {
         return (MaterialMenuStyle) super.style();
     }
@@ -249,38 +244,9 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
-    public void mouseMove(float x, float y) {
-        super.mouseMove(x, y);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-
-        Vector2f mousePos = new Vector2f(x, y);
-        AbstractWidget<?> topChild = null;
-
-        for (int i = getChildren().size() - 1; i >= 0; i--) {
-            ILayoutElement child = getChildren().get(i);
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled() && widget.hitTest(mousePos)) {
-                    topChild = widget.findInteractiveWidgetAt(mousePos);
-                    if (topChild != null) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible()) {
-                    if (widget == topChild || (topChild != null && isAncestorOf(widget, topChild))) {
-                        widget.mouseMove(x, y);
-                    } else if (widget.isHovered()) {
-                        widget.clearHover();
-                    }
-                }
-            }
-        }
+    public void layouting(RenderContext ctx) {
+        updateSize();
+        super.layouting(ctx);
     }
 
     @Override
@@ -322,6 +288,41 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     @Override
+    public void mouseMove(float x, float y) {
+        super.mouseMove(x, y);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+        AbstractWidget<?> topChild = null;
+
+        for (int i = getChildren().size() - 1; i >= 0; i--) {
+            ILayoutElement child = getChildren().get(i);
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled() && widget.hitTest(mousePos)) {
+                    topChild = widget.findInteractiveWidgetAt(mousePos);
+                    if (topChild != null) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible()) {
+                    if (widget == topChild || (topChild != null && isAncestorOf(widget, topChild))) {
+                        widget.mouseMove(x, y);
+                    } else if (widget.isHovered()) {
+                        widget.clearHover();
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void mouseScroll(float x, float y, double scrollX) {
         super.mouseScroll(x, y, scrollX);
         if (isDisabled() || !isVisible()) {
@@ -342,31 +343,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
                 }
             }
         }
-    }
-
-    @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(org.joml.Vector2f absPos) {
-        if (!hitTest(absPos)) {
-            return null;
-        }
-
-        java.util.List<ILayoutElement> children = getChildren();
-        for (int i = children.size() - 1; i >= 0; i--) {
-            ILayoutElement child = children.get(i);
-            if (child instanceof AbstractWidget<?> widget && widget.isVisible() && !widget.isDisabled()) {
-                AbstractWidget<?> interactive = widget.findInteractiveWidgetAt(absPos);
-                if (interactive != null) {
-                    return interactive;
-                }
-            }
-        }
-
-        return isInteractive() ? this : null;
-    }
-
-    @Override
-    protected Rectangle getViewRegion() {
-        return getAbsoluteViewRect();
     }
 
     @Override
@@ -406,6 +382,31 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         ctx.popAlpha();
         ctx.restore();
         ctx.endGroup();
+    }
+
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(org.joml.Vector2f absPos) {
+        if (!hitTest(absPos)) {
+            return null;
+        }
+
+        java.util.List<ILayoutElement> children = getChildren();
+        for (int i = children.size() - 1; i >= 0; i--) {
+            ILayoutElement child = children.get(i);
+            if (child instanceof AbstractWidget<?> widget && widget.isVisible() && !widget.isDisabled()) {
+                AbstractWidget<?> interactive = widget.findInteractiveWidgetAt(absPos);
+                if (interactive != null) {
+                    return interactive;
+                }
+            }
+        }
+
+        return isInteractive() ? this : null;
+    }
+
+    @Override
+    protected Rectangle getViewRegion() {
+        return getAbsoluteViewRect();
     }
 
     public MaterialMenu addGroup(MaterialMenuGroup group) {

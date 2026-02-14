@@ -53,12 +53,12 @@ public class Sgsr1 extends AbstractAlgorithm {
     private RenderGrape pipeline;
     private ITexture output;
     private IFrameBuffer outputFbo;
-    private StructuredUniformBuffer buffer;
+    private StructuredData buffer;
     private IBuffer ubo;
 
     @Override
     public void init() {
-        buffer = UniformStructBuilder.start()
+        buffer = Std140StructBuilder.start()
                 .vec4Entry("ViewportInfo")
                 .build();
         ubo = RenderSystems.current().device().createBuffer(

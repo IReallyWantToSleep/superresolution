@@ -110,7 +110,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
             );
             Vector2f textSize = new Vector2f(textMetrics.maxLineWidth, textMetrics.totalHeight);
 
-            if (getLayoutNode().getLayoutWidth() <= 0) {
+            if (style().sizeToContent()) {
                 setElementWidth(textSize.x);
             }
             setElementHeight(textSize.y);
