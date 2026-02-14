@@ -159,6 +159,12 @@ public class XeSS extends AbstractAlgorithm {
         if (this.inputDepthGlTexture != null) {
             this.inputDepthGlTexture.destroy();
         }
+        if (this.inputMotionVectorsVkTexture != null) {
+            this.inputMotionVectorsVkTexture.destroy();
+        }
+        if (this.inputMotionVectorsGlTexture != null) {
+            this.inputMotionVectorsGlTexture.destroy();
+        }
         if (this.outputColorVkTexture != null) {
             this.outputColorVkTexture.destroy();
         }

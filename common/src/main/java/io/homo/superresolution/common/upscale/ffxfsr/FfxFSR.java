@@ -156,7 +156,12 @@ public class FfxFSR extends AbstractAlgorithm {
         if (this.outputColorGlTexture != null) {
             this.outputColorGlTexture.destroy();
         }
-
+        if (this.inputMotionVectorsVkTexture != null) {
+            this.inputMotionVectorsVkTexture.destroy();
+        }
+        if (this.inputMotionVectorsGlTexture != null) {
+            this.inputMotionVectorsGlTexture.destroy();
+        }
         if (this.outputFrameBuffer != null) {
             this.outputFrameBuffer.destroy();
         }
@@ -354,9 +359,9 @@ public class FfxFSR extends AbstractAlgorithm {
                 new int[]{},
                 new int[]{GL_LAYOUT_GENERAL_EXT});
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
-        InteropResourcesConverter.flipY(
-                this.outputColorGlTexture,
-                this.outputColorTexture);
+       InteropResourcesConverter.flipY(
+               this.outputColorGlTexture,
+               this.outputColorTexture);
         return true;
     }
 
