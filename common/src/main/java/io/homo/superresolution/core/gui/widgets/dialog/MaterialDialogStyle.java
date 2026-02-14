@@ -33,6 +33,7 @@ public class MaterialDialogStyle extends WidgetStyle<MaterialDialogStyle> {
     private float buttonSpacing = 8f;
     private float sectionSpacing = 16f;
     private float dividerHeight = 1f;
+    private boolean scrimDismiss = true;
     private Color scrimColor = Color.rgba(0, 0, 0, 80);
 
     public float cornerRadius() {
@@ -131,6 +132,15 @@ public class MaterialDialogStyle extends WidgetStyle<MaterialDialogStyle> {
 
     public MaterialDialogStyle dividerHeight(float dividerHeight) {
         this.dividerHeight = dividerHeight;
+        return this;
+    }
+
+    public boolean scrimDismiss() {
+        return scrimDismiss;
+    }
+
+    public MaterialDialogStyle scrimDismiss(boolean scrimDismiss) {
+        this.scrimDismiss = scrimDismiss;
         return this;
     }
 

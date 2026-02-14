@@ -20,6 +20,10 @@ package io.homo.superresolution.common.gui;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.api.registry.ExtraResource;
+import io.homo.superresolution.api.registry.ExtraResources;
+import io.homo.superresolution.common.gui.download.MaterialDownloadList;
+import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
@@ -40,6 +44,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.gui.widgets.SpacerWidget;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
@@ -58,7 +63,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -671,6 +678,104 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         });
         openSimpleBtn.layout().setMargin(YogaEdge.TOP, 12);
         container.addChild(openSimpleBtn);
+        {
+            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
+            progressIndicator.layout().setWidthPercent(100);
+            progressIndicator.layout().setHeight(8);
+            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+
+            progressIndicator.setProgress(0.5f);
+            container.addChild(progressIndicator);
+        }
+        {
+            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
+            progressIndicator.layout().setWidthPercent(100);
+            progressIndicator.layout().setHeight(8);
+            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+
+            progressIndicator.setProgress(0);
+            container.addChild(progressIndicator);
+        }
+        {
+            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
+            progressIndicator.layout().setWidthPercent(100);
+            progressIndicator.layout().setHeight(8);
+            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+            progressIndicator.setProgress(1);
+            container.addChild(progressIndicator);
+        }
+        {
+            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
+            progressIndicator.layout().setWidthPercent(100);
+            progressIndicator.layout().setHeight(8);
+            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+
+            progressIndicator.setProgress(0.75f);
+            container.addChild(progressIndicator);
+        }
+
+        {
+            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
+            progressIndicator.layout().setWidthPercent(100);
+            progressIndicator.layout().setHeight(8);
+            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+
+            progressIndicator.setProgress(0.25f, 0.75f);
+            container.addChild(progressIndicator);
+        }
+
+        // Download Test Dialog
+        {
+            MaterialButton downloadTestBtn = MaterialButton.elevated("Download Test");
+            downloadTestBtn.layout().setMargin(YogaEdge.TOP, 12);
+            downloadTestBtn.onClick(e -> {
+                ExtraResources testResources = new ExtraResources(Arrays.asList(
+                        new ExtraResource("libxess.dll", List.of(
+                                new ExtraResource.ResourceSource(
+                                        "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/libxess.dll",
+                                        ExtraResource.ResourceSource.Type.Remote,
+                                        "CNB"
+                                )
+                        )),
+                        new ExtraResource("nvngx_dlss.dll", List.of(
+                                new ExtraResource.ResourceSource(
+                                        "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
+                                        ExtraResource.ResourceSource.Type.Remote,
+                                        "CNB"
+                                )
+                        ))
+                ));
+
+                MaterialDownloadList downloadList = MaterialDownloadList.create(
+                        testResources,
+                        SuperResolutionConstants.NATIVE_LIBRARIES_DIR
+                );
+                downloadList.layout().setWidthPercent(100);
+
+                MaterialDialog downloadDialog = MaterialDialog.create()
+                        .icon(MaterialSymbols.iconCloudDownload())
+                        .headline("下载资源")
+                        .supportingText("以下资源需要从远程服务器下载，请确保网络连接正常。下载完成后资源将保存至本地。")
+                        .content(downloadList)
+                        .addAction("取消下载", MaterialButtonVariant.Text, d -> {
+                            downloadList.cancelDownload();
+                        })
+                        .addAction("重试", MaterialButtonVariant.Text, d -> {
+                            downloadList.retryDownload();
+                        })
+                        .addAction("退出", MaterialButtonVariant.Text, d -> {
+                            downloadList.cancelDownload();
+                            d.dismiss();
+                        })
+                        .onDismiss(d -> {
+                            downloadList.cancelDownload();
+                        });
+
+                getView().showDialog(downloadDialog);
+                downloadList.startDownload();
+            });
+            container.addChild(downloadTestBtn);
+        }
 
         finalizeFrame(frame, container);
         return frame;

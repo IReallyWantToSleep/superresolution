@@ -50,7 +50,7 @@ public class FSR1 extends AbstractAlgorithm {
     private ITexture fsr1TempTexture;
     private IFrameBuffer outputFbo;
     private ITexture output;
-    private StructuredUniformBuffer fsr1UBOData;
+    private StructuredData fsr1UBOData;
     private IBuffer fsr1UBO;
 
     public static int checkFP16Support() {
@@ -66,7 +66,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void init() {
-        fsr1UBOData = UniformStructBuilder.start()
+        fsr1UBOData = Std140StructBuilder.start()
                 .vec2Entry("renderViewportSize")
                 .vec2Entry("containerTextureSize")
                 .vec2Entry("upscaledViewportSize")

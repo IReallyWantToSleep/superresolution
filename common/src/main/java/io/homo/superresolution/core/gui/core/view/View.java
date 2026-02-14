@@ -18,11 +18,15 @@
 
 package io.homo.superresolution.core.gui.core.view;
 
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
+import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
+import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 import org.joml.Vector2f;
@@ -134,12 +138,13 @@ public class View {
             ctx.translate(x, y);
 
             entry.frame.render(ctx, inputState);
-
             ctx.restore();
         }
 
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
+            activeDialog.layouting(ctx);
             activeDialog.render(ctx, inputState);
+            //renderDebugLayoutBounds(ctx, activeDialog);
         }
     }
 
@@ -284,6 +289,31 @@ public class View {
     public void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
         frames.forEach((frameEntry -> frameEntry.frame.setDebugBoundsVisible(layout, render, hitTest)));
 
+    }
+
+    private void renderDebugLayoutBounds(RenderContext ctx, AbstractWidget<?> widget) {
+        if (widget == null || !widget.isVisible()) {
+            return;
+        }
+
+        Rectangle layoutBounds = widget.getBounds();
+
+        ctx.save();
+        ctx.strokeWidth(2);
+        ctx.rect(
+                layoutBounds.x, layoutBounds.y,
+                layoutBounds.width, layoutBounds.height,
+                Color.rgba(255, 255, 255, 200), false);
+
+        ctx.restore();
+
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    renderDebugLayoutBounds(ctx, childWidget);
+                }
+            }
+        }
     }
 
     private static class FrameEntry {

@@ -177,7 +177,7 @@ public class DataSetGenerator {
             );
         }
         if (depthPreprocessConfigData == null) {
-            depthPreprocessConfigData = UniformStructBuilder.start()
+            depthPreprocessConfigData = Std140StructBuilder.start()
                     .floatEntry("near")
                     .floatEntry("far")
                     .build();

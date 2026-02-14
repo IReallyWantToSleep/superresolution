@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 public class Sgsr2 extends AbstractAlgorithm {
     private AbstractSgsrVariant variantInstance;
     private SgsrVariant currentVariant;
-    private StructuredUniformBuffer paramsData;
+    private StructuredData paramsData;
     private GlBuffer paramsUbo;
     private GlFrameBuffer output;
 
@@ -66,7 +66,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                         .build())
         ));
         this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
-        paramsData = UniformStructBuilder.start()
+        paramsData = Std140StructBuilder.start()
                 .vec2Entry("renderSize")
                 .vec2Entry("displaySize")
                 .vec2Entry("renderSizeRcp")
@@ -223,7 +223,9 @@ public class Sgsr2 extends AbstractAlgorithm {
     }
 
     private boolean checkVariant() {
-        if (variantInstance == null) return true;
+        if (variantInstance == null) {
+            return true;
+        }
         if (SuperResolutionConfig.SPECIAL.SGSR2.VARIANT.get() != currentVariant) {
             currentVariant = SuperResolutionConfig.SPECIAL.SGSR2.VARIANT.get();
             return true;
@@ -232,7 +234,9 @@ public class Sgsr2 extends AbstractAlgorithm {
     }
 
     private void safeVariantInstance(Consumer<AbstractSgsrVariant> callback) {
-        if (variantInstance != null) callback.accept(variantInstance);
+        if (variantInstance != null) {
+            callback.accept(variantInstance);
+        }
     }
 
     public GlBuffer getParams() {

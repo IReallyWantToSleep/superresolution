@@ -25,8 +25,8 @@ import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
-import io.homo.superresolution.core.graphics.impl.buffer.StructuredUniformBuffer;
-import io.homo.superresolution.core.graphics.impl.buffer.UniformStructBuilder;
+import io.homo.superresolution.core.graphics.impl.buffer.StructuredData;
+import io.homo.superresolution.core.graphics.impl.buffer.Std140StructBuilder;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
@@ -67,7 +67,7 @@ public class MotionVectorsGenerator {
     public static GlFrameBuffer preprocessFrameBuffer;
     public static GlFrameBuffer motionVectorsFrameBuffer;
     public static GlFrameBuffer inputFrameBuffer;
-    public static StructuredUniformBuffer structuredUniformBuffer;
+    public static StructuredData structuredData;
     private static GlBuffer ubo;
     private static boolean isInit;
 
@@ -77,7 +77,7 @@ public class MotionVectorsGenerator {
                         .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/preprocess.frag.glsl"))
                         .name("motion_vector_preprocess")
-                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredData.size())
                         .uniformSamplerTexture("tex_current", 1)
                         .build());
         preprocessShader.compile();
@@ -95,7 +95,7 @@ public class MotionVectorsGenerator {
                         .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/pass1.frag.glsl"))
                         .name("motion_vector_pass1")
-                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredData.size())
                         .uniformSamplerTexture("tex_current", 1)
                         .build());
         pass1Shader.compile();
@@ -113,7 +113,7 @@ public class MotionVectorsGenerator {
                         .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/pass2.frag.glsl"))
                         .name("motion_vector_pass2")
-                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredData.size())
                         .uniformSamplerTexture("tex_current", 1)
                         .uniformSamplerTexture("tex_previous", 2)
                         .build());
@@ -132,7 +132,7 @@ public class MotionVectorsGenerator {
                         .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/motion_vector/common.vert.glsl"))
                         .fragment(ShaderSource.file(ShaderType.Fragment, "/shader/motion_vector/pass3.frag.glsl"))
                         .name("motion_vector_pass3")
-                        .uniformBuffer("motion_vector_data", 0, (int) structuredUniformBuffer.size())
+                        .uniformBuffer("motion_vector_data", 0, (int) structuredData.size())
                         .uniformSamplerTexture("grad_current", 1)
                         .uniformSamplerTexture("delta_time", 2)
                         .build());
@@ -161,7 +161,7 @@ public class MotionVectorsGenerator {
             return;
         }
 
-        structuredUniformBuffer = UniformStructBuilder.start()
+        structuredData = Std140StructBuilder.start()
                 .floatEntry("exposure")
                 .intEntry("window_radius")
                 .floatEntry("min_value")
@@ -169,10 +169,10 @@ public class MotionVectorsGenerator {
                 .build();
         ubo = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
-                        .size(structuredUniformBuffer.size())
+                        .size(structuredData.size())
                         .usage(BufferUsage.Ubo)
                         .build());
-        ubo.setBufferData(structuredUniformBuffer);
+        ubo.setBufferData(structuredData);
         initShaders();
 
         pipeline = new RenderGrape();
@@ -317,11 +317,11 @@ public class MotionVectorsGenerator {
                         .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
                         .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
                         .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B));
-        structuredUniformBuffer.setFloat("exposure", 3.0f);
-        structuredUniformBuffer.setInt("window_radius", 2);
-        structuredUniformBuffer.setFloat("min_value", 1e-6f);
-        structuredUniformBuffer.setFloat("scale", 4f);
-        structuredUniformBuffer.fillBuffer();
+        structuredData.setFloat("exposure", 3.0f);
+        structuredData.setInt("window_radius", 2);
+        structuredData.setFloat("min_value", 1e-6f);
+        structuredData.setFloat("scale", 4f);
+        structuredData.fillBuffer();
         ubo.upload();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);

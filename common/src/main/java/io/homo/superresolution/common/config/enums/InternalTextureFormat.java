@@ -23,7 +23,6 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 public enum InternalTextureFormat {
     RGBA8(TextureFormat.RGBA8),
     RGBA16F(TextureFormat.RGBA16F),
-    RGBA16(TextureFormat.RGBA16),
     AUTO(null),
     R11B11G10F(TextureFormat.R11G11B10F);
 

@@ -29,6 +29,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
     public final String codeName;
     public final String displayName;
     public final Requirement requirement;
+    public final ExtraResources extraResources;
     protected final Class<T> clazz;
     private final String uuid = UUID.randomUUID().toString();
 
@@ -39,11 +40,34 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
             String displayName,
             Requirement requirement
     ) {
+        this(
+                clazz,
+                briefName,
+                codeName,
+                displayName,
+                requirement,
+                null
+        );
+    }
+
+    public AlgorithmDescription(
+            Class<T> clazz,
+            String briefName,
+            String codeName,
+            String displayName,
+            Requirement requirement,
+            ExtraResources extraResources
+    ) {
         this.clazz = clazz;
         this.briefName = briefName;
         this.codeName = codeName;
         this.displayName = displayName;
         this.requirement = requirement;
+        this.extraResources = extraResources;
+    }
+
+    public ExtraResources getExtraResources() {
+        return extraResources;
     }
 
     public Requirement getRequirement() {

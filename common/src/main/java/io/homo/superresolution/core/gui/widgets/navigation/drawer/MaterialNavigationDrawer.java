@@ -188,6 +188,7 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         if (width > 0) {
             layout().setMinWidth(width);
         }
+        super.layouting(ctx);
     }
 
     public float getPreferredWidth(RenderContext ctx) {

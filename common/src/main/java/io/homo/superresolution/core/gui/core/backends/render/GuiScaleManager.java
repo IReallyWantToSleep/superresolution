@@ -53,7 +53,7 @@ public class GuiScaleManager {
         } else {
             this.guiScale = userScale;
         }
-        this.guiScale = Math.max(minScale, Math.min(maxScale, this.guiScale));
+        this.guiScale = Math.max(1.0f, Math.min(maxScale, this.guiScale));
     }
 
     public float guiScale() {

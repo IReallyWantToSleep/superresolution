@@ -45,11 +45,6 @@ public class Frame implements IFrame {
     private float positionX = 0;
     private float positionY = 0;
     private boolean layoutDirty = true;
-    private boolean debugRenderEnabled = false;
-    private boolean debugLayoutBounds = true;
-    private boolean debugRenderBounds = true;
-    private boolean debugHitTestBounds = true;
-    private AbstractWidget<?> lastHitWidget = null;
 
     public void setPosition(float x, float y) {
         this.positionX = x;
@@ -82,11 +77,6 @@ public class Frame implements IFrame {
         }
     }
 
-    @Override
-    public AbstractWidget<?> getRoot() {
-        return root;
-    }
-
     private Rectangle transformBounds(Rectangle bounds, Transform transform) {
         if (transform.isIdentity()) {
             return bounds;
@@ -113,6 +103,11 @@ public class Frame implements IFrame {
                 bounds.y < viewportHeight;
     }
 
+    @Override
+    public AbstractWidget<?> getRoot() {
+        return root;
+    }
+
     private void renderWidget(RenderContext ctx, UIInputState inputState, RenderEntry entry) {
         AbstractWidget<?> widget = entry.widget();
         Transform transform = entry.accumulatedTransform();
@@ -121,12 +116,6 @@ public class Frame implements IFrame {
         ctx.applyTransform(transform);
         widget.render(ctx, inputState);
         ctx.restore();
-    }
-
-    @Override
-    public void setRoot(AbstractWidget<?> root) {
-        this.root = root;
-        markLayoutDirty();
     }
 
     private void collectAncestorChain(AbstractWidget<?> widget, Set<AbstractWidget<?>> chain) {
@@ -192,15 +181,6 @@ public class Frame implements IFrame {
         }
     }
 
-    @Override
-    public void setViewport(float width, float height) {
-        if (this.viewportWidth != width || this.viewportHeight != height) {
-            this.viewportWidth = width;
-            this.viewportHeight = height;
-            markLayoutDirty();
-        }
-    }
-
     private void dispatchMouseDragRecursive(AbstractWidget<?> widget, float mouseX, float mouseY,
                                             float dragX, float dragY, int button) {
         if (!widget.isVisible() || widget.isDisabled()) {
@@ -221,6 +201,12 @@ public class Frame implements IFrame {
                 }
             }
         }
+    }
+
+    @Override
+    public void setRoot(AbstractWidget<?> root) {
+        this.root = root;
+        markLayoutDirty();
     }
 
     private Vector2f transformDelta(Transform transform, float dx, float dy) {
@@ -247,11 +233,6 @@ public class Frame implements IFrame {
                 }
             }
         }
-    }
-
-    @Override
-    public Rectangle getViewport() {
-        return new Rectangle(0, 0, viewportWidth, viewportHeight);
     }
 
     private void dispatchKeyReleaseRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
@@ -310,6 +291,15 @@ public class Frame implements IFrame {
         }
 
         return null;
+    }
+
+    @Override
+    public void setViewport(float width, float height) {
+        if (this.viewportWidth != width || this.viewportHeight != height) {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            markLayoutDirty();
+        }
     }
 
     private AbstractWidget<?> findInteractiveWidgetAtRecursive(
@@ -374,6 +364,42 @@ public class Frame implements IFrame {
         return widget.getFullTransform();
     }
 
+    @Deprecated
+    public void setDebugRenderEnabled(boolean enabled) {
+    }
+
+    @Deprecated
+    public void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
+
+    }
+
+    protected void layoutWidgets(AbstractWidget<?> widget, RenderContext ctx) {
+        widget.layouting(ctx);
+
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    layoutWidgets(childWidget, ctx);
+                }
+            }
+        }
+    }
+
+    @Override
+    public Rectangle getViewport() {
+        return new Rectangle(0, 0, viewportWidth, viewportHeight);
+    }
+
+    public void updateHitTestDebug(Vector2f mousePos) {
+    }
+
+    private record RenderEntry(AbstractWidget<?> widget,
+
+                               Transform accumulatedTransform,
+
+                               int zIndex) {
+    }
+
     @Override
     public void calculateLayout() {
         if (root == null) {
@@ -390,19 +416,6 @@ public class Frame implements IFrame {
         layoutDirty = false;
     }
 
-    public boolean isDebugRenderEnabled() {
-        return debugRenderEnabled;
-    }
-
-    public void setDebugRenderEnabled(boolean enabled) {
-        this.debugRenderEnabled = enabled;
-    }
-
-    public void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
-        this.debugLayoutBounds = layout;
-        this.debugRenderBounds = render;
-        this.debugHitTestBounds = hitTest;
-    }
 
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
@@ -420,137 +433,8 @@ public class Frame implements IFrame {
         for (RenderEntry entry : renderList) {
             renderWidget(ctx, inputState, entry);
         }
-
-        if (debugRenderEnabled) {
-            renderDebugOverlay(ctx, inputState);
-        }
     }
 
-    protected void layoutWidgets(AbstractWidget<?> widget, RenderContext ctx) {
-        widget.layouting(ctx);
-
-        if (widget instanceof ILayoutContainer container) {
-            for (ILayoutElement child : container.getChildren()) {
-                if (child instanceof AbstractWidget<?> childWidget) {
-                    layoutWidgets(childWidget, ctx);
-                }
-            }
-        }
-    }
-
-    public void updateHitTestDebug(Vector2f mousePos) {
-        if (!debugRenderEnabled || !debugHitTestBounds) {
-            return;
-        }
-
-        lastHitWidget = findInteractiveWidgetAt(mousePos);
-    }
-
-    private void renderDebugOverlay(RenderContext ctx, UIInputState inputState) {
-        float oldStrokeWidth = ctx.strokeWidth();
-        Color oldStrokeColor = ctx.strokeColor();
-
-        ctx.strokeWidth(DEBUG_STROKE_WIDTH);
-
-        if (debugLayoutBounds) {
-            renderDebugLayoutBounds(ctx, root);
-        }
-
-        if (debugRenderBounds) {
-            for (RenderEntry entry : renderList) {
-                renderDebugRenderBounds(ctx, entry);
-            }
-        }
-
-        if (debugHitTestBounds && lastHitWidget != null) {
-            renderDebugHitTestBounds(ctx, lastHitWidget);
-        }
-
-        ctx.strokeWidth(oldStrokeWidth);
-        ctx.strokeColor(oldStrokeColor);
-    }
-
-    private void renderDebugLayoutBounds(RenderContext ctx, AbstractWidget<?> widget) {
-        if (!widget.isVisible()) {
-            return;
-        }
-
-        Rectangle layoutBounds = widget.getRawBounds();
-
-        ctx.save();
-        ctx.applyTransform(widget.getFullTransform());
-
-        ctx.rect(
-                layoutBounds.x, layoutBounds.y,
-                layoutBounds.width, layoutBounds.height,
-                DEBUG_LAYOUT_COLOR, false);
-
-        ctx.restore();
-
-        if (widget instanceof ILayoutContainer container) {
-            for (ILayoutElement child : container.getChildren()) {
-                if (child instanceof AbstractWidget<?> childWidget) {
-                    renderDebugLayoutBounds(ctx, childWidget);
-                }
-            }
-        }
-    }
-
-    private void renderDebugRenderBounds(RenderContext ctx, RenderEntry entry) {
-        AbstractWidget<?> widget = entry.widget();
-        Transform transform = entry.accumulatedTransform();
-
-        Rectangle rawBounds = widget.getRawBounds();
-
-        if (transform.isIdentity()) {
-            ctx.rect(
-                    rawBounds.x + 1, rawBounds.y + 1,
-                    rawBounds.width - 2, rawBounds.height - 2,
-                    DEBUG_RENDER_COLOR, false);
-        } else {
-            ctx.save();
-            ctx.applyTransform(transform);
-
-            ctx.rect(
-                    rawBounds.x + 1, rawBounds.y + 1,
-                    rawBounds.width - 2, rawBounds.height - 2,
-                    DEBUG_RENDER_COLOR, false);
-
-            ctx.restore();
-        }
-    }
-
-    private void renderDebugHitTestBounds(RenderContext ctx, AbstractWidget<?> widget) {
-        Transform accumulatedTransform = calculateAccumulatedTransform(widget);
-        Rectangle rawBounds = widget.getRawBounds();
-        ctx.strokeWidth(DEBUG_STROKE_WIDTH + 1);
-
-        if (accumulatedTransform.isIdentity()) {
-            ctx.rect(
-                    rawBounds.x - 2, rawBounds.y - 2,
-                    rawBounds.width + 4, rawBounds.height + 4,
-                    DEBUG_HITTEST_COLOR, false);
-        } else {
-            ctx.save();
-            ctx.applyTransform(accumulatedTransform);
-
-            ctx.rect(
-                    rawBounds.x - 2, rawBounds.y - 2,
-                    rawBounds.width + 4, rawBounds.height + 4,
-                    DEBUG_HITTEST_COLOR, false);
-
-            ctx.restore();
-        }
-
-        ctx.strokeWidth(DEBUG_STROKE_WIDTH);
-    }
-
-    private record RenderEntry(AbstractWidget<?> widget,
-
-                               Transform accumulatedTransform,
-
-                               int zIndex) {
-    }
 
     @Override
     public void dispatchMouseMove(float x, float y) {
