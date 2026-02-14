@@ -150,7 +150,12 @@ public class DLSS extends AbstractAlgorithm {
         if (this.outputColorGlTexture != null) {
             this.outputColorGlTexture.destroy();
         }
-
+        if (this.inputMotionVectorsVkTexture != null) {
+            this.inputMotionVectorsVkTexture.destroy();
+        }
+        if (this.inputMotionVectorsGlTexture != null) {
+            this.inputMotionVectorsGlTexture.destroy();
+        }
         if (this.outputFrameBuffer != null) {
             this.outputFrameBuffer.destroy();
         }
