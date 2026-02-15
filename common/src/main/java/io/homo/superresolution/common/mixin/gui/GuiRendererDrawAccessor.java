@@ -21,7 +21,7 @@ package io.homo.superresolution.common.mixin.gui;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-#if MC_VER > MC_1_21_4
+#if MC_VER > MC_1_21_5
 @Mixin(targets = "net.minecraft.client.gui.render.GuiRenderer$Draw")
 public interface GuiRendererDrawAccessor {
     @Accessor("pipeline")

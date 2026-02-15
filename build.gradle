@@ -17,9 +17,12 @@
  */
 
 import utils.ModrinthUploader
+import groovy.json.JsonSlurper
+import org.gradle.api.logging.configuration.ConsoleOutput
+import org.gradle.api.tasks.GradleBuild
 
 plugins {
-    id 'fabric-loom' version '1.15-SNAPSHOT' apply false
+    id 'fabric-loom' version '1.15.3' apply false
     id 'net.neoforged.moddev' version '2.0.139' apply false
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id 'multiversion'
@@ -42,18 +45,18 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven { url 'https://maven.neoforged.net' }
-        maven { url 'https://maven.aliyun.com/repository/central' }
-        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-        maven { url "https://maven.architectury.dev/" }
-        maven { url "https://maven.nucleoid.xyz/" }
-        maven { url "https://maven.shedaniel.me/" }
-        maven { url "https://maven.neoforged.net/releases" }
-        maven { url "https://libraries.minecraft.net" }
-        maven { url "https://maven.fabricmc.net/" }
-        maven { url 'https://repo.spongepowered.org/repository/maven-public' }
-        maven { url 'https://maven.parchmentmc.org/' }
-        maven { url 'https://maven.blamejared.com' }
+        maven { url = 'https://maven.neoforged.net' }
+        maven { url = 'https://maven.aliyun.com/repository/central' }
+        maven { url = 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url = "https://maven.architectury.dev/" }
+        maven { url = "https://maven.nucleoid.xyz/" }
+        maven { url = "https://maven.shedaniel.me/" }
+        maven { url = "https://maven.neoforged.net/releases" }
+        maven { url = "https://libraries.minecraft.net" }
+        maven { url = "https://maven.fabricmc.net/" }
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public' }
+        maven { url = 'https://maven.parchmentmc.org/' }
+        maven { url = 'https://maven.blamejared.com' }
     }
     dependencies {
         annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.manifold_version}")
@@ -62,6 +65,7 @@ allprojects {
                 force "org.lwjgl:lwjgl:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-glfw:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-opengl:$versionConfig.common.lwjglVersion"
+                force "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-openal:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-stb:$versionConfig.common.lwjglVersion"
                 force "org.lwjgl:lwjgl-jemalloc:$versionConfig.common.lwjglVersion"
@@ -71,6 +75,154 @@ allprojects {
         }
     }
 
+    afterEvaluate {
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            return
+        }
+        def javaWrapper = rootProject.file("script/java_tool_wrapper.sh")
+        if (!javaWrapper.exists()) {
+            return
+        }
+        tasks.matching { it.class.name.contains("CreateMinecraftArtifacts") }.configureEach {
+            if (it.hasProperty("javaExecutable")) {
+                it.javaExecutable.set(javaWrapper.absolutePath)
+            }
+            if (it.hasProperty("toolsJavaExecutable")) {
+                it.toolsJavaExecutable.set(javaWrapper.absolutePath)
+            }
+        }
+    }
+
+}
+
+def srConfigsDir = file("${rootDir}/configs")
+def srOutputDir = file("${rootDir}/build_jars")
+
+def loadVersionConfig = { File configFile ->
+    new JsonSlurper().parse(configFile)
+}
+
+def normalizeTaskSuffix = { String versionName ->
+    versionName.replaceAll("[^A-Za-z0-9_]", "_")
+}
+
+def normalizePlatforms = { def config ->
+    (config.common.platforms ?: []).collect { it.toString().trim() }.findAll { !it.isBlank() }
+}
+
+def collectTaskByVersion = [:]
+def orderedNestedBuildTasks = []
+def orderedCollectTasks = []
+
+if (srConfigsDir.exists()) {
+    def configFiles = srConfigsDir.listFiles()?.findAll { it.name.endsWith(".json") }?.sort { a, b -> a.name <=> b.name } ?: []
+    configFiles.each { configFile ->
+        def versionName = configFile.name.substring(0, configFile.name.lastIndexOf('.'))
+        def config = loadVersionConfig(configFile)
+        if ((config.skip_build ?: false) as boolean) {
+            return
+        }
+
+        def platforms = normalizePlatforms(config)
+        def suffix = normalizeTaskSuffix(versionName)
+        def nestedBuildTaskName = "buildVersion_${suffix}"
+        def collectTaskName = "collectVersion_${suffix}"
+
+        tasks.register(nestedBuildTaskName, GradleBuild) {
+            group = "build"
+            description = "构建版本 ${versionName}"
+            buildName = "superresolution_${suffix}"
+            dir = rootDir
+            tasks = ["build"]
+            startParameter.projectProperties.put("minecraft_version_config", versionName)
+            startParameter.consoleOutput = ConsoleOutput.Plain
+        }
+
+        tasks.register(collectTaskName) {
+            group = "build"
+            description = "收集版本 ${versionName} 构建产物"
+            dependsOn(nestedBuildTaskName)
+            doLast {
+                srOutputDir.mkdirs()
+                platforms.each { platform ->
+                    def libsDir = file("${rootDir}/${platform}/build/libs")
+                    if (!libsDir.exists()) {
+                        println("警告: 构建目录不存在 - ${libsDir}")
+                        return
+                    }
+                    copy {
+                        from(libsDir)
+                        include("*.jar")
+                        exclude("*dev-shadow.jar", "*sources.jar", "*javadoc.jar")
+                        into(srOutputDir)
+                    }
+                }
+            }
+        }
+
+        collectTaskByVersion[versionName] = collectTaskName
+        orderedNestedBuildTasks << nestedBuildTaskName
+        orderedCollectTasks << collectTaskName
+    }
+}
+
+for (int i = 1; i < orderedNestedBuildTasks.size(); i++) {
+    def currentTask = orderedNestedBuildTasks[i]
+    def previousTask = orderedNestedBuildTasks[i - 1]
+    tasks.named(currentTask) {
+        mustRunAfter(previousTask)
+    }
+}
+
+for (int i = 1; i < orderedCollectTasks.size(); i++) {
+    def currentTask = orderedCollectTasks[i]
+    def previousTask = orderedCollectTasks[i - 1]
+    tasks.named(currentTask) {
+        mustRunAfter(previousTask)
+    }
+}
+
+tasks.register("cleanBuildJars", Delete) {
+    group = "build"
+    description = "清理 build_jars 输出目录"
+    delete(srOutputDir)
+}
+
+tasks.register("buildOneVersion") {
+    group = "build"
+    description = "构建指定版本并收集产物，使用 -Psr.version=<configName>"
+    dependsOn("cleanBuildJars")
+    def requestedVersion = project.findProperty("sr.version")?.toString()
+    if (requestedVersion != null && !requestedVersion.isBlank() && collectTaskByVersion.containsKey(requestedVersion)) {
+        dependsOn(collectTaskByVersion[requestedVersion])
+    }
+    doFirst {
+        def versionName = project.findProperty("sr.version")?.toString()
+        if (versionName == null || versionName.isBlank()) {
+            throw new GradleException("请通过 -Psr.version=<configName> 指定版本，例如 -Psr.version=1.20.6")
+        }
+        if (!collectTaskByVersion.containsKey(versionName)) {
+            throw new GradleException("未找到可构建版本: ${versionName}")
+        }
+    }
+}
+
+tasks.register("buildAllVersions") {
+    group = "build"
+    description = "遍历 configs/*.json 构建全部版本并收集产物到 build_jars"
+    dependsOn("cleanBuildJars")
+    dependsOn(collectTaskByVersion.values())
+    doFirst {
+        if (!srConfigsDir.exists()) {
+            throw new GradleException("configs 目录不存在: ${srConfigsDir}")
+        }
+        if (collectTaskByVersion.isEmpty()) {
+            throw new GradleException("未找到可构建版本（可能全部 skip_build=true）")
+        }
+    }
+    doLast {
+        println("\n构建完成，输出目录: ${srOutputDir}")
+    }
 }
 
 
