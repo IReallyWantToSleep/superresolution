@@ -5,10 +5,10 @@ on:
     inputs:
       name:
         description: "name"
-        required: false
+        required: true
       tag_name:
         description: "tag_name"
-        required: false
+        required: true
 
 jobs:
   build:
@@ -33,7 +33,7 @@ jobs:
       - name: Build
         id: build
         if: ${{ !cancelled() }}
-        run: ./gradlew --no-daemon buildAllVersions --console=plain
+        run: ./gradlew buildAllVersions
 
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
