@@ -57,11 +57,9 @@ import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class DLSS extends AbstractAlgorithm {
     private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 3;
-    private static final int MAX_COMMAND_BUFFER_RING_SIZE = 8;
     private static boolean providerLoaded = false;
     private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
-            INITIAL_COMMAND_BUFFER_RING_SIZE,
-            MAX_COMMAND_BUFFER_RING_SIZE
+            INITIAL_COMMAND_BUFFER_RING_SIZE
     );
     private SRUpscaleContext context;
     private GlImportableTexture2D inputColorGlTexture;
