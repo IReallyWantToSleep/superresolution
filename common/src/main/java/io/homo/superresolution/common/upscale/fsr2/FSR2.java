@@ -19,19 +19,23 @@
 package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import org.joml.Vector2f;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 
 
 public class FSR2 extends AbstractAlgorithm {
@@ -43,18 +47,6 @@ public class FSR2 extends AbstractAlgorithm {
     public FSR2() {
         super();
         RenderSystem.assertOnRenderThread();
-    }
-
-    public void resize(int width, int height) {
-        RenderSystem.assertOnRenderThread();
-        this.output.resize(width, height);
-        outputFbo.resizeFrameBuffer(width, height);
-        fsr2Context.resize(new Fsr2Dimensions(
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight(),
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        ));
     }
 
     @Override
@@ -107,12 +99,48 @@ public class FSR2 extends AbstractAlgorithm {
         return dispatchFSR2(dispatchResource);
     }
 
-
     public void destroy() {
         this.output.destroy();
         outputFbo.destroy();
         fsr2Context.destroy();
         exposureTexture.destroy();
+    }
+
+    public void resize(int width, int height) {
+        RenderSystem.assertOnRenderThread();
+        this.output.resize(width, height);
+        outputFbo.resizeFrameBuffer(width, height);
+        fsr2Context.resize(new Fsr2Dimensions(
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight(),
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
+        ));
+    }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputFbo;
+    }
+
+    @Override
+    public int getOutputTextureId() {
+        return Math.toIntExact(output.handle());
+    }
+
+    @Override
+    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        //return new Vector2f(0);
+        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
+        return new Vector2f(
+                originJitter.x,
+                originJitter.y
+        );
+    }
+
+    @Override
+    public boolean isSupportJitter() {
+        return true;
     }
 
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
@@ -179,32 +207,13 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.cameraFovAngleVertical = cameraFovAngleVertical;
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
-        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
-        dispatchDescription.commandBuffer = RenderSystems.opengl().device().commandDecoder().currentCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
+        dispatchDescription.commandBuffer = commandBuffer;
         fsr2Context.dispatch(dispatchDescription);
-        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+        commandBuffer.end();
+        RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
         return true;
-    }
-
-    @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFbo;
-    }
-
-
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(output.handle());
-    }
-
-    @Override
-    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        //return new Vector2f(0);
-        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-        return new Vector2f(
-                originJitter.x,
-                originJitter.y
-        );
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
@@ -221,10 +230,5 @@ public class FSR2 extends AbstractAlgorithm {
                 (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
         );
         */
-    }
-
-    @Override
-    public boolean isSupportJitter() {
-        return true;
     }
 }

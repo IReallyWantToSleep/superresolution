@@ -38,11 +38,6 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     private static final int DEFAULT_ALIGNMENT = 4;
     private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
     private final TextureDescription description;
-
-    public TextureMipmapSettings getMipmapSettings() {
-        return description.getMipmapSettings();
-    }
-
     private int id;
     private int width;
     private int height;
@@ -184,6 +179,24 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         return description.getWrapMode();
     }
 
+    public TextureMipmapSettings getMipmapSettings() {
+        return description.getMipmapSettings();
+    }
+
+    public TextureDescription getTextureDescription() {
+        return description;
+    }
+
+    @Override
+    public int getWidth() {
+        return width;
+    }
+
+    @Override
+    public int getHeight() {
+        return height;
+    }
+
     public void configureMipmap() {
         if (description.getMipmapSettings().isAutoGenerate()) {
             this.currentMipmapLevel = calculateMaxMipLevel();
@@ -198,22 +211,8 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
     }
 
     @Override
-    public int getWidth() {
-        return width;
-    }
-
-    @Override
-    public int getHeight() {
-        return height;
-    }
-
-    @Override
     public String getDebugLabel() {
         return string();
-    }
-
-    public TextureDescription getTextureDescription() {
-        return description;
     }
 
     @Override

@@ -18,13 +18,13 @@
 
 package io.homo.superresolution.core.graphics.impl.framebuffer;
 
-import java.util.List;
-
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.graphics.impl.GpuObject;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.impl.Destroyable;
+
+import java.util.List;
 
 /**
  * 帧缓冲区
@@ -52,12 +52,14 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
 
     /**
      * 获取颜色附件列表
+     *
      * @return 颜色附件列表
      */
     List<ColorAttachment> getColorAttachments();
 
     /**
      * 获取深度/模板附件
+     *
      * @return 深度/模板附件，如果没有则返回null
      */
     DepthStencilAttachment getDepthStencilAttachment();
@@ -67,6 +69,7 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
      *
      * @param width  新宽度（像素单位）
      * @param height 新高度（像素单位）
+     *
      * @throws IllegalArgumentException 当尺寸值无效时抛出
      */
     void resizeFrameBuffer(int width, int height);
@@ -75,6 +78,7 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
      * 获取附件纹理的标识符
      *
      * @param attachmentType 附件类型（如颜色附件0、深度附件等）
+     *
      * @return 纹理ID，无附件时返回0
      */
     int getTextureId(FrameBufferAttachmentType attachmentType);
@@ -83,6 +87,7 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
      * 获取附件纹理对象
      *
      * @param attachmentType 附件类型
+     *
      * @return 纹理实例，无附件时返回null
      */
     ITexture getTexture(FrameBufferAttachmentType attachmentType);
@@ -116,6 +121,7 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
      * <p><b>默认不支持转换</b>，需实现类覆盖</p>
      *
      * @return Minecraft RenderTarget实例
+     *
      * @throws UnsupportedOperationException 默认实现抛出异常
      */
     default RenderTarget asMcRenderTarget() {

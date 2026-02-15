@@ -37,20 +37,20 @@ public abstract class ComputePipeline implements IPipeline {
         return new Builder();
     }
 
-    public IShaderProgram shader() {
-        return shader;
-    }
-
     public PipelineDescriptorSet descriptorSet() {
         return descriptorSet;
     }
 
+    public IShaderProgram shader() {
+        return shader;
+    }
+
     public static class Builder {
+        private IShaderProgram shader;
+
         public IShaderProgram shader() {
             return shader;
         }
-
-        private IShaderProgram shader;
 
         public Builder shader(IShaderProgram shader) {
             this.shader = shader;

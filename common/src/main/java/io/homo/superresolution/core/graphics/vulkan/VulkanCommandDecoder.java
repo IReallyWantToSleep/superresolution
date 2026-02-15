@@ -16,31 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.command;
+package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
-
-import static org.lwjgl.vulkan.VK10.*;
-
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import static org.lwjgl.vulkan.VK10.*;
+
 public class VulkanCommandDecoder implements ICommandDecoder {
     private VulkanDevice vulkanDevice;
-    private VulkanCommandBuffer currentCommandBuffer;
 
     public VulkanCommandDecoder(VulkanDevice vulkanDevice) {
         this.vulkanDevice = vulkanDevice;
@@ -238,36 +231,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ) {
 
-    }
-
-    @Override
-    public ICommandBuffer beginCommandBuffer() {
-        currentCommandBuffer = (VulkanCommandBuffer) vulkanDevice.createCommandBuffer();
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
-                    .sType(VK10.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
-                    .flags(VK10.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            VK_CHECK(VK10.vkBeginCommandBuffer(currentCommandBuffer.getNativeCommandBuffer(), beginInfo));
-        }
-        return currentCommandBuffer;
-    }
-
-    @Override
-    public ICommandBuffer endCommandBuffer() {
-        VK_CHECK(VK10.vkEndCommandBuffer(currentCommandBuffer.getNativeCommandBuffer()));
-        return currentCommandBuffer;
-    }
-
-    @Override
-    public ICommandBuffer endAndSubmitCommandBuffer() {
-        VK_CHECK(VK10.vkEndCommandBuffer(currentCommandBuffer.getNativeCommandBuffer()));
-        vulkanDevice.submitCommandBuffer(currentCommandBuffer);
-        return null;
-    }
-
-    @Override
-    public ICommandBuffer currentCommandBuffer() {
-        return currentCommandBuffer;
     }
 
     @Override

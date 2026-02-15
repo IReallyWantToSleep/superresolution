@@ -31,6 +31,10 @@ public class ShaderResourcesLayout {
     public ShaderResourcesLayout() {
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public ShaderResourcesLayout addUniformBuffer(String name, int binding, int bufferSize) {
         resources.put(name, ShaderResourceDescription.builder(name, ShaderResourceType.UniformBuffer)
                 .binding(binding)
@@ -38,7 +42,6 @@ public class ShaderResourcesLayout {
                 .build());
         return this;
     }
-
 
     public ShaderResourcesLayout addSamplerTexture(String name, int binding) {
         resources.put(name, ShaderResourceDescription.builder(name, ShaderResourceType.SamplerTexture)
@@ -74,10 +77,6 @@ public class ShaderResourcesLayout {
 
     public boolean hasResource(String name) {
         return resources.containsKey(name);
-    }
-    
-    public static Builder builder() {
-        return new Builder();
     }
 
     public static class Builder {

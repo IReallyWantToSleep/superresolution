@@ -23,7 +23,8 @@ import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
-import io.homo.superresolution.core.graphics.impl.vertex.*;
+import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 
 import java.util.Objects;
 
@@ -88,11 +89,6 @@ public class GrapeGraphicsJob extends GpuComputeJob<GrapeGraphicsJob> implements
         );
     }
 
-    private boolean isViewportValid() {
-        return viewport[0] >= 0 && viewport[1] >= 0
-                && viewport[2] > 0 && viewport[3] > 0;
-    }
-
     @Override
     public void destroy() {
         pipeline = null;
@@ -103,5 +99,10 @@ public class GrapeGraphicsJob extends GpuComputeJob<GrapeGraphicsJob> implements
         if (renderPass != null) {
             renderPass.destroy();
         }
+    }
+
+    private boolean isViewportValid() {
+        return viewport[0] >= 0 && viewport[1] >= 0
+                && viewport[2] > 0 && viewport[3] > 0;
     }
 }

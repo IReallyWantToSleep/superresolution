@@ -20,8 +20,10 @@ package io.homo.superresolution.core.graphics.impl.device;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
+import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
@@ -38,6 +40,7 @@ public interface IDevice {
      * 创建一个纹理。
      *
      * @param description 纹理描述对象
+     *
      * @return 新创建的纹理对象
      */
     ITexture createTexture(TextureDescription description);
@@ -46,6 +49,7 @@ public interface IDevice {
      * 创建一个着色器程序。
      *
      * @param description 着色器描述对象
+     *
      * @return 新创建的着色器程序对象
      */
     IShaderProgram createShaderProgram(ShaderDescription description);
@@ -54,6 +58,7 @@ public interface IDevice {
      * 创建顶点缓冲区
      *
      * @param description 顶点缓冲区描述对象，包含缓冲区大小和用途等参数
+     *
      * @return 新创建的顶点缓冲区对象
      */
     IVertexBuffer createVertexBuffer(VertexBufferDescription description);
@@ -62,6 +67,7 @@ public interface IDevice {
      * 创建缓冲区
      *
      * @param description 缓冲区描述对象，包含缓冲区大小和用途等参数
+     *
      * @return 新创建的缓冲区对象
      */
     IBuffer createBuffer(BufferDescription description);
@@ -70,6 +76,7 @@ public interface IDevice {
      * 创建 RenderPass
      *
      * @param builder RenderPass构建器
+     *
      * @return 新创建的RenderPass对象
      */
     RenderPass createRenderPass(RenderPass.Builder builder);
@@ -78,6 +85,7 @@ public interface IDevice {
      * 创建 PipelineDescriptorSet
      *
      * @param shader 着色器程序
+     *
      * @return 新创建的 PipelineDescriptorSet 对象
      */
     PipelineDescriptorSet createDescriptorSet(IShaderProgram shader);
@@ -86,6 +94,7 @@ public interface IDevice {
      * 创建 ComputePipeline
      *
      * @param builder ComputePipeline构建器
+     *
      * @return 新创建的 ComputePipeline 对象
      */
     ComputePipeline createComputePipeline(ComputePipeline.Builder builder);
@@ -94,11 +103,18 @@ public interface IDevice {
      * 创建 GraphicsPipeline
      *
      * @param builder GraphicsPipeline构建器
+     *
      * @return 新创建的 GraphicsPipeline 对象
      */
     GraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder);
 
-    ICommandBuffer createCommandBuffer();
+    default ICommandBuffer createCommandBuffer() {
+        return defaultCommandPool().createCommandBuffer();
+    }
+
+    ICommandPool createCommandPool(CommandPoolFlags... flags);
+
+    ICommandPool defaultCommandPool();
 
     /**
      * 获取命令解码器

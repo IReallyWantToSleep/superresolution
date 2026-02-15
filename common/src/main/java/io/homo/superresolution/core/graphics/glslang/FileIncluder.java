@@ -18,9 +18,9 @@
 
 package io.homo.superresolution.core.graphics.glslang;
 
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.utils.FileReadHelper;
-import io.homo.superresolution.api.platform.Platform;
 import net.minecraft.client.Minecraft;
 
 import java.nio.file.Files;
@@ -107,7 +107,9 @@ public class FileIncluder {
             return headerName;
         }
         Path base = Paths.get(includerName).getParent();
-        if (base == null) base = Paths.get("");
+        if (base == null) {
+            base = Paths.get("");
+        }
         Path resolved = base.resolve(headerName).normalize();
         String rel = resolved.toString().replace("\\", "/");
         return rel;

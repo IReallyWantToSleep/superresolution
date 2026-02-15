@@ -36,44 +36,43 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.semaphore.VkGlInteropSemaphore;
-import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRing;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 import org.lwjgl.opengl.GL42;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.opengl.EXTSemaphore.*;
-import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class XeSS extends AbstractAlgorithm {
+    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 3;
+    private static final int MAX_COMMAND_BUFFER_RING_SIZE = 8;
+    private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
+            INITIAL_COMMAND_BUFFER_RING_SIZE,
+            MAX_COMMAND_BUFFER_RING_SIZE
+    );
     private SRUpscaleContext context;
-
     private GlImportableTexture2D inputColorGlTexture;
     private VulkanTexture inputColorVkTexture;
-
     private GlImportableTexture2D inputDepthGlTexture;
     private VulkanTexture inputDepthVkTexture;
-
     private GlImportableTexture2D inputMotionVectorsGlTexture;
     private VulkanTexture inputMotionVectorsVkTexture;
-
     private GlImportableTexture2D outputColorGlTexture;
     private GlTexture2D outputColorTexture;
     private VulkanTexture outputColorVkTexture;
-
     private GlFrameBuffer outputFrameBuffer;
-
     private VkGlInteropSemaphore syncSemaphore;
     private VkGlInteropSemaphore syncVkSemaphore;
 
@@ -86,7 +85,7 @@ public class XeSS extends AbstractAlgorithm {
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
             return;
         }
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
 
         if (context != null) {
             if (context.nativePtr > 0) {
@@ -129,7 +128,7 @@ public class XeSS extends AbstractAlgorithm {
         extraParams.setString(
                 "XESS_DLL_PATH",
                 SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().resolve("libxess.dll").toAbsolutePath().toString()
-                );
+        );
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
@@ -146,7 +145,7 @@ public class XeSS extends AbstractAlgorithm {
     }
 
     protected void destroySharedTexture() {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
         if (this.inputColorVkTexture != null) {
             this.inputColorVkTexture.destroy();
         }
@@ -298,11 +297,10 @@ public class XeSS extends AbstractAlgorithm {
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 });
 
-        //vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
-        RenderSystems.vulkan().device().commandDecoder().beginCommandBuffer();
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device()
-                .commandDecoder().currentCommandBuffer();
+        VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
+        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+        commandBuffer.begin();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
         desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
                 commandBuffer.getNativeCommandBuffer()));
@@ -343,22 +341,13 @@ public class XeSS extends AbstractAlgorithm {
                 context,
                 desc);
 
-        RenderSystems.vulkan().device().commandDecoder().endCommandBuffer();
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pCommandBuffers(
-                            stack.pointers(
-                                    commandBuffer
-                                            .getNativeCommandBuffer()
-                                            .address()))
-                    .pSignalSemaphores(stack.longs(syncVkSemaphore.getVkSemaphoreHandle()))
-                    .pWaitSemaphores(stack.longs(syncSemaphore.getVkSemaphoreHandle()))
-                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
-            VK_CHECK(vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo,
-                    VK_NULL_HANDLE));
-        }
+        commandBuffer.end();
+        vulkanDevice.submitCommandBuffer(
+                commandBuffer,
+                new long[]{syncSemaphore.getVkSemaphoreHandle()},
+                new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                new long[]{syncVkSemaphore.getVkSemaphoreHandle()}
+        );
 
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
@@ -377,7 +366,8 @@ public class XeSS extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
+        commandBufferRing.destroy();
         destroySharedTexture();
         syncSemaphore.destroy();
         syncVkSemaphore.destroy();
@@ -389,7 +379,8 @@ public class XeSS extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
+        commandBufferRing.destroy();
         updateXeSS();
         destroySharedTexture();
         createSharedTexture();

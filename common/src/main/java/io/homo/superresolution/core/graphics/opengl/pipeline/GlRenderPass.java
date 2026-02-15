@@ -30,8 +30,6 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.opengl.OpenGLException;
 import io.homo.superresolution.core.graphics.opengl.command.GlCommandBuffer;
 
-import static org.lwjgl.opengl.GL11.*;
-
 public class GlRenderPass extends RenderPass {
 
     public GlRenderPass(GraphicsPipeline pipeline, IFrameBuffer frameBuffer, PassClearState clearState) {

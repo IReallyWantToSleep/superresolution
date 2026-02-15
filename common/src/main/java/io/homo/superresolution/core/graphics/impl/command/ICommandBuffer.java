@@ -21,6 +21,12 @@ package io.homo.superresolution.core.graphics.impl.command;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 
 public interface ICommandBuffer {
+    void begin();
+
+    void end();
+
+    void reset();
+
     void destroy();
 
     void submit(IDevice device);
@@ -28,5 +34,19 @@ public interface ICommandBuffer {
     IDevice getDevice();
 
     ICommandDecoder getDecoder();
+
+    ICommandPool ownerPool();
+
+    CommandBufferState state();
+
+    default boolean isInFlight() {
+        return state() == CommandBufferState.Pending;
+    }
+
+    default boolean isFenceSignaled() {
+        return !isInFlight();
+    }
+
+    CommandBufferBehavior behavior();
 }
 

@@ -72,11 +72,15 @@ public class GlSampler implements GpuObject, Destroyable {
 
     @Override
     public void destroy() {
-        if (handle > 0) DSA.deleteSampler(handle);
+        if (handle > 0) {
+            DSA.deleteSampler(handle);
+        }
         handle = 0;
     }
 
     public enum SamplerType {
-        NearestClamp, LinearRepeat, LinearClamp
+        NearestClamp,
+        LinearRepeat,
+        LinearClamp
     }
 }

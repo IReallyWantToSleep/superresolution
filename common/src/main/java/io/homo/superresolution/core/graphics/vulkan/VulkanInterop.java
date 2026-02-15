@@ -29,9 +29,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
-import org.lwjgl.vulkan.KHRExternalSemaphoreWin32;
-import org.lwjgl.vulkan.KHRExternalSemaphoreFd;
-
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK11.*;
 
@@ -76,16 +73,6 @@ public class VulkanInterop {
     private static class LinuxVulkanInteropExtImpl implements VulkanInteropExt {
 
         @Override
-        public void glImportMemoryEXT(int memoryObject, long size, long handle) {
-            EXTMemoryObjectFD.glImportMemoryFdEXT(
-                    memoryObject,
-                    size,
-                    EXTMemoryObjectFD.GL_HANDLE_TYPE_OPAQUE_FD_EXT,
-                    (int) handle
-            );
-        }
-
-        @Override
         public void glImportSemaphoreHandleEXT(MemoryStack stack, int semaphore, long handle) {
             EXTSemaphoreFD.glImportSemaphoreFdEXT(semaphore, EXTSemaphoreFD.GL_HANDLE_TYPE_OPAQUE_FD_EXT, (int) handle);
         }
@@ -93,7 +80,7 @@ public class VulkanInterop {
         @Override
         public long vkGetSemaphoreHandleKHR(MemoryStack stack, VkDevice device, Struct pGetHandleInfo) {
             int[] fd = new int[]{0};
-            VK_CHECK(KHRExternalSemaphoreFd.vkGetSemaphoreFdKHR(device, (VkSemaphoreGetFdInfoKHR) pGetHandleInfo, fd),"Failed to export Linux semaphore handle");
+            VK_CHECK(KHRExternalSemaphoreFd.vkGetSemaphoreFdKHR(device, (VkSemaphoreGetFdInfoKHR) pGetHandleInfo, fd), "Failed to export Linux semaphore handle");
             return fd[0];
         }
 
@@ -141,19 +128,19 @@ public class VulkanInterop {
                     "Failed to export Linux memory handle");
             return fd[0];
         }
+
+        @Override
+        public void glImportMemoryEXT(int memoryObject, long size, long handle) {
+            EXTMemoryObjectFD.glImportMemoryFdEXT(
+                    memoryObject,
+                    size,
+                    EXTMemoryObjectFD.GL_HANDLE_TYPE_OPAQUE_FD_EXT,
+                    (int) handle
+            );
+        }
     }
 
     private static class WindowsVulkanInteropExtImpl implements VulkanInteropExt {
-        @Override
-        public void glImportMemoryEXT(int memoryObject, long size, long handle) {
-            EXTMemoryObjectWin32.glImportMemoryWin32HandleEXT(
-                    memoryObject,
-                    size,
-                    EXTMemoryObjectWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT,
-                    handle
-            );
-        }
-
         @Override
         public void glImportSemaphoreHandleEXT(MemoryStack stack, int semaphore, long handle) {
             EXTSemaphoreWin32.glImportSemaphoreWin32HandleEXT(semaphore, EXTSemaphoreWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, handle);
@@ -166,7 +153,7 @@ public class VulkanInterop {
                     device,
                     (VkSemaphoreGetWin32HandleInfoKHR) pGetHandleInfo,
                     fd
-            ),"Failed to export Windows memory handle");
+            ), "Failed to export Windows memory handle");
             return fd.get(0);
         }
 
@@ -213,6 +200,16 @@ public class VulkanInterop {
             VK_CHECK(KHRExternalMemoryWin32.vkGetMemoryWin32HandleKHR(device, getInfo, pHandle),
                     "Failed to export Windows memory handle");
             return pHandle.get(0);
+        }
+
+        @Override
+        public void glImportMemoryEXT(int memoryObject, long size, long handle) {
+            EXTMemoryObjectWin32.glImportMemoryWin32HandleEXT(
+                    memoryObject,
+                    size,
+                    EXTMemoryObjectWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT,
+                    handle
+            );
         }
     }
 }

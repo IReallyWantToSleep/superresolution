@@ -36,27 +36,33 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.semaphore.VkGlInteropSemaphore;
-import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRing;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkSubmitInfo;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
-import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class DLSS extends AbstractAlgorithm {
+    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 3;
+    private static final int MAX_COMMAND_BUFFER_RING_SIZE = 8;
     private static boolean providerLoaded = false;
+    private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
+            INITIAL_COMMAND_BUFFER_RING_SIZE,
+            MAX_COMMAND_BUFFER_RING_SIZE
+    );
     private SRUpscaleContext context;
     private GlImportableTexture2D inputColorGlTexture;
     private VulkanTexture inputColorVkTexture;
@@ -80,7 +86,7 @@ public class DLSS extends AbstractAlgorithm {
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
             return;
         }
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
 
         if (!providerLoaded) {
             SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
@@ -98,7 +104,8 @@ public class DLSS extends AbstractAlgorithm {
         this.context = new SRUpscaleContext(0);
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) vulkanDevice.commandDecoder().beginCommandBuffer();
+        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+        commandBuffer.begin();
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
@@ -123,7 +130,8 @@ public class DLSS extends AbstractAlgorithm {
                 provider,
                 upscaleContextDesc);
         SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(context);
-        vulkanDevice.commandDecoder().endAndSubmitCommandBuffer();
+        commandBuffer.end();
+        vulkanDevice.submitCommandBuffer(commandBuffer);
         SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code);
         SuperResolution.LOGGER.info("'srInitUpscaleContext' return code: {}", code0);
         SuperResolution.LOGGER.info("'SRUpscaleContext' pointer: {}", context.nativePtr);
@@ -131,7 +139,7 @@ public class DLSS extends AbstractAlgorithm {
     }
 
     protected void destroySharedTexture() {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
         if (this.inputColorVkTexture != null) {
             this.inputColorVkTexture.destroy();
         }
@@ -278,9 +286,9 @@ public class DLSS extends AbstractAlgorithm {
 
         //vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
 
-        RenderSystems.vulkan().device().commandDecoder().beginCommandBuffer();
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) RenderSystems.vulkan().device()
-                .commandDecoder().currentCommandBuffer();
+        VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
+        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+        commandBuffer.begin();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
         desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
                 commandBuffer.getNativeCommandBuffer()));
@@ -321,22 +329,13 @@ public class DLSS extends AbstractAlgorithm {
                 context,
                 desc);
 
-        RenderSystems.vulkan().device().commandDecoder().endCommandBuffer();
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pCommandBuffers(
-                            stack.pointers(
-                                    commandBuffer
-                                            .getNativeCommandBuffer()
-                                            .address()))
-                    .pSignalSemaphores(stack.longs(syncVkSemaphore.getVkSemaphoreHandle()))
-                    .pWaitSemaphores(stack.longs(syncSemaphore.getVkSemaphoreHandle()))
-                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
-            vkQueueSubmit(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue(), submitInfo,
-                    VK_NULL_HANDLE);
-        }
+        commandBuffer.end();
+        vulkanDevice.submitCommandBuffer(
+                commandBuffer,
+                new long[]{syncSemaphore.getVkSemaphoreHandle()},
+                new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                new long[]{syncVkSemaphore.getVkSemaphoreHandle()}
+        );
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{},
@@ -349,7 +348,8 @@ public class DLSS extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
+        commandBufferRing.destroy();
         destroySharedTexture();
         syncSemaphore.destroy();
         syncVkSemaphore.destroy();
@@ -361,7 +361,8 @@ public class DLSS extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
+        commandBufferRing.destroy();
         destroySharedTexture();
         if (context != null && context.nativePtr > 0) {
             SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
@@ -371,13 +372,13 @@ public class DLSS extends AbstractAlgorithm {
     }
 
     @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(outputColorGlTexture.handle());
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputFrameBuffer;
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFrameBuffer;
+    public int getOutputTextureId() {
+        return Math.toIntExact(outputColorGlTexture.handle());
     }
 
     @Override
@@ -388,6 +389,11 @@ public class DLSS extends AbstractAlgorithm {
                 originJitter.x,
                 originJitter.y // Y轴取反
         );
+    }
+
+    @Override
+    public boolean isSupportJitter() {
+        return true;
     }
 
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
@@ -404,10 +410,5 @@ public class DLSS extends AbstractAlgorithm {
          * (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
          * );
          */
-    }
-
-    @Override
-    public boolean isSupportJitter() {
-        return true;
     }
 }

@@ -22,6 +22,51 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 
 public class SRDispatchCommandBufferInfo {
     public SRRenderApiType renderApiType;
+    private OpenGLCommandBuffer openglCommandBuffer;
+    private VulkanCommandBuffer vulkanCommandBuffer;
+
+    private SRDispatchCommandBufferInfo() {
+    }
+
+    public static SRDispatchCommandBufferInfo createOpenGL() {
+        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
+        info.renderApiType = SRRenderApiType.OPENGL;
+        info.openglCommandBuffer = new OpenGLCommandBuffer();
+        return info;
+    }
+
+    public static SRDispatchCommandBufferInfo createVulkan(long commandBuffer) {
+        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
+        info.renderApiType = SRRenderApiType.VULKAN;
+        info.vulkanCommandBuffer = new VulkanCommandBuffer(commandBuffer);
+        return info;
+    }
+
+    public static SRDispatchCommandBufferInfo createVulkan(VkCommandBuffer commandBuffer) {
+        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
+        info.renderApiType = SRRenderApiType.VULKAN;
+        info.vulkanCommandBuffer = new VulkanCommandBuffer(commandBuffer);
+        return info;
+    }
+
+    public SRRenderApiType getRenderApiType() {
+        return renderApiType;
+    }
+
+    public OpenGLCommandBuffer getOpenglCommandBuffer() {
+        return openglCommandBuffer;
+    }
+
+    public VulkanCommandBuffer getVulkanCommandBuffer() {
+        return vulkanCommandBuffer;
+    }
+
+    public long getVulkanCommandBufferAddress() {
+        if (renderApiType == SRRenderApiType.VULKAN && vulkanCommandBuffer != null) {
+            return vulkanCommandBuffer.commandBuffer;
+        }
+        return 0;
+    }
 
     public static class OpenGLCommandBuffer {
     }
@@ -48,51 +93,5 @@ public class SRDispatchCommandBufferInfo {
         public void setCommandBuffer(long commandBuffer) {
             this.commandBuffer = commandBuffer;
         }
-    }
-
-    private OpenGLCommandBuffer openglCommandBuffer;
-    private VulkanCommandBuffer vulkanCommandBuffer;
-
-    public static SRDispatchCommandBufferInfo createOpenGL() {
-        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
-        info.renderApiType = SRRenderApiType.OPENGL;
-        info.openglCommandBuffer = new OpenGLCommandBuffer();
-        return info;
-    }
-
-    public static SRDispatchCommandBufferInfo createVulkan(long commandBuffer) {
-        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
-        info.renderApiType = SRRenderApiType.VULKAN;
-        info.vulkanCommandBuffer = new VulkanCommandBuffer(commandBuffer);
-        return info;
-    }
-
-    public static SRDispatchCommandBufferInfo createVulkan(VkCommandBuffer commandBuffer) {
-        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
-        info.renderApiType = SRRenderApiType.VULKAN;
-        info.vulkanCommandBuffer = new VulkanCommandBuffer(commandBuffer);
-        return info;
-    }
-
-    private SRDispatchCommandBufferInfo() {
-    }
-
-    public SRRenderApiType getRenderApiType() {
-        return renderApiType;
-    }
-
-    public OpenGLCommandBuffer getOpenglCommandBuffer() {
-        return openglCommandBuffer;
-    }
-
-    public VulkanCommandBuffer getVulkanCommandBuffer() {
-        return vulkanCommandBuffer;
-    }
-
-    public long getVulkanCommandBufferAddress() {
-        if (renderApiType == SRRenderApiType.VULKAN && vulkanCommandBuffer != null) {
-            return vulkanCommandBuffer.commandBuffer;
-        }
-        return 0;
     }
 }

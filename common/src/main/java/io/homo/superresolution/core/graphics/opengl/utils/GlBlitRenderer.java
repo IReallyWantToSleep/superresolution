@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.opengl.utils;
 
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
@@ -160,15 +161,18 @@ public class GlBlitRenderer {
         GlRenderPass pass = (GlRenderPass) getOrCreateRenderPass();
         pass.pipeline().descriptorSet().samplerTexture("uTexture", textureId);
 
-        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
         RenderSystems.opengl().device().commandDecoder()
                 .draw(
+                        commandBuffer,
                         pass,
                         PrimitiveType.TriangleStrip,
                         fullscreenQuad,
                         4,
                         0
                 );
-        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+        commandBuffer.end();
+        RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
     }
 }

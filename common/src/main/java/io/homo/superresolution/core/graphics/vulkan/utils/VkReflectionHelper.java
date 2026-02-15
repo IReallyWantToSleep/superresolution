@@ -36,9 +36,11 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static org.lwjgl.system.JNI.*;
-import static org.lwjgl.system.MemoryStack.*;
-import static org.lwjgl.system.MemoryUtil.*;
-import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.vulkan.VK10.VK_API_VERSION_1_0;
+import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
 /**
  * Since lwjgl-vulkan will be loaded into the LAYER PLUGIN,
@@ -63,6 +65,21 @@ public class VkReflectionHelper {
         long l = UNSAFE.staticFieldOffset(implLookup);
         return (MethodHandles.Lookup) UNSAFE.getObject(base, l);
     });
+    private static final VarHandle capabilitiesField = runReflective(() -> IMPL_LOOKUP.findVarHandle(
+            Class.forName("org.lwjgl.vulkan.DispatchableHandleInstance"),
+            "capabilities", VKCapabilitiesInstance.class
+    ));
+    private static final VarHandle addressField = runReflective(() -> IMPL_LOOKUP.findVarHandle(
+            Class.forName("org.lwjgl.system.Pointer$Default"),
+            "address", long.class
+    ));
+    private static final MethodHandle newVKCapabilitiesInstance = runReflective(() -> IMPL_LOOKUP.findConstructor(VKCapabilitiesInstance.class, MethodType.methodType(void.class, FunctionProvider.class, int.class, Set.class, Set.class)));
+    private static final MethodHandle getEnabledExtensionSet = runReflective(() -> IMPL_LOOKUP.findStatic(VK.class, "getEnabledExtensionSet", MethodType.methodType(Set.class, int.class, PointerBuffer.class)));
+    private static final MethodHandle getGlobalCommands = runReflective(() -> IMPL_LOOKUP.findStatic(VK.class, "getGlobalCommands", MethodType.methodType(GlobalCommands)));
+
+    // reflection replacement for VK's package-private methods.
+    private static final VarHandle vkGetInstanceProcAddr = runReflective(() -> IMPL_LOOKUP.findVarHandle(GlobalCommands, "vkGetInstanceProcAddr", long.class));
+    private static final Class<?> GlobalCommands = runReflective(() -> Class.forName("org.lwjgl.vulkan.VK$GlobalCommands"));
 
     public static VkInstance createVkInstanceSafely(long handle, VkInstanceCreateInfo ci) {
         try {
@@ -75,16 +92,6 @@ public class VkReflectionHelper {
             throw new RuntimeException(ex);
         }
     }
-
-    private static final VarHandle capabilitiesField = runReflective(() -> IMPL_LOOKUP.findVarHandle(
-            Class.forName("org.lwjgl.vulkan.DispatchableHandleInstance"),
-            "capabilities", VKCapabilitiesInstance.class
-    ));
-
-    private static final VarHandle addressField = runReflective(() -> IMPL_LOOKUP.findVarHandle(
-            Class.forName("org.lwjgl.system.Pointer$Default"),
-            "address", long.class
-    ));
 
     /**
      * Copied from LWJGL3.
@@ -165,14 +172,6 @@ public class VkReflectionHelper {
 
         return extensions;
     }
-
-    // reflection replacement for VK's package-private methods.
-
-    private static final Class<?> GlobalCommands = runReflective(() -> Class.forName("org.lwjgl.vulkan.VK$GlobalCommands"));
-    private static final MethodHandle newVKCapabilitiesInstance = runReflective(() -> IMPL_LOOKUP.findConstructor(VKCapabilitiesInstance.class, MethodType.methodType(void.class, FunctionProvider.class, int.class, Set.class, Set.class)));
-    private static final MethodHandle getEnabledExtensionSet = runReflective(() -> IMPL_LOOKUP.findStatic(VK.class, "getEnabledExtensionSet", MethodType.methodType(Set.class, int.class, PointerBuffer.class)));
-    private static final MethodHandle getGlobalCommands = runReflective(() -> IMPL_LOOKUP.findStatic(VK.class, "getGlobalCommands", MethodType.methodType(GlobalCommands)));
-    private static final VarHandle vkGetInstanceProcAddr = runReflective(() -> IMPL_LOOKUP.findVarHandle(GlobalCommands, "vkGetInstanceProcAddr", long.class));
 
     public static long getVkGetInstanceProcAddr() {
         try {

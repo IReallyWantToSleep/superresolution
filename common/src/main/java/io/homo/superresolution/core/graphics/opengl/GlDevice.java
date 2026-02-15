@@ -19,13 +19,15 @@
 package io.homo.superresolution.core.graphics.opengl;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
+import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -33,8 +35,8 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.command.GlCommandBuffer;
 import io.homo.superresolution.core.graphics.opengl.command.GlCommandDecoder;
+import io.homo.superresolution.core.graphics.opengl.command.GlCommandPool;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
@@ -45,10 +47,12 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 
 public class GlDevice implements IDevice {
-    private GlCommandDecoder commandDecoder;
+    private final GlCommandDecoder commandDecoder;
+    private final GlCommandPool defaultCommandPool;
 
     public GlDevice() {
         this.commandDecoder = new GlCommandDecoder(this);
+        this.defaultCommandPool = new GlCommandPool(this, java.util.EnumSet.of(CommandPoolFlags.Reset));
     }
 
     @Override
@@ -114,7 +118,21 @@ public class GlDevice implements IDevice {
 
     @Override
     public ICommandBuffer createCommandBuffer() {
-        return new GlCommandBuffer(this);
+        return defaultCommandPool.createCommandBuffer();
+    }
+
+    @Override
+    public ICommandPool createCommandPool(CommandPoolFlags... flags) {
+        java.util.EnumSet<CommandPoolFlags> poolFlags = java.util.EnumSet.noneOf(CommandPoolFlags.class);
+        if (flags != null) {
+            java.util.Collections.addAll(poolFlags, flags);
+        }
+        return new GlCommandPool(this, poolFlags);
+    }
+
+    @Override
+    public ICommandPool defaultCommandPool() {
+        return defaultCommandPool;
     }
 
     @Override

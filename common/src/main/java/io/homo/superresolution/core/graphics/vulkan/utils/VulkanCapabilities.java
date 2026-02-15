@@ -44,7 +44,9 @@ public class VulkanCapabilities {
     }
 
     public void init(VkInstance instance, VkPhysicalDevice physicalDevice) {
-        if (initialized) return;
+        if (initialized) {
+            return;
+        }
         this.instance = instance;
         this.physicalDevice = physicalDevice;
         try (MemoryStack stack = stackPush()) {

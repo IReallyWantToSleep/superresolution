@@ -19,7 +19,7 @@
 package io.homo.superresolution.srapi;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
 public class SRTextureResource {
     public SRTextureResourceDescription description;

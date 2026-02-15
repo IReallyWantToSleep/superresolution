@@ -23,6 +23,6 @@ public class SRUpscaleProvider {
 
     public SRUpscaleProvider(long nativePtr) {
         this.nativePtr = nativePtr;
-        
+
     }
 }

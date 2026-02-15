@@ -22,7 +22,6 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import org.joml.Vector3i;
 import org.joml.Vector4i;
@@ -116,12 +115,20 @@ public final class GrapeJobBuilders {
         }
 
         public GrapeClearTextureJob build() {
-            if (target == null) throw new IllegalStateException("Clear target must be specified");
+            if (target == null) {
+                throw new IllegalStateException("Clear target must be specified");
+            }
             GrapeClearTextureJob job = new GrapeClearTextureJob();
             job.clearTarget(target);
-            if (color != null) job.clearColor(color[0], color[1], color[2], color[3]);
-            if (depth != null) job.clearDepth(depth);
-            if (stencil != null) job.clearStencil(stencil);
+            if (color != null) {
+                job.clearColor(color[0], color[1], color[2], color[3]);
+            }
+            if (depth != null) {
+                job.clearDepth(depth);
+            }
+            if (stencil != null) {
+                job.clearStencil(stencil);
+            }
             return job;
         }
     }
@@ -131,7 +138,9 @@ public final class GrapeJobBuilders {
         private Supplier<Vector3i> workGroupSizeSupplier = () -> new Vector3i(1, 1, 1);
 
         public ComputeJobBuilder(ComputePipeline pipeline) {
-            if (pipeline == null) throw new IllegalArgumentException("Compute pipeline cannot be null");
+            if (pipeline == null) {
+                throw new IllegalArgumentException("Compute pipeline cannot be null");
+            }
             this.pipeline = pipeline;
         }
 
@@ -160,7 +169,9 @@ public final class GrapeJobBuilders {
         private float[] viewport = null;
 
         public GraphicsJobBuilder(GraphicsPipeline pipeline) {
-            if (pipeline == null) throw new IllegalArgumentException("Graphics pipeline cannot be null");
+            if (pipeline == null) {
+                throw new IllegalArgumentException("Graphics pipeline cannot be null");
+            }
             this.pipeline = pipeline;
         }
 

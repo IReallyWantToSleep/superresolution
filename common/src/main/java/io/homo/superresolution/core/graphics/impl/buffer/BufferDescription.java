@@ -54,7 +54,9 @@ public class BufferDescription {
         private BufferUsage usage;
 
         public Builder size(long size) {
-            if (size <= 0) throw new IllegalArgumentException("Size must be positive");
+            if (size <= 0) {
+                throw new IllegalArgumentException("Size must be positive");
+            }
             this.size = size;
             return this;
         }

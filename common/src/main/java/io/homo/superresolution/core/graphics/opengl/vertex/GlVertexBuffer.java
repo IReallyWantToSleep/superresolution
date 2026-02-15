@@ -24,10 +24,8 @@ import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 
 public class GlVertexBuffer implements IVertexBuffer {
     private final int id;
@@ -49,10 +47,6 @@ public class GlVertexBuffer implements IVertexBuffer {
         this.isMapped = false;
     }
 
-    public GlVertexArray getVao() {
-        return vao;
-    }
-
     public static GlVertexBuffer create(VertexBufferDescription description) {
         int bufferId = Gl.DSA.createBuffer();
         int usage = description.isDynamic() ? GL15.GL_DYNAMIC_DRAW : GL15.GL_STATIC_DRAW;
@@ -61,6 +55,9 @@ public class GlVertexBuffer implements IVertexBuffer {
                 description.getVertexFormat());
     }
 
+    public GlVertexArray getVao() {
+        return vao;
+    }
 
     @Override
     public long handle() {

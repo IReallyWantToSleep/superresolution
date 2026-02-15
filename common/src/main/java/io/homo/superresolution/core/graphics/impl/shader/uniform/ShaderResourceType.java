@@ -19,5 +19,7 @@
 package io.homo.superresolution.core.graphics.impl.shader.uniform;
 
 public enum ShaderResourceType {
-    UniformBuffer, SamplerTexture, StorageTexture
+    UniformBuffer,
+    SamplerTexture,
+    StorageTexture
 }

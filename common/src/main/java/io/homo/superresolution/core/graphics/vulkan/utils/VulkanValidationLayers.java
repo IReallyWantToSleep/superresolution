@@ -61,17 +61,6 @@ public class VulkanValidationLayers implements Destroyable {
         }
     }
 
-    public void setupDebugMessenger() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkDebugUtilsMessengerCreateInfoEXT createInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
-            populateDebugMessengerCreateInfo(createInfo);
-
-            LongBuffer pDebugMessenger = stack.mallocLong(1);
-            VK_CHECK(createDebugUtilsMessengerEXT(instance, createInfo, pDebugMessenger), "Failed to set up debug messenger");
-            debugMessenger = pDebugMessenger.get(0);
-        }
-    }
-
     public static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT createInfo) {
         createInfo.sType(VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT)
                 .messageSeverity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -109,6 +98,22 @@ public class VulkanValidationLayers implements Destroyable {
                 });
     }
 
+    public static PointerBuffer getValidationLayersPointerBuffer(MemoryStack stack) {
+        PointerBuffer buffer = stack.mallocPointer(REQUIRED_LAYERS.size());
+        REQUIRED_LAYERS.forEach(layer -> buffer.put(stack.UTF8(layer)));
+        return buffer.rewind();
+    }
+
+    public void setupDebugMessenger() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkDebugUtilsMessengerCreateInfoEXT createInfo = VkDebugUtilsMessengerCreateInfoEXT.calloc(stack);
+            populateDebugMessengerCreateInfo(createInfo);
+
+            LongBuffer pDebugMessenger = stack.mallocLong(1);
+            VK_CHECK(createDebugUtilsMessengerEXT(instance, createInfo, pDebugMessenger), "Failed to set up debug messenger");
+            debugMessenger = pDebugMessenger.get(0);
+        }
+    }
 
     private int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
         VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
@@ -123,12 +128,6 @@ public class VulkanValidationLayers implements Destroyable {
         }
 
         return VK_FALSE;
-    }
-
-    public static PointerBuffer getValidationLayersPointerBuffer(MemoryStack stack) {
-        PointerBuffer buffer = stack.mallocPointer(REQUIRED_LAYERS.size());
-        REQUIRED_LAYERS.forEach(layer -> buffer.put(stack.UTF8(layer)));
-        return buffer.rewind();
     }
 
     @Override

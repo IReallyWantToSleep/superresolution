@@ -163,3 +163,4 @@ build_jars
 __pycache__
 /native/cpp/SRNativeFSR/libraries/
 /native/cpp/SRNativeMain/libraries/
+/.claude/

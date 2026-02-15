@@ -36,12 +36,12 @@ public class TextureDescription {
     private TextureDescription() {
     }
 
-    public String getLabel() {
-        return label;
-    }
-
     public static TextureDescription.Builder create() {
         return new Builder();
+    }
+
+    public String getLabel() {
+        return label;
     }
 
     public int getWidth() {
@@ -98,13 +98,17 @@ public class TextureDescription {
         }
 
         public Builder width(int width) {
-            if (width <= 0) throw new IllegalArgumentException("Width must be positive");
+            if (width <= 0) {
+                throw new IllegalArgumentException("Width must be positive");
+            }
             description.width = width;
             return this;
         }
 
         public Builder height(int height) {
-            if (height <= 0) throw new IllegalArgumentException("Height must be positive");
+            if (height <= 0) {
+                throw new IllegalArgumentException("Height must be positive");
+            }
             description.height = height;
             return this;
         }

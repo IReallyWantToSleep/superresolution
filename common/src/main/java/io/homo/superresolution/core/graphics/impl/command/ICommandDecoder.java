@@ -49,58 +49,5 @@ public interface ICommandDecoder {
 
     void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ);
 
-
-    default void clearTextureRGBA(ITexture texture, float[] color) {
-        clearTextureRGBA(currentCommandBuffer(), texture, color);
-    }
-
-    default void clearTextureDepth(ITexture texture, float depth){
-        clearTextureDepth(currentCommandBuffer(), texture, depth);
-    }
-
-    default void clearTextureStencil(ITexture texture, int stencil) {
-        clearTextureStencil(currentCommandBuffer(), texture, stencil);
-    }
-
-    default void copyTexture(ITexture src, ITexture dst, int srcX0, int srcY0, int srcX1, int srcY1, int srcLevel, int dstX0, int dstY0, int dstX1, int dstY1, int dstLevel) {
-        copyTexture(currentCommandBuffer(), src, dst, srcX0, srcY0, srcX1, srcY1, srcLevel, dstX0, dstY0, dstX1, dstY1, dstLevel);
-    }
-
-    default void copyBuffer(IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size) {
-        copyBuffer(currentCommandBuffer(), src, dst, srcOffset, dstOffset, size);
-    }
-
-    default void setViewport(float x, float y, float width, float height) {
-        setViewport(currentCommandBuffer(), x, y, width, height);
-    }
-
-    default void setScissor(int x, int y, int width, int height) {
-        setScissor(currentCommandBuffer(), x, y, width, height);
-    }
-
-    default void setLineWidth(float width) {
-        setLineWidth(currentCommandBuffer(), width);
-    }
-
-    default void setBlendConstants(float r, float g, float b, float a) {
-        setBlendConstants(currentCommandBuffer(), r, g, b, a);
-    }
-
-    default void draw(RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
-        draw(currentCommandBuffer(), renderPass, primitiveType, vertexBuffer, vertexCount, firstVertex);
-    }
-
-    default void dispatch(ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ) {
-        dispatch(currentCommandBuffer(), computePipeline, groupCountX, groupCountY, groupCountZ);
-    }
-
-    ICommandBuffer beginCommandBuffer();
-
-    ICommandBuffer endCommandBuffer();
-
-    ICommandBuffer endAndSubmitCommandBuffer();
-
-    ICommandBuffer currentCommandBuffer();
-
     IDevice getDevice();
 }

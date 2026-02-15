@@ -20,24 +20,24 @@ package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
-import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
-import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
-import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.AbstractSgsrVariant;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.sgsr.v2.SgsrUtils;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
+import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
+import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import org.joml.Vector3i;
 
 import java.util.Optional;
@@ -67,11 +67,12 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     @Override
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         swapHistoryOutput();
-        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
         sgsrPipeline.execute(commandBuffer, "convert");
         sgsrPipeline.execute(commandBuffer, "upscale");
-        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+        commandBuffer.end();
+        RenderSystems.current().device().submitCommandBuffer(commandBuffer);
     }
 
     @Override

@@ -16,14 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.semaphore;
+package io.homo.superresolution.core.graphics.vulkan;
 
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
-import org.lwjgl.vulkan.VkSubmitInfo;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.opengl.EXTSemaphore.*;
@@ -34,18 +31,6 @@ public class VkGlInteropSemaphore {
     private final long glSemaphoreHandle;
     private final long semaphoreHandle;
     private final VulkanDevice device;
-
-    public long getVkSemaphoreHandle() {
-        return vkSemaphoreHandle;
-    }
-
-    public long getGlSemaphoreHandle() {
-        return glSemaphoreHandle;
-    }
-
-    public long getSemaphoreHandle() {
-        return semaphoreHandle;
-    }
 
     private VkGlInteropSemaphore(long vkSemaphoreHandle, long glSemaphoreHandle, long semaphoreHandle, VulkanDevice device) {
         this.vkSemaphoreHandle = vkSemaphoreHandle;
@@ -78,6 +63,18 @@ public class VkGlInteropSemaphore {
         }
     }
 
+    public long getVkSemaphoreHandle() {
+        return vkSemaphoreHandle;
+    }
+
+    public long getGlSemaphoreHandle() {
+        return glSemaphoreHandle;
+    }
+
+    public long getSemaphoreHandle() {
+        return semaphoreHandle;
+    }
+
     public void destroy() {
         vkDestroySemaphore(
                 device.getVkDevice(),
@@ -85,31 +82,6 @@ public class VkGlInteropSemaphore {
                 null
         );
         glDeleteSemaphoresEXT((int) glSemaphoreHandle);
-    }
-
-    public void signalVulkan(long[] commandBuffers) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pWaitSemaphores(null)
-                    .pSignalSemaphores(stack.longs(vkSemaphoreHandle))
-                    .pCommandBuffers(commandBuffers != null ? stack.pointers(commandBuffers) : null);
-            VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), submitInfo, VK_NULL_HANDLE));
-            VK_CHECK(vkQueueWaitIdle(device.getGraphicsQueue()));
-        }
-    }
-
-    public void waitVulkan(long[] commandBuffers) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pWaitSemaphores(stack.longs(vkSemaphoreHandle))
-                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT))
-                    .pSignalSemaphores(null)
-                    .pCommandBuffers(commandBuffers != null ? stack.pointers(commandBuffers) : null);
-            VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), submitInfo, VK_NULL_HANDLE));
-            VK_CHECK(vkQueueWaitIdle(device.getGraphicsQueue()));
-        }
     }
 
     public void signalOpenGL(int[] textures, int[] buffers, int[] dstLayouts) {
@@ -129,14 +101,6 @@ public class VkGlInteropSemaphore {
                 textures == null ? new int[]{} : textures,
                 srcLayouts == null ? new int[]{} : srcLayouts
         );
-    }
-
-    public void signalVulkan() {
-        signalVulkan(null);
-    }
-
-    public void waitVulkan() {
-        waitVulkan(null);
     }
 
     public void signalOpenGL() {

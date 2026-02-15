@@ -93,6 +93,12 @@ public abstract class PipelineDescriptorSet {
 
     protected abstract void updateImpl();
 
+    protected enum ResourceType {
+        UNIFORM_BUFFER,
+        SAMPLER_TEXTURE,
+        STORAGE_IMAGE
+    }
+
     public static class ResourceBinding {
         final ResourceType type;
         final GpuObject resource;
@@ -115,12 +121,6 @@ public abstract class PipelineDescriptorSet {
         public int bindingPoint() {
             return bindingPoint;
         }
-    }
-
-    protected enum ResourceType {
-        UNIFORM_BUFFER,
-        SAMPLER_TEXTURE,
-        STORAGE_IMAGE
     }
 
     public static class DescriptorSnapshot {

@@ -126,20 +126,26 @@ public class ShaderDescription {
         }
 
         public Builder fragment(ShaderSource source) {
-            if (source.getType() != ShaderType.Fragment) throw new RuntimeException();
+            if (source.getType() != ShaderType.Fragment) {
+                throw new RuntimeException();
+            }
             description.sourceMap.put(ShaderType.Fragment, source);
             return this;
         }
 
         public Builder vertex(ShaderSource source) {
-            if (source.getType() != ShaderType.Vertex) throw new RuntimeException();
+            if (source.getType() != ShaderType.Vertex) {
+                throw new RuntimeException();
+            }
 
             description.sourceMap.put(ShaderType.Vertex, source);
             return this;
         }
 
         public Builder compute(ShaderSource source) {
-            if (source.getType() != ShaderType.Compute) throw new RuntimeException();
+            if (source.getType() != ShaderType.Compute) {
+                throw new RuntimeException();
+            }
 
             description.sourceMap.put(ShaderType.Compute, source);
             return this;

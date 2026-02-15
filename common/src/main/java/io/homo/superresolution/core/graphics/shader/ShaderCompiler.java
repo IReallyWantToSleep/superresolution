@@ -18,18 +18,18 @@
 
 package io.homo.superresolution.core.graphics.shader;
 
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderCompileException;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderCompileException;
 import io.homo.superresolution.core.utils.Md5CaculateUtil;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
@@ -274,7 +274,9 @@ public class ShaderCompiler {
     private static boolean checkProgramBinaryWithApi(IShaderProgram program, String apiTag) {
         createCacheDir();
 
-        if (Platform.currentPlatform.isDevelopmentEnvironment()) return false;
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) {
+            return false;
+        }
 
         String hash = getShaderProgramMd5(program, apiTag);
         for (ShaderType type : program.getDescription().sourceMap().keySet()) {

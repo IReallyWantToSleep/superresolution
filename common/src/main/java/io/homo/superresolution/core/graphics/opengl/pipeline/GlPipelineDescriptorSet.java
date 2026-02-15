@@ -20,7 +20,6 @@ package io.homo.superresolution.core.graphics.opengl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
@@ -33,10 +32,6 @@ public class GlPipelineDescriptorSet extends PipelineDescriptorSet {
 
     public GlPipelineDescriptorSet(IShaderProgram shader) {
         super(shader);
-    }
-
-    @Override
-    protected void updateImpl() {
     }
 
     public void applyFromSnapshot(DescriptorSnapshot snapshot) {
@@ -100,5 +95,9 @@ public class GlPipelineDescriptorSet extends PipelineDescriptorSet {
     @Override
     public void apply() {
         applyFromSnapshot(bindings);
+    }
+
+    @Override
+    protected void updateImpl() {
     }
 }

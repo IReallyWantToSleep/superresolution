@@ -25,6 +25,7 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
 import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
@@ -134,18 +135,14 @@ public class Sgsr1 extends AbstractAlgorithm {
         outputFbo.clearFrameBuffer();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);
-        RenderSystems.current().device().commandDecoder().beginCommandBuffer();
-        pipeline.execute(RenderSystems.current().device().commandDecoder().currentCommandBuffer());
-        RenderSystems.current().device().commandDecoder().endAndSubmitCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
+        pipeline.execute(commandBuffer);
+        commandBuffer.end();
+        RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         GL41.glEnable(GL41.GL_DEPTH_TEST);
         GL41.glEnable(GL41.GL_CULL_FACE);
         return true;
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        output.resize(width, height);
-        outputFbo.resizeFrameBuffer(width, height);
     }
 
     @Override
@@ -160,12 +157,18 @@ public class Sgsr1 extends AbstractAlgorithm {
     }
 
     @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(output.handle());
+    public void resize(int width, int height) {
+        output.resize(width, height);
+        outputFbo.resizeFrameBuffer(width, height);
     }
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
         return outputFbo;
+    }
+
+    @Override
+    public int getOutputTextureId() {
+        return Math.toIntExact(output.handle());
     }
 }

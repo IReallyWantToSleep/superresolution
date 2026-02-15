@@ -23,20 +23,23 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
-import io.homo.superresolution.core.graphics.opengl.*;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
-import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
+import io.homo.superresolution.core.graphics.opengl.GlDevice;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.opengl.OpenGLException;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
+import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import org.lwjgl.opengl.GL44;
 
 import static io.homo.superresolution.core.graphics.opengl.GlDebug.*;
@@ -44,7 +47,6 @@ import static org.lwjgl.opengl.GL43.*;
 
 public class GlCommandDecoder implements ICommandDecoder {
     private final GlDevice device;
-    private GlCommandBuffer currentCommandBuffer;
 
     public GlCommandDecoder(GlDevice device) {
         this.device = device;
@@ -648,25 +650,8 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public ICommandBuffer beginCommandBuffer() {
-        currentCommandBuffer = (GlCommandBuffer) device.createCommandBuffer();
-        return currentCommandBuffer;
-    }
-
-    @Override
-    public ICommandBuffer endCommandBuffer() {
-        return currentCommandBuffer;
-    }
-
-    @Override
-    public ICommandBuffer endAndSubmitCommandBuffer() {
-        currentCommandBuffer.submit(device);
-        return currentCommandBuffer;
-    }
-
-    @Override
-    public ICommandBuffer currentCommandBuffer() {
-        return currentCommandBuffer;
+    public IDevice getDevice() {
+        return device;
     }
 
     private int getGlType(VertexAttributeFormat format) {
@@ -694,10 +679,5 @@ public class GlCommandDecoder implements ICommandDecoder {
             case INT, INT2, INT3, INT4, UINT, UINT2, UINT3, UINT4 -> true;
             default -> false;
         };
-    }
-
-    @Override
-    public IDevice getDevice() {
-        return device;
     }
 }

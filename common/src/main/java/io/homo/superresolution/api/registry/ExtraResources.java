@@ -114,7 +114,7 @@ public class ExtraResources {
                 }
             }
             if (selectedSource == null) {
-                selectedSource = resource.getSources().getFirst();
+                selectedSource = resource.getSources().get(0);
             }
             ExtraResource.ProgressListener resourceProgressListener = (totalBytes, progress) -> {
                 progressListener.onProgress(

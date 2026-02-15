@@ -50,7 +50,9 @@ public abstract class GpuComputeJob<SELF extends GpuComputeJob<?>> {
             ShaderResourceDescription description = pipeline.shader().getDescription().resourcesLayout().getResource(resourceName);
             ShaderResourceType expectedType = description.type();
             Optional<?> resource = jobResource.getResource();
-            if (resource.isEmpty()) continue;
+            if (resource.isEmpty()) {
+                continue;
+            }
             switch (expectedType) {
                 case SamplerTexture -> {
                     if (jobResource.type != GrapeResourceType.SamplerTexture) {

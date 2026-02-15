@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.impl.texture;
+package io.homo.superresolution.core.graphics.impl.command;
 
-public enum TextureType {
-    Texture2D,
-    Texture1D
+public enum CommandBufferState {
+    Recording,
+    Executable,
+    Pending,
+    Destroyed
 }

@@ -55,7 +55,9 @@ public class GraphicsCapabilities {
     }
 
     private static GpuVendor parseVendorFromName(String rawName) {
-        if (rawName == null) return GpuVendor.Unknown;
+        if (rawName == null) {
+            return GpuVendor.Unknown;
+        }
 
         String lowerName = rawName.toLowerCase();
         if (lowerName.contains("nvidia") || lowerName.contains("geforce")) {

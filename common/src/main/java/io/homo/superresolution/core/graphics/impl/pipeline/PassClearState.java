@@ -44,6 +44,10 @@ public class PassClearState {
         this.stencilClearValueOnEnd = stencilClearValueOnEnd;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public boolean shouldClearColorOnBegin(int index) {
         return colorClearValuesOnBegin.containsKey(index);
     }
@@ -92,16 +96,11 @@ public class PassClearState {
         return stencilClearValueOnEnd != null ? stencilClearValueOnEnd : 0;
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
     public static class Builder {
         private final Map<Integer, float[]> colorClearValuesOnBegin = new HashMap<>();
+        private final Map<Integer, float[]> colorClearValuesOnEnd = new HashMap<>();
         private Float depthClearValueOnBegin;
         private Integer stencilClearValueOnBegin;
-
-        private final Map<Integer, float[]> colorClearValuesOnEnd = new HashMap<>();
         private Float depthClearValueOnEnd;
         private Integer stencilClearValueOnEnd;
 

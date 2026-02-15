@@ -73,7 +73,9 @@ public class RenderDoc {
     }
 
     public static Capture getCapture(int index) {
-        if (renderdoc == null) return null;
+        if (renderdoc == null) {
+            return null;
+        }
 
         var length = new IntByReference();
         if (renderdoc.GetCapture.call(index, null, length, null).intValue() != 1) {
@@ -88,10 +90,14 @@ public class RenderDoc {
     }
 
     public static int getNumCaptures() {
-        if (renderdoc == null) return -1;
+        if (renderdoc == null) {
+            return -1;
+        }
         return renderdoc.GetNumCaptures.call().intValue();
     }
 
-    public record Capture(String path, Instant timestamp) {
+    public record Capture(String path,
+
+                          Instant timestamp) {
     }
 }

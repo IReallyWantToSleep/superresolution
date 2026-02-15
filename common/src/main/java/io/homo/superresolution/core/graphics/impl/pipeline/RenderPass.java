@@ -23,11 +23,9 @@ import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.ColorAttachment;
 import io.homo.superresolution.core.graphics.impl.framebuffer.DepthStencilAttachment;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.impl.Destroyable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -78,9 +76,9 @@ public abstract class RenderPass implements Destroyable {
     public abstract void destroy();
 
     public static class Builder {
+        private final PassClearState.Builder clearStateBuilder = PassClearState.builder();
         private GraphicsPipeline pipeline;
         private IFrameBuffer frameBuffer;
-        private final PassClearState.Builder clearStateBuilder = PassClearState.builder();
 
         public Builder pipeline(GraphicsPipeline pipeline) {
             this.pipeline = pipeline;

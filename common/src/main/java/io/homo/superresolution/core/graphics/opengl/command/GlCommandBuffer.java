@@ -18,8 +18,7 @@
 
 package io.homo.superresolution.core.graphics.opengl.command;
 
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
+import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
@@ -30,22 +29,65 @@ import java.util.List;
 public class GlCommandBuffer implements ICommandBuffer {
     private final List<Runnable> glCalls = new ArrayList<>();
     private final GlDevice device;
+    private final ICommandPool ownerPool;
+    private final CommandBufferBehavior behavior;
+    private CommandBufferState state = CommandBufferState.Executable;
 
-    public GlCommandBuffer(GlDevice device) {
+    public GlCommandBuffer(GlDevice device, ICommandPool ownerPool, CommandBufferBehavior behavior) {
         this.device = device;
+        this.ownerPool = ownerPool;
+        this.behavior = behavior;
     }
 
     protected void _addGlCalls(Runnable glCalls) {
+        if (state != CommandBufferState.Recording) {
+            throw new IllegalStateException("CommandBuffer is not in recording state");
+        }
         this.glCalls.add(glCalls);
     }
 
     @Override
-    public void destroy() {
+    public void begin() {
+        if (state == CommandBufferState.Destroyed) {
+            throw new IllegalStateException("Cannot begin a destroyed command buffer");
+        }
+        if (state == CommandBufferState.Recording) {
+            throw new IllegalStateException("Command buffer is already recording");
+        }
+        state = CommandBufferState.Recording;
+    }
+
+    @Override
+    public void end() {
+        if (state != CommandBufferState.Recording) {
+            throw new IllegalStateException("Command buffer is not recording");
+        }
+        state = CommandBufferState.Executable;
+    }
+
+    @Override
+    public void reset() {
+        if (state == CommandBufferState.Destroyed) {
+            throw new IllegalStateException("Cannot reset a destroyed command buffer");
+        }
         glCalls.clear();
+        state = CommandBufferState.Executable;
+    }
+
+    @Override
+    public void destroy() {
+        if (state == CommandBufferState.Destroyed) {
+            return;
+        }
+        glCalls.clear();
+        state = CommandBufferState.Destroyed;
     }
 
     @Override
     public void submit(IDevice device) {
+        if (state != CommandBufferState.Executable) {
+            throw new IllegalStateException("Command buffer must be executable before submit");
+        }
         GlDebug.pushGroup(GlDebug.nextCommandBufferId(), "Command Buffer");
         for (Runnable call : glCalls) {
             call.run();
@@ -61,5 +103,20 @@ public class GlCommandBuffer implements ICommandBuffer {
     @Override
     public ICommandDecoder getDecoder() {
         return device.commandDecoder();
+    }
+
+    @Override
+    public ICommandPool ownerPool() {
+        return ownerPool;
+    }
+
+    @Override
+    public CommandBufferState state() {
+        return state;
+    }
+
+    @Override
+    public CommandBufferBehavior behavior() {
+        return behavior;
     }
 }

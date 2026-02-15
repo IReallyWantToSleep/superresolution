@@ -20,7 +20,10 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.pipeline.state.*;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendState;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.DepthStencilState;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.DynamicStateFlags;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.RasterizationState;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 
@@ -33,13 +36,7 @@ public abstract class GraphicsPipeline implements IPipeline {
     private final ColorBlendState colorBlend;
     private final DynamicStateFlags dynamicStates;
     private final PipelineDescriptorSet descriptorSet;
-
-    public VertexFormat vertexFormat() {
-        return vertexFormat;
-    }
-
     private final VertexFormat vertexFormat;
-
     private final DynamicState currentDynamicState = new DynamicState();
 
     public GraphicsPipeline(IShaderProgram shader,
@@ -65,8 +62,8 @@ public abstract class GraphicsPipeline implements IPipeline {
         return new Builder();
     }
 
-    public IShaderProgram shader() {
-        return shader;
+    public VertexFormat vertexFormat() {
+        return vertexFormat;
     }
 
     public RasterizationState rasterization() {
@@ -88,6 +85,10 @@ public abstract class GraphicsPipeline implements IPipeline {
     @Override
     public PipelineDescriptorSet descriptorSet() {
         return descriptorSet;
+    }
+
+    public IShaderProgram shader() {
+        return shader;
     }
 
     public GraphicsPipeline setViewport(float x, float y, float width, float height) {
@@ -165,6 +166,7 @@ public abstract class GraphicsPipeline implements IPipeline {
         private DepthStencilState depthStencil = DepthStencilState.disabled();
         private ColorBlendState colorBlend = ColorBlendState.defaults();
         private DynamicStateFlags dynamicStates = DynamicStateFlags.ViewportScissor;
+        private VertexFormat vertexFormat;
 
         public VertexFormat vertexFormat() {
             return vertexFormat;
@@ -181,8 +183,6 @@ public abstract class GraphicsPipeline implements IPipeline {
             this.vertexFormat = builder.build();
             return this;
         }
-
-        private VertexFormat vertexFormat;
 
         public IShaderProgram shader() {
             return shader;

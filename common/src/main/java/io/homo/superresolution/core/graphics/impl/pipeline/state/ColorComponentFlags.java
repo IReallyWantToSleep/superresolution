@@ -24,6 +24,7 @@ public class ColorComponentFlags {
     public static final int B = 0x4;
     public static final int A = 0x8;
     public static final int ALL = R | G | B | A;
-    
-    private ColorComponentFlags() {}
+
+    private ColorComponentFlags() {
+    }
 }
