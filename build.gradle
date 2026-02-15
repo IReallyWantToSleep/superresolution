@@ -111,6 +111,8 @@ def normalizePlatforms = { def config ->
 }
 
 def collectTaskByVersion = [:]
+def orderedNestedBuildTasks = []
+def orderedCollectTasks = []
 
 if (srConfigsDir.exists()) {
     def configFiles = srConfigsDir.listFiles()?.findAll { it.name.endsWith(".json") }?.sort { a, b -> a.name <=> b.name } ?: []
@@ -159,6 +161,24 @@ if (srConfigsDir.exists()) {
         }
 
         collectTaskByVersion[versionName] = collectTaskName
+        orderedNestedBuildTasks << nestedBuildTaskName
+        orderedCollectTasks << collectTaskName
+    }
+}
+
+for (int i = 1; i < orderedNestedBuildTasks.size(); i++) {
+    def currentTask = orderedNestedBuildTasks[i]
+    def previousTask = orderedNestedBuildTasks[i - 1]
+    tasks.named(currentTask) {
+        mustRunAfter(previousTask)
+    }
+}
+
+for (int i = 1; i < orderedCollectTasks.size(); i++) {
+    def currentTask = orderedCollectTasks[i]
+    def previousTask = orderedCollectTasks[i - 1]
+    tasks.named(currentTask) {
+        mustRunAfter(previousTask)
     }
 }
 
