@@ -59,7 +59,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
-                    .flags(0);
+                    .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             VK_CHECK(vkBeginCommandBuffer(nativeCommandBuffer, beginInfo));
         }
         state = CommandBufferState.Recording;
@@ -158,6 +158,16 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         }
         VK_CHECK(status);
         return false;
+    }
+
+    @Override
+    public void waitForFence() {
+        if (reusableFence == VK_NULL_HANDLE) {
+            inFlight = false;
+            return;
+        }
+        VK_CHECK(vkWaitForFences(vulkanDevice.getVkDevice(), reusableFence, true, Long.MAX_VALUE));
+        inFlight = false;
     }
 
     @Override

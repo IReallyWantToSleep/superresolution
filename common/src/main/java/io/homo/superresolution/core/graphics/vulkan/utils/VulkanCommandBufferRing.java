@@ -21,78 +21,48 @@ package io.homo.superresolution.core.graphics.vulkan.utils;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
-
 public class VulkanCommandBufferRing {
-    private final int initialBufferCount;
-    private final int maxBufferCount;
-    private final List<VulkanCommandBuffer> commandBuffers = new ArrayList<>();
+    private final int bufferCount;
+    private final VulkanCommandBuffer[] commandBuffers;
+    private boolean initialized;
     private int cursor = 0;
 
-    public VulkanCommandBufferRing(int initialBufferCount, int maxBufferCount) {
-        if (initialBufferCount <= 0) {
+    public VulkanCommandBufferRing(int bufferCount) {
+        if (bufferCount <= 0) {
             throw new IllegalArgumentException("initialBufferCount must be greater than 0");
         }
-        if (maxBufferCount < initialBufferCount) {
-            throw new IllegalArgumentException("maxBufferCount must be greater than or equal to initialBufferCount");
-        }
-        this.initialBufferCount = initialBufferCount;
-        this.maxBufferCount = maxBufferCount;
-    }
-
-    private VulkanCommandBuffer allocateCommandBuffer(VulkanDevice device) {
-        VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) device.defaultCommandPool().createCommandBuffer();
-        commandBuffers.add(commandBuffer);
-        return commandBuffer;
+        this.bufferCount = bufferCount;
+        this.commandBuffers = new VulkanCommandBuffer[bufferCount];
+        initialized = false;
     }
 
     public VulkanCommandBuffer acquire(VulkanDevice device) {
-        if (commandBuffers.isEmpty()) {
-            for (int i = 0; i < initialBufferCount; i++) {
-                allocateCommandBuffer(device);
+        if (!initialized) {
+            for (int i = 0; i < bufferCount; i++) {
+                commandBuffers[i] = (VulkanCommandBuffer) device.defaultCommandPool().createCommandBuffer();
             }
+            initialized = true;
         }
 
-        for (int i = 0; i < commandBuffers.size(); i++) {
-            int index = (cursor + i) % commandBuffers.size();
-            VulkanCommandBuffer commandBuffer = commandBuffers.get(index);
-            if (!commandBuffer.isFenceSignaled()) {
-                continue;
-            }
-            try {
-                commandBuffer.reset();
-                cursor = (index + 1) % commandBuffers.size();
-                return commandBuffer;
-            } catch (IllegalStateException ignored) {
-            }
-        }
-
-        if (commandBuffers.size() < maxBufferCount) {
-            VulkanCommandBuffer commandBuffer = allocateCommandBuffer(device);
-            cursor = 0;
-            return commandBuffer;
-        }
-
-        vkQueueWaitIdle(device.getMainQueue().getQueue());
-        for (VulkanCommandBuffer commandBuffer : commandBuffers) {
-            commandBuffer.reset();
-        }
-        VulkanCommandBuffer commandBuffer = commandBuffers.get(0);
-        cursor = commandBuffers.size() > 1 ? 1 : 0;
+        VulkanCommandBuffer commandBuffer = commandBuffers[cursor];
+        commandBuffer.waitForFence();
+        cursor = (cursor + 1) % bufferCount;
         return commandBuffer;
     }
 
     public void destroy() {
-        for (VulkanCommandBuffer commandBuffer : commandBuffers) {
+        for (int i = 0; i < bufferCount; i++) {
+            VulkanCommandBuffer commandBuffer = commandBuffers[i];
+            if (commandBuffer == null) {
+                continue;
+            }
             try {
                 commandBuffer.destroy();
             } catch (IllegalStateException ignored) {
             }
+            commandBuffers[i] = null;
         }
-        commandBuffers.clear();
         cursor = 0;
+        initialized = false;
     }
 }
