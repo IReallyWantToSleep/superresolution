@@ -82,7 +82,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
             throw new IllegalStateException("Command pool does not allow command buffer reset");
         }
         ensureNotInFlight();
-        VK_CHECK(vkResetCommandBuffer(nativeCommandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
+        VK_CHECK(vkResetCommandBuffer(nativeCommandBuffer, 0));
         state = CommandBufferState.Executable;
     }
 
