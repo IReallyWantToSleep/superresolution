@@ -5,14 +5,14 @@ on:
     inputs:
       name:
         description: "name"
-        required: true
+        required: false
       tag_name:
         description: "tag_name"
-        required: true
+        required: false
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,14 +27,13 @@ jobs:
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
-          platform: x64
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build
         id: build
         if: ${{ !cancelled() }}
-        run: python script/buildAll.py
+        run: ./gradlew --no-daemon buildAllVersions --console=plain
 
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
