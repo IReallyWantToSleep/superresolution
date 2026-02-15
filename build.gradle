@@ -75,6 +75,24 @@ allprojects {
         }
     }
 
+    afterEvaluate {
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            return
+        }
+        def javaWrapper = rootProject.file("script/java_tool_wrapper.sh")
+        if (!javaWrapper.exists()) {
+            return
+        }
+        tasks.matching { it.class.name.contains("CreateMinecraftArtifacts") }.configureEach {
+            if (it.hasProperty("javaExecutable")) {
+                it.javaExecutable.set(javaWrapper.absolutePath)
+            }
+            if (it.hasProperty("toolsJavaExecutable")) {
+                it.toolsJavaExecutable.set(javaWrapper.absolutePath)
+            }
+        }
+    }
+
 }
 
 def srConfigsDir = file("${rootDir}/configs")
