@@ -29,12 +29,11 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
 import io.homo.superresolution.srapi.*;
 import net.minecraft.client.Minecraft;
+import org.joml.Vector2f;
+import org.joml.Vector2i;
 
 import java.nio.file.Path;
 
@@ -47,9 +46,13 @@ public class FfxFSROgl extends AbstractAlgorithm {
     private IFrameBuffer outputColorFrameBuffer;
 
     public boolean updateFsr() {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL == null) return false;
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL == null) {
+            return false;
+        }
         Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_FSRGL.getTargetPath(Minecraft.getInstance().gameDirectory.toPath());
-        if (!(lib.toFile().isFile() && lib.toFile().canRead())) return false;
+        if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
+            return false;
+        }
         if (context != null) {
             if (context.nativePtr > 0) {
                 SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
@@ -84,8 +87,12 @@ public class FfxFSROgl extends AbstractAlgorithm {
     }
 
     protected void destroyTexture() {
-        if (this.outputColorGlTexture != null) this.outputColorGlTexture.destroy();
-        if (this.outputColorFrameBuffer != null) this.outputColorFrameBuffer.destroy();
+        if (this.outputColorGlTexture != null) {
+            this.outputColorGlTexture.destroy();
+        }
+        if (this.outputColorFrameBuffer != null) {
+            this.outputColorFrameBuffer.destroy();
+        }
 
     }
 
@@ -162,8 +169,9 @@ public class FfxFSROgl extends AbstractAlgorithm {
     @Override
     public void destroy() {
         destroyTexture();
-        if (context != null && context.nativePtr > 0)
+        if (context != null && context.nativePtr > 0) {
             SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+        }
     }
 
     @Override
@@ -174,12 +182,12 @@ public class FfxFSROgl extends AbstractAlgorithm {
     }
 
     @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(outputColorGlTexture.handle());
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputColorFrameBuffer;
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputColorFrameBuffer;
+    public int getOutputTextureId() {
+        return Math.toIntExact(outputColorGlTexture.handle());
     }
 }

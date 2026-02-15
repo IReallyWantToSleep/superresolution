@@ -34,8 +34,8 @@ import static org.lwjgl.opengl.GL45.*;
 public class GlTexture1D implements ITexture, IDebuggableObject {
     private static final int DEFAULT_ALIGNMENT = 4;
     private final Map<Integer, GlTextureView> mipViews = new ConcurrentHashMap<>();
-    private int id;
     private final TextureDescription description;
+    private int id;
     private int width;
     private int currentMipmapLevel;
 
@@ -74,11 +74,6 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
                     1
             );
         }
-    }
-
-    @Override
-    public TextureMipmapSettings getMipmapSettings() {
-        return description.getMipmapSettings();
     }
 
     private void configureTextureParameters() {
@@ -166,16 +161,13 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         return description.getWrapMode();
     }
 
-    public void configureMipmap() {
-        if (description.getMipmapSettings().isAutoGenerate()) {
-            this.currentMipmapLevel = calculateMaxMipLevel();
-            return;
-        }
-        this.currentMipmapLevel = Math.min(description.getMipmapSettings().getLevels(), calculateMaxMipLevel());
+    @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        return description.getMipmapSettings();
     }
 
-    private int calculateMaxMipLevel() {
-        return (int) (Math.log(width) / Math.log(2));
+    public TextureDescription getTextureDescription() {
+        return description;
     }
 
     @Override
@@ -186,6 +178,18 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
     @Override
     public int getHeight() {
         return 1;
+    }
+
+    public void configureMipmap() {
+        if (description.getMipmapSettings().isAutoGenerate()) {
+            this.currentMipmapLevel = calculateMaxMipLevel();
+            return;
+        }
+        this.currentMipmapLevel = Math.min(description.getMipmapSettings().getLevels(), calculateMaxMipLevel());
+    }
+
+    private int calculateMaxMipLevel() {
+        return (int) (Math.log(width) / Math.log(2));
     }
 
     @Override
@@ -216,9 +220,5 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
         this.id = Gl.DSA.createTexture1D();
         configureMipmap();
         initializeTexture();
-    }
-
-    public TextureDescription getTextureDescription() {
-        return description;
     }
 }

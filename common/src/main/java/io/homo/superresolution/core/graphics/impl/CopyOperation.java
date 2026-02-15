@@ -26,23 +26,9 @@ import java.util.Objects;
 
 public class CopyOperation {
 
-    public enum TextureChancel {
-        R, G, B, A
-    }
-
-    public static class ChannelMapping {
-        public final TextureChancel src;
-        public final TextureChancel dst;
-
-        public ChannelMapping(TextureChancel src, TextureChancel dst) {
-            this.src = Objects.requireNonNull(src);
-            this.dst = Objects.requireNonNull(dst);
-        }
-    }
-
+    private final List<ChannelMapping> mappings = new ArrayList<>();
     private ITexture srcTexture;
     private ITexture dstTexture;
-    private final List<ChannelMapping> mappings = new ArrayList<>();
 
     private CopyOperation() {
     }
@@ -76,6 +62,23 @@ public class CopyOperation {
 
     public List<ChannelMapping> getMappings() {
         return List.copyOf(mappings);
+    }
+
+    public enum TextureChancel {
+        R,
+        G,
+        B,
+        A
+    }
+
+    public static class ChannelMapping {
+        public final TextureChancel src;
+        public final TextureChancel dst;
+
+        public ChannelMapping(TextureChancel src, TextureChancel dst) {
+            this.src = Objects.requireNonNull(src);
+            this.dst = Objects.requireNonNull(dst);
+        }
     }
 
 }

@@ -71,44 +71,13 @@ public class DynamicBufferData implements IBufferData {
         Buffer buffer = MemoryUtil.memByteBuffer(address, (int) size);
         return new DynamicBufferData(buffer, size, false);
     }
-    
+
     public static DynamicBufferData wrap(Buffer buffer) {
         Objects.requireNonNull(buffer, "Buffer cannot be null");
         if (buffer.limit() <= 0) {
             throw new IllegalArgumentException("Buffer must have positive size");
         }
         return new DynamicBufferData(buffer, buffer.limit(), false);
-    }
-
-    public void update(Buffer data) {
-        Objects.requireNonNull(data, "Data buffer cannot be null");
-        if (data.limit() != size) {
-            throw new IllegalArgumentException("Data size must match buffer size");
-        }
-
-        MemoryUtil.memCopy(
-                MemoryUtil.memAddress(data),
-                MemoryUtil.memAddress(buffer),
-                size
-        );
-        markDirty();
-    }
-
-    public void updatePartial(Buffer data, long offset, long length) {
-        Objects.requireNonNull(data, "Data buffer cannot be null");
-        if (offset < 0 || length < 0 || offset + length > size) {
-            throw new IndexOutOfBoundsException("Invalid offset or length");
-        }
-        if (data.remaining() < length) {
-            throw new IllegalArgumentException("Not enough data in input buffer");
-        }
-
-        MemoryUtil.memCopy(
-                MemoryUtil.memAddress(data),
-                MemoryUtil.memAddress(buffer) + offset,
-                length
-        );
-        markDirty();
     }
 
     public void markDirty() {
@@ -140,6 +109,13 @@ public class DynamicBufferData implements IBufferData {
         }
     }
 
+    public ByteBuffer asByteBuffer() {
+        if (buffer instanceof ByteBuffer) {
+            return (ByteBuffer) buffer;
+        }
+        throw new UnsupportedOperationException("Buffer is not a ByteBuffer");
+    }
+
     @Override
     public void put(byte[] src, long offset) {
         Objects.requireNonNull(src, "Source array cannot be null");
@@ -155,10 +131,34 @@ public class DynamicBufferData implements IBufferData {
         markDirty();
     }
 
-    public ByteBuffer asByteBuffer() {
-        if (buffer instanceof ByteBuffer) {
-            return (ByteBuffer) buffer;
+    public void updatePartial(Buffer data, long offset, long length) {
+        Objects.requireNonNull(data, "Data buffer cannot be null");
+        if (offset < 0 || length < 0 || offset + length > size) {
+            throw new IndexOutOfBoundsException("Invalid offset or length");
         }
-        throw new UnsupportedOperationException("Buffer is not a ByteBuffer");
+        if (data.remaining() < length) {
+            throw new IllegalArgumentException("Not enough data in input buffer");
+        }
+
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(data),
+                MemoryUtil.memAddress(buffer) + offset,
+                length
+        );
+        markDirty();
+    }
+
+    public void update(Buffer data) {
+        Objects.requireNonNull(data, "Data buffer cannot be null");
+        if (data.limit() != size) {
+            throw new IllegalArgumentException("Data size must match buffer size");
+        }
+
+        MemoryUtil.memCopy(
+                MemoryUtil.memAddress(data),
+                MemoryUtil.memAddress(buffer),
+                size
+        );
+        markDirty();
     }
 }

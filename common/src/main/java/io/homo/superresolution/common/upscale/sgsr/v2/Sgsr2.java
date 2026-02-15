@@ -18,27 +18,30 @@
 
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.*;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.Std140StructBuilder;
+import io.homo.superresolution.core.graphics.impl.buffer.StructuredData;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.impl.Destroyable;
-import org.joml.Vector2f;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 
 import java.util.function.Consumer;
 
@@ -50,6 +53,16 @@ public class Sgsr2 extends AbstractAlgorithm {
     private GlFrameBuffer output;
 
     private int sameFrameNum = 0;
+
+    private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
+        float diff = 0;
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < 4; c++) {
+                diff += Math.abs(currentMVP.get(r, c) - prevMVP.get(r, c));
+            }
+        }
+        return diff < threshold;
+    }
 
     @Override
     public void init() {
@@ -86,6 +99,44 @@ public class Sgsr2 extends AbstractAlgorithm {
                 .build()
         );
         paramsUbo.setBufferData(paramsData);
+    }
+
+    @Override
+    public boolean dispatch(DispatchResource dispatchResource) {
+        super.dispatch(dispatchResource);
+
+        initVariant();
+        updateParams(dispatchResource);
+        variantInstance.setOutput(output);
+        variantInstance.dispatch(dispatchResource, this);
+        return false;
+    }
+
+    @Override
+    public void destroy() {
+        safeVariantInstance(Destroyable::destroy);
+        paramsData.free();
+        paramsUbo.destroy();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        safeVariantInstance((sgsrVariant -> sgsrVariant.resize(width, height)));
+        this.output.resizeFrameBuffer(width, height);
+    }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return output;
+    }
+
+    @Override
+    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
+        return new Vector2f(
+                originJitter.x,
+                originJitter.y
+        );
     }
 
     protected void updateParams(DispatchResource dispatchResource) {
@@ -144,36 +195,6 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsUbo.upload();
     }
 
-    private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
-        float diff = 0;
-        for (int r = 0; r < 4; r++) {
-            for (int c = 0; c < 4; c++) {
-                diff += Math.abs(currentMVP.get(r, c) - prevMVP.get(r, c));
-            }
-        }
-        return diff < threshold;
-    }
-
-    @Override
-    public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
-
-        initVariant();
-        updateParams(dispatchResource);
-        variantInstance.setOutput(output);
-        variantInstance.dispatch(dispatchResource, this);
-        return false;
-    }
-
-    @Override
-    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-        return new Vector2f(
-                originJitter.x,
-                originJitter.y
-        );
-    }
-
     private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
         return new Vector2f(0);
         /*
@@ -188,24 +209,6 @@ public class Sgsr2 extends AbstractAlgorithm {
         );
         */
 
-    }
-
-    @Override
-    public void destroy() {
-        safeVariantInstance(Destroyable::destroy);
-        paramsData.free();
-        paramsUbo.destroy();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        safeVariantInstance((sgsrVariant -> sgsrVariant.resize(width, height)));
-        this.output.resizeFrameBuffer(width, height);
-    }
-
-    @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return output;
     }
 
     private void initVariant() {

@@ -18,24 +18,19 @@
 
 package io.homo.superresolution.common.upscale.none;
 
-import io.homo.superresolution.core.graphics.impl.framebuffer.ColorAttachment;
-import io.homo.superresolution.core.graphics.impl.framebuffer.DepthStencilAttachment;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.lwjgl.opengl.GL43;
 
+import java.util.List;
+
 import static io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.resolveBindTarget;
 import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.opengl.GL30.*;
-
-import java.util.List;
 
 public class None extends AbstractAlgorithm {
     private static int cachedFrameBufferId = -1;
@@ -64,22 +59,22 @@ public class None extends AbstractAlgorithm {
         return true;
     }
 
-    public void resize(int width, int height) {
-    }
-
     public void destroy() {
         if (cachedFrameBufferId > 0) {
             Gl.DSA.deleteFramebuffer(cachedFrameBufferId);
         }
     }
 
-    public int getOutputTextureId() {
-        return cachedFrameBuffer == null ? 0 : cachedFrameBuffer.getTextureId(FrameBufferAttachmentType.Color);
+    public void resize(int width, int height) {
     }
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
         return cachedFrameBuffer;
+    }
+
+    public int getOutputTextureId() {
+        return cachedFrameBuffer == null ? 0 : cachedFrameBuffer.getTextureId(FrameBufferAttachmentType.Color);
     }
 
     private static class OnlyNameFramebuffer implements IBindableFrameBuffer {
@@ -129,6 +124,16 @@ public class None extends AbstractAlgorithm {
         }
 
         @Override
+        public List<ColorAttachment> getColorAttachments() {
+            return List.of(new ColorAttachment(0, colorTex));
+        }
+
+        @Override
+        public DepthStencilAttachment getDepthStencilAttachment() {
+            return null;
+        }
+
+        @Override
         public void resizeFrameBuffer(int width, int height) {
             throw new UnsupportedOperationException();
         }
@@ -171,16 +176,6 @@ public class None extends AbstractAlgorithm {
 
         @Override
         public void destroy() {
-        }
-
-        @Override
-        public List<ColorAttachment> getColorAttachments() {
-            return List.of(new ColorAttachment(0, colorTex));
-        }
-
-        @Override
-        public DepthStencilAttachment getDepthStencilAttachment() {
-            return null;
         }
     }
 }

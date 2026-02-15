@@ -21,16 +21,17 @@ package io.homo.superresolution.core.graphics.opengl.texture;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
-import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
 
 import static org.lwjgl.opengl.EXTMemoryObject.*;
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.glBindTexture;
 
 public class GlImportableTexture2D extends GlTexture2D {
 
-    private int glMemoryObject = 0;
     private final VulkanTexture sourceTexture;
+    private int glMemoryObject = 0;
 
     public GlImportableTexture2D(VulkanTexture sourceTexture) {
         super(sourceTexture.getTextureDescription());
@@ -40,9 +41,11 @@ public class GlImportableTexture2D extends GlTexture2D {
 
     @Override
     protected void initializeTexture() {
-        try (GlState ignored = new GlState(
-                GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES);
-             MemoryStack stack = MemoryStack.stackPush()) {
+        try (
+                GlState ignored = new GlState(
+                        GlState.STATE_TEXTURE | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES);
+                MemoryStack stack = MemoryStack.stackPush()
+        ) {
             configureTextureParameters();
 
             long handle = sourceTexture.getExportedMemoryHandle();
@@ -77,13 +80,13 @@ public class GlImportableTexture2D extends GlTexture2D {
     }
 
     @Override
-    public void resize(int width, int height) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void destroy() {
         super.destroy();
         glDeleteMemoryObjectsEXT(glMemoryObject);
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        throw new UnsupportedOperationException();
     }
 }

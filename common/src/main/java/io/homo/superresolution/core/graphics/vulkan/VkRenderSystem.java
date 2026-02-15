@@ -20,9 +20,10 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCapabilities;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanValidationLayers;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCapabilities;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanQueueUtils;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanValidationLayers;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -52,11 +53,6 @@ public class VkRenderSystem implements IRenderSystem {
     private final List<String> instanceExtensions = new ArrayList<>();
     private final List<String> deviceExtensions = new ArrayList<>();
     protected VulkanValidationLayers validationLayers;
-
-    public VkInstance getVulkanInstance() {
-        return instance;
-    }
-
     protected VkInstance instance;
     protected VulkanCapabilities capabilities = new VulkanCapabilities();
     private VulkanDevice vulkanDevice;
@@ -70,14 +66,8 @@ public class VkRenderSystem implements IRenderSystem {
         return buffer.rewind();
     }
 
-    @Override
-    public IDevice device() {
-        return vulkanDevice;
-    }
-
-    @Override
-    public void finish() {
-        vkDeviceWaitIdle(vulkanDevice.getVkDevice());
+    public VkInstance getVulkanInstance() {
+        return instance;
     }
 
     public VkRenderSystem addInstanceExtension(String ext) {
@@ -130,6 +120,16 @@ public class VkRenderSystem implements IRenderSystem {
         LOGGER.info("Vulkan 已销毁");
     }
 
+    @Override
+    public IDevice device() {
+        return vulkanDevice;
+    }
+
+    @Override
+    public void finish() {
+        vkDeviceWaitIdle(vulkanDevice.getVkDevice());
+    }
+
     private void createInstance() {
         try (MemoryStack stack = stackPush()) {
             VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
@@ -175,7 +175,7 @@ public class VkRenderSystem implements IRenderSystem {
 
     private VulkanDevice createLogicalDeviceWithCapabilities(VkPhysicalDevice physicalDevice) {
         try (MemoryStack stack = stackPush()) {
-            int graphicsFamilyIndex = findGraphicsQueueFamilyIndex(stack, physicalDevice);
+            int graphicsFamilyIndex = VulkanQueueUtils.findQueueFamilyIndex(stack, VK_QUEUE_GRAPHICS_BIT, physicalDevice);
             if (graphicsFamilyIndex == -1) {
                 throw new RuntimeException("No suitable queue family found");
             }
@@ -273,17 +273,4 @@ public class VkRenderSystem implements IRenderSystem {
         }
     }
 
-    private int findGraphicsQueueFamilyIndex(MemoryStack stack, VkPhysicalDevice physicalDevice) {
-        IntBuffer queueFamilyCount = stack.ints(0);
-        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, queueFamilyCount, null);
-        VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount.get(0), stack);
-
-        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, queueFamilyCount, queueFamilies);
-        for (int i = 0; i < queueFamilies.capacity(); i++) {
-            if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
 }

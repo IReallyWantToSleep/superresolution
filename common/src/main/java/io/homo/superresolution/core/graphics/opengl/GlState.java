@@ -275,8 +275,12 @@ public class GlState implements AutoCloseable {
             // int originalActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
             for (int i = 0; i < MAX_TEXTURES; i++) {
                 glActiveTexture(GL_TEXTURE0 + i);
-                if (this.textures2D[i] != 0) glBindTexture(GL_TEXTURE_2D, this.textures2D[i]);
-                if (this.textures1D[i] != 0) glBindTexture(GL_TEXTURE_1D, this.textures1D[i]);
+                if (this.textures2D[i] != 0) {
+                    glBindTexture(GL_TEXTURE_2D, this.textures2D[i]);
+                }
+                if (this.textures1D[i] != 0) {
+                    glBindTexture(GL_TEXTURE_1D, this.textures1D[i]);
+                }
             }
             //glActiveTexture(originalActiveTexture);
         }
@@ -394,8 +398,11 @@ public class GlState implements AutoCloseable {
     }
 
     private void setGlCap(int cap, boolean enabled) {
-        if (enabled) glEnable(cap);
-        else glDisable(cap);
+        if (enabled) {
+            glEnable(cap);
+        } else {
+            glDisable(cap);
+        }
     }
 
     @Override

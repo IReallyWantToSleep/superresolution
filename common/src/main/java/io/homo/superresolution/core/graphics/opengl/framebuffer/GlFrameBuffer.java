@@ -22,11 +22,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.minecraft.RenderTargetCache;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
-import io.homo.superresolution.core.graphics.impl.framebuffer.ColorAttachment;
-import io.homo.superresolution.core.graphics.impl.framebuffer.DepthStencilAttachment;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlConst;
@@ -48,11 +44,6 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     private int frameBufferId = Gl.DSA.createFramebuffer();
     private int width;
     private int height;
-
-    public void label(String label) {
-        this.label = label;
-    }
-
     private String label;
 
     public GlFrameBuffer() {
@@ -274,6 +265,29 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     }
 
     @Override
+    public List<ColorAttachment> getColorAttachments() {
+        List<ColorAttachment> list = new ArrayList<>();
+        for (GlFrameBufferAttachment attachment : attachments) {
+            if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
+                int index = attachment.type.attachmentId() - GlConst.GL_COLOR_ATTACHMENT0;
+                list.add(new ColorAttachment(index, attachment.texture));
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public DepthStencilAttachment getDepthStencilAttachment() {
+        if (depthStencilAttachment != null) {
+            return new DepthStencilAttachment(depthStencilAttachment.texture);
+        }
+        if (depthAttachment != null) {
+            return new DepthStencilAttachment(depthAttachment.texture);
+        }
+        return null;
+    }
+
+    @Override
     public void resizeFrameBuffer(int width, int height) {
         if (width < 1 || height < 1) {
             throw new RuntimeException("%s %s".formatted(width, height));
@@ -294,25 +308,6 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         }
         validate();
         updateDebugLabel(getDebugLabel());
-    }
-
-    @Override
-    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
-        int target = resolveBindTarget(bindPoint);
-        glBindFramebuffer(target, frameBufferId);
-        if (setViewport) {
-            glViewport(0, 0, width, height);
-        }
-    }
-
-    @Override
-    public void bind(FrameBufferBindPoint bindPoint) {
-        bind(bindPoint, true);
-    }
-
-    @Override
-    public void unbind(FrameBufferBindPoint bindPoint) {
-        glBindFramebuffer(resolveBindTarget(bindPoint), 0);
     }
 
     @Override
@@ -370,32 +365,32 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         return RenderTargetCache.cacheOf(this);
     }
 
+    public void label(String label) {
+        this.label = label;
+    }
+
+    @Override
+    public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
+        int target = resolveBindTarget(bindPoint);
+        glBindFramebuffer(target, frameBufferId);
+        if (setViewport) {
+            glViewport(0, 0, width, height);
+        }
+    }
+
+    @Override
+    public void bind(FrameBufferBindPoint bindPoint) {
+        bind(bindPoint, true);
+    }
+
+    @Override
+    public void unbind(FrameBufferBindPoint bindPoint) {
+        glBindFramebuffer(resolveBindTarget(bindPoint), 0);
+    }
+
     @Override
     public long handle() {
         return frameBufferId;
-    }
-
-    @Override
-    public List<ColorAttachment> getColorAttachments() {
-        List<ColorAttachment> list = new ArrayList<>();
-        for (GlFrameBufferAttachment attachment : attachments) {
-            if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
-                int index = attachment.type.attachmentId() - GlConst.GL_COLOR_ATTACHMENT0;
-                list.add(new ColorAttachment(index, attachment.texture));
-            }
-        }
-        return list;
-    }
-
-    @Override
-    public DepthStencilAttachment getDepthStencilAttachment() {
-        if (depthStencilAttachment != null) {
-            return new DepthStencilAttachment(depthStencilAttachment.texture);
-        }
-        if (depthAttachment != null) {
-            return new DepthStencilAttachment(depthAttachment.texture);
-        }
-        return null;
     }
 
     @Override

@@ -20,8 +20,10 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
+import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
@@ -33,43 +35,33 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
-import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandDecoder;
-import io.homo.superresolution.core.graphics.vulkan.command.VulkanCommandManager;
-import io.homo.superresolution.core.graphics.vulkan.texture.VulkanTexture;
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.lwjgl.vulkan.VK10.*;
+import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
+import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO;
+import static org.lwjgl.vulkan.VK10.vkQueueSubmit;
 
 public class VulkanDevice implements IDevice {
     private static final Logger LOGGER = LoggerFactory.getLogger(VulkanDevice.class);
-
     private final VkPhysicalDevice physicalDevice;
     private final VkDevice device;
-    private final VkQueue graphicsQueue;
-    private final int graphicsQueueFamilyIndex;
-    private final VulkanCommandManager commandManager;
+    private final VulkanQueue mainQueue;
+    private final VulkanCommandPool commandManager;
+    private final VulkanCommandPool defaultCommandPool;
     private final VulkanCommandDecoder commandDecoder;
 
 
     public VulkanDevice(VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
         this.physicalDevice = physicalDevice;
         this.device = device;
-        this.graphicsQueueFamilyIndex = graphicsQueueFamilyIndex;
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, pQueue);
-            graphicsQueue = new VkQueue(pQueue.get(0), device);
-        }
-        this.commandManager = new VulkanCommandManager(this);
+        this.mainQueue = new VulkanQueue(this, graphicsQueueFamilyIndex);
+        this.commandManager = new VulkanCommandPool(this, java.util.EnumSet.of(CommandPoolFlags.Reset));
+        this.defaultCommandPool = commandManager;
         this.commandDecoder = new VulkanCommandDecoder(this);
     }
 
@@ -81,10 +73,6 @@ public class VulkanDevice implements IDevice {
     @Override
     public IShaderProgram createShaderProgram(ShaderDescription description) {
         return null;
-    }
-
-    public ITexture createTextureFromHandle(TextureDescription description, long memory) {
-        return new VulkanTexture(this, description, memory);
     }
 
     @Override
@@ -119,7 +107,23 @@ public class VulkanDevice implements IDevice {
 
     @Override
     public ICommandBuffer createCommandBuffer() {
-        return new VulkanCommandBuffer(this);
+        return defaultCommandPool.createCommandBuffer();
+    }
+
+    @Override
+    public ICommandPool createCommandPool(CommandPoolFlags... flags) {
+        java.util.EnumSet<CommandPoolFlags> poolFlags = java.util.EnumSet.noneOf(CommandPoolFlags.class);
+        if (flags != null) {
+            java.util.Collections.addAll(poolFlags, flags);
+        }
+        VulkanCommandPool pool = new VulkanCommandPool(this, poolFlags);
+        pool.init();
+        return pool;
+    }
+
+    @Override
+    public ICommandPool defaultCommandPool() {
+        return defaultCommandPool;
     }
 
     @Override
@@ -129,18 +133,57 @@ public class VulkanDevice implements IDevice {
 
     @Override
     public void submitCommandBuffer(ICommandBuffer commandBuffer) {
+        VulkanCommandBuffer vkCommandBuffer = (VulkanCommandBuffer) commandBuffer;
+        submitCommandBuffer(vkCommandBuffer, null, null, null);
+    }
+
+    public ITexture createTextureFromHandle(TextureDescription description, long memory) {
+        return new VulkanTexture(this, description, memory);
+    }
+
+    public void submitCommandBuffer(
+            VulkanCommandBuffer commandBuffer,
+            long[] waitSemaphores,
+            int[] waitDstStageMask,
+            long[] signalSemaphores
+    ) {
+        if (waitSemaphores != null && waitDstStageMask != null && waitSemaphores.length != waitDstStageMask.length) {
+            throw new IllegalArgumentException("waitSemaphores and waitDstStageMask length mismatch");
+        }
+
+        long fence = commandBuffer.prepareFenceForSubmit();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                    .pCommandBuffers(stack.pointers(commandBuffer.getNativeCommandBuffer().address()));
+
+            if (waitSemaphores != null && waitSemaphores.length > 0) {
+                submitInfo.pWaitSemaphores(stack.longs(waitSemaphores));
+                submitInfo.pWaitDstStageMask(stack.ints(waitDstStageMask));
+            }
+            if (signalSemaphores != null && signalSemaphores.length > 0) {
+                submitInfo.pSignalSemaphores(stack.longs(signalSemaphores));
+            }
+
+            VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
+            commandBuffer.markSubmitted();
+        }
+    }
+
+    public void submitCommandBuffer(VulkanCommandBuffer commandBuffer) {
+        long fence = commandBuffer.prepareFenceForSubmit();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
                     .pCommandBuffers(
                             stack.pointers(
-                                    ((VulkanCommandBuffer) commandBuffer)
+                                    commandBuffer
                                             .getNativeCommandBuffer()
                                             .address()
                             )
                     );
-            vkQueueSubmit(graphicsQueue, submitInfo, VK_NULL_HANDLE);
-            vkQueueWaitIdle(graphicsQueue);
+            VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
+            commandBuffer.markSubmitted();
         }
     }
 
@@ -149,7 +192,7 @@ public class VulkanDevice implements IDevice {
      *
      * @return VulkanCommandManager实例
      */
-    public VulkanCommandManager getCommandManager() {
+    public VulkanCommandPool getCommandManager() {
         return commandManager;
     }
 
@@ -171,11 +214,7 @@ public class VulkanDevice implements IDevice {
         return device;
     }
 
-    public VkQueue getGraphicsQueue() {
-        return graphicsQueue;
-    }
-
-    public int getGraphicsQueueFamilyIndex() {
-        return graphicsQueueFamilyIndex;
+    public VulkanQueue getMainQueue() {
+        return mainQueue;
     }
 }

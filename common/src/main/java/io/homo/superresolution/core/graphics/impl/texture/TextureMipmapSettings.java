@@ -21,18 +21,8 @@ package io.homo.superresolution.core.graphics.impl.texture;
 public class TextureMipmapSettings {
     private final boolean enabled;
     private final int levels;
-
-    public float getBias() {
-        return bias;
-    }
-
-    public TextureMipmapSettings bias(float bias) {
-        this.bias = bias;
-        return this;
-    }
-
-    private float bias;
     private final boolean autoGenerate;
+    private float bias;
 
     private TextureMipmapSettings(boolean enabled, int levels, boolean autoGenerate, float bias) {
         this.enabled = enabled;
@@ -60,6 +50,15 @@ public class TextureMipmapSettings {
         return new TextureMipmapSettings(true, levels, false);
     }
 
+    public float getBias() {
+        return bias;
+    }
+
+    public TextureMipmapSettings bias(float bias) {
+        this.bias = bias;
+        return this;
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -73,8 +72,12 @@ public class TextureMipmapSettings {
     }
 
     public int resolveLevels(int width, int height) {
-        if (!enabled) return 1;
-        if (levels > 0) return levels;
+        if (!enabled) {
+            return 1;
+        }
+        if (levels > 0) {
+            return levels;
+        }
 
         int maxDim = Math.max(width, height);
         return (int) (Math.log(maxDim) / Math.log(2)) + 1;
@@ -82,8 +85,12 @@ public class TextureMipmapSettings {
 
     @Override
     public String toString() {
-        if (!enabled) return "MipmapDisabled";
-        if (levels < 0) return "MipmapAuto";
+        if (!enabled) {
+            return "MipmapDisabled";
+        }
+        if (levels < 0) {
+            return "MipmapAuto";
+        }
         return "MipmapLevels=" + levels +
                 ", Generate=" + (autoGenerate ? "Auto" : "Manual");
     }

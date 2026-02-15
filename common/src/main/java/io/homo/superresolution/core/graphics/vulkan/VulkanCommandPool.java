@@ -16,10 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.command;
+package io.homo.superresolution.core.graphics.vulkan;
 
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
+import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
+import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
+import io.homo.superresolution.core.graphics.vulkan.utils.VulkanQueueUtils;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -27,29 +30,42 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.*;
 
-public class VulkanCommandManager {
+public class VulkanCommandPool implements ICommandPool {
     private final VulkanDevice device;
-    private final List<VkCommandBuffer> allocatedBuffers = new ArrayList<>();
+    private final EnumSet<CommandPoolFlags> flags;
+    private final List<VulkanCommandBuffer> allocatedBuffers = new ArrayList<>();
+    private final VulkanFencePool fencePool;
     private int graphicsQueueFamilyIndex;
     private long commandPool;
     private VkQueue graphicsQueue;
 
-    public VulkanCommandManager(VulkanDevice device) {
+    public VulkanCommandPool(VulkanDevice device, EnumSet<CommandPoolFlags> flags) {
         this.device = device;
+        this.flags = flags.clone();
+        this.fencePool = new VulkanFencePool(this);
     }
 
     public void init() {
-        this.graphicsQueueFamilyIndex = findGraphicsQueueFamilyIndex();
+        this.graphicsQueueFamilyIndex = VulkanQueueUtils.findQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT, device);
         createCommandPool();
         createGraphicsQueue();
     }
 
-    public List<VkCommandBuffer> getAllocatedBuffers() {
+    public List<VulkanCommandBuffer> getAllocatedBuffers() {
         return allocatedBuffers;
+    }
+
+    public VulkanDevice getDevice() {
+        return device;
+    }
+
+    public VulkanFencePool getFencePool() {
+        return fencePool;
     }
 
     public long getCommandPool() {
@@ -60,28 +76,19 @@ public class VulkanCommandManager {
         return graphicsQueue;
     }
 
-    private int findGraphicsQueueFamilyIndex() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkPhysicalDevice physicalDevice = device.getPhysicalDevice();
-            int queueFamilyCount = stack.mallocInt(1).get(0);
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, stack.ints(queueFamilyCount), null);
-            VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.malloc(queueFamilyCount, stack);
-            vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, stack.ints(queueFamilyCount), queueFamilies);
-            for (int i = 0; i < queueFamilies.capacity(); i++) {
-                if ((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
-                    return i;
-                }
-            }
-            throw new VulkanException("No suitable queue family found");
-        }
-    }
-
     private void createCommandPool() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
+            int poolFlags = 0;
+            if (flags.contains(CommandPoolFlags.Reset)) {
+                poolFlags |= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            }
+            if (flags.contains(CommandPoolFlags.Transient)) {
+                poolFlags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+            }
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
                     .queueFamilyIndex(graphicsQueueFamilyIndex)
-                    .flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+                    .flags(poolFlags);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
             VulkanUtils.VK_CHECK(vkCreateCommandPool(device.getVkDevice(), poolInfo, null, pCommandPool), "Failed to create command pool");
@@ -97,7 +104,7 @@ public class VulkanCommandManager {
         }
     }
 
-    public void freeCommandBuffer(VkCommandBuffer cmdBuf) {
+    void freeCommandBuffer(VkCommandBuffer cmdBuf) {
         VK10.vkFreeCommandBuffers(
                 device.getVkDevice(),
                 commandPool,
@@ -105,7 +112,7 @@ public class VulkanCommandManager {
         );
     }
 
-    public VkCommandBuffer createCommandBuffer() {
+    VkCommandBuffer createNativeCommandBuffer() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
@@ -115,26 +122,41 @@ public class VulkanCommandManager {
 
             PointerBuffer pCommandBuffer = stack.mallocPointer(1);
             VulkanUtils.VK_CHECK(vkAllocateCommandBuffers(device.getVkDevice(), allocInfo, pCommandBuffer), "Failed to allocate command buffer");
-            VkCommandBuffer cmdBuf = new VkCommandBuffer(pCommandBuffer.get(0), device.getVkDevice());
-            allocatedBuffers.add(cmdBuf);
-
-            return cmdBuf;
+            return new VkCommandBuffer(pCommandBuffer.get(0), device.getVkDevice());
         }
     }
 
-    public void submitCommandBuffer(VkCommandBuffer commandBuffer) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pCommandBuffers(stack.pointers(commandBuffer));
+    @Override
+    public ICommandBuffer createCommandBuffer(CommandBufferBehavior behavior) {
+        VulkanCommandBuffer commandBuffer = new VulkanCommandBuffer(device, this, behavior);
+        allocatedBuffers.add(commandBuffer);
+        return commandBuffer;
+    }
 
-            vkEndCommandBuffer(commandBuffer);
-            VulkanUtils.VK_CHECK(vkQueueSubmit(graphicsQueue, submitInfo, VK_NULL_HANDLE), "Failed to submit command buffer");
-            vkQueueWaitIdle(graphicsQueue);
-        }
+    @Override
+    public EnumSet<CommandPoolFlags> flags() {
+        return flags.clone();
     }
 
     public void destroy() {
+        for (VulkanCommandBuffer buffer : new ArrayList<>(allocatedBuffers)) {
+            buffer.destroy();
+        }
+        allocatedBuffers.clear();
+        fencePool.destroy();
         vkDestroyCommandPool(device.getVkDevice(), commandPool, null);
+    }
+
+    @Override
+    public void reset() {
+        for (VulkanCommandBuffer buffer : allocatedBuffers) {
+            if (buffer.state() != io.homo.superresolution.core.graphics.impl.command.CommandBufferState.Destroyed) {
+                buffer.reset();
+            }
+        }
+    }
+
+    void onCommandBufferDestroyed(VulkanCommandBuffer commandBuffer) {
+        allocatedBuffers.remove(commandBuffer);
     }
 }

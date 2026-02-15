@@ -24,11 +24,7 @@ import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderCompileException;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.shader.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 
@@ -92,8 +88,12 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         List<String> codeLines = List.of(code.split("\n"));
         List<String> preprocessedCodeLines = new ArrayList<>();
         for (String line : codeLines) {
-            if (line.trim().startsWith("#line")) continue;
-            if (line.trim().startsWith("#extension") && line.contains("GL_GOOGLE_include_directive")) continue;
+            if (line.trim().startsWith("#line")) {
+                continue;
+            }
+            if (line.trim().startsWith("#extension") && line.contains("GL_GOOGLE_include_directive")) {
+                continue;
+            }
             preprocessedCodeLines.add(line);
         }
         return String.join("\n", preprocessedCodeLines);
@@ -254,6 +254,24 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         compile(SuperResolutionConfig.isEnableCompatShaderCompiler());
     }
 
+    @Override
+    public boolean isCompiled() {
+        return isCompiled;
+    }
+
+    @Override
+    public void destroy() {
+        if (handle != 0) {
+            glDeleteProgram(this.handle);
+            handle = 0;
+        }
+    }
+
+    @Override
+    public ShaderDescription getDescription() {
+        return description;
+    }
+
     public void compile(boolean compat) {
         EnumMap<ShaderType, ShaderSource> shaderSources = description.sourceMap();
         validateShaderTypes();
@@ -293,23 +311,5 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
             shaders.forEach(GlShader::destroy);
         }
 
-    }
-
-    @Override
-    public boolean isCompiled() {
-        return isCompiled;
-    }
-
-    @Override
-    public void destroy() {
-        if (handle != 0) {
-            glDeleteProgram(this.handle);
-            handle = 0;
-        }
-    }
-
-    @Override
-    public ShaderDescription getDescription() {
-        return description;
     }
 }

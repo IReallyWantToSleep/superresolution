@@ -21,6 +21,7 @@ package io.homo.superresolution.core.graphics.opengl.utils;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.CullMode;
@@ -51,12 +52,11 @@ public class GlTextureCopier {
     private static final Map<String, RenderPass> programMap = new HashMap<>();
     private static final Map<String, GlComputePipeline> computeProgramMap = new HashMap<>();
     private static GlSampler sampler;
+    private static GlFrameBuffer cachedFrameBuffer;
 
     public static GlFrameBuffer getCachedFrameBuffer() {
         return cachedFrameBuffer;
     }
-
-    private static GlFrameBuffer cachedFrameBuffer;
 
     private static String toComputeShaderFormatQualifier(TextureFormat format) {
         return switch (format) {
@@ -78,8 +78,9 @@ public class GlTextureCopier {
 
     private static GlComputePipeline getOrCreateComputeProgram(CopyOperation copyOperation) {
         String key = mappingKey(copyOperation.getMappings());
-        if (computeProgramMap.containsKey(key))
+        if (computeProgramMap.containsKey(key)) {
             return computeProgramMap.get(key);
+        }
         ShaderDescription.Builder builder =
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/copy.comp.glsl", true));
 
@@ -105,8 +106,9 @@ public class GlTextureCopier {
 
     private static RenderPass getOrCreateProgram(CopyOperation copyOperation) {
         String key = mappingKey(copyOperation.getMappings());
-        if (programMap.containsKey(key))
+        if (programMap.containsKey(key)) {
             return programMap.get(key);
+        }
         ShaderDescription.Builder builder =
                 ShaderDescription.graphics(
                         new ShaderSource(ShaderType.Fragment, "/shader/copy.frag.glsl", true),
@@ -149,7 +151,9 @@ public class GlTextureCopier {
 
     public static void copy(CopyOperation copyOperation) {
         GlDebug.pushGroup(GlDebug.nextCopyId(), "CopyTexture");
-        if (sampler == null) sampler = GlSampler.create(GlSampler.SamplerType.LinearClamp);
+        if (sampler == null) {
+            sampler = GlSampler.create(GlSampler.SamplerType.LinearClamp);
+        }
         if (toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()) != null) {
             GlComputePipeline pipeline = getOrCreateComputeProgram(copyOperation);
             //用线性采样，防止出现锯齿
@@ -157,14 +161,17 @@ public class GlTextureCopier {
             pipeline.descriptorSet()
                     .storageImage("outImage", copyOperation.getDstTexture())
                     .samplerTexture("tex", copyOperation.getSrcTexture());
-            RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+            ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+            commandBuffer.begin();
             RenderSystems.opengl().device().commandDecoder().dispatch(
+                    commandBuffer,
                     pipeline,
                     (int) Math.ceil((double) copyOperation.getSrcTexture().getWidth() / 16),
                     (int) Math.ceil((double) copyOperation.getSrcTexture().getHeight() / 16),
                     1
             );
-            RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+            commandBuffer.end();
+            RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
             GL43.glBindSampler(0, 0);
             GlDebug.popGroup();
             return;
@@ -179,16 +186,19 @@ public class GlTextureCopier {
             pass.pipeline().descriptorSet()
                     .samplerTexture("tex", copyOperation.getSrcTexture());
             IVertexBuffer vertexBuffer = FullscreenQuad.create(RenderSystems.opengl().device());
-            RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+            ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+            commandBuffer.begin();
             RenderSystems.opengl().device().commandDecoder()
                     .draw(
+                            commandBuffer,
                             pass,
                             PrimitiveType.TriangleStrip,
                             vertexBuffer,
                             4,
                             0
                     );
-            RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+            commandBuffer.end();
+            RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
         }
         GlDebug.popGroup();
     }

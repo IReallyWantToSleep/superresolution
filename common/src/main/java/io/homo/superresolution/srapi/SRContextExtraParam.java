@@ -26,48 +26,66 @@ public class SRContextExtraParam {
     }
 
     public String getName() {
-        if (nativePtr == 0) return null;
+        if (nativePtr == 0) {
+            return null;
+        }
         return SuperResolutionNativeAPI.srParamGetName(nativePtr);
     }
 
     public SRParamValueType getValueType() {
-        if (nativePtr == 0) return SRParamValueType.UNKNOWN;
+        if (nativePtr == 0) {
+            return SRParamValueType.UNKNOWN;
+        }
         int typeValue = SuperResolutionNativeAPI.srParamGetValueType(nativePtr);
         return SRParamValueType.fromValue(typeValue);
     }
 
     public boolean getAsBool() {
-        if (nativePtr == 0) return false;
+        if (nativePtr == 0) {
+            return false;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsBool(nativePtr);
     }
 
     public int getAsInt32() {
-        if (nativePtr == 0) return 0;
+        if (nativePtr == 0) {
+            return 0;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsInt32(nativePtr);
     }
 
     public long getAsUint32() {
-        if (nativePtr == 0) return 0L;
+        if (nativePtr == 0) {
+            return 0L;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsUint32(nativePtr);
     }
 
     public float getAsFloat() {
-        if (nativePtr == 0) return 0.0f;
+        if (nativePtr == 0) {
+            return 0.0f;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsFloat(nativePtr);
     }
 
     public double getAsDouble() {
-        if (nativePtr == 0) return 0.0;
+        if (nativePtr == 0) {
+            return 0.0;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsDouble(nativePtr);
     }
 
     public String getAsString() {
-        if (nativePtr == 0) return null;
+        if (nativePtr == 0) {
+            return null;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsString(nativePtr);
     }
 
     public long getAsPointer() {
-        if (nativePtr == 0) return 0L;
+        if (nativePtr == 0) {
+            return 0L;
+        }
         return SuperResolutionNativeAPI.srParamGetValueAsPointer(nativePtr);
     }
 

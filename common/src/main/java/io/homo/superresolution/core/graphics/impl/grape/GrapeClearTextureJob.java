@@ -88,6 +88,14 @@ public class GrapeClearTextureJob implements IGrapeJob {
         }
     }
 
+    @Override
+    public void destroy() {
+        clearColor = null;
+        clearDepth = null;
+        clearStencil = null;
+        target = null;
+    }
+
     private void validateState() {
         Objects.requireNonNull(target, "清除目标未设置");
     }
@@ -116,13 +124,5 @@ public class GrapeClearTextureJob implements IGrapeJob {
         if (!target.getTextureFormat().isStencil()) {
             throw new UnsupportedOperationException("纹理不支持模板清除");
         }
-    }
-
-    @Override
-    public void destroy() {
-        clearColor = null;
-        clearDepth = null;
-        clearStencil = null;
-        target = null;
     }
 }

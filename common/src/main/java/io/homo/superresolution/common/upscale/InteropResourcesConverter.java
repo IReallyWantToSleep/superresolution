@@ -169,8 +169,8 @@ public class InteropResourcesConverter {
         TextureFormat outputFormat = output.getTextureFormat();
         ComputePipeline computePipeline = getOrCreateFlipYPipeline(outputFormat);
 
-        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
         renderGrape.remove("flip_y");
         renderGrape.add("flip_y",
                 GrapeJobBuilders.compute(computePipeline)
@@ -184,7 +184,8 @@ public class InteropResourcesConverter {
                         .build());
 
         renderGrape.execute(commandBuffer, "flip_y");
-        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+        commandBuffer.end();
+        RenderSystems.current().device().submitCommandBuffer(commandBuffer);
     }
 
     private static void init() {
@@ -212,21 +213,25 @@ public class InteropResourcesConverter {
         }
         depthPreprocessPipeline.descriptorSet().samplerTexture("inputDepth", 0, inputDepth);
         try (GlState state = new GlState(GlState.STATE_DEPTH_TEST)) {
-            RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
+            ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+            commandBuffer.begin();
             RenderSystems.opengl().device().commandDecoder().setViewport(
+                    commandBuffer,
                     0,
                     0,
                     outputDepth.getWidth(),
                     outputDepth.getHeight()
             );
             RenderSystems.opengl().device().commandDecoder().draw(
+                    commandBuffer,
                     depthPreprocessRenderPass,
                     PrimitiveType.TriangleStrip,
                     FullscreenQuad.create(RenderSystems.opengl().device()),
                     4,
                     0
             );
-            RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+            commandBuffer.end();
+            RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         }
         GL41.glDepthFunc(GL41.GL_LEQUAL);
     }
@@ -236,8 +241,8 @@ public class InteropResourcesConverter {
             init();
         }
 
-        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
         renderGrape.remove("flip_motion_vector_y");
         renderGrape.add("flip_motion_vector_y",
                 GrapeJobBuilders.compute(flipMotionVectorYPipeline)
@@ -251,6 +256,7 @@ public class InteropResourcesConverter {
                         .build());
 
         renderGrape.execute(commandBuffer, "flip_motion_vector_y");
-        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+                commandBuffer.end();
+                RenderSystems.current().device().submitCommandBuffer(commandBuffer);
     }
 }

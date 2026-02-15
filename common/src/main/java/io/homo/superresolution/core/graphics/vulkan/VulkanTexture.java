@@ -16,12 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.texture;
+package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanInterop;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -45,28 +43,14 @@ public class VulkanTexture implements ITexture {
     private long imageView;
     private int width;
     private int height;
-
-    public long getMemorySize() {
-        return memorySize;
-    }
-
     private long memorySize;
 
     public VulkanTexture(VulkanDevice device, TextureDescription description) {
         this(device, description, false, -1, false);
     }
 
-    @Override
-    public TextureMipmapSettings getMipmapSettings() {
-        return description.getMipmapSettings();
-    }
-
     public VulkanTexture(VulkanDevice device, TextureDescription description, long memoryHandle) {
         this(device, description, true, memoryHandle, false);
-    }
-
-    public VulkanDevice getDevice() {
-        return device;
     }
 
     public VulkanTexture(VulkanDevice device, TextureDescription description, boolean isExternal, long memoryHandle, boolean exportable) {
@@ -90,6 +74,14 @@ public class VulkanTexture implements ITexture {
             }
             createImageView(stack);
         }
+    }
+
+    public long getMemorySize() {
+        return memorySize;
+    }
+
+    public VulkanDevice getDevice() {
+        return device;
     }
 
     private void exportMemoryHandle(MemoryStack stack) {
@@ -185,7 +177,6 @@ public class VulkanTexture implements ITexture {
         vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0);
     }
 
-
     private void importMemoryFromHandle(MemoryStack stack) {
         VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
         vkGetImageMemoryRequirements(device.getVkDevice(), image, memRequirements);
@@ -205,7 +196,6 @@ public class VulkanTexture implements ITexture {
         VK_CHECK(vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0),
                 "Failed to bind imported memory to image");
     }
-
 
     private int findMemoryType(int typeFilter, int properties) {
         try (MemoryStack stack = stackPush()) {
@@ -281,6 +271,16 @@ public class VulkanTexture implements ITexture {
     }
 
     @Override
+    public TextureMipmapSettings getMipmapSettings() {
+        return description.getMipmapSettings();
+    }
+
+    @Override
+    public TextureDescription getTextureDescription() {
+        return description;
+    }
+
+    @Override
     public int getWidth() {
         return width;
     }
@@ -320,7 +320,9 @@ public class VulkanTexture implements ITexture {
 
     @Override
     public void resize(int newWidth, int newHeight) {
-        if (newWidth == width && newHeight == height) return;
+        if (newWidth == width && newHeight == height) {
+            return;
+        }
 
         destroy();
         this.width = newWidth;
@@ -355,10 +357,5 @@ public class VulkanTexture implements ITexture {
             return memoryHandle;
         }
         throw new VulkanException("Texture does not have external memory");
-    }
-
-    @Override
-    public TextureDescription getTextureDescription() {
-        return description;
     }
 }

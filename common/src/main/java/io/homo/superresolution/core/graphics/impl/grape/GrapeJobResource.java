@@ -30,8 +30,8 @@ import java.util.function.Supplier;
 public class GrapeJobResource<RT> {
     protected final GrapeResourceAccess access;
     protected final GrapeResourceType type;
-    protected Supplier<Optional<RT>> resource;
     private final Predicate<RT> validator;
+    protected Supplier<Optional<RT>> resource;
 
     public GrapeJobResource(
             GrapeResourceAccess access,

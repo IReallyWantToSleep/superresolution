@@ -21,11 +21,11 @@ package io.homo.superresolution.core.graphics.opengl;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import org.lwjgl.opengl.GL;
 
-import static org.lwjgl.opengl.GL41.*;
+import static org.lwjgl.opengl.GL41.glFinish;
 
 public class GlRenderSystem implements IRenderSystem {
-    private GlDevice device;
     public boolean supportsARBClearTexture;
+    private GlDevice device;
 
     @Override
     public void initRenderSystem() {

@@ -270,7 +270,12 @@ public enum TextureFormat {
     }
 
     public enum TextureComponent {
-        R, G, B, A, Depth, Stencil
+        R,
+        G,
+        B,
+        A,
+        Depth,
+        Stencil
     }
 
     public enum DataType {

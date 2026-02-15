@@ -325,15 +325,16 @@ public class MotionVectorsGenerator {
         ubo.upload();
         GL41.glDisable(GL41.GL_DEPTH_TEST);
         GL41.glDisable(GL41.GL_CULL_FACE);
-        RenderSystems.opengl().device().commandDecoder().beginCommandBuffer();
-        ICommandBuffer commandBuffer = RenderSystems.current().device().commandDecoder().currentCommandBuffer();
+                ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+                commandBuffer.begin();
         pipeline.execute(commandBuffer, "preprocess");
         pipeline.execute(commandBuffer, "copy_preprocess_fbo_to_current_frame_texture");
         pipeline.execute(commandBuffer, "pass1");
         pipeline.execute(commandBuffer, "pass2");
         pipeline.execute(commandBuffer, "pass3");
         pipeline.execute(commandBuffer, "copy_current_frame_texture_to_previous_frame_texture");
-        RenderSystems.opengl().device().commandDecoder().endAndSubmitCommandBuffer();
+                commandBuffer.end();
+                RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         GL41.glEnable(GL41.GL_DEPTH_TEST);
         GL41.glEnable(GL41.GL_CULL_FACE);
     }

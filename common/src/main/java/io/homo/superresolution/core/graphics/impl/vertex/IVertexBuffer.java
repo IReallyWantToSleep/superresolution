@@ -52,6 +52,6 @@ public interface IVertexBuffer extends GpuObject {
     default void updateData(byte[] data) {
         updateData(data, 0, data.length);
     }
-    
+
     void destroy();
 }

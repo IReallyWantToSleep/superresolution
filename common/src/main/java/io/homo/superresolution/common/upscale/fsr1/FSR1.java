@@ -18,23 +18,27 @@
 
 package io.homo.superresolution.common.upscale.fsr1;
 
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.grape.*;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
+import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
-import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import org.joml.Vector3i;
@@ -137,6 +141,63 @@ public class FSR1 extends AbstractAlgorithm {
         this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
     }
 
+    @Override
+    public boolean dispatch(DispatchResource dispatchResource) {
+        super.dispatch(dispatchResource);
+
+        fsr1UBOData.setVec2("renderViewportSize", RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
+        fsr1UBOData.setVec2("containerTextureSize", RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getRenderHeight());
+        fsr1UBOData.setVec2("upscaledViewportSize", RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight());
+        fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
+        fsr1UBOData.fillBuffer();
+        fsr1UBO.upload();
+
+        GrapeComputeJob easuJob = (GrapeComputeJob) fsrUpscalePipeline.get("fsr1_easu");
+        GrapeJobResource.SamplerTexture inImageResource = (GrapeJobResource.SamplerTexture) easuJob
+                .resource("inImage");
+
+        if (inImageResource != null && getResources().colorTexture() != null) {
+            inImageResource.setResource(getResources().colorTexture());
+        }
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        commandBuffer.begin();
+        fsrUpscalePipeline.execute(commandBuffer);
+        commandBuffer.end();
+        RenderSystems.current().device().submitCommandBuffer(commandBuffer);
+        return true;
+    }
+
+    @Override
+    public void destroy() {
+        output.destroy();
+        fsr1TempTexture.destroy();
+        fsr1EASUShader.destroy();
+        fsr1RCASShader.destroy();
+        fsr1UBOData.free();
+        fsr1UBO.destroy();
+        outputFbo.destroy();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        fsr1TempTexture.resize(width, height);
+        output.resize(width, height);
+        outputFbo.resizeFrameBuffer(width, height);
+    }
+
+    @Override
+    public IFrameBuffer getOutputFrameBuffer() {
+        return outputFbo;
+    }
+
+    @Override
+    public int getOutputTextureId() {
+        return Math.toIntExact(output.handle());
+    }
+
     public void initShader() {
         int fp16 = SuperResolutionConfig.SPECIAL.FSR1.FP16.get() ? checkFP16Support() : 0;
         fsr1EASUShader = RenderSystems.current().device().createShaderProgram(
@@ -194,60 +255,5 @@ public class FSR1 extends AbstractAlgorithm {
                 dispatchX,
                 dispatchY,
                 1);
-    }
-
-    @Override
-    public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
-
-        fsr1UBOData.setVec2("renderViewportSize", RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight());
-        fsr1UBOData.setVec2("containerTextureSize", RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight());
-        fsr1UBOData.setVec2("upscaledViewportSize", RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight());
-        fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
-        fsr1UBOData.fillBuffer();
-        fsr1UBO.upload();
-
-        GrapeComputeJob easuJob = (GrapeComputeJob) fsrUpscalePipeline.get("fsr1_easu");
-        GrapeJobResource.SamplerTexture inImageResource = (GrapeJobResource.SamplerTexture) easuJob
-                .resource("inImage");
-
-        if (inImageResource != null && getResources().colorTexture() != null) {
-            inImageResource.setResource(getResources().colorTexture());
-        }
-        RenderSystems.current().device().commandDecoder().beginCommandBuffer();
-        fsrUpscalePipeline.execute(RenderSystems.current().device().commandDecoder().currentCommandBuffer());
-        RenderSystems.current().device().commandDecoder().endAndSubmitCommandBuffer();
-        return true;
-    }
-
-    @Override
-    public void destroy() {
-        output.destroy();
-        fsr1TempTexture.destroy();
-        fsr1EASUShader.destroy();
-        fsr1RCASShader.destroy();
-        fsr1UBOData.free();
-        fsr1UBO.destroy();
-        outputFbo.destroy();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        fsr1TempTexture.resize(width, height);
-        output.resize(width, height);
-        outputFbo.resizeFrameBuffer(width, height);
-    }
-
-    @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFbo;
-    }
-
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(output.handle());
     }
 }

@@ -30,41 +30,38 @@ public class SRCreateUpscaleContextDesc {
      * 渲染API类型
      */
     public SRRenderApiType renderApiType;
-
+    /**
+     * 放大后的分辨率
+     */
+    public Vector2i upscaledSize;
+    /**
+     * 渲染分辨率
+     */
+    public Vector2i renderSize;
+    /**
+     * 消息回调（函数指针，可选）
+     */
+    public long messageCallback;
+    /**
+     * 额外参数
+     */
+    public SRContextExtraParams extraParams;
+    /**
+     * 标志位
+     */
+    public EnumSet<SRUpscaleContextCreateFlags> flags;
     /**
      * OpenGL设备信息（当renderApiType为OPENGL时使用）
      */
     private SROpenGLDeviceInfo openglDeviceInfo;
-
     /**
      * Vulkan设备信息（当renderApiType为VULKAN时使用）
      */
     private SRVulkanDeviceInfo vulkanDeviceInfo;
 
-    /**
-     * 放大后的分辨率
-     */
-    public Vector2i upscaledSize;
-
-    /**
-     * 渲染分辨率
-     */
-    public Vector2i renderSize;
-
-    /**
-     * 消息回调（函数指针，可选）
-     */
-    public long messageCallback;
-
-    /**
-     * 额外参数
-     */
-    public SRContextExtraParams extraParams;
-
-    /**
-     * 标志位
-     */
-    public EnumSet<SRUpscaleContextCreateFlags> flags;
+    private SRCreateUpscaleContextDesc() {
+        this.messageCallback = 0;
+    }
 
     /**
      * 创建OpenGL上下文描述符
@@ -100,10 +97,6 @@ public class SRCreateUpscaleContextDesc {
         desc.flags = flags;
         desc.extraParams = new SRContextExtraParams();
         return desc;
-    }
-
-    private SRCreateUpscaleContextDesc() {
-        this.messageCallback = 0;
     }
 
     public SRRenderApiType getRenderApiType() {

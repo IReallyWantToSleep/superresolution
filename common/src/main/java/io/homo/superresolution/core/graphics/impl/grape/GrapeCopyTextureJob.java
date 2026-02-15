@@ -90,6 +90,12 @@ public class GrapeCopyTextureJob implements IGrapeJob {
 
     }
 
+    @Override
+    public void destroy() {
+        source = null;
+        destination = null;
+    }
+
     private void checkTextureFormat() {
         if (source.getTextureFormat() != destination.getTextureFormat()) {
             throw new IllegalArgumentException("源纹理与目标纹理格式不同 %s %s".formatted(source.getTextureFormat(), destination.getTextureFormat()));
@@ -100,11 +106,5 @@ public class GrapeCopyTextureJob implements IGrapeJob {
         if (dim.x + dim.z > tex.getWidth() || dim.y + dim.w > tex.getHeight()) {
             throw new IllegalArgumentException(name + "复制区域超出纹理边界");
         }
-    }
-
-    @Override
-    public void destroy() {
-        source = null;
-        destination = null;
     }
 }
