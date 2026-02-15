@@ -16,20 +16,10 @@ java {
 repositories {
     if (System.getenv().containsKey("SR_DEV")) {
         maven {
-            name "minecraftdevRepository"
-            url "http://127.0.0.1:8080/releases"
+            name = "minecraftdevRepository"
+            url = "http://127.0.0.1:8080/releases"
         }
     }
-    mavenCentral()
-    maven { url 'https://maven.neoforged.net' }
-    maven { url 'https://maven.aliyun.com/repository/central' }
-    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-    maven { url "https://maven.architectury.dev/" }
-    maven { url "https://maven.nucleoid.xyz/" }
-    maven { url "https://maven.shedaniel.me/" }
-    maven { url "https://maven.neoforged.net/releases" }
-    maven { url "https://libraries.minecraft.net" }
-    maven { url "https://maven.fabricmc.net/" }
     exclusiveContent {
         forRepository {
             maven {
@@ -50,9 +40,5 @@ repositories {
                     url = 'https://maven.neoforged.net/releases'
                 })
         filter { includeGroup('org.parchmentmc.data') }
-    }
-    maven {
-        name = 'BlameJared'
-        url = 'https://maven.blamejared.com'
     }
 }

@@ -35,20 +35,6 @@ if (isNewVersion) {
 }
 
 repositories {
-    mavenCentral()
-    maven { url 'https://maven.neoforged.net' }
-    maven { url 'https://maven.aliyun.com/repository/central' }
-    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
-    maven { url "https://maven.architectury.dev/" }
-    maven { url "https://maven.nucleoid.xyz/" }
-    maven { url "https://maven.shedaniel.me/" }
-    maven { url "https://maven.neoforged.net/releases" }
-    maven { url "https://libraries.minecraft.net" }
-    maven { url "https://maven.fabricmc.net/" }
-    maven { url 'https://repo.spongepowered.org/repository/maven-public' }
-    maven { url 'https://maven.parchmentmc.org/' }
-    maven { url 'https://maven.blamejared.com' }
-
     maven {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
@@ -79,7 +65,7 @@ static Dependency findIris(BasePlatformConfig config) {
 }
 
 dependencies {
-    compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+    compileOnly 'org.spongepowered:mixin:0.8.5'
     compileOnly "io.github.spair:imgui-java-app:1.87.5"
     compileOnly "io.github.spair:imgui-java-binding:1.87.5"
     compileOnly "io.github.spair:imgui-java-lwjgl3:1.87.5"

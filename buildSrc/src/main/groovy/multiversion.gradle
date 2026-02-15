@@ -12,7 +12,8 @@ static def fetchAllReleaseVersions() {
     try {
         def url = 'https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json'
         def connection = new URL(url).openConnection()
-        connection.setReadTimeout(300)
+        connection.setConnectTimeout(1000)
+        connection.setReadTimeout(1000)
         def manifest = new JsonSlurper().parse(connection.getInputStream())
         println("✅️️ Minecraft版本信息获取成功")
         def versions = manifest.versions
@@ -24,34 +25,38 @@ static def fetchAllReleaseVersions() {
     } catch (Exception e) {
         e.printStackTrace()
         println("⚠️ Minecraft版本信息获取失败，使用默认版本列表")
-        return [
-                '1.21.10', '1.21.9',
-                '1.21.8', '1.21.7', '1.21.6', '1.21.5', '1.21.4',
-                '1.21.3', '1.21.2', '1.21.1', '1.21',
-                '1.20.6', '1.20.5', '1.20.4', '1.20.3',
-                '1.20.2', '1.20.1', '1.20', '1.19.4',
-                '1.19.3', '1.19.2', '1.19.1', '1.19',
-                '1.18.2', '1.18.1', '1.18', '1.17.1',
-                '1.17', '1.16.5', '1.16.4', '1.16.3',
-                '1.16.2', '1.16.1', '1.16', '1.15.2',
-                '1.15.1', '1.15', '1.14.4', '1.14.3',
-                '1.14.2', '1.14.1', '1.14', '1.13.2',
-                '1.13.1', '1.13', '1.12.2', '1.12.1',
-                '1.12', '1.11.2', '1.11.1', '1.11',
-                '1.10.2', '1.10.1', '1.10', '1.9.4',
-                '1.9.3', '1.9.2', '1.9.1', '1.9',
-                '1.8.9', '1.8.8', '1.8.7', '1.8.6',
-                '1.8.5', '1.8.4', '1.8.3', '1.8.2',
-                '1.8.1', '1.8', '1.7.10', '1.7.9',
-                '1.7.8', '1.7.7', '1.7.6', '1.7.5',
-                '1.7.4', '1.7.3', '1.7.2', '1.6.4',
-                '1.6.2', '1.6.1', '1.5.2', '1.5.1',
-                '1.4.7', '1.4.5', '1.4.6', '1.4.4',
-                '1.4.2', '1.3.2', '1.3.1', '1.2.5',
-                '1.2.4', '1.2.3', '1.2.2', '1.2.1',
-                '1.1', '1.0'
-        ]
+        return getDefaultReleaseVersions()
     }
+}
+
+static def getDefaultReleaseVersions() {
+    return [
+            '1.21.10', '1.21.9',
+            '1.21.8', '1.21.7', '1.21.6', '1.21.5', '1.21.4',
+            '1.21.3', '1.21.2', '1.21.1', '1.21',
+            '1.20.6', '1.20.5', '1.20.4', '1.20.3',
+            '1.20.2', '1.20.1', '1.20', '1.19.4',
+            '1.19.3', '1.19.2', '1.19.1', '1.19',
+            '1.18.2', '1.18.1', '1.18', '1.17.1',
+            '1.17', '1.16.5', '1.16.4', '1.16.3',
+            '1.16.2', '1.16.1', '1.16', '1.15.2',
+            '1.15.1', '1.15', '1.14.4', '1.14.3',
+            '1.14.2', '1.14.1', '1.14', '1.13.2',
+            '1.13.1', '1.13', '1.12.2', '1.12.1',
+            '1.12', '1.11.2', '1.11.1', '1.11',
+            '1.10.2', '1.10.1', '1.10', '1.9.4',
+            '1.9.3', '1.9.2', '1.9.1', '1.9',
+            '1.8.9', '1.8.8', '1.8.7', '1.8.6',
+            '1.8.5', '1.8.4', '1.8.3', '1.8.2',
+            '1.8.1', '1.8', '1.7.10', '1.7.9',
+            '1.7.8', '1.7.7', '1.7.6', '1.7.5',
+            '1.7.4', '1.7.3', '1.7.2', '1.6.4',
+            '1.6.2', '1.6.1', '1.5.2', '1.5.1',
+            '1.4.7', '1.4.5', '1.4.6', '1.4.4',
+            '1.4.2', '1.3.2', '1.3.1', '1.2.5',
+            '1.2.4', '1.2.3', '1.2.2', '1.2.1',
+            '1.1', '1.0'
+    ]
 }
 
 static int toVersionCode(String verStr) {
@@ -71,7 +76,9 @@ try {
     throw new GradleException("无法解析版本配置 ${getVersionConfigPath().toString()}");
 }
 ext {
-    allMinecraftVersions = fetchAllReleaseVersions()
+    allMinecraftVersions = (project.findProperty("sr.refreshVersions")?.toString()?.toBoolean()) ?
+            fetchAllReleaseVersions() :
+            getDefaultReleaseVersions()
 
 }
 
@@ -83,8 +90,12 @@ def writeDefines() {
         sb.append("MC_" + ver.replace(".", "_") + "=" + verCode + "\n")
     }
     sb.append("MC_VER=" + toVersionCode(versionConfig.common.minecraftVersion) + "\n")
-    new File(projectDir.asWritable().absolutePath, "build.properties").text = sb.toString()
-    println("❇️ 成功写入定义文件")
+    def outputFile = new File(projectDir.asWritable().absolutePath, "build.properties")
+    def newText = sb.toString()
+    if (!outputFile.exists() || outputFile.text != newText) {
+        outputFile.text = newText
+        println("❇️ 成功写入定义文件")
+    }
 }
 
 def getVersionConfigPath() {

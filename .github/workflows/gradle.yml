@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     if: ${{ !contains(github.event.head_commit.message, 'SKIP') }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
-          platform: x64
+          
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -37,7 +37,7 @@ jobs:
       - name: Build
         id: build
         if: ${{ !cancelled() }}
-        run: python script/buildAll.py
+        run: ./gradlew buildAllVersions
       - name: Capture build artifacts
         uses: actions/upload-artifact@v4
         with:

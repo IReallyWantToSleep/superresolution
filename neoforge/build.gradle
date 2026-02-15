@@ -7,14 +7,10 @@ plugins {
 
 repositories {
     maven {
-        url "https://cursemaven.com"
+        url = "https://cursemaven.com"
         content {
             includeGroup "curse.maven"
         }
-    }
-    maven {
-        name = 'NeoForged'
-        url = 'https://maven.neoforged.net/releases'
     }
     maven {
         name = "Modrinth"
@@ -31,13 +27,21 @@ repositories {
         }
     }
     maven {
-        name "CaffeineMC"
-        url "https://maven.caffeinemc.net/releases" // or /snapshots
+        name = "CaffeineMC"
+        url = "https://maven.caffeinemc.net/releases" // or /snapshots
+        mavenContent { releasesOnly() }
+        content {
+            includeGroup "net.caffeinemc"
+        }
     }
 
     maven {
-        name "CaffeineMC"
-        url "https://maven.caffeinemc.net/snapshots" // or /snapshots
+        name = "CaffeineMC"
+        url = "https://maven.caffeinemc.net/snapshots" // or /snapshots
+        mavenContent { snapshotsOnly() }
+        content {
+            includeGroup "net.caffeinemc"
+        }
     }
 }
 
@@ -78,32 +82,16 @@ neoForge {
             if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
 
                 additionalRuntimeClasspathConfiguration.dependencies.add(
-                        dependencies.create(
-                                group: "io.github.spair",
-                                name: "imgui-java-app",
-                                version: "1.87.5"
-                        )
+                    dependencies.create("io.github.spair:imgui-java-app:1.87.5")
                 )
                 additionalRuntimeClasspathConfiguration.dependencies.add(
-                        dependencies.create(
-                                group: "io.github.spair",
-                                name: "imgui-java-binding",
-                                version: "1.87.5"
-                        )
+                    dependencies.create("io.github.spair:imgui-java-binding:1.87.5")
                 )
                 additionalRuntimeClasspathConfiguration.dependencies.add(
-                        dependencies.create(
-                                group: "io.github.spair",
-                                name: "imgui-java-lwjgl3",
-                                version: "1.87.5"
-                        )
+                    dependencies.create("io.github.spair:imgui-java-lwjgl3:1.87.5")
                 )
                 additionalRuntimeClasspathConfiguration.dependencies.add(
-                        dependencies.create(
-                                group: "org.lwjgl",
-                                name: "lwjgl-vulkan",
-                                version: "$versionConfig.common.lwjglVersion"
-                        )
+                    dependencies.create("org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion")
                 )
                 /*
                 additionalRuntimeClasspathConfiguration.dependencies.add(
@@ -216,12 +204,15 @@ dependencies {
 }
 
 processResources {
-    inputs.property 'version', project.version
+    def neoModVersion = project.version.toString()
+    def neoVersionRange = versionConfig.common.neoforgeVersionRange.toString()
+    inputs.property 'version', neoModVersion
+    inputs.property 'versionRange', neoVersionRange
 
     filesMatching('META-INF/neoforge.mods.toml') {
         expand(
-                version: project.version,
-                versionRange: versionConfig.common.neoforgeVersionRange
+                version: neoModVersion,
+                versionRange: neoVersionRange
         )
     }
 
