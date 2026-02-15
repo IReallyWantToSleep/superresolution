@@ -73,13 +73,14 @@ public class VkReflectionHelper {
             Class.forName("org.lwjgl.system.Pointer$Default"),
             "address", long.class
     ));
+    private static final Class<?> GlobalCommands = runReflective(() -> Class.forName("org.lwjgl.vulkan.VK$GlobalCommands"));
+
     private static final MethodHandle newVKCapabilitiesInstance = runReflective(() -> IMPL_LOOKUP.findConstructor(VKCapabilitiesInstance.class, MethodType.methodType(void.class, FunctionProvider.class, int.class, Set.class, Set.class)));
     private static final MethodHandle getEnabledExtensionSet = runReflective(() -> IMPL_LOOKUP.findStatic(VK.class, "getEnabledExtensionSet", MethodType.methodType(Set.class, int.class, PointerBuffer.class)));
     private static final MethodHandle getGlobalCommands = runReflective(() -> IMPL_LOOKUP.findStatic(VK.class, "getGlobalCommands", MethodType.methodType(GlobalCommands)));
 
     // reflection replacement for VK's package-private methods.
     private static final VarHandle vkGetInstanceProcAddr = runReflective(() -> IMPL_LOOKUP.findVarHandle(GlobalCommands, "vkGetInstanceProcAddr", long.class));
-    private static final Class<?> GlobalCommands = runReflective(() -> Class.forName("org.lwjgl.vulkan.VK$GlobalCommands"));
 
     public static VkInstance createVkInstanceSafely(long handle, VkInstanceCreateInfo ci) {
         try {
