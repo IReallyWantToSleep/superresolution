@@ -12,34 +12,82 @@ import sys
 import shutil
 import time
 import subprocess
+import shutil as shell_shutil
 from pathlib import Path
 from typing import Dict, List, Optional
 
 sys.stdout.reconfigure(encoding='utf-8')
-cur_path = Path.cwd()
+script_path = Path(__file__).resolve()
+cur_path = script_path.parent.parent
 version_configs_path = cur_path / VERSION_CONFIGS_DIR
 output_dir = cur_path / OUTPUT_DIR
 _gradle_args: List[str] = ["--info"] if ENABLE_GRADLE_OUTPUT_INFO else []
 _gradle_output = subprocess.DEVNULL if not ENABLE_GRADLE_OUTPUT else None
 
 print("GRADLE_HOME: ", os.environ.get('GRADLE_HOME', '未设置').strip())
-if os.environ.get('GRADLE_HOME') is not None and 'GRADLE_USER_HOME' not in os.environ:
-    os.environ.setdefault('GRADLE_USER_HOME', os.path.join(os.environ['GRADLE_HOME'], '.gradle'))
+
+def resolve_gradle_user_home() -> Path:
+    env_user_home = os.environ.get('GRADLE_USER_HOME')
+    if env_user_home:
+        return Path(env_user_home).expanduser().resolve()
+
+    default_home = Path.home() / '.gradle'
+    try:
+        default_home.mkdir(parents=True, exist_ok=True)
+        if os.access(default_home, os.W_OK):
+            return default_home
+    except Exception:
+        pass
+
+    fallback_home = cur_path / '.gradle-user-home'
+    fallback_home.mkdir(parents=True, exist_ok=True)
+    return fallback_home.resolve()
+
+gradle_user_home = resolve_gradle_user_home()
+os.environ['GRADLE_USER_HOME'] = str(gradle_user_home)
+print("GRADLE_USER_HOME:", gradle_user_home)
+
 class JavaFinder:
     def __init__(self):
         self.java_home = os.environ.get('JAVA_HOME')
         self.java_exe = None
+
+    @staticmethod
+    def _is_java_bin(path: Path) -> bool:
+        lowered = path.name.lower()
+        return lowered == "java" or lowered == "java.exe"
+
+    def _find_from_path(self) -> Optional[Path]:
+        java_cmd = shell_shutil.which("java")
+        if java_cmd:
+            resolved = Path(java_cmd).resolve()
+            home = self.validate_java_path(resolved)
+            if home is not None:
+                return home
+
+        javac_cmd = shell_shutil.which("javac")
+        if javac_cmd:
+            resolved = Path(javac_cmd).resolve()
+            if resolved.parent.name == "bin":
+                candidate_home = resolved.parent.parent
+                if self.validate_java_path(candidate_home) is not None:
+                    return candidate_home
+        return None
     
     def validate_java_path(self, path: Path) -> Optional[Path]:
         exe_path = None
         if path.is_dir():
             exe_path = path / "bin" / "java"
+            if sys.platform.startswith('win'):
+                exe_path = exe_path.with_suffix('.exe')
             if not exe_path.exists():
                 return None
             return exe_path.parent.parent
         
-        if path.name.startswith("java") and path.exists():
-            return path.parent.parent
+        if self._is_java_bin(path) and path.exists():
+            if path.parent.name == "bin":
+                return path.parent.parent
+            return path.parent
         
         return None
     
@@ -48,9 +96,18 @@ class JavaFinder:
             user_path = Path(sys.argv[1]).resolve()
             if (home := self.validate_java_path(user_path)) is not None:
                 self.java_home = home
+
         if not self.java_home:
-            print('错误: 未找到JAVA_HOME环境变量')
+            if (home := self._find_from_path()) is not None:
+                self.java_home = home
+
+        if not self.java_home:
+            print('错误: 未找到可用的 Java 运行环境。请设置 JAVA_HOME，或确保 java 已加入 PATH。')
+            print('提示: 也可以通过参数传入 Java 路径，例如: python script/buildAll.py /path/to/jdk')
             sys.exit(1)
+
+        self.java_home = str(Path(self.java_home).resolve())
+        os.environ.setdefault('JAVA_HOME', self.java_home)
         self.java_exe = Path(self.java_home) / "bin" / "java"
         if sys.platform.startswith('win'):
             self.java_exe = self.java_exe.with_suffix('.exe')
@@ -58,6 +115,8 @@ class JavaFinder:
         if not self.java_exe.exists():
             print(f'错误: Java可执行文件不存在 - {self.java_exe}')
             sys.exit(1)
+
+        print(f"JAVA_HOME: {self.java_home}")
 
 class VersionParser:
     @staticmethod
