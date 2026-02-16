@@ -250,10 +250,10 @@ public class IrisShaderCompatUpscaleDispatcher {
                                 CopyOperation.create()
                                         .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
                                         .dst(targetTexture)
-                                        .fromTo(CopyOperation.TextureChancel.A, CopyOperation.TextureChancel.A)
-                                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                                        .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
+                                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
                         );
                     } else {
                         Gl.DSA.copyImageSubData(

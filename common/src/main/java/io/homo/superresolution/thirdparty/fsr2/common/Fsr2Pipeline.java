@@ -19,6 +19,7 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
+import org.joml.Vector2i;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +38,15 @@ public abstract class Fsr2Pipeline {
     public abstract void destroy();
 
     public abstract void init();
+
+    protected Vector2i workGroupSize() {
+        return new Vector2i(8, 8);
+    }
+
+    protected Vector2i calculateDispatchGrid(int w, int h) {
+        Vector2i workGroupSize = workGroupSize();
+        return new Vector2i((w + workGroupSize.x - 1) / workGroupSize.x, (h + workGroupSize.y - 1) / workGroupSize.y);
+    }
 
     protected Fsr2PipelineResources.Fsr2ResourceEntry getResourcesDescription(String name) {
         if (!context.resources.shaderNameMap().containsKey(name)) {
@@ -67,6 +77,11 @@ public abstract class Fsr2Pipeline {
         defines.put("FFX_GLSL", bool(true));
         defines.put("FFX_GPU", bool(true));
         defines.put("FFX_HALF", bool(Fsr2DeviceCapabilities.isFp16Supported()));
+
+        Vector2i workGroupSize = workGroupSize();
+        defines.put("FFX_FSR2_THREAD_GROUP_WIDTH", String.valueOf(workGroupSize.x));
+        defines.put("FFX_FSR2_THREAD_GROUP_HEIGHT", String.valueOf(workGroupSize.y));
+
         if (override != null) {
             defines.putAll(override);
         }

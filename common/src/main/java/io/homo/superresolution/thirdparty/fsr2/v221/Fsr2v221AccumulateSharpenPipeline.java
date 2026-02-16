@@ -31,6 +31,7 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceA
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
+import org.joml.Vector2i;
 import org.joml.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
@@ -52,6 +53,11 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
     @Override
     public void destroy() {
         program.destroy();
+    }
+
+    @Override
+    protected Vector2i workGroupSize() {
+        return new Vector2i(16, 16);
     }
 
     @Override
@@ -92,8 +98,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
         GrapeJobBuilders.ComputeJobBuilder jobBuilder =
                 GrapeJobBuilders.compute(computePipeline)
                         .workGroupSupplier(() -> new Vector3i(
-                                (context.dimensions.screenWidth() + (7)) / 8,
-                                (context.dimensions.screenHeight() + (7)) / 8,
+                                calculateDispatchGrid(context.dimensions.screenWidth(), context.dimensions.screenHeight()),
                                 1
                         ));
 
