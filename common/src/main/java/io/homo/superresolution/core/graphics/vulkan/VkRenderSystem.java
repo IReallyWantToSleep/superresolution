@@ -42,8 +42,7 @@ import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_STRUCTURE_TYPE_PHYS
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
-import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+import static org.lwjgl.vulkan.VK12.*;
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
@@ -221,6 +220,8 @@ public class VkRenderSystem implements IRenderSystem {
             boolean deviceSupportsShaderFloat16 = features12.shaderFloat16();
             boolean deviceSupportsShaderIntegerDotProduct = shaderIntegerDotProductFeaturesKHR.shaderIntegerDotProduct();
             boolean deviceSupportsShaderStorageImageWriteWithoutFormat = features2.features().shaderStorageImageWriteWithoutFormat();
+            boolean deviceSupportsBufferDeviceAddress = features12.bufferDeviceAddress();
+            boolean deviceSupportsDescriptorIndexing = features12.descriptorIndexing();
             LOGGER.info("Vulkan 设备特性支持状态:");
             LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
             LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
@@ -228,6 +229,8 @@ public class VkRenderSystem implements IRenderSystem {
             LOGGER.info("  shaderFloat16: {}", deviceSupportsShaderFloat16);
             LOGGER.info("  shaderStorageImageWriteWithoutFormat: {}", deviceSupportsShaderFloat16);
             LOGGER.info("  shaderIntegerDotProduct: {}", deviceSupportsShaderIntegerDotProduct);
+            LOGGER.info("  bufferDeviceAddress: {}", deviceSupportsBufferDeviceAddress);
+            LOGGER.info("  descriptorIndexing: {}", deviceSupportsDescriptorIndexing);
 
             VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures =
                     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT.calloc(stack)
@@ -244,7 +247,9 @@ public class VkRenderSystem implements IRenderSystem {
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
                     .pNext(deviceShaderIntFeatures.address())
                     .shaderFloat16(deviceSupportsShaderFloat16)
-                    .shaderInt8(deviceSupportsShaderInt8);
+                    .shaderInt8(deviceSupportsShaderInt8)
+                    .bufferDeviceAddress(deviceSupportsBufferDeviceAddress)
+                    .descriptorIndexing(deviceSupportsDescriptorIndexing);
 
             VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
