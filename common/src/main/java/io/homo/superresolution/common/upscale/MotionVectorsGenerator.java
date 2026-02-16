@@ -314,9 +314,9 @@ public class MotionVectorsGenerator {
                 CopyOperation.create()
                         .src(colorTexture)
                         .dst(inputFrameBuffer.getTexture(FrameBufferAttachmentType.Color))
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B));
+                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B));
         structuredData.setFloat("exposure", 3.0f);
         structuredData.setInt("window_radius", 2);
         structuredData.setFloat("min_value", 1e-6f);

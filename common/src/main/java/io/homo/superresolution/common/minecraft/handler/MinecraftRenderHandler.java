@@ -210,15 +210,15 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                                 CopyOperation.create()
                                         .src(renderTarget.getTexture(FrameBufferAttachmentType.Color))
                                         .dst(colorTexture)
-                                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
                         );
                         GlTextureCopier.copy(
                                 CopyOperation.create()
                                         .src(renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth))
                                         .dst(depthTexture)
-                                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
+                                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
                         );
                         GlDebug.popGroup();
                     }
