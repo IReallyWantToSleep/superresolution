@@ -77,7 +77,7 @@
 ```shell
 git clone https://github.com/187J3X1-114514/superresolution
 cd superresolution
-python script/buildAll.py
+./gradlew buildAllVersions
 ```
 
 # 计划功能

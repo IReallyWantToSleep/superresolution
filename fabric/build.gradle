@@ -8,9 +8,8 @@ plugins {
 }
 
 repositories {
-    maven { url 'https://maven.aliyun.com/repository/central' }
     maven {
-        url "https://cursemaven.com"
+        url = "https://cursemaven.com"
         content {
             includeGroup "curse.maven"
         }
@@ -34,13 +33,21 @@ repositories {
         }
     }
     maven {
-        name "CaffeineMC"
-        url "https://maven.caffeinemc.net/releases" // or /snapshots
+        name = "CaffeineMC"
+        url = "https://maven.caffeinemc.net/releases" // or /snapshots
+        mavenContent { releasesOnly() }
+        content {
+            includeGroup "net.caffeinemc"
+        }
     }
 
     maven {
-        name "CaffeineMC"
-        url "https://maven.caffeinemc.net/snapshots" // or /snapshots
+        name = "CaffeineMC"
+        url = "https://maven.caffeinemc.net/snapshots" // or /snapshots
+        mavenContent { snapshotsOnly() }
+        content {
+            includeGroup "net.caffeinemc"
+        }
     }
 }
 String renderdocPath = Paths.get(rootProject.projectDir.getAbsolutePath(), "renderdoc").toString();
@@ -126,6 +133,7 @@ dependencies {
 loom {
     disableObfuscation()
     mixin {
+        useLegacyMixinAp = true
         defaultRefmapName.set("${mod_id}.refmap.json")
     }
     runs {
@@ -143,20 +151,26 @@ loom {
     }
 }
 
+def fabricModVersion = project.version.toString()
+def fabricJavaVersion = versionConfig.common.javaVersion.toString()
+def fabricVersionRange = versionConfig.common.fabricVersionRange.size() == 1 ?
+        '"' + versionConfig.common.fabricVersionRange.get(0) + '"' :
+        '[' + versionConfig.common.fabricVersionRange.stream().map {
+            return '"' + it + '"'
+        }.toList().join(",") + ']'
+
 processResources {
-    inputs.property 'version', project.version
+    inputs.property 'version', fabricModVersion
+    inputs.property 'javaVersion', fabricJavaVersion
+    inputs.property 'versionRange', fabricVersionRange
     filesMatching('fabric.mod.json') {
         expand(
-                version: project.version,
-                javaVersion: versionConfig.common.javaVersion
+                version: fabricModVersion,
+                javaVersion: fabricJavaVersion,
+                versionRange: fabricVersionRange
         )
         filter { String line ->
-            return line.replace('"{versionRange}"', versionConfig.common.fabricVersionRange.size() == 1 ?
-                    '"' + versionConfig.common.fabricVersionRange.get(0) + '"' :
-                    '[' + versionConfig.common.fabricVersionRange.stream().map {
-                        return '"' + it + '"'
-                    }.toList().join(",") + ']'
-            )
+            return line.replace('"{versionRange}"', fabricVersionRange)
         }
     }
 }
