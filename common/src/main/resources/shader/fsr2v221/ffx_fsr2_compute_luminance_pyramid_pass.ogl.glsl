@@ -114,10 +114,10 @@ void SPD_ResetAtomicCounter()
 #include "fsr2v221/include/ffx_fsr2_compute_luminance_pyramid.h"
 
 #ifndef FFX_FSR2_THREAD_GROUP_WIDTH
-#define FFX_FSR2_THREAD_GROUP_WIDTH 256
+//#define FFX_FSR2_THREAD_GROUP_WIDTH 256
 #endif // #ifndef FFX_FSR2_THREAD_GROUP_WIDTH
 #ifndef FFX_FSR2_THREAD_GROUP_HEIGHT
-#define FFX_FSR2_THREAD_GROUP_HEIGHT 1
+//#define FFX_FSR2_THREAD_GROUP_HEIGHT 1
 #endif // #ifndef FFX_FSR2_THREAD_GROUP_HEIGHT
 #ifndef FFX_FSR2_THREAD_GROUP_DEPTH
 #define FFX_FSR2_THREAD_GROUP_DEPTH 1
