@@ -246,9 +246,9 @@ public class DataSetGenerator {
                 CopyOperation.create()
                         .src(RenderHandlerManager.getColorTexture())
                         .dst(tempColorTexture)
-                        .fromTo(CopyOperation.TextureChancel.R, CopyOperation.TextureChancel.R)
-                        .fromTo(CopyOperation.TextureChancel.G, CopyOperation.TextureChancel.G)
-                        .fromTo(CopyOperation.TextureChancel.B, CopyOperation.TextureChancel.B)
+                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
         );
         writeImage(
                 tempColorTexture,
