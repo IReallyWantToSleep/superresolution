@@ -30,6 +30,7 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
 import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import org.joml.Vector2i;
 import org.joml.Vector3i;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 
@@ -50,6 +51,11 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
     @Override
     public void destroy() {
         program.destroy();
+    }
+
+    @Override
+    protected Vector2i workGroupSize() {
+        return new Vector2i(256, 1);
     }
 
     @Override
