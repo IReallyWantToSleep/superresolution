@@ -46,3 +46,27 @@ tasks.register('copyNativeLibAll', Copy) {
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
+
+tasks.register('buildNativeCpp', Exec) {
+    group = 'build'
+    description = 'Build native C/C++ libraries via platform script'
+    def osName = System.getProperty('os.name').toLowerCase()
+    workingDir "${projectDir}/cpp"
+    if (osName.contains('windows')) {
+        commandLine 'powershell', '-ExecutionPolicy', 'Bypass', '-File', 'build_windows.ps1'
+    } else if (osName.contains('linux')) {
+        commandLine 'bash', 'build_linux.sh'
+    } else {
+        throw new GradleException("Unsupported OS for native build: ${osName}")
+    }
+}
+
+tasks.named('copyNativeLibAll') {
+    mustRunAfter('buildNativeCpp')
+    outputs.upToDateWhen { false }
+}
+
+tasks.named('build') {
+    dependsOn('buildNativeCpp')
+    dependsOn('copyNativeLibAll')
+}

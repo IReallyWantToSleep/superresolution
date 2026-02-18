@@ -37,8 +37,18 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 rootProject.name = 'superresolution'
-include('common')
+
+def requestedTasks = gradle.startParameter.taskNames ?: []
+def nativeOnlyMode = !requestedTasks.isEmpty() && requestedTasks.every { taskName ->
+    def normalized = taskName?.toLowerCase() ?: ""
+    normalized.startsWith(":native:") || normalized == ":native" || normalized == "native" || normalized.startsWith("native:")
+}
+
 include('native')
+if (!nativeOnlyMode) {
+    include('common')
+}
+
 gradle.ext.set(
         "versionConfigSrc",
         new JsonSlurper().parse(
@@ -47,10 +57,12 @@ gradle.ext.set(
 )
 rootProject.properties.put("minecraft_version", gradle.ext.versionConfigSrc.common.minecraft_version)
 gradle.ext.set("minecraft_version", gradle.ext.versionConfigSrc.common.minecraft_version)
-println("❇️ 当前Minecraft版本 $gradle.ext.versionConfigSrc.common.minecraft_version")
-for (loader in gradle.ext.versionConfigSrc.common.platforms) {
-    def loaderName = loader.strip()
-    if (loaderName.isEmpty() || loaderName.isBlank()) continue
-    println "❇️ 已启用加载器 " + loaderName
-    include(loaderName)
+if (!nativeOnlyMode) {
+    println("❇️ 当前Minecraft版本 $gradle.ext.versionConfigSrc.common.minecraft_version")
+    for (loader in gradle.ext.versionConfigSrc.common.platforms) {
+        def loaderName = loader.strip()
+        if (loaderName.isEmpty() || loaderName.isBlank()) continue
+        println "❇️ 已启用加载器 " + loaderName
+        include(loaderName)
+    }
 }
