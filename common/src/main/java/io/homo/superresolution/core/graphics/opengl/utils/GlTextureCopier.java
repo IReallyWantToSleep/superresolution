@@ -84,11 +84,11 @@ public class GlTextureCopier {
         ShaderDescription.Builder builder =
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/copy.comp.glsl", true));
 
-        builder.addDefine("COPY_CHANCEL", String.valueOf(copyOperation.getMappings().size()));
+        builder.addDefine("COPY_CHANNEL", String.valueOf(copyOperation.getMappings().size()));
         for (int i = 0; i < copyOperation.getMappings().size(); i++) {
             CopyOperation.ChannelMapping map = copyOperation.getMappings().get(i);
-            builder.addDefine("COPY_SRC_CHANCEL" + i, String.valueOf(map.src.ordinal()));
-            builder.addDefine("COPY_DST_CHANCEL" + i, String.valueOf(map.dst.ordinal()));
+            builder.addDefine("COPY_SRC_CHANNEL" + i, String.valueOf(map.src.ordinal()));
+            builder.addDefine("COPY_DST_CHANNEL" + i, String.valueOf(map.dst.ordinal()));
         }
         builder.addDefine("COPY_DST_FORMAT", toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()));
 
@@ -115,11 +115,11 @@ public class GlTextureCopier {
                         new ShaderSource(ShaderType.Vertex, "/shader/copy.vert.glsl", true)
                 );
 
-        builder.addDefine("COPY_CHANCEL", String.valueOf(copyOperation.getMappings().size()));
+        builder.addDefine("COPY_CHANNEL", String.valueOf(copyOperation.getMappings().size()));
         for (int i = 0; i < copyOperation.getMappings().size(); i++) {
             CopyOperation.ChannelMapping map = copyOperation.getMappings().get(i);
-            builder.addDefine("COPY_SRC_CHANCEL" + i, String.valueOf(map.src.ordinal()));
-            builder.addDefine("COPY_DST_CHANCEL" + i, String.valueOf(map.dst.ordinal()));
+            builder.addDefine("COPY_SRC_CHANNEL" + i, String.valueOf(map.src.ordinal()));
+            builder.addDefine("COPY_DST_CHANNEL" + i, String.valueOf(map.dst.ordinal()));
         }
 
         builder.uniformSamplerTexture("tex", 0);

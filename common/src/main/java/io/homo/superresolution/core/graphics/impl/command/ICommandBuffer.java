@@ -47,6 +47,8 @@ public interface ICommandBuffer {
         return !isInFlight();
     }
 
+    default void waitForFence() { /* noop */ }
+
     CommandBufferBehavior behavior();
 }
 
