@@ -34,6 +34,7 @@ jobs:
         id: build
         if: ${{ !cancelled() }}
         run: ./gradlew buildAllVersions
+        continue-on-error: true
 
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
