@@ -160,6 +160,7 @@ build_jars
 /native/cpp/output/
 /native/cpp/buildLinux/*
 /native/cpp/buildWindows/*
+/native/cpp/buildWindowsOnLinux*/*
 __pycache__
 /native/cpp/SRNativeFSR/libraries/
 /native/cpp/SRNativeMain/libraries/

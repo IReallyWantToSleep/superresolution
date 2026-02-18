@@ -56,9 +56,16 @@ foreach(OUTPUTCONFIG DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
 endforeach()
 
 
-if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -O3")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -O3")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    add_compile_options(-Wall)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-O3 -g1)
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3 -g0 -ffunction-sections -fdata-sections -flto)
+        add_link_options(-Wl,--gc-sections -s)
+    endif()
+elseif(NOT WIN32)
+    add_compile_options(-Wall -O3)
 endif()
 
 include_directories(

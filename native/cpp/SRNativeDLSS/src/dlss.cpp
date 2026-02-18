@@ -3,9 +3,11 @@
 #include <cstring>
 #include <cstdlib>
 #include "sr/dlss/sr_provider.h"
-#include <windows.h>
 #include <string>
 #include <iostream>
+#ifdef ON_WIN64
+#include <windows.h>
+#endif
 #include "DLSS/include/nvsdk_ngx_vk.h"
 #include "DLSS/include/nvsdk_ngx_helpers_vk.h"
 #include "DLSS/include/nvsdk_ngx_defs.h"

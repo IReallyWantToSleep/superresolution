@@ -70,8 +70,10 @@ public class NativeLibManager {
         } else if (operatingSystem.type == OperatingSystemType.LINUX && operatingSystem.arch == SystemArchitecture.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
+            LIB_SUPER_RESOLUTION_DLSS = new NativeLib("SuperResolutionDLSS", false, false);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
+            libs.add(LIB_SUPER_RESOLUTION_DLSS);
 
         } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
