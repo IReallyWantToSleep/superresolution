@@ -30,18 +30,8 @@ plugins {
 }
 
 allprojects {
-    apply plugin: "systems.manifold.manifold-gradle-plugin"
-
-    manifold {
-        manifoldVersion = rootProject.manifold_version
-    }
     group = rootProject.group
     version = rootProject.mod_version
-    tasks.withType(JavaCompile) {
-        options.release = versionConfig.common.javaVersion as Integer
-        options.compilerArgs += ["-Xplugin:Manifold"]
-        options.encoding = "UTF-8"
-    }
 
     repositories {
         mavenCentral()
@@ -58,41 +48,55 @@ allprojects {
         maven { url = 'https://maven.parchmentmc.org/' }
         maven { url = 'https://maven.blamejared.com' }
     }
-    dependencies {
-        annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.manifold_version}")
-        configurations.configureEach {
-            resolutionStrategy {
-                force "org.lwjgl:lwjgl:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-glfw:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-opengl:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-openal:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-stb:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-jemalloc:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-tinyfd:$versionConfig.common.lwjglVersion"
-                force "org.lwjgl:lwjgl-freetype:$versionConfig.common.lwjglVersion"
+
+    if (project.name != "native") {
+        apply plugin: "systems.manifold.manifold-gradle-plugin"
+
+        manifold {
+            manifoldVersion = rootProject.manifold_version
+        }
+
+        tasks.withType(JavaCompile) {
+            options.release = versionConfig.common.javaVersion as Integer
+            options.compilerArgs += ["-Xplugin:Manifold"]
+            options.encoding = "UTF-8"
+        }
+
+        dependencies {
+            annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.manifold_version}")
+            configurations.configureEach {
+                resolutionStrategy {
+                    force "org.lwjgl:lwjgl:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-glfw:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-opengl:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-vulkan:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-openal:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-stb:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-jemalloc:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-tinyfd:$versionConfig.common.lwjglVersion"
+                    force "org.lwjgl:lwjgl-freetype:$versionConfig.common.lwjglVersion"
+                }
+            }
+        }
+
+        afterEvaluate {
+            if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+                return
+            }
+            def javaWrapper = rootProject.file("script/java_tool_wrapper.sh")
+            if (!javaWrapper.exists()) {
+                return
+            }
+            tasks.matching { it.class.name.contains("CreateMinecraftArtifacts") }.configureEach {
+                if (it.hasProperty("javaExecutable")) {
+                    it.javaExecutable.set(javaWrapper.absolutePath)
+                }
+                if (it.hasProperty("toolsJavaExecutable")) {
+                    it.toolsJavaExecutable.set(javaWrapper.absolutePath)
+                }
             }
         }
     }
-
-    afterEvaluate {
-        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-            return
-        }
-        def javaWrapper = rootProject.file("script/java_tool_wrapper.sh")
-        if (!javaWrapper.exists()) {
-            return
-        }
-        tasks.matching { it.class.name.contains("CreateMinecraftArtifacts") }.configureEach {
-            if (it.hasProperty("javaExecutable")) {
-                it.javaExecutable.set(javaWrapper.absolutePath)
-            }
-            if (it.hasProperty("toolsJavaExecutable")) {
-                it.toolsJavaExecutable.set(javaWrapper.absolutePath)
-            }
-        }
-    }
-
 }
 
 def srConfigsDir = file("${rootDir}/configs")
@@ -135,6 +139,7 @@ if (srConfigsDir.exists()) {
             dir = rootDir
             tasks = ["build"]
             startParameter.projectProperties.put("minecraft_version_config", versionName)
+            startParameter.excludedTaskNames.add(":native:build")
             startParameter.consoleOutput = ConsoleOutput.Plain
         }
 
@@ -182,6 +187,13 @@ for (int i = 1; i < orderedCollectTasks.size(); i++) {
     }
 }
 
+def nativeBuildTaskPath = ":native:build"
+orderedNestedBuildTasks.each { taskName ->
+    tasks.named(taskName) {
+        mustRunAfter(nativeBuildTaskPath)
+    }
+}
+
 tasks.register("cleanBuildJars", Delete) {
     group = "build"
     description = "清理 build_jars 输出目录"
@@ -223,6 +235,17 @@ tasks.register("buildAllVersions") {
     doLast {
         println("\n构建完成，输出目录: ${srOutputDir}")
     }
+}
+
+tasks.register("buildAll") {
+    group = "build"
+    description = "先构建 native，再执行 buildAllVersions"
+    dependsOn(nativeBuildTaskPath)
+    dependsOn("buildAllVersions")
+}
+
+tasks.named("buildAllVersions") {
+    mustRunAfter(nativeBuildTaskPath)
 }
 
 
