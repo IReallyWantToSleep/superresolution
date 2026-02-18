@@ -47,7 +47,7 @@ public class CopyOperation {
         return this;
     }
 
-    public CopyOperation fromTo(TextureChancel src, TextureChancel dst) {
+    public CopyOperation fromTo(TextureChannel src, TextureChannel dst) {
         mappings.add(new ChannelMapping(src, dst));
         return this;
     }
@@ -64,7 +64,7 @@ public class CopyOperation {
         return List.copyOf(mappings);
     }
 
-    public enum TextureChancel {
+    public enum TextureChannel {
         R,
         G,
         B,
@@ -72,10 +72,10 @@ public class CopyOperation {
     }
 
     public static class ChannelMapping {
-        public final TextureChancel src;
-        public final TextureChancel dst;
+        public final TextureChannel src;
+        public final TextureChannel dst;
 
-        public ChannelMapping(TextureChancel src, TextureChancel dst) {
+        public ChannelMapping(TextureChannel src, TextureChannel dst) {
             this.src = Objects.requireNonNull(src);
             this.dst = Objects.requireNonNull(dst);
         }
