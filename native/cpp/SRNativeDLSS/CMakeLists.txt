@@ -5,12 +5,14 @@ message(STATUS "生成DLSS模块")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (NOT (ON_WINDOWS) )
+if (NOT (ON_WINDOWS OR ON_LINUX) )
     message(FATAL_ERROR "${LIB_PLATFORM} 平台不支持DLSS")
 endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_definitions(-DON_WIN64)
     add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    add_definitions(-DON_LINUX64 -DFFX_GCC)
 else()
     message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
@@ -21,8 +23,14 @@ find_package(Vulkan REQUIRED)
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
     ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}
-    ${PROJECT_SOURCE_DIR}/third_party/DLSS/lib/Windows_x86_64/x64
 )
+
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    link_directories(${PROJECT_SOURCE_DIR}/third_party/DLSS/lib/Windows_x86_64/x64)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    link_directories(${PROJECT_SOURCE_DIR}/third_party/DLSS/lib/Linux_x86_64)
+endif()
+
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/../SRNativeMain/include
@@ -32,17 +40,33 @@ include_directories(
 )
 aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
 add_library(SR_DLSS_LIB SHARED ${ALL_SRC})
-set_target_properties(SR_DLSS_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionDLSS+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set_target_properties(SR_DLSS_LIB PROPERTIES OUTPUT_NAME "SuperResolutionDLSS+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
+elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set_target_properties(SR_DLSS_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionDLSS+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
+endif()
+if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_libraries(SR_DLSS_LIB
+            SR_MAIN_LIB
+            nvsdk_ngx_s_dbg
+            ${Vulkan_LIBRARIES}
+        )
+    else()
+        target_link_libraries(SR_DLSS_LIB
+            SR_MAIN_LIB
+            nvsdk_ngx_s
+            ${Vulkan_LIBRARIES}
+        )
+    endif()
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
     target_link_libraries(SR_DLSS_LIB
         SR_MAIN_LIB
-        nvsdk_ngx_s_dbg
+        nvsdk_ngx
         ${Vulkan_LIBRARIES}
+        dl
+        pthread
     )
 else()
-    target_link_libraries(SR_DLSS_LIB
-        SR_MAIN_LIB
-        nvsdk_ngx_s
-        ${Vulkan_LIBRARIES}
-    )
+    message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
 endif()
