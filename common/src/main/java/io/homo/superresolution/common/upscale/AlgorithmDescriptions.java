@@ -120,11 +120,13 @@ public class AlgorithmDescriptions {
                     "NVIDIA DLSS",
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.LINUX))
                             .requiredGlExtension("GL_EXT_memory_object")
                             .requiredGlExtension("GL_EXT_semaphore")
                             .glMajorVersion(4)
                             .glMinorVersion(6)
                             .requireVulkan(true),
+                    Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS ?
                     ExtraResources.builder()
                             .add(ExtraResource.builder("nvngx_dlss.dll")
                                     .addRemote(
@@ -133,7 +135,7 @@ public class AlgorithmDescriptions {
                                     )
                                     .build()
                             )
-                            .build()
+                            .build() : ExtraResources.builder().build()
             );
     public static final AlgorithmDescription<Sgsr1> SGSR1 =
             new AlgorithmDescription<>(
