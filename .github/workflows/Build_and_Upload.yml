@@ -23,10 +23,7 @@ jobs:
         with:
           java-version: 21
           distribution: temurin
-      - name: Set up Clang
-        uses: egor-tensin/setup-clang@v1
-        with:
-          version: latest
+          
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
