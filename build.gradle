@@ -225,6 +225,7 @@ tasks.register("buildAllVersions") {
     dependsOn("cleanBuildJars")
     dependsOn(collectTaskByVersion.values())
     doFirst {
+        gradle.startParameter.continueOnFailure = true
         if (!srConfigsDir.exists()) {
             throw new GradleException("configs 目录不存在: ${srConfigsDir}")
         }

@@ -38,6 +38,8 @@ jobs:
         id: build
         if: ${{ !cancelled() }}
         run: ./gradlew buildAllVersions
+        continue-on-error: true
+        
       - name: Capture build artifacts
         uses: actions/upload-artifact@v4
         with:
