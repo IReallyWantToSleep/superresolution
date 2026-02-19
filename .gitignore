@@ -165,3 +165,4 @@ __pycache__
 /native/cpp/SRNativeFSR/libraries/
 /native/cpp/SRNativeMain/libraries/
 /.claude/
+/common/src/main/resources/lib/
