@@ -49,15 +49,19 @@ VULKAN_STUB_DIR="${SCRIPT_DIR}/buildWindowsOnLinux-vulkan-stub"
 # --- Step 0: Check host prerequisites ---
 setup() {
     echo "[setup] Checking prerequisites..."
-    if [ "$ID" = "debian" ] || [[ "$ID_LIKE" == *debian* ]]; then
-        echo "Debian or Debian-based system"
-        apt update
-        apt install -y clang lld llvm cmake ninja-build python3 msitools wine winbind
-    else
-        echo "Unsupported Linux distribution. Please install the following packages manually:"
-        echo "  clang lld llvm cmake ninja-build python3 msitools wine winbind"
-        exit 1
-    fi
+    # if [ "$ID" = "debian" ] || [[ "$ID_LIKE" == *debian* ]]; then
+    #     echo "Debian or Debian-based system"
+    #     apt update
+    #     apt install -y clang lld llvm cmake ninja-build python3 msitools wine winbind
+    # else
+    #     echo "Unsupported Linux distribution. Please install the following packages manually:"
+    #     echo "  clang lld llvm cmake ninja-build python3 msitools wine winbind"
+    #     exit 1
+    # fi
+    #我要假定你用的是Debian
+    echo "Debian or Debian-based system"
+    apt update
+    apt install -y clang lld llvm cmake ninja-build python3 msitools wine winbind
 }
 # --- Step 1: Setup msvc-wine (clang+lld mode, no Wine needed) ---
 setup_msvc_wine() {
