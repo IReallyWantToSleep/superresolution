@@ -160,7 +160,7 @@ public class GlBlitRenderer {
 
         GlRenderPass pass = (GlRenderPass) getOrCreateRenderPass();
         pass.pipeline().descriptorSet().samplerTexture("uTexture", textureId);
-
+        pass.pipeline().descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
         RenderSystems.opengl().device().commandDecoder()

@@ -23,7 +23,8 @@
 
 # 其它功能
 
-* 光影包内的超分辨率支持，[文档](docs/SuperResolutionShaderCompatDocsZh.md)
+*
+光影包内的超分辨率支持，[文档](https://github.com/187J3X1-114514/superresolution/wiki/Shaderpack-Interface-documentation)
 
 # 兼容性
 

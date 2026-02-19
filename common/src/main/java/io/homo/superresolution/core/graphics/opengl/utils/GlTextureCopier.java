@@ -161,6 +161,7 @@ public class GlTextureCopier {
             pipeline.descriptorSet()
                     .storageImage("outImage", copyOperation.getDstTexture())
                     .samplerTexture("tex", copyOperation.getSrcTexture());
+            pipeline.descriptorSet().update();
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();
             RenderSystems.opengl().device().commandDecoder().dispatch(
@@ -185,6 +186,7 @@ public class GlTextureCopier {
             GlRenderPass pass = (GlRenderPass) getOrCreateProgram(copyOperation);
             pass.pipeline().descriptorSet()
                     .samplerTexture("tex", copyOperation.getSrcTexture());
+            pass.pipeline().descriptorSet().update();
             IVertexBuffer vertexBuffer = FullscreenQuad.create(RenderSystems.opengl().device());
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();

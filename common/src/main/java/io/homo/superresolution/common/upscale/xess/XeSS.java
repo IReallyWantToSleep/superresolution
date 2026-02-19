@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.xess;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -44,19 +45,21 @@ import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRing;
 import io.homo.superresolution.srapi.*;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
+import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.lwjgl.opengl.GL42;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
 
 import static org.lwjgl.opengl.EXTSemaphore.*;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class XeSS extends AbstractAlgorithm {
-    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 3;
+    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
     private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
             INITIAL_COMMAND_BUFFER_RING_SIZE
     );
@@ -197,7 +200,7 @@ public class XeSS extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.DEPTH32F)
+                        .format(TextureFormat.R32F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -269,7 +272,7 @@ public class XeSS extends AbstractAlgorithm {
         InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 this.inputColorGlTexture);
-        InteropResourcesConverter.preprocessDepth(
+        InteropResourcesConverter.flipY(
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
 
@@ -423,5 +426,44 @@ public class XeSS extends AbstractAlgorithm {
          * (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
          * );
          */
+    }
+
+    @Override
+    public boolean isCustomUpscaleRatio() {
+        return false;
+    }
+
+    @Override
+    public List<QualityPreset> getQualityPresets() {
+        return List.of(
+                new QualityPreset()
+                        .setName(Component.literal("Ultra Performance"))
+                        .setCodeName("xess_ultra_performance")
+                        .setUpscaleRatio(3.0f),
+                new QualityPreset()
+                        .setName(Component.literal("Performance"))
+                        .setCodeName("xess_performance")
+                        .setUpscaleRatio(2.3f),
+                new QualityPreset()
+                        .setName(Component.literal("Balanced"))
+                        .setCodeName("xess_balanced")
+                        .setUpscaleRatio(2.0f),
+                new QualityPreset()
+                        .setName(Component.literal("Quality"))
+                        .setCodeName("xess_quality")
+                        .setUpscaleRatio(1.7f),
+                new QualityPreset()
+                        .setName(Component.literal("Ultra Quality"))
+                        .setCodeName("xess_ultra_quality")
+                        .setUpscaleRatio(1.5f),
+                new QualityPreset()
+                        .setName(Component.literal("Ultra Quality Plus"))
+                        .setCodeName("xess_ultra_quality_plus")
+                        .setUpscaleRatio(1.3f),
+                new QualityPreset()
+                        .setName(Component.literal("Native Anti-Aliasing"))
+                        .setCodeName("xess_native_aa")
+                        .setUpscaleRatio(1.0f)
+        );
     }
 }

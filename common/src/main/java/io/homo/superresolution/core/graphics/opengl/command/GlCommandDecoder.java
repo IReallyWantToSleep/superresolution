@@ -638,7 +638,6 @@ public class GlCommandDecoder implements ICommandDecoder {
             GlDebug.pushGroup(0x7160000, "Setup Compute Pipeline");
             if (computePipeline instanceof GlComputePipeline glPipeline) {
                 glUseProgram((int) glPipeline.shader().handle());
-                glPipeline.descriptorSet().update();
                 glPipeline.descriptorSet().apply();
             }
             GlDebug.popGroup();

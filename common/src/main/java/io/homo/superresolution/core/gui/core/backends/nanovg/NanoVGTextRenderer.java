@@ -96,6 +96,37 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         contextPtr.restore();
     }
 
+
+    public void drawAlignedText(
+            IFont font,
+            float fontSize,
+            TextMetrics metrics,
+            float startX,
+            float startY,
+            float maxWidth,
+            float lineHeight,
+            Color color,
+            TextAlign align,
+            boolean wrap) {
+        if (align == null) {
+            align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
+        }
+        color = color.copy().alpha((int) (nvg.globalAlpha() * color.alpha()));
+        NanoVGColor vgColor = contextPtr.colorRGBA(color.red(), color.green(), color.blue(), color.alpha());
+        String fontName = ((NanoVGFont) font).name;
+        contextPtr.save();
+        contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
+        contextPtr.fillColor(vgColor);
+        float yPos = startY + 1.5f;
+        for (String line : metrics.lines) {
+            contextPtr.text(startX, yPos, line);
+            yPos += lineHeight;
+        }
+        contextPtr.restore();
+    }
+
     private int toNvgAlign(TextAlignType alignType) {
         return switch (alignType) {
             case ALIGN_LEFT -> 1;

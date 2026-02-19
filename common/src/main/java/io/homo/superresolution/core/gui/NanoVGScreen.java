@@ -62,6 +62,7 @@ public abstract class NanoVGScreen<T> extends Screen {
         defaultFrameLayout.setWidthPercent(100);
         defaultFrameLayout.setHeightPercent(100);
         buildWidgets();
+        
     }
 
     public NanoVGScreen setTransparent(boolean transparent) {

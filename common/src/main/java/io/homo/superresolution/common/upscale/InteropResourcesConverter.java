@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.upscale;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
@@ -44,6 +45,7 @@ import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL41;
 
 import java.util.HashMap;
@@ -60,7 +62,7 @@ public class InteropResourcesConverter {
     private static RenderPass depthPreprocessRenderPass;
     private static IFrameBuffer depthPreprocessFrameBuffer;
 
-    private static RenderGrape renderGrape;
+    //private static RenderGrape renderGrape;
     private static boolean isInit = false;
 
     private static String toComputeShaderFormatQualifier(TextureFormat format) {
@@ -170,20 +172,17 @@ public class InteropResourcesConverter {
         ComputePipeline computePipeline = getOrCreateFlipYPipeline(outputFormat);
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        computePipeline.descriptorSet().samplerTexture("inputTexture", input);
+        computePipeline.descriptorSet().storageImage("outputTexture", output);
+        computePipeline.descriptorSet().update();
         commandBuffer.begin();
-        renderGrape.remove("flip_y");
-        renderGrape.add("flip_y",
-                GrapeJobBuilders.compute(computePipeline)
-                        .resource("inputTexture", GrapeJobResource.SamplerTexture.create(input))
-                        .resource("outputTexture",
-                                GrapeJobResource.StorageTexture.create(output, GrapeResourceAccess.Write))
-                        .workGroup(
-                                (input.getWidth() + 15) / 16,
-                                (input.getHeight() + 15) / 16,
-                                1)
-                        .build());
-
-        renderGrape.execute(commandBuffer, "flip_y");
+        RenderSystems.current().device().commandDecoder().dispatch(
+                commandBuffer,
+                computePipeline,
+                (input.getWidth() + 15) / 16,
+                (input.getHeight() + 15) / 16,
+                1
+        );
         commandBuffer.end();
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
     }
@@ -194,7 +193,6 @@ public class InteropResourcesConverter {
         }
         depthPreprocessFrameBuffer = GlFrameBuffer.create(null, TextureFormat.DEPTH32F, 16, 16);
         initShaders();
-        renderGrape = new RenderGrape();
         isInit = true;
     }
 
@@ -242,21 +240,18 @@ public class InteropResourcesConverter {
         }
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        flipMotionVectorYPipeline.descriptorSet().samplerTexture("inputMotionVector", input);
+        flipMotionVectorYPipeline.descriptorSet().storageImage("outputMotionVector", output);
+        flipMotionVectorYPipeline.descriptorSet().update();
         commandBuffer.begin();
-        renderGrape.remove("flip_motion_vector_y");
-        renderGrape.add("flip_motion_vector_y",
-                GrapeJobBuilders.compute(flipMotionVectorYPipeline)
-                        .resource("inputMotionVector", GrapeJobResource.SamplerTexture.create(input))
-                        .resource("outputMotionVector",
-                                GrapeJobResource.StorageTexture.create(output, GrapeResourceAccess.Write))
-                        .workGroup(
-                                (input.getWidth() + 15) / 16,
-                                (input.getHeight() + 15) / 16,
-                                1)
-                        .build());
-
-        renderGrape.execute(commandBuffer, "flip_motion_vector_y");
-                commandBuffer.end();
-                RenderSystems.current().device().submitCommandBuffer(commandBuffer);
+        RenderSystems.current().device().commandDecoder().dispatch(
+                commandBuffer,
+                flipMotionVectorYPipeline,
+                (input.getWidth() + 15) / 16,
+                (input.getHeight() + 15) / 16,
+                1
+        );
+        commandBuffer.end();
+        RenderSystems.current().device().submitCommandBuffer(commandBuffer);
     }
 }

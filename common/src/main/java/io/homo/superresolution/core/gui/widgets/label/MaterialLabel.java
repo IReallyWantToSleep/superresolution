@@ -36,6 +36,13 @@ import java.util.function.Supplier;
 public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     private Supplier<String> textSupplier = () -> "";
     private Function<MaterialScheme, Color> colorSupplier = (scheme) -> scheme.theme() == MaterialTheme.Dark ? Color.rgb(255, 255, 255) : Color.black();
+    //cached infos
+    private float cachedTextSize;
+    private float cachedLineHeight;
+    private boolean cachedWrap;
+    private String cachedText;
+    private Rectangle cachedBounds;
+    private TextMetrics cachedTextMetrics;
 
     public MaterialLabel() {
         this.style = new MaterialLabelStyle();
@@ -96,11 +103,25 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     public void layouting(RenderContext ctx) {
         String text = textSupplier.get();
         style().color(colorSupplier.apply(scheme()));
-        if (text != null && !text.isEmpty()) {
-            Rectangle bounds = getBounds();
-            float maxWidth = bounds.width > 0 ? bounds.width : Float.MAX_VALUE;
+        if (text.equals(cachedText) &&
+                style().fontSize() == cachedTextSize &&
+                style().lineHeight() == cachedLineHeight &&
+                style().wrap() == cachedWrap &&
+                getBounds().equals(cachedBounds)
+        ) {
+            if (style().sizeToContent()) {
+                setElementWidth(cachedTextMetrics.maxLineWidth);
+            }
+            setElementHeight(cachedTextMetrics.totalHeight);
+        } else {
+            cachedText = text;
+            cachedTextSize = style().fontSize();
+            cachedLineHeight = style().lineHeight();
+            cachedWrap = style().wrap();
+            cachedBounds = getBounds();
+            float maxWidth = cachedBounds.width > 0 ? cachedBounds.width : Float.MAX_VALUE;
 
-            TextMetrics textMetrics = ctx.measureTextMetrics(
+            cachedTextMetrics = ctx.measureTextMetrics(
                     ctx.font(),
                     style().fontSize(),
                     text,
@@ -108,12 +129,10 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                     style().lineHeight(),
                     style().wrap()
             );
-            Vector2f textSize = new Vector2f(textMetrics.maxLineWidth, textMetrics.totalHeight);
-
             if (style().sizeToContent()) {
-                setElementWidth(textSize.x);
+                setElementWidth(cachedTextMetrics.maxLineWidth);
             }
-            setElementHeight(textSize.y);
+            setElementHeight(cachedTextMetrics.totalHeight);
         }
     }
 
@@ -121,6 +140,9 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     public void render(RenderContext ctx, UIInputState inputState) {
         String text = textSupplier.get();
         if (text != null && !text.isEmpty()) {
+            if (!text.equals(cachedText)) {
+                layouting(ctx);
+            }
             Rectangle bounds = getBounds();
             float maxWidth = bounds.width > 0 ? bounds.width : Float.MAX_VALUE;
 
@@ -129,7 +151,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
             ctx.drawAlignedText(
                     ctx.font(),
                     style().fontSize(),
-                    text,
+                    cachedTextMetrics,
                     bounds.x,
                     bounds.y,
                     maxWidth,

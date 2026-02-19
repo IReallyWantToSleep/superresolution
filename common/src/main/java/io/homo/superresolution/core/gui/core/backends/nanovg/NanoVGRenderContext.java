@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.render.*;
 import io.homo.superresolution.core.utils.Color;
@@ -374,8 +376,8 @@ public class NanoVGRenderContext implements RenderContext {
 
     @Override
     public IPaint imagePattern(float ox, float oy, float ex, float ey, float width, float height,
-                               float angle, float alpha, int image) {
-        return new NanoVGPaintWrapper(nvg.imagePattern(ox, oy, ex, ey, width, height, angle, alpha, image));
+                               float angle, float alpha, IImage image) {
+        return new NanoVGPaintWrapper(nvg.imagePattern(ox, oy, ex, ey, width, height, angle, alpha, ((NanoVGImage) image).nvgId));
     }
 
     @Override
@@ -414,7 +416,15 @@ public class NanoVGRenderContext implements RenderContext {
     public void drawAlignedText(IFont font, float fontSize, String text,
                                 float x, float y, float lineMaxWidth, float lineHeight,
                                 Color color, TextAlign align, boolean wrap) {
+
         NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, color, align, wrap);
+    }
+
+    @Override
+    public void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
+                                float x, float y, float lineMaxWidth, float lineHeight,
+                                Color color, TextAlign align, boolean wrap) {
+        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, color, align, wrap);
     }
 
     @Override
@@ -545,5 +555,27 @@ public class NanoVGRenderContext implements RenderContext {
     public void setViewportSize(float width, float height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
+    }
+
+    public IImage createImage(ITexture texture) {
+        if (!(texture instanceof GlTexture2D)) {
+            throw new IllegalArgumentException("Texture must be instance of GlTexture2D");
+        }
+        NanoVGImage image = new NanoVGImage();
+        image.nvgId = nvg.rawContext.createImageFromHandle(
+                (int) texture.handle(),
+                texture.getWidth(),
+                texture.getHeight(),
+                0
+        );
+        return image;
+    }
+
+    public void delectImage(IImage image) {
+        if (image instanceof NanoVGImage) {
+            image.destroy();
+        } else {
+            throw new IllegalArgumentException("Image must be instance of NanoVGImage");
+        }
     }
 }

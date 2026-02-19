@@ -20,6 +20,7 @@ package io.homo.superresolution.core;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
@@ -68,7 +69,9 @@ public class RenderSystems {
     }
 
     private static void initVulkan() {
-        //if (SuperResolutionConfig.isSkipInitVulkan()) return;
+        if (SuperResolutionConfig.isSkipInitVulkan()) {
+            return;
+        }
         try {
             VK.create();
         } catch (Exception | Error e) {

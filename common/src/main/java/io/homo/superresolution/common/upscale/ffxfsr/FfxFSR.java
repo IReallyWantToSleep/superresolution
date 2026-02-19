@@ -57,7 +57,7 @@ import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class FfxFSR extends AbstractAlgorithm {
 
-    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 3;
+    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
     private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
             INITIAL_COMMAND_BUFFER_RING_SIZE
     );
@@ -97,7 +97,13 @@ public class FfxFSR extends AbstractAlgorithm {
                 "srGetFfxFSRUpscaleProvidersCount"
         );
         SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolutionNativeAPI.srGetUpscaleProvider(provider, 0x8000003);
+        SuperResolutionNativeAPI.srGetUpscaleProvider(
+                provider,
+                switch (SuperResolutionConfig.SPECIAL.FSR.VERSION.get()) {
+                    case V2 -> 0x8000002;
+                    case V3 -> 0x8000003;
+                }
+        );
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
 
@@ -188,7 +194,7 @@ public class FfxFSR extends AbstractAlgorithm {
                 (VulkanDevice) RenderSystems.vulkan().device(),
                 TextureDescription.create()
                         .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.DEPTH32F)
+                        .format(TextureFormat.R32F)
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
@@ -264,10 +270,9 @@ public class FfxFSR extends AbstractAlgorithm {
         InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 this.inputColorGlTexture);
-        InteropResourcesConverter.preprocessDepth(
+        InteropResourcesConverter.flipY(
                 dispatchResource.resources().depthTexture(),
                 this.inputDepthGlTexture);
-
         if (dispatchResource.resources().motionVectorsTexture() != null) {
             InteropResourcesConverter.flipMotionVectorY(
                     dispatchResource.resources().motionVectorsTexture(),
@@ -288,7 +293,6 @@ public class FfxFSR extends AbstractAlgorithm {
         );
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
         VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-        commandBuffer.begin();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
         desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
                 commandBuffer.getNativeCommandBuffer()
@@ -327,7 +331,7 @@ public class FfxFSR extends AbstractAlgorithm {
         desc.setViewSpaceToMetersFactor(1.0f);
         desc.setReset(false);
         desc.setFlags(0);
-
+        commandBuffer.begin();
         SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(
                 context,
                 desc

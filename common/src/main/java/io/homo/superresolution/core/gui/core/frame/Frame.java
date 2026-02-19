@@ -77,7 +77,7 @@ public class Frame implements IFrame {
         }
     }
 
-    private Rectangle transformBounds(Rectangle bounds, Transform transform) {
+    protected Rectangle transformBounds(Rectangle bounds, Transform transform) {
         if (transform.isIdentity()) {
             return bounds;
         }
@@ -96,11 +96,16 @@ public class Frame implements IFrame {
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
     }
 
-    private boolean isInViewport(Rectangle bounds) {
+    protected boolean isInViewport(Rectangle bounds) {
         return bounds.x + bounds.width > 0 &&
                 bounds.y + bounds.height > 0 &&
                 bounds.x < viewportWidth &&
                 bounds.y < viewportHeight;
+    }
+
+    protected boolean isOutsideViewport(AbstractWidget<?> widget, Transform accumulatedTransform) {
+        Rectangle transformedBounds = transformBounds(widget.getBounds(), accumulatedTransform);
+        return !isInViewport(transformedBounds);
     }
 
     @Override
@@ -393,11 +398,11 @@ public class Frame implements IFrame {
     public void updateHitTestDebug(Vector2f mousePos) {
     }
 
-    private record RenderEntry(AbstractWidget<?> widget,
+    public record RenderEntry(AbstractWidget<?> widget,
 
-                               Transform accumulatedTransform,
+                              Transform accumulatedTransform,
 
-                               int zIndex) {
+                              int zIndex) {
     }
 
     @Override
@@ -430,7 +435,7 @@ public class Frame implements IFrame {
         renderList.clear();
         collectRenderables(root, renderList);
         renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
-        for (RenderEntry entry : renderList) {
+        for (RenderEntry entry : renderList.stream().filter((entry) -> !isOutsideViewport(entry.widget(), entry.accumulatedTransform())).toList()) {
             renderWidget(ctx, inputState, entry);
         }
     }

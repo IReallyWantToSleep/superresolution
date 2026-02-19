@@ -18,12 +18,17 @@
 
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
+import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.download.MaterialDownloadList;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
@@ -37,14 +42,22 @@ import io.homo.superresolution.common.gui.options.OptionCategory;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.gui.*;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IImage;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
-import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
+import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
+import io.homo.superresolution.core.gui.widgets.MaterialWidget;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
+import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.gui.widgets.SpacerWidget;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
@@ -52,22 +65,20 @@ import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
-import io.homo.superresolution.core.gui.widgets.dialog.DialogAction;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.core.utils.ImageLoader;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -80,6 +91,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private YogaNode contentLayout;
     private Frame currentContentFrame;
     private MaterialNavigationDrawer drawer;
+    private List<Destroyable> destroyables = new ArrayList<>();
 
     public MaterialConfigScreen(Screen parentScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
@@ -110,6 +122,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     public void onClose() {
+        destroyables.forEach(Destroyable::destroy);
         if (minecraft != null) {
             minecraft.setScreen(parentScreen);
         }
@@ -164,8 +177,14 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             case "performance":
                 frame = createPerformanceFrame();
                 break;
-            case "dialog_test":
-                frame = createDialogTestFrame();
+            case "debug":
+                frame = createDebugFrame();
+                break;
+            case "info_environment":
+                frame = createEnvironmentInfoFrame();
+                break;
+            case "info_about":
+                frame = createAboutInfoFrame();
                 break;
             default:
                 frame = createEmptyFrame();
@@ -191,9 +210,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private Frame createNavigationDrawerFrame() {
-        Frame frame = new ScrollableFrame();
-        //frame.setHorizontalScrollEnabled(false);
-        //frame.setVerticalScrollEnabled(true);
+        ScrollableFrame frame = new ScrollableFrame();
+        frame.setHorizontalScrollEnabled(false);
+        frame.setVerticalScrollEnabled(true);
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100);
@@ -205,11 +224,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .addItem(Text.translatable("superresolution.screen.config.section.advanced").getString(), MaterialSymbols.iconTune(), "advanced")
                 .addItem(Text.translatable("superresolution.screen.config.section.algorithm").getString(), MaterialSymbols.iconMemory(), "algorithm")
                 .addItem(Text.translatable("superresolution.screen.config.section.appearance").getString(), MaterialSymbols.iconPalette(), "appearance")
+                .addItem(Text.translatable("superresolution.screen.config.section.debug").getString(), MaterialSymbols.iconBugReport(), "debug")
                 .addItem(Text.translatable("superresolution.screen.config.section.experimental").getString(), MaterialSymbols.iconScience(), "experimental")
                 .addSectionHeader(Text.translatable("superresolution.screen.config.section.profiling").getString())
                 .addItem(Text.translatable("superresolution.screen.config.section.performance").getString(), MaterialSymbols.iconSpeed(), "performance")
-                .addSectionHeader("Debug")
-                .addItem("Dialog Test", MaterialSymbols.iconBuild(), "dialog_test")
+                .addSectionHeader(Text.translatable("superresolution.screen.config.section.information").getString())
+                .addItem(Text.translatable("superresolution.screen.config.section.environment").getString(), MaterialSymbols.iconInfo(), "info_environment")
+                .addItem(Text.translatable("superresolution.screen.config.section.about").getString(), MaterialSymbols.iconInfo(), "info_about")
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
                     switchContentFrame(key);
@@ -315,7 +336,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         ))}))
                 )
                 .setSaveConsumer((value) -> {
-                    SuperResolutionConfig.setUpscaleRatio(value.floatValue());
+                    SuperResolutionConfig.setUpscaleRatio(
+                            Float.parseFloat(String.format("%.2f", value.doubleValue()))
+                    );
                 })
                 .build();
 
@@ -356,23 +379,23 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     private void openLostResourceDialog(List<ExtraResource> resources) {
         MaterialDownloadList downloadList = MaterialDownloadList.create(
-                ExtraResources.builder().addAll(resources).build(),
+                new ExtraResources(resources),
                 SuperResolutionConstants.NATIVE_LIBRARIES_DIR
         );
         downloadList.layout().setWidthPercent(100);
 
         MaterialDialog downloadDialog = MaterialDialog.create()
                 .icon(MaterialSymbols.iconInfo())
-                .headline("下载资源")
-                .supportingText("该算法需要一些额外的资源才能正常工作，在完成前，你可能无法使用此算法。\n\n如果你执意使用那么你的游戏可能会崩溃哦~")
+                .headline(Text.translatable("superresolution.screen.config.dialog.download.title").getString())
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.download.description").getString())
                 .content(downloadList)
-                .addAction("取消下载", MaterialButtonVariant.Text, d -> {
+                .addAction(Text.translatable("superresolution.screen.config.dialog.download.action.cancel").getString(), MaterialButtonVariant.Text, d -> {
                     downloadList.cancelDownload();
                 })
-                .addAction("重试", MaterialButtonVariant.Text, d -> {
+                .addAction(Text.translatable("superresolution.screen.config.dialog.download.action.retry").getString(), MaterialButtonVariant.Text, d -> {
                     downloadList.retryDownload();
                 })
-                .addAction("退出", MaterialButtonVariant.Text, d -> {
+                .addAction(Text.translatable("superresolution.screen.config.dialog.download.action.exit").getString(), MaterialButtonVariant.Text, d -> {
                     downloadList.cancelDownload();
                     d.dismiss();
                 })
@@ -682,101 +705,364 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
-    private Frame createDialogTestFrame() {
+    private Frame createDebugFrame() {
         ScrollableFrame frame = createStandardScrollableFrame();
         ContainerWidget container = createStandardContainer();
-        addFrameTitle(container, Text.literal("Dialog Test"));
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.debug"));
+        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.debug"));
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_debug"),
+                        SuperResolutionConfig.isEnableDebug()
+                )
+                .setDefaultValue(() -> false)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_debug"))
+                .setSaveConsumer(SuperResolutionConfig::setEnableDebug)
+                .build();
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.debug_dump_shader"),
+                        SuperResolutionConfig.isDebugDumpShader())
+                .setDefaultValue(() -> false)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.debug_dump_shader"))
+                .setSaveConsumer(SuperResolutionConfig::setDebugDumpShader)
+                .build();
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
+                        SuperResolutionConfig.isEnableRenderDoc())
+                .setDefaultValue(() -> true)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
+                .setSaveConsumer(SuperResolutionConfig::setEnableRenderDoc)
+                .build();
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_imgui"),
+                        SuperResolutionConfig.isEnableImgui())
+                .setDefaultValue(() -> true)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
+                .setSaveConsumer(SuperResolutionConfig::setEnableImgui)
+                .build();
+        addOptionGroupToContainer(container, builder);
+        finalizeFrame(frame, container);
+        return frame;
+    }
 
-        MaterialButton openDialogBtn = MaterialButton.elevated("WOW");
-        openDialogBtn.onClick(e -> {
-            MaterialDialog dialog = MaterialDialog.create()
-                    .icon(MaterialSymbols.iconSettings())
-                    .headline("要来我的米奇妙妙屋吗？")
-                    .supportingText("""
-                            “嘿~大家好，是我米老鼠。要不要进我的妙妙屋？”
-                            “哦，太好了，我们走吧！”
-                            “哦，我差点忘了，要让妙妙屋出现，我们必须要念奇妙的咒语：米斯嘎，木斯嘎，米老鼠！跟我说一次：米斯嘎，木斯嘎，米老鼠！”""")
-                    .divider(true)
-                    .addAction("俺不要", MaterialButtonVariant.Text, MaterialDialog::dismiss)
-                    .addAction("接受", MaterialButtonVariant.Text, d -> {
-                        d.dismiss();
-                    });
-            getView().showDialog(dialog);
-        });
-        openDialogBtn.layout().setMargin(YogaEdge.TOP, 12);
-        container.addChild(openDialogBtn);
+    private Frame createEnvironmentInfoFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.environment"));
 
-        MaterialButton openSimpleBtn = MaterialButton.tonal("？");
-        openSimpleBtn.onClick(e -> {
-            MaterialDialog dialog = MaterialDialog.create()
-                    .headline("要来我的米奇妙妙屋吗？")
-                    .supportingText("""
-                            “嘿~大家好，是我米老鼠。要不要进我的妙妙屋？”
-                            “哦，太好了，我们走吧！”
-                            “哦，我差点忘了，要让妙妙屋出现，我们必须要念奇妙的咒语：米斯嘎，木斯嘎，米老鼠！跟我说一次：米斯嘎，木斯嘎，米老鼠！”""")
-                    .addAction("俺不要", MaterialButtonVariant.Text, MaterialDialog::dismiss)
-                    .addAction("接受", MaterialButtonVariant.Text, MaterialDialog::dismiss);
-            getView().showDialog(dialog);
-        });
-        openSimpleBtn.layout().setMargin(YogaEdge.TOP, 12);
-        container.addChild(openSimpleBtn);
-        {
-            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
-            progressIndicator.layout().setWidthPercent(100);
-            progressIndicator.layout().setHeight(8);
-            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+        MaterialLabel label = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.config.info.environment.base").getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        label.layout().setMargin(YogaEdge.TOP, 8);
+        label.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(label);
 
-            progressIndicator.setProgress(0.5f);
-            container.addChild(progressIndicator);
-        }
-        {
-            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
-            progressIndicator.layout().setWidthPercent(100);
-            progressIndicator.layout().setHeight(8);
-            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+        InfoCard envCard = new InfoCard();
+        envCard.addChild(createInfoLine(Text.translatable("superresolution.screen.config.info.environment.mod_version").getString(), safeGetModVersion()));
+        envCard.addChild(createInfoLine(Text.translatable("superresolution.screen.config.info.environment.native_version").getString(), safeGetNativeVersion()));
+        envCard.addChild(createInfoLine(Text.translatable("superresolution.screen.config.info.environment.system").getString(), safeGetOperatingSystem()));
+        container.addChild(envCard);
+        MaterialLabel labelOGL = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.config.info.environment.opengl").getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        labelOGL.layout().setMargin(YogaEdge.TOP, 8);
+        labelOGL.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(labelOGL);
 
-            progressIndicator.setProgress(0);
-            container.addChild(progressIndicator);
-        }
-        {
-            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
-            progressIndicator.layout().setWidthPercent(100);
-            progressIndicator.layout().setHeight(8);
-            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
-            progressIndicator.setProgress(1);
-            container.addChild(progressIndicator);
-        }
-        {
-            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
-            progressIndicator.layout().setWidthPercent(100);
-            progressIndicator.layout().setHeight(8);
-            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
+        container.addChild(createGraphicsInfoCard(
+                Text.translatable("superresolution.screen.config.info.environment.opengl").getString(),
+                GraphicsCapabilities.getGLVersionString(),
+                GraphicsCapabilities.getGLExtensions()
+        ));
+        MaterialLabel labelVK = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.config.info.environment.vulkan").getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        labelVK.layout().setMargin(YogaEdge.TOP, 8);
+        labelVK.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(labelVK);
 
-            progressIndicator.setProgress(0.75f);
-            container.addChild(progressIndicator);
-        }
-
-        {
-            MaterialLinearProgressIndicator progressIndicator = new MaterialLinearProgressIndicator();
-            progressIndicator.layout().setWidthPercent(100);
-            progressIndicator.layout().setHeight(8);
-            progressIndicator.layout().setMargin(YogaEdge.VERTICAL, 5);
-
-            progressIndicator.setProgress(0.25f, 0.75f);
-            container.addChild(progressIndicator);
-        }
-
-        // Download Test Dialog
-        {
-            MaterialButton downloadTestBtn = MaterialButton.elevated("Download Test");
-            downloadTestBtn.layout().setMargin(YogaEdge.TOP, 12);
-            downloadTestBtn.onClick(e -> {
-            });
-            container.addChild(downloadTestBtn);
-        }
+        container.addChild(createGraphicsInfoCard(
+                Text.translatable("superresolution.screen.config.info.environment.vulkan").getString(),
+                GraphicsCapabilities.getVulkanVersionString(),
+                GraphicsCapabilities.getVulkanDeviceExtensions()
+        ));
 
         finalizeFrame(frame, container);
         return frame;
+    }
+
+    private InfoCard createGraphicsInfoCard(String title, String version, Set<String> extensions) {
+        InfoCard card = new InfoCard();
+        card.addChild(createInfoLine(Text.translatable("superresolution.screen.config.info.environment.version").getString(), version));
+
+        ContainerWidget extensionsContainer = new ContainerWidget();
+        extensionsContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        extensionsContainer.layout().setWidthPercent(100);
+        extensionsContainer.layout().setGap(YogaGutter.COLUMN, 2);
+        extensionsContainer.layout().setPadding(YogaEdge.TOP, 4);
+
+        MaterialLabel extTitle = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.config.info.environment.extensions").getString())
+                .fontSize(14)
+                .color(MaterialScheme::secondary);
+        extensionsContainer.addChild(extTitle);
+
+        if (extensions == null || extensions.isEmpty()) {
+            MaterialLabel emptyLabel = MaterialLabel.create()
+                    .text(Text.translatable("superresolution.screen.text.none").getString())
+                    .fontSize(13)
+                    .color(MaterialScheme::onSurfaceVariant);
+            extensionsContainer.addChild(emptyLabel);
+        } else {
+            for (String extension : extensions) {
+                MaterialLabel extLabel = MaterialLabel.create()
+                        .text(extension)
+                        .fontSize(12)
+                        .color(MaterialScheme::onSurfaceVariant);
+                extLabel.style().wrap(true);
+                extLabel.layout().setWidthPercent(100);
+                extensionsContainer.addChild(extLabel);
+            }
+        }
+        card.addChild(extensionsContainer);
+
+        return card;
+    }
+
+    private Frame createAboutInfoFrame() {
+        ScrollableFrame frame = createStandardScrollableFrame();
+        ContainerWidget container = createStandardContainer();
+        addFrameTitle(container, Text.translatable("superresolution.screen.config.section.about"));
+
+        MaterialLabel contributorSection = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.info.text.contributors").getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        contributorSection.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(contributorSection);
+
+        InfoCard contributorsCard = new InfoCard();
+        List<ContributorInfo> contributors = new ArrayList<>(List.of(
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.desc").getString(), "https://github.com/187J3X1-114514", "/assets/super_resolution/textures/gui/contributors/114514.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.desc").getString(), "https://github.com/ysjmxy", "/assets/super_resolution/textures/gui/contributors/mxy.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.yu.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.yu.desc").getString(), "https://github.com/yu234567", ""),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.enaium.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.enaium.desc").getString(), "https://github.com/Enaium", "/assets/super_resolution/textures/gui/contributors/Enaium.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.desc").getString(), "https://github.com/rrtt217", "/assets/super_resolution/textures/gui/contributors/rrtt217.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.desc").getString(), "https://github.com/Shiroiame-Kusu", "/assets/super_resolution/textures/gui/contributors/Shiroiame-Kusu.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.desc").getString(), "https://github.com/ChloePrime", ""),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.desc").getString(), "https://github.com/EnderPhantomWing", ""),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/suodeliesi.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.xiaolang.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.xiaolang.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/xiaolangfengqi.png"),
+                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.qwertyuiop.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.qwertyuiop.desc").getString(), "https://github.com/moyongxin", "/assets/super_resolution/textures/gui/contributors/qwertyuiop.png")
+        ));
+        Collections.shuffle(contributors);
+        for (ContributorInfo contributor : contributors) {
+            contributorsCard.addChild(createContributorRow(contributor));
+        }
+        container.addChild(contributorsCard);
+
+        MaterialLabel librarySection = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.config.info.about.libraries").getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        librarySection.layout().setMargin(YogaEdge.TOP, 12);
+        librarySection.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(librarySection);
+
+        InfoCard librariesCard = new InfoCard();
+        List<LibraryInfo> libraries = new ArrayList<>(List.of(
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.architectury").getString(), "https://github.com/architectury/architectury-api"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.night_config").getString(), "https://github.com/TheElectronWill/night-config"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.mixin").getString(), "https://github.com/SpongePowered/Mixin"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.nanovg").getString(), "https://github.com/memononen/nanovg"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.nanosvg").getString(), "https://github.com/memononen/nanosvg"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.manifold").getString(), "https://github.com/manifold-systems/manifold"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.imgui").getString(), "https://github.com/ocornut/imgui"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.sgsr2").getString(), "https://github.com/SnapdragonStudios/snapdragon-gsr"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fsr1").getString(), "https://github.com/GPUOpen-Effects/FidelityFX-FSR"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fsr2").getString(), "https://github.com/GPUOpen-Effects/FidelityFX-FSR2"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fidelityfx_sdk").getString(), "https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fsr2_opengl").getString(), "https://github.com/JuanDiegoMontoya/FidelityFX-FSR2-OpenGL"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.joml").getString(), "https://github.com/JOML-CI/JOML"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.renderdoc").getString(), "https://github.com/baldurk/renderdoc"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.lwjgl3").getString(), "https://github.com/LWJGL/lwjgl3"),
+                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.glslang").getString(), "https://github.com/KhronosGroup/glslang")
+        ));
+        Collections.shuffle(libraries);
+        for (LibraryInfo library : libraries) {
+            librariesCard.addChild(createLibraryRow(library));
+        }
+        container.addChild(librariesCard);
+
+        finalizeFrame(frame, container);
+        return frame;
+    }
+
+    private ContainerWidget createInfoLine(String name, String value) {
+        ContainerWidget row = new ContainerWidget();
+        row.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        row.layout().setWidthPercent(100);
+        row.layout().setPadding(YogaEdge.VERTICAL, 4);
+
+        MaterialLabel nameLabel = MaterialLabel.create()
+                .text(name)
+                .fontSize(14)
+                .color(MaterialScheme::secondary);
+        row.addChild(nameLabel);
+
+        MaterialLabel valueLabel = MaterialLabel.create()
+                .text(value)
+                .fontSize(13)
+                .color(MaterialScheme::onSurfaceVariant);
+        valueLabel.style().wrap(true);
+        valueLabel.layout().setWidthPercent(100);
+        row.addChild(valueLabel);
+        return row;
+    }
+
+    private ContainerWidget createContributorRow(ContributorInfo contributor) {
+        ContainerWidget row = new ContainerWidget();
+        row.layout().setFlexDirection(YogaFlexDirection.ROW);
+        row.layout().setAlignItems(YogaAlign.CENTER);
+        row.layout().setWidthPercent(100);
+        row.layout().setPadding(YogaEdge.VERTICAL, 6);
+
+        ContainerWidget left = new ContainerWidget();
+        left.layout().setFlexDirection(YogaFlexDirection.ROW);
+        left.layout().setAlignItems(YogaAlign.CENTER);
+        left.layout().setFlexGrow(1f);
+        left.layout().setGap(YogaGutter.COLUMN, 10);
+
+        ContributorAvatar avatar = new ContributorAvatar(contributor/*MaterialSymbols.iconAccountCircle()*/);
+        destroyables.add(avatar);
+        left.addChild(avatar);
+
+        ContainerWidget info = new ContainerWidget();
+        info.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        info.layout().setGap(YogaGutter.COLUMN, 2);
+        info.layout().setFlexGrow(1f);
+
+        MaterialLabel nameLabel = MaterialLabel.create()
+                .text(contributor.name())
+                .fontSize(14)
+                .color(MaterialScheme::onSurface);
+        info.addChild(nameLabel);
+
+        MaterialLabel descLabel = MaterialLabel.create()
+                .text(contributor.description())
+                .fontSize(12)
+                .color(MaterialScheme::onSurfaceVariant);
+        descLabel.style().wrap(true);
+        descLabel.layout().setWidthPercent(100);
+        info.addChild(descLabel);
+
+        left.addChild(info);
+        row.addChild(left);
+
+        MaterialButton openBtn = MaterialButton.textButton(Text.translatable("superresolution.screen.config.info.about.github").getString())
+                .icon(MaterialSymbols.iconOpenInNew())
+                .size(MaterialButtonSize.Small);
+        boolean hasUrl = contributor.githubUrl() != null && !contributor.githubUrl().isBlank();
+        openBtn.setDisabled(!hasUrl);
+        openBtn.onClick(e -> openExternalLink(contributor.githubUrl()));
+        row.addChild(openBtn);
+
+        return row;
+    }
+
+    private ContainerWidget createLibraryRow(LibraryInfo library) {
+        ContainerWidget row = new ContainerWidget();
+        row.layout().setFlexDirection(YogaFlexDirection.ROW);
+        row.layout().setAlignItems(YogaAlign.CENTER);
+        row.layout().setWidthPercent(100);
+        row.layout().setMinHeight(42);
+
+        ContainerWidget info = new ContainerWidget();
+        info.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        info.layout().setGap(YogaGutter.COLUMN, 2);
+        info.layout().setFlexGrow(1f);
+
+        MaterialLabel nameLabel = MaterialLabel.create()
+                .text(library.name())
+                .fontSize(14)
+                .color(MaterialScheme::onSurface);
+        info.addChild(nameLabel);
+
+        String urlText = (library.githubUrl() == null || library.githubUrl().isBlank())
+                ? Text.translatable("superresolution.screen.config.info.about.github_todo").getString()
+                : Component.translatable("superresolution.screen.config.info.about.github_prefix", library.githubUrl()).getString();
+        MaterialLabel linkLabel = MaterialLabel.create()
+                .text(urlText)
+                .fontSize(11)
+                .color(MaterialScheme::onSurfaceVariant);
+        linkLabel.style().wrap(true);
+        linkLabel.layout().setWidthPercent(100);
+        info.addChild(linkLabel);
+
+        row.addChild(info);
+
+        MaterialButton openBtn = MaterialButton.textButton(Text.translatable("superresolution.screen.config.info.about.open").getString())
+                .icon(MaterialSymbols.iconOpenInNew())
+                .size(MaterialButtonSize.ExtraSmall);
+        boolean hasUrl = library.githubUrl() != null && !library.githubUrl().isBlank();
+        openBtn.setDisabled(!hasUrl);
+        openBtn.onClick(e -> openExternalLink(library.githubUrl()));
+        row.addChild(openBtn);
+
+        return row;
+    }
+
+    private String safeGetModVersion() {
+        try {
+            if (Platform.currentPlatform == null) {
+                return Text.translatable("superresolution.screen.config.info.unknown").getString();
+            }
+            return Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID);
+        } catch (Throwable ignored) {
+            return Text.translatable("superresolution.screen.config.info.unknown").getString();
+        }
+    }
+
+    private String safeGetNativeVersion() {
+        try {
+            return SuperResolutionNative.getVersionInfo();
+        } catch (Throwable ignored) {
+            return Text.translatable("superresolution.screen.config.info.unavailable").getString();
+        }
+    }
+
+    private String safeGetOperatingSystem() {
+        try {
+            if (Platform.currentPlatform == null) {
+                return Text.translatable("superresolution.screen.config.info.unknown").getString();
+            }
+            return Platform.currentPlatform.getOS().getString();
+        } catch (Throwable ignored) {
+            return Text.translatable("superresolution.screen.config.info.unknown").getString();
+        }
+    }
+
+    private void openExternalLink(String url) {
+        if (url == null || url.isBlank()) {
+            return;
+        }
+        try {
+            try {
+                String[] args;
+                if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
+                    args = new String[]{"rundll32", "url.dll,FileProtocolHandler", url};
+                } else if (Platform.currentPlatform.getOS().type == OperatingSystemType.LINUX) {
+                    args = new String[]{"xdg-open", url};
+                } else {
+                    return;
+                }
+                Runtime.getRuntime().exec(args);
+            } catch (IOException privilegedactionexception) {
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private Frame createEmptyFrame() {
@@ -794,5 +1080,145 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     public boolean isPauseScreen() {
         return SuperResolutionConfig.isPauseGameOnGui();
+    }
+
+    private record ContributorInfo(String name,
+
+                                   String description,
+
+                                   String githubUrl,
+
+                                   String avatar) {
+    }
+
+    private record LibraryInfo(String name,
+
+                               String githubUrl) {
+    }
+
+    private static class InfoCard extends MaterialContainerWidget<InfoCard> {
+        InfoCard() {
+
+        }
+
+        @Override
+        protected void init() {
+        }
+
+        @Override
+        public void layouting(RenderContext ctx) {
+            getLayoutNode().setDebugName("InfoCard");
+            layout().setFlexDirection(YogaFlexDirection.COLUMN);
+            layout().setWidthPercent(100);
+            layout().setPadding(YogaEdge.VERTICAL, 14);
+            layout().setPadding(YogaEdge.HORIZONTAL, 20);
+            layout().setGap(YogaGutter.COLUMN, 8);
+        }
+
+        @Override
+        protected Rectangle getViewRegion() {
+            return getBounds();
+        }
+
+        @Override
+        protected void renderSelf(RenderContext ctx, UIInputState inputState) {
+            Rectangle bounds = getBounds();
+            ctx.roundedRect(
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                    16,
+                    scheme().surfaceContainerLow(),
+                    true
+            );
+        }
+    }
+
+    private static class ContributorAvatar extends MaterialWidget<ContributorAvatar> {
+        private ContributorInfo contributorInfo;
+        private IImage guiImage;
+        private ITexture rawTexture;
+        private boolean loaded = false;
+
+        ContributorAvatar(ContributorInfo contributorInfo) {
+            setElementSize(36, 36);
+            this.contributorInfo = contributorInfo;
+        }
+
+        @Override
+        protected void init() {
+        }
+
+        @Override
+        protected boolean isInteractive() {
+            return false;
+        }
+
+        @Override
+        public void render(RenderContext ctx, UIInputState inputState) {
+            Rectangle bounds = getBounds();
+            Vector2f center = bounds.getCenter();
+            if (contributorInfo.avatar() != null) {
+                if (!loaded) {
+                    try (InputStream inputStream = getClass().getResourceAsStream(contributorInfo.avatar())) {
+                        if (inputStream == null) {
+                            loaded = true;
+                            return;
+                        }
+                        rawTexture = ImageLoader.load(
+                                RenderSystems.opengl().device(),
+                                inputStream
+                        );
+                    } catch (Throwable ignored) {
+                        ignored.printStackTrace();
+                        loaded = true;
+                        return;
+                    }
+                    if (rawTexture != null) {
+                        guiImage = ctx.createImage(rawTexture);
+                        loaded = true;
+                    }
+                }
+
+                if (guiImage != null && rawTexture != null && loaded) {
+                    IPaint paint = ctx.imagePattern(
+                            bounds.x, bounds.y, 36, 36,
+                            rawTexture.getWidth(), rawTexture.getHeight(), 0, 1.0f,
+                            guiImage
+                    );
+
+                    ctx.beginPath();
+                    ctx.paint(paint);
+                    ctx.roundedRectComplex(
+                            bounds.x,
+                            bounds.y,
+                            bounds.width,
+                            bounds.height,
+                            6f,
+                            6f,
+                            6f,
+                            6f
+                    );
+                    ctx.endPath(true);
+                    return;
+                }
+            }
+            MaterialSymbols.iconAccountCircle().render(
+                    ctx,
+                    scheme().secondary(),
+                    32,
+                    center
+            );
+        }
+
+        public void destroy() {
+            if (rawTexture != null) {
+                rawTexture.destroy();
+            }
+            if (guiImage != null) {
+                guiImage.destroy();
+            }
+        }
     }
 }

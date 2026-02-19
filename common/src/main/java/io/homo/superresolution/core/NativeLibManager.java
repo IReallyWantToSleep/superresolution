@@ -172,7 +172,9 @@ public class NativeLibManager {
     }
 
     private static boolean _writeFile(InputStream in, String path) throws IOException {
-        if (in == null) return false;
+        if (in == null) {
+            return false;
+        }
         Path filePath = Path.of(path);
         Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);
         return true;
@@ -182,8 +184,10 @@ public class NativeLibManager {
         Path sourcePath = Paths.get(BASE_PATH, library.fileName);
         Path targetPath = library.getTargetPath(path);
 
-        try (InputStream in = NativeLibManager.class.getClassLoader()
-                .getResourceAsStream(sourcePath.toString().replace("\\", "/"))) {
+        try (
+                InputStream in = NativeLibManager.class.getClassLoader()
+                        .getResourceAsStream(sourcePath.toString().replace("\\", "/"))
+        ) {
             if (in == null) {
                 if (library.required) {
                     LOGGER.error("必要依赖库 {} 提取失败：资源未找到", sourcePath);
@@ -251,10 +255,15 @@ public class NativeLibManager {
                 sb.append("lib");
                 sb.append(baseName);
 
-                if (operatingSystem.type == OperatingSystemType.WINDOWS) sb.append("+win64");
-                else if (operatingSystem.type == OperatingSystemType.LINUX) sb.append("+linux64");
-                else if (operatingSystem.type == OperatingSystemType.MACOS) sb.append("+macarm64");
-                else if (operatingSystem.type == OperatingSystemType.ANDROID) sb.append("+android");
+                if (operatingSystem.type == OperatingSystemType.WINDOWS) {
+                    sb.append("+win64");
+                } else if (operatingSystem.type == OperatingSystemType.LINUX) {
+                    sb.append("+linux64");
+                } else if (operatingSystem.type == OperatingSystemType.MACOS) {
+                    sb.append("+macarm64");
+                } else if (operatingSystem.type == OperatingSystemType.ANDROID) {
+                    sb.append("+android");
+                }
 
                 if (USE_DEBUG_LIB) {
                     sb.append("+debug");
@@ -265,10 +274,13 @@ public class NativeLibManager {
                 sb.append(baseName);
             }
 
-            if (operatingSystem.type == OperatingSystemType.WINDOWS) sb.append(".dll");
-            else if (operatingSystem.type == OperatingSystemType.LINUX || operatingSystem.type == OperatingSystemType.ANDROID)
+            if (operatingSystem.type == OperatingSystemType.WINDOWS) {
+                sb.append(".dll");
+            } else if (operatingSystem.type == OperatingSystemType.LINUX || operatingSystem.type == OperatingSystemType.ANDROID) {
                 sb.append(".so");
-            else if (operatingSystem.type == OperatingSystemType.MACOS) sb.append(".dylib");
+            } else if (operatingSystem.type == OperatingSystemType.MACOS) {
+                sb.append(".dylib");
+            }
 
             return sb.toString();
         }

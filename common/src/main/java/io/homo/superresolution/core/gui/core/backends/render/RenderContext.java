@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.render;
 
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
@@ -219,7 +220,7 @@ public interface RenderContext {
                           Color beginColor, Color endColor);
 
     IPaint imagePattern(float ox, float oy, float ex, float ey, float width, float height,
-                        float angle, float alpha, int image);
+                        float angle, float alpha, IImage image);
 
     IFont font();
 
@@ -235,6 +236,10 @@ public interface RenderContext {
 
 
     void drawAlignedText(IFont font, float fontSize, String text,
+                         float x, float y, float lineMaxWidth, float lineHeight,
+                         Color color, TextAlign align, boolean wrap);
+
+    void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
                          float x, float y, float lineMaxWidth, float lineHeight,
                          Color color, TextAlign align, boolean wrap);
 
@@ -276,4 +281,9 @@ public interface RenderContext {
     default Vector2f viewportSize() {
         return new Vector2f(viewportWidth(), viewportHeight());
     }
+
+    IImage createImage(ITexture texture);
+
+    void delectImage(IImage image);
+
 }

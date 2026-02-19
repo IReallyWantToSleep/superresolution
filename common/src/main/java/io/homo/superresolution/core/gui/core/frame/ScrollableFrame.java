@@ -22,6 +22,7 @@ import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.IScrollHandler;
 import io.homo.superresolution.core.gui.core.SmoothDragScrollHandler;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
@@ -188,6 +189,29 @@ public class ScrollableFrame extends Frame {
         ctx.resetScissor();
 
         ctx.restore();
+    }
+
+    @Override
+    protected boolean isOutsideViewport(AbstractWidget<?> widget, Transform accumulatedTransform) {
+        Rectangle transformedBounds = transformBounds(widget.getBounds(), accumulatedTransform);
+
+        Vector2f contentOrigin = getContentOrigin();
+        Rectangle screenBounds = new Rectangle(
+                transformedBounds.x + contentOrigin.x,
+                transformedBounds.y + contentOrigin.y,
+                transformedBounds.width,
+                transformedBounds.height
+        );
+
+        Rectangle viewport = getViewport();
+        Rectangle contentClipRect = new Rectangle(
+                contentPaddingLeft,
+                contentPaddingTop,
+                viewport.width - contentPaddingLeft - contentPaddingRight,
+                viewport.height - contentPaddingTop - contentPaddingBottom
+        );
+
+        return !(isInViewport(screenBounds) || contentClipRect.intersect(screenBounds));
     }
 
     @Override

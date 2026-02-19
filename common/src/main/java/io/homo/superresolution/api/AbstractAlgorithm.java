@@ -25,6 +25,8 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import org.joml.Vector2f;
 
+import java.util.List;
+
 public abstract class AbstractAlgorithm implements Resizable, Destroyable {
     protected InputResourceSet getResources() {
         return resources;
@@ -45,6 +47,7 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * 运行算法。
      *
      * @param dispatchResource 运行算法所需资源。
+     *
      * @return 如果运行成功返回true，否则返回false。
      */
     public boolean dispatch(DispatchResource dispatchResource) {
@@ -93,5 +96,13 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
 
     public boolean isSupportJitter() {
         return false;
+    }
+
+    public List<QualityPreset> getQualityPresets() {
+        return List.of();
+    }
+
+    public boolean isCustomUpscaleRatio() {
+        return true;
     }
 }
