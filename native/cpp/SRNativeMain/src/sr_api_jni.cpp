@@ -15,12 +15,29 @@ void sr_message_callback_bridge(SRMessageType type, const wchar_t *message)
     if (!g_envForCallback || !message)
         return;
 
-    std::wstring wmsg(message);
-    // 显式转换为UTF-8,在大多数时候和大多数平台下应该没问题
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    std::string utf8msg = converter.to_bytes(wmsg);
+    try {
+        std::wstring wmsg(message);
+        // 显式转换为UTF-8,在大多数时候和大多数平台下应该没问题
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::string utf8msg = converter.to_bytes(wmsg);
 
-    java_log(g_envForCallback, const_cast<char *>(utf8msg.c_str()), (int)type);
+        java_log(g_envForCallback, const_cast<char *>(utf8msg.c_str()), (int)type);
+    } catch (const std::exception &e) {
+        // Fallback: 如果wstring转换失败，尝试逐字符转换，跳过无效字符
+        std::string fallback = "[wstring conversion failed: ";
+        fallback += e.what();
+        fallback += "] ";
+        const wchar_t *p = message;
+        while (*p) {
+            if (*p >= 0x20 && *p < 0x7F) {
+                fallback += static_cast<char>(*p);
+            } else {
+                fallback += '?';
+            }
+            ++p;
+        }
+        java_log(g_envForCallback, const_cast<char *>(fallback.c_str()), (int)type);
+    }
 }
 
 void throwJavaException(JNIEnv *env, const char *message, const char *exceptionClassName = "java/lang/RuntimeException")
