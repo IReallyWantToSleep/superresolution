@@ -28,7 +28,8 @@ if(NOT DEFINED SRLIB_VERSION)
     string(TIMESTAMP COMPILE_TIME "%Y%m%d_%H%M%S")
     set(SRLIB_VERSION ${COMPILE_TIME})
 endif()
-add_definitions(-DSRLIB_VERSION="${SRLIB_VERSION}")
+# 注意：不使用 add_definitions，避免 SRLIB_VERSION 泄漏到 SDK 等第三方子目录
+# 各模块通过 target_compile_definitions 自行添加
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(LIB_PLATFORM "linux64")

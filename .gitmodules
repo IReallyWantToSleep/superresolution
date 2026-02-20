@@ -7,3 +7,6 @@
 [submodule "native/cpp/SRNativeMain/third_party/glslang"]
 	path = native/cpp/SRNativeMain/third_party/glslang
 	url = https://github.com/187J3X1-114514/glslang-sr
+[submodule "native/cpp/SRNativeFSR/SDK"]
+	path = native/cpp/SRNativeFSR/SDK
+	url = https://github.com/187J3X1-114514/FidelityFX-SDK-UpscaleOnly
