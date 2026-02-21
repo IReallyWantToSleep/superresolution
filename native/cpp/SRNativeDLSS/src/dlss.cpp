@@ -73,7 +73,7 @@ extern "C"
             delete[] wideMessage;
         };
 
-        featureInfo.LoggingInfo.LoggingCallback = desc->messageCallback ? ngxLogger : nullptr;
+        featureInfo.LoggingInfo.LoggingCallback = desc->messageCallback ? ngxLogger : (NVSDK_NGX_AppLogCallback)nullptr;
         featureInfo.LoggingInfo.MinimumLoggingLevel = NVSDK_NGX_LOGGING_LEVEL_ON;
         if (srFindParam(&desc->extraParams, "NGX_FEATURE_DLL_PATH") != nullptr)
         {

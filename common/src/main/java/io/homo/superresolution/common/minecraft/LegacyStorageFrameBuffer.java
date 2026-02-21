@@ -21,6 +21,7 @@ package io.homo.superresolution.common.minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
@@ -86,16 +87,8 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, this.width, this.height);
+            glTexStorage2D(GL_TEXTURE_2D, 1, SuperResolutionConfig.getInternalTextureFormat().gl(), this.width, this.height);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.colorTextureId, 0);
-
-            //color1 运动矢量用
-            glBindTexture(GL_TEXTURE_2D, this.colorAttachment1);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexStorage2D(GL_TEXTURE_2D, 1, TextureFormat.RG16F.gl(), this.width, this.height);
 
             this.checkStatus();
             #if MC_VER > MC_1_21_1

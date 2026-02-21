@@ -57,12 +57,14 @@ public class PerformanceTracker {
 
         ctx.ensureQueriesInitialized();
 
-        if (ctx.queryPending[ctx.cursor]) {
+        if (ctx.queryPending[ctx.cursor] && ctx.queryEnded[ctx.cursor]) {
             syncGpuResultAtIndex(ctx, ctx.cursor, true);
         }
 
-        GL41.glBeginQuery(GL41.GL_TIME_ELAPSED, ctx.queryIds[ctx.cursor]);
+        GL41.glQueryCounter(ctx.queryIdsStart[ctx.cursor], GL41.GL_TIMESTAMP);
+
         ctx.queryPending[ctx.cursor] = true;
+        ctx.queryEnded[ctx.cursor] = false;
     }
 
     public static void pop(String operationName) {
@@ -73,7 +75,8 @@ public class PerformanceTracker {
 
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             ctx.ensureQueriesInitialized();
-            GL41.glEndQuery(GL41.GL_TIME_ELAPSED);
+            GL41.glQueryCounter(ctx.queryIdsEnd[ctx.cursor], GL41.GL_TIMESTAMP);
+            ctx.queryEnded[ctx.cursor] = true;
         }
 
         long end = System.nanoTime();
@@ -130,7 +133,7 @@ public class PerformanceTracker {
         ctx.ensureQueriesInitialized();
 
         for (int i = 0; i < MAX_RESULT; i++) {
-            if (ctx.queryPending[i]) {
+            if (ctx.queryPending[i] && ctx.queryEnded[i]) {
                 syncGpuResultAtIndex(ctx, i, true);
             }
         }
@@ -169,7 +172,7 @@ public class PerformanceTracker {
 
         int lastIdx = (ctx.cursor - 1 + MAX_RESULT) % MAX_RESULT;
 
-        if (ctx.queryPending[lastIdx]) {
+        if (ctx.queryPending[lastIdx] && ctx.queryEnded[lastIdx]) {
             syncGpuResultAtIndex(ctx, lastIdx, true);
         }
 
@@ -180,7 +183,7 @@ public class PerformanceTracker {
         int checks = 0;
         int idx = (ctx.cursor - 1 + MAX_RESULT) % MAX_RESULT;
         while (checks < 5) {
-            if (ctx.queryPending[idx]) {
+            if (ctx.queryPending[idx] && ctx.queryEnded[idx]) {
                 if (!syncGpuResultAtIndex(ctx, idx, false)) {
                     break;
                 }
@@ -191,31 +194,37 @@ public class PerformanceTracker {
     }
 
     private static boolean syncGpuResultAtIndex(TrackerContext ctx, int index, boolean forceWait) {
-        if (!ctx.queryPending[index]) {
+        if (!ctx.queryPending[index] || !ctx.queryEnded[index]) {
             return true;
         }
 
-        int queryId = ctx.queryIds[index];
+        int startId = ctx.queryIdsStart[index];
+        int endId = ctx.queryIdsEnd[index];
 
         if (!forceWait) {
-            int available = GL41.glGetQueryObjecti(queryId, GL41.GL_QUERY_RESULT_AVAILABLE);
+            int available = GL41.glGetQueryObjecti(endId, GL41.GL_QUERY_RESULT_AVAILABLE);
             if (available == 0) {
                 return false;
             }
         }
 
-        long time = GL41.glGetQueryObjectui64(queryId, GL41.GL_QUERY_RESULT);
+        long startTime = GL41.glGetQueryObjectui64(startId, GL41.GL_QUERY_RESULT);
+        long endTime = GL41.glGetQueryObjectui64(endId, GL41.GL_QUERY_RESULT);
 
-        ctx.gpuTimes[index] = time;
+        ctx.gpuTimes[index] = Math.max(0L, endTime - startTime);
         ctx.queryPending[index] = false;
         return true;
     }
 
     private static class TrackerContext {
-        final int[] queryIds = new int[MAX_RESULT];
+        final int[] queryIdsStart = new int[MAX_RESULT];
+        final int[] queryIdsEnd = new int[MAX_RESULT];
+
         final long[] cpuTimes = new long[MAX_RESULT];
         final long[] gpuTimes = new long[MAX_RESULT];
+
         final boolean[] queryPending = new boolean[MAX_RESULT];
+        final boolean[] queryEnded = new boolean[MAX_RESULT]; // 防止 pop 意外没有调用导致的卡死
 
         int cursor = 0;
         long tempCpuStart = 0;
@@ -223,24 +232,30 @@ public class PerformanceTracker {
 
         TrackerContext() {
             if (SuperResolutionConfig.isEnableDetailedProfiling()) {
-                GL41.glGenQueries(queryIds);
-                queriesInitialized = true;
+                initQueries();
             }
+        }
+
+        private void initQueries() {
+            GL41.glGenQueries(queryIdsStart);
+            GL41.glGenQueries(queryIdsEnd);
+            queriesInitialized = true;
         }
 
         void ensureQueriesInitialized() {
             if (!queriesInitialized && SuperResolutionConfig.isEnableDetailedProfiling()) {
-                GL41.glGenQueries(queryIds);
-                queriesInitialized = true;
+                initQueries();
             }
         }
 
         void cleanup() {
             if (queriesInitialized) {
-                GL41.glDeleteQueries(queryIds);
+                GL41.glDeleteQueries(queryIdsStart);
+                GL41.glDeleteQueries(queryIdsEnd);
                 queriesInitialized = false;
             }
             Arrays.fill(queryPending, false);
+            Arrays.fill(queryEnded, false);
             Arrays.fill(cpuTimes, 0);
             Arrays.fill(gpuTimes, 0);
             cursor = 0;

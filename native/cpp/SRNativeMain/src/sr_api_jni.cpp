@@ -7,6 +7,7 @@
 #include "sr/sr_modules.h"
 #include <codecvt>
 #include <locale>
+#include <cstring>
 #include "io_homo_superresolution_core_SuperResolutionNative.h"
 static JNIEnv *g_envForCallback = nullptr;
 

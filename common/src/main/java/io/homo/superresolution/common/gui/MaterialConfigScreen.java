@@ -21,57 +21,53 @@ package io.homo.superresolution.common.gui;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
-import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.gui.download.MaterialDownloadList;
-import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
+import io.homo.superresolution.common.gui.download.MaterialDownloadList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.common.gui.options.EnumSelectorBuilder;
-import io.homo.superresolution.common.gui.options.NumberSliderOptionEntry;
-import io.homo.superresolution.common.gui.options.OptionBuilder;
-import io.homo.superresolution.common.gui.options.OptionCategory;
-import io.homo.superresolution.common.gui.options.SelectionListOptionEntry;
+import io.homo.superresolution.common.gui.options.*;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.SuperResolutionNative;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.gui.*;
-import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IImage;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
-import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
-import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.gui.widgets.SpacerWidget;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
+import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
-import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
+import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.ImageLoader;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
@@ -1045,17 +1041,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         InfoCard contributorsCard = new InfoCard();
         List<ContributorInfo> contributors = new ArrayList<>(List.of(
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.desc").getString(), "https://github.com/187J3X1-114514", "/assets/super_resolution/textures/gui/contributors/114514.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.desc").getString(), "https://github.com/ysjmxy", "/assets/super_resolution/textures/gui/contributors/mxy.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.yu.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.yu.desc").getString(), "https://github.com/yu234567", ""),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.enaium.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.enaium.desc").getString(), "https://github.com/Enaium", "/assets/super_resolution/textures/gui/contributors/Enaium.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.desc").getString(), "https://github.com/rrtt217", "/assets/super_resolution/textures/gui/contributors/rrtt217.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.desc").getString(), "https://github.com/Shiroiame-Kusu", "/assets/super_resolution/textures/gui/contributors/Shiroiame-Kusu.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.desc").getString(), "https://github.com/ChloePrime", ""),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.desc").getString(), "https://github.com/EnderPhantomWing", ""),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/suodeliesi.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.xiaolang.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.xiaolang.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/xiaolangfengqi.png"),
-                new ContributorInfo(Text.translatable("superresolution.screen.config.info.about.contributor.qwertyuiop.name").getString(), Text.translatable("superresolution.screen.config.info.about.contributor.qwertyuiop.desc").getString(), "https://github.com/moyongxin", "/assets/super_resolution/textures/gui/contributors/qwertyuiop.png")
+                new ContributorInfo("187J3X1", Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.desc").getString(), "https://github.com/187J3X1-114514", "/assets/super_resolution/textures/gui/contributors/114514.png"),
+                new ContributorInfo("异世界美西螈", Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.desc").getString(), "https://github.com/ysjmxy", "/assets/super_resolution/textures/gui/contributors/mxy.png"),
+                new ContributorInfo("yu", Text.translatable("superresolution.screen.config.info.about.contributor.yu.desc").getString(), "https://github.com/yu234567", ""),
+                new ContributorInfo("Enaium", Text.translatable("superresolution.screen.config.info.about.contributor.enaium.desc").getString(), "https://github.com/Enaium", "/assets/super_resolution/textures/gui/contributors/Enaium.png"),
+                new ContributorInfo("rrtt217", Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.desc").getString(), "https://github.com/rrtt217", "/assets/super_resolution/textures/gui/contributors/rrtt217.png"),
+                new ContributorInfo("筱烷", Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.desc").getString(), "https://github.com/Shiroiame-Kusu", "/assets/super_resolution/textures/gui/contributors/Shiroiame-Kusu.png"),
+                new ContributorInfo("ChloePrime", Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.desc").getString(), "https://github.com/ChloePrime", ""),
+                new ContributorInfo("EnderPhantomWing", Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.desc").getString(), "https://github.com/EnderPhantomWing", "/assets/super_resolution/textures/gui/contributors/EnderPhantomWing.png"),
+                new ContributorInfo("索德列斯", Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/suodeliesi.png"),
+                new ContributorInfo("小狼_枫琪", Text.translatable("superresolution.screen.config.info.about.contributor.xiaolang.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/xiaolangfengqi.png"),
+                new ContributorInfo("qwertyuiop", Text.translatable("superresolution.screen.config.info.about.contributor.qwertyuiop.desc").getString(), "https://github.com/moyongxin", "/assets/super_resolution/textures/gui/contributors/qwertyuiop.png")
         ));
         Collections.shuffle(contributors);
         for (ContributorInfo contributor : contributors) {
@@ -1073,28 +1069,72 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         InfoCard librariesCard = new InfoCard();
         List<LibraryInfo> libraries = new ArrayList<>(List.of(
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.architectury").getString(), "https://github.com/architectury/architectury-api"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.night_config").getString(), "https://github.com/TheElectronWill/night-config"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.mixin").getString(), "https://github.com/SpongePowered/Mixin"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.nanovg").getString(), "https://github.com/memononen/nanovg"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.nanosvg").getString(), "https://github.com/memononen/nanosvg"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.manifold").getString(), "https://github.com/manifold-systems/manifold"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.imgui").getString(), "https://github.com/ocornut/imgui"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.sgsr2").getString(), "https://github.com/SnapdragonStudios/snapdragon-gsr"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fsr1").getString(), "https://github.com/GPUOpen-Effects/FidelityFX-FSR"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fsr2").getString(), "https://github.com/GPUOpen-Effects/FidelityFX-FSR2"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fidelityfx_sdk").getString(), "https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.fsr2_opengl").getString(), "https://github.com/JuanDiegoMontoya/FidelityFX-FSR2-OpenGL"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.joml").getString(), "https://github.com/JOML-CI/JOML"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.renderdoc").getString(), "https://github.com/baldurk/renderdoc"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.lwjgl3").getString(), "https://github.com/LWJGL/lwjgl3"),
-                new LibraryInfo(Text.translatable("superresolution.screen.config.info.about.library.glslang").getString(), "https://github.com/KhronosGroup/glslang")
+                new LibraryInfo("Architectury API", "https://github.com/architectury/architectury-api"),
+                new LibraryInfo("Night Config", "https://github.com/TheElectronWill/night-config"),
+                new LibraryInfo("SpongePowered Mixin", "https://github.com/SpongePowered/Mixin"),
+                new LibraryInfo("NanoVG", "https://github.com/memononen/nanovg"),
+                new LibraryInfo("NanoSVG", "https://github.com/memononen/nanosvg"),
+                new LibraryInfo("Manifold", "https://github.com/manifold-systems/manifold"),
+                new LibraryInfo("Dear ImGui", "https://github.com/ocornut/imgui"),
+                new LibraryInfo("Snapdragon™ Game Super Resolution 2(1)", "https://github.com/SnapdragonStudios/snapdragon-gsr"),
+                new LibraryInfo("FidelityFX Super Resolution 1.0", "https://github.com/GPUOpen-Effects/FidelityFX-FSR"),
+                new LibraryInfo("FidelityFX Super Resolution 2.2", "https://github.com/GPUOpen-Effects/FidelityFX-FSR2"),
+                new LibraryInfo("AMD FidelityFX™ SDK", "https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK"),
+                new LibraryInfo("FidelityFX Super Resolution 2.2 (OpenGL)", "https://github.com/JuanDiegoMontoya/FidelityFX-FSR2-OpenGL"),
+                new LibraryInfo("Java OpenGL Math Library(JOML)", "https://github.com/JOML-CI/JOML"),
+                new LibraryInfo("RenderDoc", "https://github.com/baldurk/renderdoc"),
+                new LibraryInfo("Lightweight Java Game Library 3(LWJGL3)", "https://github.com/LWJGL/lwjgl3"),
+                new LibraryInfo("Glslang", "https://github.com/KhronosGroup/glslang"),
+                new LibraryInfo("Intel XeSS SDK", "https://github.com/intel/xess"),
+                new LibraryInfo("NVIDIA RTX DLSS SDK", "https://github.com/NVIDIA/DLSS")
         ));
         Collections.shuffle(libraries);
         for (LibraryInfo library : libraries) {
             librariesCard.addChild(createLibraryRow(library));
         }
         container.addChild(librariesCard);
+        MaterialLabel legalSection = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.config.info.about.legal_notices").getString())
+                .fontSize(18)
+                .color(MaterialScheme::secondary);
+        legalSection.layout().setMargin(YogaEdge.TOP, 12);
+        legalSection.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(legalSection);
+
+        InfoCard noticesCard = new InfoCard();
+        noticesCard.layout().setGap(YogaGutter.ROW, 12);
+
+        {
+            MaterialLabel label = MaterialLabel.create()
+                    .text(Text.translatable("superresolution.screen.config.info.about.gpl_statement").getString());
+            label.style().wrap(true);
+            noticesCard.addChild(label);
+        }
+        {
+            MaterialLabel label = MaterialLabel.create()
+                    .text(Text.translatable("superresolution.screen.config.info.about.minecraft_disclaimer").getString());
+            label.style().wrap(true);
+            noticesCard.addChild(label);
+        }
+        {
+            MaterialLabel label = MaterialLabel.create()
+                    .text(Text.translatable("superresolution.screen.config.info.about.nvidia_disclaimer").getString());
+            label.style().wrap(true);
+            noticesCard.addChild(label);
+        }
+        {
+            MaterialLabel label = MaterialLabel.create()
+                    .text(Text.translatable("superresolution.screen.config.info.about.amd_disclaimer").getString());
+            label.style().wrap(true);
+            noticesCard.addChild(label);
+        }
+        {
+            MaterialLabel label = MaterialLabel.create()
+                    .text(Text.translatable("superresolution.screen.config.info.about.intel_disclaimer").getString());
+            label.style().wrap(true);
+            noticesCard.addChild(label);
+        }
+        container.addChild(noticesCard);
 
         finalizeFrame(frame, container);
         return frame;

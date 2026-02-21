@@ -99,7 +99,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                         depthTexture.getInternalTexture(),
                         motionVectorsTexture.getInternalTexture() != null && lastMotionConfig.enabled ?
                                 motionVectorsTexture.getInternalTexture() :
-                                AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                                (AlgorithmManager.getMotionVectorsFrameBuffer() != null ? AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) : null)
 
                 )
 

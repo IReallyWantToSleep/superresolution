@@ -73,7 +73,6 @@ neoForge {
     runs {
         configureEach {
             jvmArguments.add("-XX:+CreateMinidumpOnCrash")
-            jvmArguments.add("-XX:+AllowEnhancedClassRedefinition")
             //jvmArguments.add("-Dorg.lwjgl.util.Debug=true")
             //jvmArguments.add("-Dorg.lwjgl.util.DebugAllocator=true")
             //environment("ENABLE_VULKAN_RENDERDOC_CAPTURE", "1")
@@ -145,7 +144,6 @@ dependencies {
     //libraries(jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux")
 
     implementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
-    implementation "me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion"
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8"
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
         def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}"

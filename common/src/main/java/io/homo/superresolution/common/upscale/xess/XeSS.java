@@ -316,7 +316,11 @@ public class XeSS extends AbstractAlgorithm {
                         dispatchResource.screenSize())
                         .mul(new Vector2f(1, -1))
         );
-        desc.setMotionVectorScale(new Vector2f(1));
+        desc.setMotionVectorScale(
+                new Vector2f(
+                        dispatchResource.renderWidth(),
+                        dispatchResource.renderHeight())
+        );
         desc.setRenderSize(
                 new Vector2i(
                         dispatchResource.renderWidth(),

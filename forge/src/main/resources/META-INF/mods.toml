@@ -27,13 +27,6 @@ versionRange = "[*,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.super_resolution]]
-modId = "cloth_config"
-mandatory = true
-versionRange = "[*,)"
-ordering = "NONE"
-side = "BOTH"
-
 [mods."sodium:options"]
 "mixin.features.render.gui.debug" = false
 

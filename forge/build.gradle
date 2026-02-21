@@ -98,7 +98,6 @@ dependencies {
     //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
     //jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion"
     modImplementation "dev.architectury:architectury-forge:$versionConfig.common.architecturyApiVersion"
-    modImplementation "me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion"
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb"
     jarJar(implementation "net.neoforged:bus:8.0.5")
     for (lib in versionConfig.forge.dependencies.modrinth) {

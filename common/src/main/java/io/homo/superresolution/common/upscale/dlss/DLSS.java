@@ -308,11 +308,16 @@ public class DLSS extends AbstractAlgorithm {
                         dispatchResource.renderSize(),
                         dispatchResource.screenSize())
                         .mul(new Vector2f(1, 1)));
-        desc.setMotionVectorScale(new Vector2f(1));
+        desc.setMotionVectorScale(
+                new Vector2f(
+                        dispatchResource.renderWidth(),
+                        dispatchResource.renderHeight())
+        );
         desc.setRenderSize(
                 new Vector2i(
                         dispatchResource.renderWidth(),
-                        dispatchResource.renderHeight()));
+                        dispatchResource.renderHeight())
+        );
         desc.setUpscaleSize(
                 new Vector2i(
                         dispatchResource.screenWidth(),

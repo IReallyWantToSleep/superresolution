@@ -18,8 +18,6 @@
 
 package io.homo.superresolution.core.utils;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.NativeImage;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;

@@ -89,10 +89,10 @@ dependencies {
 
     if (isNewVersion) {
         compileOnly "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
-        compileOnly "me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion"
+        //compileOnly "me.shedaniel.cloth:cloth-config-neoforge:$versionConfig.common.clothConfigVersion"
     } else {
         modCompileOnly "dev.architectury:architectury-forge:$versionConfig.common.architecturyApiVersion"
-        modCompileOnly "me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion"
+        //modCompileOnly "me.shedaniel.cloth:cloth-config-forge:$versionConfig.common.clothConfigVersion"
     }
 
     //搜索Iris依赖
