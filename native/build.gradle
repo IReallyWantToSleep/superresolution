@@ -2,6 +2,11 @@ plugins {
     id 'java'
 }
 
+import java.net.HttpURLConnection
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorCompletionService
+import java.util.concurrent.Executors
+
 group = 'io.homo.SuperResolution'
 version = '0.0.1-alpha.1'
 
@@ -46,18 +51,36 @@ tasks.register('copyNativeLibAll', Copy) {
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
+def osName = System.getProperty('os.name').toLowerCase()
 
-tasks.register('buildNativeCpp', Exec) {
+tasks.register('buildNativeCppWindows', Exec) {
     group = 'build'
-    description = 'Build native C/C++ libraries via platform script'
-    def osName = System.getProperty('os.name').toLowerCase()
+    description = 'Build native C/C++ DLLs via platform script'
+    // mustRunAfter('downloadNativeLibraries')
     workingDir "${projectDir}/cpp"
     if (osName.contains('windows')) {
         commandLine 'powershell', '-ExecutionPolicy', 'Bypass', '-File', 'build_windows.ps1'
     } else if (osName.contains('linux')) {
-        commandLine 'bash', 'build_linux.sh'
+        commandLine 'bash', 'build_windows_docker.sh'
     } else {
         throw new GradleException("Unsupported OS for native build: ${osName}")
+    }
+}
+
+tasks.register('buildNativeCppLinux', Exec) {
+    group = 'build'
+    description = 'Build native C/C++ .so Libraries via platform script'
+    // mustRunAfter('downloadNativeLibraries')
+    workingDir "${projectDir}/cpp"
+    commandLine 'bash', 'build_linux.sh'
+}
+
+tasks.register('buildNativeCpp') {
+    group = 'build'
+    description = 'Build native C/C++ libraries via platform script'
+    dependsOn('buildNativeCppWindows')
+    if (osName.contains('linux')) {
+        dependsOn('buildNativeCppLinux')
     }
 }
 
@@ -67,6 +90,113 @@ tasks.named('copyNativeLibAll') {
 }
 
 tasks.named('build') {
+    // dependsOn('downloadNativeLibraries')
     dependsOn('buildNativeCpp')
     dependsOn('copyNativeLibAll')
 }
+
+tasks.register('SkipDownload') {
+    dependsOn('buildNativeCpp')
+    dependsOn('copyNativeLibAll')
+}
+def parseLibraryPairsFromScript(File scriptFile) {
+    if (!scriptFile.exists()) {
+        throw new GradleException("未找到脚本: ${scriptFile}")
+    }
+    def text = scriptFile.getText('UTF-8')
+    def matcher = (text =~ /\[\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*\]/)
+    def pairs = []
+    matcher.each { groups ->
+        pairs << [groups[1], groups[2]]
+    }
+    if (pairs.isEmpty()) {
+        throw new GradleException("未从 ${scriptFile} 解析到任何下载映射")
+    }
+    return pairs
+}
+
+// def libraryScriptFile = rootProject.file('script/download_libraries.py')
+// def libraryPairs = parseLibraryPairsFromScript(libraryScriptFile)
+// def nativeLibrariesBaseUrl = 'https://github.com/187J3X1-114514/superresolution/raw/refs/heads/assets'
+
+// tasks.register('downloadNativeLibraries') {
+//     group = 'build'
+//     description = '下载 native/cpp 预编译依赖库（由 script/download_libraries.py 迁移）'
+
+//     outputs.files(libraryPairs.collect { pair ->
+//         rootProject.file(pair[1])
+//     })
+
+//     doLast {
+//         int total = libraryPairs.size()
+//         int done = 0
+//         int failed = 0
+//         int workers = ((project.findProperty('native.downloadWorkers') ?: '8') as String).toInteger()
+//         workers = Math.max(1, workers)
+
+//         logger.lifecycle("开始下载 native 依赖库，共 ${total} 个文件，线程数: ${workers}")
+
+//         def pool = Executors.newFixedThreadPool(workers)
+//         def completionService = new ExecutorCompletionService<Map>(pool)
+
+//         try {
+//             libraryPairs.each { pair ->
+//                 completionService.submit({ ->
+//                     def remotePath = pair[0]
+//                     def localFile = rootProject.file(pair[1])
+//                     localFile.parentFile.mkdirs()
+
+//                     def url = new URL("${nativeLibrariesBaseUrl}/${remotePath}")
+//                     boolean ok = false
+//                     Exception lastError = null
+
+//                     for (int attempt = 1; attempt <= 6; attempt++) {
+//                         HttpURLConnection conn = null
+//                         try {
+//                             conn = (HttpURLConnection) url.openConnection()
+//                             conn.setConnectTimeout(30000)
+//                             conn.setReadTimeout(30000)
+//                             conn.setInstanceFollowRedirects(true)
+//                             conn.setRequestProperty('User-Agent', 'Gradle-native-library-downloader')
+
+//                             conn.inputStream.withCloseable { input ->
+//                                 localFile.withOutputStream { out ->
+//                                     input.transferTo(out)
+//                                 }
+//                             }
+
+//                             ok = true
+//                             break
+//                         } catch (Exception ex) {
+//                             lastError = ex
+//                             sleep(1000)
+//                         } finally {
+//                             conn?.disconnect()
+//                         }
+//                     }
+
+//                     return [ok: ok, remotePath: remotePath, localFile: localFile, error: lastError]
+//                 } as Callable<Map>)
+//             }
+
+//             (1..total).each {
+//                 def result = completionService.take().get()
+//                 done++
+//                 if (!result.ok) {
+//                     failed++
+//                     logger.error("下载失败 (${done}/${total}): ${result.remotePath} -> ${result.localFile}，错误: ${result.error?.message}")
+//                 } else {
+//                     logger.lifecycle("下载完成 (${done}/${total}): ${result.remotePath}")
+//                 }
+//             }
+//         } finally {
+//             pool.shutdownNow()
+//         }
+
+//         if (failed > 0) {
+//             throw new GradleException("native 依赖库下载失败: ${failed}/${total}")
+//         }
+//         logger.lifecycle("native 依赖库下载完成，共 ${total} 个文件")
+//     }
+// }
+

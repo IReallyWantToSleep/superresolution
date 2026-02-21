@@ -24,8 +24,14 @@
 
 #include <FidelityFX/host/ffx_types.h>
 
-#ifndef ON_WIN64
+#if defined(__has_include)
+#if __has_include(<bit>)
 #include <bit>
+#endif
+#endif
+
+#if defined(_MSC_VER)
+#include <intrin.h>
 #endif
 /// @defgroup Utils Utilities
 /// Utility Macros used by the FidelityFX SDK
@@ -178,16 +184,12 @@ const float FFX_EPSILON = 1e-06f;
 /// @ingroup Utils
 inline uint8_t ffxCountBitsSet(uint32_t val) noexcept
 {
-#if __cplusplus >= 202002L
-#ifdef ON_WIN64
+#if __cplusplus >= 202002L && defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201907L
     return static_cast<uint8_t>(std::popcount(val));
-#else
-    return static_cast<uint8_t>(std::popcount(val));
-#endif
-#elif defined(_MSVC_LANG)
-    return static_cast<uint8_t>(__popcnt(val));
 #elif defined(__GNUC__) || defined(__clang__)
     return static_cast<uint8_t>(__builtin_popcount(val));
+#elif defined(_MSC_VER)
+    return static_cast<uint8_t>(__popcnt(val));
 #else
     uint32_t c = val - ((val >> 1) & 0x55555555);
     c = ((c >> 2) & 0x33333333) + (c & 0x33333333);
