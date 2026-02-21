@@ -46,18 +46,38 @@ tasks.register('copyNativeLibAll', Copy) {
     }
     into "${projectDir}/../common/src/main/resources/lib/"
 }
+def osName = System.getProperty('os.name').toLowerCase()
 
-tasks.register('buildNativeCpp', Exec) {
+tasks.register('buildNativeCppWindows', Exec) {
     group = 'build'
-    description = 'Build native C/C++ libraries via platform script'
-    def osName = System.getProperty('os.name').toLowerCase()
+    description = 'Build native C/C++ DLLs via platform script'
+    // mustRunAfter('downloadNativeLibraries')
     workingDir "${projectDir}/cpp"
     if (osName.contains('windows')) {
         commandLine 'powershell', '-ExecutionPolicy', 'Bypass', '-File', 'build_windows.ps1'
     } else if (osName.contains('linux')) {
-        commandLine 'bash', 'build_linux.sh'
+        commandLine 'bash', 'build_windows_docker.sh'
     } else {
         throw new GradleException("Unsupported OS for native build: ${osName}")
+    }
+}
+
+tasks.register('buildNativeCppLinux', Exec) {
+    group = 'build'
+    description = 'Build native C/C++ .so Libraries via platform script'
+    // mustRunAfter('downloadNativeLibraries')
+    workingDir "${projectDir}/cpp"
+    commandLine 'bash', 'build_linux.sh'
+}
+
+tasks.register('buildNativeCpp') {
+    group = 'build'
+    description = 'Build native C/C++ libraries via platform script'
+    if (osName.contains('windows')) {
+        dependsOn('buildNativeCppWindows')
+    }
+    if (osName.contains('linux')) {
+        dependsOn('buildNativeCppLinux')
     }
 }
 

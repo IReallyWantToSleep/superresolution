@@ -28,7 +28,8 @@ if(NOT DEFINED SRLIB_VERSION)
     string(TIMESTAMP COMPILE_TIME "%Y%m%d_%H%M%S")
     set(SRLIB_VERSION ${COMPILE_TIME})
 endif()
-add_definitions(-DSRLIB_VERSION="${SRLIB_VERSION}")
+# 注意：不使用 add_definitions，避免 SRLIB_VERSION 泄漏到 SDK 等第三方子目录
+# 各模块通过 target_compile_definitions 自行添加
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(LIB_PLATFORM "linux64")
@@ -62,7 +63,8 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         add_compile_options(-O3 -g1)
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O3 -g0 -ffunction-sections -fdata-sections -flto)
-        add_link_options(-flto -Wl,--gc-sections -s)
+        #别问为什么要写个-fuse-ld=lld
+        add_link_options(-fuse-ld=lld -flto -Wl,--gc-sections -s)
     endif()
 elseif(NOT WIN32)
     add_compile_options(-Wall -O3)
