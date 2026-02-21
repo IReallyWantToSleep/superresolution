@@ -125,6 +125,7 @@ extern "C"
         const SRContextExtraParams *params,
         const char *name,
         void **outValue);
+    SR_API void srDestroyExtraParams(SRContextExtraParams* params);
 
 #ifdef __cplusplus
 }

@@ -437,31 +437,31 @@ public class XeSS extends AbstractAlgorithm {
     public List<QualityPreset> getQualityPresets() {
         return List.of(
                 new QualityPreset()
-                        .setName(Component.literal("Ultra Performance"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.ultra_performance"))
                         .setCodeName("xess_ultra_performance")
                         .setUpscaleRatio(3.0f),
                 new QualityPreset()
-                        .setName(Component.literal("Performance"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.performance"))
                         .setCodeName("xess_performance")
                         .setUpscaleRatio(2.3f),
                 new QualityPreset()
-                        .setName(Component.literal("Balanced"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.balanced"))
                         .setCodeName("xess_balanced")
                         .setUpscaleRatio(2.0f),
                 new QualityPreset()
-                        .setName(Component.literal("Quality"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.quality"))
                         .setCodeName("xess_quality")
                         .setUpscaleRatio(1.7f),
                 new QualityPreset()
-                        .setName(Component.literal("Ultra Quality"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.ultra_quality"))
                         .setCodeName("xess_ultra_quality")
                         .setUpscaleRatio(1.5f),
                 new QualityPreset()
-                        .setName(Component.literal("Ultra Quality Plus"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.ultra_quality_plus"))
                         .setCodeName("xess_ultra_quality_plus")
                         .setUpscaleRatio(1.3f),
                 new QualityPreset()
-                        .setName(Component.literal("Native Anti-Aliasing"))
+                        .setName(Component.translatable("superresolution.algo.preset.xess.native_aa"))
                         .setCodeName("xess_native_aa")
                         .setUpscaleRatio(1.0f)
         );

@@ -54,8 +54,10 @@ SR_API SRReturnCode srCreateUpscaleContext(
     {
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
+    //memset(outContext, 0, sizeof(SRUpscaleContext));
     outContext->callbacks = provider->callbacks;
-    return provider->callbacks.pCreate(outContext, desc);
+    SRReturnCode code = provider->callbacks.pCreate(outContext, desc);
+    return code;
 }
 
 SR_API SRReturnCode srInitUpscaleContext(
@@ -65,7 +67,8 @@ SR_API SRReturnCode srInitUpscaleContext(
     {
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
-    return context->callbacks.pInit(context);
+    SRReturnCode code = context->callbacks.pInit(context);
+    return code;
 }
 
 SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context)
@@ -74,7 +77,8 @@ SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context)
     {
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
-    return context->callbacks.pDestroy(context);
+    SRReturnCode code = context->callbacks.pDestroy(context);
+    return code;
 }
 
 SR_API SRReturnCode srQueryUpscaleContext(
@@ -97,7 +101,8 @@ SR_API SRReturnCode srDispatchUpscale(
     {
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
-    return context->callbacks.pDispatchUpscale(context, desc);
+	SRReturnCode code = context->callbacks.pDispatchUpscale(context, desc);
+    return code;
 }
 SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     const std::string &libPath,
@@ -384,11 +389,13 @@ SR_API SRReturnCode srParamsSetBool(
     {
         return SR_RETURN_CODE_ERROR;
     }
-
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_BOOL;
     param->value.boolValue = value;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -408,11 +415,13 @@ SR_API SRReturnCode srParamsSetInt32(
     {
         return SR_RETURN_CODE_ERROR;
     }
-
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_INT32;
     param->value.int32Value = value;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -432,11 +441,13 @@ SR_API SRReturnCode srParamsSetUint32(
     {
         return SR_RETURN_CODE_ERROR;
     }
-
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_UINT32;
     param->value.uint32Value = value;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -456,11 +467,13 @@ SR_API SRReturnCode srParamsSetFloat(
     {
         return SR_RETURN_CODE_ERROR;
     }
-
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_FLOAT;
     param->value.floatValue = value;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -480,11 +493,13 @@ SR_API SRReturnCode srParamsSetDouble(
     {
         return SR_RETURN_CODE_ERROR;
     }
-
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_DOUBLE;
     param->value.doubleValue = value;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -504,11 +519,16 @@ SR_API SRReturnCode srParamsSetString(
     {
         return SR_RETURN_CODE_ERROR;
     }
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
 
+    char* valueCopy = strdup(value);
+    if (!valueCopy) return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_STRING;
-    param->value.stringValue = value;
+    param->value.stringValue = valueCopy;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -528,11 +548,14 @@ SR_API SRReturnCode srParamsSetPointer(
     {
         return SR_RETURN_CODE_ERROR;
     }
+    char* nameCopy = strdup(name);
+    if (!nameCopy) return SR_RETURN_CODE_ERROR;
 
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
-    param->name = name;
+    param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_POINTER;
     param->value.ptrValue = value;
+	param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -759,4 +782,20 @@ SR_API SRReturnCode srParamsGetPointer(
 
     *outValue = param->value.ptrValue;
     return SR_RETURN_CODE_OK;
+}
+
+SR_API void srDestroyExtraParams(SRContextExtraParams* params) {
+    for (uint32_t i = 0; i < params->extraParamCount; ++i) {
+        if (params->extraParams[i].exist) {
+            free((void*)params->extraParams[i].name);
+            if (params->extraParams[i].valueType == SR_PARAM_VALUE_TYPE_STRING) {
+                if ((void*)params->extraParams[i].value.stringValue)
+                {
+                    free((void*)params->extraParams[i].value.stringValue);
+                }
+            }
+        }
+
+    }
+    params->extraParamCount = 0;
 }

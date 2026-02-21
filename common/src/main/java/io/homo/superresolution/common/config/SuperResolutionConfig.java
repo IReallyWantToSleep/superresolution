@@ -60,7 +60,6 @@ public class SuperResolutionConfig {
     public static final SpecialConfigs SPECIAL;
     public static final BooleanValue ENABLE_UPSCALE;
     public static final FloatValue UPSCALE_RATIO;
-    public static final StringValue QUALITY_PRESET;
     public static final StringValue UPSCALE_ALGO;
     public static final FloatValue SHARPNESS;
     public static final EnumValue<CaptureMode> CAPTURE_MODE;
@@ -100,14 +99,6 @@ public class SuperResolutionConfig {
                 ShaderCompatHandler.irisApiReloadShader();
             }
         });
-
-        QUALITY_PRESET = builder.defineString(
-                "quality_preset",
-                () -> "custom",
-                "Quality preset for super-resolution settings",
-                value -> value != null && (value.equals("custom") || AlgorithmRegistry.getAlgorithmMap().containsKey(value))
-        );
-        
         UPSCALE_RATIO = builder.defineFloat(
                 "upscale_ratio",
                 () -> 1.7f,

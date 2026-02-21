@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.gui.options;
 
-import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
@@ -27,6 +26,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelectColors;
@@ -34,39 +34,87 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, SelectionListOptionEntry<T>> {
     private static final float SELECT_MIN_WIDTH = 150f;
-    protected final ImmutableList<T> values;
+    protected List<T> values;
     protected final AtomicInteger index;
-    protected final int original;
+    protected final T originalValue;
     protected ContainerWidget selectorContainer;
     protected MaterialSelect<T> materialSelect;
     protected Function<T, String> nameProvider;
     protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
+    protected @Nullable Supplier<List<T>> valuesSupplier = null;
     protected String headerText = "";
 
     public SelectionListOptionEntry(
             Text name,
             T value,
-            ImmutableList<T> values,
+            List<T> values,
             Function<T, String> nameProvider
     ) {
         super(name, value);
-        this.values = values;
+        this.values = new ArrayList<>(values);
+        if (this.values.isEmpty() && value != null) {
+            this.values.add(value);
+        }
         this.index = new AtomicInteger(values.indexOf(value));
         this.index.compareAndSet(-1, 0);
-        this.original = values.indexOf(value);
+        this.originalValue = value;
         this.nameProvider = nameProvider;
         init();
     }
 
     public SelectionListOptionEntry<T> setItemEnableRequirement(@Nullable Function<T, OptionRequirement> itemEnableRequirement) {
         this.itemEnableRequirement = itemEnableRequirement;
+        return this;
+    }
+
+    public SelectionListOptionEntry<T> setValuesSupplier(@Nullable Supplier<List<T>> valuesSupplier) {
+        this.valuesSupplier = valuesSupplier;
+        return this;
+    }
+
+    public List<T> getValues() {
+        return Collections.unmodifiableList(values);
+    }
+
+    public SelectionListOptionEntry<T> setValues(List<T> newValues) {
+        applyValues(newValues, value());
+        return this;
+    }
+
+    public SelectionListOptionEntry<T> refreshDynamicValues() {
+        if (valuesSupplier != null) {
+            List<T> supplied = valuesSupplier.get();
+            if (supplied != null) {
+                applyValues(supplied, value());
+            }
+        }
+        return this;
+    }
+
+    public SelectionListOptionEntry<T> setSelectedValue(T newValue) {
+        if (newValue == null) {
+            return this;
+        }
+        int newIndex = values.indexOf(newValue);
+        if (newIndex < 0) {
+            return this;
+        }
+        index.set(newIndex);
+        this.value = newValue;
+        if (materialSelect != null) {
+            materialSelect.setValue(newValue);
+        }
         return this;
     }
 
@@ -132,30 +180,39 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
 
     @Override
     public T value() {
-        return values.get(index.get());
+        if (values.isEmpty()) {
+            return value;
+        }
+        int currentIndex = index.get();
+        if (currentIndex < 0 || currentIndex >= values.size()) {
+            currentIndex = Math.max(0, Math.min(values.size() - 1, currentIndex));
+            index.set(currentIndex);
+        }
+        return values.get(currentIndex);
     }
 
     @Override
     public void tick(RenderContext ctx) {
+        refreshDynamicValues();
         boolean enabled = updateRequirements();
         materialSelect.setDisabled(!enabled);
         for (T itemValue : values) {
+            MaterialMenuItem menuItem = materialSelect.getMenu().getItemByValue(itemValue);
+            if (menuItem == null) {
+                continue;
+            }
             if (itemEnableRequirement != null) {
                 OptionRequirement requirement = itemEnableRequirement.apply(itemValue);
                 boolean canSelect = requirement.check();
-                materialSelect.getMenu().getItemByValue(
-                        itemValue
-                ).selectable(canSelect).setDisabled(!canSelect);
+                menuItem.selectable(canSelect).setDisabled(!canSelect);
             } else {
-                materialSelect.getMenu().getItemByValue(
-                        itemValue
-                ).selectable(true).setDisabled(false);
+                menuItem.selectable(true).setDisabled(false);
             }
         }
     }
 
     public boolean isEdited() {
-        return !Objects.equals(index.get(), original);
+        return !Objects.equals(value(), originalValue);
     }
 
     private int getDefaultIndex() {
@@ -170,5 +227,48 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
     public SelectionListOptionEntry<T> setHeaderText(String headerText) {
         this.headerText = headerText;
         return this;
+    }
+
+    private void applyValues(List<T> newValues, @Nullable T preferredValue) {
+        List<T> sanitizedValues = newValues == null ? Collections.emptyList() : new ArrayList<>(newValues);
+        if (sanitizedValues.isEmpty()) {
+            if (preferredValue != null) {
+                sanitizedValues.add(preferredValue);
+            } else if (!values.isEmpty()) {
+                sanitizedValues.add(values.get(0));
+            } else {
+                return;
+            }
+        }
+
+        if (sanitizedValues.equals(this.values)) {
+            return;
+        }
+
+        T previousValue = preferredValue != null ? preferredValue : value();
+        int previousIndex = index.get();
+        this.values = sanitizedValues;
+
+        if (materialSelect != null) {
+            materialSelect.clearOptions();
+            for (T itemValue : this.values) {
+                materialSelect.addOption(itemValue, nameProvider.apply(itemValue));
+            }
+        }
+
+        T selectedValue;
+        if (this.values.contains(previousValue)) {
+            selectedValue = previousValue;
+        } else if (previousIndex >= 0 && previousIndex < this.values.size()) {
+            selectedValue = this.values.get(previousIndex);
+        } else {
+            selectedValue = this.values.get(0);
+        }
+        int selectedIndex = this.values.indexOf(selectedValue);
+        index.set(Math.max(0, selectedIndex));
+        this.value = selectedValue;
+        if (materialSelect != null) {
+            materialSelect.setValue(selectedValue);
+        }
     }
 }

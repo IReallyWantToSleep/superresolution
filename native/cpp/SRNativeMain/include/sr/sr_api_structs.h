@@ -62,6 +62,7 @@ extern "C"
         const char *name;
         SRParamValueType valueType;
         SRParamValue value;
+		bool exist;
     } SRContextExtraParam;
 
     typedef struct SROpenGLDeviceInfo

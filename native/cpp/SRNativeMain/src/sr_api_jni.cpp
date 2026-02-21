@@ -543,6 +543,7 @@ extern "C"
     {
         g_envForCallback = env;
         SRContextExtraParams *params = new SRContextExtraParams();
+        memset(params, 0, sizeof(SRContextExtraParams));
         params->extraParamCount = 0;
         return reinterpret_cast<jlong>(params);
     }
@@ -553,6 +554,7 @@ extern "C"
         if (paramsPtr != 0)
         {
             auto *params = reinterpret_cast<SRContextExtraParams *>(paramsPtr);
+            srDestroyExtraParams(params);
             delete params;
         }
     }

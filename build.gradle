@@ -187,13 +187,7 @@ for (int i = 1; i < orderedCollectTasks.size(); i++) {
     }
 }
 
-def nativeBuildTaskPath = ":native:build"
-orderedNestedBuildTasks.each { taskName ->
-    tasks.named(taskName) {
-        mustRunAfter(nativeBuildTaskPath)
-    }
-}
-
+def nativeBuildTaskPath = ":native:buildNative"
 tasks.register("cleanBuildJars", Delete) {
     group = "build"
     description = "清理 build_jars 输出目录"

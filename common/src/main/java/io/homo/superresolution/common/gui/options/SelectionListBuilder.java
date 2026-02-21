@@ -23,12 +23,15 @@ import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionListOptionEntry<T>, SelectionListBuilder<T>> {
     protected ImmutableList<T> values;
     protected Function<T, String> nameProvider;
     protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
+    protected @Nullable Supplier<List<T>> valuesSupplier = null;
 
     public SelectionListBuilder(Text name, T value, T[] valuesArray) {
         super(name, value);
@@ -53,6 +56,7 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
                 nameProvider
         );
         entry.setItemEnableRequirement(itemEnableRequirement);
+        entry.setValuesSupplier(valuesSupplier);
         return finishBuild(entry);
     }
 
@@ -63,6 +67,11 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
 
     public SelectionListBuilder<T> setNameProvider(@Nullable Function<T, String> nameProvider) {
         this.nameProvider = nameProvider != null ? nameProvider : t -> t.toString();
+        return this;
+    }
+
+    public SelectionListBuilder<T> setValuesSupplier(@Nullable Supplier<List<T>> valuesSupplier) {
+        this.valuesSupplier = valuesSupplier;
         return this;
     }
 }

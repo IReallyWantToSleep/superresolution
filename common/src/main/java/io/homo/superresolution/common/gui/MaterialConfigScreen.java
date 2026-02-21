@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.common.gui;
 
+import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
@@ -37,8 +39,10 @@ import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.EnumSelectorBuilder;
+import io.homo.superresolution.common.gui.options.NumberSliderOptionEntry;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
 import io.homo.superresolution.common.gui.options.OptionCategory;
+import io.homo.superresolution.common.gui.options.SelectionListOptionEntry;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
@@ -92,6 +96,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private Frame currentContentFrame;
     private MaterialNavigationDrawer drawer;
     private List<Destroyable> destroyables = new ArrayList<>();
+    private Map<String, List<QualityPresetOption>> qualityPresetOptionsCache;
 
     public MaterialConfigScreen(Screen parentScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
@@ -100,6 +105,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     protected void buildWidgets() {
+        if (qualityPresetOptionsCache == null) {
+            qualityPresetOptionsCache = new HashMap<>();
+        }
         MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), Color.from("#6750A4")));
         materialScheme = MaterialUI.Scheme;
         contentFrames = new HashMap<>();
@@ -272,6 +280,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         ContainerWidget container = createStandardContainer();
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.general"));
 
+        @SuppressWarnings("unchecked")
+        final SelectionListOptionEntry<QualityPresetOption>[] qualityPresetEntryRef = new SelectionListOptionEntry[1];
+        final NumberSliderOptionEntry[] upscaleRatioEntryRef = new NumberSliderOptionEntry[1];
+        final boolean[] syncingQualityPreset = {false};
+
         OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.general"));
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
@@ -302,6 +315,28 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         return false;
                     }
                     SuperResolutionConfig.setUpscaleAlgorithm(algo);
+                    if (qualityPresetEntryRef[0] != null) {
+                        qualityPresetEntryRef[0].refreshDynamicValues();
+                        QualityPresetOption targetPreset = resolveQualityPresetOption(
+                                qualityPresetEntryRef[0].getValues(),
+                                SuperResolutionConfig.getUpscaleRatio()
+                        );
+                        qualityPresetEntryRef[0].setSelectedValue(targetPreset);
+
+                        if (!isAlgorithmSupportsCustomUpscaleRatio(algo)
+                                && targetPreset != null
+                                && !targetPreset.custom()) {
+                            syncingQualityPreset[0] = true;
+                            try {
+                                SuperResolutionConfig.setUpscaleRatio(targetPreset.upscaleRatio());
+                                if (upscaleRatioEntryRef[0] != null) {
+                                    upscaleRatioEntryRef[0].setCurrentValue(targetPreset.upscaleRatio());
+                                }
+                            } finally {
+                                syncingQualityPreset[0] = false;
+                            }
+                        }
+                    }
                     return true;
                 })
                 .setItemEnableRequirement((value) -> {
@@ -320,7 +355,37 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     );
                 })
                 .build();
-        builder.numberOption(
+
+        List<QualityPresetOption> initialPresetOptions = getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm());
+        QualityPresetOption initialPreset = resolveQualityPresetOption(
+                initialPresetOptions,
+                SuperResolutionConfig.getUpscaleRatio()
+        );
+        qualityPresetEntryRef[0] = builder.selectorOption(
+                        Text.translatable("superresolution.screen.config.options.label.quality_preset"),
+                        initialPreset,
+                        initialPresetOptions.toArray(new QualityPresetOption[0]))
+                .setNameProvider(QualityPresetOption::displayName)
+                .setValuesSupplier(() -> getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm()))
+                .setSaveConsumer((presetOption) -> {
+                    if (presetOption == null || presetOption.custom() || syncingQualityPreset[0]) {
+                        return true;
+                    }
+                    syncingQualityPreset[0] = true;
+                    try {
+                        float ratio = presetOption.upscaleRatio();
+                        SuperResolutionConfig.setUpscaleRatio(ratio);
+                        if (upscaleRatioEntryRef[0] != null) {
+                            upscaleRatioEntryRef[0].setCurrentValue(ratio);
+                        }
+                    } finally {
+                        syncingQualityPreset[0] = false;
+                    }
+                    return true;
+                })
+                .build();
+
+        upscaleRatioEntryRef[0] = builder.numberOption(
                         Text.translatable("superresolution.screen.config.options.label.upscale_ratio"),
                         SuperResolutionConfig.getUpscaleRatio(),
                         3.0,
@@ -335,10 +400,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 String.format("%.2f", ((1 / value.floatValue()) * 100)) + "%"
                         ))}))
                 )
+                .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
                 .setSaveConsumer((value) -> {
-                    SuperResolutionConfig.setUpscaleRatio(
-                            Float.parseFloat(String.format("%.2f", value.doubleValue()))
-                    );
+                    float targetRatio = Float.parseFloat(String.format("%.2f", value.doubleValue()));
+                    SuperResolutionConfig.setUpscaleRatio(targetRatio);
+                    if (qualityPresetEntryRef[0] != null && !syncingQualityPreset[0]) {
+                        QualityPresetOption targetPreset = resolveQualityPresetOption(
+                                qualityPresetEntryRef[0].getValues(),
+                                targetRatio
+                        );
+                        qualityPresetEntryRef[0].setSelectedValue(targetPreset);
+                    }
                 })
                 .build();
 
@@ -375,6 +447,134 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
         return frame;
+    }
+
+    private List<QualityPresetOption> getQualityPresetOptions(AlgorithmDescription<?> algorithmDescription) {
+        if (algorithmDescription == null) {
+            return List.of(createCustomQualityPresetOption(SuperResolutionConfig.getUpscaleRatio()));
+        }
+
+        Map<String, List<QualityPresetOption>> cache = getQualityPresetOptionsCache();
+        List<QualityPresetOption> baseOptions = cache.computeIfAbsent(algorithmDescription.getCodeName(), codeName -> {
+            List<QualityPresetOption> options = new ArrayList<>();
+            for (QualityPreset preset : getAlgorithmQualityPresets(algorithmDescription)) {
+                String presetName = preset.getName() == null ? preset.getCodeName() : preset.getName().getString();
+                options.add(new QualityPresetOption(
+                        preset.getCodeName(),
+                        presetName,
+                        preset.getUpscaleRatio(),
+                        false
+                ));
+            }
+            return options;
+        });
+
+        List<QualityPresetOption> options = new ArrayList<>(baseOptions);
+        if (isAlgorithmSupportsCustomUpscaleRatio(algorithmDescription)) {
+            options.add(createCustomQualityPresetOption(SuperResolutionConfig.getUpscaleRatio()));
+        }
+        return options;
+    }
+
+    private List<QualityPreset> getAlgorithmQualityPresets(AlgorithmDescription<?> algorithmDescription) {
+        if (algorithmDescription == null) {
+            return List.of();
+        }
+
+        if (SuperResolution.algorithmDescription != null
+                && SuperResolution.algorithmDescription.equals(algorithmDescription)
+                && SuperResolution.currentAlgorithm != null) {
+            return SuperResolution.currentAlgorithm.getQualityPresets();
+        }
+
+        AbstractAlgorithm algorithm = null;
+        try {
+            algorithm = algorithmDescription.createNewInstance();
+            return new ArrayList<>(algorithm.getQualityPresets());
+        } catch (Exception ignored) {
+            return List.of();
+        } finally {
+            if (algorithm != null) {
+                try {
+                    algorithm.destroy();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    private QualityPresetOption resolveQualityPresetOption(List<QualityPresetOption> options, float ratio) {
+        if (options == null || options.isEmpty()) {
+            return createCustomQualityPresetOption(ratio);
+        }
+        for (QualityPresetOption option : options) {
+            if (!option.custom() && isSameRatio(option.upscaleRatio(), ratio)) {
+                return option;
+            }
+        }
+        for (QualityPresetOption option : options) {
+            if (option.custom()) {
+                return option;
+            }
+        }
+        QualityPresetOption closest = options.get(0);
+        float closestDiff = Math.abs(closest.upscaleRatio() - ratio);
+        for (int i = 1; i < options.size(); i++) {
+            QualityPresetOption option = options.get(i);
+            float diff = Math.abs(option.upscaleRatio() - ratio);
+            if (diff < closestDiff) {
+                closest = option;
+                closestDiff = diff;
+            }
+        }
+        return closest;
+    }
+
+    private boolean isAlgorithmSupportsCustomUpscaleRatio(AlgorithmDescription<?> algorithmDescription) {
+        if (algorithmDescription == null) {
+            return true;
+        }
+
+        if (SuperResolution.algorithmDescription != null
+                && SuperResolution.algorithmDescription.equals(algorithmDescription)
+                && SuperResolution.currentAlgorithm != null) {
+            return SuperResolution.currentAlgorithm.isCustomUpscaleRatio();
+        }
+
+        AbstractAlgorithm algorithm = null;
+        try {
+            algorithm = algorithmDescription.createNewInstance();
+            return algorithm.isCustomUpscaleRatio();
+        } catch (Exception ignored) {
+            return true;
+        } finally {
+            if (algorithm != null) {
+                try {
+                    algorithm.destroy();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+    }
+
+    private Map<String, List<QualityPresetOption>> getQualityPresetOptionsCache() {
+        if (qualityPresetOptionsCache == null) {
+            qualityPresetOptionsCache = new HashMap<>();
+        }
+        return qualityPresetOptionsCache;
+    }
+
+    private QualityPresetOption createCustomQualityPresetOption(float ratio) {
+        return new QualityPresetOption(
+                "custom",
+                Text.translatable("superresolution.screen.text.custom").getString(),
+                ratio,
+                true
+        );
+    }
+
+    private boolean isSameRatio(float left, float right) {
+        return Math.abs(left - right) < 0.005f;
     }
 
     private void openLostResourceDialog(List<ExtraResource> resources) {
@@ -1080,6 +1280,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     public boolean isPauseScreen() {
         return SuperResolutionConfig.isPauseGameOnGui();
+    }
+
+    private record QualityPresetOption(String codeName,
+
+                                       String displayName,
+
+                                       float upscaleRatio,
+
+                                       boolean custom) {
     }
 
     private record ContributorInfo(String name,

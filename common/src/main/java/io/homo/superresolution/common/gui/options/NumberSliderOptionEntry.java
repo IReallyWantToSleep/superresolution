@@ -39,6 +39,7 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
     protected Number min;
     protected Number step;
     protected Function<Number, String> valueFormater;
+    private boolean suppressSliderChangeEvent = false;
 
     public NumberSliderOptionEntry(
             Text name,
@@ -86,6 +87,9 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
         slider.setValue(value);
         slider.onChange(event -> {
             this.value = (Number) event.getNewValue();
+            if (suppressSliderChangeEvent) {
+                return;
+            }
             if (saveConsumer != null) {
                 if (!saveConsumer.apply(this.value)) {
                     slider.setValue((Number) event.getOldValue());
@@ -117,6 +121,21 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
         this.valueFormater = formatter;
         if (slider != null) {
             slider.setValueIndicatorTextFormater(formatter);
+        }
+        return this;
+    }
+
+    public NumberSliderOptionEntry setCurrentValue(Number value) {
+        if (slider == null) {
+            this.value = value;
+            return this;
+        }
+        suppressSliderChangeEvent = true;
+        try {
+            slider.setValue(value);
+            this.value = value;
+        } finally {
+            suppressSliderChangeEvent = false;
         }
         return this;
     }

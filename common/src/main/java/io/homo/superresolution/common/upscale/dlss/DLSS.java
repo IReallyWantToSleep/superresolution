@@ -62,8 +62,7 @@ public class DLSS extends AbstractAlgorithm {
     private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
     private static boolean providerLoaded = false;
     private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
-            INITIAL_COMMAND_BUFFER_RING_SIZE
-    );
+            INITIAL_COMMAND_BUFFER_RING_SIZE);
     private SRUpscaleContext context;
     private GlImportableTexture2D inputColorGlTexture;
     private VulkanTexture inputColorVkTexture;
@@ -122,10 +121,15 @@ public class DLSS extends AbstractAlgorithm {
                 EnumSet.of(
                         SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
                         SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED,
-                        SRUpscaleContextCreateFlags.ENABLE_DEBUG
-                )
+                        SRUpscaleContextCreateFlags.ENABLE_DEBUG));
+        upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH",
+                SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
         );
-        upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH", SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString());
+        upscaleContextDesc.extraParams.setInt32(
+                "DLSS_RENDER_PRESET",
+                SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
+        );
+
         SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
                 context,
                 provider,
@@ -285,7 +289,8 @@ public class DLSS extends AbstractAlgorithm {
                         GL_LAYOUT_SHADER_READ_ONLY_EXT
                 });
 
-        //vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getGraphicsQueue());
+        // vkQueueWaitIdle(((VulkanDevice)
+        // RenderSystems.vulkan().device()).getGraphicsQueue());
 
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
         VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
@@ -302,19 +307,16 @@ public class DLSS extends AbstractAlgorithm {
                         dispatchResource.frameCount(),
                         dispatchResource.renderSize(),
                         dispatchResource.screenSize())
-                        .mul(new Vector2f(1, 1))
-        );
+                        .mul(new Vector2f(1, 1)));
         desc.setMotionVectorScale(new Vector2f(1));
         desc.setRenderSize(
                 new Vector2i(
                         dispatchResource.renderWidth(),
-                        dispatchResource.renderHeight())
-        );
+                        dispatchResource.renderHeight()));
         desc.setUpscaleSize(
                 new Vector2i(
                         dispatchResource.screenWidth(),
-                        dispatchResource.screenHeight())
-        );
+                        dispatchResource.screenHeight()));
         desc.setFrameTimeDelta(dispatchResource.frameTimeDelta());
         desc.setEnableSharpening(true);
         desc.setSharpness(SuperResolutionConfig.getSharpness());
@@ -335,8 +337,7 @@ public class DLSS extends AbstractAlgorithm {
                 commandBuffer,
                 new long[]{syncSemaphore.getVkSemaphoreHandle()},
                 new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                new long[]{syncVkSemaphore.getVkSemaphoreHandle()}
-        );
+                new long[]{syncVkSemaphore.getVkSemaphoreHandle()});
         syncVkSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
                 new int[]{},
@@ -422,25 +423,24 @@ public class DLSS extends AbstractAlgorithm {
     public List<QualityPreset> getQualityPresets() {
         return List.of(
                 new QualityPreset()
-                        .setName(Component.literal("Ultra Performance"))
+                        .setName(Component.translatable("superresolution.algo.preset.dlss.ultra_performance"))
                         .setCodeName("dlss_ultra_performance")
                         .setUpscaleRatio(3.0f),
                 new QualityPreset()
-                        .setName(Component.literal("Performance"))
+                        .setName(Component.translatable("superresolution.algo.preset.dlss.performance"))
                         .setCodeName("dlss_performance")
                         .setUpscaleRatio(2.0f),
                 new QualityPreset()
-                        .setName(Component.literal("Balanced"))
+                        .setName(Component.translatable("superresolution.algo.preset.dlss.balanced"))
                         .setCodeName("dlss_balanced")
                         .setUpscaleRatio(1.724f),
                 new QualityPreset()
-                        .setName(Component.literal("Quality"))
+                        .setName(Component.translatable("superresolution.algo.preset.dlss.quality"))
                         .setCodeName("dlss_quality")
                         .setUpscaleRatio(1.5f),
                 new QualityPreset()
-                        .setName(Component.literal("DLAA"))
+                        .setName(Component.translatable("superresolution.algo.preset.dlss.dlaa"))
                         .setCodeName("dlss_dlaa")
-                        .setUpscaleRatio(1.0f)
-        );
+                        .setUpscaleRatio(1.0f));
     }
 }
