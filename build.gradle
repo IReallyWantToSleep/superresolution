@@ -137,7 +137,7 @@ if (srConfigsDir.exists()) {
             description = "构建版本 ${versionName}"
             buildName = "superresolution_${suffix}"
             dir = rootDir
-            tasks = ["build"]
+            tasks = ["clean", "build"]
             startParameter.projectProperties.put("minecraft_version_config", versionName)
             startParameter.excludedTaskNames.add(":native:build")
             startParameter.consoleOutput = ConsoleOutput.Plain

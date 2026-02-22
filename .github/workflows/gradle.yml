@@ -39,10 +39,6 @@ jobs:
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
-      
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -62,6 +58,10 @@ jobs:
           path: |
             common/src/main/resources/lib
           key: native-libs-linux-${{ hashFiles('native/**') }}
+
+      - name: Install Python packages
+        if: steps.native-cache-linux.outputs.cache-hit != 'true'
+        run: pip install pyyaml simplejson
 
       - name: Initialize
         if: steps.native-cache-linux.outputs.cache-hit != 'true'
@@ -126,6 +126,10 @@ jobs:
             common/src/main/resources/lib
           key: native-libs-windows-${{ hashFiles('native/**') }}
 
+      - name: Install Python packages
+        if: steps.native-cache-windows.outputs.cache-hit != 'true'
+        run: pip install pyyaml simplejson
+
       - name: Initialize
         if: steps.native-cache-windows.outputs.cache-hit != 'true'
         working-directory: native/cpp
@@ -167,18 +171,6 @@ jobs:
           name: native-libs-windows
           path: common/src/main/resources/lib
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y cmake build-essential ninja-build
-
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
-        with:
-          vulkan-query-version: 1.4.321.1
-          vulkan-components: Vulkan-Headers,Vulkan-Loader,SPIRV-Cross,SPIRV-Tools,Glslang
-          vulkan-use-cache: true
-
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
@@ -192,10 +184,6 @@ jobs:
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
