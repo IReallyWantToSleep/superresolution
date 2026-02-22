@@ -58,6 +58,8 @@ jobs:
           path: |
             common/src/main/resources/lib
           key: native-libs-linux-${{ hashFiles('native/**') }}
+          restore-keys: |
+            native-libs-linux-
 
       - name: Install Python packages
         if: steps.native-cache-linux.outputs.cache-hit != 'true'
@@ -125,6 +127,8 @@ jobs:
           path: |
             common/src/main/resources/lib
           key: native-libs-windows-${{ hashFiles('native/**') }}
+          restore-keys: |
+            native-libs-windows-
 
       - name: Install Python packages
         if: steps.native-cache-windows.outputs.cache-hit != 'true'
