@@ -94,6 +94,14 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
         return new Vector2f(0);
     }
 
+    public int getJitterSequenceLength(
+            int frameCount,
+            Vector2f renderSize,
+            Vector2f screenSize
+    ) {
+        return 0;
+    }
+
     public boolean isSupportJitter() {
         return false;
     }

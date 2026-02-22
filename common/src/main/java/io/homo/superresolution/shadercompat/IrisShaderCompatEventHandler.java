@@ -53,16 +53,30 @@ public class IrisShaderCompatEventHandler {
     }
 
     private static void onCompositeRendererRenderAfter(IrisCompositePassRenderingEvent.AfterPassRender event) {
-        if (!IrisShaderCompatUtils.shouldApplySuperResolutionChanges()) return;
-        if (event.getCompositeRenderer() == null) return;
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return;
+        if (!IrisShaderCompatUtils.shouldApplySuperResolutionChanges()) {
+            return;
+        }
+        if (event.getCompositeRenderer() == null) {
+            return;
+        }
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
+            return;
+        }
         SRShaderCompatData.WorldProfile config = IrisShaderCompatUtils.getCurrentConfig().get();
-        if (!config.enabled || !config.upscale.enabled) return;
-        if (Iris.getPipelineManager().getPipeline().isEmpty()) return;
-        if (config.upscale.trigger.order != SRShaderCompatData.PipelineTrigger.Order.AFTER) return;
+        if (!config.enabled || !config.upscale.enabled) {
+            return;
+        }
+        if (Iris.getPipelineManager().getPipeline().isEmpty()) {
+            return;
+        }
+        if (config.upscale.trigger.order != SRShaderCompatData.PipelineTrigger.Order.AFTER) {
+            return;
+        }
         String targetPassName = config.upscale.trigger.passName;
         String currentPassName = event.getPassName();
-        if (!targetPassName.equals(currentPassName)) return;
+        if (!targetPassName.equals(currentPassName)) {
+            return;
+        }
 
         try {
             //检查renderTargets是不是null以及是否被销毁，否则1.21.5+会报Tried to use destroyed RenderTargets
@@ -88,16 +102,30 @@ public class IrisShaderCompatEventHandler {
     }
 
     private static void onCompositeRendererRenderBefore(IrisCompositePassRenderingEvent.BeforePassRender event) {
-        if (!IrisShaderCompatUtils.shouldApplySuperResolutionChanges()) return;
-        if (event.getCompositeRenderer() == null) return;
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return;
+        if (!IrisShaderCompatUtils.shouldApplySuperResolutionChanges()) {
+            return;
+        }
+        if (event.getCompositeRenderer() == null) {
+            return;
+        }
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
+            return;
+        }
         SRShaderCompatData.WorldProfile config = IrisShaderCompatUtils.getCurrentConfig().get();
-        if (!config.enabled || !config.upscale.enabled) return;
-        if (Iris.getPipelineManager().getPipeline().isEmpty()) return;
-        if (config.upscale.trigger.order != SRShaderCompatData.PipelineTrigger.Order.BEFORE) return;
+        if (!config.enabled || !config.upscale.enabled) {
+            return;
+        }
+        if (Iris.getPipelineManager().getPipeline().isEmpty()) {
+            return;
+        }
+        if (config.upscale.trigger.order != SRShaderCompatData.PipelineTrigger.Order.BEFORE) {
+            return;
+        }
         String targetPassName = config.upscale.trigger.passName;
         String currentPassName = event.getPassName();
-        if (!targetPassName.equals(currentPassName)) return;
+        if (!targetPassName.equals(currentPassName)) {
+            return;
+        }
 
         try {
             //检查renderTargets是不是null以及是否被销毁，否则1.21.5+会报Tried to use destroyed RenderTargets
@@ -156,6 +184,13 @@ public class IrisShaderCompatEventHandler {
                     Integer.toString(SuperResolutionAPI.getScreenWidth()));
             event.registerMacro("SR_SCREEN_HEIGHT",
                     Integer.toString(SuperResolutionAPI.getScreenHeight()));
+            event.registerMacro("SR_UPSCALE_RATIO",
+                    Float.toString(SuperResolutionConfig.getUpscaleRatio()));
+            event.registerMacro("SR_RENDER_SCALE_FACTOR",
+                    Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
+            event.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
+                    Integer.toString(SuperResolution.getCurrentAlgorithm().isSupportJitter() ?
+                            AlgorithmManager.getJitterSequenceLength() : 0));
 
         } else {
             event.registerMacro("SR_ENABLE", "0");
@@ -172,6 +207,11 @@ public class IrisShaderCompatEventHandler {
                     Integer.toString(SuperResolutionAPI.getScreenWidth()));
             event.registerMacro("SR_SCREEN_HEIGHT",
                     Integer.toString(SuperResolutionAPI.getScreenHeight()));
+            event.registerMacro("SR_UPSCALE_RATIO",
+                    Float.toString(1.0f));
+            event.registerMacro("SR_RENDER_SCALE_FACTOR",
+                    Float.toString(1.0f));
+            event.registerMacro("SR_JITTER_SEQUENCE_LENGTH", "0");
         }
     }
 
@@ -227,8 +267,9 @@ public class IrisShaderCompatEventHandler {
                 UniformUpdateFrequency.PER_FRAME,
                 "SRJitterOffset",
                 () -> {
-                    if (!SuperResolution.getCurrentAlgorithm().isSupportJitter())
+                    if (!SuperResolution.getCurrentAlgorithm().isSupportJitter()) {
                         return new Vector2f(0);
+                    }
                     Vector2f jitterOffset = AlgorithmManager.getJitterOffset();
                     return new Vector2f(jitterOffset.x, jitterOffset.y);
                 });
@@ -236,8 +277,9 @@ public class IrisShaderCompatEventHandler {
                 UniformUpdateFrequency.PER_FRAME,
                 "SRPreviousJitterOffset",
                 () -> {
-                    if (!SuperResolution.getCurrentAlgorithm().isSupportJitter())
+                    if (!SuperResolution.getCurrentAlgorithm().isSupportJitter()) {
                         return new Vector2f(0);
+                    }
                     Vector2f jitterOffset = AlgorithmManager.getPreviousJitterOffset();
                     return new Vector2f(jitterOffset.x, jitterOffset.y);
                 });

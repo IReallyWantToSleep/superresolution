@@ -10,3 +10,6 @@
 [submodule "native/cpp/SRNativeFSR/SDK"]
 	path = native/cpp/SRNativeFSR/SDK
 	url = https://github.com/187J3X1-114514/FidelityFX-SDK-UpscaleOnly
+[submodule "native/cpp/SRNativeXeSS/third_party/XeSS"]
+	path = native/cpp/SRNativeXeSS/third_party/XeSS
+	url = https://github.com/intel/xess

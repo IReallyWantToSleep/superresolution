@@ -402,6 +402,11 @@ public class FfxFSR extends AbstractAlgorithm {
     }
 
     @Override
+    public int getJitterSequenceLength(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        return Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+    }
+
+    @Override
     public boolean isSupportJitter() {
         return true;
     }

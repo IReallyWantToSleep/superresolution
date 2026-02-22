@@ -141,6 +141,17 @@ public class AlgorithmManager {
         return new Vector2f(0);
     }
 
+    public static int getJitterSequenceLength() {
+        if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
+            return SuperResolutionAPI.getCurrentAlgorithm().getJitterSequenceLength(
+                    RenderHandlerManager.getFrameCount(),
+                    new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
+                    new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
+            );
+        }
+        return 0;
+    }
+
 
     public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
         Matrix4f jitteredProj = new Matrix4f(proj);

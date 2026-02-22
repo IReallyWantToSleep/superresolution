@@ -267,6 +267,7 @@ public class SuperResolutionConfig {
                     RenderHandlerManager.getScreenWidth(),
                     RenderHandlerManager.getScreenHeight()
             );
+            ShaderCompatHandler.irisApiReloadShader();
         };
     }
 

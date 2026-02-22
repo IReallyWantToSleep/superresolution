@@ -412,29 +412,13 @@ public class XeSS extends AbstractAlgorithm {
     }
 
     @Override
-    public boolean isSupportJitter() {
-        return true;
-    }
-
-    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-            return new Vector2f(0);
-        }
-        // halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
-        // R2 参考PhotonShader
-        /*
-         * return new Vector2f(
-         * (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
-         * (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
-         * );
-         */
+    public int getJitterSequenceLength(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        return Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
     }
 
     @Override
-    public boolean isCustomUpscaleRatio() {
-        return false;
+    public boolean isSupportJitter() {
+        return true;
     }
 
     @Override
@@ -469,5 +453,26 @@ public class XeSS extends AbstractAlgorithm {
                         .setCodeName("xess_native_aa")
                         .setUpscaleRatio(1.0f)
         );
+    }
+
+    @Override
+    public boolean isCustomUpscaleRatio() {
+        return false;
+    }
+
+    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
+        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return new Vector2f(0);
+        }
+        // halton
+        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
+        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
+        // R2 参考PhotonShader
+        /*
+         * return new Vector2f(
+         * (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
+         * (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
+         * );
+         */
     }
 }
