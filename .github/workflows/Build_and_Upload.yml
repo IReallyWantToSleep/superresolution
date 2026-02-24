@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  build:
+  build-native-linux:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -40,17 +40,137 @@ jobs:
           java-version: 21
           distribution: temurin
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-          
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build
+      - name: Restore native cache (Linux)
+        id: native-cache-linux
+        uses: actions/cache@v4
+        with:
+          path: |
+            common/src/main/resources/lib
+          key: native-libs-linux-${{ hashFiles('native/**') }}
+          restore-keys: |
+            native-libs-linux-
+
+      - name: Install Python packages
+        if: steps.native-cache-linux.outputs.cache-hit != 'true'
+        run: pip install pyyaml simplejson
+
+      - name: Initialize
+        if: steps.native-cache-linux.outputs.cache-hit != 'true'
+        working-directory: native/cpp
+        run: python init.py
+
+      - name: Build native libraries (Linux)
+        if: ${{ !cancelled() && steps.native-cache-linux.outputs.cache-hit != 'true' }}
+        run: ./gradlew buildNative
+        continue-on-error: true
+
+      - name: Upload Linux native libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-linux
+          path: |
+            common/src/main/resources/lib/**/*.so
+          if-no-files-found: error
+
+  build-native-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.321.1
+          vulkan-components: Vulkan-Headers,Vulkan-Loader,SPIRV-Cross,SPIRV-Tools,Glslang
+          vulkan-use-cache: true
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore native cache (Windows)
+        id: native-cache-windows
+        uses: actions/cache@v4
+        with:
+          path: |
+            common/src/main/resources/lib
+          key: native-libs-windows-${{ hashFiles('native/**') }}
+          restore-keys: |
+            native-libs-windows-
+
+      - name: Install Python packages
+        if: steps.native-cache-windows.outputs.cache-hit != 'true'
+        run: pip install pyyaml simplejson
+
+      - name: Initialize
+        if: steps.native-cache-windows.outputs.cache-hit != 'true'
+        working-directory: native/cpp
+        run: python init.py
+
+      - name: Build native libraries (Windows)
+        if: ${{ !cancelled() && steps.native-cache-windows.outputs.cache-hit != 'true' }}
+        run: .\gradlew.bat buildNative
+        continue-on-error: true
+
+      - name: Upload Windows native libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-windows
+          path: |
+            common/src/main/resources/lib/**/*.dll
+          if-no-files-found: error
+
+  build-and-upload:
+    needs: [build-native-linux, build-native-windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download Linux native libraries
+        uses: actions/download-artifact@v4
+        with:
+          name: native-libs-linux
+          path: common/src/main/resources/lib
+
+      - name: Download Windows native libraries
+        uses: actions/download-artifact@v4
+        with:
+          name: native-libs-windows
+          path: common/src/main/resources/lib
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build all versions
         id: build
         if: ${{ !cancelled() }}
-        run: ./gradlew buildAll
+        run: ./gradlew buildAllVersions
         continue-on-error: true
 
       - name: Upload Artifacts
