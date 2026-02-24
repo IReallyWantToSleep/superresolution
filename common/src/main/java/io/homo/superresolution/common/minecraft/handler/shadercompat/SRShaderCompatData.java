@@ -21,6 +21,7 @@ package io.homo.superresolution.common.minecraft.handler.shadercompat;
 
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector2f;
 
 import java.util.Collections;
 import java.util.List;
@@ -91,9 +92,132 @@ public class SRShaderCompatData {
 
     public static class JitterConfig {
         public final boolean enabled;
+        public final JitterSource source;
+        public final JitterSourceConfig sourceConfig;
+
+        public enum JitterSource {
+            MOD,
+            SHADERPACK
+        }
 
         public JitterConfig(boolean enabled) {
+            this(enabled, JitterSource.MOD, null);
+        }
+
+        public JitterConfig(boolean enabled, JitterSource source, JitterSourceConfig sourceConfig) {
             this.enabled = enabled;
+            this.source = source;
+            this.sourceConfig = sourceConfig;
+        }
+    }
+
+    public static class JitterSourceConfig {
+        public final SourceConfig jitterOffset;
+        public final SourceConfig jitterSequenceLength;
+
+        public JitterSourceConfig(SourceConfig jitterOffset, SourceConfig jitterSequenceLength) {
+            this.jitterOffset = jitterOffset;
+            this.jitterSequenceLength = jitterSequenceLength;
+        }
+
+        public Vector2f getJitterOffset(ShaderPipelineContext context) {
+            if (jitterOffset.source == SourceConfig.SourceType.CONST){
+                if (jitterOffset.type == SourceConfig.ValueType.VECTOR2F) {
+                    return new Vector2f(
+                            Float.parseFloat(((List<?>) jitterOffset.value).get(0).toString()),
+                            Float.parseFloat(((List<?>) jitterOffset.value).get(1).toString())
+                    );
+                } else {
+                    throw new IllegalArgumentException("Invalid type for jitterOffset: " + jitterOffset.type);
+                }
+            } else {
+                if(jitterOffset.source == SourceConfig.SourceType.UNIFORM) {
+                    Object value = context.getCustomUniformValue((String) jitterOffset.value);
+                    if (value instanceof Vector2f) {
+                        return (Vector2f) value;
+                    } else {
+                        throw new IllegalArgumentException("Expected Vector2f for uniform " + jitterOffset.value);
+                    }
+                } else if (jitterOffset.source == SourceConfig.SourceType.VARIABLE) {
+                    Object value = context.getCustomVariableValue((String) jitterOffset.value);
+                    if (value instanceof Vector2f) {
+                        return (Vector2f) value;
+                    } else {
+                        throw new IllegalArgumentException("Expected Vector2f for variable " + jitterOffset.value);
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unsupported source type for jitterOffset: " + jitterOffset.source);
+                }
+            }
+        }
+
+        public int getJitterSequenceLength(ShaderPipelineContext context) {
+            if (jitterSequenceLength.source == SourceConfig.SourceType.CONST){
+                if (jitterSequenceLength.type == SourceConfig.ValueType.VECTOR2F) {
+                    return Integer.parseInt((jitterSequenceLength.value).toString());
+                } else {
+                    throw new IllegalArgumentException("Invalid type for jitterSequenceLength: " + jitterSequenceLength.type);
+                }
+            } else {
+                if(jitterSequenceLength.source == SourceConfig.SourceType.UNIFORM) {
+                    Object value = context.getCustomUniformValue((String) jitterSequenceLength.value);
+                    if (value instanceof Integer) {
+                        return (Integer) value;
+                    } else {
+                        throw new IllegalArgumentException("Expected Integer for uniform " + jitterSequenceLength.value);
+                    }
+                } else if (jitterSequenceLength.source == SourceConfig.SourceType.VARIABLE) {
+                    Object value = context.getCustomVariableValue((String) jitterSequenceLength.value);
+                    if (value instanceof Integer) {
+                        return (Integer) value;
+                    } else {
+                        throw new IllegalArgumentException("Expected Integer for variable " + jitterSequenceLength.value);
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unsupported source type for jitterSequenceLength: " + jitterSequenceLength.source);
+                }
+            }
+        }
+    }
+
+    public static class SourceConfig {
+        public enum SourceType {
+            CONST,
+            VARIABLE,
+            UNIFORM;
+            public static SourceType fromString(String value) {
+                for (SourceType type : values()) {
+                    if (type.name().equalsIgnoreCase(value)) {
+                        return type;
+                    }
+                }
+                throw new IllegalArgumentException("Invalid SourceType: " + value);
+            }
+        }
+        public enum ValueType {
+            FLOAT,
+            INT,
+            UINT,
+            VECTOR2F,
+            VECTOR3F,
+            VECTOR4F;
+            public static ValueType fromString(String value) {
+                for (ValueType type : values()) {
+                    if (type.name().equalsIgnoreCase(value)) {
+                        return type;
+                    }
+                }
+                throw new IllegalArgumentException("Invalid ValueType: " + value);
+            }
+        }
+        public final SourceType source; // const/variable/uniform
+        public final ValueType type; // float,int,uint,vector2f,vector3f,vector4f
+        public final Object value; // for const: the actual value; for variable/uniform: the name
+
+        public SourceConfig(String source, String type, Object value) {
+            this.source = SourceType.fromString(source);
+            this.type = ValueType.fromString(type);
+            this.value = value;
         }
     }
 

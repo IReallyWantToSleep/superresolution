@@ -45,12 +45,31 @@ public class ImGuiLayer {
 
     public float[] blurPhi = new float[1];
     public float[] blurM = new float[1];
+    public static final float[] jitterScaleAlgo = new float[1];
+    public static final float[] jitterScaleShader = new float[1];
+    public static final int[] jitterOffsetFrameOffsetAlgo = new int[1];
+    public static final int[] jitterOffsetFrameOffsetShader = new int[1];
 
+    public static final float[] jitterOffset = new float[4];
     public void imgui() {
         float previewHeight = ((float) PREVIEW_WIDTH / RenderHandlerManager.getScreenWidth()) * RenderHandlerManager.getScreenHeight();
 
         ImGui.begin("DEBUG");
         drawCaptureButtons();
+        ImGui.sliderFloat("jitterScaleAlgo",jitterScaleAlgo,-3,3);
+        ImGui.sliderFloat("jitterScaleShader",jitterScaleShader,-3,3);
+        ImGui.sliderInt("jitterOffsetFrameOffsetAlgo",jitterOffsetFrameOffsetAlgo,-3,3);
+        ImGui.sliderInt("jitterOffsetFrameOffsetShader",jitterOffsetFrameOffsetShader,-3,3);
+
+        ImGui.text("Shader Jitter: %.2f  %.2f".formatted(jitterOffset[0],jitterOffset[1]));
+        ImGui.text("Algo Jitter: %.2f  %.2f".formatted(jitterOffset[2],jitterOffset[3]));
+
+        ImGui.text("Jitter: %s  %s".formatted(
+                Math.abs(jitterOffset[0] - jitterOffset[2]) < 1e-6,
+                Math.abs(jitterOffset[1] - jitterOffset[3]) < 1e-6
+                )
+        );
+
         if (!SuperResolution.gameIsLoaded || SuperResolution.currentAlgorithm == null || Minecraft.getInstance().level == null) {
             ImGui.end();
             return;

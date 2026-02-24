@@ -107,14 +107,30 @@ public class Fsr2Utils {
         return (int) jitterPhaseCount;
     }
 
-    public static Vector2f ffxFsr2GetJitterOffset(int index, int phaseCount) {
-        if (!(phaseCount > 0)) {
+    public static Vector2f ffxFsr2GetJitterOffset(int index, int phaseCount) {if (!(phaseCount > 0)) {
             throw new RuntimeException();
         }
 
         float x = halton((index % phaseCount) + 1, 2) - 0.5f;
         float y = halton((index % phaseCount) + 1, 3) - 0.5f;
 
-        return new Vector2f(x, y);
+        //if (index % 4 == 0){
+        //    x = 1;
+        //    y = 1;
+        //}
+        //if (index % 4 == 1){
+        //    x = 0;
+        //    y = 0;
+        //}
+        //if (index % 4 == 2){
+        //    x = 1;
+        //    y = 1;
+        //}
+        //if (index % 4 == 3){
+        //    x = 1;
+        //    y = 1;
+        //}
+
+        return new Vector2f(x , y);
     }
 }

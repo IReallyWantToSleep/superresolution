@@ -39,6 +39,8 @@ public record DispatchResource(
 
         float cameraNear,
         float cameraFar,
+        Vector2f jitterOffset,
+        int jitterSeq,
 
         Matrix4f modelViewMatrix,
         Matrix4f projectionMatrix,
@@ -49,6 +51,7 @@ public record DispatchResource(
         Matrix4f lastProjectionMatrix,
         Matrix4f lastModelViewProjectionMatrix,
         Matrix4f lastViewMatrix,
+
         InputResourceSet resources
 ) {
 }

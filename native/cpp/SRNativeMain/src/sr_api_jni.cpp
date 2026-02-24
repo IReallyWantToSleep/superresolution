@@ -194,7 +194,7 @@ extern "C"
         desc.renderApiType = static_cast<SRRenderApiType>(renderApiType);
         desc.renderSize = {static_cast<uint32_t>(renderSizeX), static_cast<uint32_t>(renderSizeY)};
         desc.upscaledSize = {static_cast<uint32_t>(upscaledSizeX), static_cast<uint32_t>(upscaledSizeY)};
-        desc.flags = static_cast<uint32_t>(flags);
+        desc.flags = static_cast<uint32_t>(static_cast<int32_t>(flags));
         desc.messageCallback = sr_message_callback_bridge;
 
         if (extraParamsPtr != 0)

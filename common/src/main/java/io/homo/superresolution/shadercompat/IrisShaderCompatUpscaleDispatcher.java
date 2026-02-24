@@ -19,12 +19,15 @@
 package io.homo.superresolution.shadercompat;
 
 
+import io.homo.irisapi.IrisAPI;
+import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
@@ -66,7 +69,36 @@ public class IrisShaderCompatUpscaleDispatcher {
     private static SRShaderCompatData.InputTexture lastMotionConfig;
 
     private static CompositeRenderer cachedCompositeRenderer;
+    private static NamedCompositePass cachedNamedCompositePass;
 
+    public static Vector2f getJitterOffset(){
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return new Vector2f(0,0);
+        SRShaderCompatData.WorldProfile profile = IrisShaderCompatUtils.getCurrentConfig().get();
+        if (profile.jitter.source == SRShaderCompatData.JitterConfig.JitterSource.MOD){
+            Vector2f jitter = AlgorithmManager.getJitterOffset();
+            return jitter;
+        }else {
+            Vector2f jitter = profile.jitter.sourceConfig.getJitterOffset(
+                    new IrisShaderPipelineContext(IrisAPI.getIrisRenderingPipeline())
+            );
+            if (jitter == null) {
+                return new Vector2f(0, 0);
+            }
+            return jitter;
+        }
+    }
+
+    public static int getJitterSequenceLength(){
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return 0;
+        SRShaderCompatData.WorldProfile profile = IrisShaderCompatUtils.getCurrentConfig().get();
+        if (profile.jitter.source == SRShaderCompatData.JitterConfig.JitterSource.MOD){
+            return AlgorithmManager.getJitterSequenceLength();
+        }else {
+            return profile.jitter.sourceConfig.getJitterSequenceLength(
+                    new IrisShaderPipelineContext(IrisAPI.getIrisRenderingPipeline())
+            );
+        }
+    }
 
     public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer) {
         return new DispatchResource(
@@ -84,6 +116,8 @@ public class IrisShaderCompatUpscaleDispatcher {
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,
                 Minecraft.getInstance().gameRenderer.getDepthFar(),
+                getJitterOffset(),
+                getJitterSequenceLength(),
                 param.currentModelViewMatrix,
                 param.currentProjectionMatrix,
                 param.currentModelViewProjectionMatrix,
@@ -135,7 +169,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 c1.region.equals(c2.region);
     }
 
-    public static void dispatchUpscale(CompositeRenderer compositeRenderer) {
+    public static void dispatchUpscale(CompositeRenderer compositeRenderer, NamedCompositePass pass) {
         if (!SuperResolutionConfig.isEnableUpscale()) {
             return;
         }
@@ -150,6 +184,11 @@ public class IrisShaderCompatUpscaleDispatcher {
 
         if (!compositeRenderer.equals(cachedCompositeRenderer)) {
             cachedCompositeRenderer = compositeRenderer;
+            needUpdate = true;
+        }
+
+        if (!pass.equals(cachedNamedCompositePass)) {
+            cachedNamedCompositePass = pass;
             needUpdate = true;
         }
 
@@ -172,21 +211,21 @@ public class IrisShaderCompatUpscaleDispatcher {
                 if (colorTexture != null && colorTexture.getInternalTexture() != null) {
                     colorTexture.getInternalTexture().destroy();
                 }
-                colorTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, colorConfig);
+                colorTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, colorConfig,pass);
                 lastColorConfig = colorConfig;
             }
             if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig) || needUpdate) {
                 if (depthTexture != null && depthTexture.getInternalTexture() != null) {
                     depthTexture.getInternalTexture().destroy();
                 }
-                depthTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, depthConfig);
+                depthTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, depthConfig,pass);
                 lastDepthConfig = depthConfig;
             }
             if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig) || needUpdate) {
                 if (motionVectorsTexture != null && motionVectorsTexture.getInternalTexture() != null) {
                     motionVectorsTexture.getInternalTexture().destroy();
                 }
-                motionVectorsTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, motionConfig);
+                motionVectorsTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, motionConfig,pass);
                 lastMotionConfig = motionConfig;
             }
             GlDebug.pushGroup(64108436, "SRUpscale-CopyInput");
@@ -242,10 +281,17 @@ public class IrisShaderCompatUpscaleDispatcher {
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
         if (currentConfig.outputTextures.get("upscaled_color").enabled) {
             for (String targetName : currentConfig.outputTextures.get("upscaled_color").targetNames) {
-                ITexture targetTexture = IrisTextureResolver.getIrisTexture(compositeRenderer, targetName);
+                ITexture targetTexture = IrisTextureResolver.getIrisTexture(
+                        compositeRenderer,
+                        targetName,
+                        pass,
+                        false
+                );
                 ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
                 if (targetTexture != null && sourceTexture != null) {
-                    if (targetTexture.getTextureFormat() != sourceTexture.getTextureFormat()) {
+                    if (
+                            targetTexture.getTextureFormat() != sourceTexture.getTextureFormat()
+                    ) {
                         GlTextureCopier.copy(
                                 CopyOperation.create()
                                         .src(outFbo.getTexture(FrameBufferAttachmentType.Color))

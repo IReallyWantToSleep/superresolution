@@ -129,16 +129,6 @@ public class FSR2 extends AbstractAlgorithm {
     }
 
     @Override
-    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        //return new Vector2f(0);
-        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-        return new Vector2f(
-                originJitter.x,
-                originJitter.y
-        );
-    }
-
-    @Override
     public boolean isSupportJitter() {
         return true;
     }
@@ -156,41 +146,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.setDepth(resources.depthTexture());
         dispatchDescription.setMotionVectors(resources.motionVectorsTexture());
         dispatchDescription.setOutput(this.output);
-        dispatchDescription.setJitterOffset(
-                getOriginJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize()
-                )
-        );
-        /*
-        SuperResolution.LOGGER.info(
-                "FSR2 {} {}", getJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize()
-                ).x,
-                getJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize()
-                ).y
-
-        );
-        SuperResolution.LOGGER.info(
-                "FSR2OG {} {}", getOriginJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize()
-                ).x,
-                getOriginJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize()
-                ).y
-
-        );
-        */
+        dispatchDescription.setJitterOffset(dispatchResource.jitterOffset());
         dispatchDescription.setExposure(exposureTexture);
         dispatchDescription.setRenderSize(new Vector2f(
                 dispatchResource.renderWidth(),
@@ -214,21 +170,5 @@ public class FSR2 extends AbstractAlgorithm {
         commandBuffer.end();
         RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
         return true;
-    }
-
-    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-            return new Vector2f(0);
-        }
-        //halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
-        //R2 参考PhotonShader
-        /*
-        return new Vector2f(
-                (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
-                (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
-        );
-        */
     }
 }

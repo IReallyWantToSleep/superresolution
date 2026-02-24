@@ -46,6 +46,7 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
+import org.joml.Vector2f;
 import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
@@ -233,13 +234,17 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                             dispatchResource = AlgorithmManager.getDispatchResource(
                                     colorTexture,
                                     depthTexture,
-                                    AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color)
+                                    AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color),
+                                    new Vector2f(0),
+                                    0
                             );
                         } else {
                             dispatchResource = AlgorithmManager.getDispatchResource(
                                     colorTexture,
                                     depthTexture,
-                                    null
+                                    null,
+                                    new Vector2f(0),
+                                    0
                             );
                         }
                         GlDebug.popGroup();

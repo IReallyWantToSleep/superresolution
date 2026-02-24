@@ -18,16 +18,21 @@
 
 package io.homo.superresolution.shadercompat;
 
+import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 
 public class IrisTextureConfigResolver {
 
-    public static ShaderCompatTextureInfo createForInput(CompositeRenderer renderer, SRShaderCompatData.InputTexture config) {
+    public static ShaderCompatTextureInfo createForInput(
+            CompositeRenderer renderer,
+            SRShaderCompatData.InputTexture config,
+            NamedCompositePass pass
+    ) {
         return new ShaderCompatTextureInfo(
                 () -> IrisTextureResolver.getIrisTexture(
-                        renderer, config.sourceName
+                        renderer, config.sourceName,pass
                 ), config.region,
                 false,
                 config.sourceName

@@ -25,6 +25,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
@@ -119,55 +120,46 @@ public class AlgorithmManager {
 
     public static Vector2f getPreviousJitterOffset() {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
-            Vector2f jitter = SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
+            return Fsr2Utils.ffxFsr2GetJitterOffset(
                     RenderHandlerManager.getFrameCount() - 1,
-                    new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                    new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
+                    Fsr2Utils.ffxFsr2GetJitterPhaseCount(
+                            RenderHandlerManager.getRenderWidth(),
+                            RenderHandlerManager.getScreenWidth()
+                    )
             );
-            return jitter;
         }
         return new Vector2f(0);
     }
 
     public static Vector2f getJitterOffset() {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
-            Vector2f jitter = SuperResolutionAPI.getCurrentAlgorithm().getJitterOffset(
+            return Fsr2Utils.ffxFsr2GetJitterOffset(
                     RenderHandlerManager.getFrameCount(),
-                    new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                    new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
+                    Fsr2Utils.ffxFsr2GetJitterPhaseCount(
+                            RenderHandlerManager.getRenderWidth(),
+                            RenderHandlerManager.getScreenWidth()
+                    )
             );
-            return jitter;
         }
         return new Vector2f(0);
     }
 
     public static int getJitterSequenceLength() {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
-            return SuperResolutionAPI.getCurrentAlgorithm().getJitterSequenceLength(
-                    RenderHandlerManager.getFrameCount(),
-                    new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                    new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
+            return Fsr2Utils.ffxFsr2GetJitterPhaseCount(
+                    RenderHandlerManager.getRenderWidth(),
+                    RenderHandlerManager.getScreenWidth()
             );
         }
         return 0;
     }
 
-
-    public static Matrix4f applyJitterOffset(Matrix4f proj, Vector2f jitter) {
-        Matrix4f jitteredProj = new Matrix4f(proj);
-        float jx_ndc = (2.0f * jitter.x) / RenderHandlerManager.getRenderWidth();
-        float jy_ndc = (2.0f * jitter.y) / RenderHandlerManager.getRenderHeight();
-        jitteredProj.m20(jitteredProj.m20() + jx_ndc);
-        jitteredProj.m21(jitteredProj.m21() + jy_ndc);
-
-        return jitteredProj;
-    }
-
-
     public static DispatchResource getDispatchResource(
             ITexture color,
             ITexture depth,
-            ITexture motionVectors
+            ITexture motionVectors,
+            Vector2f jitterOffset,
+            int jitterSequenceLength
     ) {
         return new DispatchResource(
                 RenderHandlerManager.getRenderWidth(),
@@ -184,6 +176,8 @@ public class AlgorithmManager {
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 0.05F,
                 Minecraft.getInstance().gameRenderer.getDepthFar(),
+                jitterOffset,
+                jitterSequenceLength,
                 param.currentModelViewMatrix,
                 param.currentProjectionMatrix,
                 param.currentModelViewProjectionMatrix,

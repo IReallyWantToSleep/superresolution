@@ -26,6 +26,7 @@ import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -100,10 +101,10 @@ public class RenderHandlerManager {
     }
 
     public static void onFrameBegin() {
+        frameCount++;
     }
 
     public static void onFrameEnd() {
-        frameCount++;
     }
 
     public static void onRenderWorldBegin(CallType type) {

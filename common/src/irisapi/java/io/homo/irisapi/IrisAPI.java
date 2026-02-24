@@ -18,10 +18,21 @@
 
 package io.homo.irisapi;
 
+import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
+import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
 import net.neoforged.bus.EventBus;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.IEventBus;
 
 public class IrisAPI {
     public static final IEventBus EVENT_BUS = BusBuilder.builder().build();
+
+    public static IrisRenderingPipeline getIrisRenderingPipeline() {
+        WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipelineNullable();
+        if (pipeline instanceof  IrisRenderingPipeline) {
+            return (IrisRenderingPipeline) pipeline;
+        }
+        return null;
+    }
 }

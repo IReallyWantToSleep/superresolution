@@ -18,6 +18,9 @@
 
 package io.homo.superresolution.shadercompat;
 
+import com.google.common.collect.ImmutableSet;
+import io.homo.irisapi.IrisReflectionUtils;
+import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlOnlyNameTexture;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
@@ -30,14 +33,27 @@ import static org.lwjgl.opengl.GL11.GL_DEPTH_COMPONENT;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 
 public class IrisTextureResolver {
+    private static final String AUTO_PREFIX = "autotex";
     private static final String COLOR_PREFIX = "colortex";
     private static final String ALT_PREFIX = "alttex";
     private static final String DEPTH_TEX = "depthtex";
     private static final String NO_HAND_DEPTH_TEX = "noHandDepthtex";
     private static final String NO_TRANSLUCENT_DEPTH_TEX = "noTranslucentDepthtex";
 
-    public static GlOnlyNameTexture getIrisTexture(CompositeRenderer renderer, String name) {
-        int id = getIrisTextureByName(renderer, name);
+    public static GlOnlyNameTexture getIrisTexture(
+            CompositeRenderer renderer,
+            String name,
+            NamedCompositePass pass
+    ) {
+        return getIrisTexture(renderer, name, pass, false);
+    }
+    public static GlOnlyNameTexture getIrisTexture(
+            CompositeRenderer renderer,
+            String name,
+            NamedCompositePass pass,
+            boolean useStageWritesToMain
+    ) {
+        int id = getIrisTextureByName(renderer, name,pass,useStageWritesToMain);
         if (id < 1) return null;
         return new GlOnlyNameTexture(
                 () -> {
@@ -50,7 +66,7 @@ public class IrisTextureResolver {
         );
     }
 
-    public static int getIrisTextureByName(CompositeRenderer renderer, String name) {
+    public static int getIrisTextureByName(CompositeRenderer renderer, String name,NamedCompositePass pass,boolean useStageWritesToMain) {
         return resolveTexture(renderer, name,
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId)
@@ -59,7 +75,9 @@ public class IrisTextureResolver {
                         .getOrCreate(texId)
                         .getAltTexture(),
                 depthId -> depthId,
-                -1
+                -1,
+                pass,
+                useStageWritesToMain
         );
     }
 
@@ -73,7 +91,9 @@ public class IrisTextureResolver {
             Function<Integer, T> colorResolver,
             Function<Integer, T> colorAltResolver,
             Function<Integer, T> depthResolver,
-            T defaultValue
+            T defaultValue,
+            NamedCompositePass pass,
+            boolean useStageWritesToMain
     ) {
         try {
             if (name.startsWith(COLOR_PREFIX)) {
@@ -86,6 +106,16 @@ public class IrisTextureResolver {
                 return depthResolver.apply(getNoHandDepthTexId(renderer));
             } else if (name.equals(NO_TRANSLUCENT_DEPTH_TEX)) {
                 return depthResolver.apply(getNoTranslucentDepthTexId(renderer));
+            } else if (name.startsWith(AUTO_PREFIX)) {
+                ImmutableSet<Integer> stateReadsFromAlt = IrisReflectionUtils.getCompositePassStateReadsFromAlt(
+                        pass
+                );
+                int index = Integer.parseInt(name.substring(AUTO_PREFIX.length()));
+                if (stateReadsFromAlt.contains(index)){
+                    return useStageWritesToMain ? colorResolver.apply(index): colorAltResolver.apply(index);
+                } else {
+                    return useStageWritesToMain ? colorAltResolver.apply(index): colorResolver.apply(index);
+                }
             }
         } catch (NumberFormatException ignored) {
         }

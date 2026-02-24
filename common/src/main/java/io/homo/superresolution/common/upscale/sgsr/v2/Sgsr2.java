@@ -130,15 +130,6 @@ public class Sgsr2 extends AbstractAlgorithm {
         return output;
     }
 
-    @Override
-    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-        return new Vector2f(
-                originJitter.x,
-                originJitter.y
-        );
-    }
-
     protected void updateParams(DispatchResource dispatchResource) {
         Matrix4f currentViewMatrix = new Matrix4f(dispatchResource.viewMatrix());
         Matrix4f currentProjectionMatrix = new Matrix4f(dispatchResource.projectionMatrix());
@@ -156,7 +147,7 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsData.setVec2("displaySize", dispatchResource.screenSize());
         paramsData.setVec2("renderSizeRcp", new Vector2f().set(1).div(dispatchResource.renderSize()));
         paramsData.setVec2("displaySizeRcp", new Vector2f().set(1).div(dispatchResource.screenSize()));
-        paramsData.setVec2("jitterOffset", getOriginJitterOffset(dispatchResource.frameCount(), dispatchResource.renderSize(), dispatchResource.screenSize()));
+        paramsData.setVec2("jitterOffset",dispatchResource.jitterOffset());
         /*
         glm::mat4 inv_view       = glm::inverse(current_view);
         glm::mat4 inv_proj       = glm::inverse(current_proj);
@@ -193,22 +184,6 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsData.setUint("reset", 0);
         paramsData.fillBuffer();
         paramsUbo.upload();
-    }
-
-    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        return new Vector2f(0);
-        /*
-        //halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
-        //R2 参考PhotonShader
-        /*
-        return new Vector2f(
-                (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
-                (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
-        );
-        */
-
     }
 
     private void initVariant() {

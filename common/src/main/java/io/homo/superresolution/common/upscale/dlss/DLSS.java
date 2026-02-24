@@ -22,8 +22,8 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.NativeLibManager;
@@ -48,6 +48,7 @@ import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
+import org.lwjgl.opengl.GL20;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -264,6 +265,9 @@ public class DLSS extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
+        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
+
+        GL20.glFinish();
         InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 this.inputColorGlTexture);
@@ -302,16 +306,17 @@ public class DLSS extends AbstractAlgorithm {
         desc.setDepth(new SRTextureResource(this.inputDepthVkTexture));
         desc.setMotionVectors(new SRTextureResource(this.inputMotionVectorsVkTexture));
         desc.setOutput(new SRTextureResource(this.outputColorVkTexture));
-        desc.setJitterOffset(
-                getOriginJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize())
-                        .mul(new Vector2f(1, 1)));
+        desc.setJitterOffset(new Vector2f(
+                Fsr2Utils.ffxFsr2GetJitterOffset(
+                        RenderHandlerManager.getFrameCount() + ImGuiLayer.jitterOffsetFrameOffsetAlgo[0],
+                        Fsr2Utils.ffxFsr2GetJitterPhaseCount(
+                                RenderHandlerManager.getRenderWidth(),
+                                RenderHandlerManager.getScreenWidth()
+                        )
+                ).mul(1,1)
+                ));
         desc.setMotionVectorScale(
-                new Vector2f(
-                        dispatchResource.renderWidth(),
-                        dispatchResource.renderHeight())
+                new Vector2f(dispatchResource.renderSize().x, dispatchResource.renderSize().y)
         );
         desc.setRenderSize(
                 new Vector2i(
@@ -322,7 +327,7 @@ public class DLSS extends AbstractAlgorithm {
                 new Vector2i(
                         dispatchResource.screenWidth(),
                         dispatchResource.screenHeight()));
-        desc.setFrameTimeDelta(dispatchResource.frameTimeDelta());
+        desc.setFrameTimeDelta(0);
         desc.setEnableSharpening(true);
         desc.setSharpness(SuperResolutionConfig.getSharpness());
         desc.setPreExposure(1.0f);
@@ -389,21 +394,6 @@ public class DLSS extends AbstractAlgorithm {
     }
 
     @Override
-    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        // return new Vector2f(0);
-        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-        return new Vector2f(
-                originJitter.x,
-                originJitter.y // Y轴取反
-        );
-    }
-
-    @Override
-    public int getJitterSequenceLength(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        return Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-    }
-
-    @Override
     public boolean isSupportJitter() {
         return true;
     }
@@ -436,21 +426,5 @@ public class DLSS extends AbstractAlgorithm {
     @Override
     public boolean isCustomUpscaleRatio() {
         return false;
-    }
-
-    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-            return new Vector2f(0);
-        }
-        // halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
-        // R2 参考PhotonShader
-        /*
-         * return new Vector2f(
-         * (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
-         * (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
-         * );
-         */
     }
 }

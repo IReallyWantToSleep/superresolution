@@ -18,12 +18,23 @@
 
 package io.homo.irisapi;
 
+import com.google.common.collect.ImmutableSet;
+import net.irisshaders.iris.uniforms.custom.cached.CachedUniform;
+
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class IrisReflectionUtils {
     private static volatile Class<?> passClazz;
     private static volatile Class<?> computeOnlyPassClazz;
+    private static volatile Class<?> customUniformClazz;
     private static volatile Field computesField;
+    private static volatile Field stageReadsFromAltField;
+    private static volatile Field customUniform_variablesField;
+    private static volatile Field customUniform_uniformOrderField;
+
     private static volatile boolean initialized = false;
 
     private static void ensureInitialized() {
@@ -33,14 +44,48 @@ public class IrisReflectionUtils {
                     try {
                         passClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$Pass");
                         computeOnlyPassClazz = Class.forName("net.irisshaders.iris.pipeline.CompositeRenderer$ComputeOnlyPass");
+                        customUniformClazz = Class.forName("net.irisshaders.iris.uniforms.custom.CustomUniforms");
                         computesField = passClazz.getDeclaredField("computes");
+                        stageReadsFromAltField = passClazz.getDeclaredField("stageReadsFromAlt");
+                        customUniform_variablesField = customUniformClazz.getDeclaredField("variables");
+                        customUniform_uniformOrderField = customUniformClazz.getDeclaredField("uniformOrder");
                         computesField.setAccessible(true);
+                        stageReadsFromAltField.setAccessible(true);
+                        customUniform_variablesField.setAccessible(true);
+                        customUniform_uniformOrderField.setAccessible(true);
                         initialized = true;
                     } catch (Throwable e) {
                         throw new RuntimeException("Failed to initialize IrisReflectionUtils", e);
                     }
                 }
             }
+        }
+    }
+
+    public static List<CachedUniform> getVariableCustomUniforms(Object customUniforms) {
+        ensureInitialized();
+        try {
+            return new ArrayList<>( ((Map<String,CachedUniform>)customUniform_variablesField.get(customUniforms)).values());
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access variables field", e);
+        }
+    }
+
+    public static  List<CachedUniform> getUniformOrderCustomUniforms(Object customUniforms) {
+        ensureInitialized();
+        try {
+            return (List<CachedUniform>) customUniform_uniformOrderField.get(customUniforms);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access uniformOrder field", e);
+        }
+    }
+
+    public static ImmutableSet<Integer> getCompositePassStateReadsFromAlt(Object object) {
+        ensureInitialized();
+        try {
+            return (ImmutableSet<Integer>) stageReadsFromAltField.get(object);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access stateReadsFromAlt field", e);
         }
     }
 

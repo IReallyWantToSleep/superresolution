@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale.ffxfsr;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -301,13 +302,7 @@ public class FfxFSR extends AbstractAlgorithm {
         desc.setDepth(new SRTextureResource(this.inputDepthVkTexture));
         desc.setMotionVectors(new SRTextureResource(this.inputMotionVectorsVkTexture));
         desc.setOutput(new SRTextureResource(this.outputColorVkTexture));
-        desc.setJitterOffset(
-                getOriginJitterOffset(
-                        dispatchResource.frameCount(),
-                        dispatchResource.renderSize(),
-                        dispatchResource.screenSize())
-                        .mul(new Vector2f(1, -1))
-        );
+        desc.setJitterOffset(new Vector2f(dispatchResource.jitterOffset()));
         desc.setMotionVectorScale(new Vector2f(1));
         desc.setRenderSize(
                 new Vector2i(
@@ -392,38 +387,8 @@ public class FfxFSR extends AbstractAlgorithm {
     }
 
     @Override
-    public Vector2f getJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        //return new Vector2f(0);
-        Vector2f originJitter = getOriginJitterOffset(frameCount, renderSize, screenSize);
-        return new Vector2f(
-                originJitter.x,
-                originJitter.y
-        );
-    }
-
-    @Override
-    public int getJitterSequenceLength(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        return Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-    }
-
-    @Override
     public boolean isSupportJitter() {
         return true;
     }
 
-    private Vector2f getOriginJitterOffset(int frameCount, Vector2f renderSize, Vector2f screenSize) {
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-            return new Vector2f(0);
-        }
-        //halton
-        int jitterPhaseCount = Fsr2Utils.ffxFsr2GetJitterPhaseCount(renderSize.x, screenSize.x);
-        return Fsr2Utils.ffxFsr2GetJitterOffset(frameCount, jitterPhaseCount);
-        //R2 参考PhotonShader
-        /*
-        return new Vector2f(
-                (float) (Mth.frac(1.3247179572 * frameCount + 0.5) * 2.0 - 1.0),
-                (float) (Mth.frac(1.7548776662 * frameCount + 0.5) * 2.0 - 1.0)
-        );
-        */
-    }
 }
