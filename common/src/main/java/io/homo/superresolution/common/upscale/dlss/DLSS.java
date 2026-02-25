@@ -22,6 +22,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;

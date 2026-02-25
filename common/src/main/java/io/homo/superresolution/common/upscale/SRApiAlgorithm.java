@@ -22,6 +22,7 @@ import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRin
 import io.homo.superresolution.srapi.SRUpscaleContext;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
+import org.lwjgl.opengl.GL20;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
@@ -78,90 +79,14 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             return false;
         }
 
-        int currentFrameIndex = dispatchResource.frameCount();
+        int currentFrameIndex = dispatchResource.frameCount() % MAX_IN_FLIGHT_FRAME;
         InFlightFrameResourcesSet inFlight;
         VkGlInteropSemaphore upscaleFinishSemaphore;
         VkGlInteropSemaphore glFinishSemaphore;
-        int finishedGlIndex = 0;
-        int finishedIndex = 0;
-        if (currentFrameIndex > 2) {
-            // =============== 渲染第N-2帧已经预期完成的Upscale结果 ================
-
-            // 获取第N-2帧的资源集合Index
-            finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
-
-            // 获取第N-2帧的资源集合
-            inFlight = inFlightFrames[finishedIndex];
-            upscaleFinishSemaphore = inFlight.upscaleVkFinish;
-            glFinishSemaphore = inFlight.glFinish;
-
-            // 等待第N-2帧的Cmdbuf完成（如果有的话）（防止edge-case）
-            if (inFlight.commandBuffer != null) {
-                inFlight.commandBuffer.waitForFence();
-            }
-
-            //GL Queue等待第N-2帧的Upscale结果 （防止edge-case）x2
-            upscaleFinishSemaphore.waitOpenGL(
-                    new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                    new int[]{},
-                    new int[]{GL_LAYOUT_GENERAL_EXT}
-            );
-
-            //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
-            InteropResourcesConverter.flipY(
-                    inFlight.outputColorGlTexture,
-                    inFlight.flippedOutputGlTexture);
-            // =================================================================
-        }
-
-        if (currentFrameIndex > 1) {
-            // =============== 处理第N-1帧已经预期完成的GL渲染结果 ================
-            finishedGlIndex = (((currentFrameIndex - 1) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
-            // 获取第N-1帧的资源集合
-            inFlight = inFlightFrames[finishedGlIndex];
-
-            upscaleFinishSemaphore = inFlight.upscaleVkFinish;
-            glFinishSemaphore = inFlight.glFinish;
-            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-            VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-
-            if (inFlight.frameData != null) {
-                // 构建第N-1帧的Cmdbuf
-                commandBuffer.begin();
-                dispatchSRApiContext(
-                        commandBuffer,
-                        inFlight
-                );
-                commandBuffer.end();
-
-                // 提交第N-1帧的Cmdbuf
-                // 在第N-1帧的GL渲染结果准备好后（glFinishSemaphore）
-                // 执行Upscale
-                // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
-                inFlight.fence = vulkanDevice.submitCommandBuffer(
-                        commandBuffer,
-                        new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
-                        new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                        new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
-                );
-
-                // 存一下第N-1帧的Cmdbuf
-                inFlight.commandBuffer = commandBuffer;
-
-            }
-            // =================================================================
-        }
-        // =============== 处理第N帧还未完成的GL渲染结果 ================
-        inFlight = inFlightFrames[currentFrameIndex % MAX_IN_FLIGHT_FRAME];
+        inFlight = inFlightFrames[currentFrameIndex];
         upscaleFinishSemaphore = inFlight.upscaleVkFinish;
         glFinishSemaphore = inFlight.glFinish;
-        inFlight.frameData = FrameData.from(dispatchResource);
-        // 这里理论上不需要等待，因为上一帧已经wait过了，但是为了防止edge-case（比如某帧的Cmdbuf特别慢，导致第N+1帧来了，第N-1帧的Cmdbuf还没执行完，第N-1帧的GL渲染结果还没准备好），还是等一下比较保险
-        upscaleFinishSemaphore.waitOpenGL(
-                new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                new int[]{},
-                new int[]{GL_LAYOUT_GENERAL_EXT});
-        // 保险x2
+        InFlightFrameResourcesSet lastInFlight = inFlightFrames[(dispatchResource.frameCount() - 1 + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME];
         if (inFlight.commandBuffer != null) {
             inFlight.commandBuffer.waitForFence();
         }
@@ -176,7 +101,6 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                     dispatchResource.resources().motionVectorsTexture(),
                     inFlight.inputMotionVectorsGlTexture);
         }
-
         glFinishSemaphore.signalOpenGL(
                 new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
                         Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
@@ -184,6 +108,43 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 new int[]{},
                 new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT}
         );
+        //GL20.glFinish();
+
+        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+        inFlight.frameData = FrameData.from(dispatchResource);
+
+            VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+            // 构建第N-1帧的Cmdbuf
+            commandBuffer.begin();
+            dispatchSRApiContext(
+                    commandBuffer,
+                    inFlight
+            );
+            commandBuffer.end();
+
+            // 提交第N-1帧的Cmdbuf
+            // 在第N-1帧的GL渲染结果准备好后（glFinishSemaphore）
+            // 执行Upscale
+            // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
+            inFlight.fence = vulkanDevice.submitCommandBuffer(
+                    commandBuffer,
+                    new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
+                    new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                    new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
+            );
+
+            // 存一下第N-1帧的Cmdbuf
+            inFlight.commandBuffer = commandBuffer;
+
+        upscaleFinishSemaphore.waitOpenGL(
+                new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
+                new int[]{},
+                new int[]{GL_LAYOUT_GENERAL_EXT}
+        );
+        InteropResourcesConverter.flipY(
+                inFlight.outputColorGlTexture,
+                inFlight.flippedOutputGlTexture);
+
         return true;
     }
 
@@ -210,14 +171,14 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
         int currentFrameIndex = RenderHandlerManager.getFrameCount();
-        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+        int finishedIndex = (((currentFrameIndex) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         return inFlightFrames[finishedIndex].outputFrameBuffer;
     }
 
     @Override
     public int getOutputTextureId() {
         int currentFrameIndex = RenderHandlerManager.getFrameCount();
-        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+        int finishedIndex = (((currentFrameIndex) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
         return Math.toIntExact(outputColorGlTexture.handle());
     }
