@@ -196,6 +196,7 @@ public class VulkanDevice implements IDevice {
                     .pCommandBuffers(stack.pointers(commandBuffer.getNativeCommandBuffer().address()));
 
             if (waitSemaphores != null && waitSemaphores.length > 0) {
+                submitInfo.waitSemaphoreCount(waitSemaphores.length);
                 submitInfo.pWaitSemaphores(stack.longs(waitSemaphores));
                 submitInfo.pWaitDstStageMask(stack.ints(waitDstStageMask));
             }
