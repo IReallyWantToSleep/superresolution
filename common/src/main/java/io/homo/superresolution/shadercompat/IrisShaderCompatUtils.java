@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.shadercompat;
 
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;

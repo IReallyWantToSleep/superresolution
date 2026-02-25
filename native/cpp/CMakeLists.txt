@@ -24,6 +24,7 @@ else()
 endif()
 
 
+
 if(NOT DEFINED SRLIB_VERSION)
     string(TIMESTAMP COMPILE_TIME "%Y%m%d_%H%M%S")
     set(SRLIB_VERSION ${COMPILE_TIME})

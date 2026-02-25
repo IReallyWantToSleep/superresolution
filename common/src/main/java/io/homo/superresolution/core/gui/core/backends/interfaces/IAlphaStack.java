@@ -20,8 +20,12 @@ package io.homo.superresolution.core.gui.core.backends.interfaces;
 
 public interface IAlphaStack {
     void push(float alpha);
+
     void pushAbsolute(float alpha);
+
     void pop();
+
     float current();
+
     void reset();
 }

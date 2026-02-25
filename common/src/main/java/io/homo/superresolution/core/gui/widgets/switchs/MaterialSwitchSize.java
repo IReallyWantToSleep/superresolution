@@ -20,14 +20,23 @@ package io.homo.superresolution.core.gui.widgets.switchs;
 
 public record MaterialSwitchSize(
         float trackHeight,
+
         float trackWidth,
+
         float trackOutlineWidth,
+
         float iconSize,
+
         float handleSizeChecked,
+
         float handleSizePress,
+
         float handleSize,
+
         float handleSizeCheckedWithIcon,
+
         float handleSizePressWithIcon,
+
         float handleSizeWithIcon
 ) {
     public static final MaterialSwitchSize Default = new MaterialSwitchSize(

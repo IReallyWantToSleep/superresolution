@@ -121,7 +121,7 @@ public class SgsrParams implements IBufferData {
         Matrix4f inv_current_view_proj_matrix = new Matrix4f(dispatchResource.viewMatrix()).invert().mul(new Matrix4f(dispatchResource.projectionMatrix()).invert());
         Matrix4f clipToPrevClipMat = new Matrix4f(dispatchResource.lastViewMatrix()).mul(inv_current_view_proj_matrix);
         setClipToPrevClip(clipToPrevClipMat);
-        setPreExposure(1.2f);
+        setPreExposure(dispatchResource.preExposure());
         setCameraFovAngleHor(dispatchResource.horizontalFov());
         setCameraNear(dispatchResource.cameraNear());
         boolean isCameraStill = isCameraStill(

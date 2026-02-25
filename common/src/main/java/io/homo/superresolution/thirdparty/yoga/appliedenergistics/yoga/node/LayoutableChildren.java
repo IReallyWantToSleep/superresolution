@@ -49,9 +49,9 @@ public class LayoutableChildren implements Iterable<YogaNode> {
      * Includes C++-style current() method for accessing the current element without advancing.
      */
     public static class LayoutIterator implements Iterator<YogaNode> {
+        private final LinkedList<NodeIndexPair> backtrack = new LinkedList<>();
         private YogaNode currentNode;
         private int childIndex;
-        private final LinkedList<NodeIndexPair> backtrack = new LinkedList<>();
 
         /**
          * Creates a new iterator starting at the specified node and child index.
@@ -89,6 +89,7 @@ public class LayoutableChildren implements Iterable<YogaNode> {
          * This provides C++-style access to the current element.
          *
          * @return The current element
+         *
          * @throws NoSuchElementException if there is no current element
          */
         public YogaNode current() {
@@ -155,20 +156,24 @@ public class LayoutableChildren implements Iterable<YogaNode> {
             }
         }
 
+        @Override
+        public int hashCode() {
+            return Objects.hash(currentNode, childIndex);
+        }
+
         /**
          * Checks if this iterator equals another iterator.
          */
         @Override
         public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof LayoutIterator other)) return false;
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof LayoutIterator other)) {
+                return false;
+            }
 
             return currentNode == other.currentNode && childIndex == other.childIndex;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(currentNode, childIndex);
         }
 
         public LayoutIterator copy() {
@@ -181,6 +186,8 @@ public class LayoutableChildren implements Iterable<YogaNode> {
     /**
      * Helper class to store node and index pairs for backtracking.
      */
-    private record NodeIndexPair(YogaNode node, int index) {
+    private record NodeIndexPair(YogaNode node,
+
+                                 int index) {
     }
 }

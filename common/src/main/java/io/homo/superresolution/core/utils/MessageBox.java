@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.utils;
 
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
 public class MessageBox {
     private static void createMsgBox(String text, String caption, int messageType) {

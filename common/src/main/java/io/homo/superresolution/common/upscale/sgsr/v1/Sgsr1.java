@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -58,7 +59,7 @@ public class Sgsr1 extends AbstractAlgorithm {
     private IBuffer ubo;
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
         buffer = Std140StructBuilder.start()
                 .vec4Entry("ViewportInfo")
                 .build();

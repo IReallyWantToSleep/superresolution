@@ -22,14 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Animator<T extends Animator<T, V>, V> {
-    protected enum State {
-        IDLE,
-        RUNNING,
-        PAUSED,
-        CANCELLED,
-        ENDED
-    }
-
+    protected final List<AnimatorUpdateListener<V>> updateListeners = new ArrayList<>();
+    protected final List<AnimatorLifecycleListener> lifecycleListeners = new ArrayList<>();
     protected State state = State.IDLE;
     protected long durationMs = 1;
     protected long startDelayMs = 0;
@@ -41,8 +35,19 @@ public abstract class Animator<T extends Animator<T, V>, V> {
     protected V targetValue;
     protected V currentValue;
     protected double progress;
-    protected final List<AnimatorUpdateListener<V>> updateListeners = new ArrayList<>();
-    protected final List<AnimatorLifecycleListener> lifecycleListeners = new ArrayList<>();
+
+    public static FloatAnimator ofFloat(Float from, Float to) {
+        return new FloatAnimator(from, to);
+    }
+
+    public static void updateAll(Animator<?, ?>... animators) {
+        if (animators == null) {
+            return;
+        }
+        for (Animator<?, ?> animator : animators) {
+            animator.update();
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public T start() {
@@ -353,6 +358,14 @@ public abstract class Animator<T extends Animator<T, V>, V> {
         return calculateProgress();
     }
 
+    protected enum State {
+        IDLE,
+        RUNNING,
+        PAUSED,
+        CANCELLED,
+        ENDED
+    }
+
     @FunctionalInterface
     public interface AnimatorUpdateListener<V> {
         void onUpdate(V value);
@@ -384,19 +397,6 @@ public abstract class Animator<T extends Animator<T, V>, V> {
         public FloatAnimator(Float from, Float to) {
             this();
             fromTo(from, to);
-        }
-    }
-
-    public static FloatAnimator ofFloat(Float from, Float to) {
-        return new FloatAnimator(from, to);
-    }
-
-    public static void updateAll(Animator<?, ?>... animators) {
-        if (animators == null) {
-            return;
-        }
-        for (Animator<?, ?> animator : animators) {
-            animator.update();
         }
     }
 }

@@ -27,10 +27,9 @@ import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -44,9 +43,9 @@ import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
-import org.joml.Vector2f;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
+import org.joml.Vector2f;
 import org.lwjgl.opengl.GL41;
 
 import java.util.HashMap;
@@ -63,21 +62,48 @@ public class IrisShaderCompatUpscaleDispatcher {
     public static ShaderCompatTextureInfo colorTexture;
     public static ShaderCompatTextureInfo depthTexture;
     public static ShaderCompatTextureInfo motionVectorsTexture;
+    public static ShaderCompatTextureInfo exposureTexture;
 
     private static SRShaderCompatData.InputTexture lastColorConfig;
     private static SRShaderCompatData.InputTexture lastDepthConfig;
     private static SRShaderCompatData.InputTexture lastMotionConfig;
+    private static SRShaderCompatData.InputTexture lastExposureConfig;
+
+    private static boolean lastIsHdrInput = false;
 
     private static CompositeRenderer cachedCompositeRenderer;
     private static NamedCompositePass cachedNamedCompositePass;
 
-    public static Vector2f getJitterOffset(){
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return new Vector2f(0,0);
+    /**
+     * 从 SourceConfig 解析 pre-exposure 标量值（float）。
+     * 若 config 为 null 则返回默认值 1.0。
+     */
+    private static float resolvePreExposure(SRShaderCompatData.SourceConfig config) {
+        if (config == null) {
+            return 1.0f;
+        }
+        if (config.source == SRShaderCompatData.SourceConfig.SourceType.CONST) {
+            return ((Number) config.value).floatValue();
+        }
+        IrisShaderPipelineContext ctx = new IrisShaderPipelineContext(IrisAPI.getIrisRenderingPipeline());
+        Object val = config.source == SRShaderCompatData.SourceConfig.SourceType.UNIFORM
+                ? ctx.getCustomUniformValue((String) config.value)
+                : ctx.getCustomVariableValue((String) config.value);
+        if (val instanceof Number n) {
+            return n.floatValue();
+        }
+        return 1.0f;
+    }
+
+    public static Vector2f getJitterOffset() {
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
+            return new Vector2f(0, 0);
+        }
         SRShaderCompatData.WorldProfile profile = IrisShaderCompatUtils.getCurrentConfig().get();
-        if (profile.jitter.source == SRShaderCompatData.JitterConfig.JitterSource.MOD){
+        if (profile.jitter.source == SRShaderCompatData.JitterConfig.JitterSource.MOD) {
             Vector2f jitter = AlgorithmManager.getJitterOffset();
             return jitter;
-        }else {
+        } else {
             Vector2f jitter = profile.jitter.sourceConfig.getJitterOffset(
                     new IrisShaderPipelineContext(IrisAPI.getIrisRenderingPipeline())
             );
@@ -88,19 +114,23 @@ public class IrisShaderCompatUpscaleDispatcher {
         }
     }
 
-    public static int getJitterSequenceLength(){
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) return 0;
+    public static int getJitterSequenceLength() {
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
+            return 0;
+        }
         SRShaderCompatData.WorldProfile profile = IrisShaderCompatUtils.getCurrentConfig().get();
-        if (profile.jitter.source == SRShaderCompatData.JitterConfig.JitterSource.MOD){
+        if (profile.jitter.source == SRShaderCompatData.JitterConfig.JitterSource.MOD) {
             return AlgorithmManager.getJitterSequenceLength();
-        }else {
+        } else {
             return profile.jitter.sourceConfig.getJitterSequenceLength(
                     new IrisShaderPipelineContext(IrisAPI.getIrisRenderingPipeline())
             );
         }
     }
 
-    public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer) {
+    public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer,
+                                                       float preExposure, boolean isHdrInput,
+                                                       ITexture resolvedExposureTexture) {
         return new DispatchResource(
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight(),
@@ -128,13 +158,16 @@ public class IrisShaderCompatUpscaleDispatcher {
                 param.lastModelViewProjectionMatrix,
                 param.lastViewMatrix,
 
+                preExposure,
+                isHdrInput,
+
                 new InputResourceSet(
                         colorTexture.getInternalTexture(),
                         depthTexture.getInternalTexture(),
                         motionVectorsTexture.getInternalTexture() != null && lastMotionConfig.enabled ?
                                 motionVectorsTexture.getInternalTexture() :
-                                (AlgorithmManager.getMotionVectorsFrameBuffer() != null ? AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) : null)
-
+                                (AlgorithmManager.getMotionVectorsFrameBuffer() != null ? AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) : null),
+                        resolvedExposureTexture
                 )
 
         );
@@ -200,40 +233,74 @@ public class IrisShaderCompatUpscaleDispatcher {
         SRShaderCompatData.InputTexture colorConfig;
         SRShaderCompatData.InputTexture depthConfig;
         SRShaderCompatData.InputTexture motionConfig;
+        SRShaderCompatData.InputTexture exposureConfig;
         SRShaderCompatData.OutputTexture outputConfig;
         {
             colorConfig = currentConfig.inputTextures.get("color");
             depthConfig = currentConfig.inputTextures.get("depth");
             motionConfig = currentConfig.inputTextures.get("motion_vectors");
+            exposureConfig = currentConfig.inputTextures.get("exposure");
             outputConfig = currentConfig.outputTextures.get("upscaled_color");
 
-            if (colorTexture == null || !configEquals(colorConfig, lastColorConfig) || needUpdate) {
+            if ((colorTexture == null || !configEquals(colorConfig, lastColorConfig) || needUpdate) && colorConfig != null && colorConfig.enabled) {
                 if (colorTexture != null && colorTexture.getInternalTexture() != null) {
                     colorTexture.getInternalTexture().destroy();
                 }
-                colorTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, colorConfig,pass);
+                colorTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, colorConfig, pass);
                 lastColorConfig = colorConfig;
             }
-            if (depthTexture == null || !configEquals(depthConfig, lastDepthConfig) || needUpdate) {
+            if ((depthTexture == null || !configEquals(depthConfig, lastDepthConfig) || needUpdate) && depthConfig != null && depthConfig.enabled) {
                 if (depthTexture != null && depthTexture.getInternalTexture() != null) {
                     depthTexture.getInternalTexture().destroy();
                 }
-                depthTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, depthConfig,pass);
+                depthTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, depthConfig, pass);
                 lastDepthConfig = depthConfig;
             }
-            if (motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig) || needUpdate) {
+            if ((motionVectorsTexture == null || !configEquals(motionConfig, lastMotionConfig) || needUpdate)) {
                 if (motionVectorsTexture != null && motionVectorsTexture.getInternalTexture() != null) {
                     motionVectorsTexture.getInternalTexture().destroy();
                 }
-                motionVectorsTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, motionConfig,pass);
+                motionVectorsTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, motionConfig, pass);
                 lastMotionConfig = motionConfig;
             }
+
+            if ((exposureTexture == null || !configEquals(exposureConfig, lastExposureConfig) || needUpdate) && exposureConfig != null && exposureConfig.enabled) {
+                if (exposureTexture != null && exposureTexture.getInternalTexture() != null) {
+                    exposureTexture.getInternalTexture().destroy();
+                }
+                exposureTexture = IrisTextureConfigResolver.createForInput(compositeRenderer, exposureConfig, pass);
+                lastExposureConfig = exposureConfig;
+            }
+
             GlDebug.pushGroup(64108436, "SRUpscale-CopyInput");
             colorTexture.updateTexture();
             depthTexture.updateTexture();
-            motionVectorsTexture.updateTexture();
+            if (motionVectorsTexture != null) {
+                motionVectorsTexture.updateTexture();
+            }
+            if (exposureTexture != null) {
+                exposureTexture.updateTexture();
+            }
             GlDebug.popGroup();
         }
+
+        // 检测 HDR 标志变化，若变化则触发算法重新创建
+        boolean isHdrInput = currentConfig.isHdrInput;
+        if (isHdrInput != lastIsHdrInput) {
+            lastIsHdrInput = isHdrInput;
+            SuperResolution.recreateAlgorithm(SuperResolution.getInitializationDescription());
+        }
+
+        // 解析 pre-exposure 值
+        float preExposure = resolvePreExposure(currentConfig.preExposure);
+
+        // 解析 exposure 纹理（传给 InputResourceSet）
+        ITexture rawExposureTexture = (
+                exposureConfig != null &&
+                        exposureConfig.enabled &&
+                        exposureTexture != null &&
+                        exposureTexture.getSourceTexture() != null
+        ) ? exposureTexture.getInternalTexture() : null;
 
         /*
         升采样阶段开始
@@ -253,7 +320,12 @@ public class IrisShaderCompatUpscaleDispatcher {
                     depthTexture.getInternalTexture()
             );
         }
-        DispatchResource dispatchResource = getDispatchResource(compositeRenderer);
+        DispatchResource dispatchResource = getDispatchResource(
+                compositeRenderer,
+                preExposure,
+                isHdrInput,
+                rawExposureTexture
+        );
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmDispatchEvent(

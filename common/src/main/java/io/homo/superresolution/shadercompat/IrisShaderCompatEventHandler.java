@@ -27,15 +27,12 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
-import io.homo.superresolution.shadercompat.mixin.core.IrisRenderingPipelineAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.RenderTargetsAccessor;
 import net.irisshaders.iris.Iris;
-import net.irisshaders.iris.gl.uniform.DynamicUniformHolder;
 import net.irisshaders.iris.gl.uniform.UniformHolder;
 import net.irisshaders.iris.gl.uniform.UniformUpdateFrequency;
 import org.joml.Vector2f;
@@ -93,7 +90,7 @@ public class IrisShaderCompatEventHandler {
                                 )
                         ).isDestroyed()) {
                     if (Iris.getPipelineManager().getPipeline().isPresent()) {
-                        IrisShaderCompatUpscaleDispatcher.dispatchUpscale(event.getCompositeRenderer(),event.getCompositePass());
+                        IrisShaderCompatUpscaleDispatcher.dispatchUpscale(event.getCompositeRenderer(), event.getCompositePass());
                     }
                 }
             }
@@ -142,7 +139,7 @@ public class IrisShaderCompatEventHandler {
                                 )
                         ).isDestroyed()) {
                     if (Iris.getPipelineManager().getPipeline().isPresent()) {
-                        IrisShaderCompatUpscaleDispatcher.dispatchUpscale(event.getCompositeRenderer(),event.getCompositePass());
+                        IrisShaderCompatUpscaleDispatcher.dispatchUpscale(event.getCompositeRenderer(), event.getCompositePass());
                     }
                 }
             }
@@ -153,7 +150,7 @@ public class IrisShaderCompatEventHandler {
         setupUniforms();
     }
 
-    private static void setupUniforms(){
+    private static void setupUniforms() {
 
     }
 
@@ -273,8 +270,12 @@ public class IrisShaderCompatEventHandler {
                 UniformUpdateFrequency.PER_FRAME,
                 "SROriginalViewportSizeI",
                 () -> new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()));
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty())return;
-        if (IrisShaderCompatUtils.getCurrentConfig().get().jitter.source == SRShaderCompatData.JitterConfig.JitterSource.SHADERPACK)return;
+        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
+            return;
+        }
+        if (IrisShaderCompatUtils.getCurrentConfig().get().jitter.source == SRShaderCompatData.JitterConfig.JitterSource.SHADERPACK) {
+            return;
+        }
 
         uniforms.uniform2f(
                 UniformUpdateFrequency.PER_FRAME,
@@ -302,7 +303,7 @@ public class IrisShaderCompatEventHandler {
                     }
                     //我懒，所以只对MOD源的抖动提供上一个帧的偏移，反正SHADERPACK源的抖动它自己管，MOD源的抖动才需要我们提供上一个帧的偏移
                     return new Vector2f(
-                        AlgorithmManager.getPreviousJitterOffset()
+                            AlgorithmManager.getPreviousJitterOffset()
                     );
                 });
     }

@@ -19,5 +19,9 @@
 package io.homo.superresolution.core.gui.widgets.button;
 
 public enum MaterialButtonVariant {
-    Elevated, Filled, Tonal, Outlined, Text
+    Elevated,
+    Filled,
+    Tonal,
+    Outlined,
+    Text
 }

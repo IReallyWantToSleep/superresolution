@@ -61,6 +61,7 @@ public class Cache {
      * @param marginRow           Margin for row
      * @param marginColumn        Margin for column
      * @param config              The yoga config
+     *
      * @return True if cached measurement can be used
      */
     public static boolean canUseCachedMeasurement(

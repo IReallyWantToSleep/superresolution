@@ -80,9 +80,15 @@ public class BezierInterpolator implements TimeInterpolator {
 
     @Override
     public float interpolation(float input) {
-        if (isLinear) return input;
-        if (input <= 0) return 0;
-        if (input >= 1) return 1;
+        if (isLinear) {
+            return input;
+        }
+        if (input <= 0) {
+            return 0;
+        }
+        if (input >= 1) {
+            return 1;
+        }
         float position = input * (PRECISION - 1);
         int index = (int) position;
         if (index >= PRECISION - 1) {

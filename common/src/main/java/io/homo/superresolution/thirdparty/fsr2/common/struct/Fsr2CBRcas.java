@@ -37,26 +37,6 @@ public class Fsr2CBRcas implements IBufferData {
         this.container.order(ByteOrder.LITTLE_ENDIAN);
     }
 
-    @Override
-    public void free() {
-        MemoryUtil.memFree(container);
-    }
-
-    @Override
-    public void put(byte[] src, long offset) {
-        throw new RuntimeException();
-    }
-
-    @Override
-    public void updatePartial(Buffer data, long offset, long length) {
-        throw new RuntimeException();
-    }
-
-    @Override
-    public void update(Buffer data) {
-        throw new RuntimeException();
-    }
-
     public void update(Fsr2Context context, Fsr2DispatchDescription desc, Fsr2Dimensions dims) {
         container.clear();
         int[] rcasConfig = new int[4];
@@ -77,5 +57,25 @@ public class Fsr2CBRcas implements IBufferData {
     @Override
     public long size() {
         return 16;
+    }
+
+    @Override
+    public void free() {
+        MemoryUtil.memFree(container);
+    }
+
+    @Override
+    public void put(byte[] src, long offset) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void updatePartial(Buffer data, long offset, long length) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void update(Buffer data) {
+        throw new RuntimeException();
     }
 }

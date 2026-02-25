@@ -71,11 +71,11 @@ public class SpacerWidget extends MaterialWidget<SpacerWidget> {
     }
 
     @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
+    protected boolean isInteractive() {
+        return false;
     }
 
     @Override
-    protected boolean isInteractive() {
-        return false;
+    public void render(RenderContext ctx, UIInputState inputState) {
     }
 }

@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 public class NanoVGContext {
-    private long nativeHandle;
     private static final int DEFAULT_FLAGS = 0;
+    private long nativeHandle;
 
     public NanoVGContext(int flags) {
         this.nativeHandle = createContext(flags);
@@ -35,6 +35,170 @@ public class NanoVGContext {
     public NanoVGContext() {
         this(DEFAULT_FLAGS);
     }
+
+    private static native long createContext(int flags);
+
+    private static native void nDeleteContext(long ctx);
+
+    private static native void nBeginFrame(long ctx, float windowWidth, float windowHeight, float devicePixelRatio);
+
+    private static native void nCancelFrame(long ctx);
+
+    private static native void nEndFrame(long ctx);
+
+    private static native void nGlobalCompositeOperation(long ctx, int op);
+
+    private static native void nGlobalCompositeBlendFunc(long ctx, int sfactor, int dfactor);
+
+    private static native void nGlobalCompositeBlendFuncSeparate(long ctx, int srcRGB, int dstRGB, int srcAlpha, int dstAlpha);
+
+    private static native void nSave(long ctx);
+
+    private static native void nRestore(long ctx);
+
+    private static native void nReset(long ctx);
+
+    private static native void nShapeAntiAlias(long ctx, int enabled);
+
+    private static native void nStrokeColor(long ctx, long colorHandle);
+
+    private static native long nColorRGBA(long ctx, int r, int g, int b, int a);
+
+    private static native long nColorRGBAf(long ctx, float r, float g, float b, float a);
+
+    private static native void nStrokePaint(long ctx, long paintHandle);
+
+    private static native void nFillColor(long ctx, long colorHandle);
+
+    private static native void nFillPaint(long ctx, long paintHandle);
+
+    private static native void nMiterLimit(long ctx, float limit);
+
+    private static native void nStrokeWidth(long ctx, float size);
+
+    private static native void nLineCap(long ctx, int cap);
+
+    private static native void nLineJoin(long ctx, int join);
+
+    private static native void nGlobalAlpha(long ctx, float alpha);
+
+    private static native void nResetTransform(long ctx);
+
+    private static native void nTransform(long ctx, float a, float b, float c, float d, float e, float f);
+
+    private static native void nTranslate(long ctx, float x, float y);
+
+    private static native void nRotate(long ctx, float angle);
+
+    private static native void nSkewX(long ctx, float angle);
+
+    private static native void nSkewY(long ctx, float angle);
+
+    private static native void nScale(long ctx, float x, float y);
+
+    private static native float[] nCurrentTransform(long ctx);
+
+    private static native int nCreateImageFromHandle(long ctx, int textureId, int w, int h, int imageFlags);
+
+    private static native void nDeleteImage(long ctx, int image);
+
+    private static native long nLinearGradient(long ctx, float sx, float sy, float ex, float ey, long icolHandle, long ocolHandle);
+
+    private static native long nBoxGradient(long ctx, float x, float y, float w, float h, float r, float f, long icolHandle, long ocolHandle);
+
+    private static native long nRadialGradient(long ctx, float cx, float cy, float inr, float outr, long icolHandle, long ocolHandle);
+
+    private static native long nImagePattern(long ctx, float ox, float oy, float ex, float ey, float angle, int image, float alpha);
+
+    private static native void nScissor(long ctx, float x, float y, float w, float h);
+
+    private static native void nIntersectScissor(long ctx, float x, float y, float w, float h);
+
+    private static native void nResetScissor(long ctx);
+
+    private static native void nBeginPath(long ctx);
+
+    private static native void nMoveTo(long ctx, float x, float y);
+
+    private static native void nLineTo(long ctx, float x, float y);
+
+    private static native void nBezierTo(long ctx, float c1x, float c1y, float c2x, float c2y, float x, float y);
+
+    private static native void nQuadTo(long ctx, float cx, float cy, float x, float y);
+
+    private static native void nArcTo(long ctx, float x1, float y1, float x2, float y2, float radius);
+
+    private static native void nClosePath(long ctx);
+
+    private static native void nPathWinding(long ctx, int dir);
+
+    private static native void nArc(long ctx, float cx, float cy, float r, float a0, float a1, int dir);
+
+    private static native void nRect(long ctx, float x, float y, float w, float h);
+
+    private static native void nRoundedRect(long ctx, float x, float y, float w, float h, float r);
+
+    private static native void nRoundedRectVarying(long ctx, float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft);
+
+    private static native void nRoundedRectComplex(long ctx, float x, float y, float w, float h, float tl, float tr, float bl, float br);
+
+    private static native void nRoundedRectEllipse(long ctx, float x, float y, float w, float h, float rw, float rh);
+
+    private static native void nEllipse(long ctx, float cx, float cy, float rx, float ry);
+
+    private static native void nCircle(long ctx, float cx, float cy, float r);
+
+    private static native void nFill(long ctx);
+
+    private static native void nStroke(long ctx);
+
+    private static native int nCreateFont(long ctx, String name, String filename);
+
+    private static native int nCreateFontAtIndex(long ctx, String name, String filename, int fontIndex);
+
+    private static native int nCreateFontMem(long ctx, String name, ByteBuffer data, int freeData);
+
+    private static native int nCreateFontMemAtIndex(long ctx, String name, ByteBuffer data, int freeData, int fontIndex);
+
+    private static native int nFindFont(long ctx, String name);
+
+    private static native int nAddFallbackFontId(long ctx, int baseFont, int fallbackFont);
+
+    private static native int nAddFallbackFont(long ctx, String baseFont, String fallbackFont);
+
+    private static native void nResetFallbackFontsId(long ctx, int baseFont);
+
+    private static native void nResetFallbackFonts(long ctx, String baseFont);
+
+    private static native void nFontSize(long ctx, float size);
+
+    private static native void nFontBlur(long ctx, float blur);
+
+    private static native void nTextLetterSpacing(long ctx, float spacing);
+
+    private static native void nTextLineHeight(long ctx, float lineHeight);
+
+    private static native void nTextAlign(long ctx, int align);
+
+    private static native void nFontFaceId(long ctx, int font);
+
+    private static native void nFontFace(long ctx, String font);
+
+    private static native float nText(long ctx, float x, float y, String string);
+
+    private static native void nTextBox(long ctx, float x, float y, float breakRowWidth, String string);
+
+    private static native TextBoundsResult nTextBounds(long ctx, float x, float y, String string);
+
+    private static native float[] nTextBoxBounds(long ctx, float x, float y, float breakRowWidth, String string);
+
+    private static native NVGglyphPosition[] nTextGlyphPositions(long ctx, float x, float y, String string);
+
+    private static native TextMetricsResult nTextMetrics(long ctx);
+
+    private static native NVGtextRow[] nTextBreakLines(long ctx, String string, float breakRowWidth);
+
+    private static native void nLineStyle(long ctx, int lineStyle);
 
     public long getNativeHandle() {
         return nativeHandle;
@@ -372,168 +536,4 @@ public class NanoVGContext {
             nativeHandle = 0;
         }
     }
-
-    private static native long createContext(int flags);
-
-    private static native void nDeleteContext(long ctx);
-
-    private static native void nBeginFrame(long ctx, float windowWidth, float windowHeight, float devicePixelRatio);
-
-    private static native void nCancelFrame(long ctx);
-
-    private static native void nEndFrame(long ctx);
-
-    private static native void nGlobalCompositeOperation(long ctx, int op);
-
-    private static native void nGlobalCompositeBlendFunc(long ctx, int sfactor, int dfactor);
-
-    private static native void nGlobalCompositeBlendFuncSeparate(long ctx, int srcRGB, int dstRGB, int srcAlpha, int dstAlpha);
-
-    private static native void nSave(long ctx);
-
-    private static native void nRestore(long ctx);
-
-    private static native void nReset(long ctx);
-
-    private static native void nShapeAntiAlias(long ctx, int enabled);
-
-    private static native void nStrokeColor(long ctx, long colorHandle);
-
-    private static native long nColorRGBA(long ctx, int r, int g, int b, int a);
-
-    private static native long nColorRGBAf(long ctx, float r, float g, float b, float a);
-
-    private static native void nStrokePaint(long ctx, long paintHandle);
-
-    private static native void nFillColor(long ctx, long colorHandle);
-
-    private static native void nFillPaint(long ctx, long paintHandle);
-
-    private static native void nMiterLimit(long ctx, float limit);
-
-    private static native void nStrokeWidth(long ctx, float size);
-
-    private static native void nLineCap(long ctx, int cap);
-
-    private static native void nLineJoin(long ctx, int join);
-
-    private static native void nGlobalAlpha(long ctx, float alpha);
-
-    private static native void nResetTransform(long ctx);
-
-    private static native void nTransform(long ctx, float a, float b, float c, float d, float e, float f);
-
-    private static native void nTranslate(long ctx, float x, float y);
-
-    private static native void nRotate(long ctx, float angle);
-
-    private static native void nSkewX(long ctx, float angle);
-
-    private static native void nSkewY(long ctx, float angle);
-
-    private static native void nScale(long ctx, float x, float y);
-
-    private static native float[] nCurrentTransform(long ctx);
-
-    private static native int nCreateImageFromHandle(long ctx, int textureId, int w, int h, int imageFlags);
-
-    private static native void nDeleteImage(long ctx, int image);
-
-    private static native long nLinearGradient(long ctx, float sx, float sy, float ex, float ey, long icolHandle, long ocolHandle);
-
-    private static native long nBoxGradient(long ctx, float x, float y, float w, float h, float r, float f, long icolHandle, long ocolHandle);
-
-    private static native long nRadialGradient(long ctx, float cx, float cy, float inr, float outr, long icolHandle, long ocolHandle);
-
-    private static native long nImagePattern(long ctx, float ox, float oy, float ex, float ey, float angle, int image, float alpha);
-
-    private static native void nScissor(long ctx, float x, float y, float w, float h);
-
-    private static native void nIntersectScissor(long ctx, float x, float y, float w, float h);
-
-    private static native void nResetScissor(long ctx);
-
-    private static native void nBeginPath(long ctx);
-
-    private static native void nMoveTo(long ctx, float x, float y);
-
-    private static native void nLineTo(long ctx, float x, float y);
-
-    private static native void nBezierTo(long ctx, float c1x, float c1y, float c2x, float c2y, float x, float y);
-
-    private static native void nQuadTo(long ctx, float cx, float cy, float x, float y);
-
-    private static native void nArcTo(long ctx, float x1, float y1, float x2, float y2, float radius);
-
-    private static native void nClosePath(long ctx);
-
-    private static native void nPathWinding(long ctx, int dir);
-
-    private static native void nArc(long ctx, float cx, float cy, float r, float a0, float a1, int dir);
-
-    private static native void nRect(long ctx, float x, float y, float w, float h);
-
-    private static native void nRoundedRect(long ctx, float x, float y, float w, float h, float r);
-
-    private static native void nRoundedRectVarying(long ctx, float x, float y, float w, float h, float radTopLeft, float radTopRight, float radBottomRight, float radBottomLeft);
-
-    private static native void nRoundedRectComplex(long ctx, float x, float y, float w, float h, float tl, float tr, float bl, float br);
-
-    private static native void nRoundedRectEllipse(long ctx, float x, float y, float w, float h, float rw, float rh);
-
-    private static native void nEllipse(long ctx, float cx, float cy, float rx, float ry);
-
-    private static native void nCircle(long ctx, float cx, float cy, float r);
-
-    private static native void nFill(long ctx);
-
-    private static native void nStroke(long ctx);
-
-    private static native int nCreateFont(long ctx, String name, String filename);
-
-    private static native int nCreateFontAtIndex(long ctx, String name, String filename, int fontIndex);
-
-    private static native int nCreateFontMem(long ctx, String name, ByteBuffer data, int freeData);
-
-    private static native int nCreateFontMemAtIndex(long ctx, String name, ByteBuffer data, int freeData, int fontIndex);
-
-    private static native int nFindFont(long ctx, String name);
-
-    private static native int nAddFallbackFontId(long ctx, int baseFont, int fallbackFont);
-
-    private static native int nAddFallbackFont(long ctx, String baseFont, String fallbackFont);
-
-    private static native void nResetFallbackFontsId(long ctx, int baseFont);
-
-    private static native void nResetFallbackFonts(long ctx, String baseFont);
-
-    private static native void nFontSize(long ctx, float size);
-
-    private static native void nFontBlur(long ctx, float blur);
-
-    private static native void nTextLetterSpacing(long ctx, float spacing);
-
-    private static native void nTextLineHeight(long ctx, float lineHeight);
-
-    private static native void nTextAlign(long ctx, int align);
-
-    private static native void nFontFaceId(long ctx, int font);
-
-    private static native void nFontFace(long ctx, String font);
-
-    private static native float nText(long ctx, float x, float y, String string);
-
-    private static native void nTextBox(long ctx, float x, float y, float breakRowWidth, String string);
-
-    private static native TextBoundsResult nTextBounds(long ctx, float x, float y, String string);
-
-    private static native float[] nTextBoxBounds(long ctx, float x, float y, float breakRowWidth, String string);
-
-    private static native NVGglyphPosition[] nTextGlyphPositions(long ctx, float x, float y, String string);
-
-    private static native TextMetricsResult nTextMetrics(long ctx);
-
-    private static native NVGtextRow[] nTextBreakLines(long ctx, String string, float breakRowWidth);
-
-    private static native void nLineStyle(long ctx, int lineStyle);
 }

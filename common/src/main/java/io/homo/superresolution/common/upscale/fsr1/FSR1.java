@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -69,7 +70,7 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
         fsr1UBOData = Std140StructBuilder.start()
                 .vec2Entry("renderViewportSize")
                 .vec2Entry("containerTextureSize")

@@ -203,9 +203,13 @@ extern "C"
         {
             dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
         }
-                if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
         {
             dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
+        }
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)
+        {
+            dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
         }
         dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
         dlssCreateParams.Feature.InWidth = desc->renderSize.x;

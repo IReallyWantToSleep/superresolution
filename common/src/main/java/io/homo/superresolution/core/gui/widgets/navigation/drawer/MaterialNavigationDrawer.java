@@ -38,10 +38,9 @@ import java.util.function.Consumer;
 
 public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNavigationDrawer> {
     private static final float CORNER_RADIUS = 16f;
-
+    private final List<MaterialNavigationDrawerItem> allItems = new ArrayList<>();
     private MaterialNavigationDrawerItem selectedItem = null;
     private Consumer<MaterialNavigationDrawerItem> onItemSelectedHandler;
-    private final List<MaterialNavigationDrawerItem> allItems = new ArrayList<>();
 
     public MaterialNavigationDrawer() {
         getLayoutNode().setDebugName("MaterialNavigationDrawer");
@@ -60,8 +59,55 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
     }
 
     @Override
+    public void layouting(RenderContext ctx) {
+        float width = getPreferredWidth(ctx);
+        if (width > 0) {
+            layout().setMinWidth(width);
+        }
+        super.layouting(ctx);
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        Rectangle bounds = getBounds();
+        ctx.beginGroup(style().zIndex());
+
+        Color backgroundColor = scheme().surfaceContainerLow();
+        ctx.beginPath();
+        ctx.fillColor(backgroundColor);
+        ctx.roundedRectComplex(
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                0,
+                CORNER_RADIUS,
+                0,
+                CORNER_RADIUS
+        );
+        ctx.endPath(true);
+        renderSelf(ctx, inputState);
+        ctx.endGroup();
+    }
+
+    @Override
     protected Rectangle getViewRegion() {
         return getAbsoluteViewRect();
+    }
+
+    @Override
+    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
+        if (!isVisible()) {
+            return;
+        }
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?>) {
+                AbstractWidget<?> widget = (AbstractWidget<?>) child;
+                if (widget.isVisible()) {
+                    widget.render(ctx, inputState);
+                }
+            }
+        }
     }
 
     public MaterialNavigationDrawer addHeader(String title, MaterialSymbol icon) {
@@ -72,14 +118,12 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         return this;
     }
 
-
     public MaterialNavigationDrawer addHeader(String title) {
         MaterialNavigationDrawerHeader header = MaterialNavigationDrawerHeader.create()
                 .title(title);
         addChild(header);
         return this;
     }
-
 
     public MaterialNavigationDrawer addHeader(MaterialNavigationDrawerHeader header) {
         addChild(header);
@@ -182,15 +226,6 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         super.addChild(element);
     }
 
-    @Override
-    public void layouting(RenderContext ctx) {
-        float width = getPreferredWidth(ctx);
-        if (width > 0) {
-            layout().setMinWidth(width);
-        }
-        super.layouting(ctx);
-    }
-
     public float getPreferredWidth(RenderContext ctx) {
         float padding = 12f;
         float maxContentWidth = 0;
@@ -204,44 +239,6 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
             }
         }
         return maxContentWidth + padding * 2;
-    }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        Rectangle bounds = getBounds();
-        ctx.beginGroup(style().zIndex());
-
-        Color backgroundColor = scheme().surfaceContainerLow();
-        ctx.beginPath();
-        ctx.fillColor(backgroundColor);
-        ctx.roundedRectComplex(
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                bounds.height,
-                0,
-                CORNER_RADIUS,
-                0,
-                CORNER_RADIUS
-        );
-        ctx.endPath(true);
-        renderSelf(ctx, inputState);
-        ctx.endGroup();
-    }
-
-    @Override
-    protected void renderSelf(RenderContext ctx, UIInputState inputState) {
-        if (!isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?>) {
-                AbstractWidget<?> widget = (AbstractWidget<?>) child;
-                if (widget.isVisible()) {
-                    widget.render(ctx, inputState);
-                }
-            }
-        }
     }
 
     private static final class MaterialNavigationDrawerSpacer extends MaterialWidget<MaterialNavigationDrawerSpacer> {

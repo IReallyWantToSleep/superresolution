@@ -22,11 +22,7 @@ public class LayoutResults {
     // This value was chosen based on empirical data:
     // 98% of analyzed layouts require less than 8 entries.
     public static final int MAX_CACHED_MEASUREMENTS = 8;
-
-    // Layout properties
-    private YogaDirection direction = YogaDirection.INHERIT;
-    private boolean hadOverflow = false;
-
+    public final CachedMeasurement[] cachedMeasurements = new CachedMeasurement[MAX_CACHED_MEASUREMENTS];
     // Layout values
     private final float[] dimensions = new float[]{YogaConstants.UNDEFINED, YogaConstants.UNDEFINED};
     private final float[] measuredDimensions = new float[]{YogaConstants.UNDEFINED, YogaConstants.UNDEFINED};
@@ -34,19 +30,17 @@ public class LayoutResults {
     private final float[] margin = new float[4];
     private final float[] border = new float[4];
     private final float[] padding = new float[4];
-
     // Caching related fields
     public long computedFlexBasisGeneration = 0;
     public FloatOptional computedFlexBasis = FloatOptional.of(YogaConstants.UNDEFINED);
-
     public int generationCount = 0;
     public int configVersion = 0;
     public YogaDirection lastOwnerDirection = YogaDirection.INHERIT;
-
     public int nextCachedMeasurementsIndex = 0;
-    public final CachedMeasurement[] cachedMeasurements = new CachedMeasurement[MAX_CACHED_MEASUREMENTS];
-
     public CachedMeasurement cachedLayout = new CachedMeasurement();
+    // Layout properties
+    private YogaDirection direction = YogaDirection.INHERIT;
+    private boolean hadOverflow = false;
 
     public LayoutResults() {
         // Initialize cached measurements array
@@ -167,9 +161,36 @@ public class LayoutResults {
     }
 
     @Override
+    public int hashCode() {
+        int result = Objects.hash(
+                direction,
+                hadOverflow,
+                computedFlexBasis,
+                generationCount,
+                configVersion,
+                lastOwnerDirection,
+                nextCachedMeasurementsIndex,
+                cachedLayout);
+
+        result = 31 * result + Arrays.hashCode(dimensions);
+        result = 31 * result + Arrays.hashCode(measuredDimensions);
+        result = 31 * result + Arrays.hashCode(position);
+        result = 31 * result + Arrays.hashCode(margin);
+        result = 31 * result + Arrays.hashCode(border);
+        result = 31 * result + Arrays.hashCode(padding);
+        result = 31 * result + Arrays.hashCode(cachedMeasurements);
+
+        return result;
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
 
         LayoutResults other = (LayoutResults) obj;
 
@@ -205,29 +226,6 @@ public class LayoutResults {
         }
 
         return isEqual;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Objects.hash(
-                direction,
-                hadOverflow,
-                computedFlexBasis,
-                generationCount,
-                configVersion,
-                lastOwnerDirection,
-                nextCachedMeasurementsIndex,
-                cachedLayout);
-
-        result = 31 * result + Arrays.hashCode(dimensions);
-        result = 31 * result + Arrays.hashCode(measuredDimensions);
-        result = 31 * result + Arrays.hashCode(position);
-        result = 31 * result + Arrays.hashCode(margin);
-        result = 31 * result + Arrays.hashCode(border);
-        result = 31 * result + Arrays.hashCode(padding);
-        result = 31 * result + Arrays.hashCode(cachedMeasurements);
-
-        return result;
     }
 
     // TODO: It's unclear from C++ whether it default initializes, or zeros?

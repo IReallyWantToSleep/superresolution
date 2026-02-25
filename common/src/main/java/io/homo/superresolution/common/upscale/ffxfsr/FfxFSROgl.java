@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.ffxfsr;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -115,7 +116,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
     }
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
         if (!updateFsr()) {
             throw new RuntimeException();
         }
@@ -152,7 +153,7 @@ public class FfxFSROgl extends AbstractAlgorithm {
         desc.setFrameTimeDelta(dispatchResource.frameTimeDelta());
         desc.setEnableSharpening(true);
         desc.setSharpness(SuperResolutionConfig.getSharpness());
-        desc.setPreExposure(1.0f);
+        desc.setPreExposure(dispatchResource.preExposure());
         desc.setCameraNear(0.8f);
         desc.setCameraFar(dispatchResource.cameraFar());
         desc.setCameraFovAngleVertical((float) Math.toRadians(dispatchResource.verticalFov()));

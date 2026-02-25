@@ -18,12 +18,6 @@
 
 package io.homo.superresolution.thirdparty.fsr2.common;
 
-import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
-
 public class Fsr2MaximumBias {
     public static int FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH = 16;
     public static int FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT = 16;

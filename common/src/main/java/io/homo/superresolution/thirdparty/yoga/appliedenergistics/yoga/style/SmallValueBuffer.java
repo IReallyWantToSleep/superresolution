@@ -21,10 +21,10 @@ import java.util.BitSet;
  */
 public class SmallValueBuffer {
 
+    private static final int INITIAL_CAPACITY = 16;
+    private final BitSet wideElements;
     private int count;
     private int[] buffer;
-    private final BitSet wideElements;
-    private static final int INITIAL_CAPACITY = 16;
 
     public SmallValueBuffer() {
         this.count = 0;

@@ -22,8 +22,6 @@ import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 
-import javax.annotation.Nullable;
-
 public abstract class MaterialWidget<T extends MaterialWidget<T>> extends AbstractWidget<T> {
     public MaterialScheme scheme() {
         return MaterialUI.Scheme;

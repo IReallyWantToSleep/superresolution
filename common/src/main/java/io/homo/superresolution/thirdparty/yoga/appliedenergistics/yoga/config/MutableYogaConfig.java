@@ -7,11 +7,7 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.LogLevel;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaCloneNodeFunction;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaErrata;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaExperimentalFeature;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -64,26 +60,10 @@ public class MutableYogaConfig implements io.homo.superresolution.thirdparty.yog
     }
 
     /**
-     * Enables or disables an experimental feature.
-     *
-     * @param feature The experimental feature to toggle
-     * @param enabled true to enable the feature, false to disable
-     */
-    public void setExperimentalFeatureEnabled(YogaExperimentalFeature feature, boolean enabled) {
-        if (isExperimentalFeatureEnabled(feature) != enabled) {
-            if (enabled) {
-                experimentalFeatures.add(feature);
-            } else {
-                experimentalFeatures.remove(feature);
-            }
-            version++;
-        }
-    }
-
-    /**
      * Checks if an experimental feature is enabled.
      *
      * @param feature The feature to check
+     *
      * @return true if the feature is enabled
      */
     @Override
@@ -99,6 +79,16 @@ public class MutableYogaConfig implements io.homo.superresolution.thirdparty.yog
     @Override
     public Set<YogaExperimentalFeature> getEnabledExperiments() {
         return EnumSet.copyOf(experimentalFeatures);
+    }
+
+    /**
+     * Gets the current errata flags.
+     *
+     * @return The current errata flags
+     */
+    @Override
+    public EnumSet<YogaErrata> getErrata() {
+        return EnumSet.copyOf(errata);
     }
 
     /**
@@ -122,6 +112,103 @@ public class MutableYogaConfig implements io.homo.superresolution.thirdparty.yog
         EnumSet<YogaErrata> newErrata = EnumSet.of(errata);
         if (!this.errata.equals(newErrata)) {
             this.errata = newErrata;
+            version++;
+        }
+    }
+
+    /**
+     * Checks if a specific errata flag is set.
+     *
+     * @param errata The errata flag to check
+     *
+     * @return true if the errata flag is set
+     */
+    @Override
+    public boolean hasErrata(YogaErrata errata) {
+        return this.errata.contains(errata);
+    }
+
+    /**
+     * Gets the current point scale factor.
+     *
+     * @return The current point scale factor
+     */
+    @Override
+    public float getPointScaleFactor() {
+        return pointScaleFactor;
+    }
+
+    /**
+     * Sets the point scale factor for layout calculations.
+     *
+     * @param pointScaleFactor The point scale factor to use
+     */
+    public void setPointScaleFactor(float pointScaleFactor) {
+        if (this.pointScaleFactor != pointScaleFactor) {
+            this.pointScaleFactor = pointScaleFactor;
+            version++;
+        }
+    }
+
+    /**
+     * Gets the current version of this configuration.
+     *
+     * @return The current version
+     */
+    @Override
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Logs a message with the configured logger.
+     *
+     * @param node     The node associated with the log message
+     * @param logLevel The log level
+     * @param format   The format string
+     * @param args     The arguments for the format string
+     */
+    @Override
+    public void log(YogaNode node, LogLevel logLevel, String format, Object... args) {
+        if (logger != null) {
+            logger.log(this, node, logLevel, format, args);
+        }
+    }
+
+    /**
+     * Clones a node using the configured clone node callback.
+     *
+     * @param node       The node to clone
+     * @param owner      The owner of the node
+     * @param childIndex The index of the node in its parent
+     *
+     * @return The cloned node
+     */
+    @Override
+    public YogaNode cloneNode(YogaNode node, YogaNode owner, int childIndex) {
+        YogaNode clone = null;
+        if (cloneNodeCallback != null) {
+            clone = cloneNodeCallback.cloneNode(node, owner, childIndex);
+        }
+        if (clone == null) {
+            clone = node.cloneWithChildren();
+        }
+        return clone;
+    }
+
+    /**
+     * Enables or disables an experimental feature.
+     *
+     * @param feature The experimental feature to toggle
+     * @param enabled true to enable the feature, false to disable
+     */
+    public void setExperimentalFeatureEnabled(YogaExperimentalFeature feature, boolean enabled) {
+        if (isExperimentalFeatureEnabled(feature) != enabled) {
+            if (enabled) {
+                experimentalFeatures.add(feature);
+            } else {
+                experimentalFeatures.remove(feature);
+            }
             version++;
         }
     }
@@ -161,46 +248,12 @@ public class MutableYogaConfig implements io.homo.superresolution.thirdparty.yog
     }
 
     /**
-     * Gets the current errata flags.
+     * Gets the context object.
      *
-     * @return The current errata flags
+     * @return The context object
      */
-    @Override
-    public EnumSet<YogaErrata> getErrata() {
-        return EnumSet.copyOf(errata);
-    }
-
-    /**
-     * Checks if a specific errata flag is set.
-     *
-     * @param errata The errata flag to check
-     * @return true if the errata flag is set
-     */
-    @Override
-    public boolean hasErrata(YogaErrata errata) {
-        return this.errata.contains(errata);
-    }
-
-    /**
-     * Sets the point scale factor for layout calculations.
-     *
-     * @param pointScaleFactor The point scale factor to use
-     */
-    public void setPointScaleFactor(float pointScaleFactor) {
-        if (this.pointScaleFactor != pointScaleFactor) {
-            this.pointScaleFactor = pointScaleFactor;
-            version++;
-        }
-    }
-
-    /**
-     * Gets the current point scale factor.
-     *
-     * @return The current point scale factor
-     */
-    @Override
-    public float getPointScaleFactor() {
-        return pointScaleFactor;
+    public Object getContext() {
+        return context;
     }
 
     /**
@@ -213,25 +266,6 @@ public class MutableYogaConfig implements io.homo.superresolution.thirdparty.yog
     }
 
     /**
-     * Gets the context object.
-     *
-     * @return The context object
-     */
-    public Object getContext() {
-        return context;
-    }
-
-    /**
-     * Gets the current version of this configuration.
-     *
-     * @return The current version
-     */
-    @Override
-    public int getVersion() {
-        return version;
-    }
-
-    /**
      * Sets the logger for this configuration.
      *
      * @param logger The logger to use
@@ -241,47 +275,12 @@ public class MutableYogaConfig implements io.homo.superresolution.thirdparty.yog
     }
 
     /**
-     * Logs a message with the configured logger.
-     *
-     * @param node     The node associated with the log message
-     * @param logLevel The log level
-     * @param format   The format string
-     * @param args     The arguments for the format string
-     */
-    @Override
-    public void log(YogaNode node, LogLevel logLevel, String format, Object... args) {
-        if (logger != null) {
-            logger.log(this, node, logLevel, format, args);
-        }
-    }
-
-    /**
      * Sets the clone node callback function.
      *
      * @param cloneNode The callback function to use for cloning nodes
      */
     public void setCloneNodeCallback(YogaCloneNodeFunction cloneNode) {
         this.cloneNodeCallback = cloneNode;
-    }
-
-    /**
-     * Clones a node using the configured clone node callback.
-     *
-     * @param node       The node to clone
-     * @param owner      The owner of the node
-     * @param childIndex The index of the node in its parent
-     * @return The cloned node
-     */
-    @Override
-    public YogaNode cloneNode(YogaNode node, YogaNode owner, int childIndex) {
-        YogaNode clone = null;
-        if (cloneNodeCallback != null) {
-            clone = cloneNodeCallback.cloneNode(node, owner, childIndex);
-        }
-        if (clone == null) {
-            clone = node.cloneWithChildren();
-        }
-        return clone;
     }
 
     // Lazy initialization holder class

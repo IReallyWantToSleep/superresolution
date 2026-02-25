@@ -58,7 +58,9 @@ public class GroupNode extends RenderNode {
 
     @Override
     public void render(RenderContext ctx) {
-        if (children.isEmpty()) return;
+        if (children.isEmpty()) {
+            return;
+        }
 
         ctx.save();
         applyState(ctx);

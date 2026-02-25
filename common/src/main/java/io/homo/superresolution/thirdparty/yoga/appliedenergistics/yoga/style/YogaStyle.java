@@ -7,19 +7,7 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaBoxSizing;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDimension;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaJustify;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaOverflow;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPhysicalEdge;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaWrap;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.FlexDirectionUtil;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.FloatOptional;
@@ -164,6 +152,42 @@ public class YogaStyle {
             setMinDimension(dimension, other.getMinDimension(dimension));
             setMaxDimension(dimension, other.getMaxDimension(dimension));
         }
+    }
+
+    private static boolean numbersEqual(
+            StyleValueHandle lhsHandle,
+            StyleValuePool lhsPool,
+            StyleValueHandle rhsHandle,
+            StyleValuePool rhsPool) {
+        return (lhsHandle.isUndefined() && rhsHandle.isUndefined()) ||
+                (lhsPool.getNumber(lhsHandle).equals(rhsPool.getNumber(rhsHandle)));
+    }
+
+    private static boolean lengthsEqual(
+            StyleValueHandle lhsHandle,
+            StyleValuePool lhsPool,
+            StyleValueHandle rhsHandle,
+            StyleValuePool rhsPool) {
+        return (lhsHandle.isUndefined() && rhsHandle.isUndefined()) ||
+                (lhsPool.getLength(lhsHandle).equals(rhsPool.getLength(rhsHandle)));
+    }
+
+    private static boolean arraysEqual(
+            StyleValueHandle[] lhs,
+            StyleValuePool lhsPool,
+            StyleValueHandle[] rhs,
+            StyleValuePool rhsPool) {
+        if (lhs.length != rhs.length) {
+            return false;
+        }
+
+        for (int i = 0; i < lhs.length; i++) {
+            if (!lengthsEqual(lhs[i], lhsPool, rhs[i], rhsPool)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public YogaDirection getDirection() {
@@ -663,6 +687,8 @@ public class YogaStyle {
         return Comparison.maxOrDefined(gap.resolve(ownerSize).unwrap(), 0.0f);
     }
 
+    // Private helper methods
+
     public boolean flexStartMarginIsAuto(YogaFlexDirection axis, YogaDirection direction) {
         return computeMargin(FlexDirectionUtil.flexStartEdge(axis), direction).isAuto();
     }
@@ -673,8 +699,12 @@ public class YogaStyle {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
 
         YogaStyle other = (YogaStyle) obj;
         return direction == other.direction
@@ -701,8 +731,6 @@ public class YogaStyle {
                 && arraysEqual(maxDimensions, pool, other.maxDimensions, other.pool)
                 && numbersEqual(aspectRatio, pool, other.aspectRatio, other.pool);
     }
-
-    // Private helper methods
 
     private StyleLength computeColumnGap() {
         if (gap[YogaGutter.COLUMN.ordinal()].isDefined()) {
@@ -789,6 +817,8 @@ public class YogaStyle {
         }
     }
 
+    // Static helpers for comparing values
+
     private StyleLength computeMargin(YogaPhysicalEdge edge, YogaDirection direction) {
         switch (edge) {
             case LEFT:
@@ -832,43 +862,5 @@ public class YogaStyle {
             default:
                 throw new IllegalArgumentException("Invalid physical edge");
         }
-    }
-
-    // Static helpers for comparing values
-
-    private static boolean numbersEqual(
-            StyleValueHandle lhsHandle,
-            StyleValuePool lhsPool,
-            StyleValueHandle rhsHandle,
-            StyleValuePool rhsPool) {
-        return (lhsHandle.isUndefined() && rhsHandle.isUndefined()) ||
-                (lhsPool.getNumber(lhsHandle).equals(rhsPool.getNumber(rhsHandle)));
-    }
-
-    private static boolean lengthsEqual(
-            StyleValueHandle lhsHandle,
-            StyleValuePool lhsPool,
-            StyleValueHandle rhsHandle,
-            StyleValuePool rhsPool) {
-        return (lhsHandle.isUndefined() && rhsHandle.isUndefined()) ||
-                (lhsPool.getLength(lhsHandle).equals(rhsPool.getLength(rhsHandle)));
-    }
-
-    private static boolean arraysEqual(
-            StyleValueHandle[] lhs,
-            StyleValuePool lhsPool,
-            StyleValueHandle[] rhs,
-            StyleValuePool rhsPool) {
-        if (lhs.length != rhs.length) {
-            return false;
-        }
-
-        for (int i = 0; i < lhs.length; i++) {
-            if (!lengthsEqual(lhs[i], lhsPool, rhs[i], rhsPool)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

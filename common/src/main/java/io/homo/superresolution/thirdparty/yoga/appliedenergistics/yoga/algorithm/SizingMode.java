@@ -44,6 +44,7 @@ public enum SizingMode {
      * Convert a SizingMode to its equivalent MeasureMode
      *
      * @param mode The SizingMode to convert
+     *
      * @return The corresponding MeasureMode
      */
     public static YogaMeasureMode measureMode(SizingMode mode) {
@@ -58,7 +59,9 @@ public enum SizingMode {
      * Convert a MeasureMode to its equivalent SizingMode
      *
      * @param mode The MeasureMode to convert
+     *
      * @return The corresponding SizingMode
+     *
      * @throws IllegalArgumentException If an invalid MeasureMode is provided
      */
     public static SizingMode sizingMode(YogaMeasureMode mode) {

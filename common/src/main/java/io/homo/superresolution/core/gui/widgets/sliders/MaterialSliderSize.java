@@ -20,17 +20,29 @@ package io.homo.superresolution.core.gui.widgets.sliders;
 
 public record MaterialSliderSize(
         float trackCornerSize,
+
         float trackHeight,
+
         float handleWidthPress,
+
         float handleWidth,
+
         float handleHeight,
+
         float insetIconSize,
+
         float stepsSize,
+
         float stepsHorizontalPadding,
+
         float stepsVerticalPadding,
+
         float valueIndicatorTextHorizontalPadding,
+
         float valueIndicatorTextVerticalPadding,
+
         float valueIndicatorBottomPadding,
+
         float handleHorizontalPadding
 ) {
 

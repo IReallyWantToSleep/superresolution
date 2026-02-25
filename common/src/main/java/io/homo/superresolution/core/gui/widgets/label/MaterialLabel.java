@@ -21,14 +21,13 @@ package io.homo.superresolution.core.gui.widgets.label;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialTheme;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
-import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
-import org.joml.Vector2f;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -90,16 +89,6 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     }
 
     @Override
-    public MaterialLabelStyle style() {
-        return (MaterialLabelStyle) style;
-    }
-
-    @Override
-    protected boolean isInteractive() {
-        return false;
-    }
-
-    @Override
     public void layouting(RenderContext ctx) {
         String text = textSupplier.get();
         style().color(colorSupplier.apply(scheme()));
@@ -134,6 +123,16 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
             }
             setElementHeight(cachedTextMetrics.totalHeight);
         }
+    }
+
+    @Override
+    public MaterialLabelStyle style() {
+        return (MaterialLabelStyle) style;
+    }
+
+    @Override
+    protected boolean isInteractive() {
+        return false;
     }
 
     @Override

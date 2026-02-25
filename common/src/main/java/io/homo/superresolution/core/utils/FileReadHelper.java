@@ -33,8 +33,10 @@ public class FileReadHelper {
         ArrayList<String> lines = new ArrayList<>();
 
         if (inputStream != null) {
-            try (InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+            try (
+                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                    BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+            ) {
 
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {

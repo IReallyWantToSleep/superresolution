@@ -23,7 +23,8 @@ public enum SRUpscaleContextCreateFlags {
     ENABLE_DEBUG(1 << 0),
     ENABLE_AUTO_EXPOSURE(1 << 1),
     ENABLE_DEPTH_INVERTED(1 << 2),
-    ENABLE_MOTION_VECTORS_JITTERED(1 << 4);
+    ENABLE_MOTION_VECTORS_JITTERED(1 << 4),
+    ENABLE_HDR(1 << 5);
     public final int value;
 
     SRUpscaleContextCreateFlags(int value) {

@@ -20,12 +20,19 @@ package io.homo.superresolution.core.gui.widgets.button;
 
 public record MaterialButtonSize(
         float height,
+
         float padding,
+
         float iconPadding,
+
         float roundCornerSize,
+
         float squareCornerSize,
+
         float pressedCornerSize,
+
         float iconSize,
+
         float fontSize
 ) {
     public static final MaterialButtonSize ExtraSmall = new MaterialButtonSize(

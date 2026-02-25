@@ -41,9 +41,24 @@ public class CachedMeasurement {
     }
 
     @Override
+    public int hashCode() {
+        int result = Float.floatToIntBits(availableWidth);
+        result = 31 * result + Float.floatToIntBits(availableHeight);
+        result = 31 * result + widthSizingMode.hashCode();
+        result = 31 * result + heightSizingMode.hashCode();
+        result = 31 * result + Float.floatToIntBits(computedWidth);
+        result = 31 * result + Float.floatToIntBits(computedHeight);
+        return result;
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
 
         CachedMeasurement other = (CachedMeasurement) obj;
         boolean isEqual = widthSizingMode == other.widthSizingMode &&
@@ -70,16 +85,5 @@ public class CachedMeasurement {
         }
 
         return isEqual;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = Float.floatToIntBits(availableWidth);
-        result = 31 * result + Float.floatToIntBits(availableHeight);
-        result = 31 * result + widthSizingMode.hashCode();
-        result = 31 * result + heightSizingMode.hashCode();
-        result = 31 * result + Float.floatToIntBits(computedWidth);
-        result = 31 * result + Float.floatToIntBits(computedHeight);
-        return result;
     }
 }

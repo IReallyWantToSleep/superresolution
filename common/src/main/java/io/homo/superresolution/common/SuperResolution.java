@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import dev.architectury.event.events.client.ClientLifecycleEvent;
 import dev.architectury.event.events.client.ClientTickEvent;
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmResizeEvent;
 import io.homo.superresolution.api.platform.EnvironmentType;
@@ -33,6 +34,7 @@ import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.core.NativeLibManager;
@@ -216,6 +218,10 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static boolean createAlgorithm() {
+        return createAlgorithm(getInitializationDescription());
+    }
+
+    public static boolean createAlgorithm(InitializationDescription desc) {
         try (GlState ignored = new GlState()) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
@@ -223,10 +229,11 @@ public final class SuperResolution implements Resizable, Destroyable {
             if (!isPreInit) {
                 return false;
             }
-            defaultAlgorithm.init();
+            defaultAlgorithm.initialize();
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
+                currentAlgorithm.initialize(desc);
                 SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
                 return true;
             } catch (Exception e) {
@@ -238,6 +245,10 @@ public final class SuperResolution implements Resizable, Destroyable {
     }
 
     public static boolean recreateAlgorithm() {
+        return recreateAlgorithm(getInitializationDescription());
+    }
+
+    public static boolean recreateAlgorithm(InitializationDescription desc) {
         try (GlState ignored = new GlState()) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
@@ -252,17 +263,7 @@ public final class SuperResolution implements Resizable, Destroyable {
 
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
-                currentAlgorithm.init();
-                /*SuperResolutionAPI.EVENT_BUS.post(
-                        new AlgorithmResizeEvent(
-                                currentAlgorithm,
-                                RenderHandlerManager.getScreenWidth(),
-                                RenderHandlerManager.getScreenHeight(),
-                                RenderHandlerManager.getRenderWidth(),
-                                RenderHandlerManager.getRenderHeight()
-                        )
-                );*/
-
+                currentAlgorithm.initialize(desc);
                 return true;
             } catch (Exception e) {
                 LOGGER.error("初始化算法 {} 时失败：", algorithmDescription.getDisplayName(), e);
@@ -276,6 +277,21 @@ public final class SuperResolution implements Resizable, Destroyable {
             return currentAlgorithm;
         }
         return defaultAlgorithm;
+    }
+
+    /**
+     * 根据当前所有配置来构建初始化描述。
+     * <ul>
+     *   <li>Iris 光影接口配置：通过 {@link ShaderCompatHandler#getCurrentLevelCompatConfig()} 读取，
+     *       未安装 Iris 或未加载光影包时回落 fallback（false）</li>
+     *   <li>用户配置：暂无，预留扩展点</li>
+     * </ul>
+     */
+    public static InitializationDescription getInitializationDescription() {
+        boolean isHdr = ShaderCompatHandler.getCurrentLevelCompatConfig()
+                .map(p -> p.upscale.isHdrInput)
+                .orElse(false);
+        return new InitializationDescription().setHdrInput(isHdr);
     }
 
     public void init() {

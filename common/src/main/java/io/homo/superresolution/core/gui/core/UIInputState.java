@@ -22,6 +22,7 @@ import org.joml.Vector2f;
 
 public record UIInputState(
         Vector2f mousePosition,
+
         float frameTime
 ) {
 }

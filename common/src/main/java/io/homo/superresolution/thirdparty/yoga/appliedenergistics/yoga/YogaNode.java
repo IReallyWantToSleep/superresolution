@@ -25,9 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison.isDefined;
-import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison.isUndefined;
-import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison.maxOrDefined;
+import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.Comparison.*;
 
 public class YogaNode implements YogaProps {
     private boolean hasNewLayout = true;
@@ -49,17 +47,6 @@ public class YogaNode implements YogaProps {
     private StyleSizeLength[] processedDimensions = new StyleSizeLength[2];
     @Nullable
     private String debugName;
-
-    /**
-     * The interface the {@link #getData()} object can optionally implement.
-     */
-    public interface Inputs {
-
-        /**
-         * Requests the data object to disable mutations of its inputs.
-         */
-        void freeze(final YogaNode node, final @Nullable YogaNode parent);
-    }
 
     // Constructors
     public YogaNode() {
@@ -102,9 +89,21 @@ public class YogaNode implements YogaProps {
         this.processedDimensions = node.processedDimensions.clone();
     }
 
+    private static String f(float f) {
+        if ((float) (int) f == f) {
+            return String.valueOf((int) f);
+        }
+        return String.valueOf(f);
+    }
+
     // Getters
     public Object getContext() {
         return context;
+    }
+
+    // Setters
+    public void setContext(Object context) {
+        this.context = context;
     }
 
     public boolean alwaysFormsContainingBlock() {
@@ -117,6 +116,10 @@ public class YogaNode implements YogaProps {
 
     public YogaNodeType getNodeType() {
         return nodeType;
+    }
+
+    public void setNodeType(YogaNodeType nodeType) {
+        this.nodeType = nodeType;
     }
 
     public boolean hasMeasureFunc() {
@@ -185,16 +188,32 @@ public class YogaNode implements YogaProps {
         return dirtiedFunc;
     }
 
+    public void setDirtiedFunc(YogaDirtiedFunction dirtiedFunc) {
+        this.dirtiedFunc = dirtiedFunc;
+    }
+
     public YogaStyle getStyle() {
         return style;
+    }
+
+    public void setStyle(YogaStyle style) {
+        this.style = style;
     }
 
     public LayoutResults getLayout() {
         return layout;
     }
 
+    public void setLayout(LayoutResults layout) {
+        this.layout = layout;
+    }
+
     public int getLineIndex() {
         return lineIndex;
+    }
+
+    public void setLineIndex(int lineIndex) {
+        this.lineIndex = lineIndex;
     }
 
     public boolean isReferenceBaseline() {
@@ -205,126 +224,12 @@ public class YogaNode implements YogaProps {
         return owner;
     }
 
-    public List<YogaNode> getChildren() {
-        return children;
-    }
-
-    public YogaNode getChild(int index) {
-        return children.get(index);
-    }
-
-    public int getChildCount() {
-        return children.size();
-    }
-
-    public LayoutableChildren getLayoutChildren() {
-        return new LayoutableChildren(this);
-    }
-
-    public int getLayoutChildCount() {
-        if (contentsChildrenCount == 0) {
-            return children.size();
-        } else {
-            int count = 0;
-            for (var iter = getLayoutChildren().iterator(); iter.hasNext(); iter.next()) {
-                count++;
-            }
-            return count;
-        }
-    }
-
-    public YogaConfig getConfig() {
-        return config;
-    }
-
-    public boolean isDirty() {
-        return isDirty;
-    }
-
-    public StyleSizeLength getProcessedDimension(YogaDimension dimension) {
-        return processedDimensions[dimension.ordinal()];
-    }
-
-    public FloatOptional getResolvedDimension(
-            YogaDirection direction,
-            YogaDimension dimension,
-            float referenceLength,
-            float ownerWidth) {
-        FloatOptional value = getProcessedDimension(dimension).resolve(referenceLength);
-        if (style.getBoxSizing() == YogaBoxSizing.BORDER_BOX) {
-            return value;
-        }
-
-        FloatOptional dimensionPaddingAndBorder = FloatOptional.of(
-                style.computePaddingAndBorderForDimension(direction, dimension, ownerWidth));
-
-        return value.add(
-                dimensionPaddingAndBorder.isDefined() ? dimensionPaddingAndBorder
-                        : FloatOptional.of(0.0f));
-    }
-
-    // Setters
-    public void setContext(Object context) {
-        this.context = context;
-    }
-
-    public void setAlwaysFormsContainingBlock(boolean alwaysFormsContainingBlock) {
-        this.alwaysFormsContainingBlock = alwaysFormsContainingBlock;
-    }
-
-    public void setHasNewLayout(boolean hasNewLayout) {
-        this.hasNewLayout = hasNewLayout;
-    }
-
-    public void markLayoutSeen() {
-        setHasNewLayout(false);
-    }
-
-    public void setNodeType(YogaNodeType nodeType) {
-        this.nodeType = nodeType;
-    }
-
-    public void setMeasureFunction(YogaMeasureFunction measureFunc) {
-        if (measureFunc == null) {
-            setNodeType(YogaNodeType.DEFAULT);
-        } else {
-            if (!children.isEmpty()) {
-                throw new IllegalStateException(
-                        "Cannot set measure function: Nodes with measure functions cannot have children.");
-            }
-            setNodeType(YogaNodeType.TEXT);
-        }
-
-        this.measureFunc = measureFunc;
-    }
-
-    public void setBaselineFunction(YogaBaselineFunction baselineFunc) {
-        this.baselineFunc = baselineFunc;
-    }
-
-    public void setDirtiedFunc(YogaDirtiedFunction dirtiedFunc) {
-        this.dirtiedFunc = dirtiedFunc;
-    }
-
-    public void setStyle(YogaStyle style) {
-        this.style = style;
-    }
-
-    public void setLayout(LayoutResults layout) {
-        this.layout = layout;
-    }
-
-    public void setLineIndex(int lineIndex) {
-        this.lineIndex = lineIndex;
-    }
-
-    @Override
-    public void setIsReferenceBaseline(boolean isReferenceBaseline) {
-        this.isReferenceBaseline = isReferenceBaseline;
-    }
-
     public void setOwner(YogaNode owner) {
         this.owner = owner;
+    }
+
+    public List<YogaNode> getChildren() {
+        return children;
     }
 
     public void setChildren(List<YogaNode> children) {
@@ -356,6 +261,34 @@ public class YogaNode implements YogaProps {
         }
     }
 
+    public YogaNode getChild(int index) {
+        return children.get(index);
+    }
+
+    public int getChildCount() {
+        return children.size();
+    }
+
+    public LayoutableChildren getLayoutChildren() {
+        return new LayoutableChildren(this);
+    }
+
+    public int getLayoutChildCount() {
+        if (contentsChildrenCount == 0) {
+            return children.size();
+        } else {
+            int count = 0;
+            for (var iter = getLayoutChildren().iterator(); iter.hasNext(); iter.next()) {
+                count++;
+            }
+            return count;
+        }
+    }
+
+    public YogaConfig getConfig() {
+        return config;
+    }
+
     public void setConfig(MutableYogaConfig config) {
         Objects.requireNonNull(config, "Attempting to set a null config on a Node");
 
@@ -374,6 +307,24 @@ public class YogaNode implements YogaProps {
         }
 
         this.config = config;
+    }    public void setMeasureFunction(YogaMeasureFunction measureFunc) {
+        if (measureFunc == null) {
+            setNodeType(YogaNodeType.DEFAULT);
+        } else {
+            if (!children.isEmpty()) {
+                throw new IllegalStateException(
+                        "Cannot set measure function: Nodes with measure functions cannot have children.");
+            }
+            setNodeType(YogaNodeType.TEXT);
+        }
+
+        this.measureFunc = measureFunc;
+    }
+
+    public boolean isDirty() {
+        return isDirty;
+    }    public void setBaselineFunction(YogaBaselineFunction baselineFunc) {
+        this.baselineFunc = baselineFunc;
     }
 
     public void setDirty(boolean isDirty) {
@@ -386,8 +337,41 @@ public class YogaNode implements YogaProps {
         }
     }
 
-    public void setLayoutDirection(YogaDirection direction) {
-        layout.setDirection(direction);
+    public StyleSizeLength getProcessedDimension(YogaDimension dimension) {
+        return processedDimensions[dimension.ordinal()];
+    }
+
+    public FloatOptional getResolvedDimension(
+            YogaDirection direction,
+            YogaDimension dimension,
+            float referenceLength,
+            float ownerWidth) {
+        FloatOptional value = getProcessedDimension(dimension).resolve(referenceLength);
+        if (style.getBoxSizing() == YogaBoxSizing.BORDER_BOX) {
+            return value;
+        }
+
+        FloatOptional dimensionPaddingAndBorder = FloatOptional.of(
+                style.computePaddingAndBorderForDimension(direction, dimension, ownerWidth));
+
+        return value.add(
+                dimensionPaddingAndBorder.isDefined() ? dimensionPaddingAndBorder
+                        : FloatOptional.of(0.0f));
+    }
+
+    public void setAlwaysFormsContainingBlock(boolean alwaysFormsContainingBlock) {
+        this.alwaysFormsContainingBlock = alwaysFormsContainingBlock;
+    }
+
+    public void setHasNewLayout(boolean hasNewLayout) {
+        this.hasNewLayout = hasNewLayout;
+    }    @Override
+    public void setIsReferenceBaseline(boolean isReferenceBaseline) {
+        this.isReferenceBaseline = isReferenceBaseline;
+    }
+
+    public void markLayoutSeen() {
+        setHasNewLayout(false);
     }
 
     public void setLayoutMargin(float margin, YogaPhysicalEdge edge) {
@@ -428,13 +412,6 @@ public class YogaNode implements YogaProps {
 
     public void setLayoutDimension(float lengthValue, YogaDimension dimension) {
         layout.setDimension(dimension, lengthValue);
-    }
-
-    private static String f(float f) {
-        if ((float) (int) f == f) {
-            return String.valueOf((int) f);
-        }
-        return String.valueOf(f);
     }
 
     public @Nullable String getDebugName() {
@@ -752,110 +729,6 @@ public class YogaNode implements YogaProps {
                 crossAxisTrailingEdge);
     }
 
-    @Override
-    public YogaDirection getStyleDirection() {
-        return style.getDirection();
-    }
-
-    @Override
-    public void setDirection(YogaDirection direction) {
-        if (style.getDirection() != direction) {
-            style.setDirection(direction);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaFlexDirection getFlexDirection() {
-        return style.getFlexDirection();
-    }
-
-    @Override
-    public void setFlexDirection(YogaFlexDirection flexDirection) {
-        if (style.getFlexDirection() != flexDirection) {
-            style.setFlexDirection(flexDirection);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaJustify getJustifyContent() {
-        return style.getJustifyContent();
-    }
-
-    @Override
-    public void setJustifyContent(YogaJustify justifyContent) {
-        if (style.getJustifyContent() != justifyContent) {
-            style.setJustifyContent(justifyContent);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaAlign getAlignItems() {
-        return style.getAlignItems();
-    }
-
-    @Override
-    public void setAlignItems(YogaAlign alignItems) {
-        if (style.getAlignItems() != alignItems) {
-            style.setAlignItems(alignItems);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaAlign getAlignSelf() {
-        return style.getAlignSelf();
-    }
-
-    @Override
-    public void setAlignSelf(YogaAlign alignSelf) {
-        if (style.getAlignSelf() != alignSelf) {
-            style.setAlignSelf(alignSelf);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaAlign getAlignContent() {
-        return style.getAlignContent();
-    }
-
-    @Override
-    public void setAlignContent(YogaAlign alignContent) {
-        if (style.getAlignContent() != alignContent) {
-            style.setAlignContent(alignContent);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaPositionType getPositionType() {
-        return style.getPositionType();
-    }
-
-    @Override
-    public void setPositionType(YogaPositionType positionType) {
-        if (style.getPositionType() != positionType) {
-            style.setPositionType(positionType);
-            markDirtyAndPropagate();
-        }
-    }
-
-    @Override
-    public YogaBoxSizing getBoxSizing() {
-        return style.getBoxSizing();
-    }
-
-    @Override
-    public void setBoxSizing(YogaBoxSizing boxSizing) {
-        if (style.getBoxSizing() != boxSizing) {
-            style.setBoxSizing(boxSizing);
-            markDirtyAndPropagate();
-        }
-    }
-
     public YogaWrap getWrap() {
         return style.getFlexWrap();
     }
@@ -888,10 +761,19 @@ public class YogaNode implements YogaProps {
             style.setDisplay(display);
             markDirtyAndPropagate();
         }
+    }    @Override
+    public YogaDirection getStyleDirection() {
+        return style.getDirection();
     }
 
     public float getFlex() {
         return style.getFlex().unwrapOrDefault(YogaConstants.UNDEFINED);
+    }    @Override
+    public void setDirection(YogaDirection direction) {
+        if (style.getDirection() != direction) {
+            style.setDirection(direction);
+            markDirtyAndPropagate();
+        }
     }
 
     @Override
@@ -901,14 +783,252 @@ public class YogaNode implements YogaProps {
             style.setFlex(value);
             markDirtyAndPropagate();
         }
+    }    @Override
+    public YogaFlexDirection getFlexDirection() {
+        return style.getFlexDirection();
     }
 
     @Override
+    public void setFlexBasisAuto() {
+        var value = StyleSizeLength.ofAuto();
+        if (!style.getFlexBasis().equals(value)) {
+            style.setFlexBasis(value);
+            markDirtyAndPropagate();
+        }
+    }    @Override
+    public void setFlexDirection(YogaFlexDirection flexDirection) {
+        if (style.getFlexDirection() != flexDirection) {
+            style.setFlexDirection(flexDirection);
+            markDirtyAndPropagate();
+        }
+    }
+
+    @Override
+    public void setFlexBasisPercent(float percent) {
+        var value = StyleSizeLength.percent(percent);
+        if (!style.getFlexBasis().equals(value)) {
+            style.setFlexBasis(value);
+            markDirtyAndPropagate();
+        }
+    }    @Override
+    public YogaJustify getJustifyContent() {
+        return style.getJustifyContent();
+    }
+
+    public boolean isMeasureDefined() {
+        return measureFunc != null;
+    }    @Override
+    public void setJustifyContent(YogaJustify justifyContent) {
+        if (style.getJustifyContent() != justifyContent) {
+            style.setJustifyContent(justifyContent);
+            markDirtyAndPropagate();
+        }
+    }
+
+    public @Nullable Object getData() {
+        return getContext();
+    }    @Override
+    public YogaAlign getAlignItems() {
+        return style.getAlignItems();
+    }
+
+    public void setData(Object data) {
+        setContext(data);
+    }    @Override
+    public void setAlignItems(YogaAlign alignItems) {
+        if (style.getAlignItems() != alignItems) {
+            style.setAlignItems(alignItems);
+            markDirtyAndPropagate();
+        }
+    }
+
+    /**
+     * 这    是    相    对    于    父    节    点    的
+     */
+    public float getLayoutX() {
+        return layout.position(YogaPhysicalEdge.LEFT);
+    }    @Override
+    public YogaAlign getAlignSelf() {
+        return style.getAlignSelf();
+    }
+
+    /**
+     * 这    是    相    对    于    父    节    点    的
+     */
+    public float getLayoutY() {
+        return layout.position(YogaPhysicalEdge.TOP);
+    }    @Override
+    public void setAlignSelf(YogaAlign alignSelf) {
+        if (style.getAlignSelf() != alignSelf) {
+            style.setAlignSelf(alignSelf);
+            markDirtyAndPropagate();
+        }
+    }
+
+    public float getLayoutRight() {
+        return layout.position(YogaPhysicalEdge.RIGHT);
+    }    @Override
+    public YogaAlign getAlignContent() {
+        return style.getAlignContent();
+    }
+
+    public float getLayoutBottom() {
+        return layout.position(YogaPhysicalEdge.BOTTOM);
+    }    @Override
+    public void setAlignContent(YogaAlign alignContent) {
+        if (style.getAlignContent() != alignContent) {
+            style.setAlignContent(alignContent);
+            markDirtyAndPropagate();
+        }
+    }
+
+    public float getLayoutWidth() {
+        return layout.dimension(YogaDimension.WIDTH);
+    }    @Override
+    public YogaPositionType getPositionType() {
+        return style.getPositionType();
+    }
+
+    public float getLayoutHeight() {
+        return layout.dimension(YogaDimension.HEIGHT);
+    }    @Override
+    public void setPositionType(YogaPositionType positionType) {
+        if (style.getPositionType() != positionType) {
+            style.setPositionType(positionType);
+            markDirtyAndPropagate();
+        }
+    }
+
+    public float getLayoutMargin(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge) {
+        return switch (edge) {
+            case LEFT -> layout.margin(YogaPhysicalEdge.LEFT);
+            case TOP -> layout.margin(YogaPhysicalEdge.TOP);
+            case RIGHT -> layout.margin(YogaPhysicalEdge.RIGHT);
+            case BOTTOM -> layout.margin(YogaPhysicalEdge.BOTTOM);
+            case START -> getLayoutDirection() == YogaDirection.RTL
+                    ? layout.margin(YogaPhysicalEdge.RIGHT)
+                    : layout.margin(YogaPhysicalEdge.LEFT);
+            case END -> getLayoutDirection() == YogaDirection.RTL
+                    ? layout.margin(YogaPhysicalEdge.LEFT)
+                    : layout.margin(YogaPhysicalEdge.RIGHT);
+            default -> throw new IllegalArgumentException("Cannot get layout margins of multi-edge shorthands");
+        };
+    }    @Override
+    public YogaBoxSizing getBoxSizing() {
+        return style.getBoxSizing();
+    }
+
+    public float getLayoutPadding(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge) {
+        return switch (edge) {
+            case LEFT -> layout.padding(YogaPhysicalEdge.LEFT);
+            case TOP -> layout.padding(YogaPhysicalEdge.TOP);
+            case RIGHT -> layout.padding(YogaPhysicalEdge.RIGHT);
+            case BOTTOM -> layout.padding(YogaPhysicalEdge.BOTTOM);
+            case START -> getLayoutDirection() == YogaDirection.RTL
+                    ? layout.padding(YogaPhysicalEdge.RIGHT)
+                    : layout.padding(YogaPhysicalEdge.LEFT);
+            case END -> getLayoutDirection() == YogaDirection.RTL
+                    ? layout.padding(YogaPhysicalEdge.LEFT)
+                    : layout.padding(YogaPhysicalEdge.RIGHT);
+            default -> throw new IllegalArgumentException("Cannot get layout padding of multi-edge shorthands");
+        };
+    }    @Override
+    public void setBoxSizing(YogaBoxSizing boxSizing) {
+        if (style.getBoxSizing() != boxSizing) {
+            style.setBoxSizing(boxSizing);
+            markDirtyAndPropagate();
+        }
+    }
+
+    public float getLayoutBorder(YogaEdge edge) {
+        return switch (edge) {
+            case LEFT -> layout.border(YogaPhysicalEdge.LEFT);
+            case TOP -> layout.border(YogaPhysicalEdge.TOP);
+            case RIGHT -> layout.border(YogaPhysicalEdge.RIGHT);
+            case BOTTOM -> layout.border(YogaPhysicalEdge.BOTTOM);
+            case START -> getLayoutDirection() == YogaDirection.RTL
+                    ? layout.border(YogaPhysicalEdge.RIGHT)
+                    : layout.border(YogaPhysicalEdge.LEFT);
+            case END -> getLayoutDirection() == YogaDirection.RTL
+                    ? layout.border(YogaPhysicalEdge.LEFT)
+                    : layout.border(YogaPhysicalEdge.RIGHT);
+            default -> throw new IllegalArgumentException("Cannot get layout border of multi-edge shorthands");
+        };
+    }
+
+    public YogaDirection getLayoutDirection() {
+        return layout.direction();
+    }
+
+    public void setLayoutDirection(YogaDirection direction) {
+        layout.setDirection(direction);
+    }
+
+    public void calculateLayout(float width, float height) {
+        calculateLayout(width, height, style.getDirection());
+    }
+
+    public void calculateLayout(float width, float height, YogaDirection direction) {
+        freeze(null);
+
+        ArrayList<YogaNode> n = new ArrayList<>();
+        n.add(this);
+        for (int i = 0; i < n.size(); ++i) {
+            final YogaNode parent = n.get(i);
+            List<YogaNode> children = parent.children;
+            if (children != null) {
+                for (YogaNode child : children) {
+                    child.freeze(parent);
+                }
+            }
+        }
+
+        CalculateLayout.calculateLayout(
+                this,
+                width,
+                height,
+                direction
+        );
+    }
+
+    private void freeze(YogaNode parent) {
+        Object data = getData();
+        if (data instanceof Inputs inputs) {
+            inputs.freeze(this, parent);
+        }
+    }
+
+    public void copyStyle(YogaNode other) {
+        if (!style.equals(other.style)) {
+            style = new YogaStyle(other.style);
+            markDirtyAndPropagate();
+        }
+    }
+
+    public YogaNode cloneWithChildren() {
+        var node = new YogaNode(this);
+        YogaEvent.publish(node, YogaEventType.NODE_ALLOCATION, new YogaEvent.NodeAllocationData(config));
+        node.setOwner(null);
+        return node;
+    }
+
+    public YogaNode cloneWithoutChildren() {
+        var node = new YogaNode(this);
+        YogaEvent.publish(node, YogaEventType.NODE_ALLOCATION, new YogaEvent.NodeAllocationData(config));
+        node.setOwner(null);
+        node.clearChildren();
+        return node;
+    }    @Override
     public float getFlexGrow() {
         return style.getFlexGrow().unwrapOrDefault(YogaStyle.DEFAULT_FLEX_GROW);
     }
 
-    @Override
+    public float getAbsolutePositionX() {
+        if (owner != null) {
+            return owner.getAbsolutePositionX() + getLayoutX();
+        }
+        return getLayoutX();
+    }    @Override
     public void setFlexGrow(float flexGrow) {
         var value = FloatOptional.of(flexGrow);
         if (!style.getFlexGrow().equals(value)) {
@@ -917,7 +1037,12 @@ public class YogaNode implements YogaProps {
         }
     }
 
-    @Override
+    public float getAbsolutePositionY() {
+        if (owner != null) {
+            return owner.getAbsolutePositionY() + getLayoutY();
+        }
+        return getLayoutY();
+    }    @Override
     public float getFlexShrink() {
         return style.getFlexShrink().unwrapOrDefault(
                 config.useWebDefaults() ? YogaStyle.WEB_DEFAULT_FLEX_SHRINK
@@ -925,6 +1050,14 @@ public class YogaNode implements YogaProps {
     }
 
     @Override
+    public String toString() {
+        if (debugName != null) {
+            return debugName;
+        } else if (context != null) {
+            return "context[" + context + "]";
+        }
+        return super.toString();
+    }    @Override
     public void setFlexShrink(float flexShrink) {
         var value = FloatOptional.of(flexShrink);
         if (!style.getFlexShrink().equals(value)) {
@@ -933,7 +1066,16 @@ public class YogaNode implements YogaProps {
         }
     }
 
-    @Override
+    /**
+     * The interface the {@link #getData()} object can optionally implement.
+     */
+    public interface Inputs {
+
+        /**
+         * Requests the data object to disable mutations of its inputs.
+         */
+        void freeze(final YogaNode node, final @Nullable YogaNode parent);
+    }    @Override
     public YogaValue getFlexBasis() {
         return style.getFlexBasis().asYogaValue();
     }
@@ -947,23 +1089,9 @@ public class YogaNode implements YogaProps {
         }
     }
 
-    @Override
-    public void setFlexBasisPercent(float percent) {
-        var value = StyleSizeLength.percent(percent);
-        if (!style.getFlexBasis().equals(value)) {
-            style.setFlexBasis(value);
-            markDirtyAndPropagate();
-        }
-    }
 
-    @Override
-    public void setFlexBasisAuto() {
-        var value = StyleSizeLength.ofAuto();
-        if (!style.getFlexBasis().equals(value)) {
-            style.setFlexBasis(value);
-            markDirtyAndPropagate();
-        }
-    }
+
+
 
     @Override
     public void setFlexBasisMaxContent() {
@@ -1151,99 +1279,31 @@ public class YogaNode implements YogaProps {
         }
     }
 
-    public boolean isMeasureDefined() {
-        return measureFunc != null;
-    }
 
-    public void setData(Object data) {
-        setContext(data);
-    }
 
-    public @Nullable Object getData() {
-        return getContext();
-    }
 
-    /**
-     * 这    是    相    对    于    父    节    点    的
-     */
-    public float getLayoutX() {
-        return layout.position(YogaPhysicalEdge.LEFT);
-    }
 
-    /**
-     * 这    是    相    对    于    父    节    点    的
-     */
-    public float getLayoutY() {
-        return layout.position(YogaPhysicalEdge.TOP);
-    }
 
-    public float getLayoutRight() {
-        return layout.position(YogaPhysicalEdge.RIGHT);
-    }
 
-    public float getLayoutBottom() {
-        return layout.position(YogaPhysicalEdge.BOTTOM);
-    }
 
-    public float getLayoutWidth() {
-        return layout.dimension(YogaDimension.WIDTH);
-    }
 
-    public float getLayoutHeight() {
-        return layout.dimension(YogaDimension.HEIGHT);
-    }
 
-    public float getLayoutMargin(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge) {
-        return switch (edge) {
-            case LEFT -> layout.margin(YogaPhysicalEdge.LEFT);
-            case TOP -> layout.margin(YogaPhysicalEdge.TOP);
-            case RIGHT -> layout.margin(YogaPhysicalEdge.RIGHT);
-            case BOTTOM -> layout.margin(YogaPhysicalEdge.BOTTOM);
-            case START -> getLayoutDirection() == YogaDirection.RTL
-                    ? layout.margin(YogaPhysicalEdge.RIGHT)
-                    : layout.margin(YogaPhysicalEdge.LEFT);
-            case END -> getLayoutDirection() == YogaDirection.RTL
-                    ? layout.margin(YogaPhysicalEdge.LEFT)
-                    : layout.margin(YogaPhysicalEdge.RIGHT);
-            default -> throw new IllegalArgumentException("Cannot get layout margins of multi-edge shorthands");
-        };
-    }
 
-    public float getLayoutPadding(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge) {
-        return switch (edge) {
-            case LEFT -> layout.padding(YogaPhysicalEdge.LEFT);
-            case TOP -> layout.padding(YogaPhysicalEdge.TOP);
-            case RIGHT -> layout.padding(YogaPhysicalEdge.RIGHT);
-            case BOTTOM -> layout.padding(YogaPhysicalEdge.BOTTOM);
-            case START -> getLayoutDirection() == YogaDirection.RTL
-                    ? layout.padding(YogaPhysicalEdge.RIGHT)
-                    : layout.padding(YogaPhysicalEdge.LEFT);
-            case END -> getLayoutDirection() == YogaDirection.RTL
-                    ? layout.padding(YogaPhysicalEdge.LEFT)
-                    : layout.padding(YogaPhysicalEdge.RIGHT);
-            default -> throw new IllegalArgumentException("Cannot get layout padding of multi-edge shorthands");
-        };
-    }
 
-    public float getLayoutBorder(YogaEdge edge) {
-        return switch (edge) {
-            case LEFT -> layout.border(YogaPhysicalEdge.LEFT);
-            case TOP -> layout.border(YogaPhysicalEdge.TOP);
-            case RIGHT -> layout.border(YogaPhysicalEdge.RIGHT);
-            case BOTTOM -> layout.border(YogaPhysicalEdge.BOTTOM);
-            case START -> getLayoutDirection() == YogaDirection.RTL
-                    ? layout.border(YogaPhysicalEdge.RIGHT)
-                    : layout.border(YogaPhysicalEdge.LEFT);
-            case END -> getLayoutDirection() == YogaDirection.RTL
-                    ? layout.border(YogaPhysicalEdge.LEFT)
-                    : layout.border(YogaPhysicalEdge.RIGHT);
-            default -> throw new IllegalArgumentException("Cannot get layout border of multi-edge shorthands");
-        };
-    }
 
-    public YogaDirection getLayoutDirection() {
-        return layout.direction();
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public YogaValue getGap(YogaGutter gutter) {
         return style.getGap(gutter).asYogaValue();
@@ -1256,83 +1316,21 @@ public class YogaNode implements YogaProps {
         }
     }
 
-    public void calculateLayout(float width, float height) {
-        calculateLayout(width, height, style.getDirection());
-    }
 
-    public void calculateLayout(float width, float height, YogaDirection direction) {
-        freeze(null);
 
-        ArrayList<YogaNode> n = new ArrayList<>();
-        n.add(this);
-        for (int i = 0; i < n.size(); ++i) {
-            final YogaNode parent = n.get(i);
-            List<YogaNode> children = parent.children;
-            if (children != null) {
-                for (YogaNode child : children) {
-                    child.freeze(parent);
-                }
-            }
-        }
 
-        CalculateLayout.calculateLayout(
-                this,
-                width,
-                height,
-                direction
-        );
-    }
 
-    private void freeze(YogaNode parent) {
-        Object data = getData();
-        if (data instanceof Inputs inputs) {
-            inputs.freeze(this, parent);
-        }
-    }
 
-    public void copyStyle(YogaNode other) {
-        if (!style.equals(other.style)) {
-            style = new YogaStyle(other.style);
-            markDirtyAndPropagate();
-        }
-    }
 
-    public YogaNode cloneWithChildren() {
-        var node = new YogaNode(this);
-        YogaEvent.publish(node, YogaEventType.NODE_ALLOCATION, new YogaEvent.NodeAllocationData(config));
-        node.setOwner(null);
-        return node;
-    }
 
-    public YogaNode cloneWithoutChildren() {
-        var node = new YogaNode(this);
-        YogaEvent.publish(node, YogaEventType.NODE_ALLOCATION, new YogaEvent.NodeAllocationData(config));
-        node.setOwner(null);
-        node.clearChildren();
-        return node;
-    }
 
-    public float getAbsolutePositionX() {
-        if (owner != null) {
-            return owner.getAbsolutePositionX() + getLayoutX();
-        }
-        return getLayoutX();
-    }
 
-    public float getAbsolutePositionY() {
-        if (owner != null) {
-            return owner.getAbsolutePositionY() + getLayoutY();
-        }
-        return getLayoutY();
-    }
 
-    @Override
-    public String toString() {
-        if (debugName != null) {
-            return debugName;
-        } else if (context != null) {
-            return "context[" + context + "]";
-        }
-        return super.toString();
-    }
+
+
+
+
+
+
+
 }

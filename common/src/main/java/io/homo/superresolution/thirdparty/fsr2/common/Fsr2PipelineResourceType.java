@@ -190,13 +190,15 @@ public class Fsr2PipelineResourceType {
         return id;
     }
 
-    public boolean equals(Object other) {
-        if (other instanceof Fsr2PipelineResourceType) return this.id == ((Fsr2PipelineResourceType) other).id();
-        return false;
-    }
-
     @Override
     public int hashCode() {
         return Integer.hashCode(id);
+    }
+
+    public boolean equals(Object other) {
+        if (other instanceof Fsr2PipelineResourceType) {
+            return this.id == ((Fsr2PipelineResourceType) other).id();
+        }
+        return false;
     }
 }

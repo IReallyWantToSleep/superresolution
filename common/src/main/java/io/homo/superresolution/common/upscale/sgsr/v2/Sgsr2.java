@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.sgsr.v2;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.SgsrVariant;
@@ -65,7 +66,7 @@ public class Sgsr2 extends AbstractAlgorithm {
     }
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
         this.output = new GlFrameBuffer();
         output.addAttachment(new GlFrameBufferAttachment(
                 GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
@@ -158,7 +159,7 @@ public class Sgsr2 extends AbstractAlgorithm {
         Matrix4f clipToPrevClipMat = previousViewProjectionMatrix.mul(invertViewProjectionMatrix, new Matrix4f());
 
         paramsData.setMat4("clipToPrevClip", clipToPrevClipMat);
-        paramsData.setFloat("preExposure", 1.0f);
+        paramsData.setFloat("preExposure", dispatchResource.preExposure());
         paramsData.setFloat("cameraFovAngleHor", dispatchResource.horizontalFov());
         paramsData.setFloat("cameraNear", dispatchResource.cameraNear());
 

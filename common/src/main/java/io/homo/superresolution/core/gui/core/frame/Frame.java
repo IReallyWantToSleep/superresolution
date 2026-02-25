@@ -25,7 +25,6 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
-import io.homo.superresolution.core.gui.widgets.menu.MaterialMenu;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
@@ -108,11 +107,6 @@ public class Frame implements IFrame {
         return !isInViewport(transformedBounds);
     }
 
-    @Override
-    public AbstractWidget<?> getRoot() {
-        return root;
-    }
-
     private void renderWidget(RenderContext ctx, UIInputState inputState, RenderEntry entry) {
         AbstractWidget<?> widget = entry.widget();
         Transform transform = entry.accumulatedTransform();
@@ -121,6 +115,9 @@ public class Frame implements IFrame {
         ctx.applyTransform(transform);
         widget.render(ctx, inputState);
         ctx.restore();
+    }    @Override
+    public AbstractWidget<?> getRoot() {
+        return root;
     }
 
     private void collectAncestorChain(AbstractWidget<?> widget, Set<AbstractWidget<?>> chain) {
@@ -208,12 +205,6 @@ public class Frame implements IFrame {
         }
     }
 
-    @Override
-    public void setRoot(AbstractWidget<?> root) {
-        this.root = root;
-        markLayoutDirty();
-    }
-
     private Vector2f transformDelta(Transform transform, float dx, float dy) {
         if (transform.isIdentity()) {
             return new Vector2f(dx, dy);
@@ -238,6 +229,10 @@ public class Frame implements IFrame {
                 }
             }
         }
+    }    @Override
+    public void setRoot(AbstractWidget<?> root) {
+        this.root = root;
+        markLayoutDirty();
     }
 
     private void dispatchKeyReleaseRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
@@ -296,15 +291,6 @@ public class Frame implements IFrame {
         }
 
         return null;
-    }
-
-    @Override
-    public void setViewport(float width, float height) {
-        if (this.viewportWidth != width || this.viewportHeight != height) {
-            this.viewportWidth = width;
-            this.viewportHeight = height;
-            markLayoutDirty();
-        }
     }
 
     private AbstractWidget<?> findInteractiveWidgetAtRecursive(
@@ -371,6 +357,13 @@ public class Frame implements IFrame {
 
     @Deprecated
     public void setDebugRenderEnabled(boolean enabled) {
+    }    @Override
+    public void setViewport(float width, float height) {
+        if (this.viewportWidth != width || this.viewportHeight != height) {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            markLayoutDirty();
+        }
     }
 
     @Deprecated
@@ -390,11 +383,6 @@ public class Frame implements IFrame {
         }
     }
 
-    @Override
-    public Rectangle getViewport() {
-        return new Rectangle(0, 0, viewportWidth, viewportHeight);
-    }
-
     public void updateHitTestDebug(Vector2f mousePos) {
     }
 
@@ -404,6 +392,17 @@ public class Frame implements IFrame {
 
                               int zIndex) {
     }
+
+
+
+    @Override
+    public Rectangle getViewport() {
+        return new Rectangle(0, 0, viewportWidth, viewportHeight);
+    }
+
+
+
+
 
     @Override
     public void calculateLayout() {

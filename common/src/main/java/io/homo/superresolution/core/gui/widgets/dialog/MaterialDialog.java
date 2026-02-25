@@ -26,7 +26,6 @@ import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.core.view.View;
@@ -39,7 +38,6 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 

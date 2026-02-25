@@ -19,11 +19,14 @@
 package io.homo.superresolution.api;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import org.jetbrains.annotations.Nullable;
 
 public record InputResourceSet(
         ITexture colorTexture,
         ITexture depthTexture,
-        ITexture motionVectorsTexture
+        ITexture motionVectorsTexture,
+        /** Exposure texture (optional), null if not provided by shader pack / config */
+        @Nullable ITexture exposureTexture
 ) {
 
 }

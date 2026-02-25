@@ -155,9 +155,18 @@ public final class LayoutData {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(layouts, measures, maxMeasureCache, cachedLayouts, cachedMeasures, measureCallbacks, measureCallbackReasonsCount);
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
         var that = (LayoutData) obj;
         return this.layouts == that.layouts &&
                 this.measures == that.measures &&
@@ -166,11 +175,6 @@ public final class LayoutData {
                 this.cachedMeasures == that.cachedMeasures &&
                 this.measureCallbacks == that.measureCallbacks &&
                 Objects.equals(this.measureCallbackReasonsCount, that.measureCallbackReasonsCount);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(layouts, measures, maxMeasureCache, cachedLayouts, cachedMeasures, measureCallbacks, measureCallbackReasonsCount);
     }
 
     @Override

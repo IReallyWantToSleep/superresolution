@@ -73,8 +73,12 @@ public class Fsr2Utils {
         int sign = (bits >>> 16) & 0x8000;
         int exp = ((bits >>> 23) & 0xff) - 127 + 15;
 
-        if (exp > 0x1f) exp = 0x1f;
-        if (exp < 0) exp = 0;
+        if (exp > 0x1f) {
+            exp = 0x1f;
+        }
+        if (exp < 0) {
+            exp = 0;
+        }
 
         int mantissa = (bits >>> 13) & 0x3ff;
         return sign | (exp << 10) | mantissa;
@@ -107,7 +111,8 @@ public class Fsr2Utils {
         return (int) jitterPhaseCount;
     }
 
-    public static Vector2f ffxFsr2GetJitterOffset(int index, int phaseCount) {if (!(phaseCount > 0)) {
+    public static Vector2f ffxFsr2GetJitterOffset(int index, int phaseCount) {
+        if (!(phaseCount > 0)) {
             throw new RuntimeException();
         }
 
@@ -131,6 +136,6 @@ public class Fsr2Utils {
         //    y = 1;
         //}
 
-        return new Vector2f(x , y);
+        return new Vector2f(x, y);
     }
 }

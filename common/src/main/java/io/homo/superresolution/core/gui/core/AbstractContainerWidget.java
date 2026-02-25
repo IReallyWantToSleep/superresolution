@@ -19,10 +19,7 @@
 package io.homo.superresolution.core.gui.core;
 
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
-import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
-import io.homo.superresolution.core.gui.core.impl.Renderable;
-import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import org.joml.Vector2f;

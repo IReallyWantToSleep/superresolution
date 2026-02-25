@@ -24,7 +24,9 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.KHRExternalMemoryFd;
+import org.lwjgl.vulkan.KHRExternalSemaphoreFd;
+import org.lwjgl.vulkan.VK;
 
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.EXTMutableDescriptorType.VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME;
@@ -36,9 +38,9 @@ import static org.lwjgl.vulkan.KHRExternalSemaphore.VK_KHR_EXTERNAL_SEMAPHORE_EX
 import static org.lwjgl.vulkan.KHRExternalSemaphoreCapabilities.VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRExternalSemaphoreWin32.VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRGetMemoryRequirements2.VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPushDescriptor.VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRShaderFloat16Int8.VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME;
-import static org.lwjgl.vulkan.KHRPushDescriptor.VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME;
 
 public class RenderSystems {
     private static VkRenderSystem vulkan;

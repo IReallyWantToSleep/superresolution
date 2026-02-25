@@ -21,19 +21,17 @@ package io.homo.superresolution.core.gui.widgets.sliders;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.BezierInterpolator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
-import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
-import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MaterialSlider extends MaterialWidget<MaterialSlider> {

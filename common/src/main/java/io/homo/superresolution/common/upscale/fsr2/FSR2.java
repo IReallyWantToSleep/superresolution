@@ -20,6 +20,7 @@ package io.homo.superresolution.common.upscale.fsr2;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
@@ -50,7 +51,7 @@ public class FSR2 extends AbstractAlgorithm {
     }
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
         output = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(RenderHandlerManager.getScreenWidth())
@@ -156,7 +157,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.enableSharpening = false;
         dispatchDescription.sharpness = 1 - SuperResolutionConfig.getSharpness();
         dispatchDescription.frameTimeDelta = dispatchResource.frameTimeDelta();
-        dispatchDescription.preExposure = 1.0f;
+        dispatchDescription.preExposure = dispatchResource.preExposure();
         dispatchDescription.reset = false;
         dispatchDescription.cameraNear = dispatchResource.cameraNear();
         dispatchDescription.cameraFar = dispatchResource.cameraFar();

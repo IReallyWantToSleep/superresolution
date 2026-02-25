@@ -21,8 +21,6 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.core.utils.DirectoryEnsurer;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class SuperResolutionConstants {

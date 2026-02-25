@@ -22,6 +22,7 @@ public interface YogaConfig {
      *
      * @param oldConfig The old configuration
      * @param newConfig The new configuration
+     *
      * @return true if layout needs to be recalculated
      */
     static boolean configUpdateInvalidatesLayout(YogaConfig oldConfig, YogaConfig newConfig) {

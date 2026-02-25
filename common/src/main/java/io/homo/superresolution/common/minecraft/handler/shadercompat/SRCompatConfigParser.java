@@ -122,12 +122,44 @@ public class SRCompatConfigParser {
                         }
                     }
 
+                    // 解析 pre_exposure
+                    SRShaderCompatData.SourceConfig preExposureConfig = null;
+                    if (rawProfile.upscale.pre_exposure != null) {
+                        if (!validateRawSourceConfig(rawProfile.upscale.pre_exposure, worldKey + " upscale.pre_exposure")) return null;
+                        // pre_exposure 值类型必须为标量（FLOAT/INT/UINT）
+                        SRShaderCompatData.SourceConfig.ValueType vType;
+                        try {
+                            vType = SRShaderCompatData.SourceConfig.ValueType.fromString(rawProfile.upscale.pre_exposure.type);
+                        } catch (IllegalArgumentException ex) {
+                            SuperResolution.LOGGER.error("配置错误：profile '{}' upscale.pre_exposure.type 非法: {}", worldKey, ex.getMessage());
+                            return null;
+                        }
+                        if (vType != SRShaderCompatData.SourceConfig.ValueType.FLOAT &&
+                                vType != SRShaderCompatData.SourceConfig.ValueType.INT &&
+                                vType != SRShaderCompatData.SourceConfig.ValueType.UINT) {
+                            SuperResolution.LOGGER.error("配置错误：profile '{}' upscale.pre_exposure.type 必须为标量类型 (float/int/uint)，但得到: {}", worldKey, rawProfile.upscale.pre_exposure.type);
+                            return null;
+                        }
+                        try {
+                            preExposureConfig = new SRShaderCompatData.SourceConfig(
+                                    rawProfile.upscale.pre_exposure.source,
+                                    rawProfile.upscale.pre_exposure.type,
+                                    rawProfile.upscale.pre_exposure.value
+                            );
+                        } catch (IllegalArgumentException ex) {
+                            SuperResolution.LOGGER.error("配置错误：profile '{}' upscale.pre_exposure 中存在无效值: {}", worldKey, ex.getMessage());
+                            return null;
+                        }
+                    }
+
                     upscaleConfig = new SRShaderCompatData.UpscaleConfig(
                             rawProfile.upscale.enabled,
                             trigger,
                             parseTextureFormat(rawProfile.upscale.internal_format),
                             mapInputTextures(rawProfile.upscale.inputs, worldKey),
-                            mapOutputTextures(rawProfile.upscale.outputs, worldKey)
+                            mapOutputTextures(rawProfile.upscale.outputs, worldKey),
+                            preExposureConfig,
+                            rawProfile.upscale.hdr
                     );
                 } else {
                     upscaleConfig = new SRShaderCompatData.UpscaleConfig(
@@ -135,7 +167,9 @@ public class SRCompatConfigParser {
                             null,
                             TextureFormat.R11G11B10F,
                             new HashMap<>(),
-                            new HashMap<>()
+                            new HashMap<>(),
+                            null,
+                            false
                     );
                 }
 
@@ -416,6 +450,8 @@ public class SRCompatConfigParser {
             String internal_format;
             Map<String, RawInputTexture> inputs;
             Map<String, RawOutputTexture> outputs;
+            RawSourceConfig pre_exposure;
+            boolean hdr;
         }
 
         static class RawTrigger {

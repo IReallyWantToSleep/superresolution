@@ -7,26 +7,8 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaConstants;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDimension;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaErrata;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaExperimentalFeature;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaJustify;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaOverflow;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPhysicalEdge;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaSize;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaWrap;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.LayoutData;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.LayoutPassReason;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.LayoutType;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.YogaEvent;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.YogaEventType;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.*;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.node.CachedMeasurement;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.node.LayoutResults;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.node.LayoutableChildren;
@@ -41,9 +23,7 @@ import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.al
 import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.AlignUtil.resolveChildAlignment;
 import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.Baseline.calculateBaseline;
 import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.Baseline.isBaselineLayout;
-import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.BoundAxis.boundAxis;
-import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.BoundAxis.boundAxisWithinMinAndMax;
-import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.BoundAxis.paddingAndBorderForAxis;
+import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.BoundAxis.*;
 import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.Cache.canUseCachedMeasurement;
 import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.FlexDirectionUtil.dimension;
 import static io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.FlexDirectionUtil.flexStartEdge;
@@ -167,6 +147,7 @@ public class CalculateLayout {
      * @param layoutMarkerData Data for layout markers
      * @param depth            The current depth in the tree
      * @param generationCount  The current generation count
+     *
      * @return Whether layout was performed
      */
     public static boolean calculateLayoutInternal(
@@ -1297,47 +1278,6 @@ public class CalculateLayout {
         }
     }
 
-    private static class MaxSizeConstraint {
-        io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode mode;
-        float size;
-
-        public void constrainForMode(
-                YogaNode node,
-                YogaDirection direction,
-                YogaFlexDirection axis,
-                float ownerAxisSize,
-                float ownerWidth,
-                io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode mode,
-                float size) {
-            this.mode = mode;
-            this.size = size;
-
-            FloatOptional maxSize = node.getStyle().resolveMaxDimension(
-                            direction,
-                            dimension(axis),
-                            ownerAxisSize,
-                            ownerWidth)
-                    .add(FloatOptional.of(node.getStyle().computeMarginForAxis(axis, ownerWidth)));
-
-            switch (this.mode) {
-                case STRETCH_FIT:
-                case FIT_CONTENT:
-                    if (maxSize.isUndefined() || this.size < maxSize.unwrap()) {
-                        // size remains unchanged
-                    } else {
-                        this.size = maxSize.unwrap();
-                    }
-                    break;
-                case MAX_CONTENT:
-                    if (maxSize.isDefined()) {
-                        this.mode = io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode.FIT_CONTENT;
-                        this.size = maxSize.unwrap();
-                    }
-                    break;
-            }
-        }
-    }
-
     private static void computeFlexBasisForChild(
             YogaNode node,
             YogaNode child,
@@ -2442,6 +2382,47 @@ public class CalculateLayout {
         if (isNodeBaselineLayout) {
             flexLine.getLayout().setCrossDim(
                     maxAscentForCurrentLine + maxDescentForCurrentLine);
+        }
+    }
+
+    private static class MaxSizeConstraint {
+        io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode mode;
+        float size;
+
+        public void constrainForMode(
+                YogaNode node,
+                YogaDirection direction,
+                YogaFlexDirection axis,
+                float ownerAxisSize,
+                float ownerWidth,
+                io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode mode,
+                float size) {
+            this.mode = mode;
+            this.size = size;
+
+            FloatOptional maxSize = node.getStyle().resolveMaxDimension(
+                            direction,
+                            dimension(axis),
+                            ownerAxisSize,
+                            ownerWidth)
+                    .add(FloatOptional.of(node.getStyle().computeMarginForAxis(axis, ownerWidth)));
+
+            switch (this.mode) {
+                case STRETCH_FIT:
+                case FIT_CONTENT:
+                    if (maxSize.isUndefined() || this.size < maxSize.unwrap()) {
+                        // size remains unchanged
+                    } else {
+                        this.size = maxSize.unwrap();
+                    }
+                    break;
+                case MAX_CONTENT:
+                    if (maxSize.isDefined()) {
+                        this.mode = io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm.SizingMode.FIT_CONTENT;
+                        this.size = maxSize.unwrap();
+                    }
+                    break;
+            }
         }
     }
 }

@@ -23,6 +23,7 @@ public class PixelGrid {
      * @param pointScaleFactor The point scale factor
      * @param forceCeil        Whether to force rounding up
      * @param forceFloor       Whether to force rounding down
+     *
      * @return The rounded value
      */
     public static float roundValueToPixelGrid(

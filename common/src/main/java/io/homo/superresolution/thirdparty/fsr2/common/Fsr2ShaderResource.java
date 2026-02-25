@@ -30,12 +30,13 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class Fsr2ShaderResource {
+    private static ITexture nullTexture;
     public GrapeResourceAccess access = GrapeResourceAccess.Read;
     public int binding = -1;
     public Supplier<Fsr2PipelineResources.Fsr2ResourceEntry> resourceEntry = null;
     public Supplier<Fsr2PipelineResourceType> resourceType = null;
     public String resourceName;
-    private static ITexture nullTexture;
+    public GlSampler sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
 
     public GlSampler sampler() {
         return sampler;
@@ -45,9 +46,6 @@ public class Fsr2ShaderResource {
         this.sampler = sampler;
         return this;
     }
-
-    public GlSampler sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
-
 
     public GrapeResourceAccess access() {
         return access;
@@ -98,7 +96,9 @@ public class Fsr2ShaderResource {
             this.resourceEntry = () -> context.resources.resource(resourceType.get());
         }
         Fsr2PipelineResourceType resourceType = context.resources.resourceEntriesMap().get(resourceEntry.get());
-        if (resourceType == null) throw new RuntimeException();
+        if (resourceType == null) {
+            throw new RuntimeException();
+        }
         String name = resourceName != null ? resourceName : access == GrapeResourceAccess.Read ? resourceType.srvShaderName() : resourceType.uavShaderName();
         if (name == null) {
             name = "RESOURCE+" + UUID.randomUUID() + "+" + binding;

@@ -24,6 +24,27 @@ public class StyleValuePool {
         this.buffer = new SmallValueBuffer();
     }
 
+    private static boolean isIntegerPackable(float f) {
+        final short MAX_INLINE_ABS_VALUE = (1 << 11) - 1;
+
+        int i = (int) f;
+        return (float) i == f && i >= -MAX_INLINE_ABS_VALUE && i <= +MAX_INLINE_ABS_VALUE;
+    }
+
+    private static short packInlineInteger(float value) {
+        short isNegative = value < 0 ? (short) 1 : (short) 0;
+        return (short) ((isNegative << 11) |
+                ((int) value * (isNegative != 0 ? -1 : 1)));
+    }
+
+    private static float unpackInlineInteger(short value) {
+        final short VALUE_SIGN_MASK = 0b0000_1000_0000_0000;
+        final short VALUE_MAGNITUDE_MASK = 0b0000_0111_1111_1111;
+
+        final boolean isNegative = (value & VALUE_SIGN_MASK) != 0;
+        return (value & VALUE_MAGNITUDE_MASK) * (isNegative ? -1 : 1);
+    }
+
     public void store(StyleValueHandle handle, io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleLength length) {
         if (length.isUndefined()) {
             handle.setType(StyleValueHandle.TYPE_UNDEFINED);
@@ -151,26 +172,5 @@ public class StyleValuePool {
         } else {
             handle.setValue((short) keyword.ordinal());
         }
-    }
-
-    private static boolean isIntegerPackable(float f) {
-        final short MAX_INLINE_ABS_VALUE = (1 << 11) - 1;
-
-        int i = (int) f;
-        return (float) i == f && i >= -MAX_INLINE_ABS_VALUE && i <= +MAX_INLINE_ABS_VALUE;
-    }
-
-    private static short packInlineInteger(float value) {
-        short isNegative = value < 0 ? (short) 1 : (short) 0;
-        return (short) ((isNegative << 11) |
-                ((int) value * (isNegative != 0 ? -1 : 1)));
-    }
-
-    private static float unpackInlineInteger(short value) {
-        final short VALUE_SIGN_MASK = 0b0000_1000_0000_0000;
-        final short VALUE_MAGNITUDE_MASK = 0b0000_0111_1111_1111;
-
-        final boolean isNegative = (value & VALUE_SIGN_MASK) != 0;
-        return (value & VALUE_MAGNITUDE_MASK) * (isNegative ? -1 : 1);
     }
 }

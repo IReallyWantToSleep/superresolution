@@ -29,7 +29,6 @@ import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
-import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.impl.Destroyable;
 import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;

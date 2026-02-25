@@ -21,6 +21,7 @@ public class TrailingPosition {
      * @param axis           The flex direction axis
      * @param containingNode The containing node
      * @param node           The node to position
+     *
      * @return The position of the opposite edge
      */
     public static float getPositionOfOppositeEdge(
@@ -54,6 +55,7 @@ public class TrailingPosition {
      * Determines if an axis needs trailing position
      *
      * @param axis The flex direction axis
+     *
      * @return True if the axis needs trailing position
      */
     public static boolean needsTrailingPosition(YogaFlexDirection axis) {

@@ -42,9 +42,11 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
 public class GlDevice implements IDevice {
     private final GlCommandDecoder commandDecoder;
@@ -143,5 +145,12 @@ public class GlDevice implements IDevice {
     @Override
     public void submitCommandBuffer(ICommandBuffer commandBuffer) {
         commandBuffer.submit(this);
+    }
+
+    public GlImportableTexture2D createTextureImportable(ITexture exportedTexture) {
+        if (exportedTexture instanceof VulkanTexture) {
+            return new GlImportableTexture2D((VulkanTexture) exportedTexture);
+        }
+        throw new IllegalArgumentException();
     }
 }

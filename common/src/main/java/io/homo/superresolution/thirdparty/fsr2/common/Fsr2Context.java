@@ -33,14 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.glBindTexture;
-import static org.lwjgl.opengl.GL11.glTexSubImage2D;
 
 public class Fsr2Context {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-FSR2");
 
-    //////////////////////
+    /// ///////////////////
     public Fsr2Pipeline accumulatePipeline;
     public Fsr2Pipeline rcasPipeline;
     public Fsr2Pipeline accumulateSharpenPipeline;
@@ -48,7 +45,7 @@ public class Fsr2Context {
     public Fsr2Pipeline depthClipPipeline;
     public Fsr2Pipeline lockPipeline;
     public Fsr2Pipeline reconstructPreviousDepthPipeline;
-    //////////////////////
+    /// ///////////////////
 
     public Fsr2PipelineResources resources = new Fsr2PipelineResources();
     public Fsr2ContextConfig config;

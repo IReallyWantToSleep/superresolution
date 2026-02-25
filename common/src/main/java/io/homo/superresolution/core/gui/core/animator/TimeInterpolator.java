@@ -20,8 +20,6 @@ package io.homo.superresolution.core.gui.core.animator;
 
 @FunctionalInterface
 public interface TimeInterpolator {
-    float interpolation(float progress);
-
     float PI = (float) Math.PI;
     float C1 = 1.70158f;
     float C2 = C1 * 1.525f;
@@ -184,4 +182,6 @@ public interface TimeInterpolator {
                 ? (1 - bounceOutHelper(1 - 2 * x)) / 2
                 : (1 + bounceOutHelper(2 * x - 1)) / 2;
     }
+
+    float interpolation(float progress);
 }

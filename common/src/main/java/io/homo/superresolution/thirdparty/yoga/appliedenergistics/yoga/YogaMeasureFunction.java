@@ -20,6 +20,7 @@ public interface YogaMeasureFunction {
      * @param widthMode  The mode in which the width is being constrained
      * @param height     The available height
      * @param heightMode The mode in which the height is being constrained
+     *
      * @return The measured dimensions for the node
      */
     YogaSize measure(

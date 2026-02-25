@@ -58,11 +58,11 @@ public class SRDispatchUpscaleDesc {
         this.extraParams = new SRContextExtraParams();
     }
 
-    public SRDispatchCommandBufferInfo getCommandList() {
+    public SRDispatchCommandBufferInfo getCommandBuffer() {
         return commandList;
     }
 
-    public SRDispatchUpscaleDesc setCommandList(SRDispatchCommandBufferInfo commandList) {
+    public SRDispatchUpscaleDesc setCommandBuffer(SRDispatchCommandBufferInfo commandList) {
         this.commandList = commandList;
         return this;
     }

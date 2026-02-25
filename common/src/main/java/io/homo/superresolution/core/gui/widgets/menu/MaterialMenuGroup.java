@@ -51,12 +51,6 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     }
 
     @Override
-    public void layouting(RenderContext ctx) {
-        updateSize();
-        super.layouting(ctx);
-    }
-
-    @Override
     public MaterialMenuStyle style() {
         return (MaterialMenuStyle) super.style();
     }
@@ -97,20 +91,9 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     }
 
     @Override
-    public void mouseMove(float x, float y) {
-        super.mouseMove(x, y);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    //if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                    widget.mouseMove(x, y);
-                    // }
-                }
-            }
-        }
+    public void layouting(RenderContext ctx) {
+        updateSize();
+        super.layouting(ctx);
     }
 
     @Override
@@ -148,6 +131,23 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     }
 
     @Override
+    public void mouseMove(float x, float y) {
+        super.mouseMove(x, y);
+        if (isDisabled() || !isVisible()) {
+            return;
+        }
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof AbstractWidget<?> widget) {
+                if (widget.isVisible() && !widget.isDisabled()) {
+                    //if (widget.hitTest(new org.joml.Vector2f(x, y))) {
+                    widget.mouseMove(x, y);
+                    // }
+                }
+            }
+        }
+    }
+
+    @Override
     public void mouseScroll(float x, float y, double scrollX) {
         super.mouseScroll(x, y, scrollX);
         if (isDisabled() || !isVisible()) {
@@ -162,6 +162,11 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
                 }
             }
         }
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        renderSelf(ctx, inputState);
     }
 
     @Override
@@ -244,11 +249,6 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
                 }
             }
         }
-    }
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        renderSelf(ctx, inputState);
     }
 
     public MaterialMenuGroup addItem(MaterialMenuItem item) {

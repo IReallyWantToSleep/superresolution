@@ -28,14 +28,6 @@ public class StyleValueHandle {
     static final byte TYPE_NUMBER = 3;
     static final byte TYPE_AUTO = 4;
     static final byte TYPE_KEYWORD = 5;
-
-    // Intentionally leaving out auto as a fast path
-    enum Keyword {
-        MAX_CONTENT,
-        FIT_CONTENT,
-        STRETCH
-    }
-
     private short repr;
 
     public StyleValueHandle() {
@@ -88,5 +80,12 @@ public class StyleValueHandle {
 
     void setValueIsIndexed() {
         repr |= HANDLE_INDEXED_MASK;
+    }
+
+    // Intentionally leaving out auto as a fast path
+    enum Keyword {
+        MAX_CONTENT,
+        FIT_CONTENT,
+        STRETCH
     }
 }

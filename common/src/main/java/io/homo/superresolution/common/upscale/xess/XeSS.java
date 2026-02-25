@@ -19,12 +19,12 @@
 package io.homo.superresolution.common.upscale.xess;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.NativeLibManager;
@@ -79,7 +79,7 @@ public class XeSS extends AbstractAlgorithm {
     private VkGlInteropSemaphore syncSemaphore;
     private VkGlInteropSemaphore syncVkSemaphore;
 
-    public void updateXeSS() {
+    public void updateXeSS(InitializationDescription desc) {
         if (NativeLibManager.LIB_SUPER_RESOLUTION_XESS == null) {
             return;
         }
@@ -120,7 +120,9 @@ public class XeSS extends AbstractAlgorithm {
                         RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(),
                         RenderHandlerManager.getRenderHeight()),
-                EnumSet.noneOf(SRUpscaleContextCreateFlags.class)
+                desc != null && desc.isHdrInput()
+                        ? EnumSet.of(SRUpscaleContextCreateFlags.ENABLE_HDR)
+                        : EnumSet.noneOf(SRUpscaleContextCreateFlags.class)
         );
         SRContextExtraParams extraParams = new SRContextExtraParams();
         upscaleContextDesc.setExtraParams(extraParams);
@@ -251,7 +253,8 @@ public class XeSS extends AbstractAlgorithm {
     }
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
+        this.initDesc = desc;
         createSharedTexture();
         syncSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
         syncVkSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
@@ -303,7 +306,7 @@ public class XeSS extends AbstractAlgorithm {
         VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
         commandBuffer.begin();
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
-        desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
+        desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(
                 commandBuffer.getNativeCommandBuffer()));
         desc.setColor(new SRTextureResource(this.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(this.inputDepthVkTexture));
@@ -336,7 +339,7 @@ public class XeSS extends AbstractAlgorithm {
         desc.setFrameTimeDelta(dispatchResource.frameTimeDelta());
         desc.setEnableSharpening(true);
         desc.setSharpness(SuperResolutionConfig.getSharpness());
-        desc.setPreExposure(1.0f);
+        desc.setPreExposure(dispatchResource.preExposure());
         desc.setCameraNear(dispatchResource.cameraNear());
         desc.setCameraFar(dispatchResource.cameraFar());
         desc.setCameraFovAngleVertical(dispatchResource.verticalFov());
@@ -388,7 +391,7 @@ public class XeSS extends AbstractAlgorithm {
     public void resize(int width, int height) {
         vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
         commandBufferRing.destroy();
-        updateXeSS();
+        updateXeSS(this.initDesc);
         destroySharedTexture();
         createSharedTexture();
     }

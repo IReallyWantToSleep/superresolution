@@ -16,17 +16,6 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 @FunctionalInterface
 public interface YogaLogger {
     /**
-     * Log a message from the yoga layout engine.
-     *
-     * @param config The config that triggered the log
-     * @param node   The node associated with the log
-     * @param level  The log level
-     * @param format The format string
-     * @param args   Arguments for the format string
-     */
-    void log(YogaConfig config, YogaNode node, LogLevel level, String format, Object... args);
-
-    /**
      * Returns the default logger implementation.
      *
      * @return The default logger
@@ -37,4 +26,15 @@ public interface YogaLogger {
             // This is just a placeholder for the equivalent of getDefaultLogger in C++
         };
     }
+
+    /**
+     * Log a message from the yoga layout engine.
+     *
+     * @param config The config that triggered the log
+     * @param node   The node associated with the log
+     * @param level  The log level
+     * @param format The format string
+     * @param args   Arguments for the format string
+     */
+    void log(YogaConfig config, YogaNode node, LogLevel level, String format, Object... args);
 }

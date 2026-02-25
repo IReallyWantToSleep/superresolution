@@ -30,8 +30,8 @@ import org.joml.Vector2f;
 public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest {
     public static final MutableYogaConfig yogaConfig = YogaConfig.create();
     private final Vector2f elementSize = new Vector2f(-1, -1);
-    protected ILayoutContainer parent;
     private final YogaNode layoutNode = new YogaNode(yogaConfig);
+    protected ILayoutContainer parent;
 
     public void setElementSize(float width, float height) {
         elementSize.set(width, height);
@@ -131,6 +131,15 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
     }
 
     @Override
+    public YogaProps layout() {
+        return layoutNode;
+    }
+
+    public YogaNode getLayoutNode() {
+        return layoutNode;
+    }
+
+    @Override
     public boolean hitTest(Vector2f absolutePos) {
         Transform fullTransform = getFullTransform();
 
@@ -142,16 +151,6 @@ public abstract class AbstractLayoutElement implements ILayoutElement, IHitTest 
         Vector2f localPos = fullTransform.inverseTransformPoint(absolutePos);
         Rectangle rawBounds = getRawBounds();
         return rawBounds.in(localPos);
-    }
-
-
-    public YogaNode getLayoutNode() {
-        return layoutNode;
-    }
-
-    @Override
-    public YogaProps layout() {
-        return layoutNode;
     }
 
 }

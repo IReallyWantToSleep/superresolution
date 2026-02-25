@@ -44,7 +44,9 @@ public class SuperResolutionNativeHelper {
     }
 
     public static long CPP_vkGetDeviceProcAddr(String name) {
-        if (name.equals("SuperResolution_GetInstance")) return RenderSystems.vulkan().getVulkanInstance().address();
+        if (name.equals("SuperResolution_GetInstance")) {
+            return RenderSystems.vulkan().getVulkanInstance().address();
+        }
         if (name.equals("SuperResolution_VkGetInstanceProcAddr")) {
             Class<VK> clazz = VK.class;
             try {

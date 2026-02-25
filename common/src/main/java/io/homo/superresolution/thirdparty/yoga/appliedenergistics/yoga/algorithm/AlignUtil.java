@@ -18,6 +18,7 @@ public class AlignUtil {
      *
      * @param node  The parent node
      * @param child The child node
+     *
      * @return The resolved alignment
      */
     public static YogaAlign resolveChildAlignment(YogaNode node, YogaNode child) {
@@ -35,6 +36,7 @@ public class AlignUtil {
      * https://www.w3.org/TR/css-align-3/#distribution-values
      *
      * @param align The alignment
+     *
      * @return The fallback alignment
      */
     public static YogaAlign fallbackAlignment(YogaAlign align) {
@@ -55,6 +57,7 @@ public class AlignUtil {
      * https://www.w3.org/TR/css-align-3/#distribution-values
      *
      * @param align The justify alignment
+     *
      * @return The fallback alignment
      */
     public static YogaJustify fallbackAlignment(YogaJustify align) {

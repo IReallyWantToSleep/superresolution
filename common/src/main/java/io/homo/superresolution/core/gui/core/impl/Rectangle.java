@@ -174,23 +174,8 @@ public class Rectangle {
         return this.width * this.height;
     }
 
-    public Rectangle clone() {
-        return new Rectangle(this.x, this.y, this.width, this.height);
-    }
-
     public boolean isEmpty() {
         return this.width <= 0 || this.height <= 0;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Rectangle rectangle = (Rectangle) obj;
-        return Float.compare(rectangle.x, x) == 0 &&
-                Float.compare(rectangle.y, y) == 0 &&
-                Float.compare(rectangle.width, width) == 0 &&
-                Float.compare(rectangle.height, height) == 0;
     }
 
     @Override
@@ -200,6 +185,25 @@ public class Rectangle {
         result = 31 * result + Float.hashCode(width);
         result = 31 * result + Float.hashCode(height);
         return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        Rectangle rectangle = (Rectangle) obj;
+        return Float.compare(rectangle.x, x) == 0 &&
+                Float.compare(rectangle.y, y) == 0 &&
+                Float.compare(rectangle.width, width) == 0 &&
+                Float.compare(rectangle.height, height) == 0;
+    }
+
+    public Rectangle clone() {
+        return new Rectangle(this.x, this.y, this.width, this.height);
     }
 
     @Override

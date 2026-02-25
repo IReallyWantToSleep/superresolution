@@ -14,12 +14,6 @@ public interface YogaProps {
 
     /* Width properties */
 
-    void setWidth(StyleSizeLength length);
-
-    default void setWidth(float width) {
-        setWidth(StyleSizeLength.points(width));
-    }
-
     default void setWidthPercent(float percent) {
         setWidth(StyleSizeLength.percent(percent));
     }
@@ -40,12 +34,6 @@ public interface YogaProps {
         setWidth(StyleSizeLength.ofStretch());
     }
 
-    void setMinWidth(StyleSizeLength length);
-
-    default void setMinWidth(float minWidth) {
-        setMinWidth(StyleSizeLength.points(minWidth));
-    }
-
     default void setMinWidthPercent(float percent) {
         setMinWidth(StyleSizeLength.percent(percent));
     }
@@ -62,12 +50,6 @@ public interface YogaProps {
         setMinWidth(StyleSizeLength.ofStretch());
     }
 
-    void setMaxWidth(StyleSizeLength length);
-
-    default void setMaxWidth(float maxWidth) {
-        setMaxWidth(StyleSizeLength.points(maxWidth));
-    }
-
     default void setMaxWidthPercent(float percent) {
         setMaxWidth(StyleSizeLength.percent(percent));
     }
@@ -82,14 +64,6 @@ public interface YogaProps {
 
     default void setMaxWidthStretch() {
         setMaxWidth(StyleSizeLength.ofStretch());
-    }
-
-    /* Height properties */
-
-    void setHeight(StyleSizeLength length);
-
-    default void setHeight(float height) {
-        setHeight(StyleSizeLength.points(height));
     }
 
     default void setHeightPercent(float percent) {
@@ -112,15 +86,11 @@ public interface YogaProps {
         setHeight(StyleSizeLength.ofStretch());
     }
 
-    void setMinHeight(StyleSizeLength length);
-
-    default void setMinHeight(float minHeight) {
-        setMinHeight(StyleSizeLength.points(minHeight));
-    }
-
     default void setMinHeightPercent(float percent) {
         setMinHeight(StyleSizeLength.percent(percent));
     }
+
+    /* Height properties */
 
     default void setMinHeightMaxContent() {
         setMinHeight(StyleSizeLength.ofMaxContent());
@@ -132,12 +102,6 @@ public interface YogaProps {
 
     default void setMinHeightStretch() {
         setMinHeight(StyleSizeLength.ofStretch());
-    }
-
-    void setMaxHeight(StyleSizeLength length);
-
-    default void setMaxHeight(float maxHeight) {
-        setMaxHeight(StyleSizeLength.points(maxHeight));
     }
 
     default void setMaxHeightPercent(float percent) {
@@ -156,8 +120,6 @@ public interface YogaProps {
         setMaxHeight(StyleSizeLength.ofStretch());
     }
 
-    /* Margin properties */
-
     void setMargin(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, StyleLength length);
 
     default void setMargin(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, float margin) {
@@ -172,8 +134,6 @@ public interface YogaProps {
         setMargin(edge, StyleLength.ofAuto());
     }
 
-    /* Padding properties */
-
     void setPadding(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, StyleLength length);
 
     default void setPadding(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, float padding) {
@@ -183,10 +143,6 @@ public interface YogaProps {
     default void setPaddingPercent(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, float percent) {
         setPadding(edge, StyleLength.percent(percent));
     }
-
-    /* Position properties */
-
-    void setPositionType(YogaPositionType positionType);
 
     void setPosition(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, StyleLength length);
 
@@ -202,47 +158,29 @@ public interface YogaProps {
         setPosition(edge, StyleLength.ofAuto());
     }
 
-    /* Alignment properties */
-
-    void setAlignContent(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign alignContent);
-
-    void setAlignItems(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign alignItems);
-
-    void setAlignSelf(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign alignSelf);
-
-    /* Flex properties */
-
     void setFlex(float flex);
+
+    /* Margin properties */
 
     void setFlexBasisAuto();
 
     void setFlexBasisPercent(float percent);
 
-    void setFlexBasis(float flexBasis);
-
     void setFlexBasisMaxContent();
 
     void setFlexBasisFitContent();
 
+    /* Padding properties */
+
     void setFlexBasisStretch();
-
-    void setFlexDirection(YogaFlexDirection direction);
-
-    void setFlexGrow(float flexGrow);
-
-    void setFlexShrink(float flexShrink);
-
-    /* Other properties */
-
-    void setJustifyContent(YogaJustify justifyContent);
 
     void setDirection(YogaDirection direction);
 
     void setBorder(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge, float value);
 
-    void setWrap(YogaWrap wrap);
+    /* Position properties */
 
-    void setAspectRatio(float aspectRatio);
+    void setWrap(YogaWrap wrap);
 
     void setIsReferenceBaseline(boolean isReferenceBaseline);
 
@@ -250,43 +188,103 @@ public interface YogaProps {
 
     void setBaselineFunction(YogaBaselineFunction yogaBaselineFunction);
 
-    void setBoxSizing(YogaBoxSizing boxSizing);
-
-    /* Getters */
-
     YogaValue getWidth();
+
+    /* Alignment properties */
+
+    void setWidth(StyleSizeLength length);
+
+    default void setWidth(float width) {
+        setWidth(StyleSizeLength.points(width));
+    }
 
     YogaValue getMinWidth();
 
+    /* Flex properties */
+
+    void setMinWidth(StyleSizeLength length);
+
+    default void setMinWidth(float minWidth) {
+        setMinWidth(StyleSizeLength.points(minWidth));
+    }
+
     YogaValue getMaxWidth();
+
+    void setMaxWidth(StyleSizeLength length);
+
+    default void setMaxWidth(float maxWidth) {
+        setMaxWidth(StyleSizeLength.points(maxWidth));
+    }
 
     YogaValue getHeight();
 
+    void setHeight(StyleSizeLength length);
+
+    default void setHeight(float height) {
+        setHeight(StyleSizeLength.points(height));
+    }
+
     YogaValue getMinHeight();
 
+    void setMinHeight(StyleSizeLength length);
+
+    /* Other properties */
+
+    default void setMinHeight(float minHeight) {
+        setMinHeight(StyleSizeLength.points(minHeight));
+    }
+
     YogaValue getMaxHeight();
+
+    void setMaxHeight(StyleSizeLength length);
+
+    default void setMaxHeight(float maxHeight) {
+        setMaxHeight(StyleSizeLength.points(maxHeight));
+    }
 
     YogaDirection getStyleDirection();
 
     YogaFlexDirection getFlexDirection();
 
+    void setFlexDirection(YogaFlexDirection direction);
+
     YogaJustify getJustifyContent();
+
+    void setJustifyContent(YogaJustify justifyContent);
+
+    /* Getters */
 
     io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign getAlignItems();
 
+    void setAlignItems(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign alignItems);
+
     io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign getAlignSelf();
+
+    void setAlignSelf(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign alignSelf);
 
     YogaAlign getAlignContent();
 
+    void setAlignContent(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign alignContent);
+
     YogaPositionType getPositionType();
+
+    void setPositionType(YogaPositionType positionType);
 
     float getFlexGrow();
 
+    void setFlexGrow(float flexGrow);
+
     float getFlexShrink();
+
+    void setFlexShrink(float flexShrink);
 
     YogaValue getFlexBasis();
 
+    void setFlexBasis(float flexBasis);
+
     float getAspectRatio();
+
+    void setAspectRatio(float aspectRatio);
 
     YogaValue getMargin(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge edge);
 
@@ -309,4 +307,6 @@ public interface YogaProps {
     }
 
     YogaBoxSizing getBoxSizing();
+
+    void setBoxSizing(YogaBoxSizing boxSizing);
 }

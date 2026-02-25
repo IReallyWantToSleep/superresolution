@@ -106,12 +106,12 @@ public class VulkanDevice implements IDevice {
     }
 
     @Override
-    public ICommandBuffer createCommandBuffer() {
+    public VulkanCommandBuffer createCommandBuffer() {
         return defaultCommandPool.createCommandBuffer();
     }
 
     @Override
-    public ICommandPool createCommandPool(CommandPoolFlags... flags) {
+    public VulkanCommandPool createCommandPool(CommandPoolFlags... flags) {
         java.util.EnumSet<CommandPoolFlags> poolFlags = java.util.EnumSet.noneOf(CommandPoolFlags.class);
         if (flags != null) {
             java.util.Collections.addAll(poolFlags, flags);
@@ -135,6 +135,44 @@ public class VulkanDevice implements IDevice {
     public void submitCommandBuffer(ICommandBuffer commandBuffer) {
         VulkanCommandBuffer vkCommandBuffer = (VulkanCommandBuffer) commandBuffer;
         submitCommandBuffer(vkCommandBuffer, null, null, null);
+    }
+
+    public VulkanTexture createTextureExt(
+            TextureDescription description,
+            boolean isExternal,
+            long memoryHandle,
+            boolean exportable
+    ) {
+        return new VulkanTexture(
+                this,
+                description,
+                isExternal,
+                memoryHandle,
+                exportable
+        );
+    }
+
+    public VulkanTexture createTextureExportable(
+            TextureDescription description
+    ) {
+        return createTextureExt(
+                description,
+                false,
+                0,
+                true
+        );
+    }
+
+    public VulkanTexture createTextureExternal(
+            TextureDescription description,
+            long memoryHandle
+    ) {
+        return createTextureExt(
+                description,
+                true,
+                memoryHandle,
+                false
+        );
     }
 
     public ITexture createTextureFromHandle(TextureDescription description, long memory) {

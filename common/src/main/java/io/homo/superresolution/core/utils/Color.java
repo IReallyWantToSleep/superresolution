@@ -118,6 +118,10 @@ public class Color {
         );
     }
 
+    public static Color lerp(Color from, Color to, float t) {
+        return from.copy().lerp(to, t);
+    }
+
     public int red() {
         return color[0];
     }
@@ -181,10 +185,6 @@ public class Color {
         color[2] = (int) (color[2] + (other.blue() - color[2]) * t);
         color[3] = (int) (color[3] + (other.alpha() - color[3]) * t);
         return this;
-    }
-
-    public static Color lerp(Color from, Color to, float t) {
-        return from.copy().lerp(to, t);
     }
 
 }

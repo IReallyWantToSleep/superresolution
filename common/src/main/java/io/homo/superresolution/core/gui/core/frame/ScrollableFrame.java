@@ -26,14 +26,8 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
-
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test.CaptureTree;
 import org.joml.Vector2f;
-
-import java.nio.file.Path;
 
 public class ScrollableFrame extends Frame {
 
@@ -131,6 +125,29 @@ public class ScrollableFrame extends Frame {
     }
 
     @Override
+    protected boolean isOutsideViewport(AbstractWidget<?> widget, Transform accumulatedTransform) {
+        Rectangle transformedBounds = transformBounds(widget.getBounds(), accumulatedTransform);
+
+        Vector2f contentOrigin = getContentOrigin();
+        Rectangle screenBounds = new Rectangle(
+                transformedBounds.x + contentOrigin.x,
+                transformedBounds.y + contentOrigin.y,
+                transformedBounds.width,
+                transformedBounds.height
+        );
+
+        Rectangle viewport = getViewport();
+        Rectangle contentClipRect = new Rectangle(
+                contentPaddingLeft,
+                contentPaddingTop,
+                viewport.width - contentPaddingLeft - contentPaddingRight,
+                viewport.height - contentPaddingTop - contentPaddingBottom
+        );
+
+        return !(isInViewport(screenBounds) || contentClipRect.intersect(screenBounds));
+    }
+
+    @Override
     public void calculateLayout() {
         AbstractWidget<?> root = getRoot();
         if (root == null) {
@@ -189,29 +206,6 @@ public class ScrollableFrame extends Frame {
         ctx.resetScissor();
 
         ctx.restore();
-    }
-
-    @Override
-    protected boolean isOutsideViewport(AbstractWidget<?> widget, Transform accumulatedTransform) {
-        Rectangle transformedBounds = transformBounds(widget.getBounds(), accumulatedTransform);
-
-        Vector2f contentOrigin = getContentOrigin();
-        Rectangle screenBounds = new Rectangle(
-                transformedBounds.x + contentOrigin.x,
-                transformedBounds.y + contentOrigin.y,
-                transformedBounds.width,
-                transformedBounds.height
-        );
-
-        Rectangle viewport = getViewport();
-        Rectangle contentClipRect = new Rectangle(
-                contentPaddingLeft,
-                contentPaddingTop,
-                viewport.width - contentPaddingLeft - contentPaddingRight,
-                viewport.height - contentPaddingTop - contentPaddingBottom
-        );
-
-        return !(isInViewport(screenBounds) || contentClipRect.intersect(screenBounds));
     }
 
     @Override

@@ -44,6 +44,7 @@ public class VulkanTexture implements ITexture {
     private int width;
     private int height;
     private long memorySize;
+    private int currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     public VulkanTexture(VulkanDevice device, TextureDescription description) {
         this(device, description, false, -1, false);
@@ -337,6 +338,44 @@ public class VulkanTexture implements ITexture {
             }
             createImageView(stack);
         }
+    }
+
+    public void transitionImageLayout(
+            VulkanCommandBuffer commandBuffer,
+            int newLayout,
+            int srcStageMask,
+            int dstStageMask,
+            int dependencyFlags
+    ) {
+        if (currentLayout == newLayout) {
+            return;
+        }
+        try (MemoryStack stack = stackPush()) {
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1,stack)
+                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                    .oldLayout(currentLayout)
+                    .newLayout(newLayout)
+                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .image(image)
+                    .subresourceRange(VkImageSubresourceRange.calloc(stack)
+                            .aspectMask(getAspectMask())
+                            .baseMipLevel(0)
+                            .levelCount(description.getMipmapSettings().getLevels())
+                            .baseArrayLayer(0)
+                            .layerCount(1)
+                    );
+            vkCmdPipelineBarrier(
+                    commandBuffer.getNativeCommandBuffer(),
+                    srcStageMask,
+                    dstStageMask,
+                    dependencyFlags,
+                    null,
+                    null,
+                    barrier
+            );
+        }
+        currentLayout = newLayout;
     }
 
     @Override

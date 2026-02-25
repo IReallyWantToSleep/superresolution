@@ -278,4 +278,8 @@ public class RenderHandlerManager {
     public static ITexture getDepthTexture() {
         return handler.getDepthTexture();
     }
+
+    public static IMinecraftRenderHandler getHandler() {
+        return handler;
+    }
 }

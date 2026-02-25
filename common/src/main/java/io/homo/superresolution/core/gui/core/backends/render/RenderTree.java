@@ -44,7 +44,9 @@ public class RenderTree {
     public void render(RenderContext ctx, Runnable beforeLayer, Runnable afterLayer) {
         for (RenderLayer layer : RenderLayer.values()) {
             List<RenderNode> nodes = nodesByLayer.get(layer);
-            if (nodes.isEmpty()) continue;
+            if (nodes.isEmpty()) {
+                continue;
+            }
 
             if (beforeLayer != null) {
                 beforeLayer.run();

@@ -19,12 +19,11 @@
 package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 
 import java.util.function.Supplier;
 
@@ -58,26 +57,6 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
         return false;
     }
 
-    public MaterialNavigationDrawerSectionHeader title(String title) {
-        this.titleSupplier = () -> title;
-        return this;
-    }
-
-    public MaterialNavigationDrawerSectionHeader title(Supplier<String> supplier) {
-        this.titleSupplier = supplier;
-        return this;
-    }
-
-    public float computeContentWidth(RenderContext ctx) {
-        float width = PADDING_LEFT;
-        String title = titleSupplier.get();
-        if (title != null && !title.isEmpty()) {
-            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE);
-        }
-        width += PADDING_LEFT;
-        return width;
-    }
-
     @Override
     public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
@@ -97,5 +76,25 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
                     false
             );
         }
+    }
+
+    public MaterialNavigationDrawerSectionHeader title(String title) {
+        this.titleSupplier = () -> title;
+        return this;
+    }
+
+    public MaterialNavigationDrawerSectionHeader title(Supplier<String> supplier) {
+        this.titleSupplier = supplier;
+        return this;
+    }
+
+    public float computeContentWidth(RenderContext ctx) {
+        float width = PADDING_LEFT;
+        String title = titleSupplier.get();
+        if (title != null && !title.isEmpty()) {
+            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE);
+        }
+        width += PADDING_LEFT;
+        return width;
     }
 }

@@ -22,26 +22,6 @@ import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.utils.Color;
 
 public interface MaterialSelectColors {
-    Color outline(MaterialScheme scheme);
-
-    Color outlineFocused(MaterialScheme scheme);
-
-    Color label(MaterialScheme scheme);
-
-    Color labelFocused(MaterialScheme scheme);
-
-    Color inputText(MaterialScheme scheme);
-
-    Color placeholder(MaterialScheme scheme);
-
-    Color leadingIcon(MaterialScheme scheme);
-
-    Color trailingIcon(MaterialScheme scheme);
-
-    Color supportingText(MaterialScheme scheme);
-
-    Color background(MaterialScheme scheme);
-
     MaterialSelectColors STANDARD = new MaterialSelectColors() {
         @Override
         public Color outline(MaterialScheme scheme) {
@@ -93,4 +73,24 @@ public interface MaterialSelectColors {
             return scheme.surface().copy();
         }
     };
+
+    Color outline(MaterialScheme scheme);
+
+    Color outlineFocused(MaterialScheme scheme);
+
+    Color label(MaterialScheme scheme);
+
+    Color labelFocused(MaterialScheme scheme);
+
+    Color inputText(MaterialScheme scheme);
+
+    Color placeholder(MaterialScheme scheme);
+
+    Color leadingIcon(MaterialScheme scheme);
+
+    Color trailingIcon(MaterialScheme scheme);
+
+    Color supportingText(MaterialScheme scheme);
+
+    Color background(MaterialScheme scheme);
 }

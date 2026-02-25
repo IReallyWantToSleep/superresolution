@@ -59,8 +59,9 @@ public class Fsr2PipelineResources {
     }
 
     private void addResourceDescription(Fsr2PipelineResourceType type, Fsr2ResourceCreateDescription description) {
-        if (resourceCreateDescriptions.containsKey(type) || resources.containsKey(type))
+        if (resourceCreateDescriptions.containsKey(type) || resources.containsKey(type)) {
             throw new RuntimeException(type.toString());
+        }
         resourceCreateDescriptions.put(type, description);
         resources.put(type, new Fsr2ResourceEntry(description));
         resourceEntriesMap.put(resources.get(type), type);
@@ -208,7 +209,9 @@ public class Fsr2PipelineResources {
             resources.get(type).setNeedDestroy(true);
 
             if (desc.dim == 1) {
-                if (desc.size.y != 1) throw new RuntimeException(desc.label);
+                if (desc.size.y != 1) {
+                    throw new RuntimeException(desc.label);
+                }
                 GlTexture1D tex = (GlTexture1D) RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture1D)
@@ -218,16 +221,16 @@ public class Fsr2PipelineResources {
                                         desc.mipCount == 0 ?
                                                 TextureMipmapSettings.auto() :
                                                 desc.mipCount == -1 ?
-                                                        TextureMipmapSettings.disabled() :
-                                                        TextureMipmapSettings.manual(desc.mipCount)
+                                                TextureMipmapSettings.disabled() :
+                                                TextureMipmapSettings.manual(desc.mipCount)
                                 )
                                 .format(desc.format)
                                 .filterMode(
                                         desc.mipCount == 0 ?
                                                 TextureFilterMode.Linear :
                                                 desc.mipCount == -1 ?
-                                                        TextureFilterMode.Nearest :
-                                                        TextureFilterMode.Linear
+                                                TextureFilterMode.Nearest :
+                                                TextureFilterMode.Linear
                                 )
                                 .label(desc.label)
                                 .build()
@@ -245,16 +248,16 @@ public class Fsr2PipelineResources {
                                         desc.mipCount == 0 ?
                                                 TextureMipmapSettings.auto() :
                                                 desc.mipCount == -1 ?
-                                                        TextureMipmapSettings.disabled() :
-                                                        TextureMipmapSettings.manual(desc.mipCount)
+                                                TextureMipmapSettings.disabled() :
+                                                TextureMipmapSettings.manual(desc.mipCount)
                                 )
                                 .format(desc.format)
                                 .filterMode(
                                         desc.mipCount == 0 ?
                                                 TextureFilterMode.Linear :
                                                 desc.mipCount == -1 ?
-                                                        TextureFilterMode.Nearest :
-                                                        TextureFilterMode.Linear
+                                                TextureFilterMode.Nearest :
+                                                TextureFilterMode.Linear
                                 )
                                 .label(desc.label)
                                 .build()
@@ -279,12 +282,16 @@ public class Fsr2PipelineResources {
 
     public Fsr2ResourceEntry resource(Fsr2PipelineResourceType type) {
         Fsr2ResourceEntry entry = resources.get(type);
-        if (entry == null) throw new RuntimeException("资源未找到: " + type);
+        if (entry == null) {
+            throw new RuntimeException("资源未找到: " + type);
+        }
         return entry;
     }
 
     public enum Fsr2ResourceType {
-        TEXTURE, UBO, NULL
+        TEXTURE,
+        UBO,
+        NULL
     }
 
     public static class Fsr2ResourceEntry {

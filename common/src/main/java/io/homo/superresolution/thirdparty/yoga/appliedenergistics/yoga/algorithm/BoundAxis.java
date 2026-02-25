@@ -23,6 +23,7 @@ public class BoundAxis {
      * @param axis      The flex direction axis
      * @param direction The layout direction
      * @param widthSize The width size
+     *
      * @return The padding and border value
      */
     public static float paddingAndBorderForAxis(
@@ -43,6 +44,7 @@ public class BoundAxis {
      * @param value     The value to bound
      * @param axisSize  The axis size
      * @param widthSize The width size
+     *
      * @return The bounded value
      */
     public static FloatOptional boundAxisWithinMinAndMax(
@@ -84,6 +86,7 @@ public class BoundAxis {
      * @param value     The value to bound
      * @param axisSize  The axis size
      * @param widthSize The width size
+     *
      * @return The bounded value
      */
     public static float boundAxis(

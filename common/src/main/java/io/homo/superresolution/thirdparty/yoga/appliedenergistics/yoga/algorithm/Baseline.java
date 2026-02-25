@@ -7,11 +7,7 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDimension;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPhysicalEdge;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.YogaEvent;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.event.YogaEventType;
 
@@ -21,6 +17,7 @@ public class Baseline {
      * Calculate baseline represented as an offset from the top edge of the node.
      *
      * @param node The node to calculate baseline for
+     *
      * @return The baseline value
      */
     public static float calculateBaseline(YogaNode node) {
@@ -68,6 +65,7 @@ public class Baseline {
      * Whether any of the children of this node participate in baseline alignment
      *
      * @param node The node to check
+     *
      * @return True if any children participate in baseline alignment
      */
     public static boolean isBaselineLayout(YogaNode node) {

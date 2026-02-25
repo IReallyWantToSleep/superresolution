@@ -43,6 +43,11 @@ public class Fsr2DispatchDescription {
     public float cameraFovAngleVertical;
     public float viewSpaceToMetersFactor;
     public boolean deviceDepthNegativeOneToOne;
+    public ICommandBuffer commandBuffer;
+
+    public static Fsr2DispatchDescription create() {
+        return new Fsr2DispatchDescription();
+    }
 
     public ICommandBuffer commandBuffer() {
         return commandBuffer;
@@ -51,12 +56,6 @@ public class Fsr2DispatchDescription {
     public Fsr2DispatchDescription setCommandBuffer(ICommandBuffer commandBuffer) {
         this.commandBuffer = commandBuffer;
         return this;
-    }
-
-    public ICommandBuffer commandBuffer;
-
-    public static Fsr2DispatchDescription create() {
-        return new Fsr2DispatchDescription();
     }
 
     public ITexture color() {

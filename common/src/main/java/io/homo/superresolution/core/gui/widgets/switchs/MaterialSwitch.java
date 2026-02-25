@@ -20,13 +20,14 @@ package io.homo.superresolution.core.gui.widgets.switchs;
 
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.animator.*;
+import io.homo.superresolution.core.gui.core.animator.Animator;
+import io.homo.superresolution.core.gui.core.animator.BezierInterpolator;
+import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.core.utils.MouseCursor;
 import org.joml.Vector2f;
 
 public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {

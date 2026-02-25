@@ -9,11 +9,17 @@ package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test;
 
 public record FacebookSerializedMeasureFunc(
         float inputWidth,
+
         int widthMode,
+
         float inputHeight,
+
         int heightMode,
+
         float outputWidth,
+
         float outputHeight,
+
         long durationNs
 ) {
     public boolean inputsMatch(

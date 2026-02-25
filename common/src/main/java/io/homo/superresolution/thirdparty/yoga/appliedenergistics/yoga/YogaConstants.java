@@ -21,6 +21,7 @@ public class YogaConstants {
      * Determines if a float value is undefined.
      *
      * @param value the value to check
+     *
      * @return true if the value is undefined (NaN)
      */
     public static boolean isUndefined(float value) {

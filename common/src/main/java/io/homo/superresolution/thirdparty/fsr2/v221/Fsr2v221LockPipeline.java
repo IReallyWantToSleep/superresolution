@@ -28,9 +28,9 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.thirdparty.fsr2.common.*;
 import org.joml.Vector2i;
 import org.joml.Vector3i;
-import io.homo.superresolution.thirdparty.fsr2.common.*;
 
 import java.util.HashMap;
 
@@ -50,11 +50,6 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
     @Override
     public void destroy() {
         program.destroy();
-    }
-
-    @Override
-    public Vector2i workGroupSize() {
-        return new Vector2i(16, 16);
     }
 
     @Override
@@ -112,6 +107,11 @@ public class Fsr2v221LockPipeline extends Fsr2Pipeline {
                         .getResourceDescription(context)
         );
         pipeline.add("fsr2_lock", jobBuilder.build());
+    }
+
+    @Override
+    public Vector2i workGroupSize() {
+        return new Vector2i(16, 16);
     }
 
     @Override

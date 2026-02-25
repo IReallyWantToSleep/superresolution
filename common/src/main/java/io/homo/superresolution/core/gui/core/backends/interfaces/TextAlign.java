@@ -18,7 +18,9 @@
 
 package io.homo.superresolution.core.gui.core.backends.interfaces;
 
-public record TextAlign(TextAlignType horizontal, TextAlignType vertical) {
+public record TextAlign(TextAlignType horizontal,
+
+                        TextAlignType vertical) {
     //horizontal
     public static final int ALIGN_LEFT = 1;
     public static final int ALIGN_CENTER = 2;

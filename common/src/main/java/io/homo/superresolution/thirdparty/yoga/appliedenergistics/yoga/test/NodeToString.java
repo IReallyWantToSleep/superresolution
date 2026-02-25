@@ -7,23 +7,14 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.test;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaConstants;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDimension;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaErrata;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaExperimentalFeature;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaValue;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaConfig;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleLength;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.config.YogaConfig;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleLength;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 
 import java.util.List;
 import java.util.Map;
@@ -140,11 +131,6 @@ public class NodeToString {
                 key + "-horizontal",
                 valueGetter.getValue(node, YogaEdge.HORIZONTAL),
                 valueGetter.getValue(defaultNode, YogaEdge.HORIZONTAL));
-    }
-
-    @FunctionalInterface
-    private interface EdgeValueGetter {
-        YogaValue getValue(YogaNode node, YogaEdge edge);
     }
 
     private static YogaValue borderFloatToYogaValue(YogaNode node, YogaEdge edge) {
@@ -472,5 +458,10 @@ public class NodeToString {
         layoutInputsObj.addProperty("owner-direction", ownerDirection.toString());
 
         json.add("layout-inputs", layoutInputsObj);
+    }
+
+    @FunctionalInterface
+    private interface EdgeValueGetter {
+        YogaValue getValue(YogaNode node, YogaEdge edge);
     }
 }

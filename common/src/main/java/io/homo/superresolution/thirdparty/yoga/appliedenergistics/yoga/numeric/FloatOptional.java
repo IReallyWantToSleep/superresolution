@@ -59,6 +59,7 @@ public class FloatOptional {
      * Returns the wrapped value, or the specified default value if undefined.
      *
      * @param defaultValue The default value to return if this is undefined
+     *
      * @return The wrapped value or the default
      */
     public float unwrapOrDefault(float defaultValue) {
@@ -87,6 +88,7 @@ public class FloatOptional {
      * Adds this FloatOptional to another and returns the result.
      *
      * @param other The FloatOptional to add
+     *
      * @return A new FloatOptional with the sum of the values
      */
     public FloatOptional add(FloatOptional other) {
@@ -97,6 +99,7 @@ public class FloatOptional {
      * Compares this FloatOptional for approximate equality with another.
      *
      * @param other The FloatOptional to compare with
+     *
      * @return True if values are approximately equal or both undefined
      */
     public boolean inexactEquals(FloatOptional other) {
@@ -108,6 +111,7 @@ public class FloatOptional {
      * handling undefined values.
      *
      * @param other The FloatOptional to compare with
+     *
      * @return A new FloatOptional with the maximum value
      */
     public FloatOptional maxOrDefined(FloatOptional other) {
@@ -115,9 +119,18 @@ public class FloatOptional {
     }
 
     @Override
+    public int hashCode() {
+        return isUndefined() ? 0 : Float.floatToIntBits(value);
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         FloatOptional that = (FloatOptional) o;
 
@@ -130,14 +143,19 @@ public class FloatOptional {
     }
 
     @Override
-    public int hashCode() {
-        return isUndefined() ? 0 : Float.floatToIntBits(value);
+    public String toString() {
+        if (isUndefined()) {
+            return "undefined";
+        } else {
+            return String.valueOf(value);
+        }
     }
 
     /**
      * Compares this FloatOptional with another for ordering.
      *
      * @param other the FloatOptional to be compared
+     *
      * @return a negative integer, zero, or a positive integer as this object
      * is less than, equal to, or greater than the specified object
      */
@@ -149,6 +167,7 @@ public class FloatOptional {
      * Checks if this FloatOptional is greater than another.
      *
      * @param other The FloatOptional to compare with
+     *
      * @return True if this value is greater than the other
      */
     public boolean isGreaterThan(FloatOptional other) {
@@ -159,6 +178,7 @@ public class FloatOptional {
      * Checks if this FloatOptional is less than another.
      *
      * @param other The FloatOptional to compare with
+     *
      * @return True if this value is less than the other
      */
     public boolean isLessThan(FloatOptional other) {
@@ -169,6 +189,7 @@ public class FloatOptional {
      * Checks if this FloatOptional is greater than or equal to another.
      *
      * @param other The FloatOptional to compare with
+     *
      * @return True if this value is greater than or equal to the other
      */
     public boolean isGreaterThanOrEqual(FloatOptional other) {
@@ -179,6 +200,7 @@ public class FloatOptional {
      * Checks if this FloatOptional is less than or equal to another.
      *
      * @param other The FloatOptional to compare with
+     *
      * @return True if this value is less than or equal to the other
      */
     public boolean isLessThanOrEqual(FloatOptional other) {
@@ -187,14 +209,5 @@ public class FloatOptional {
 
     public float getValue() {
         return value;
-    }
-
-    @Override
-    public String toString() {
-        if (isUndefined()) {
-            return "undefined";
-        } else {
-            return String.valueOf(value);
-        }
     }
 }

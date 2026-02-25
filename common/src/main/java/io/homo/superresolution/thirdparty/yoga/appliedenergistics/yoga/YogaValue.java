@@ -13,13 +13,12 @@ import java.util.Objects;
  * Java conversion of YGValue
  */
 public class YogaValue {
-    public final float value;
-    public final io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit unit;
-
     // Constants
     public static final YogaValue ZERO = new YogaValue(0, io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit.POINT);
     public static final YogaValue UNDEFINED = new YogaValue(YogaConstants.UNDEFINED, io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit.UNDEFINED);
     public static final YogaValue AUTO = new YogaValue(YogaConstants.UNDEFINED, io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit.AUTO);
+    public final float value;
+    public final io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit unit;
 
     public YogaValue(float value, io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaUnit unit) {
         this.value = value;
@@ -35,9 +34,18 @@ public class YogaValue {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(value, unit);
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         YogaValue yogaValue = (YogaValue) o;
 
@@ -49,11 +57,6 @@ public class YogaValue {
             case UNDEFINED, AUTO, FIT_CONTENT, MAX_CONTENT, STRETCH -> true;
             case POINT, PERCENT -> Float.compare(value, yogaValue.value) == 0;
         };
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(value, unit);
     }
 
     @Override

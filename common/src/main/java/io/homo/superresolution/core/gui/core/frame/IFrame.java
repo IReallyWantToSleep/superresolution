@@ -25,9 +25,9 @@ import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import org.joml.Vector2f;
 
 public interface IFrame {
-    void setRoot(AbstractWidget<?> root);
-
     AbstractWidget<?> getRoot();
+
+    void setRoot(AbstractWidget<?> root);
 
     void setViewport(float width, float height);
 

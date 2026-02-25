@@ -26,6 +26,7 @@ public class MaterialLabelStyle extends WidgetStyle<MaterialLabelStyle> {
     private float fontSize = 14f;
     private float lineHeight = 15f;
     private boolean sizeToContent = false;
+    private boolean wrap = false;
 
     public boolean wrap() {
         return wrap;
@@ -35,8 +36,6 @@ public class MaterialLabelStyle extends WidgetStyle<MaterialLabelStyle> {
         this.wrap = wrap;
         return this;
     }
-
-    private boolean wrap = false;
 
     public float lineHeight() {
         return lineHeight;

@@ -20,16 +20,27 @@ package io.homo.superresolution.core.gui.widgets.select;
 
 public record MaterialSelectSize(
         float containerHeight,
+
         float horizontalPadding,
+
         float cornerRadius,
+
         float outlineWidth,
+
         float outlineFocusedWidth,
+
         float iconSize,
+
         float iconTextGap,
+
         float inputFontSize,
+
         float labelFontSize,
+
         float labelCenterFontSize,
+
         float supportingTextFontSize,
+
         float supportingTextTopMargin
 ) {
     public static final MaterialSelectSize Standard = new MaterialSelectSize(

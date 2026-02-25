@@ -11,11 +11,17 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaMeasu
 
 public record SerializedMeasureFunc(
         float inputWidth,
+
         YogaMeasureMode widthMode,
+
         float inputHeight,
+
         YogaMeasureMode heightMode,
+
         float outputWidth,
+
         float outputHeight,
+
         long durationNs
 ) {
     public boolean inputsMatch(

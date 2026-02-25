@@ -19,10 +19,10 @@
 package io.homo.superresolution.thirdparty.fsr2.common.struct;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
-import org.joml.Vector2f;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Dimensions;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2DispatchDescription;
+import org.joml.Vector2f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.Buffer;
@@ -55,26 +55,6 @@ public class Fsr2CBFSR2 implements IBufferData {
 
     public Fsr2CBFSR2() {
         this.container = MemoryUtil.memCalloc((int) size());
-    }
-
-    @Override
-    public void free() {
-        MemoryUtil.memFree(container);
-    }
-
-    @Override
-    public void put(byte[] src, long offset) {
-        throw new RuntimeException();
-    }
-
-    @Override
-    public void updatePartial(Buffer data, long offset, long length) {
-        throw new RuntimeException();
-    }
-
-    @Override
-    public void update(Buffer data) {
-        throw new RuntimeException();
     }
 
     public void fillBuffer() {
@@ -185,6 +165,26 @@ public class Fsr2CBFSR2 implements IBufferData {
     @Override
     public long size() {
         return 128;
+    }
+
+    @Override
+    public void free() {
+        MemoryUtil.memFree(container);
+    }
+
+    @Override
+    public void put(byte[] src, long offset) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void updatePartial(Buffer data, long offset, long length) {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void update(Buffer data) {
+        throw new RuntimeException();
     }
 
     public void computeDeviceToViewDepth(

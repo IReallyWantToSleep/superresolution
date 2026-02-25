@@ -26,17 +26,15 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
-import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.core.gui.widgets.button.MaterialButtonShape;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import org.joml.Vector2f;
 
 import java.util.function.Consumer;
@@ -45,26 +43,17 @@ import java.util.function.Supplier;
 public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
     private static final long ANIMATION_DURATION = 200;
     private static final long FADE_DURATION = 200;
-
+    private final Animator.FloatAnimator fadeAnimator = Animator.ofFloat(1f, 1f)
+            .duration(FADE_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
+    private final Animator.FloatAnimator selectionAnimator = Animator.ofFloat(0f, 0f)
+            .duration(ANIMATION_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
     private Supplier<String> textSupplier = () -> "";
     private Supplier<MaterialSymbol> iconSupplier = () -> null;
     private Supplier<MaterialSymbol> rightIconSupplier = () -> null;
     private boolean selected = false;
     private boolean selectable = false;
-    private Object value = null;
-    private Consumer<Boolean> onSelectionChanged;
-
-    private final Animator.FloatAnimator fadeAnimator = Animator.ofFloat(1f, 1f)
-            .duration(FADE_DURATION)
-            .timeInterpolator(TimeInterpolator.easeOutCubic());
-
-    private boolean fadeInStarted = false;
-    private boolean fadeOutStarted = false;
-
-    private final Animator.FloatAnimator selectionAnimator = Animator.ofFloat(0f, 0f)
-            .duration(ANIMATION_DURATION)
-            .timeInterpolator(TimeInterpolator.easeOutCubic());
-
     private final MaterialWidgetOverlay<MaterialMenuItem> overlay = new MaterialWidgetOverlay<>(this) {
         private void drawPath(RenderContext ctx, MaterialMenuItem widget) {
             Rectangle bounds = getRawBounds();
@@ -124,6 +113,10 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
             ctx.endPath(true);
         }
     };
+    private Object value = null;
+    private Consumer<Boolean> onSelectionChanged;
+    private boolean fadeInStarted = false;
+    private boolean fadeOutStarted = false;
 
     public MaterialMenuItem() {
         this.style = new MaterialMenuItemStyle();
@@ -132,11 +125,6 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
 
     public static MaterialMenuItem create() {
         return new MaterialMenuItem();
-    }
-
-    @Override
-    public MaterialMenuItemStyle style() {
-        return (MaterialMenuItemStyle) super.style();
     }
 
     private void onPress(MouseEvent.MousePressEvent event) {
@@ -164,104 +152,18 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
     }
 
     @Override
+    public void layouting(RenderContext ctx) {
+        updateSize();
+    }
+
+    @Override
+    public MaterialMenuItemStyle style() {
+        return (MaterialMenuItemStyle) super.style();
+    }
+
+    @Override
     protected boolean isInteractive() {
         return true;
-    }
-
-    private void handleSelectionClick() {
-        if (getParent() instanceof MaterialMenuGroup group) {
-            if (group.getParent() instanceof MaterialMenu menu) {
-                menu.handleItemSelection(this);
-            }
-        }
-    }
-
-    public MaterialMenuItem text(String text) {
-        this.textSupplier = () -> text;
-        return this;
-    }
-
-    public MaterialMenuItem icon(MaterialSymbol icon) {
-        this.iconSupplier = () -> icon;
-        return this;
-    }
-
-    public MaterialMenuItem rightIcon(MaterialSymbol icon) {
-        this.rightIconSupplier = () -> icon;
-        return this;
-    }
-
-    public MaterialMenuItem selectable(boolean selectable) {
-        this.selectable = selectable;
-        return this;
-    }
-
-    public boolean isSelectable() {
-        return selectable;
-    }
-
-    public MaterialMenuItem selected(boolean selected) {
-        setSelectedInternal(selected, true);
-        return this;
-    }
-
-    public boolean isSelected() {
-        return selected;
-    }
-
-    void setSelectedInternal(boolean selected, boolean notifyListener) {
-        boolean oldSelected = this.selected;
-        this.selected = selected;
-        if (oldSelected != selected) {
-            if (selected) {
-                selectionAnimator.fromTo(selectionAnimator.get(), 1f).start();
-            } else {
-                selectionAnimator.fromTo(selectionAnimator.get(), 0f).start();
-            }
-            if (onSelectionChanged != null && notifyListener) {
-                onSelectionChanged.accept(selected);
-            }
-        }
-    }
-
-    public MaterialMenuItem value(Object value) {
-        this.value = value;
-        return this;
-    }
-
-    public Object getValue() {
-        return value;
-    }
-
-    public MaterialMenuItem onSelectionChanged(Consumer<Boolean> onSelectionChanged) {
-        this.onSelectionChanged = onSelectionChanged;
-        return this;
-    }
-
-    void startFadeIn() {
-        if (!fadeInStarted) {
-            fadeInStarted = true;
-            fadeOutStarted = false;
-            fadeAnimator.fromTo(fadeAnimator.get(), 1f).start();
-        }
-    }
-
-    void startFadeOut() {
-        if (!fadeOutStarted) {
-            fadeOutStarted = true;
-            fadeInStarted = false;
-            fadeAnimator.fromTo(fadeAnimator.get(), 0f).start();
-        }
-    }
-
-    void resetFadeState(boolean visible) {
-        fadeInStarted = visible;
-        fadeOutStarted = !visible;
-        fadeAnimator.set(visible ? 1f : 0f);
-    }
-
-    public float getFadeProgress() {
-        return fadeAnimator.get();
     }
 
     @Override
@@ -368,6 +270,109 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         ctx.restore();
     }
 
+    @Override
+    public void destroy() {
+        if (overlay != null) {
+            overlay.destroy();
+        }
+    }
+
+    private void handleSelectionClick() {
+        if (getParent() instanceof MaterialMenuGroup group) {
+            if (group.getParent() instanceof MaterialMenu menu) {
+                menu.handleItemSelection(this);
+            }
+        }
+    }
+
+    public MaterialMenuItem text(String text) {
+        this.textSupplier = () -> text;
+        return this;
+    }
+
+    public MaterialMenuItem icon(MaterialSymbol icon) {
+        this.iconSupplier = () -> icon;
+        return this;
+    }
+
+    public MaterialMenuItem rightIcon(MaterialSymbol icon) {
+        this.rightIconSupplier = () -> icon;
+        return this;
+    }
+
+    public MaterialMenuItem selectable(boolean selectable) {
+        this.selectable = selectable;
+        return this;
+    }
+
+    public boolean isSelectable() {
+        return selectable;
+    }
+
+    public MaterialMenuItem selected(boolean selected) {
+        setSelectedInternal(selected, true);
+        return this;
+    }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    void setSelectedInternal(boolean selected, boolean notifyListener) {
+        boolean oldSelected = this.selected;
+        this.selected = selected;
+        if (oldSelected != selected) {
+            if (selected) {
+                selectionAnimator.fromTo(selectionAnimator.get(), 1f).start();
+            } else {
+                selectionAnimator.fromTo(selectionAnimator.get(), 0f).start();
+            }
+            if (onSelectionChanged != null && notifyListener) {
+                onSelectionChanged.accept(selected);
+            }
+        }
+    }
+
+    public MaterialMenuItem value(Object value) {
+        this.value = value;
+        return this;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public MaterialMenuItem onSelectionChanged(Consumer<Boolean> onSelectionChanged) {
+        this.onSelectionChanged = onSelectionChanged;
+        return this;
+    }
+
+    void startFadeIn() {
+        if (!fadeInStarted) {
+            fadeInStarted = true;
+            fadeOutStarted = false;
+            fadeAnimator.fromTo(fadeAnimator.get(), 1f).start();
+        }
+    }
+
+    void startFadeOut() {
+        if (!fadeOutStarted) {
+            fadeOutStarted = true;
+            fadeInStarted = false;
+            fadeAnimator.fromTo(fadeAnimator.get(), 0f).start();
+        }
+    }
+
+    void resetFadeState(boolean visible) {
+        fadeInStarted = visible;
+        fadeOutStarted = !visible;
+        fadeAnimator.set(visible ? 1f : 0f);
+    }
+
+    public float getFadeProgress() {
+        return fadeAnimator.get();
+    }
+
     public float computeContentWidth() {
         MaterialMenuItemSize size = style().size();
         NanoVG.context.save();
@@ -400,17 +405,5 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         layout().setWidthPercent(100);
         layout().setHeight(size.height());
         layout().setFlexShrink(0);
-    }
-
-    @Override
-    public void layouting(RenderContext ctx) {
-        updateSize();
-    }
-
-    @Override
-    public void destroy() {
-        if (overlay != null) {
-            overlay.destroy();
-        }
     }
 }

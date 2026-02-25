@@ -29,7 +29,6 @@ import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;

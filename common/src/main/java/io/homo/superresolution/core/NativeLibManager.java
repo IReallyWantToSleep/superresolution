@@ -18,20 +18,20 @@
 
 package io.homo.superresolution.core;
 
-import com.sun.jna.Pointer;
-import com.sun.jna.PointerType;
-import io.homo.superresolution.api.platform.SystemArchitecture;
 import io.homo.superresolution.api.platform.OperatingSystem;
 import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.SystemArchitecture;
 import io.homo.superresolution.core.utils.MessageBox;
-import org.lwjgl.system.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,14 +42,12 @@ public class NativeLibManager {
     public static final boolean USE_DEBUG_LIB = true;
 
     private static final List<NativeLib> libs = new ArrayList<>();
-    private static boolean nativeApiAvailable;
-
-
     public static NativeLib LIB_SUPER_RESOLUTION = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_DLSS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSRGL = null;
+    private static boolean nativeApiAvailable;
 
     static {
         OperatingSystem operatingSystem = new OperatingSystem();

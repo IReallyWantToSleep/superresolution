@@ -25,6 +25,7 @@ public final class FlexDirectionUtil {
      * Checks if the flex direction is a row.
      *
      * @param flexDirection The flex direction to check
+     *
      * @return True if the flex direction is Row or RowReverse
      */
     public static boolean isRow(YogaFlexDirection flexDirection) {
@@ -36,6 +37,7 @@ public final class FlexDirectionUtil {
      * Checks if the flex direction is a column.
      *
      * @param flexDirection The flex direction to check
+     *
      * @return True if the flex direction is Column or ColumnReverse
      */
     public static boolean isColumn(YogaFlexDirection flexDirection) {
@@ -48,6 +50,7 @@ public final class FlexDirectionUtil {
      *
      * @param flexDirection The flex direction to resolve
      * @param direction     The text direction
+     *
      * @return The resolved flex direction
      */
     public static YogaFlexDirection resolveDirection(
@@ -69,6 +72,7 @@ public final class FlexDirectionUtil {
      *
      * @param flexDirection The flex direction
      * @param direction     The text direction
+     *
      * @return The resolved cross direction
      */
     public static YogaFlexDirection resolveCrossDirection(
@@ -83,7 +87,9 @@ public final class FlexDirectionUtil {
      * Gets the flex start edge based on the flex direction.
      *
      * @param flexDirection The flex direction
+     *
      * @return The physical edge corresponding to flex start
+     *
      * @throws IllegalArgumentException If the flex direction is invalid
      */
     public static YogaPhysicalEdge flexStartEdge(YogaFlexDirection flexDirection) {
@@ -105,7 +111,9 @@ public final class FlexDirectionUtil {
      * Gets the flex end edge based on the flex direction.
      *
      * @param flexDirection The flex direction
+     *
      * @return The physical edge corresponding to flex end
+     *
      * @throws IllegalArgumentException If the flex direction is invalid
      */
     public static YogaPhysicalEdge flexEndEdge(YogaFlexDirection flexDirection) {
@@ -128,6 +136,7 @@ public final class FlexDirectionUtil {
      *
      * @param flexDirection The flex direction
      * @param direction     The text direction
+     *
      * @return The physical edge corresponding to inline start
      */
     public static YogaPhysicalEdge inlineStartEdge(
@@ -145,6 +154,7 @@ public final class FlexDirectionUtil {
      *
      * @param flexDirection The flex direction
      * @param direction     The text direction
+     *
      * @return The physical edge corresponding to inline end
      */
     public static YogaPhysicalEdge inlineEndEdge(
@@ -161,7 +171,9 @@ public final class FlexDirectionUtil {
      * Gets the dimension corresponding to the flex direction.
      *
      * @param flexDirection The flex direction
+     *
      * @return The dimension (width or height)
+     *
      * @throws IllegalArgumentException If the flex direction is invalid
      */
     public static YogaDimension dimension(YogaFlexDirection flexDirection) {

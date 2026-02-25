@@ -24,7 +24,6 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.render.*;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
-import io.homo.superresolution.thirdparty.nanovg.NanoVGPaint;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -524,6 +523,28 @@ public class NanoVGRenderContext implements RenderContext {
         return viewportHeight;
     }
 
+    public IImage createImage(ITexture texture) {
+        if (!(texture instanceof GlTexture2D)) {
+            throw new IllegalArgumentException("Texture must be instance of GlTexture2D");
+        }
+        NanoVGImage image = new NanoVGImage();
+        image.nvgId = nvg.rawContext.createImageFromHandle(
+                (int) texture.handle(),
+                texture.getWidth(),
+                texture.getHeight(),
+                0
+        );
+        return image;
+    }
+
+    public void delectImage(IImage image) {
+        if (image instanceof NanoVGImage) {
+            image.destroy();
+        } else {
+            throw new IllegalArgumentException("Image must be instance of NanoVGImage");
+        }
+    }
+
     public void applyGuiScale() {
         transformStack.setIdentity();
         transformStack.scale(guiScale, guiScale);
@@ -555,27 +576,5 @@ public class NanoVGRenderContext implements RenderContext {
     public void setViewportSize(float width, float height) {
         this.viewportWidth = width;
         this.viewportHeight = height;
-    }
-
-    public IImage createImage(ITexture texture) {
-        if (!(texture instanceof GlTexture2D)) {
-            throw new IllegalArgumentException("Texture must be instance of GlTexture2D");
-        }
-        NanoVGImage image = new NanoVGImage();
-        image.nvgId = nvg.rawContext.createImageFromHandle(
-                (int) texture.handle(),
-                texture.getWidth(),
-                texture.getHeight(),
-                0
-        );
-        return image;
-    }
-
-    public void delectImage(IImage image) {
-        if (image instanceof NanoVGImage) {
-            image.destroy();
-        } else {
-            throw new IllegalArgumentException("Image must be instance of NanoVGImage");
-        }
     }
 }

@@ -42,7 +42,8 @@ import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_STRUCTURE_TYPE_PHYS
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
-import static org.lwjgl.vulkan.VK12.*;
+import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
@@ -120,7 +121,7 @@ public class VkRenderSystem implements IRenderSystem {
     }
 
     @Override
-    public IDevice device() {
+    public VulkanDevice device() {
         return vulkanDevice;
     }
 

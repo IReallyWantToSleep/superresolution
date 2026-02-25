@@ -18,6 +18,7 @@ public interface YogaBaselineFunction {
      * @param node   The node to calculate baseline for
      * @param width  The width of the node
      * @param height The height of the node
+     *
      * @return The baseline position
      */
     float baseline(YogaNode node, float width, float height);

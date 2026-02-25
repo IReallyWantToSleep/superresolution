@@ -22,6 +22,7 @@ import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -188,6 +189,11 @@ public class AlgorithmManager {
                 param.lastModelViewProjectionMatrix,
                 param.lastViewMatrix,
 
+                1.0f,
+                ShaderCompatHandler.getCurrentLevelCompatConfig()
+                        .map(p -> p.upscale.isHdrInput)
+                        .orElse(false),
+
                 new InputResourceSet(
                         color,
                         depth,
@@ -195,8 +201,8 @@ public class AlgorithmManager {
                                 getMotionVectorsFrameBuffer() == null ?
                                         null :
                                         getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
-                                motionVectors
-
+                                motionVectors,
+                        null
                 )
         );
     }
@@ -209,14 +215,14 @@ public class AlgorithmManager {
     }
 
     public static class AlgorithmParam {
-        public Matrix4f lastProjectionMatrix;
-        public Matrix4f currentProjectionMatrix;
-        public Matrix4f currentModelViewMatrix;
-        public Matrix4f lastModelViewMatrix;
-        public Matrix4f currentModelViewProjectionMatrix;
-        public Matrix4f lastModelViewProjectionMatrix;
-        public Matrix4f currentViewMatrix;
-        public Matrix4f lastViewMatrix;
+        public Matrix4f lastProjectionMatrix = new Matrix4f();
+        public Matrix4f currentProjectionMatrix = new Matrix4f();
+        public Matrix4f currentModelViewMatrix = new Matrix4f();
+        public Matrix4f lastModelViewMatrix = new Matrix4f();
+        public Matrix4f currentModelViewProjectionMatrix = new Matrix4f();
+        public Matrix4f lastModelViewProjectionMatrix = new Matrix4f();
+        public Matrix4f currentViewMatrix = new Matrix4f();
+        public Matrix4f lastViewMatrix = new Matrix4f();
 
         public double verticalFov = 11.4514f;
     }

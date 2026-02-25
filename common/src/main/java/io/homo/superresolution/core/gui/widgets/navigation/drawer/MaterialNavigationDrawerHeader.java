@@ -20,12 +20,11 @@ package io.homo.superresolution.core.gui.widgets.navigation.drawer;
 
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import org.joml.Vector2f;
 
 import java.util.function.Supplier;

@@ -22,20 +22,6 @@ import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.utils.Color;
 
 public interface MaterialMenuColors {
-    Color menuBackground(MaterialScheme scheme);
-
-    Color itemText(MaterialScheme scheme);
-
-    Color itemIcon(MaterialScheme scheme);
-
-    Color selectedItemBackground(MaterialScheme scheme);
-
-    Color selectedItemText(MaterialScheme scheme);
-
-    Color selectedItemIcon(MaterialScheme scheme);
-
-    Color stateLayer(MaterialScheme scheme);
-
     MaterialMenuColors STANDARD = new MaterialMenuColors() {
         @Override
         public Color menuBackground(MaterialScheme scheme) {
@@ -73,7 +59,6 @@ public interface MaterialMenuColors {
         }
 
     };
-
     MaterialMenuColors VIBRANT = new MaterialMenuColors() {
         @Override
         public Color menuBackground(MaterialScheme scheme) {
@@ -110,4 +95,18 @@ public interface MaterialMenuColors {
             return scheme.onTertiaryContainer().copy();
         }
     };
+
+    Color menuBackground(MaterialScheme scheme);
+
+    Color itemText(MaterialScheme scheme);
+
+    Color itemIcon(MaterialScheme scheme);
+
+    Color selectedItemBackground(MaterialScheme scheme);
+
+    Color selectedItemText(MaterialScheme scheme);
+
+    Color selectedItemIcon(MaterialScheme scheme);
+
+    Color stateLayer(MaterialScheme scheme);
 }

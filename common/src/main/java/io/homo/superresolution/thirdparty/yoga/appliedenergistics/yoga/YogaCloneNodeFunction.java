@@ -18,6 +18,7 @@ public interface YogaCloneNodeFunction {
      * @param node       The node to clone
      * @param owner      The owner of the node
      * @param childIndex The index of the node in its parent
+     *
      * @return The cloned node, or null to use the default cloning mechanism
      */
     io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode cloneNode(io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode node, YogaNode owner, int childIndex);

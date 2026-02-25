@@ -135,7 +135,13 @@ public class RenderState {
         return scissor != null;
     }
 
-    public record ScissorRect(float x, float y, float width, float height) {
+    public record ScissorRect(float x,
+
+                              float y,
+
+                              float width,
+
+                              float height) {
         public ScissorRect copy() {
             return new ScissorRect(x, y, width, height);
         }

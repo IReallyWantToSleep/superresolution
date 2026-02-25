@@ -92,9 +92,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
 
     public T createNewInstance() {
         try {
-            T instance = this.clazz.getDeclaredConstructor().newInstance();
-            instance.init();
-            return instance;
+            return this.clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

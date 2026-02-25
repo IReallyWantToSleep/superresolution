@@ -19,11 +19,10 @@
 package io.homo.superresolution.common.upscale.ffxfsr;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.NativeLibManager;
@@ -44,7 +43,6 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRing;
 import io.homo.superresolution.srapi.*;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 
@@ -252,7 +250,7 @@ public class FfxFSR extends AbstractAlgorithm {
     }
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
         createSharedTexture();
         syncSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
         syncVkSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
@@ -295,7 +293,7 @@ public class FfxFSR extends AbstractAlgorithm {
         VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
         VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
-        desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
+        desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(
                 commandBuffer.getNativeCommandBuffer()
         ));
         desc.setColor(new SRTextureResource(this.inputColorVkTexture));
@@ -319,7 +317,7 @@ public class FfxFSR extends AbstractAlgorithm {
         desc.setFrameTimeDelta(dispatchResource.frameTimeDelta());
         desc.setEnableSharpening(true);
         desc.setSharpness(SuperResolutionConfig.getSharpness());
-        desc.setPreExposure(1.0f);
+        desc.setPreExposure(dispatchResource.preExposure());
         desc.setCameraNear(dispatchResource.cameraNear());
         desc.setCameraFar(dispatchResource.cameraFar());
         desc.setCameraFovAngleVertical(dispatchResource.verticalFov());

@@ -72,6 +72,10 @@ public class StyleSizeLength {
         return UNDEFINED;
     }
 
+    public static StyleSizeLength fromYogaValue(YogaValue value) {
+        return new StyleSizeLength(FloatOptional.of(value.value), value.unit);
+    }
+
     public boolean isAuto() {
         return unit == YogaUnit.AUTO;
     }
@@ -120,21 +124,17 @@ public class StyleSizeLength {
         return new YogaValue(value.unwrap(), unit);
     }
 
-    public static StyleSizeLength fromYogaValue(YogaValue value) {
-        return new StyleSizeLength(FloatOptional.of(value.value), value.unit);
-    }
-
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
 
         StyleSizeLength other = (StyleSizeLength) obj;
         return value.equals(other.value) && unit == other.unit;
-    }
-
-    public boolean inexactEquals(StyleSizeLength other) {
-        return unit == other.unit && value.inexactEquals(other.value);
     }
 
     @Override
@@ -144,5 +144,9 @@ public class StyleSizeLength {
             case POINT -> value.toString();
             case PERCENT -> value + "%";
         };
+    }
+
+    public boolean inexactEquals(StyleSizeLength other) {
+        return unit == other.unit && value.inexactEquals(other.value);
     }
 }

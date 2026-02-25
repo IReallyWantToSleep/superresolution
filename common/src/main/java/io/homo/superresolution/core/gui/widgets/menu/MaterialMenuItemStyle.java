@@ -21,8 +21,8 @@ package io.homo.superresolution.core.gui.widgets.menu;
 import io.homo.superresolution.core.gui.core.WidgetStyle;
 
 public class MaterialMenuItemStyle extends WidgetStyle<MaterialMenuItemStyle> {
-    private MaterialMenuItemSize size = MaterialMenuItemSize.Standard;
     protected MaterialMenuColors colors = MaterialMenuColors.STANDARD;
+    private MaterialMenuItemSize size = MaterialMenuItemSize.Standard;
 
     public MaterialMenuItemSize size() {
         return size;

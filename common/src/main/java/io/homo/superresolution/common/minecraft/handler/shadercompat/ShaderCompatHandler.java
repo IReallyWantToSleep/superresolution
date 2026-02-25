@@ -77,7 +77,10 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     public static Optional<SRShaderCompatData.WorldProfile> getCurrentLevelCompatConfig() {
         try {
             Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUtils");
-            return Optional.ofNullable((SRShaderCompatData.WorldProfile) irisApiClazz.getMethod("getCurrentConfig").invoke(null));
+            Object result = irisApiClazz.getMethod("getCurrentConfig").invoke(null);
+            // getCurrentConfig() 返回 Optional<WorldProfile>，需要先转换为 Optional 再取内容
+            Optional<?> opt = (Optional<?>) result;
+            return opt.map(o -> (SRShaderCompatData.WorldProfile) o);
         } catch (Throwable e) {
             return Optional.empty();
         }

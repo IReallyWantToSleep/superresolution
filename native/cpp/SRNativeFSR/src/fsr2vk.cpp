@@ -42,6 +42,11 @@ extern "C"
         {
             fsrContexDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
         }
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)
+        {
+            fsrContexDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+        }
+        
         fsrContexDesc.backendInterface = *(privateData->ffxInterface);
         fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
         fsrContexDesc.displaySize = {desc->upscaledSize.x, desc->upscaledSize.y};

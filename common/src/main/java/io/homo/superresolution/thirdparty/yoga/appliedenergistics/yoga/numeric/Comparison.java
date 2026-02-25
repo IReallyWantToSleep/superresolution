@@ -20,6 +20,7 @@ public final class Comparison {
      * Checks if a floating-point value is undefined (NaN).
      *
      * @param value The floating-point value to check
+     *
      * @return True if the value is undefined (NaN), false otherwise
      */
     public static boolean isUndefined(float value) {
@@ -30,6 +31,7 @@ public final class Comparison {
      * Checks if a floating-point value is undefined (NaN).
      *
      * @param value The floating-point value to check
+     *
      * @return True if the value is undefined (NaN), false otherwise
      */
     public static boolean isUndefined(double value) {
@@ -40,6 +42,7 @@ public final class Comparison {
      * Checks if a floating-point value is defined (not NaN).
      *
      * @param value The floating-point value to check
+     *
      * @return True if the value is defined (not NaN), false otherwise
      */
     public static boolean isDefined(float value) {
@@ -50,6 +53,7 @@ public final class Comparison {
      * Checks if a floating-point value is defined (not NaN).
      *
      * @param value The floating-point value to check
+     *
      * @return True if the value is defined (not NaN), false otherwise
      */
     public static boolean isDefined(double value) {
@@ -60,6 +64,7 @@ public final class Comparison {
      * Checks if a floating-point value is infinite.
      *
      * @param value The floating-point value to check
+     *
      * @return True if the value is infinite, false otherwise
      */
     public static boolean isInf(float value) {
@@ -70,6 +75,7 @@ public final class Comparison {
      * Checks if a floating-point value is infinite.
      *
      * @param value The floating-point value to check
+     *
      * @return True if the value is infinite, false otherwise
      */
     public static boolean isInf(double value) {
@@ -81,6 +87,7 @@ public final class Comparison {
      *
      * @param a The first value
      * @param b The second value
+     *
      * @return The maximum value, or the defined value if one is undefined
      */
     public static float maxOrDefined(float a, float b) {
@@ -95,6 +102,7 @@ public final class Comparison {
      *
      * @param a The first value
      * @param b The second value
+     *
      * @return The maximum value, or the defined value if one is undefined
      */
     public static double maxOrDefined(double a, double b) {
@@ -109,6 +117,7 @@ public final class Comparison {
      *
      * @param a The first value
      * @param b The second value
+     *
      * @return The minimum value, or the defined value if one is undefined
      */
     public static float minOrDefined(float a, float b) {
@@ -123,6 +132,7 @@ public final class Comparison {
      *
      * @param a The first value
      * @param b The second value
+     *
      * @return The minimum value, or the defined value if one is undefined
      */
     public static double minOrDefined(double a, double b) {
@@ -138,6 +148,7 @@ public final class Comparison {
      *
      * @param a The first value
      * @param b The second value
+     *
      * @return True if values are approximately equal or both undefined
      */
     public static boolean inexactEquals(float a, float b) {
@@ -153,6 +164,7 @@ public final class Comparison {
      *
      * @param a The first value
      * @param b The second value
+     *
      * @return True if values are approximately equal or both undefined
      */
     public static boolean inexactEquals(double a, double b) {
@@ -167,6 +179,7 @@ public final class Comparison {
      *
      * @param val1 The first array
      * @param val2 The second array
+     *
      * @return True if all elements are approximately equal
      */
     public static boolean inexactEquals(float[] val1, float[] val2) {
@@ -187,6 +200,7 @@ public final class Comparison {
      *
      * @param val1 The first array
      * @param val2 The second array
+     *
      * @return True if all elements are approximately equal
      */
     public static boolean inexactEquals(double[] val1, double[] val2) {

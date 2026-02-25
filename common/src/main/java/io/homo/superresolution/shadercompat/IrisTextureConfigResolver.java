@@ -32,7 +32,7 @@ public class IrisTextureConfigResolver {
     ) {
         return new ShaderCompatTextureInfo(
                 () -> IrisTextureResolver.getIrisTexture(
-                        renderer, config.sourceName,pass
+                        renderer, config.sourceName, pass
                 ), config.region,
                 false,
                 config.sourceName

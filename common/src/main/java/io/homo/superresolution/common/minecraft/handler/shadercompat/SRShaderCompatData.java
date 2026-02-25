@@ -64,14 +64,20 @@ public class SRShaderCompatData {
         public final TextureFormat internalFormat;
         public final Map<String, InputTexture> inputTextures;
         public final Map<String, OutputTexture> outputTextures;
+        public final @Nullable SourceConfig preExposure;
+        public final boolean isHdrInput;
 
         public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
-                             Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures) {
+                             Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures,
+                             @Nullable SourceConfig preExposure,
+                             boolean isHdrInput) {
             this.enabled = enabled;
             this.trigger = trigger;
             this.internalFormat = internalFormat;
             this.inputTextures = inputTextures;
             this.outputTextures = outputTextures;
+            this.preExposure = preExposure;
+            this.isHdrInput = isHdrInput;
         }
     }
 

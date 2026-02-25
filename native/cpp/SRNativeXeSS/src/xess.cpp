@@ -146,7 +146,10 @@ extern "C"
             &upscale_size,
             quality_settings,
             &privateData->renderSize);
-        uint32_t initializeFlags = XESS_INIT_FLAG_LDR_INPUT_COLOR;
+        uint32_t initializeFlags = 0;
+        if (!(desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)){
+            initializeFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
+        }
         if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
         {
             initializeFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;

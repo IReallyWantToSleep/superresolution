@@ -7,12 +7,7 @@
 
 package io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.algorithm;
 
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaWrap;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.node.LayoutableChildren;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.numeric.FloatOptional;
 
@@ -48,26 +43,6 @@ public class FlexLine {
         this.layout = layout;
     }
 
-    public List<YogaNode> getItemsInFlow() {
-        return itemsInFlow;
-    }
-
-    public float getSizeConsumed() {
-        return sizeConsumed;
-    }
-
-    public int getNumberOfAutoMargins() {
-        return numberOfAutoMargins;
-    }
-
-    public FlexLineRunningLayout getLayout() {
-        return layout;
-    }
-
-    public void setLayout(FlexLineRunningLayout layout) {
-        this.layout = layout;
-    }
-
     /**
      * Calculates where a line starting at a given index should break, returning
      * information about the collective children on the line.
@@ -84,6 +59,7 @@ public class FlexLine {
      * @param availableInnerMainDim The available inner dimension along the main axis
      * @param iterator              Iterator for the layoutable children
      * @param lineCount             The current line count
+     *
      * @return A FlexLine object containing information about the line
      */
     public static FlexLine calculateFlexLine(
@@ -187,5 +163,25 @@ public class FlexLine {
                 0.0f);
 
         return new FlexLine(itemsInFlow, sizeConsumed, numberOfAutoMargins, layout);
+    }
+
+    public List<YogaNode> getItemsInFlow() {
+        return itemsInFlow;
+    }
+
+    public float getSizeConsumed() {
+        return sizeConsumed;
+    }
+
+    public int getNumberOfAutoMargins() {
+        return numberOfAutoMargins;
+    }
+
+    public FlexLineRunningLayout getLayout() {
+        return layout;
+    }
+
+    public void setLayout(FlexLineRunningLayout layout) {
+        this.layout = layout;
     }
 }

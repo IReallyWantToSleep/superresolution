@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.none;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -38,7 +39,7 @@ public class None extends AbstractAlgorithm {
 
 
     @Override
-    public void init() {
+    public void initialize(InitializationDescription desc) {
     }
 
     @Override

@@ -57,6 +57,10 @@ public class StyleLength {
         return UNDEFINED;
     }
 
+    public static StyleLength fromYogaValue(YogaValue value) {
+        return new StyleLength(FloatOptional.of(value.value), value.unit);
+    }
+
     public boolean isAuto() {
         return unit == YogaUnit.AUTO;
     }
@@ -93,14 +97,14 @@ public class StyleLength {
         return new YogaValue(value.unwrap(), unit);
     }
 
-    public static StyleLength fromYogaValue(YogaValue value) {
-        return new StyleLength(FloatOptional.of(value.value), value.unit);
-    }
-
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
 
         StyleLength other = (StyleLength) obj;
         return value.equals(other.value) && unit == other.unit;

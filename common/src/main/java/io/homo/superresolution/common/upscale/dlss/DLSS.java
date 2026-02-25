@@ -18,77 +18,42 @@
 
 package io.homo.superresolution.common.upscale.dlss;
 
-import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.InteropResourcesConverter;
+import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.utils.VkReflectionHelper;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRing;
 import io.homo.superresolution.srapi.*;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
-import org.lwjgl.opengl.GL20;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
-import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
-
-public class DLSS extends AbstractAlgorithm {
-    private static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
+public class DLSS extends SRApiAlgorithm {
     private static boolean providerLoaded = false;
-    private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
-            INITIAL_COMMAND_BUFFER_RING_SIZE);
-    private SRUpscaleContext context;
-    private GlImportableTexture2D inputColorGlTexture;
-    private VulkanTexture inputColorVkTexture;
-    private GlImportableTexture2D inputDepthGlTexture;
-    private VulkanTexture inputDepthVkTexture;
-    private GlImportableTexture2D inputMotionVectorsGlTexture;
-    private VulkanTexture inputMotionVectorsVkTexture;
-    private GlImportableTexture2D outputColorGlTexture;
-    private GlTexture2D outputColorTexture;
-    private VulkanTexture outputColorVkTexture;
-    private GlFrameBuffer outputFrameBuffer;
-    private VkGlInteropSemaphore syncSemaphore;
-    private VkGlInteropSemaphore syncVkSemaphore;
 
-    public void updateDLSS() {
+    @Override
+    protected void recreateSRApiContext(InitializationDescription desc) {
         if (NativeLibManager.LIB_SUPER_RESOLUTION_DLSS == null) {
             return;
         }
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_DLSS
-                .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
+        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_DLSS.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
             return;
         }
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
-
+        RenderSystems.vulkan().device().getMainQueue().waitIdle();
         if (!providerLoaded) {
             SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                     lib.toAbsolutePath().toString(),
@@ -100,13 +65,20 @@ public class DLSS extends AbstractAlgorithm {
         SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
                 SuperResolutionNativeAPI.srGetUpscaleProvider(
                         provider,
-                        0x8000005));
+                        0x8000005)
+        );
 
         this.context = new SRUpscaleContext(0);
-
-        VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
-        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-        commandBuffer.begin();
+        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+        VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
+        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.of(
+                SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
+                SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
+        if (desc.isHdrInput()) {
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_HDR
+            );
+        }
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
@@ -119,10 +91,8 @@ public class DLSS extends AbstractAlgorithm {
                         RenderHandlerManager.getScreenHeight()),
                 new Vector2i(RenderHandlerManager.getRenderWidth(),
                         RenderHandlerManager.getRenderHeight()),
-                EnumSet.of(
-                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
-                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED,
-                        SRUpscaleContextCreateFlags.ENABLE_DEBUG));
+                flags
+        );
         upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH",
                 SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
         );
@@ -131,266 +101,64 @@ public class DLSS extends AbstractAlgorithm {
                 SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
         );
 
-        SRReturnCode code = SuperResolutionNativeAPI.srCreateUpscaleContext(
-                context,
-                provider,
-                upscaleContextDesc);
-        SRReturnCode code0 = SuperResolutionNativeAPI.srInitUpscaleContext(context);
+        commandBuffer.begin();
+        SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
+        if (createUpscaleContextCode != SRReturnCode.OK) {
+            SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
+            throw new RuntimeException("Failed to create upscale context");
+        }
+        SRReturnCode initUpscaleContextCode = SuperResolutionNativeAPI.srInitUpscaleContext(context);
+        if (initUpscaleContextCode != SRReturnCode.OK) {
+            SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
+            throw new RuntimeException("Failed to initialize upscale context");
+        }
         commandBuffer.end();
         vulkanDevice.submitCommandBuffer(commandBuffer);
-        SuperResolution.LOGGER.info("'srCreateUpscaleContext' return code: {}", code);
-        SuperResolution.LOGGER.info("'srInitUpscaleContext' return code: {}", code0);
-        SuperResolution.LOGGER.info("'SRUpscaleContext' pointer: {}", context.nativePtr);
-        SuperResolution.LOGGER.info("'SRUpscaleProvider' pointer: {}", provider.nativePtr);
-    }
-
-    protected void destroySharedTexture() {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
-        if (this.inputColorVkTexture != null) {
-            this.inputColorVkTexture.destroy();
-        }
-        if (this.inputColorGlTexture != null) {
-            this.inputColorGlTexture.destroy();
-        }
-        if (this.inputDepthVkTexture != null) {
-            this.inputDepthVkTexture.destroy();
-        }
-        if (this.inputDepthGlTexture != null) {
-            this.inputDepthGlTexture.destroy();
-        }
-        if (this.outputColorVkTexture != null) {
-            this.outputColorVkTexture.destroy();
-        }
-        if (this.outputColorGlTexture != null) {
-            this.outputColorGlTexture.destroy();
-        }
-        if (this.inputMotionVectorsVkTexture != null) {
-            this.inputMotionVectorsVkTexture.destroy();
-        }
-        if (this.inputMotionVectorsGlTexture != null) {
-            this.inputMotionVectorsGlTexture.destroy();
-        }
-        if (this.outputFrameBuffer != null) {
-            this.outputFrameBuffer.destroy();
-        }
-        if (this.outputColorTexture != null) {
-            this.outputColorTexture.destroy();
-        }
-    }
-
-    protected void createSharedTexture() {
-        this.inputColorVkTexture = new VulkanTexture(
-                (VulkanDevice) RenderSystems.vulkan().device(),
-                TextureDescription.create()
-                        .usages(TextureUsages.create().sampler().storage())
-                        .format(SuperResolutionConfig.getInternalTextureFormat())
-                        .type(TextureType.Texture2D)
-                        .width(RenderHandlerManager.getRenderWidth())
-                        .height(RenderHandlerManager.getRenderHeight())
-                        .label("SRUpscaleInputColorVkTexture")
-                        .build(),
-                false,
-                0,
-                true);
-        this.inputColorGlTexture = new GlImportableTexture2D(this.inputColorVkTexture);
-
-        this.inputDepthVkTexture = new VulkanTexture(
-                (VulkanDevice) RenderSystems.vulkan().device(),
-                TextureDescription.create()
-                        .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.R32F)
-                        .type(TextureType.Texture2D)
-                        .width(RenderHandlerManager.getRenderWidth())
-                        .height(RenderHandlerManager.getRenderHeight())
-                        .label("SRUpscaleInputDepthVkTexture")
-                        .build(),
-                false,
-                0,
-                true);
-        this.inputDepthGlTexture = new GlImportableTexture2D(this.inputDepthVkTexture);
-
-        this.inputMotionVectorsVkTexture = new VulkanTexture(
-                (VulkanDevice) RenderSystems.vulkan().device(),
-                TextureDescription.create()
-                        .usages(TextureUsages.create().sampler().storage())
-                        .format(TextureFormat.RG16F)
-                        .type(TextureType.Texture2D)
-                        .width(RenderHandlerManager.getRenderWidth())
-                        .height(RenderHandlerManager.getRenderHeight())
-                        .label("SRUpscaleInputMotionVectorsVkTexture")
-                        .build(),
-                false,
-                0,
-                true);
-        this.inputMotionVectorsGlTexture = new GlImportableTexture2D(this.inputMotionVectorsVkTexture);
-
-        this.outputColorVkTexture = new VulkanTexture(
-                (VulkanDevice) RenderSystems.vulkan().device(),
-                TextureDescription.create()
-                        .type(TextureType.Texture2D)
-                        .usages(TextureUsages.create().sampler().storage().transferDestination())
-                        .format(SuperResolutionConfig.getInternalTextureFormat())
-                        .width(RenderHandlerManager.getScreenWidth())
-                        .height(RenderHandlerManager.getScreenHeight())
-                        .label("SRUpscaleOutputColorVkTexture")
-                        .build(),
-                false,
-                0,
-                true);
-        this.outputColorGlTexture = new GlImportableTexture2D(this.outputColorVkTexture);
-        this.outputColorTexture = GlTexture2D.create(
-                TextureDescription.create()
-                        .type(TextureType.Texture2D)
-                        .usages(TextureUsages.create().sampler().storage())
-                        .format(SuperResolutionConfig.getInternalTextureFormat())
-                        .width(RenderHandlerManager.getScreenWidth())
-                        .height(RenderHandlerManager.getScreenHeight())
-                        .label("SRUpscaleOutputColorGlTexture_XeSS")
-                        .build());
-        this.outputFrameBuffer = GlFrameBuffer.create(this.outputColorTexture, null);
+        vulkanDevice.getMainQueue().waitIdle();
     }
 
     @Override
-    public void init() {
-        syncSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
-        syncVkSemaphore = VkGlInteropSemaphore.create((VulkanDevice) RenderSystems.vulkan().device());
-        updateDLSS();
-        createSharedTexture();
+    protected void destroySRApiContext() {
+        if (context != null) {
+            SRReturnCode code = SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+            if (code != SRReturnCode.OK) {
+                SuperResolution.LOGGER.error("Failed to destroy upscale context. Return code: {}", code);
+                throw new RuntimeException("Failed to destroy upscale context");
+            }
+            context = null;
+        }
     }
 
     @Override
-    public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
+    public void dispatchSRApiContext(
+            VulkanCommandBuffer commandBuffer,
+            InFlightFrameResourcesSet inFlightFrameResourcesSet
 
-        if (context == null || context.nativePtr < 1) {
-            return false;
-        }
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
-
-        GL20.glFinish();
-        InteropResourcesConverter.flipY(
-                dispatchResource.resources().colorTexture(),
-                this.inputColorGlTexture);
-        InteropResourcesConverter.flipY(
-                dispatchResource.resources().depthTexture(),
-                this.inputDepthGlTexture);
-
-        if (dispatchResource.resources().motionVectorsTexture() != null) {
-            InteropResourcesConverter.flipMotionVectorY(
-                    dispatchResource.resources().motionVectorsTexture(),
-                    this.inputMotionVectorsGlTexture);
-        }
-        syncSemaphore.signalOpenGL(
-                new int[]{
-                        Math.toIntExact(this.inputColorGlTexture.handle()),
-                        Math.toIntExact(this.inputDepthGlTexture.handle()),
-                        Math.toIntExact(this.inputMotionVectorsGlTexture.handle())
-                },
-                null,
-                new int[]{
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT
-                });
-
-        // vkQueueWaitIdle(((VulkanDevice)
-        // RenderSystems.vulkan().device()).getGraphicsQueue());
-
-        VulkanDevice vulkanDevice = (VulkanDevice) RenderSystems.vulkan().device();
-        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-        commandBuffer.begin();
+    ) {
         SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
-        desc.setCommandList(SRDispatchCommandBufferInfo.createVulkan(
-                commandBuffer.getNativeCommandBuffer()));
-        desc.setColor(new SRTextureResource(this.inputColorVkTexture));
-        desc.setDepth(new SRTextureResource(this.inputDepthVkTexture));
-        desc.setMotionVectors(new SRTextureResource(this.inputMotionVectorsVkTexture));
-        desc.setOutput(new SRTextureResource(this.outputColorVkTexture));
-        desc.setJitterOffset(new Vector2f(
-                Fsr2Utils.ffxFsr2GetJitterOffset(
-                        RenderHandlerManager.getFrameCount() + ImGuiLayer.jitterOffsetFrameOffsetAlgo[0],
-                        Fsr2Utils.ffxFsr2GetJitterPhaseCount(
-                                RenderHandlerManager.getRenderWidth(),
-                                RenderHandlerManager.getScreenWidth()
-                        )
-                ).mul(1,1)
-                ));
-        desc.setMotionVectorScale(
-                new Vector2f(dispatchResource.renderSize().x, dispatchResource.renderSize().y)
-        );
-        desc.setRenderSize(
-                new Vector2i(
-                        dispatchResource.renderWidth(),
-                        dispatchResource.renderHeight())
-        );
-        desc.setUpscaleSize(
-                new Vector2i(
-                        dispatchResource.screenWidth(),
-                        dispatchResource.screenHeight()));
-        desc.setFrameTimeDelta(0);
+        desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
+        desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
+        desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
+        desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
+        desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
+        desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
+        desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
+        desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
+        desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
+        desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
         desc.setEnableSharpening(true);
         desc.setSharpness(SuperResolutionConfig.getSharpness());
-        desc.setPreExposure(1.0f);
-        desc.setCameraNear(dispatchResource.cameraNear());
-        desc.setCameraFar(dispatchResource.cameraFar());
-        desc.setCameraFovAngleVertical(dispatchResource.verticalFov());
+        desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
+        desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
+        desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
+        desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
         desc.setViewSpaceToMetersFactor(1.0f);
         desc.setReset(false);
         desc.setFlags(0);
-
-        SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(
-                context,
-                desc);
-
-        commandBuffer.end();
-        vulkanDevice.submitCommandBuffer(
-                commandBuffer,
-                new long[]{syncSemaphore.getVkSemaphoreHandle()},
-                new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                new long[]{syncVkSemaphore.getVkSemaphoreHandle()});
-        syncVkSemaphore.waitOpenGL(
-                new int[]{Math.toIntExact(this.outputColorGlTexture.handle())},
-                new int[]{},
-                new int[]{GL_LAYOUT_GENERAL_EXT});
-        InteropResourcesConverter.flipY(
-                this.outputColorGlTexture,
-                this.outputColorTexture);
-        return true;
-    }
-
-    @Override
-    public void destroy() {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
-        commandBufferRing.destroy();
-        destroySharedTexture();
-        syncSemaphore.destroy();
-        syncVkSemaphore.destroy();
-
-        if (context != null && context.nativePtr > 0) {
-            SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+        SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
+        if (code != SRReturnCode.OK) {
+            SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
         }
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        vkQueueWaitIdle(((VulkanDevice) RenderSystems.vulkan().device()).getMainQueue().getQueue());
-        commandBufferRing.destroy();
-        destroySharedTexture();
-        if (context != null && context.nativePtr > 0) {
-            SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
-        }
-        updateDLSS();
-        createSharedTexture();
-    }
-
-    @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFrameBuffer;
-    }
-
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(outputColorGlTexture.handle());
     }
 
     @Override

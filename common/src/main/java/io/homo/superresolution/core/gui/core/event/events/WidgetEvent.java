@@ -67,18 +67,16 @@ public class WidgetEvent {
 
     public static class ChangeEvent<T> extends Event {
         private final T newValue;
-
-        public T getOldValue() {
-            return oldValue;
-        }
-
         private final T oldValue;
-
 
         public ChangeEvent(T oldValue, T newValue) {
             this.newValue = newValue;
             this.oldValue = oldValue;
 
+        }
+
+        public T getOldValue() {
+            return oldValue;
         }
 
         public T getNewValue() {
@@ -89,18 +87,16 @@ public class WidgetEvent {
 
     public static class InputEvent<T> extends Event {
         private final T newValue;
-
-        public T getOldValue() {
-            return oldValue;
-        }
-
         private final T oldValue;
-
 
         public InputEvent(T oldValue, T newValue) {
             this.newValue = newValue;
             this.oldValue = oldValue;
 
+        }
+
+        public T getOldValue() {
+            return oldValue;
         }
 
         public T getNewValue() {

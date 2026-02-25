@@ -21,12 +21,12 @@ public class IrisShaderPipelineContext implements ShaderPipelineContext {
     @Override
     public Object getCustomUniformValue(String name) {
         CustomUniforms customUniforms = pipeline.getCustomUniforms();
-        List<CachedUniform> uniforms =IrisReflectionUtils.getUniformOrderCustomUniforms(customUniforms);
+        List<CachedUniform> uniforms = IrisReflectionUtils.getUniformOrderCustomUniforms(customUniforms);
         for (CachedUniform uniform : uniforms) {
             if (uniform.getName().equals(name)) {
                 FunctionReturn value = new FunctionReturn();
                 uniform.writeTo(value);
-                if (uniform.getType().equals(Type.Boolean)){
+                if (uniform.getType().equals(Type.Boolean)) {
                     return value.booleanReturn;
                 } else if (uniform.getType().equals(Type.Float)) {
                     return value.floatReturn;
@@ -43,12 +43,12 @@ public class IrisShaderPipelineContext implements ShaderPipelineContext {
     @Override
     public Object getCustomVariableValue(String name) {
         CustomUniforms customUniforms = pipeline.getCustomUniforms();
-        List<CachedUniform> uniforms =IrisReflectionUtils.getVariableCustomUniforms(customUniforms);
+        List<CachedUniform> uniforms = IrisReflectionUtils.getVariableCustomUniforms(customUniforms);
         for (CachedUniform uniform : uniforms) {
             if (uniform.getName().equals(name)) {
                 FunctionReturn value = new FunctionReturn();
                 uniform.writeTo(value);
-                if (uniform.getType().equals(Type.Boolean)){
+                if (uniform.getType().equals(Type.Boolean)) {
                     return value.booleanReturn;
                 } else if (uniform.getType().equals(Type.Float)) {
                     return value.floatReturn;
