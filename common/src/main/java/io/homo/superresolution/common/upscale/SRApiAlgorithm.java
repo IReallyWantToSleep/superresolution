@@ -108,7 +108,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 new int[]{},
                 new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT}
         );
-        //GL20.glFinish();
+        GL20.glFinish();
 
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         inFlight.frameData = FrameData.from(dispatchResource);
@@ -123,7 +123,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             commandBuffer.end();
 
             // 提交第N-1帧的Cmdbuf
-            // 在第N-1帧的GL渲染结果准备好后（glFinishSemaphore）
+            // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
             // 执行Upscale
             // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
             inFlight.fence = vulkanDevice.submitCommandBuffer(
