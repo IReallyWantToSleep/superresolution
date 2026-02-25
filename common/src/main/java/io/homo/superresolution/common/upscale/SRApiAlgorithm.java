@@ -108,7 +108,6 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 new int[]{},
                 new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT}
         );
-        GL20.glFinish();
 
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         inFlight.frameData = FrameData.from(dispatchResource);

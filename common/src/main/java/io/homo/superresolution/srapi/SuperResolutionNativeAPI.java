@@ -41,7 +41,7 @@ public class SuperResolutionNativeAPI {
 
         long extraParamsPtr = desc.extraParams != null ? desc.extraParams.getNativePtr() : 0;
         int flags = 0;
-        for (SRUpscaleContextCreateFlags contextCreateFlags : SRUpscaleContextCreateFlags.values()) {
+        for (SRUpscaleContextCreateFlags contextCreateFlags : desc.getFlags()) {
             flags |= contextCreateFlags.value;
         }
         int code = SuperResolutionNative.NsrCreateUpscaleContext(
