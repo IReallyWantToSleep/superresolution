@@ -26,7 +26,6 @@ import org.joml.Vector2f;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
 
 public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     public static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
@@ -89,7 +88,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             // =============== 渲染第N-2帧已经预期完成的Upscale结果 ================
 
             // 获取第N-2帧的资源集合Index
-            finishedIndex = Math.max(0, (currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME);
+            finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
 
             // 获取第N-2帧的资源集合
             inFlight = inFlightFrames[finishedIndex];
@@ -117,7 +116,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
         if (currentFrameIndex > 1) {
             // =============== 处理第N-1帧已经预期完成的GL渲染结果 ================
-            finishedGlIndex = Math.max((currentFrameIndex - 1) % MAX_IN_FLIGHT_FRAME, 0);
+            finishedGlIndex = (((currentFrameIndex - 1) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
             // 获取第N-1帧的资源集合
             inFlight = inFlightFrames[finishedGlIndex];
 
@@ -139,7 +138,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 // 在第N-1帧的GL渲染结果准备好后（glFinishSemaphore）
                 // 执行Upscale
                 // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
-                vulkanDevice.submitCommandBuffer(
+                inFlight.fence = vulkanDevice.submitCommandBuffer(
                         commandBuffer,
                         new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
                         new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
@@ -148,6 +147,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
                 // 存一下第N-1帧的Cmdbuf
                 inFlight.commandBuffer = commandBuffer;
+
             }
             // =================================================================
         }
@@ -163,9 +163,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 new int[]{GL_LAYOUT_GENERAL_EXT});
         // 保险x2
         if (inFlight.commandBuffer != null) {
-            if (!inFlight.commandBuffer.isFenceSignaled()){
-                RenderSystems.vulkan().device().getMainQueue().waitIdle();
-            }
+            inFlight.commandBuffer.waitForFence();
         }
         InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
@@ -212,14 +210,14 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
         int currentFrameIndex = RenderHandlerManager.getFrameCount();
-        int finishedIndex = Math.max((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME, 0);
+        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         return inFlightFrames[finishedIndex].outputFrameBuffer;
     }
 
     @Override
     public int getOutputTextureId() {
         int currentFrameIndex = RenderHandlerManager.getFrameCount();
-        int finishedIndex = Math.max((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME, 0);
+        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
         return Math.toIntExact(outputColorGlTexture.handle());
     }
@@ -323,6 +321,8 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         public VkGlInteropSemaphore upscaleVkFinish;
         public FrameData frameData;
         public VulkanCommandBuffer commandBuffer;
+        public long fence;
+
         protected int index;
 
         public void destroy() {
