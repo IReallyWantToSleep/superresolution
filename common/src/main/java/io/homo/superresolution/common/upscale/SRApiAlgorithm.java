@@ -26,6 +26,7 @@ import org.joml.Vector2f;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+import static org.lwjgl.vulkan.VK10.vkWaitForFences;
 
 public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     public static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
@@ -95,7 +96,12 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             upscaleFinishSemaphore = inFlight.upscaleVkFinish;
             glFinishSemaphore = inFlight.glFinish;
 
-            //GL Queue等待第N-2帧的Upscale结果 （防止edge-case）
+            // 等待第N-2帧的Cmdbuf完成（如果有的话）（防止edge-case）
+            if (inFlight.commandBuffer != null) {
+                inFlight.commandBuffer.waitForFence();
+            }
+
+            //GL Queue等待第N-2帧的Upscale结果 （防止edge-case）x2
             upscaleFinishSemaphore.waitOpenGL(
                     new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
                     new int[]{},
@@ -119,6 +125,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             glFinishSemaphore = inFlight.glFinish;
             VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
             VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+
             if (inFlight.frameData != null) {
                 // 构建第N-1帧的Cmdbuf
                 commandBuffer.begin();
@@ -136,7 +143,11 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                         commandBuffer,
                         new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
                         new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                        new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()});
+                        new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
+                );
+
+                // 存一下第N-1帧的Cmdbuf
+                inFlight.commandBuffer = commandBuffer;
             }
             // =================================================================
         }
@@ -145,12 +156,17 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         upscaleFinishSemaphore = inFlight.upscaleVkFinish;
         glFinishSemaphore = inFlight.glFinish;
         inFlight.frameData = FrameData.from(dispatchResource);
-        // 这里理论上不需要等待，因为上一帧已经wait过了
-        //upscaleFinishSemaphore.waitOpenGL(
-        //        new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-        //        new int[]{},
-        //        new int[]{GL_LAYOUT_GENERAL_EXT});
-
+        // 这里理论上不需要等待，因为上一帧已经wait过了，但是为了防止edge-case（比如某帧的Cmdbuf特别慢，导致第N+1帧来了，第N-1帧的Cmdbuf还没执行完，第N-1帧的GL渲染结果还没准备好），还是等一下比较保险
+        upscaleFinishSemaphore.waitOpenGL(
+                new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
+                new int[]{},
+                new int[]{GL_LAYOUT_GENERAL_EXT});
+        // 保险x2
+        if (inFlight.commandBuffer != null) {
+            if (!inFlight.commandBuffer.isFenceSignaled()){
+                RenderSystems.vulkan().device().getMainQueue().waitIdle();
+            }
+        }
         InteropResourcesConverter.flipY(
                 dispatchResource.resources().colorTexture(),
                 inFlight.inputColorGlTexture);
@@ -210,38 +226,54 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     public record FrameData(
             int renderWidth,
+
             int renderHeight,
+
             Vector2f renderSize,
 
             int screenWidth,
+
             int screenHeight,
+
             Vector2f screenSize,
 
             int frameCount,
+
             float frameTimeDelta,
 
             float verticalFov,
+
             float horizontalFov,
 
             float cameraNear,
+
             float cameraFar,
+
             Vector2f jitterOffset,
+
             int jitterSeq,
 
             Matrix4f modelViewMatrix,
+
             Matrix4f projectionMatrix,
+
             Matrix4f modelViewProjectionMatrix,
+
             Matrix4f viewMatrix,
 
             Matrix4f lastModelViewMatrix,
+
             Matrix4f lastProjectionMatrix,
+
             Matrix4f lastModelViewProjectionMatrix,
+
             Matrix4f lastViewMatrix,
 
             float preExposure,
+
             boolean isHdrInput
-    ){
-        public static FrameData from(DispatchResource dispatchResource){
+    ) {
+        public static FrameData from(DispatchResource dispatchResource) {
             return new FrameData(
                     dispatchResource.renderWidth(),
                     dispatchResource.renderHeight(),
@@ -290,7 +322,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         public VkGlInteropSemaphore glFinish;
         public VkGlInteropSemaphore upscaleVkFinish;
         public FrameData frameData;
-
+        public VulkanCommandBuffer commandBuffer;
         protected int index;
 
         public void destroy() {

@@ -179,7 +179,7 @@ public class VulkanDevice implements IDevice {
         return new VulkanTexture(this, description, memory);
     }
 
-    public void submitCommandBuffer(
+    public long submitCommandBuffer(
             VulkanCommandBuffer commandBuffer,
             long[] waitSemaphores,
             int[] waitDstStageMask,
@@ -206,6 +206,7 @@ public class VulkanDevice implements IDevice {
             VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
             commandBuffer.markSubmitted();
         }
+        return fence;
     }
 
     public void submitCommandBuffer(VulkanCommandBuffer commandBuffer) {

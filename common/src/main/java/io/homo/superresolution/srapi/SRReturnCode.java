@@ -29,13 +29,14 @@ public enum SRReturnCode {
     INVALID_ARGUMENT(7),
     UNSUPPORTED(8);
     public final int value;
+    private static final SRReturnCode[] values = values();
 
     SRReturnCode(int value) {
         this.value = value;
     }
 
     public static SRReturnCode fromValue(int value) {
-        for (SRReturnCode v : values()) {
+        for (SRReturnCode v : values) {
             if (v.value == value) {
                 return v;
             }
