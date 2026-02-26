@@ -397,6 +397,24 @@ extern "C"
             .ReadWrite = true,
         };
 
+        NVSDK_NGX_Resource_VK exposure{
+            .Resource = {
+                .ImageViewInfo = {
+                    .ImageView = (VkImageView)desc->exposure.imageView,
+                    .Image = (VkImage)desc->exposure.handle,
+                    .SubresourceRange = {
+                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .levelCount = 1,
+                        .layerCount = 1,
+                    },
+                    .Format = srTextureFormatToVkFormat(desc->exposure.desc.format),
+                    .Width = desc->exposure.desc.width,
+                    .Height = desc->exposure.desc.height,
+                }},
+            .Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW,
+            .ReadWrite = false,
+        };
+
         NVSDK_NGX_VK_DLSS_Eval_Params dlssEval{
             .Feature = {
                 .pInColor = &colorInput,
@@ -414,6 +432,7 @@ extern "C"
             .InReset = desc->reset ? 1 : 0,
             .InMVScaleX = desc->motionVectorScale.x,
             .InMVScaleY = desc->motionVectorScale.y,
+            .pInExposureTexture = &exposure,
             .InPreExposure = desc->preExposure,
             .InExposureScale = 1.f,
             .InFrameTimeDeltaInMsec = static_cast<float>(desc->frameTimeDelta),

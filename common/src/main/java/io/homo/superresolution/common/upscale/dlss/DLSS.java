@@ -72,12 +72,15 @@ public class DLSS extends SRApiAlgorithm {
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
-        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.of(
-                SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE,
-                SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
+        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.of(SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
         if (desc.isHdrInput()) {
             flags.add(
                     SRUpscaleContextCreateFlags.ENABLE_HDR
+            );
+        }
+        if (desc.isAutoExposure()){
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
             );
         }
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
@@ -141,6 +144,7 @@ public class DLSS extends SRApiAlgorithm {
         desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
         desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
+        desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
         desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
         desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
         desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));

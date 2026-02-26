@@ -5,6 +5,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -14,6 +15,7 @@ import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
@@ -101,12 +103,28 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                     dispatchResource.resources().motionVectorsTexture(),
                     inFlight.inputMotionVectorsGlTexture);
         }
+        if (dispatchResource.resources().exposureTexture() != null) {
+            GlTextureCopier.copy(
+                    CopyOperation.create()
+                            .src(dispatchResource.resources().exposureTexture())
+                            .dst(inFlight.inputExposureGlTexture)
+                            .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+            );
+        }
         glFinishSemaphore.signalOpenGL(
                 new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
                         Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
-                        Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle())},
+                        Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
+                        Math.toIntExact(inFlight.inputExposureGlTexture.handle())
+
+                },
                 new int[]{},
-                new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT, GL_LAYOUT_SHADER_READ_ONLY_EXT}
+                new int[]{
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                        GL_LAYOUT_SHADER_READ_ONLY_EXT
+                }
         );
 
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
@@ -227,9 +245,8 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
             Matrix4f lastViewMatrix,
 
-            float preExposure,
+            float preExposure
 
-            boolean isHdrInput
     ) {
         public static FrameData from(DispatchResource dispatchResource) {
             return new FrameData(
@@ -255,8 +272,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                     new Matrix4f(dispatchResource.lastProjectionMatrix()),
                     new Matrix4f(dispatchResource.lastModelViewProjectionMatrix()),
                     new Matrix4f(dispatchResource.lastViewMatrix()),
-                    dispatchResource.preExposure(),
-                    dispatchResource.isHdrInput()
+                    dispatchResource.preExposure()
             );
         }
     }
@@ -270,6 +286,9 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
         public GlImportableTexture2D inputMotionVectorsGlTexture;
         public VulkanTexture inputMotionVectorsVkTexture;
+
+        public GlImportableTexture2D inputExposureGlTexture;
+        public VulkanTexture inputExposureVkTexture;
 
         public GlImportableTexture2D outputColorGlTexture;
         public VulkanTexture outputColorVkTexture;
@@ -309,6 +328,13 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             }
             if (inputMotionVectorsVkTexture != null) {
                 inputMotionVectorsVkTexture.destroy();
+            }
+
+            if (inputExposureGlTexture != null) {
+                inputExposureGlTexture.destroy();
+            }
+            if (inputExposureVkTexture != null) {
+                inputExposureVkTexture.destroy();
             }
 
             if (flippedOutputGlTexture != null) {
@@ -367,6 +393,18 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                             .build()
             );
             this.inputMotionVectorsGlTexture = glDevice.createTextureImportable(this.inputMotionVectorsVkTexture);
+
+            this.inputExposureVkTexture = vkDevice.createTextureExportable(
+                    TextureDescription.create()
+                            .usages(TextureUsages.create().sampler().storage())
+                            .format(TextureFormat.R16F)
+                            .type(TextureType.Texture2D)
+                            .width(1)
+                            .height(1)
+                            .label("SRUpscaleInputExposureVkTexture-%s".formatted(index))
+                            .build()
+            );
+            this.inputExposureGlTexture = glDevice.createTextureImportable(this.inputExposureVkTexture);
 
             this.outputColorVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()

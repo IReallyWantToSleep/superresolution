@@ -225,6 +225,8 @@
     "superresolution.screen.config.special.fsr.version.name": "FSR Version",
     "superresolution.screen.config.special.fsr.version.tooltip": "FSR version. 2.3.3 for FSR2, 3.1.4 for FSR3\nDefault is 2.3.3",
     "superresolution.screen.config.info.about.legal_notices": "Legal Notices",
+    "superresolution.screen.config.info.about.contributor.ar.desc": "Fox！Fox！Fox！",
+    "superresolution.screen.config.info.about.contributor.chenmeng.desc": "smart guy",
     "superresolution.screen.config.info.about.gpl_statement": "This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. You are free to distribute this mod in modpacks.",
     "superresolution.screen.config.info.about.minecraft_disclaimer": "This is not an official Minecraft service. This project is not affiliated with Mojang Studios, Microsoft Corporation, or their affiliates.",
     "superresolution.screen.config.info.about.nvidia_disclaimer": "NVIDIA, GeForce, RTX, and DLSS mentioned in this software are trademarks or registered trademarks of NVIDIA Corporation in the United States and other countries. This project is not affiliated with, endorsed, or approved by NVIDIA Corporation.",

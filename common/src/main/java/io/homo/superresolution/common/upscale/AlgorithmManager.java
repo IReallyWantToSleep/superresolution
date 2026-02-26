@@ -190,9 +190,6 @@ public class AlgorithmManager {
                 param.lastViewMatrix,
 
                 1.0f,
-                ShaderCompatHandler.getCurrentLevelCompatConfig()
-                        .map(p -> p.upscale.isHdrInput)
-                        .orElse(false),
 
                 new InputResourceSet(
                         color,

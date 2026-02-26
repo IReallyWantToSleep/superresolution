@@ -223,6 +223,7 @@ public class IrisShaderCompatEventHandler {
         if (SuperResolutionConfig.isForceDisableShaderCompat()) {
             return;
         }
+        if (IrisShaderCompatUtils.getCurrentShaderPackConfig().isEmpty())return;
 
         UniformHolder uniforms = event.getUniforms();
 

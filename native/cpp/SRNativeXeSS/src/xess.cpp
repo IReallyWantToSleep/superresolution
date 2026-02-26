@@ -153,6 +153,8 @@ extern "C"
         if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
         {
             initializeFlags |= XESS_INIT_FLAG_ENABLE_AUTOEXPOSURE;
+        }else{
+            initializeFlags |= XESS_INIT_FLAG_EXPOSURE_SCALE_TEXTURE;
         }
         if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
         {
@@ -308,7 +310,7 @@ extern "C"
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
-    xess_vk_image_view_info SRTextureResourceToXeSSResource(const SRTextureResource *resource)
+    xess_vk_image_view_info srTextureResourceToXeSSResource(const SRTextureResource *resource)
     {
         xess_vk_image_view_info info = {};
         info.imageView = (VkImageView)(resource->imageView);
@@ -332,30 +334,30 @@ extern "C"
         xess_vk_execute_params_t *execute_params = new xess_vk_execute_params_t();
         if (desc->color.exist)
         {
-            execute_params->colorTexture = SRTextureResourceToXeSSResource(&desc->color);
+            execute_params->colorTexture = srTextureResourceToXeSSResource(&desc->color);
             // execute_params.inputColorBase = {0,0};
         }
         if (desc->depth.exist)
         {
-            execute_params->depthTexture = SRTextureResourceToXeSSResource(&desc->depth);
+            execute_params->depthTexture = srTextureResourceToXeSSResource(&desc->depth);
             // execute_params.inputDepthBase = {renderSize.x,renderSize.y};
         }
         if (desc->motionVectors.exist)
         {
-            execute_params->velocityTexture = SRTextureResourceToXeSSResource(&desc->motionVectors);
+            execute_params->velocityTexture = srTextureResourceToXeSSResource(&desc->motionVectors);
             // execute_params.inputMotionVectorBase = {renderSize.x,renderSize.y};
         }
         if (desc->exposure.exist)
         {
-            execute_params->exposureScaleTexture = SRTextureResourceToXeSSResource(&desc->exposure);
+            execute_params->exposureScaleTexture = srTextureResourceToXeSSResource(&desc->exposure);
         }
         if (desc->reactive.exist)
         {
-            execute_params->responsivePixelMaskTexture = SRTextureResourceToXeSSResource(&desc->reactive);
+            execute_params->responsivePixelMaskTexture = srTextureResourceToXeSSResource(&desc->reactive);
         }
         if (desc->output.exist)
         {
-            execute_params->outputTexture = SRTextureResourceToXeSSResource(&desc->output);
+            execute_params->outputTexture = srTextureResourceToXeSSResource(&desc->output);
         }
         execute_params->jitterOffsetX = desc->jitterOffset.x;
         execute_params->jitterOffsetY = desc->jitterOffset.y;

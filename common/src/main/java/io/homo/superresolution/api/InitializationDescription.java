@@ -21,6 +21,7 @@ package io.homo.superresolution.api;
 public class InitializationDescription {
 
     private boolean isHdrInput;
+    private boolean isAutoExposure;
 
     public InitializationDescription() {
     }
@@ -35,6 +36,15 @@ public class InitializationDescription {
 
     public InitializationDescription setHdrInput(boolean isHdrInput) {
         this.isHdrInput = isHdrInput;
+        return this;
+    }
+
+    public boolean isAutoExposure() {
+        return isAutoExposure;
+    }
+
+    public InitializationDescription setAutoExposure(boolean autoExposure) {
+        isAutoExposure = autoExposure;
         return this;
     }
 }

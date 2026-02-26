@@ -279,14 +279,6 @@ public final class SuperResolution implements Resizable, Destroyable {
         return defaultAlgorithm;
     }
 
-    /**
-     * 根据当前所有配置来构建初始化描述。
-     * <ul>
-     *   <li>Iris 光影接口配置：通过 {@link ShaderCompatHandler#getCurrentLevelCompatConfig()} 读取，
-     *       未安装 Iris 或未加载光影包时回落 fallback（false）</li>
-     *   <li>用户配置：暂无，预留扩展点</li>
-     * </ul>
-     */
     public static InitializationDescription getInitializationDescription() {
         boolean isHdr = ShaderCompatHandler.getCurrentLevelCompatConfig()
                 .map(p -> p.upscale.isHdrInput)

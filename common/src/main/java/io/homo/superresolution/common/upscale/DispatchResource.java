@@ -53,7 +53,6 @@ public record DispatchResource(
         Matrix4f lastViewMatrix,
 
         float preExposure,
-        boolean isHdrInput,
 
         InputResourceSet resources
 ) {

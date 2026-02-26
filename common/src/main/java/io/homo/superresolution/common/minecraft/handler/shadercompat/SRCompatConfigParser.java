@@ -159,7 +159,8 @@ public class SRCompatConfigParser {
                             mapInputTextures(rawProfile.upscale.inputs, worldKey),
                             mapOutputTextures(rawProfile.upscale.outputs, worldKey),
                             preExposureConfig,
-                            rawProfile.upscale.hdr
+                            rawProfile.upscale.hdr,
+                            rawProfile.upscale.auto_exposure
                     );
                 } else {
                     upscaleConfig = new SRShaderCompatData.UpscaleConfig(
@@ -169,6 +170,7 @@ public class SRCompatConfigParser {
                             new HashMap<>(),
                             new HashMap<>(),
                             null,
+                            false,
                             false
                     );
                 }
@@ -452,6 +454,7 @@ public class SRCompatConfigParser {
             Map<String, RawOutputTexture> outputs;
             RawSourceConfig pre_exposure;
             boolean hdr;
+            boolean auto_exposure;
         }
 
         static class RawTrigger {

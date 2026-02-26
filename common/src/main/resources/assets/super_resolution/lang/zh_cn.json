@@ -224,6 +224,8 @@
     "superresolution.screen.config.info.about.library.glslang": "Glslang",
     "superresolution.screen.config.special.fsr.version.name": "FSR版本",
     "superresolution.screen.config.special.fsr.version.tooltip": "FSR的版本，2.3.3为FSR2，3.1.4为FSR3\n默认为2.3.3",
+    "superresolution.screen.config.info.about.contributor.ar.desc": "狐狸！狐狸！狐狸！",
+    "superresolution.screen.config.info.about.contributor.chenmeng.desc": "大 聪 明",
     "superresolution.screen.config.info.about.legal_notices": "法律声明",
     "superresolution.screen.config.info.about.gpl_statement": "本程序是自由软件：您可以根据自由软件基金会发布的 GNU 通用公共许可证第三版（或更新版本）的条款重新分发和/或修改它，您可以在整合包中自由分发此模组。",
     "superresolution.screen.config.info.about.minecraft_disclaimer": "这不是官方的Minecraft服务。本项目与 Mojang Studios、Microsoft Corporation 及其关联公司无任何关联。",

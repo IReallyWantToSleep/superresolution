@@ -69,15 +69,10 @@ public class IrisShaderCompatUpscaleDispatcher {
     private static SRShaderCompatData.InputTexture lastMotionConfig;
     private static SRShaderCompatData.InputTexture lastExposureConfig;
 
-    private static boolean lastIsHdrInput = false;
 
     private static CompositeRenderer cachedCompositeRenderer;
     private static NamedCompositePass cachedNamedCompositePass;
 
-    /**
-     * 从 SourceConfig 解析 pre-exposure 标量值（float）。
-     * 若 config 为 null 则返回默认值 1.0。
-     */
     private static float resolvePreExposure(SRShaderCompatData.SourceConfig config) {
         if (config == null) {
             return 1.0f;
@@ -129,7 +124,7 @@ public class IrisShaderCompatUpscaleDispatcher {
     }
 
     public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer,
-                                                       float preExposure, boolean isHdrInput,
+                                                       float preExposure,
                                                        ITexture resolvedExposureTexture) {
         return new DispatchResource(
                 RenderHandlerManager.getRenderWidth(),
@@ -159,7 +154,6 @@ public class IrisShaderCompatUpscaleDispatcher {
                 param.lastViewMatrix,
 
                 preExposure,
-                isHdrInput,
 
                 new InputResourceSet(
                         colorTexture.getInternalTexture(),
@@ -284,17 +278,8 @@ public class IrisShaderCompatUpscaleDispatcher {
             GlDebug.popGroup();
         }
 
-        // 检测 HDR 标志变化，若变化则触发算法重新创建
-        boolean isHdrInput = currentConfig.isHdrInput;
-        if (isHdrInput != lastIsHdrInput) {
-            lastIsHdrInput = isHdrInput;
-            SuperResolution.recreateAlgorithm(SuperResolution.getInitializationDescription());
-        }
-
-        // 解析 pre-exposure 值
         float preExposure = resolvePreExposure(currentConfig.preExposure);
 
-        // 解析 exposure 纹理（传给 InputResourceSet）
         ITexture rawExposureTexture = (
                 exposureConfig != null &&
                         exposureConfig.enabled &&
@@ -323,7 +308,6 @@ public class IrisShaderCompatUpscaleDispatcher {
         DispatchResource dispatchResource = getDispatchResource(
                 compositeRenderer,
                 preExposure,
-                isHdrInput,
                 rawExposureTexture
         );
         if (SuperResolution.currentAlgorithm != null) {
