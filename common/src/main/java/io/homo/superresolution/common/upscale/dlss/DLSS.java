@@ -72,15 +72,20 @@ public class DLSS extends SRApiAlgorithm {
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
-        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.of(SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
+        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
+        if (desc.isAutoExposure()){
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+            );
+        }
         if (desc.isHdrInput()) {
             flags.add(
                     SRUpscaleContextCreateFlags.ENABLE_HDR
             );
         }
-        if (desc.isAutoExposure()){
+        if (desc.isMotionJittered()){
             flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+                    SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
             );
         }
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(

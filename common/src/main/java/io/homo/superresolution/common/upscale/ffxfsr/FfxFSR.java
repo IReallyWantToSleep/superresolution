@@ -76,18 +76,22 @@ public class FfxFSR extends SRApiAlgorithm {
 
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.of(SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
-        if (desc.isHdrInput()) {
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_HDR
-            );
-        }
+        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
         if (desc.isAutoExposure()){
             flags.add(
                     SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
             );
         }
-
+        if (desc.isHdrInput()) {
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_HDR
+            );
+        }
+        if (desc.isMotionJittered()){
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
+            );
+        }
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),

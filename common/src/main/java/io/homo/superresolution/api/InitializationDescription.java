@@ -22,12 +22,22 @@ public class InitializationDescription {
 
     private boolean isHdrInput;
     private boolean isAutoExposure;
+    private boolean isMotionJittered;
 
     public InitializationDescription() {
     }
 
     public static InitializationDescription defaults() {
         return new InitializationDescription();
+    }
+
+    public boolean isMotionJittered() {
+        return isMotionJittered;
+    }
+
+    public InitializationDescription setMotionJittered(boolean motionJittered) {
+        isMotionJittered = motionJittered;
+        return this;
     }
 
     public boolean isHdrInput() {

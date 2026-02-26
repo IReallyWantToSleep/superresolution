@@ -7,6 +7,7 @@ package io.homo.superresolution.common.config.enums;
 import net.minecraft.network.chat.Component;
 
 public enum DLSSRenderPreset {
+    F(6, Component.literal("F")),
     J(10, Component.literal("J")),
     K(11, Component.literal("K")),
     L(12, Component.literal("L")),

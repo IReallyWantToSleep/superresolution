@@ -284,7 +284,16 @@ public final class SuperResolution implements Resizable, Destroyable {
         boolean isHdr = ShaderCompatHandler.getCurrentLevelCompatConfig()
                 .map(p -> p.upscale.isHdrInput)
                 .orElse(false);
-        return new InitializationDescription().setHdrInput(isHdr);
+        boolean isAutoExposure = ShaderCompatHandler.getCurrentLevelCompatConfig()
+                .map(p -> p.upscale.isAutoExposure)
+                .orElse(true);
+        boolean isMotionJittered = ShaderCompatHandler.getCurrentLevelCompatConfig()
+                .map(p -> p.upscale.isMotionJittered)
+                .orElse(false);
+        return new InitializationDescription()
+                .setHdrInput(isHdr)
+                .setAutoExposure(isAutoExposure)
+                .setMotionJittered(isMotionJittered);
     }
 
     public void init() {

@@ -67,11 +67,13 @@ public class SRShaderCompatData {
         public final @Nullable SourceConfig preExposure;
         public final boolean isHdrInput;
         public final boolean isAutoExposure;
+        public final boolean isMotionJittered;
+
 
         public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
                              Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures,
                              @Nullable SourceConfig preExposure,
-                             boolean isHdrInput,boolean isAutoExposure) {
+                             boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered) {
             this.enabled = enabled;
             this.trigger = trigger;
             this.internalFormat = internalFormat;
@@ -80,6 +82,7 @@ public class SRShaderCompatData {
             this.preExposure = preExposure;
             this.isHdrInput = isHdrInput;
             this.isAutoExposure = isAutoExposure;
+            this.isMotionJittered = isMotionJittered;
         }
     }
 

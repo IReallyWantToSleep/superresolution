@@ -27,8 +27,10 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.RenderTargetsAccessor;
@@ -38,10 +40,7 @@ import net.irisshaders.iris.gl.uniform.UniformUpdateFrequency;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class IrisShaderCompatEventHandler {
     public static void registerEventListeners() {
@@ -172,6 +171,12 @@ public class IrisShaderCompatEventHandler {
             event.registerMacro("SR_ALGO_" + desc.codeName.toUpperCase(), Integer.toString(id));
         });
 
+        Arrays.stream(DLSSRenderPreset.values()).toList().forEach((preset) -> {
+            event.registerMacro(
+                    "SR_ALGO_DLSS_RENDERPRESET_" + preset.toString(), Integer.toString(preset.getCode()));
+        });
+
+
         if (SuperResolutionConfig.isEnableUpscale()) {
             event.registerMacro("SR_ENABLE", "1");
             event.registerMacro("SR_DISABLE", "0");
@@ -196,6 +201,11 @@ public class IrisShaderCompatEventHandler {
                     Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
             event.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
                     Integer.toString(AlgorithmManager.getJitterSequenceLength()));
+            event.registerMacro("SR_ALGO_DLSS_RENDERPRESET",
+                    SuperResolutionConfig.getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSS) ?
+                            Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :
+                            "0"
+                    );
         } else {
             event.registerMacro("SR_ENABLE", "0");
             event.registerMacro("SR_DISABLE", "1");

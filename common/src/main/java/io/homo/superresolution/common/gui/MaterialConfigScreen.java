@@ -688,7 +688,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
                 .setDefaultValue(() -> false)
                 .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
-                .setEnableRequirement(SuperResolutionConfig::isEnableExperimentalFeatures)
+                .setEnableRequirement(()->false)
                 .build();
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);

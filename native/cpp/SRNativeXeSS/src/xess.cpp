@@ -17,6 +17,7 @@ struct SRXeSSFunctionsTable
     xess_result_t (*xessGetVersion)(xess_version_t *);
     xess_result_t (*xessGetProperties)(xess_context_handle_t, const xess_2d_t *, xess_properties_t *);
     xess_result_t (*xessVKExecute)(xess_context_handle_t, VkCommandBuffer, const xess_vk_execute_params_t *);
+    xess_result_t (*xessSetVelocityScale)(xess_context_handle_t hContext, float x, float y);
 };
 
 static SRXeSSFunctionsTable g_xessFunctions = {};
@@ -85,6 +86,7 @@ SR_API SRReturnCode srXeSSLoadFunctionsFromDll(const char *dllPath, SRMessageCal
     resolved &= srXeSSResolve(g_xessFunctions.xessGetVersion, "xessGetVersion", messageCallback);
     resolved &= srXeSSResolve(g_xessFunctions.xessGetProperties, "xessGetProperties", messageCallback);
     resolved &= srXeSSResolve(g_xessFunctions.xessVKExecute, "xessVKExecute", messageCallback);
+    resolved &= srXeSSResolve(g_xessFunctions.xessSetVelocityScale, "xessSetVelocityScale", messageCallback);
 
     if (!resolved)
     {
@@ -365,6 +367,7 @@ extern "C"
         execute_params->resetHistory = desc->reset ? 1 : 0;
         execute_params->inputWidth = desc->renderSize.x;
         execute_params->inputHeight = desc->renderSize.y;
+        g_xessFunctions.xessSetVelocityScale(xessContext, desc->motionVectorScale.x, desc->motionVectorScale.y);
         auto status = g_xessFunctions.xessVKExecute(xessContext, desc->commandList.apiCommandBuffer.vulkan.commandBuffer, execute_params);
         if (status != XESS_RESULT_SUCCESS)
         {
