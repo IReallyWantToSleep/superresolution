@@ -38,6 +38,7 @@ import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.*;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.RenderSystems;
@@ -333,6 +334,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             }
                         }
                     }
+                    if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+                        ShaderCompatHandler.irisApiReloadShader();
+                    }
                     return true;
                 })
                 .setItemEnableRequirement((value) -> {
@@ -377,6 +381,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     } finally {
                         syncingQualityPreset[0] = false;
                     }
+                    if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+                        ShaderCompatHandler.irisApiReloadShader();
+                    }
                     return true;
                 })
                 .build();
@@ -406,6 +413,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 targetRatio
                         );
                         qualityPresetEntryRef[0].setSelectedValue(targetPreset);
+                    }
+                    if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+                        ShaderCompatHandler.irisApiReloadShader();
                     }
                 })
                 .build();

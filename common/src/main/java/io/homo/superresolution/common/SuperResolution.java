@@ -241,6 +241,7 @@ public final class SuperResolution implements Resizable, Destroyable {
                 e.printStackTrace();
             }
         }
+
         return false;
     }
 
@@ -318,6 +319,9 @@ public final class SuperResolution implements Resizable, Destroyable {
             currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
         }
         AlgorithmManager.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+        //if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+        //    ShaderCompatHandler.irisApiReloadShader();
+        //}
     }
 
     public void destroy() {

@@ -24,7 +24,6 @@ import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRin
 import io.homo.superresolution.srapi.SRUpscaleContext;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
-import org.lwjgl.opengl.GL20;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
@@ -130,28 +129,28 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         inFlight.frameData = FrameData.from(dispatchResource);
 
-            VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-            // 构建第N-1帧的Cmdbuf
-            commandBuffer.begin();
-            dispatchSRApiContext(
-                    commandBuffer,
-                    inFlight
-            );
-            commandBuffer.end();
+        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+        // 构建第N-1帧的Cmdbuf
+        commandBuffer.begin();
+        dispatchSRApiContext(
+                commandBuffer,
+                inFlight
+        );
+        commandBuffer.end();
 
-            // 提交第N-1帧的Cmdbuf
-            // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
-            // 执行Upscale
-            // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
-            inFlight.fence = vulkanDevice.submitCommandBuffer(
-                    commandBuffer,
-                    new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
-                    new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                    new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
-            );
+        // 提交第N-1帧的Cmdbuf
+        // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
+        // 执行Upscale
+        // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
+        inFlight.fence = vulkanDevice.submitCommandBuffer(
+                commandBuffer,
+                new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
+                new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
+        );
 
-            // 存一下第N-1帧的Cmdbuf
-            inFlight.commandBuffer = commandBuffer;
+        // 存一下第N-1帧的Cmdbuf
+        inFlight.commandBuffer = commandBuffer;
 
         upscaleFinishSemaphore.waitOpenGL(
                 new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
@@ -171,6 +170,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         commandBufferRing.destroy();
         destroyResources();
         destroySRApiContext();
+        context = null;
     }
 
     @Override

@@ -4,6 +4,8 @@
 #include "FidelityFX/host/ffx_fsr3upscaler.h"
 #include <cstring>
 #include <cstdlib>
+#include <cstdlib>
+#include <utility>
 #include "sr/fsr/sr_provider.h"
 struct SRFsr3PrivateData
 {
@@ -80,7 +82,8 @@ extern "C"
         };
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
         size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
-        void *scratchBuffer = calloc(1, scratchBufferSize);
+        void *scratchBuffer = malloc(scratchBufferSize);
+        memset(scratchBuffer, 0, scratchBufferSize);
         FfxInterface *ffxInterface = new FfxInterface();
         if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1); _rc != FFX_OK)
         {
@@ -211,7 +214,7 @@ extern "C"
         dispatchDesc.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};
         dispatchDesc.motionVectorScale = {desc->motionVectorScale.x, desc->motionVectorScale.y};
         dispatchDesc.renderSize = {desc->renderSize.x, desc->renderSize.y};
-
+		dispatchDesc.upscaleSize = { desc->upscaleSize.x, desc->upscaleSize.y };
         dispatchDesc.enableSharpening = desc->enableSharpening;
         dispatchDesc.sharpness = desc->sharpness;
         dispatchDesc.frameTimeDelta = desc->frameTimeDelta;

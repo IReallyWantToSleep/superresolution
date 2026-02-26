@@ -45,7 +45,6 @@ import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.gui.MaterialTheme;
-import io.homo.superresolution.core.gui.MaterialUI;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
 
@@ -94,18 +93,12 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
-        ENABLE_UPSCALE.onChange((oldValue, newValue) -> {
-            if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-                ShaderCompatHandler.irisApiReloadShader();
-            }
-        });
         UPSCALE_RATIO = builder.defineFloat(
                 "upscale_ratio",
                 () -> 1.7f,
                 "Upscale ratio factor",
                 value -> value >= 0.5f && value <= 4.0f
         );
-
         UPSCALE_ALGO = builder.defineString(
                 "upscale_algo",
                 defaultAlgoSupplier,
@@ -118,7 +111,6 @@ public class SuperResolutionConfig {
                     return algo != null && algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR).isEmpty();
                 }
         );
-
         SHARPNESS = builder.defineFloat(
                 "sharpness",
                 () -> 0.55f,
@@ -267,7 +259,6 @@ public class SuperResolutionConfig {
                     RenderHandlerManager.getScreenWidth(),
                     RenderHandlerManager.getScreenHeight()
             );
-            ShaderCompatHandler.irisApiReloadShader();
         };
     }
 
@@ -383,7 +374,11 @@ public class SuperResolutionConfig {
         ENABLE_UPSCALE.set(value);
         if (resolutionChanged) {
             resolutionChangeCallback.run();
+            if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+                ShaderCompatHandler.irisApiReloadShader();
+            }
         }
+
     }
 
     public static float getSharpness() {
