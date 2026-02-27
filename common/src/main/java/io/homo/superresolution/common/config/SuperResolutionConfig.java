@@ -32,6 +32,7 @@ import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
+import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
@@ -78,6 +79,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
+    public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
 
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
@@ -136,6 +138,13 @@ public class SuperResolutionConfig {
                 ArrayList::new,
                 "List of post-processing chains to skip injection",
                 value -> value != null && !value.isEmpty()
+        );
+
+        INTEROP_SYNC_MODE = builder.defineEnum(
+                "interop_sync_mode",
+                InteropSyncMode.class,
+                () -> InteropSyncMode.LowLatency,
+                ""
         );
 
         THEME = builder.defineEnum(
@@ -366,7 +375,9 @@ public class SuperResolutionConfig {
 
     public static boolean isEnableUpscale() {
         if (SuperResolutionConfig.isDisableUpscaleOnVanilla()) {
-            return isEnableUpscaleOriginal() && ShaderCompatHandler.irisApiIsShaderPackInUse();
+            return isEnableUpscaleOriginal() && (
+                    ShaderCompatHandler.irisApiIsShaderPackInUse()
+            );
         }
         return isEnableUpscaleOriginal();
     }
@@ -559,6 +570,13 @@ public class SuperResolutionConfig {
         THEME.set(value);
     }
 
+    public static InteropSyncMode getInteropSyncMode() {
+        return INTEROP_SYNC_MODE.get();
+    }
+
+    public static void setInteropSyncMode(InteropSyncMode value) {
+        INTEROP_SYNC_MODE.set(value);
+    }
     public static float getMinUpscaleRatio() {
         if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
             return 1.0f;

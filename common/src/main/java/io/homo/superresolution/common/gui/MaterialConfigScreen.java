@@ -30,6 +30,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
+import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.gui.download.MaterialDownloadList;
@@ -41,6 +42,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.SuperResolutionNative;
@@ -667,6 +669,20 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
                 .setEnumNameProvider(format -> format.name())
                 .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
+                .build();
+        builder.enumSelectorOption(
+                Text.translatable("superresolution.screen.config.options.label.interop_sync_mode"),
+                InteropSyncMode.class,
+                SuperResolutionConfig.getInteropSyncMode())
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
+                .setDefaultValue(InteropSyncMode.LowLatency)
+                .setEnumNameProvider(mode -> ((InteropSyncMode)mode).toString())
+                .setSaveConsumer((value)->{
+                    SuperResolutionConfig.setInteropSyncMode(value);
+                    if (SuperResolution.currentAlgorithm instanceof SRApiAlgorithm){
+                        SuperResolution.recreateAlgorithm();
+                    }
+                })
                 .build();
 
         builder.booleanOption(

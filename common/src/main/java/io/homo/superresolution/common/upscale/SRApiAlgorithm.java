@@ -3,6 +3,7 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
@@ -37,6 +38,8 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     protected SRUpscaleContext context;
     protected InFlightFrameResourcesSet[] inFlightFrames = new InFlightFrameResourcesSet[MAX_IN_FLIGHT_FRAME];
 
+    protected boolean syncSerialMode;
+
     protected abstract void recreateSRApiContext(InitializationDescription desc);
 
     protected abstract void destroySRApiContext();
@@ -67,6 +70,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     @Override
     public void initialize(InitializationDescription desc) {
+        syncSerialMode = SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
         this.initDesc = desc;
         createResources();
         recreateSRApiContext(desc);
@@ -79,87 +83,181 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
+        if (syncSerialMode) {
+            int currentFrameIndex = dispatchResource.frameCount() % MAX_IN_FLIGHT_FRAME;
+            InFlightFrameResourcesSet inFlight;
+            VkGlInteropSemaphore upscaleFinishSemaphore;
+            VkGlInteropSemaphore glFinishSemaphore;
+            inFlight = inFlightFrames[currentFrameIndex];
+            upscaleFinishSemaphore = inFlight.upscaleVkFinish;
+            glFinishSemaphore = inFlight.glFinish;
+            if (inFlight.commandBuffer != null) {
+                inFlight.commandBuffer.waitForFence();
+            }
+            processInputResources(inFlight, dispatchResource);
+            glFinishSemaphore.signalOpenGL(
+                    new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
+                            Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
+                            Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
+                            Math.toIntExact(inFlight.inputExposureGlTexture.handle())
 
-        int currentFrameIndex = dispatchResource.frameCount() % MAX_IN_FLIGHT_FRAME;
-        InFlightFrameResourcesSet inFlight;
-        VkGlInteropSemaphore upscaleFinishSemaphore;
-        VkGlInteropSemaphore glFinishSemaphore;
-        inFlight = inFlightFrames[currentFrameIndex];
-        upscaleFinishSemaphore = inFlight.upscaleVkFinish;
-        glFinishSemaphore = inFlight.glFinish;
-        if (inFlight.commandBuffer != null) {
-            inFlight.commandBuffer.waitForFence();
-        }
-        InteropResourcesConverter.flipY(
-                dispatchResource.resources().colorTexture(),
-                inFlight.inputColorGlTexture);
-        InteropResourcesConverter.flipY(
-                dispatchResource.resources().depthTexture(),
-                inFlight.inputDepthGlTexture);
-        if (dispatchResource.resources().motionVectorsTexture() != null) {
-            InteropResourcesConverter.flipMotionVectorY(
-                    dispatchResource.resources().motionVectorsTexture(),
-                    inFlight.inputMotionVectorsGlTexture);
-        }
-        if (dispatchResource.resources().exposureTexture() != null) {
-            GlTextureCopier.copy(
-                    CopyOperation.create()
-                            .src(dispatchResource.resources().exposureTexture())
-                            .dst(inFlight.inputExposureGlTexture)
-                            .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                    },
+                    new int[]{},
+                    new int[]{
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT
+                    }
             );
-        }
-        glFinishSemaphore.signalOpenGL(
-                new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
-                        Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
-                        Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
-                        Math.toIntExact(inFlight.inputExposureGlTexture.handle())
 
-                },
-                new int[]{},
-                new int[]{
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                        GL_LAYOUT_SHADER_READ_ONLY_EXT
+            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+            inFlight.frameData = FrameData.from(dispatchResource);
+
+            VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+            // 构建第N-1帧的Cmdbuf
+            commandBuffer.begin();
+            dispatchSRApiContext(
+                    commandBuffer,
+                    inFlight
+            );
+            commandBuffer.end();
+
+            // 提交第N-1帧的Cmdbuf
+            // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
+            // 执行Upscale
+            // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
+            inFlight.fence = vulkanDevice.submitCommandBuffer(
+                    commandBuffer,
+                    new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
+                    new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                    new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
+            );
+
+            // 存一下第N-1帧的Cmdbuf
+            inFlight.commandBuffer = commandBuffer;
+
+            upscaleFinishSemaphore.waitOpenGL(
+                    new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
+                    new int[]{},
+                    new int[]{GL_LAYOUT_GENERAL_EXT}
+            );
+            InteropResourcesConverter.flipY(
+                    inFlight.outputColorGlTexture,
+                    inFlight.flippedOutputGlTexture);
+        }else {
+            int currentFrameIndex = dispatchResource.frameCount();
+            {
+                InFlightFrameResourcesSet inFlight;
+                VkGlInteropSemaphore upscaleFinishSemaphore;
+                VkGlInteropSemaphore glFinishSemaphore;
+                // =============== 处理第N帧还未完成的GL渲染结果 ================
+                inFlight = inFlightFrames[currentFrameIndex % MAX_IN_FLIGHT_FRAME];
+                upscaleFinishSemaphore = inFlight.upscaleVkFinish;
+                glFinishSemaphore = inFlight.glFinish;
+                inFlight.frameData = FrameData.from(dispatchResource);
+                // 这里理论上不需要等待，因为上一帧已经wait过了，但是为了防止edge-case（比如某帧的Cmdbuf特别慢，导致第N+1帧来了，第N-1帧的Cmdbuf还没执行完，第N-1帧的GL渲染结果还没准备好），还是等一下比较保险
+                upscaleFinishSemaphore.waitOpenGL(
+                        new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
+                        new int[]{},
+                        new int[]{GL_LAYOUT_GENERAL_EXT});
+                // 保险x2
+                if (inFlight.commandBuffer != null) {
+                    inFlight.commandBuffer.waitForFence();
                 }
-        );
+                processInputResources(inFlight, dispatchResource);
 
-        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-        inFlight.frameData = FrameData.from(dispatchResource);
+                glFinishSemaphore.signalOpenGL(
+                        new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
+                                Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
+                                Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
+                                Math.toIntExact(inFlight.inputExposureGlTexture.handle())
 
-        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-        // 构建第N-1帧的Cmdbuf
-        commandBuffer.begin();
-        dispatchSRApiContext(
-                commandBuffer,
-                inFlight
-        );
-        commandBuffer.end();
+                        },
+                        new int[]{},
+                        new int[]{
+                                GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                                GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                                GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                                GL_LAYOUT_SHADER_READ_ONLY_EXT
+                        }
+                );
+            }
+            if (currentFrameIndex > 1) {
+                InFlightFrameResourcesSet inFlight;
+                VkGlInteropSemaphore upscaleFinishSemaphore;
+                VkGlInteropSemaphore glFinishSemaphore;
+                int finishedGlIndex = 0;
+                // =============== 处理第N-1帧已经预期完成的GL渲染结果 ================
+                finishedGlIndex = (((currentFrameIndex - 1) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+                // 获取第N-1帧的资源集合
+                inFlight = inFlightFrames[finishedGlIndex];
 
-        // 提交第N-1帧的Cmdbuf
-        // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
-        // 执行Upscale
-        // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
-        inFlight.fence = vulkanDevice.submitCommandBuffer(
-                commandBuffer,
-                new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
-                new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
-        );
+                upscaleFinishSemaphore = inFlight.upscaleVkFinish;
+                glFinishSemaphore = inFlight.glFinish;
+                VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+                VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
 
-        // 存一下第N-1帧的Cmdbuf
-        inFlight.commandBuffer = commandBuffer;
+                if (inFlight.frameData != null) {
+                    // 构建第N-1帧的Cmdbuf
+                    commandBuffer.begin();
+                    dispatchSRApiContext(
+                            commandBuffer,
+                            inFlight
+                    );
+                    commandBuffer.end();
 
-        upscaleFinishSemaphore.waitOpenGL(
-                new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                new int[]{},
-                new int[]{GL_LAYOUT_GENERAL_EXT}
-        );
-        InteropResourcesConverter.flipY(
-                inFlight.outputColorGlTexture,
-                inFlight.flippedOutputGlTexture);
+                    // 提交第N-1帧的Cmdbuf
+                    // 在第N-1帧的GL渲染结果准备好后（glFinishSemaphore）
+                    // 执行Upscale
+                    // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
+                    inFlight.fence = vulkanDevice.submitCommandBuffer(
+                            commandBuffer,
+                            new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
+                            new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                            new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
+                    );
 
+                    // 存一下第N-1帧的Cmdbuf
+                    inFlight.commandBuffer = commandBuffer;
+
+                }
+                // =================================================================
+            }
+            if (currentFrameIndex > 2) {
+                InFlightFrameResourcesSet inFlight;
+                VkGlInteropSemaphore upscaleFinishSemaphore;
+                VkGlInteropSemaphore glFinishSemaphore;
+                int finishedGlIndex = 0;
+                int finishedIndex = 0;
+                // =============== 渲染第N-2帧已经预期完成的Upscale结果 ================
+                // 获取第N-2帧的资源集合Index
+                finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+
+                // 获取第N-2帧的资源集合
+                inFlight = inFlightFrames[finishedIndex];
+                upscaleFinishSemaphore = inFlight.upscaleVkFinish;
+                glFinishSemaphore = inFlight.glFinish;
+
+                // 等待第N-2帧的Cmdbuf完成（如果有的话）（防止edge-case）
+                if (inFlight.commandBuffer != null) {
+                    inFlight.commandBuffer.waitForFence();
+                }
+
+                //GL Queue等待第N-2帧的Upscale结果 （防止edge-case）x2
+                upscaleFinishSemaphore.waitOpenGL(
+                        new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
+                        new int[]{},
+                        new int[]{GL_LAYOUT_GENERAL_EXT}
+                );
+
+                //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
+                InteropResourcesConverter.flipY(
+                        inFlight.outputColorGlTexture,
+                        inFlight.flippedOutputGlTexture);
+                // =================================================================
+            }
+        }
         return true;
     }
 
@@ -197,6 +295,28 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         int finishedIndex = (((currentFrameIndex) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
         return Math.toIntExact(outputColorGlTexture.handle());
+    }
+
+    private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
+        InteropResourcesConverter.flipY(
+                dispatchResource.resources().colorTexture(),
+                inFlight.inputColorGlTexture);
+        InteropResourcesConverter.flipY(
+                dispatchResource.resources().depthTexture(),
+                inFlight.inputDepthGlTexture);
+        if (dispatchResource.resources().motionVectorsTexture() != null) {
+            InteropResourcesConverter.flipMotionVectorY(
+                    dispatchResource.resources().motionVectorsTexture(),
+                    inFlight.inputMotionVectorsGlTexture);
+        }
+        if (dispatchResource.resources().exposureTexture() != null) {
+            GlTextureCopier.copy(
+                    CopyOperation.create()
+                            .src(dispatchResource.resources().exposureTexture())
+                            .dst(inFlight.inputExposureGlTexture)
+                            .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+            );
+        }
     }
 
     public record FrameData(

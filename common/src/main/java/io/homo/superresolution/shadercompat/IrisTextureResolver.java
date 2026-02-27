@@ -24,13 +24,14 @@ import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlOnlyNameTexture;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
+import net.irisshaders.iris.gl.texture.InternalTextureFormat;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
+import net.irisshaders.iris.targets.RenderTarget;
 import net.irisshaders.iris.targets.RenderTargets;
 
 import java.util.function.Function;
 
-import static org.lwjgl.opengl.GL11.GL_DEPTH_COMPONENT;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.*;
 
 public class IrisTextureResolver {
     private static final String AUTO_PREFIX = "autotex";
@@ -56,12 +57,42 @@ public class IrisTextureResolver {
         if (getIrisTextureByName(renderer, name,pass,useStageWritesToMain)< 1) return null;
         return new GlOnlyNameTexture(
                 () -> {
-                    int format = GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain));
-                    return format == GL_DEPTH_COMPONENT ? TextureFormat.DEPTH32 : TextureFormat.fromGl(format);
+                    if (!isColorTextureName(name)){
+                        int internalFormat = GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D,getIrisTextureByName(renderer, name, pass, useStageWritesToMain));
+                        return TextureFormat.fromGl(internalFormat);
+                    }
+                    InternalTextureFormat irisFormat = getIrisColorTextureByName(renderer, name, pass, useStageWritesToMain).getInternalFormat();
+                    int format = irisFormat != null && irisFormat.getGlFormat() != GL_RGBA ? irisFormat.getGlFormat() : GL_RGBA8;
+                    return TextureFormat.fromGl(format);
                 },
-                () -> GlTextureInfoGetter.getWidth(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain)),
-                () -> GlTextureInfoGetter.getHeight(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain)),
+                () -> {
+                    if (!isColorTextureName(name)){
+                        return GlTextureInfoGetter.getWidth(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain));
+                    }
+                    return getIrisColorTextureByName(renderer, name, pass, useStageWritesToMain).getWidth();
+                },
+                () -> {
+                    if (!isColorTextureName(name)){
+                        return GlTextureInfoGetter.getHeight(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain));
+                    }
+                    return getIrisColorTextureByName(renderer, name, pass, useStageWritesToMain).getHeight();
+                },
                 () -> (long) getIrisTextureByName(renderer, name,pass,useStageWritesToMain)
+        );
+    }
+
+    public static boolean isColorTextureName(String name) {
+        return name.startsWith(COLOR_PREFIX) || name.startsWith(ALT_PREFIX) || name.startsWith(AUTO_PREFIX);
+    }
+
+    public static RenderTarget getIrisColorTextureByName(CompositeRenderer renderer, String name, NamedCompositePass pass, boolean useStageWritesToMain) {
+        return resolveColorTexture(renderer, name,
+                texId -> getCompositeRendererRenderTargets(renderer)
+                        .getOrCreate(texId),
+                texId -> getCompositeRendererRenderTargets(renderer)
+                        .getOrCreate(texId),
+                pass,
+                useStageWritesToMain
         );
     }
 
@@ -73,7 +104,7 @@ public class IrisTextureResolver {
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId)
                         .getAltTexture(),
-                depthId -> depthId,
+                d->d,
                 -1,
                 pass,
                 useStageWritesToMain
@@ -82,6 +113,35 @@ public class IrisTextureResolver {
 
     public static RenderTargets getCompositeRendererRenderTargets(CompositeRenderer renderer) {
         return ((CompositeRendererAccessor) renderer).getRenderTargets();
+    }
+
+    private static <T> T resolveColorTexture(
+            CompositeRenderer renderer,
+            String name,
+            Function<Integer, T> colorResolver,
+            Function<Integer, T> colorAltResolver,
+            NamedCompositePass pass,
+            boolean useStageWritesToMain
+    ) {
+        try {
+            if (name.startsWith(COLOR_PREFIX)) {
+                return colorResolver.apply(Integer.parseInt(name.substring(COLOR_PREFIX.length())));
+            } else if (name.startsWith(ALT_PREFIX)) {
+                return colorAltResolver.apply(Integer.parseInt(name.substring(ALT_PREFIX.length())));
+            } else if (name.startsWith(AUTO_PREFIX)) {
+                ImmutableSet<Integer> stateReadsFromAlt = IrisReflectionUtils.getCompositePassStateReadsFromAlt(
+                        pass
+                );
+                int index = Integer.parseInt(name.substring(AUTO_PREFIX.length()));
+                if (stateReadsFromAlt.contains(index)){
+                    return useStageWritesToMain ? colorResolver.apply(index): colorAltResolver.apply(index);
+                } else {
+                    return useStageWritesToMain ? colorAltResolver.apply(index): colorResolver.apply(index);
+                }
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return null;
     }
 
     private static <T> T resolveTexture(
