@@ -227,6 +227,10 @@ extern "C"
         SRFSR_CHECK(ffxFsr3UpscalerContextDispatch(fsr3Context, &dispatchDesc));
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
+    SR_API SRReturnCode srFfxFsr3Shutdown()
+    {
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
     SR_API SRUpscaleContextCallbacks srGetFfxFSR3UpscaleCallbacks()
     {
         static SRUpscaleContextCallbacks callbacks = {
@@ -235,6 +239,7 @@ extern "C"
             .pDestroy = (SRDestroyFunc)srFfxFsr3DestroyUpscaleContext,
             .pQuery = (SRQueryFunc)srFfxFsr3QueryUpscale,
             .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr3DispatchUpscale,
+            .pShutdown = (SRShutdownFunc)srFfxFsr3Shutdown,
         };
         return callbacks;
     }

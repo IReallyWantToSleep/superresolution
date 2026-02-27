@@ -120,6 +120,8 @@ public class SuperResolutionNative {
             String getProvidersCountFuncName
     );
 
+    public static native int NsrShutdown();
+
     public static native long NsrCreateParams();
 
     public static native void NsrDestroyParams(long paramsPtr);

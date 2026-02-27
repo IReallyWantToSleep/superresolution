@@ -14,6 +14,7 @@
 extern "C"
 {
 #endif
+    SR_API SRReturnCode srShutdown();
     SR_API SRReturnCode srCreateUpscaleContext(
         SRUpscaleContext *outContext,
         SRUpscaleProvider *provider,
@@ -125,7 +126,7 @@ extern "C"
         const SRContextExtraParams *params,
         const char *name,
         void **outValue);
-    SR_API void srDestroyExtraParams(SRContextExtraParams* params);
+    SR_API void srDestroyExtraParams(SRContextExtraParams *params);
 
 #ifdef __cplusplus
 }

@@ -59,6 +59,12 @@ extern "C"
         return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
     }
 
+    SR_API SRReturnCode srFfxFsr2Shutdown()
+    {    
+        srFfxFsr2Shutdown();
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
+
     SR_API SRUpscaleContextCallbacks srGetFfxFSR2UpscaleCallbacks()
     {
         static SRUpscaleContextCallbacks callbacks = {
@@ -67,6 +73,7 @@ extern "C"
             .pDestroy = (SRDestroyFunc)srFfxFsr2DestroyUpscaleContext,
             .pQuery = (SRQueryFunc)srFfxFsr2QueryUpscale,
             .pDispatchUpscale = (SRDispatchUpscaleFunc)srFfxFsr2DispatchUpscale,
+            .pShutdown = (SRShutdownFunc)srFfxFsr2Shutdown,
         };
         return callbacks;
     }

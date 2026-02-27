@@ -324,6 +324,11 @@ extern "C"
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
 
+    SR_API SRReturnCode srFfxFsr2VkShutdown()
+    {
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
+
 #ifdef __cplusplus
 }
 #endif

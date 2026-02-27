@@ -47,6 +47,7 @@ import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.core.utils.MessageBox;
+import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
@@ -328,16 +329,15 @@ public final class SuperResolution implements Resizable, Destroyable {
             currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
         }
         AlgorithmManager.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
-        //if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-        //    ShaderCompatHandler.irisApiReloadShader();
-        //}
     }
 
     public void destroy() {
+        isInit = false;
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
         }
         AlgorithmManager.destroy();
+        SuperResolutionNativeAPI.srShutdown();
         RenderSystems.destroy();
     }
 }

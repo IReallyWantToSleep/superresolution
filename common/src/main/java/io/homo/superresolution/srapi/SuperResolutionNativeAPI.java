@@ -256,4 +256,8 @@ public class SuperResolutionNativeAPI {
     protected static long srParamGetValueAsPointer(long paramPtr) {
         return SuperResolutionNative.NsrParamGetValueAsPointer(paramPtr);
     }
+
+    public static SRReturnCode srShutdown(){
+        return SRReturnCode.fromValue(SuperResolutionNative.NsrShutdown());
+    }
 }

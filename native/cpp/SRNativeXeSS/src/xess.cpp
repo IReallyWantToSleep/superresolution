@@ -377,6 +377,10 @@ extern "C"
         }
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
+    SR_API SRReturnCode srXeSSShutdown()
+    {
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
     SR_API SRUpscaleContextCallbacks srGetXeSSUpscaleCallbacks()
     {
         static SRUpscaleContextCallbacks callbacks = {
@@ -385,6 +389,8 @@ extern "C"
             .pDestroy = (SRDestroyFunc)srXeSSDestroyUpscaleContext,
             .pQuery = (SRQueryFunc)srXeSSQueryUpscale,
             .pDispatchUpscale = (SRDispatchUpscaleFunc)srXeSSDispatchUpscale,
+            .pShutdown = (SRShutdownFunc)srXeSSShutdown,
+
         };
         return callbacks;
     }

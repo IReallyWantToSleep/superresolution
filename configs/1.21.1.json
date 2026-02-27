@@ -40,11 +40,11 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.8.1+1.21.1-fabric"
+                    "version": "1.8.8+1.21.1-fabric"
                 },
                 {
                     "name": "sodium",
-                    "version": "mc1.21.1-0.6.5-fabric"
+                    "version": "mc1.21.1-0.6.13-fabric"
                 },
                 {
                     "name": "distanthorizons",
@@ -78,7 +78,7 @@
         "modmenu_version": "11.0.1"
     },
     "neoforge": {
-        "loader_version": "21.1.89",
+        "loader_version": "21.1.219",
         "dependencies": {
             "modrinth": [
                 {
@@ -99,7 +99,7 @@
                 },
                 {
                     "name": "sodium",
-                    "version": "mc1.21.1-0.6.7-neoforge"
+                    "version": "mc1.21.1-0.6.13-neoforge"
                 },
                 {
                     "name": "immediatelyfast",
@@ -115,7 +115,7 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.8.1+1.21.1-neoforge"
+                    "version": "1.8.8+1.21.1-neoforge"
                 },
                 {
                     "name": "sodium-options-api",

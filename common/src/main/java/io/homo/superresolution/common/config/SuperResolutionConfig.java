@@ -237,7 +237,7 @@ public class SuperResolutionConfig {
         INTERNAL_TEXTURE_FORMAT = builder.defineEnum(
                 "internal_texture_format",
                 InternalTextureFormat.class,
-                () -> InternalTextureFormat.R11B11G10F,
+                () -> InternalTextureFormat.AUTO,
                 "The precision of the internal texture format affects video memory consumption: higher precision results in greater consumption, while lower precision leads to smaller consumption. Note: Excessively low precision may cause noticeable color banding in the image."
         );
         INTERNAL_TEXTURE_FORMAT.onChange(

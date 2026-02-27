@@ -45,6 +45,25 @@ SR_API SRReturnCode srGetUpscaleProvider(
     return SR_RETURN_CODE_CANNOT_FIND_PROVIDER;
 }
 
+SR_API SRReturnCode srShutdown()
+{
+    std::lock_guard<std::mutex> lock(g_providerMutex);
+    bool allSuccess = true;
+    for (const auto &provider : g_srLoadedUpscaleProviders)
+    {
+        if (provider.callbacks.pShutdown)
+        {
+            SRReturnCode code = provider.callbacks.pShutdown();
+            if (code != SR_RETURN_CODE_OK)
+            {
+                allSuccess = false;
+            }
+        }
+    }
+
+    return allSuccess ? SR_RETURN_CODE_OK : SR_RETURN_CODE_UNEXPECTED_ERROR;
+}
+
 SR_API SRReturnCode srCreateUpscaleContext(
     SRUpscaleContext *outContext,
     SRUpscaleProvider *provider,
@@ -54,7 +73,7 @@ SR_API SRReturnCode srCreateUpscaleContext(
     {
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
-    //memset(outContext, 0, sizeof(SRUpscaleContext));
+    // memset(outContext, 0, sizeof(SRUpscaleContext));
     outContext->callbacks = provider->callbacks;
     SRReturnCode code = provider->callbacks.pCreate(outContext, desc);
     return code;
@@ -101,7 +120,7 @@ SR_API SRReturnCode srDispatchUpscale(
     {
         return (SRReturnCode)SR_RETURN_CODE_NULL_POINTER;
     }
-	SRReturnCode code = context->callbacks.pDispatchUpscale(context, desc);
+    SRReturnCode code = context->callbacks.pDispatchUpscale(context, desc);
     return code;
 }
 SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
@@ -354,7 +373,6 @@ SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt)
     }
 }
 
-
 SR_API const SRContextExtraParam *srFindParam(
     const SRContextExtraParams *params,
     const char *name)
@@ -389,8 +407,9 @@ SR_API SRReturnCode srParamsSetBool(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_BOOL;
@@ -415,8 +434,9 @@ SR_API SRReturnCode srParamsSetInt32(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_INT32;
@@ -441,8 +461,9 @@ SR_API SRReturnCode srParamsSetUint32(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_UINT32;
@@ -467,8 +488,9 @@ SR_API SRReturnCode srParamsSetFloat(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_FLOAT;
@@ -493,8 +515,9 @@ SR_API SRReturnCode srParamsSetDouble(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_DOUBLE;
@@ -519,11 +542,13 @@ SR_API SRReturnCode srParamsSetString(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
 
-    char* valueCopy = strdup(value);
-    if (!valueCopy) return SR_RETURN_CODE_ERROR;
+    char *valueCopy = strdup(value);
+    if (!valueCopy)
+        return SR_RETURN_CODE_ERROR;
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_STRING;
@@ -548,14 +573,15 @@ SR_API SRReturnCode srParamsSetPointer(
     {
         return SR_RETURN_CODE_ERROR;
     }
-    char* nameCopy = strdup(name);
-    if (!nameCopy) return SR_RETURN_CODE_ERROR;
+    char *nameCopy = strdup(name);
+    if (!nameCopy)
+        return SR_RETURN_CODE_ERROR;
 
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_POINTER;
     param->value.ptrValue = value;
-	param->exist = true;
+    param->exist = true;
     params->extraParamCount++;
 
     return SR_RETURN_CODE_OK;
@@ -784,18 +810,21 @@ SR_API SRReturnCode srParamsGetPointer(
     return SR_RETURN_CODE_OK;
 }
 
-SR_API void srDestroyExtraParams(SRContextExtraParams* params) {
-    for (uint32_t i = 0; i < params->extraParamCount; ++i) {
-        if (params->extraParams[i].exist) {
-            free((void*)params->extraParams[i].name);
-            if (params->extraParams[i].valueType == SR_PARAM_VALUE_TYPE_STRING) {
-                if ((void*)params->extraParams[i].value.stringValue)
+SR_API void srDestroyExtraParams(SRContextExtraParams *params)
+{
+    for (uint32_t i = 0; i < params->extraParamCount; ++i)
+    {
+        if (params->extraParams[i].exist)
+        {
+            free((void *)params->extraParams[i].name);
+            if (params->extraParams[i].valueType == SR_PARAM_VALUE_TYPE_STRING)
+            {
+                if ((void *)params->extraParams[i].value.stringValue)
                 {
-                    free((void*)params->extraParams[i].value.stringValue);
+                    free((void *)params->extraParams[i].value.stringValue);
                 }
             }
         }
-
     }
     params->extraParamCount = 0;
 }

@@ -448,6 +448,11 @@ extern "C"
         }
         return (SRReturnCode)SR_RETURN_CODE_OK;
     }
+    SR_API SRReturnCode srDLSSShutdown()
+    {
+        NVSDK_NGX_VULKAN_Shutdown1(nullptr);
+        return (SRReturnCode)SR_RETURN_CODE_OK;
+    }
     SR_API SRUpscaleContextCallbacks srGetDLSSUpscaleCallbacks()
     {
         static SRUpscaleContextCallbacks callbacks = {
@@ -456,6 +461,7 @@ extern "C"
             .pDestroy = (SRDestroyFunc)srDLSSDestroyUpscaleContext,
             .pQuery = (SRQueryFunc)srDLSSQueryUpscale,
             .pDispatchUpscale = (SRDispatchUpscaleFunc)srDLSSDispatchUpscale,
+            .pShutdown = (SRShutdownFunc)srDLSSShutdown,
         };
         return callbacks;
     }

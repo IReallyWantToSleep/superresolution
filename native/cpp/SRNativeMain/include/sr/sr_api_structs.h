@@ -165,6 +165,7 @@ extern "C"
     typedef SRReturnCode (*SRDestroyFunc)(SRUpscaleContext *context);
     typedef SRReturnCode (*SRQueryFunc)(SRUpscaleContext *, SRUpscaleContextQueryResult *, int queryType);
     typedef SRReturnCode (*SRDispatchUpscaleFunc)(SRUpscaleContext *context, const struct SRDispatchUpscaleDesc *desc);
+    typedef SRReturnCode (*SRShutdownFunc)();
 
     typedef struct SRUpscaleContextCallbacks
     {
@@ -173,6 +174,7 @@ extern "C"
         SRDestroyFunc pDestroy;
         SRQueryFunc pQuery;
         SRDispatchUpscaleFunc pDispatchUpscale;
+        SRShutdownFunc pShutdown;
     } SRUpscaleContextCallbacks;
 
     struct SRUpscaleContext
