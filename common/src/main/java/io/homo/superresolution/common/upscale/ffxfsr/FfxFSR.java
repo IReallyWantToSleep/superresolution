@@ -77,21 +77,22 @@ public class FfxFSR extends SRApiAlgorithm {
         this.context = new SRUpscaleContext(0);
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
-        if (desc.isAutoExposure()){
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-            );
-        }
-        if (desc.isHdrInput()) {
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_HDR
-            );
-        }
-        if (desc.isMotionJittered()){
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-            );
-        }
+        flags.add(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
+        //if (desc.isAutoExposure()){
+        flags.add(
+                SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+        );
+        //}
+        //if (desc.isHdrInput()) {
+        //    flags.add(
+        //            SRUpscaleContextCreateFlags.ENABLE_HDR
+        //    );
+        //}
+        //if (desc.isMotionJittered()){
+        flags.add(
+                SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
+        );
+        //}
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
@@ -146,7 +147,7 @@ public class FfxFSR extends SRApiAlgorithm {
         desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
         desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-        desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
+        //desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
         desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
 
         desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));

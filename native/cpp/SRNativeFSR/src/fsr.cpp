@@ -93,19 +93,19 @@ FfxSurfaceFormat srTextureFormatToFfxSurfaceFormat(SRTextureFormat format)
 FfxResourceUsage srTextureResourceUsageToFfx(SRResourceUsage usage)
 {
     FfxResourceUsage ffxUsage = FFX_RESOURCE_USAGE_READ_ONLY;
-    if (usage == SR_RESOURCE_USAGE_RENDERTARGET)
-        ffxUsage = FFX_RESOURCE_USAGE_RENDERTARGET;
-    else if (usage == SR_RESOURCE_USAGE_UAV)
-        ffxUsage = FFX_RESOURCE_USAGE_UAV;
-    else if (usage == SR_RESOURCE_USAGE_DEPTHTARGET)
-        ffxUsage = FFX_RESOURCE_USAGE_DEPTHTARGET;
-    else if (usage == SR_RESOURCE_USAGE_INDIRECT)
-        ffxUsage = FFX_RESOURCE_USAGE_INDIRECT;
-    else if (usage == SR_RESOURCE_USAGE_ARRAYVIEW)
-        ffxUsage = FFX_RESOURCE_USAGE_ARRAYVIEW;
-    else if (usage == SR_RESOURCE_USAGE_STENCILTARGET)
-        ffxUsage = FFX_RESOURCE_USAGE_STENCILTARGET;
-    else if (usage == SR_RESOURCE_USAGE_DCC_RENDERTARGET)
-        ffxUsage = FFX_RESOURCE_USAGE_DCC_RENDERTARGET;
+    if (usage & SR_RESOURCE_USAGE_RENDERTARGET)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_RENDERTARGET);
+    if (usage & SR_RESOURCE_USAGE_UAV)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_UAV);
+    if (usage & SR_RESOURCE_USAGE_DEPTHTARGET)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_DEPTHTARGET);
+    if (usage & SR_RESOURCE_USAGE_INDIRECT)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_INDIRECT);
+    if (usage & SR_RESOURCE_USAGE_ARRAYVIEW)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_ARRAYVIEW);
+    if (usage & SR_RESOURCE_USAGE_STENCILTARGET)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_STENCILTARGET);
+    if (usage & SR_RESOURCE_USAGE_DCC_RENDERTARGET)
+        ffxUsage = (FfxResourceUsage)(ffxUsage | FFX_RESOURCE_USAGE_DCC_RENDERTARGET);
     return ffxUsage;
 }

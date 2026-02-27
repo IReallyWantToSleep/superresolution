@@ -82,10 +82,10 @@ extern "C"
             (PFN_vkGetDeviceProcAddr)(desc->renderDeviceInfo.vulkan.deviceProcAddr),
         };
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
-        size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
+        size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 3);
         void *scratchBuffer = malloc(scratchBufferSize);
         FfxInterface *ffxInterface = new FfxInterface();
-        if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1); _rc != FFX_OK)
+        if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 3); _rc != FFX_OK)
         {
             free(scratchBuffer);
             delete ffxInterface;

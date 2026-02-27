@@ -87,7 +87,6 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         inFlight = inFlightFrames[currentFrameIndex];
         upscaleFinishSemaphore = inFlight.upscaleVkFinish;
         glFinishSemaphore = inFlight.glFinish;
-        InFlightFrameResourcesSet lastInFlight = inFlightFrames[(dispatchResource.frameCount() - 1 + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME];
         if (inFlight.commandBuffer != null) {
             inFlight.commandBuffer.waitForFence();
         }
