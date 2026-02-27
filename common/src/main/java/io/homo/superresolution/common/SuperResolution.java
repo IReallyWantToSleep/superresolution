@@ -124,6 +124,13 @@ public final class SuperResolution implements Resizable, Destroyable {
                 );
             }
         });
+        if (Platform.currentPlatform.isInstallIris()) {
+            try {
+                Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler").getMethod("registerEventListeners").invoke(null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public static void preInit() {
@@ -200,17 +207,9 @@ public final class SuperResolution implements Resizable, Destroyable {
             if (!isPreInit) {
                 return;
             }
-            /*
-            if (SuperResolutionConfig.isEnableCompatShaderCompiler() == SuperResolutionConfig.ENABLE_COMPAT_SHADER_COMPILER.getDefault()) {
-                if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.Intel) {
-                    SuperResolutionConfig.setEnableCompatShaderCompiler(true);
-                    SuperResolutionConfig.SPEC.save();
-                }
-            }*/
 
             LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());
             LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
-
 
             RenderHandlerManager.initialize();
             AlgorithmManager.init();

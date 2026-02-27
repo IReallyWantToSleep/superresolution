@@ -83,7 +83,11 @@ public class IrisReflectionUtils {
     public static ImmutableSet<Integer> getCompositePassStateReadsFromAlt(Object object) {
         ensureInitialized();
         try {
-            return (ImmutableSet<Integer>) stageReadsFromAltField.get(object);
+            ImmutableSet<Integer> stageReadsFromAlt = (ImmutableSet<Integer>) stageReadsFromAltField.get(object);
+            if (stageReadsFromAlt == null) {
+                return ImmutableSet.of();
+            }
+            return stageReadsFromAlt;
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Failed to access stateReadsFromAlt field", e);
         }

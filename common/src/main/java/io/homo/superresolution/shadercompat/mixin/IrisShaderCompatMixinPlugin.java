@@ -32,9 +32,6 @@ import java.util.Set;
 public class IrisShaderCompatMixinPlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(String s) {
-        if (Platform.currentPlatform.isInstallIris()) {
-            IrisShaderCompatEventHandler.registerEventListeners();
-        }
     }
 
     @Override

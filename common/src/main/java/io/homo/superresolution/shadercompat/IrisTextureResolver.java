@@ -53,16 +53,15 @@ public class IrisTextureResolver {
             NamedCompositePass pass,
             boolean useStageWritesToMain
     ) {
-        int id = getIrisTextureByName(renderer, name,pass,useStageWritesToMain);
-        if (id < 1) return null;
+        if (getIrisTextureByName(renderer, name,pass,useStageWritesToMain)< 1) return null;
         return new GlOnlyNameTexture(
                 () -> {
-                    int format = GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, id);
+                    int format = GlTextureInfoGetter.getInternalFormat(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain));
                     return format == GL_DEPTH_COMPONENT ? TextureFormat.DEPTH32 : TextureFormat.fromGl(format);
                 },
-                () -> GlTextureInfoGetter.getWidth(GL_TEXTURE_2D, id),
-                () -> GlTextureInfoGetter.getHeight(GL_TEXTURE_2D, id),
-                () -> (long) id
+                () -> GlTextureInfoGetter.getWidth(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain)),
+                () -> GlTextureInfoGetter.getHeight(GL_TEXTURE_2D, getIrisTextureByName(renderer, name,pass,useStageWritesToMain)),
+                () -> (long) getIrisTextureByName(renderer, name,pass,useStageWritesToMain)
         );
     }
 

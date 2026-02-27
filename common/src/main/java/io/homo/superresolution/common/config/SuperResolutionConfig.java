@@ -442,7 +442,7 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isGenerateMotionVectors() {
-        return GENERATE_MOTION_VECTORS.get();
+        return false;
     }
 
     public static void setGenerateMotionVectors(boolean value) {

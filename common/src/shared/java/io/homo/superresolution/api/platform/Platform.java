@@ -47,7 +47,6 @@ public abstract class Platform {
 
     public boolean isInstallIris() {
         if (isInstallIris == null)
-
             isInstallIris = currentPlatform.isModLoaded("iris") || currentPlatform.isModLoaded("oculus");
         return isInstallIris;
     }

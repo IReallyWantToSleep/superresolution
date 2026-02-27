@@ -191,12 +191,12 @@ public class ScrollableFrame extends Frame {
 
         ctx.save();
         Rectangle viewport = getViewport();
-        ctx.scissor(
-                contentPaddingLeft,
-                contentPaddingTop,
-                viewport.width - contentPaddingLeft - contentPaddingRight,
-                viewport.height - contentPaddingTop - contentPaddingBottom
-        );
+        //ctx.scissor(
+        //        contentPaddingLeft,
+        //        contentPaddingTop,
+        //        viewport.width - contentPaddingLeft - contentPaddingRight,
+        //        viewport.height - contentPaddingTop - contentPaddingBottom
+        //);
         ctx.save();
         ctx.translate(contentOrigin.x, contentOrigin.y);
 

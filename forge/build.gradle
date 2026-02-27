@@ -82,6 +82,7 @@ mixin {
     config 'super_resolution-forge.mixins.json'
     config 'super_resolution-forge-compat.mixins.json'
     config 'super_resolution.shadercompat.mixins.json'
+    config 'super_resolution_irisapi.mixins.json'
 
 }
 
@@ -146,6 +147,6 @@ processResources {
 
 jar {
     manifest.attributes([
-            "MixinConfigs": "super_resolution.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json,super_resolution.shadercompat.mixins.json"
+            "MixinConfigs": "super_resolution.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json,super_resolution.shadercompat.mixins.json,super_resolution_irisapi.mixins.json"
     ])
 }

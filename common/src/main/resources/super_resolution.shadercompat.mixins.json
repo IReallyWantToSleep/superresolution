@@ -13,6 +13,7 @@
         "core.ShaderPackMixin"
     ],
     "mixins": [
+        "core.IrisMixin",
         "core.PackRenderTargetDirectivesMixin"
     ],
     "injectors": {
