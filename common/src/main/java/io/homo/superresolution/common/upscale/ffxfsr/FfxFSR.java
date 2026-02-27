@@ -78,21 +78,21 @@ public class FfxFSR extends SRApiAlgorithm {
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
         flags.add(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
-        //if (desc.isAutoExposure()){
+        if (desc.isAutoExposure()){
         flags.add(
                 SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
         );
-        //}
-        //if (desc.isHdrInput()) {
-        //    flags.add(
-        //            SRUpscaleContextCreateFlags.ENABLE_HDR
-        //    );
-        //}
-        //if (desc.isMotionJittered()){
+        }
+        if (desc.isHdrInput()) {
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_HDR
+            );
+        }
+        if (desc.isMotionJittered()){
         flags.add(
                 SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
         );
-        //}
+        }
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
                         RenderSystems.vulkan().getVulkanInstance(),
@@ -111,15 +111,13 @@ public class FfxFSR extends SRApiAlgorithm {
         if (createUpscaleContextCode != SRReturnCode.OK) {
             SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
             context = null;
-            return;
-            //throw new RuntimeException("Failed to create upscale context");
+            throw new RuntimeException("Failed to create upscale context");
         }
         SRReturnCode initUpscaleContextCode = SuperResolutionNativeAPI.srInitUpscaleContext(context);
         if (initUpscaleContextCode != SRReturnCode.OK) {
             SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
             context = null;
-            return;
-            //throw new RuntimeException("Failed to initialize upscale context");
+            throw new RuntimeException("Failed to initialize upscale context");
         }
         vulkanDevice.getMainQueue().waitIdle();
     }

@@ -272,6 +272,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
+    private void openCreateAlgorithmFailedDialog(AlgorithmDescription<?> description) {
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconError())
+                .headline(Text.translatable("superresolution.screen.config.dialog.create_algorithm_failed.title").getString())
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.create_algorithm_failed.message").getString().formatted(description.displayName))
+                .addAction(Text.translatable("superresolution.screen.config.dialog.create_algorithm_failed.action.confirm").getString(), MaterialButtonVariant.Tonal, MaterialDialog::dismiss);
+        getView().showDialog(dialog);
+    }
+
     private Frame createGeneralFrame() {
         ScrollableFrame frame = createStandardScrollableFrame();
         ContainerWidget container = createStandardContainer();
@@ -279,6 +288,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         @SuppressWarnings("unchecked")
         final SelectionListOptionEntry<QualityPresetOption>[] qualityPresetEntryRef = new SelectionListOptionEntry[1];
+        final SelectionListOptionEntry[] algoSelectRef = new SelectionListOptionEntry[1];
+
         final NumberSliderOptionEntry[] upscaleRatioEntryRef = new NumberSliderOptionEntry[1];
         final boolean[] syncingQualityPreset = {false};
 
@@ -298,7 +309,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDefaultValue(() -> false)
                 .setSaveConsumer(SuperResolutionConfig::setDisableUpscaleOnVanilla)
                 .build();
-        builder.selectorOption(
+
+        algoSelectRef[0] = builder.selectorOption(
                         Text.translatable("superresolution.screen.config.options.label.algo_type"),
                         SuperResolutionConfig.getUpscaleAlgorithm(),
                         AlgorithmRegistry.getAlgorithmMap().values().toArray())
@@ -311,7 +323,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         openLostResourceDialog(lostResources);
                         return false;
                     }
-                    SuperResolutionConfig.setUpscaleAlgorithm(algo);
+                    if (!SuperResolutionConfig.setUpscaleAlgorithm(algo)){
+                        openCreateAlgorithmFailedDialog(algo);
+                        algoSelectRef[0].setSelectedValue(SuperResolutionConfig.getUpscaleAlgorithm());
+                    }
                     if (qualityPresetEntryRef[0] != null) {
                         qualityPresetEntryRef[0].refreshDynamicValues();
                         QualityPresetOption targetPreset = resolveQualityPresetOption(

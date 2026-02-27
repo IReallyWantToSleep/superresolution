@@ -301,7 +301,7 @@ public class SuperResolutionConfig {
         return algo;
     }
 
-    public static synchronized void setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
+    public static synchronized boolean setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
         if (newAlgo == null) {
             newAlgo = getDefaultAlgorithm();
         }
@@ -310,7 +310,7 @@ public class SuperResolutionConfig {
         AlgorithmDescription<?> currentAlgo = AlgorithmRegistry.getDescriptionByID(algoName);
 
         if (currentAlgo == newAlgo) {
-            return;
+            return true;
         }
 
         AbstractAlgorithm oldAlgorithmInstance = SuperResolution.currentAlgorithm;
@@ -327,6 +327,7 @@ public class SuperResolutionConfig {
             if (oldAlgorithmInstance != null) {
                 try {
                     oldAlgorithmInstance.destroy();
+                    return true;
                 } catch (Exception e) {
                     SuperResolution.LOGGER.error("销毁旧算法时出错", e);
                 }
@@ -349,6 +350,7 @@ public class SuperResolutionConfig {
                 }
             }
         }
+        return false;
     }
 
     private static void fallbackToNone() {
