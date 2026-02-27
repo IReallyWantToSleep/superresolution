@@ -206,9 +206,35 @@ jobs:
         run: ./gradlew buildAllVersions
         continue-on-error: true
         
-      - name: Capture build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Install @actions/artifact
+        run: npm install @actions/artifact@2
+
+      - name: Upload JARs individually
+        uses: actions/github-script@v7
         with:
-          name: superresolution-build
-          path: |
-            build_jars/
+          script: |
+            const {DefaultArtifactClient} = require('@actions/artifact')
+            const fs = require('fs')
+            const path = require('path')
+
+            const client = new DefaultArtifactClient()
+            const buildDir = path.join(process.env.GITHUB_WORKSPACE, 'build_jars')
+
+            if (!fs.existsSync(buildDir)) {
+              core.warning('build_jars directory not found, skipping upload')
+              return
+            }
+
+            const jars = fs.readdirSync(buildDir).filter(f => f.endsWith('.jar'))
+            core.info(`Found ${jars.length} JAR(s) to upload`)
+
+            for (const jar of jars) {
+              const name = path.basename(jar, '.jar')
+              const filePath = path.join(buildDir, jar)
+              core.info(`Uploading: ${jar}`)
+              await client.uploadArtifact(name, [filePath], buildDir, {
+                compressionLevel: 0
+              })
+            }
+
+            core.info(`Successfully uploaded ${jars.length} artifact(s)`)
