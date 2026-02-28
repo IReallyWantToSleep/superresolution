@@ -47,7 +47,7 @@ import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-Vulkan");
-    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport() && false;
+    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport();
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
 
     private final List<String> instanceExtensions = new ArrayList<>();

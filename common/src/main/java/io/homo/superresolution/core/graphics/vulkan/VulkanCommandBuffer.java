@@ -78,6 +78,9 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     @Override
     public void reset() {
         ensureNotDestroyed();
+        if (behavior == CommandBufferBehavior.OneTimeSubmit) {
+            throw new IllegalStateException("Cannot reset a one-time submit command buffer");
+        }
         if (!ownerPool.flags().contains(io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags.Reset)) {
             throw new IllegalStateException("Command pool does not allow command buffer reset");
         }
@@ -109,6 +112,10 @@ public class VulkanCommandBuffer implements ICommandBuffer {
             throw new IllegalStateException("Command buffer must be executable before submit");
         }
         device.submitCommandBuffer(this);
+        if (behavior == CommandBufferBehavior.OneTimeSubmit) {
+            waitForFence();
+            destroy();
+        }
     }
 
     @Override

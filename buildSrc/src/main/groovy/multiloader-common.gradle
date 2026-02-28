@@ -15,15 +15,6 @@ java {
 
 repositories {
     exclusiveContent {
-        forRepository {
-            maven {
-                name = 'Sponge'
-                url = 'https://repo.spongepowered.org/repository/maven-public'
-            }
-        }
-        filter { includeGroupAndSubgroups('org.spongepowered') }
-    }
-    exclusiveContent {
         forRepositories(
                 maven {
                     name = 'ParchmentMC'

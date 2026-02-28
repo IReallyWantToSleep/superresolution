@@ -93,6 +93,9 @@ public class GlCommandBuffer implements ICommandBuffer {
             call.run();
         }
         GlDebug.popGroup();
+        if (behavior == CommandBufferBehavior.OneTimeSubmit) {
+            destroy();
+        }
     }
 
     @Override

@@ -177,7 +177,7 @@ public class IrisShaderCompatEventHandler {
         });
 
 
-        if (SuperResolutionConfig.isEnableUpscale()) {
+        if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
             event.registerMacro("SR_ENABLE", "1");
             event.registerMacro("SR_DISABLE", "0");
             event.registerMacro("SR_ALGO_SUPPORTS_JITTER",
@@ -240,12 +240,12 @@ public class IrisShaderCompatEventHandler {
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
                 "SRRenderScale",
-                () -> SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getRenderScaleFactor() : 1);
+                () -> SuperResolutionConfig.isEnableUpscaleOriginal() ? SuperResolutionConfig.getRenderScaleFactor() : 1);
 
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
                 "SRRatio",
-                () -> SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getUpscaleRatio() : 1);
+                () -> SuperResolutionConfig.isEnableUpscaleOriginal() ? SuperResolutionConfig.getUpscaleRatio() : 1);
 
         // 注：这代码改之前因为没讲到对数那一章，误把ln当log2
         // ln(inputWidth/upscaledWidth) / ln(2) = log2(inputWidth/upscaledWidth)
@@ -253,7 +253,7 @@ public class IrisShaderCompatEventHandler {
         uniforms.uniform1f(
                 UniformUpdateFrequency.PER_FRAME,
                 "SRRenderScaleLog2",
-                () -> SuperResolutionConfig.isEnableUpscale()
+                () -> SuperResolutionConfig.isEnableUpscaleOriginal()
                         ? (Math.log(((double) SuperResolutionAPI.getRenderWidth() /
                         SuperResolutionAPI.getScreenWidth())) / Math.log(2))
                         : 0);

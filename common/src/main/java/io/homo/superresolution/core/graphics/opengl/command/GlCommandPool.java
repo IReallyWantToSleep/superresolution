@@ -41,7 +41,9 @@ public class GlCommandPool implements ICommandPool {
     @Override
     public ICommandBuffer createCommandBuffer(CommandBufferBehavior behavior) {
         GlCommandBuffer commandBuffer = new GlCommandBuffer(device, this, behavior);
-        buffers.add(commandBuffer);
+        if (behavior != CommandBufferBehavior.OneTimeSubmit) {
+            buffers.add(commandBuffer);
+        }
         return commandBuffer;
     }
 

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan.utils;
 
+import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
@@ -39,7 +40,7 @@ public class VulkanCommandBufferRing {
     public VulkanCommandBuffer acquire(VulkanDevice device) {
         if (!initialized) {
             for (int i = 0; i < bufferCount; i++) {
-                commandBuffers[i] = (VulkanCommandBuffer) device.defaultCommandPool().createCommandBuffer();
+                commandBuffers[i] = (VulkanCommandBuffer) device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.ReusableSequential);
             }
             initialized = true;
         }

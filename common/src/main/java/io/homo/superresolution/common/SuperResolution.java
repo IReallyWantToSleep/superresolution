@@ -315,7 +315,7 @@ public final class SuperResolution implements Resizable, Destroyable {
     public void resize(int width, int height) {
         cachedWidth = MinecraftWindow.getWindowWidth();
         cachedHeight = MinecraftWindow.getWindowHeight();
-        if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscale()) {
+        if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmResizeEvent(
                             currentAlgorithm,

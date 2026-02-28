@@ -22,7 +22,7 @@ import java.util.EnumSet;
 
 public interface ICommandPool {
     default ICommandBuffer createCommandBuffer() {
-        return createCommandBuffer(CommandBufferBehavior.ReusableSequential);
+        return createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
     }
 
     ICommandBuffer createCommandBuffer(CommandBufferBehavior behavior);

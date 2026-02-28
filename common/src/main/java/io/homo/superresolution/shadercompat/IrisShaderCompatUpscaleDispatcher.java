@@ -196,8 +196,35 @@ public class IrisShaderCompatUpscaleDispatcher {
                 c1.region.equals(c2.region);
     }
 
+    public static void reset(){
+        if (colorTexture != null && colorTexture.getInternalTexture() != null) {
+            colorTexture.getInternalTexture().destroy();
+        }
+        if (depthTexture != null && depthTexture.getInternalTexture() != null) {
+            depthTexture.getInternalTexture().destroy();
+        }
+        if (motionVectorsTexture != null && motionVectorsTexture.getInternalTexture() != null) {
+            motionVectorsTexture.getInternalTexture().destroy();
+        }
+        if (exposureTexture != null && exposureTexture.getInternalTexture() != null) {
+            exposureTexture.getInternalTexture().destroy();
+        }
+        colorTexture = null;
+        depthTexture = null;
+        motionVectorsTexture = null;
+        exposureTexture = null;
+
+        lastColorConfig = null;
+        lastDepthConfig = null;
+        lastMotionConfig = null;
+        lastExposureConfig = null;
+
+        cachedCompositeRenderer = null;
+        cachedNamedCompositePass = null;
+    }
+
     public static void dispatchUpscale(CompositeRenderer compositeRenderer, NamedCompositePass pass) {
-        if (!SuperResolutionConfig.isEnableUpscale()) {
+        if (!SuperResolutionConfig.isEnableUpscaleOriginal()) {
             return;
         }
         if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {

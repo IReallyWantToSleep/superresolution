@@ -25,6 +25,7 @@ import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatCon
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.shadercompat.IrisSRCompatShaderPack;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher;
 import net.irisshaders.iris.shaderpack.ShaderPack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -61,6 +62,7 @@ public class ShaderPackMixin implements IrisSRCompatShaderPack {
     )
     #endif {
         ShaderCompatHandler.setLoadingShader(true);
+        IrisShaderCompatUpscaleDispatcher.reset();
         try {
             Path srConfigPath = root.resolve("superresolution.json");
             if (Files.exists(srConfigPath)) {
