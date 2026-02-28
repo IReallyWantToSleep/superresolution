@@ -31,7 +31,15 @@ plugins {
 
 allprojects {
     group = rootProject.group
-    version = rootProject.mod_version
+    def isDev = rootProject.findProperty('is_dev')?.toString()?.toBoolean() ?: false
+    if (isDev) {
+        def gitCommitHash = providers.exec {
+            commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        }.standardOutput.asText.get().trim()
+        version = "${rootProject.mod_version}-dev-${gitCommitHash}"
+    } else {
+        version = rootProject.mod_version
+    }
 
     repositories {
         mavenCentral()
