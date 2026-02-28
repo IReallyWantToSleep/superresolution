@@ -376,7 +376,8 @@ public class SuperResolutionConfig {
     public static boolean isEnableUpscale() {
         if (SuperResolutionConfig.isDisableUpscaleOnVanilla()) {
             return isEnableUpscaleOriginal() && (
-                    ShaderCompatHandler.irisApiIsShaderPackInUse()
+                    ShaderCompatHandler.irisApiIsShaderPackInUse() ||
+                            ShaderCompatHandler.isLoadingShader()
             );
         }
         return isEnableUpscaleOriginal();

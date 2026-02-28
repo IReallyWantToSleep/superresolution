@@ -38,6 +38,14 @@ import java.util.function.Consumer;
 public class ShaderCompatHandler implements IMinecraftRenderHandler {
     private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
 
+    private static boolean isLoadingShader;
+    public static boolean isLoadingShader() {
+        return isLoadingShader;
+    }
+
+    public static void setLoadingShader(boolean loadingShader) {
+        isLoadingShader = loadingShader;
+    }
     public static void irisApiReloadShader() {
         try {
             Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
