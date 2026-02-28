@@ -19,12 +19,11 @@ jobs:
           sudo apt update
           sudo apt install -y cmake build-essential ninja-build
 
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          vulkan-query-version: 1.4.321.1
-          vulkan-components: Vulkan-Headers,Vulkan-Loader,SPIRV-Cross,SPIRV-Tools,Glslang
-          vulkan-use-cache: true
+          version: 1.4.321.1
+          cache: true
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -93,12 +92,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          vulkan-query-version: 1.4.321.1
-          vulkan-components: Vulkan-Headers,Vulkan-Loader,SPIRV-Cross,SPIRV-Tools,Glslang
-          vulkan-use-cache: true
+          version: 1.4.321.1
+          cache: true
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
