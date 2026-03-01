@@ -41,9 +41,6 @@ public class IrisShaderCompatMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String s, String s1) {
-        if (s1.contains("PackRenderTargetDirectivesMixin")) {
-            return !Platform.currentPlatform.isModLoaded("voxy") && Platform.currentPlatform.isInstallIris();
-        }
         return Platform.currentPlatform.isInstallIris();
     }
 

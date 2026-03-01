@@ -52,7 +52,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     protected void createResources() {
         VulkanDevice vkDevice = RenderSystems.vulkan().device();
         vkDevice.getMainQueue().waitIdle();
-        for (int i = 0; i < MAX_IN_FLIGHT_FRAME; i++) {
+        for (int i = 0; i < (syncSerialMode ? 1 : MAX_IN_FLIGHT_FRAME); i++) {
             inFlightFrames[i] = new InFlightFrameResourcesSet();
             inFlightFrames[i].index = i;
             inFlightFrames[i].initialize();
@@ -61,7 +61,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     protected void destroyResources() {
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
-        for (int i = 0; i < MAX_IN_FLIGHT_FRAME; i++) {
+        for (int i = 0; i < (syncSerialMode ? 1 : MAX_IN_FLIGHT_FRAME); i++) {
             if (inFlightFrames[i] != null) {
                 inFlightFrames[i].destroy();
             }
@@ -84,7 +84,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             return false;
         }
         if (syncSerialMode) {
-            int currentFrameIndex = dispatchResource.frameCount() % MAX_IN_FLIGHT_FRAME;
+            int currentFrameIndex = 0;
             InFlightFrameResourcesSet inFlight;
             VkGlInteropSemaphore upscaleFinishSemaphore;
             VkGlInteropSemaphore glFinishSemaphore;
@@ -145,7 +145,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             InteropResourcesConverter.flipY(
                     inFlight.outputColorGlTexture,
                     inFlight.flippedOutputGlTexture);
-        }else {
+        } else {
             int currentFrameIndex = dispatchResource.frameCount();
             {
                 InFlightFrameResourcesSet inFlight;
@@ -284,15 +284,21 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
+        if (syncSerialMode){
+            return inFlightFrames[0].outputFrameBuffer;
+        }
         int currentFrameIndex = RenderHandlerManager.getFrameCount();
-        int finishedIndex = (((currentFrameIndex) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         return inFlightFrames[finishedIndex].outputFrameBuffer;
     }
 
     @Override
     public int getOutputTextureId() {
+        if (syncSerialMode){
+            return Math.toIntExact(inFlightFrames[0].outputColorGlTexture.handle());
+        }
         int currentFrameIndex = RenderHandlerManager.getFrameCount();
-        int finishedIndex = (((currentFrameIndex) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+        int finishedIndex = (((currentFrameIndex-2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
         return Math.toIntExact(outputColorGlTexture.handle());
     }

@@ -78,20 +78,20 @@ public class FfxFSR extends SRApiAlgorithm {
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
         flags.add(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
-        if (desc.isAutoExposure()){
-        flags.add(
-                SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-        );
+        if (desc.isAutoExposure()) {
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+            );
         }
         if (desc.isHdrInput()) {
             flags.add(
                     SRUpscaleContextCreateFlags.ENABLE_HDR
             );
         }
-        if (desc.isMotionJittered()){
-        flags.add(
-                SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-        );
+        if (desc.isMotionJittered()) {
+            flags.add(
+                    SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
+            );
         }
         SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
                 new SRVulkanDeviceInfo(
@@ -145,7 +145,7 @@ public class FfxFSR extends SRApiAlgorithm {
         desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
         desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-        //desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
+        desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
         desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
 
         desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
@@ -172,7 +172,7 @@ public class FfxFSR extends SRApiAlgorithm {
         desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
         desc.setViewSpaceToMetersFactor(1.0f);
         desc.setReset(false);
-        desc.setFlags(0);
+        desc.setFlags(1);
 
         SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
         if (code != SRReturnCode.OK) {

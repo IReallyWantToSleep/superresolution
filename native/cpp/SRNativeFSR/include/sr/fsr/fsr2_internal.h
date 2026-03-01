@@ -10,7 +10,7 @@ extern "C"
     SR_API SRReturnCode srFfxFsr2VkDestroyUpscaleContext(SRUpscaleContext *context);
     SR_API SRReturnCode srFfxFsr2VkQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType);
     SR_API SRReturnCode srFfxFsr2VkDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc);
-
+    SR_API SRReturnCode srFfxFsr2VkShutdown();
 #ifdef __cplusplus
 }
 #endif

@@ -9,5 +9,6 @@
 
 
 FfxResource srTextureResourceToFfxResource(const SRTextureResource * srTex);
+FfxResource srTextureResourceToFfxOutputResource(const SRTextureResource * srTex);
 FfxResourceUsage srTextureResourceUsageToFfx(SRResourceUsage usage);
 FfxSurfaceFormat srTextureFormatToFfxSurfaceFormat(SRTextureFormat format);

@@ -151,7 +151,17 @@ public class SRCompatConfigParser {
                             return null;
                         }
                     }
-
+                    boolean autoExposureEffective = !(rawProfile.upscale != null &&
+                            rawProfile.upscale.inputs != null &&
+                            rawProfile.upscale.inputs.containsKey("exposure"));
+                    if (
+                            rawProfile.upscale != null &&
+                                    rawProfile.upscale.inputs != null &&
+                                    rawProfile.upscale.inputs.containsKey("exposure") &&
+                                    rawProfile.upscale.auto_exposure
+                    ){
+                        SuperResolution.LOGGER.warn("配置警告：profile '{}' 中 upscale.auto_exposure 为 true ，但同时启用 exposure 输入纹理，已自动忽略auto_exposure设置，默认为false。", worldKey);
+                    }
                     upscaleConfig = new SRShaderCompatData.UpscaleConfig(
                             rawProfile.upscale.enabled,
                             trigger,
@@ -160,7 +170,7 @@ public class SRCompatConfigParser {
                             mapOutputTextures(rawProfile.upscale.outputs, worldKey),
                             preExposureConfig,
                             rawProfile.upscale.hdr,
-                            rawProfile.upscale.auto_exposure,
+                            rawProfile.upscale.auto_exposure && autoExposureEffective,
                             rawProfile.upscale.motion_jittered
 
                     );

@@ -60,9 +60,8 @@ extern "C"
     }
 
     SR_API SRReturnCode srFfxFsr2Shutdown()
-    {    
-        srFfxFsr2Shutdown();
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+    {
+        return srFfxFsr2VkShutdown();
     }
 
     SR_API SRUpscaleContextCallbacks srGetFfxFSR2UpscaleCallbacks()

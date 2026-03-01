@@ -19,6 +19,13 @@ FfxResource srTextureResourceToFfxResource(const SRTextureResource *srTex)
     return resource;
 }
 
+FfxResource srTextureResourceToFfxOutputResource(const SRTextureResource *srTex)
+{
+    FfxResource resource = srTextureResourceToFfxResource(srTex);
+    resource.state = FFX_RESOURCE_STATE_UNORDERED_ACCESS;
+    return resource;
+}
+
 FfxSurfaceFormat srTextureFormatToFfxSurfaceFormat(SRTextureFormat format)
 {
     switch (format)

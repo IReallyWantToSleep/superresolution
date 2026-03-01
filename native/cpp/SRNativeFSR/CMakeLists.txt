@@ -51,6 +51,9 @@ if(SR_FSR_BUILD_SDK)
         ffx_fsr1_x64
         ffx_fsr2_x64
         ffx_fsr3upscaler_x64
+        ffx_fsr3_x64
+        ffx_frameinterpolation_x64
+        ffx_opticalflow_x64
     )
 
     # clang-cl 交叉编译时，SDK 自身的 /W4 /WX 会把 clang 独有的诊断
@@ -84,6 +87,9 @@ if(SR_FSR_BUILD_SDK)
     set(FFX_LINK_BACKEND  ffx_backend_vk_x64)
     set(FFX_LINK_FSR2     ffx_fsr2_x64)
     set(FFX_LINK_FSR3UP   ffx_fsr3upscaler_x64)
+    set(FFX_LINK_FRAMEINTERPOLATION ffx_frameinterpolation_x64)
+    set(FFX_LINK_OPTICALFLOW ffx_opticalflow_x64)
+    set(FFX_LINK_FSR3   ffx_fsr3_x64)
 else()
     # --- 使用预编译 SDK 库 ---
     message(STATUS "[FSR] 使用预编译 SDK 库: ${FFX_SDK_LIB_DIR}")
@@ -99,10 +105,16 @@ else()
         set(FFX_LINK_BACKEND  ffx_backend_vk_x64d)
         set(FFX_LINK_FSR2     ffx_fsr2_x64d)
         set(FFX_LINK_FSR3UP   ffx_fsr3upscaler_x64d)
+        set(FFX_LINK_FRAMEINTERPOLATION ffx_frameinterpolation_x64d)
+        set(FFX_LINK_OPTICALFLOW ffx_opticalflow_x64d)
+        set(FFX_LINK_FSR3   ffx_fsr3_x64d)
     else()
         set(FFX_LINK_BACKEND  ffx_backend_vk_x64)
         set(FFX_LINK_FSR2     ffx_fsr2_x64)
         set(FFX_LINK_FSR3UP   ffx_fsr3upscaler_x64)
+        set(FFX_LINK_FSR3   ffx_fsr3_x64)
+        set(FFX_LINK_FRAMEINTERPOLATION ffx_frameinterpolation_x64)
+        set(FFX_LINK_OPTICALFLOW ffx_opticalflow_x64)
     endif()
 endif()
 
@@ -162,5 +174,8 @@ target_link_libraries(SR_FSR_LIB
     ${FFX_LINK_BACKEND}
     ${FFX_LINK_FSR2}
     ${FFX_LINK_FSR3UP}
+    ${FFX_LINK_FRAMEINTERPOLATION}
+    ${FFX_LINK_OPTICALFLOW}
+    ${FFX_LINK_FSR3}
     ${Vulkan_LIBRARIES}
 )

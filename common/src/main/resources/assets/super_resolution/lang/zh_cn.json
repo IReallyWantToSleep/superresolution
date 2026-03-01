@@ -210,6 +210,7 @@
     "superresolution.screen.config.info.about.contributor.suodeliesi.desc": "感谢他提供的设备，帮助修复了几个Intel上的bug",
     "superresolution.screen.config.info.about.contributor.xiaolang.desc": "感谢他打赏的5090!",
     "superresolution.screen.config.info.about.contributor.qwertyuiop.desc": "感谢他帮助修复了一堆意义不明的，光怪陆离的bug，以及其它贡献！",
+    "superresolution.screen.config.info.about.contributor.tahnass.desc": "感谢他为ITRP光影添加了超分辨率兼容！",
     "superresolution.screen.config.info.about.library.architectury": "Architectury API",
     "superresolution.screen.config.info.about.library.night_config": "Night Config",
     "superresolution.screen.config.info.about.library.mixin": "SpongePowered Mixin",
