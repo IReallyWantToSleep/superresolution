@@ -270,13 +270,13 @@ extern "C"
             const SRContextExtraParam *param = srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX");
             if (param && param->valueType == SR_PARAM_VALUE_TYPE_BOOL && param->value.boolValue == true)
             {
-                NVSDK_NGX_VULKAN_Shutdown1((VkDevice)vulkanDevice.device);
+                NVSDK_NGX_VULKAN_Shutdown1(vulkanDevice.device);
                 g_ngxInitialized = false;
             }
         }
         delete privateData;
         context->userContext = nullptr;
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srDLSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
@@ -285,11 +285,11 @@ extern "C"
         switch (queryType)
         {
         case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
-            ((SRQueryVersionResult *)outResult)->versionId = SR_MAKE_VERSION(
+            reinterpret_cast<SRQueryVersionResult *>(outResult)->versionId = SR_MAKE_VERSION(
                 1,
                 5,
                 0);
-            ((SRQueryVersionResult *)outResult)->versionNumber = SR_MAKE_VERSION(
+            reinterpret_cast<SRQueryVersionResult *>(outResult)->versionNumber = SR_MAKE_VERSION(
                 1,
                 5,
                 0);

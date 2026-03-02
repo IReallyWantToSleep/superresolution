@@ -107,18 +107,37 @@ dependencies {
             }
             continue
         }
+
         if (lib.compileOnly) {
-            modCompileOnly(depName)
+            if (lib.useJarJar) {
+                modCompileOnly(utils.JarJar.extractJars(project, depName))
+            } else {
+                modCompileOnly(depName)
+            }
         } else {
-            modImplementation(depName)
+            if (lib.useJarJar) {
+                modImplementation(utils.JarJar.extractJars(project, depName))
+            } else {
+                modImplementation(depName)
+            }
         }
     }
+
+
     for (lib in versionConfig.fabric.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {
-                modCompileOnly(files("../libs/" + lib.name + ".jar"))
+                if (lib.useJarJar) {
+                    modCompileOnly(utils.JarJar.extractJars(project, "../libs/" + lib.name + ".jar"))
+                } else {
+                    modCompileOnly(files("../libs/" + lib.name + ".jar"))
+                }
             } else {
-                modImplementation(files("../libs/" + lib.name + ".jar"))
+                if (lib.useJarJar) {
+                    modImplementation(utils.JarJar.extractJars(project, "../libs/" + lib.name + ".jar"))
+                } else {
+                    modImplementation(files("../libs/" + lib.name + ".jar"))
+                }
             }
         } else {
             if (lib.compileOnly) {
@@ -131,7 +150,7 @@ dependencies {
 }
 
 loom {
-    disableObfuscation()
+    //disableObfuscation()
     mixin {
         useLegacyMixinAp = true
         defaultRefmapName.set("${mod_id}.refmap.json")

@@ -54,6 +54,7 @@ public abstract class MinecraftMixin {
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
         SuperResolution.gameIsLoaded = true;
+        SuperResolution.onGameLoadFinished();
     }
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")

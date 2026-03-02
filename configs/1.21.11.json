@@ -29,11 +29,11 @@
             "modrinth": [
                 {
                     "name": "iris",
-                    "version": "1.10.5+1.21.11-fabric"
+                    "version": "1.10.6+1.21.11-fabric"
                 },
                 {
                     "name": "sodium",
-                    "version": "0.8.3-beta.2+mc1.21.11"
+                    "version": "0.8.6+mc1.21.11"
                 },
                 {
                     "name": "spark",
@@ -43,6 +43,11 @@
                     "name": "fabric-permissions-api",
                     "version": "0.4.0",
                     "minecraft_version": "1.21.6"
+                },
+                {
+                    "name": "voxy",
+                    "version": "0.2.11-alpha",
+                    "use_jarjar": true
                 }
             ],
             "local": []
@@ -50,7 +55,7 @@
         "modmenu_version": "17.0.0-beta.1"
     },
     "neoforge": {
-        "loader_version": "21.11.37-beta",
+        "loader_version": "21.11.38-beta",
         "dependencies": {
             "modrinth": [
                 {
@@ -59,15 +64,16 @@
                 },
                 {
                     "name": "sodium",
-                    "version": "0.8.3-beta.2+mc1.21.11"
+                    "version": "0.8.6+mc1.21.11"
                 },
                 {
                     "name": "iris",
-                    "version": "1.10.5+1.21.11-neoforge"
+                    "version": "1.10.6+1.21.11-neoforge"
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.4.5-b-1.21.11"
+                    "version": "2.4.5-b-1.21.11",
+                    "compileOnly": true
                 }
             ],
             "local": [

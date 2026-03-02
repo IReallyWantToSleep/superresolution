@@ -15,7 +15,8 @@
     "mixins": [
         "core.IrisMixin",
         "core.PackRenderTargetDirectivesAccessor",
-        "core.PackRenderTargetDirectivesMixin"
+        "core.PackRenderTargetDirectivesMixin",
+        "core.PipelineManagerMixin"
     ],
     "injectors": {
         "defaultRequire": 1

@@ -26,6 +26,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
+import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
 import java.util.ArrayList;
@@ -79,6 +80,13 @@ public class OptionBuilder {
         return new NumberSliderBuilder(name, value, max, min).setCategory(category);
     }
 
+    public ColorSelectBuilder colorSelectOption(
+            Text name,
+            Color value
+    ) {
+        return new ColorSelectBuilder(name, value).setCategory(category);
+    }
+
     public OptionBuilder addEntry(AbstractOptionEntry<?, ?> entry) {
         entries.add(entry);
         return this;
@@ -115,22 +123,6 @@ public class OptionBuilder {
             return getBounds();
         }
 
-        private void initLayout() {
-            layout().setFlexDirection(YogaFlexDirection.COLUMN);
-            layout().setWidthPercent(100);
-            layout().setPadding(YogaEdge.ALL, PADDING);
-            layout().setGap(YogaGutter.COLUMN, GAP);
-        }
-
-        public void addEntry(AbstractOptionEntry<?, ?> entry) {
-            entries.add(entry);
-            addChild(entry.getContainer());
-        }
-
-        public List<AbstractOptionEntry<?, ?>> getEntries() {
-            return entries;
-        }
-
         @Override
         protected void renderSelf(RenderContext ctx, UIInputState inputState) {
             Rectangle bounds = getBounds();
@@ -152,6 +144,22 @@ public class OptionBuilder {
                     scheme().surfaceContainer(),
                     true
             );
+        }
+
+        private void initLayout() {
+            layout().setFlexDirection(YogaFlexDirection.COLUMN);
+            layout().setWidthPercent(100);
+            layout().setPadding(YogaEdge.ALL, PADDING);
+            layout().setGap(YogaGutter.COLUMN, GAP);
+        }
+
+        public void addEntry(AbstractOptionEntry<?, ?> entry) {
+            entries.add(entry);
+            addChild(entry.getContainer());
+        }
+
+        public List<AbstractOptionEntry<?, ?>> getEntries() {
+            return entries;
         }
 
         public void saveAll() {

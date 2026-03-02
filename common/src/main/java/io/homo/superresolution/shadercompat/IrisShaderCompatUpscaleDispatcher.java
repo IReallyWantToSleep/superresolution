@@ -221,6 +221,7 @@ public class IrisShaderCompatUpscaleDispatcher {
 
         cachedCompositeRenderer = null;
         cachedNamedCompositePass = null;
+        RenderHandlerManager.frameCount = 0;
     }
 
     public static void dispatchUpscale(CompositeRenderer compositeRenderer, NamedCompositePass pass) {

@@ -70,9 +70,6 @@ public class ColorUtil {
         if (toFormat.equals("rgba")) {
             return new int[]{r, g, b, a};
         }
-        if (toFormat.equals("argb")) {
-            return new int[]{a, r, g, b};
-        }
         if (toFormat.equals("rgb")) {
             return new int[]{r, g, b};
         }
@@ -85,7 +82,17 @@ public class ColorUtil {
             return (int[]) code;
         }
         if (code instanceof String) {
-            return toArray((String) code, "rgba");
+            if (((String) code).startsWith("#")) {
+                if (((String) code).length() == 7) {
+                    return toArray((String) code, "rgb");
+                } else if (((String) code).length() == 9) {
+                    return toArray((String) code, "rgba");
+                }else {
+                    throw new IllegalArgumentException("Unsupported color code format: " + code);
+                }
+            } else {
+                throw new IllegalArgumentException("Unsupported color code format: " + code);
+            }
         }
         throw new IllegalArgumentException("Unsupported code type: " + code.getClass().getName());
     }
@@ -98,16 +105,16 @@ public class ColorUtil {
             b = value[2];
             a = 255;
         } else if (value.length == 4) {
-            a = value[0];
-            r = value[1];
-            g = value[2];
-            b = value[3];
+            r = value[0];
+            g = value[1];
+            b = value[2];
+            a = value[3];
         } else {
             throw new IllegalArgumentException("Unexpected shape of input: " + Arrays.toString(value));
         }
 
         if (forceRgba || a != 255) {
-            return String.format("#%02X%02X%02X%02X", a, r, g, b);
+            return String.format("#%02X%02X%02X%02X", a, r, g, b);  // 输出标准 #AARRGGBB
         } else {
             return String.format("#%02X%02X%02X", r, g, b);
         }

@@ -177,6 +177,7 @@ dependencies {
             }
         }
     }
+
     for (lib in versionConfig.neoforge.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {

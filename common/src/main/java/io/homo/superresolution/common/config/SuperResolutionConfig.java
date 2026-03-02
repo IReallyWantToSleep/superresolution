@@ -46,6 +46,7 @@ import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.gui.MaterialTheme;
+import io.homo.superresolution.core.utils.Color;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
 
@@ -79,6 +80,8 @@ public class SuperResolutionConfig {
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
+    public static final StringValue THEME_COLOR;
+
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
 
@@ -152,6 +155,13 @@ public class SuperResolutionConfig {
                 MaterialTheme.class,
                 () -> MaterialTheme.Light,
                 "Interface theme"
+        );
+
+        THEME_COLOR = builder.defineString(
+                "theme_color",
+                () -> "#78DC77",
+                "Primary color for the interface theme",
+                value -> value != null && value.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$")
         );
 
         DEBUG_DUMP_SHADER = builder.defineBoolean(
@@ -590,5 +600,19 @@ public class SuperResolutionConfig {
         double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
         return (float) Math.max(maxWidth, maxHeight);
         */
+    }
+
+    public static Color getThemeColor() {
+        String colorStr = THEME_COLOR.get();
+        try {
+            return Color.from(colorStr);
+        } catch (IllegalArgumentException e) {
+            SuperResolution.LOGGER.warn("无效的主题颜色配置: {}，使用默认颜色", colorStr);
+            return Color.from("#78DC77");
+        }
+    }
+
+    public  static void setThemeColor(Color color) {
+        THEME_COLOR.set(color.hex());
     }
 }

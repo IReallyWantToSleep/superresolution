@@ -22,7 +22,7 @@ import org.gradle.api.logging.configuration.ConsoleOutput
 import org.gradle.api.tasks.GradleBuild
 
 plugins {
-    id 'fabric-loom' version '1.15.3' apply false
+    id 'fabric-loom' version '1.16.0-alpha.9' apply false
     id 'net.neoforged.moddev' version '2.0.139' apply false
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id 'multiversion'

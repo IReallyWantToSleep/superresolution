@@ -107,7 +107,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         if (qualityPresetOptionsCache == null) {
             qualityPresetOptionsCache = new HashMap<>();
         }
-        MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), Color.from("#6750A4")));
+        MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor()));
         materialScheme = MaterialUI.Scheme;
         contentFrames = new HashMap<>();
         currentContentKey = "general";
@@ -264,7 +264,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setEnumNameProvider(t -> Text.translatable("superresolution.enum.theme." + t.name().toLowerCase()).getString())
                 .setSaveConsumer(value -> {
                     SuperResolutionConfig.setTheme(value);
-                    MaterialUI.setScheme(MaterialScheme.from(value, Color.from("#6750A4")));
+                    MaterialUI.setScheme(MaterialScheme.from(value, SuperResolutionConfig.getThemeColor()));
+                    this.materialScheme = MaterialUI.Scheme;
+                })
+                .build();
+        builder.colorSelectOption(
+                Text.literal("主题色"),
+                SuperResolutionConfig.getThemeColor())
+                .setDefaultValue(()->Color.from("#78DC77"))
+                .setValueChangeListener(value -> {
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value));
+                    this.materialScheme = MaterialUI.Scheme;
+                })
+                .setSaveConsumer(value -> {
+                    SuperResolutionConfig.setThemeColor(value);
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value));
                     this.materialScheme = MaterialUI.Scheme;
                 })
                 .build();

@@ -12,6 +12,7 @@ on:
 
 jobs:
   build-native-linux:
+    if: ${{ !contains(github.event.head_commit.message, 'SKIP') }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
@@ -29,7 +30,6 @@ jobs:
         with:
           version: 1.4.321.1
           cache: true
-
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
@@ -39,8 +39,21 @@ jobs:
           java-version: 21
           distribution: temurin
 
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@v1
+        with:
+          version: latest
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            wrapper
+          gradle-home-cache-excludes: |
+            caches/build-cache-1
 
       - name: Restore native cache (Linux)
         id: native-cache-linux
@@ -53,16 +66,15 @@ jobs:
             native-libs-linux-
 
       - name: Install Python packages
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         working-directory: native/cpp
         run: python init.py
 
       - name: Build native libraries (Linux)
-        if: ${{ !cancelled() && steps.native-cache-linux.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled() }}
+        id: build
         run: ./gradlew buildNative
         continue-on-error: true
 
@@ -75,6 +87,7 @@ jobs:
           if-no-files-found: error
 
   build-native-windows:
+    if: ${{ !contains(github.event.head_commit.message, 'SKIP') }}
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -98,6 +111,14 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            wrapper
+          gradle-home-cache-excludes: |
+            caches/build-cache-1
 
       - name: Restore native cache (Windows)
         id: native-cache-windows
@@ -110,16 +131,15 @@ jobs:
             native-libs-windows-
 
       - name: Install Python packages
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         working-directory: native/cpp
         run: python init.py
 
       - name: Build native libraries (Windows)
-        if: ${{ !cancelled() && steps.native-cache-windows.outputs.cache-hit != 'true' }}
+        if: ${{ !cancelled()}}
+        id: build
         run: .\gradlew.bat buildNative
         continue-on-error: true
 

@@ -24,7 +24,16 @@ public class Color {
     private final int[] color;
 
     public Color(int[] color) {
-        this.color = color;
+        if (color.length == 3) {
+            this.color = new int[]{
+                    color[0],
+                    color[1],
+                    color[2],
+                    255
+            };
+        }else {
+            this.color = color;
+        }
     }
 
     public static Color hex(String hex) {

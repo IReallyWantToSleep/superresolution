@@ -91,9 +91,25 @@ public final class SuperResolution implements Resizable, Destroyable {
         }
     }
 
+    public static void onGameLoadFinished(){
+        SuperResolution.createAlgorithm();
+
+        //TODO: 这是个临时的补丁，我实在修不好第一次进世界时超分质量差的问题（）
+        ShaderCompatHandler.irisApiReloadShader();
+    }
+
     public static void registerEvents() {
         ClientLifecycleEvent.CLIENT_SETUP.register(
-                (minecraft) -> SuperResolutionKeyMapping.registerKeyMapping()
+                (minecraft) -> {
+                    SuperResolutionKeyMapping.registerKeyMapping();
+                    if (Platform.currentPlatform.isInstallIris()) {
+                        try {
+                            Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler").getMethod("registerEventListeners").invoke(null);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
         );
         ClientLifecycleEvent.CLIENT_STARTED.register(
                 (minecraft) -> {
@@ -101,15 +117,17 @@ public final class SuperResolution implements Resizable, Destroyable {
                         SuperResolution.LOGGER.warn("似乎有什么东西在重复初始化SR");
                         return;
                     }
+                    SuperResolutionConfig.SPEC.load();
                     gameIsStarted = true;
                     SuperResolutionKeyMapping.registerKeyMapping();
                     instance = new SuperResolution();
                     SuperResolution.check();
                     SuperResolution.preInit();
                     SuperResolution.initRendering();
-                    SuperResolution.createAlgorithm();
                     SuperResolution.getInstance().init();
                     MaterialUI.init();
+
+
                 }
         );
         ClientLifecycleEvent.CLIENT_STOPPING.register(
@@ -124,13 +142,6 @@ public final class SuperResolution implements Resizable, Destroyable {
                 );
             }
         });
-        if (Platform.currentPlatform.isInstallIris()) {
-            try {
-                Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler").getMethod("registerEventListeners").invoke(null);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     public static void preInit() {
