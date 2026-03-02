@@ -20,11 +20,10 @@ jobs:
           sudo apt install -y cmake build-essential ninja-build
 
       - name: Install Vulkan SDK
-        uses: humbletim/install-vulkan-sdk@v1.2
+        uses: humbletim/install-vulkan-sdk@033219e2d69dd4d3e873e217eb385fdd4b4438f4
         with:
           version: 1.4.321.1
           cache: true
-
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 
@@ -93,11 +92,10 @@ jobs:
           submodules: recursive
 
       - name: Install Vulkan SDK
-        uses: humbletim/install-vulkan-sdk@v1.2
+        uses: humbletim/install-vulkan-sdk@033219e2d69dd4d3e873e217eb385fdd4b4438f4
         with:
           version: 1.4.321.1
           cache: true
-
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
 

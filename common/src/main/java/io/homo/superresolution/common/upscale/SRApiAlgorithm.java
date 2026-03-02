@@ -40,6 +40,12 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     protected boolean syncSerialMode;
 
+    //部分模组会暴力ci.cancel掉世界渲染
+    //这时SR的frameCount依然增加
+    //造成在三缓模式下的同步全部乱套
+    //所以我们需要自己维护一个frameCount
+    protected int frameCount = 0;
+
     protected abstract void recreateSRApiContext(InitializationDescription desc);
 
     protected abstract void destroySRApiContext();
@@ -83,6 +89,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         if (context == null || context.nativePtr < 1) {
             return false;
         }
+        frameCount++;
         if (syncSerialMode) {
             int currentFrameIndex = 0;
             InFlightFrameResourcesSet inFlight;
@@ -146,7 +153,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                     inFlight.outputColorGlTexture,
                     inFlight.flippedOutputGlTexture);
         } else {
-            int currentFrameIndex = dispatchResource.frameCount();
+            int currentFrameIndex = frameCount;
             {
                 InFlightFrameResourcesSet inFlight;
                 VkGlInteropSemaphore upscaleFinishSemaphore;
@@ -287,7 +294,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         if (syncSerialMode){
             return inFlightFrames[0].outputFrameBuffer;
         }
-        int currentFrameIndex = RenderHandlerManager.getFrameCount();
+        int currentFrameIndex = frameCount;
         int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         return inFlightFrames[finishedIndex].outputFrameBuffer;
     }
@@ -297,7 +304,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         if (syncSerialMode){
             return Math.toIntExact(inFlightFrames[0].outputColorGlTexture.handle());
         }
-        int currentFrameIndex = RenderHandlerManager.getFrameCount();
+        int currentFrameIndex = frameCount;
         int finishedIndex = (((currentFrameIndex-2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
         return Math.toIntExact(outputColorGlTexture.handle());
