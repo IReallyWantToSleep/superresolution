@@ -63,6 +63,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     public ITexture colorTexture;
     public ITexture depthTexture;
     private IBindableFrameBuffer renderTarget;
+    private boolean initialized;
 
     public void initialize() {
         RenderSystem.assertOnRenderThread();
@@ -111,9 +112,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                         )
                         .build()
         );
+        initialized = true;
     }
 
     public void onProcessPostChain(PostChain postChain) {
+        if (!initialized) {
+            return;
+        }
         #if MC_VER < MC_1_21_4
         int renderWidth = RenderHandlerManager.getRenderWidth();
         int renderHeight = RenderHandlerManager.getRenderHeight();
@@ -131,6 +136,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void updateRenderTarget() {
+        if (!initialized) {
+            return;
+        }
         renderTargets.clear();
         for (MinecraftRenderTargetType minecraftRenderTargetType : MinecraftRenderTargetType.values()) {
             IBindableFrameBuffer renderTarget = minecraftRenderTargetType.get(Minecraft.getInstance().levelRenderer);
@@ -148,6 +156,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void resize() {
+        if (!initialized) {
+            return;
+        }
         int screenWidth = RenderHandlerManager.getScreenWidth();
         int screenHeight = RenderHandlerManager.getScreenHeight();
         int renderWidth = RenderHandlerManager.getRenderWidth();
@@ -174,6 +185,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderWorldBegin(CallType type) {
+        if (!initialized) {
+            return;
+        }
         if (!checkRenderWorldCallPos(type)) {
             return;
         }
@@ -190,6 +204,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderWorldEnd(CallType type) {
+        if (!initialized) {
+            return;
+        }
         if (!checkRenderWorldCallPos(type)) {
             return;
         }
@@ -361,6 +378,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void updateRenderTargetSize() {
+        if (!initialized) {
+            return;
+        }
         int renderWidth = RenderHandlerManager.getRenderWidth();
         int renderHeight = RenderHandlerManager.getRenderHeight();
         int screenWidth = RenderHandlerManager.getScreenWidth();
@@ -398,6 +418,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderHandBegin() {
+        if (!initialized) {
+            return;
+        }
         if (!checkRenderHandCallPos()) {
             return;
         }
@@ -408,6 +431,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void blitHandRenderTarget() {
+        if (!initialized) {
+            return;
+        }
         glEnable(GL_BLEND);
         callOnRenderTarget(MinecraftRenderTargetType.HAND, (renderTarget -> GlTexture2D.blitToScreen(
                 RenderHandlerManager.getScreenWidth(),
@@ -420,6 +446,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     public void onRenderHandEnd() {
+        if (!initialized) {
+            return;
+        }
         if (!checkRenderHandCallPos()) {
             return;
         }
@@ -439,6 +468,9 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
 
     @Override
     public void destroy() {
+        if (!initialized) {
+            return;
+        }
         colorTexture.destroy();
         depthTexture.destroy();
         renderTarget.destroy();
