@@ -40,6 +40,7 @@ public class IrisShaderCompatUtils {
                     return null;
                 }
         );
+        if (key != null)key = key.replace("world","");
         return data.getProfileForWorld(key);
     }
 
