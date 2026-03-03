@@ -6,48 +6,48 @@
 #define _Included_io_homo_superresolution_thirdparty_nanovg_NanoVGColor
 #ifdef __cplusplus
 extern "C" {
-#endif
-/*
+    #endif
+    /*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGColor
  * Method:    nGetNanoVGColorR
  * Signature: (J)F
  */
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nGetNanoVGColorR
-  (JNIEnv *, jobject, jlong);
+    (JNIEnv *, jobject, jlong);
 
-/*
+    /*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGColor
  * Method:    nGetNanoVGColorG
  * Signature: (J)F
  */
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nGetNanoVGColorG
-  (JNIEnv *, jobject, jlong);
+    (JNIEnv *, jobject, jlong);
 
-/*
+    /*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGColor
  * Method:    nGetNanoVGColorB
  * Signature: (J)F
  */
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nGetNanoVGColorB
-  (JNIEnv *, jobject, jlong);
+    (JNIEnv *, jobject, jlong);
 
-/*
+    /*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGColor
  * Method:    nGetNanoVGColorA
  * Signature: (J)F
  */
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nGetNanoVGColorA
-  (JNIEnv *, jobject, jlong);
+    (JNIEnv *, jobject, jlong);
 
-/*
+    /*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGColor
  * Method:    nDelete
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nDelete
-  (JNIEnv *, jobject, jlong);
+    (JNIEnv *, jobject, jlong);
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif
 #endif

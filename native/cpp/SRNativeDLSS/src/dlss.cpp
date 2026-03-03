@@ -12,8 +12,7 @@
 #include "DLSS/include/nvsdk_ngx_helpers_vk.h"
 #include "DLSS/include/nvsdk_ngx_defs.h"
 
-struct SRDLSSPrivateData
-{
+struct SRDLSSPrivateData {
     NVSDK_NGX_Handle *dlssHandle;
     NVSDK_NGX_Parameter *ngxParams;
     SRMessageCallback messageCallback;
@@ -23,19 +22,15 @@ static thread_local SRMessageCallback g_ngxLoggingCallback = nullptr;
 static thread_local bool g_ngxInitialized = false;
 
 #ifdef __cplusplus
-extern "C"
-{
-#endif
+extern "C" {
+    #endif
     static bool slInitialized = false;
-    SR_API SRReturnCode srDLSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
-    {
-        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN)
-        {
-            if (desc->messageCallback)
-            {
+    SR_API SRReturnCode srDLSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc) {
+        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN) {
+            if (desc->messageCallback) {
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"DLSS only supports Vulkan render API.");
             }
-            return (SRReturnCode)SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
+            return (SRReturnCode) SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
         }
         ///////////////
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
@@ -48,8 +43,8 @@ extern "C"
         NVSDK_NGX_FeatureCommonInfo featureInfo = {};
         featureInfo.LoggingInfo = {};
 
-        static auto ngxLogger = [](const char *message, NVSDK_NGX_Logging_Level loggingLevel, NVSDK_NGX_Feature sourceComponent) -> void
-        {
+        static auto ngxLogger = [](const char *message, NVSDK_NGX_Logging_Level loggingLevel,
+                                   NVSDK_NGX_Feature sourceComponent) -> void {
             if (!g_ngxLoggingCallback || !message)
                 return;
 
@@ -58,8 +53,7 @@ extern "C"
             std::mbstowcs(wideMessage, message, len);
 
             SRMessageType msgType = SR_MESSAGE_TYPE_INFO;
-            if (loggingLevel <= NVSDK_NGX_LOGGING_LEVEL_ON)
-            {
+            if (loggingLevel <= NVSDK_NGX_LOGGING_LEVEL_ON) {
                 msgType = SR_MESSAGE_TYPE_ERROR;
             }
 
@@ -73,13 +67,12 @@ extern "C"
             delete[] wideMessage;
         };
 
-        featureInfo.LoggingInfo.LoggingCallback = desc->messageCallback ? ngxLogger : (NVSDK_NGX_AppLogCallback)nullptr;
+        featureInfo.LoggingInfo.LoggingCallback =
+                desc->messageCallback ? ngxLogger : (NVSDK_NGX_AppLogCallback) nullptr;
         featureInfo.LoggingInfo.MinimumLoggingLevel = NVSDK_NGX_LOGGING_LEVEL_ON;
-        if (srFindParam(&desc->extraParams, "NGX_FEATURE_DLL_PATH") != nullptr)
-        {
+        if (srFindParam(&desc->extraParams, "NGX_FEATURE_DLL_PATH") != nullptr) {
             const SRContextExtraParam *param = srFindParam(&desc->extraParams, "NGX_FEATURE_DLL_PATH");
-            if (param && param->valueType == SR_PARAM_VALUE_TYPE_STRING && param->value.stringValue)
-            {
+            if (param && param->valueType == SR_PARAM_VALUE_TYPE_STRING && param->value.stringValue) {
                 size_t len = std::strlen(param->value.stringValue) + 1;
                 wchar_t *widePath = new wchar_t[len];
                 std::mbstowcs(widePath, param->value.stringValue, len);
@@ -97,8 +90,7 @@ extern "C"
         featureDiscoveryInfo.FeatureInfo = &featureInfo;
         featureDiscoveryInfo.SDKVersion = NVSDK_NGX_Version_API;
 
-        if (!g_ngxInitialized)
-        {
+        if (!g_ngxInitialized) {
             g_ngxInitialized = true;
             const char *projectId = "3a799712-b54a-407c-82b0-eb3366f0f1e3";
             auto result = NVSDK_NGX_VULKAN_Init_with_ProjectID(
@@ -106,19 +98,18 @@ extern "C"
                 NVSDK_NGX_ENGINE_TYPE_CUSTOM,
                 "11.45.14",
                 L".",
-                (VkInstance)(vulkanDevice.instance),
-                (VkPhysicalDevice)(vulkanDevice.physicalDevice),
-                (VkDevice)(vulkanDevice.device),
-                (PFN_vkGetInstanceProcAddr)(vulkanDevice.instanceProcAddr),
-                (PFN_vkGetDeviceProcAddr)(vulkanDevice.deviceProcAddr),
+                (VkInstance) (vulkanDevice.instance),
+                (VkPhysicalDevice) (vulkanDevice.physicalDevice),
+                (VkDevice) (vulkanDevice.device),
+                (PFN_vkGetInstanceProcAddr) (vulkanDevice.instanceProcAddr),
+                (PFN_vkGetDeviceProcAddr) (vulkanDevice.deviceProcAddr),
                 &featureInfo,
                 NVSDK_NGX_Version_API);
-            if (!NVSDK_NGX_SUCCEED(result))
-            {
+            if (!NVSDK_NGX_SUCCEED(result)) {
                 std::wstring msg = L"NVSDK_NGX_VULKAN_Init failed. Code:";
                 msg += GetNGXResultAsString(result);
                 privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
-                return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+                return (SRReturnCode) SR_RETURN_CODE_UNEXPECTED_ERROR;
             }
         }
         NVSDK_NGX_FeatureRequirement featureRequirement = {};
@@ -127,17 +118,14 @@ extern "C"
             vulkanDevice.physicalDevice,
             &featureDiscoveryInfo,
             &featureRequirement);
-        if (!NVSDK_NGX_SUCCEED(result))
-        {
+        if (!NVSDK_NGX_SUCCEED(result)) {
             std::wstring msg = L"NVSDK_NGX_VULKAN_GetFeatureRequirements failed. Code:";
             msg += GetNGXResultAsString(result);
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
             // return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
-        if (NVSDK_NGX_SUCCEED(result))
-        {
-            if (featureRequirement.FeatureSupported != NVSDK_NGX_FeatureSupportResult_Supported)
-            {
+        if (NVSDK_NGX_SUCCEED(result)) {
+            if (featureRequirement.FeatureSupported != NVSDK_NGX_FeatureSupportResult_Supported) {
                 /*
                 NVSDK_NGX_FeatureSupportResult_Supported
                 NVSDK_NGX_FeatureSupportResult_CheckNotPresent
@@ -147,68 +135,60 @@ extern "C"
                 NVSDK_NGX_FeatureSupportResult_NotImplemented
                 */
                 std::wstring msg;
-                switch (featureRequirement.FeatureSupported)
-                {
-                case NVSDK_NGX_FeatureSupportResult_CheckNotPresent:
-                    msg = L"DLSS not supported: Check Not Present.";
-                    break;
-                case NVSDK_NGX_FeatureSupportResult_DriverVersionUnsupported:
-                    msg = L"DLSS not supported: Driver Version Unsupported.";
-                    break;
-                case NVSDK_NGX_FeatureSupportResult_AdapterUnsupported:
-                    msg = L"DLSS not supported: Adapter Unsupported.";
-                    break;
-                case NVSDK_NGX_FeatureSupportResult_OSVersionBelowMinimumSupported:
-                    msg = L"DLSS not supported: OS Version Below Minimum Supported.";
-                    break;
-                case NVSDK_NGX_FeatureSupportResult_NotImplemented:
-                    msg = L"DLSS not supported: Not Implemented.";
-                    break;
+                switch (featureRequirement.FeatureSupported) {
+                    case NVSDK_NGX_FeatureSupportResult_CheckNotPresent:
+                        msg = L"DLSS not supported: Check Not Present.";
+                        break;
+                    case NVSDK_NGX_FeatureSupportResult_DriverVersionUnsupported:
+                        msg = L"DLSS not supported: Driver Version Unsupported.";
+                        break;
+                    case NVSDK_NGX_FeatureSupportResult_AdapterUnsupported:
+                        msg = L"DLSS not supported: Adapter Unsupported.";
+                        break;
+                    case NVSDK_NGX_FeatureSupportResult_OSVersionBelowMinimumSupported:
+                        msg = L"DLSS not supported: OS Version Below Minimum Supported.";
+                        break;
+                    case NVSDK_NGX_FeatureSupportResult_NotImplemented:
+                        msg = L"DLSS not supported: Not Implemented.";
+                        break;
                 }
                 privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
-                return (SRReturnCode)SR_RETURN_CODE_UNSUPPORTED;
+                return (SRReturnCode) SR_RETURN_CODE_UNSUPPORTED;
             }
         }
 
         result = NVSDK_NGX_VULKAN_GetCapabilityParameters(&privateData->ngxParams);
-        if (!NVSDK_NGX_SUCCEED(result))
-        {
+        if (!NVSDK_NGX_SUCCEED(result)) {
             std::wstring msg = L"NVSDK_NGX_VULKAN_GetCapabilityParameters failed. Code:";
             msg += GetNGXResultAsString(result);
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
-            return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+            return (SRReturnCode) SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
         ///////////////
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srDLSSInitUpscaleContext(SRUpscaleContext *context)
-    {
-        SRDLSSPrivateData *privateData = (SRDLSSPrivateData *)context->userContext;
+    SR_API SRReturnCode srDLSSInitUpscaleContext(SRUpscaleContext *context) {
+        SRDLSSPrivateData *privateData = (SRDLSSPrivateData *) context->userContext;
         const SRCreateUpscaleContextDesc *desc = &context->desc;
         // 如果已经初始化过，先释放旧的 handle
-        if (privateData->dlssHandle)
-        {
+        if (privateData->dlssHandle) {
             NVSDK_NGX_VULKAN_ReleaseFeature(privateData->dlssHandle);
             privateData->dlssHandle = nullptr;
         }
         float upscaleRatio = desc->upscaledSize.x / desc->renderSize.x;
         NVSDK_NGX_DLSS_Create_Params dlssCreateParams = {};
-        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
-        {
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE) {
             dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
         }
 
-        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED)
-        {
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED) {
             dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVJittered;
         }
-        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
-        {
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED) {
             dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_DepthInverted;
         }
-        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)
-        {
+        if (context->desc.flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR) {
             dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
         }
         dlssCreateParams.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
@@ -217,18 +197,28 @@ extern "C"
         dlssCreateParams.Feature.InTargetWidth = desc->upscaledSize.x;
         dlssCreateParams.Feature.InTargetHeight = desc->upscaledSize.y;
         SRVulkanDeviceInfo vulkanDevice = desc->renderDeviceInfo.vulkan;
-        VkCommandBuffer cmd = (VkCommandBuffer)vulkanDevice.initCommandBuffer;
-        if (srFindParam(&desc->extraParams, "DLSS_RENDER_PRESET") != nullptr)
-        {
+        VkCommandBuffer cmd = (VkCommandBuffer) vulkanDevice.initCommandBuffer;
+        if (srFindParam(&desc->extraParams, "DLSS_RENDER_PRESET") != nullptr) {
             const SRContextExtraParam *param = srFindParam(&desc->extraParams, "DLSS_RENDER_PRESET");
-            if (param && param->valueType == SR_PARAM_VALUE_TYPE_INT32 && param->value.int32Value >= 0)
-            {
-                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
-                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
-                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
-                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
-                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
-                privateData->ngxParams->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality, static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+            if (param && param->valueType == SR_PARAM_VALUE_TYPE_INT32 && param->value.int32Value >= 0) {
+                privateData->ngxParams->Set(
+                    NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA,
+                    static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(
+                    NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced,
+                    static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(
+                    NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Performance,
+                    static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(
+                    NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Quality,
+                    static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(
+                    NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraPerformance,
+                    static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
+                privateData->ngxParams->Set(
+                    NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_UltraQuality,
+                    static_cast<NVSDK_NGX_DLSS_Hint_Render_Preset>(param->value.int32Value));
             }
         }
         auto result = NGX_VULKAN_CREATE_DLSS_EXT1(
@@ -240,36 +230,29 @@ extern "C"
             privateData->ngxParams,
             &dlssCreateParams);
 
-        if (!NVSDK_NGX_SUCCEED(result))
-        {
+        if (!NVSDK_NGX_SUCCEED(result)) {
             std::wstring msg = L"NGX_VULKAN_CREATE_DLSS_EXT1 failed. Code:";
             msg += GetNGXResultAsString(result);
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
-            return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+            return (SRReturnCode) SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srDLSSDestroyUpscaleContext(SRUpscaleContext *context)
-    {
-        SRDLSSPrivateData *privateData = (SRDLSSPrivateData *)context->userContext;
-        if (privateData->dlssHandle)
-        {
+    SR_API SRReturnCode srDLSSDestroyUpscaleContext(SRUpscaleContext *context) {
+        SRDLSSPrivateData *privateData = (SRDLSSPrivateData *) context->userContext;
+        if (privateData->dlssHandle) {
             NVSDK_NGX_VULKAN_ReleaseFeature(privateData->dlssHandle);
             privateData->dlssHandle = nullptr;
         }
-        if (privateData->ngxParams)
-        {
+        if (privateData->ngxParams) {
             NVSDK_NGX_VULKAN_DestroyParameters(privateData->ngxParams);
             privateData->ngxParams = nullptr;
         }
         SRVulkanDeviceInfo vulkanDevice = context->desc.renderDeviceInfo.vulkan;
-        if (srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX") != nullptr)
-        {
-
+        if (srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX") != nullptr) {
             const SRContextExtraParam *param = srFindParam(&context->desc.extraParams, "ALWAYS_SHUTDOWN_NGX");
-            if (param && param->valueType == SR_PARAM_VALUE_TYPE_BOOL && param->value.boolValue == true)
-            {
+            if (param && param->valueType == SR_PARAM_VALUE_TYPE_BOOL && param->value.boolValue == true) {
                 NVSDK_NGX_VULKAN_Shutdown1(vulkanDevice.device);
                 g_ngxInitialized = false;
             }
@@ -279,60 +262,56 @@ extern "C"
         return SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srDLSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
-    {
+    SR_API SRReturnCode srDLSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
+                                           SRUpscaleContextQueryType queryType) {
         SRUpscaleContextQueryResult *outResult = result;
-        switch (queryType)
-        {
-        case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
-            reinterpret_cast<SRQueryVersionResult *>(outResult)->versionId = SR_MAKE_VERSION(
-                1,
-                5,
-                0);
-            reinterpret_cast<SRQueryVersionResult *>(outResult)->versionNumber = SR_MAKE_VERSION(
-                1,
-                5,
-                0);
-            break;
-        case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
-            ((SRQueryGpuMemoryResult *)outResult)->gpuMemory = 0;
-            return (SRReturnCode)SR_RETURN_CODE_UNSUPPORTED;
-            break;
-        case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
-        {
-            SRDLSSPrivateData *privateData = (SRDLSSPrivateData *)context->userContext;
-            int support = 0;
-            privateData->ngxParams->Get(NVSDK_NGX_Parameter_SuperSampling_Available, &support);
-            ((SRQueryAvailabilityResult *)outResult)->isAvailable = NVSDK_NGX_SUCCEED(support) && static_cast<bool>(support);
-            break;
+        switch (queryType) {
+            case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
+                reinterpret_cast<SRQueryVersionResult *>(outResult)->versionId = SR_MAKE_VERSION(
+                    1,
+                    5,
+                    0);
+                reinterpret_cast<SRQueryVersionResult *>(outResult)->versionNumber = SR_MAKE_VERSION(
+                    1,
+                    5,
+                    0);
+                break;
+            case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
+                ((SRQueryGpuMemoryResult *) outResult)->gpuMemory = 0;
+                return (SRReturnCode) SR_RETURN_CODE_UNSUPPORTED;
+                break;
+            case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE: {
+                SRDLSSPrivateData *privateData = (SRDLSSPrivateData *) context->userContext;
+                int support = 0;
+                privateData->ngxParams->Get(NVSDK_NGX_Parameter_SuperSampling_Available, &support);
+                ((SRQueryAvailabilityResult *) outResult)->isAvailable =
+                        NVSDK_NGX_SUCCEED(support) && static_cast<bool>(support);
+                break;
+            }
+            default:
+                break;
         }
-        default:
-            break;
-        }
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srDLSSDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc)
-    {
-        SRDLSSPrivateData *privateData = (SRDLSSPrivateData *)context->userContext;
+    SR_API SRReturnCode srDLSSDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc) {
+        SRDLSSPrivateData *privateData = (SRDLSSPrivateData *) context->userContext;
         const SRCreateUpscaleContextDesc *createDesc = &context->desc;
-        if (!privateData->dlssHandle)
-        {
+        if (!privateData->dlssHandle) {
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, L"DLSS handle is null in srDLSSDispatchUpscale.");
-            return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+            return (SRReturnCode) SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
-        if (desc->motionVectors.exist == false)
-        {
+        if (desc->motionVectors.exist == false) {
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, L"DLSS requires motion vectors input.");
-            return (SRReturnCode)SR_RETURN_CODE_INVALID_ARGUMENT;
+            return (SRReturnCode) SR_RETURN_CODE_INVALID_ARGUMENT;
         }
         NVSDK_NGX_Parameter *params = nullptr;
         NVSDK_NGX_VULKAN_AllocateParameters(&params);
         NVSDK_NGX_Resource_VK colorInput{
             .Resource = {
                 .ImageViewInfo = {
-                    .ImageView = (VkImageView)desc->color.imageView,
-                    .Image = (VkImage)desc->color.handle,
+                    .ImageView = (VkImageView) desc->color.imageView,
+                    .Image = (VkImage) desc->color.handle,
                     .SubresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                         .levelCount = 1,
@@ -341,15 +320,16 @@ extern "C"
                     .Format = srTextureFormatToVkFormat(desc->color.desc.format),
                     .Width = desc->color.desc.width,
                     .Height = desc->color.desc.height,
-                }},
+                }
+            },
             .Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW,
             .ReadWrite = true,
         };
         NVSDK_NGX_Resource_VK colorOutput{
             .Resource = {
                 .ImageViewInfo = {
-                    .ImageView = (VkImageView)desc->output.imageView,
-                    .Image = (VkImage)desc->output.handle,
+                    .ImageView = (VkImageView) desc->output.imageView,
+                    .Image = (VkImage) desc->output.handle,
                     .SubresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                         .levelCount = 1,
@@ -358,15 +338,16 @@ extern "C"
                     .Format = srTextureFormatToVkFormat(desc->output.desc.format),
                     .Width = desc->output.desc.width,
                     .Height = desc->output.desc.height,
-                }},
+                }
+            },
             .Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW,
             .ReadWrite = true,
         };
         NVSDK_NGX_Resource_VK depthAttachment{
             .Resource = {
                 .ImageViewInfo = {
-                    .ImageView = (VkImageView)desc->depth.imageView,
-                    .Image = (VkImage)desc->depth.handle,
+                    .ImageView = (VkImageView) desc->depth.imageView,
+                    .Image = (VkImage) desc->depth.handle,
                     .SubresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
                         .levelCount = 1,
@@ -375,15 +356,16 @@ extern "C"
                     .Format = srTextureFormatToVkFormat(desc->depth.desc.format),
                     .Width = desc->depth.desc.width,
                     .Height = desc->depth.desc.height,
-                }},
+                }
+            },
             .Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW,
             .ReadWrite = false,
         };
         NVSDK_NGX_Resource_VK motionVectors{
             .Resource = {
                 .ImageViewInfo = {
-                    .ImageView = (VkImageView)desc->motionVectors.imageView,
-                    .Image = (VkImage)desc->motionVectors.handle,
+                    .ImageView = (VkImageView) desc->motionVectors.imageView,
+                    .Image = (VkImage) desc->motionVectors.handle,
                     .SubresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                         .levelCount = 1,
@@ -392,7 +374,8 @@ extern "C"
                     .Format = srTextureFormatToVkFormat(desc->motionVectors.desc.format),
                     .Width = desc->motionVectors.desc.width,
                     .Height = desc->motionVectors.desc.height,
-                }},
+                }
+            },
             .Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW,
             .ReadWrite = true,
         };
@@ -400,8 +383,8 @@ extern "C"
         NVSDK_NGX_Resource_VK exposure{
             .Resource = {
                 .ImageViewInfo = {
-                    .ImageView = (VkImageView)desc->exposure.imageView,
-                    .Image = (VkImage)desc->exposure.handle,
+                    .ImageView = (VkImageView) desc->exposure.imageView,
+                    .Image = (VkImage) desc->exposure.handle,
                     .SubresourceRange = {
                         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                         .levelCount = 1,
@@ -410,7 +393,8 @@ extern "C"
                     .Format = srTextureFormatToVkFormat(desc->exposure.desc.format),
                     .Width = desc->exposure.desc.width,
                     .Height = desc->exposure.desc.height,
-                }},
+                }
+            },
             .Type = NVSDK_NGX_RESOURCE_VK_TYPE_VK_IMAGEVIEW,
             .ReadWrite = false,
         };
@@ -437,35 +421,36 @@ extern "C"
             .InExposureScale = 1.f,
             .InFrameTimeDeltaInMsec = static_cast<float>(desc->frameTimeDelta),
         };
-        auto result = NGX_VULKAN_EVALUATE_DLSS_EXT((VkCommandBuffer)desc->commandList.apiCommandBuffer.vulkan.commandBuffer, privateData->dlssHandle, params, &dlssEval);
+        auto result = NGX_VULKAN_EVALUATE_DLSS_EXT(
+            (VkCommandBuffer) desc->commandList.apiCommandBuffer.vulkan.commandBuffer, privateData->dlssHandle, params,
+            &dlssEval);
         NVSDK_NGX_VULKAN_DestroyParameters(params);
-        if (!NVSDK_NGX_SUCCEED(result))
-        {
+        if (!NVSDK_NGX_SUCCEED(result)) {
             std::wstring msg = L"NVSDK_NGX_VULKAN_EVALUATE_DLSS_EXT failed. Code:";
             msg += GetNGXResultAsString(result);
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
-            return (SRReturnCode)SR_RETURN_CODE_UNEXPECTED_ERROR;
+            return SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
-    SR_API SRReturnCode srDLSSShutdown()
-    {
+
+    SR_API SRReturnCode srDLSSShutdown() {
         NVSDK_NGX_VULKAN_Shutdown1(nullptr);
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
-    SR_API SRUpscaleContextCallbacks srGetDLSSUpscaleCallbacks()
-    {
+
+    SR_API SRUpscaleContextCallbacks srGetDLSSUpscaleCallbacks() {
         static SRUpscaleContextCallbacks callbacks = {
-            .pCreate = (SRCreateFunc)srDLSSCreateUpscaleContext,
-            .pInit = (SRInitFunc)srDLSSInitUpscaleContext,
-            .pDestroy = (SRDestroyFunc)srDLSSDestroyUpscaleContext,
-            .pQuery = (SRQueryFunc)srDLSSQueryUpscale,
-            .pDispatchUpscale = (SRDispatchUpscaleFunc)srDLSSDispatchUpscale,
-            .pShutdown = (SRShutdownFunc)srDLSSShutdown,
+            .pCreate = (SRCreateFunc) srDLSSCreateUpscaleContext,
+            .pInit = (SRInitFunc) srDLSSInitUpscaleContext,
+            .pDestroy = (SRDestroyFunc) srDLSSDestroyUpscaleContext,
+            .pQuery = (SRQueryFunc) srDLSSQueryUpscale,
+            .pDispatchUpscale = (SRDispatchUpscaleFunc) srDLSSDispatchUpscale,
+            .pShutdown = (SRShutdownFunc) srDLSSShutdown,
         };
         return callbacks;
     }
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif

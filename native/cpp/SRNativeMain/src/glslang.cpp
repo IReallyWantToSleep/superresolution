@@ -10,35 +10,31 @@
 #include <vector>
 #include <fstream>
 
-class JniIncluder : public glslang::TShader::Includer
-{
+class JniIncluder : public glslang::TShader::Includer {
 public:
-    explicit JniIncluder(JNIEnv* env) : env(env) {}
+    explicit JniIncluder(JNIEnv *env) : env(env) {
+    }
 
-    IncludeResult *includeLocal(const char *headerName, const char *includerName, size_t inclusionDepth) override
-    {
+    IncludeResult *includeLocal(const char *headerName, const char *includerName, size_t inclusionDepth) override {
         return handleInclude(headerName, includerName, inclusionDepth, true);
     }
 
-    IncludeResult *includeSystem(const char *headerName, const char *includerName, size_t inclusionDepth) override
-    {
+    IncludeResult *includeSystem(const char *headerName, const char *includerName, size_t inclusionDepth) override {
         return handleInclude(headerName, includerName, inclusionDepth, false);
     }
 
-    void releaseInclude(IncludeResult *result) override
-    {
-        if (result)
-        {
+    void releaseInclude(IncludeResult *result) override {
+        if (result) {
             delete[] result->headerData;
             delete result;
         }
     }
 
 private:
-    JNIEnv* env;
+    JNIEnv *env;
 
-    IncludeResult *handleInclude(const char *headerName, const char *includerName, size_t inclusionDepth, bool isLocal)
-    {
+    IncludeResult *handleInclude(const char *headerName, const char *includerName, size_t inclusionDepth,
+                                 bool isLocal) {
         jclass helperClass = env->FindClass(JAVA_GLSLANG_INCLUDER_HELPER);
         jmethodID method = env->GetStaticMethodID(
             helperClass,
@@ -69,16 +65,15 @@ private:
 };
 
 
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_initGlslang(JNIEnv *env, jclass)
-{
+JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_initGlslang(JNIEnv *env, jclass) {
     return glslang::InitializeProcess() ? 0 : 1;
 }
 
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_destroyGlslang(JNIEnv *env, jclass)
-{
+JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_destroyGlslang(JNIEnv *env, jclass) {
     glslang::FinalizeProcess();
     return 0;
 }
+
 JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_compileShaderToSpirv(
     JNIEnv *env,
     jclass clazz,
@@ -92,8 +87,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
     jint default_version,
     jint default_profile,
     jboolean force_default_version_and_profile,
-    jboolean forward_compatible)
-{
+    jboolean forward_compatible) {
     const char *shaderSource = env->GetStringUTFChars(shaderSrc, nullptr);
 
     EShLanguage shaderStage = static_cast<EShLanguage>(stage);
@@ -125,8 +119,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
     jmethodID constructor = env->GetMethodID(resultClass, "<init>",
                                              "(Ljava/lang/String;Ljava/lang/String;IJLjava/nio/ByteBuffer;Ljava/lang/String;)V");
 
-    auto makeResult = [&](int errorCode, const char *log, jlong size, jobject buffer)
-    {
+    auto makeResult = [&](int errorCode, const char *log, jlong size, jobject buffer) {
         jstring jSource = env->NewStringUTF(shaderSource);
         jstring jPreprocessed = env->NewStringUTF(preprocessed.c_str());
         jstring jLog = env->NewStringUTF(log ? log : "");
@@ -141,8 +134,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
         return result;
     };
 
-    if (!success)
-    {
+    if (!success) {
         return makeResult(1, shader.getInfoLog(), 0, nullptr); // PREPROCESS_ERROR
     }
     success = shader.parse(
@@ -153,16 +145,14 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
         forward_compatible,
         EShMsgDefault,
         includer);
-    if (!success)
-    {
+    if (!success) {
         return makeResult(2, shader.getInfoLog(), 0, nullptr); // PARSE_ERROR
     }
 
     glslang::TProgram program;
     program.addShader(&shader);
     success = program.link(EShMsgDefault);
-    if (!success)
-    {
+    if (!success) {
         return makeResult(3, program.getInfoLog(), 0, nullptr); // LINK_ERROR
     }
 
@@ -171,8 +161,7 @@ JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNativ
 
     size_t dataSize = spirv.size() * sizeof(unsigned int);
     jobject spirvBuffer = nullptr;
-    if (dataSize > 0)
-    {
+    if (dataSize > 0) {
         void *nativeBuf = malloc(dataSize);
         memcpy(nativeBuf, spirv.data(), dataSize);
         spirvBuffer = env->NewDirectByteBuffer(nativeBuf, dataSize);

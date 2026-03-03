@@ -46,6 +46,7 @@ import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.gui.MaterialTheme;
+import io.homo.superresolution.core.gui.SchemeVariant;
 import io.homo.superresolution.core.utils.Color;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
@@ -80,6 +81,8 @@ public class SuperResolutionConfig {
     public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
+    public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
+    public static final FloatValue THEME_CONTRAST_LEVEL;
     public static final StringValue THEME_COLOR;
 
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
@@ -162,6 +165,20 @@ public class SuperResolutionConfig {
                 () -> "#78DC77",
                 "Primary color for the interface theme",
                 value -> value != null && value.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$")
+        );
+
+        THEME_SCHEME_VARIANT = builder.defineEnum(
+                "theme_scheme_variant",
+                SchemeVariant.class,
+                () -> SchemeVariant.FIDELITY,
+                "Color scheme variant for the interface theme"
+        );
+
+        THEME_CONTRAST_LEVEL = builder.defineFloat(
+                "theme_contrast_level",
+                () -> 0.0f,
+                "Contrast level for the interface theme (-1.0 to 1.0)",
+                value -> value >= -1.0f && value <= 1.0f
         );
 
         DEBUG_DUMP_SHADER = builder.defineBoolean(
@@ -285,7 +302,7 @@ public class SuperResolutionConfig {
         try {
             GL.getCapabilities();
         } catch (Exception e) {
-            return AlgorithmDescriptions.SGSR1;
+            return AlgorithmDescriptions.FSR1;
         }
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
             if (algorithmDescription.requirement.check().support()) {
@@ -614,5 +631,21 @@ public class SuperResolutionConfig {
 
     public  static void setThemeColor(Color color) {
         THEME_COLOR.set(color.hex());
+    }
+
+    public static SchemeVariant getThemeSchemeVariant() {
+        return THEME_SCHEME_VARIANT.get();
+    }
+
+    public static void setThemeSchemeVariant(SchemeVariant value) {
+        THEME_SCHEME_VARIANT.set(value);
+    }
+
+    public static float getThemeContrastLevel() {
+        return THEME_CONTRAST_LEVEL.get();
+    }
+
+    public static void setThemeContrastLevel(float value) {
+        THEME_CONTRAST_LEVEL.set(Math.max(-1.0f, Math.min(1.0f, value)));
     }
 }

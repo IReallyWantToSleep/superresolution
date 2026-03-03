@@ -107,7 +107,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         if (qualityPresetOptionsCache == null) {
             qualityPresetOptionsCache = new HashMap<>();
         }
-        MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor()));
+        MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
         materialScheme = MaterialUI.Scheme;
         contentFrames = new HashMap<>();
         currentContentKey = "general";
@@ -264,21 +265,58 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setEnumNameProvider(t -> Text.translatable("superresolution.enum.theme." + t.name().toLowerCase()).getString())
                 .setSaveConsumer(value -> {
                     SuperResolutionConfig.setTheme(value);
-                    MaterialUI.setScheme(MaterialScheme.from(value, SuperResolutionConfig.getThemeColor()));
+                    MaterialUI.setScheme(MaterialScheme.from(value, SuperResolutionConfig.getThemeColor(),
+                            SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
                     this.materialScheme = MaterialUI.Scheme;
                 })
                 .build();
         builder.colorSelectOption(
-                Text.literal("主题色"),
+                Text.translatable("superresolution.screen.config.options.label.theme_color"),
                 SuperResolutionConfig.getThemeColor())
                 .setDefaultValue(()->Color.from("#78DC77"))
                 .setValueChangeListener(value -> {
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value));
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
+                            SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
                     this.materialScheme = MaterialUI.Scheme;
                 })
                 .setSaveConsumer(value -> {
                     SuperResolutionConfig.setThemeColor(value);
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value));
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
+                            SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
+                    this.materialScheme = MaterialUI.Scheme;
+                })
+                .build();
+        builder.enumSelectorOption(
+                        Text.translatable("superresolution.screen.config.options.label.theme_scheme_variant"),
+                        SchemeVariant.class,
+                        SuperResolutionConfig.getThemeSchemeVariant())
+                .setDefaultValue(SchemeVariant.CONTENT)
+                .setEnumNameProvider(v -> Text.translatable("superresolution.enum.schemevarinat." + v.name().toLowerCase()).getString())
+                .setSaveConsumer(value -> {
+                    SuperResolutionConfig.setThemeSchemeVariant(value);
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                            value, SuperResolutionConfig.getThemeContrastLevel()));
+                    this.materialScheme = MaterialUI.Scheme;
+                })
+                .build();
+        builder.numberOption(
+                        Text.translatable("superresolution.screen.config.options.label.theme_contrast_level"),
+                        SuperResolutionConfig.getThemeContrastLevel(),
+                        1.0f,
+                        -1.0f)
+                .setStep(0.2)
+                .setValueFormater((value)-> String.format("%.0f",value.doubleValue()*100) + "%")
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.theme_contrast_level"))
+                .setDefaultValue(() -> 0.0f)
+                .setValueChangeListener(value -> {
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                            SuperResolutionConfig.getThemeSchemeVariant(), value.doubleValue()));
+                    this.materialScheme = MaterialUI.Scheme;
+                })
+                .setSaveConsumer(value -> {
+                    SuperResolutionConfig.setThemeContrastLevel(value.floatValue());
+                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                            SuperResolutionConfig.getThemeSchemeVariant(), value.doubleValue()));
                     this.materialScheme = MaterialUI.Scheme;
                 })
                 .build();
@@ -331,7 +369,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         SuperResolutionConfig.getUpscaleAlgorithm(),
                         AlgorithmRegistry.getAlgorithmMap().values().toArray())
                 .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
-                .setDefaultValue(() -> AlgorithmDescriptions.SGSR1)
+                .setDefaultValue(() -> AlgorithmDescriptions.FSR1)
                 .setSaveConsumer((obj) -> {
                     AlgorithmDescription<?> algo = (AlgorithmDescription<?>) obj;
                     List<ExtraResource> lostResources = algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);

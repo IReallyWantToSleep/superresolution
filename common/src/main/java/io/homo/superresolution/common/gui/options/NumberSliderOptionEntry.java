@@ -26,12 +26,14 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
+import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberSliderOptionEntry> {
-    private static final float SLIDER_WIDTH = 200f;
+    private static final float SLIDER_WIDTH = 250f;
     protected MaterialSlider slider;
     protected MaterialLabel valueLabel;
     protected ContainerWidget sliderContainer;
@@ -40,6 +42,7 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
     protected Number step;
     protected Function<Number, String> valueFormater;
     private boolean suppressSliderChangeEvent = false;
+    protected Consumer<Number> valueChangeListener = (value)->{};
 
     public NumberSliderOptionEntry(
             Text name,
@@ -78,13 +81,12 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
 
         slider = MaterialSlider.create(MaterialSliderSize.Small, SLIDER_WIDTH);
         slider.style().valueIndicator(true);
-        if (step != null && step.doubleValue() != 0) {
-            slider.style().steps(true);
-            slider.setStep(step);
-        }
         slider.setMin(min);
         slider.setMax(max);
         slider.setValue(value);
+        slider.onInput(inputEvent -> {
+            valueChangeListener.accept((Number) inputEvent.getNewValue());
+        });
         slider.onChange(event -> {
             this.value = (Number) event.getNewValue();
             if (suppressSliderChangeEvent) {
@@ -144,6 +146,14 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
     public void tick(RenderContext ctx) {
         boolean enabled = updateRequirements();
         slider.setDisabled(!enabled);
+        if (step.doubleValue() > 1e-6) {
+            double range = max.doubleValue() - min.doubleValue();
+            if (step.doubleValue()/range > 0.08) {
+                slider.style().steps(true);
+            } else {
+                slider.style().steps(false);
+            }
+        }
     }
 
     @Override

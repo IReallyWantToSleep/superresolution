@@ -4,42 +4,37 @@
 #include <vulkan/vulkan.h>
 
 #ifdef __cplusplus
-extern "C"
-{
-#endif
+extern "C" {
+    #endif
 
-#define SR_MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
-#define SR_API_CONTEXT_MAX_PARAMS 16
+    #define SR_MAKE_VERSION(major, minor, patch) (((major) << 22) | ((minor) << 12) | (patch))
+    #define SR_API_CONTEXT_MAX_PARAMS 16
 
     typedef void (*SRMessageCallback)(SRMessageType type, const wchar_t *message);
+
     typedef void *(*SRGetFuncAddress)(void *device, const char *pName);
 
     typedef struct SRUpscaleContext SRUpscaleContext;
 
-    typedef struct
-    {
+    typedef struct {
         SRUpscaleContextQueryType type;
         void *data;
     } SRUpscaleContextQueryResult;
 
-    typedef struct
-    {
+    typedef struct {
         uint64_t versionNumber;
         uint64_t versionId;
     } SRQueryVersionResult;
 
-    typedef struct
-    {
+    typedef struct {
         uint64_t gpuMemory;
     } SRQueryGpuMemoryResult;
 
-    typedef struct
-    {
+    typedef struct {
         bool isAvailable;
     } SRQueryAvailabilityResult;
 
-    typedef union SRParamValue
-    {
+    typedef union SRParamValue {
         bool boolValue;
         int32_t int32Value;
         uint32_t uint32Value;
@@ -50,28 +45,24 @@ extern "C"
         const char *stringValue;
         void *ptrValue;
 
-        struct
-        {
+        struct {
             void *data;
             size_t size;
         } binaryValue;
     } SRParamValue;
 
-    typedef struct SRContextExtraParam
-    {
+    typedef struct SRContextExtraParam {
         const char *name;
         SRParamValueType valueType;
         SRParamValue value;
-		bool exist;
+        bool exist;
     } SRContextExtraParam;
 
-    typedef struct SROpenGLDeviceInfo
-    {
+    typedef struct SROpenGLDeviceInfo {
         SRGetFuncAddress deviceProcAddr;
     } SROpenGLDeviceInfo;
 
-    typedef struct SRVulkanDeviceInfo
-    {
+    typedef struct SRVulkanDeviceInfo {
         VkInstance instance;
         VkPhysicalDevice physicalDevice;
         VkDevice device;
@@ -80,39 +71,35 @@ extern "C"
         SRGetFuncAddress instanceProcAddr;
     } SRVulkanDeviceInfo;
 
-    typedef struct SRCommandBufferOpenGL
-    {
+    typedef struct SRCommandBufferOpenGL {
     } SRCommandBufferOpenGL;
 
-    typedef struct SRCommandBufferVulkan
-    {
+    typedef struct SRCommandBufferVulkan {
         VkCommandBuffer commandBuffer;
     } SRCommandBufferVulkan;
 
-    typedef struct SRDispatchCommandBufferInfo
-    {
+    typedef struct SRDispatchCommandBufferInfo {
         SRRenderApiType renderApiType;
-        union
-        {
+
+        union {
             SRCommandBufferOpenGL opengl;
             SRCommandBufferVulkan vulkan;
         } apiCommandBuffer;
     } SRDispatchCommandBufferInfo;
 
-    typedef struct SRContextExtraParams
-    {
+    typedef struct SRContextExtraParams {
         SRContextExtraParam extraParams[SR_API_CONTEXT_MAX_PARAMS];
         uint32_t extraParamCount;
     } SRContextExtraParams;
 
-    typedef struct SRCreateUpscaleContextDesc
-    {
+    typedef struct SRCreateUpscaleContextDesc {
         SRRenderApiType renderApiType;
-        union
-        {
+
+        union {
             SROpenGLDeviceInfo opengl;
             SRVulkanDeviceInfo vulkan;
         } renderDeviceInfo;
+
         SRVectorUint2 upscaledSize;
         SRVectorUint2 renderSize;
         SRMessageCallback messageCallback;
@@ -120,16 +107,14 @@ extern "C"
         uint32_t flags;
     } SRCreateUpscaleContextDesc;
 
-    typedef struct SRTextureResource
-    {
+    typedef struct SRTextureResource {
         bool exist;
         SRTextureResourceDescription desc;
         void *handle;
         void *imageView; // 可选
     } SRTextureResource;
 
-    typedef struct SRDispatchUpscaleDesc
-    {
+    typedef struct SRDispatchUpscaleDesc {
         SRDispatchCommandBufferInfo commandList;
 
         SRTextureResource color;
@@ -161,14 +146,18 @@ extern "C"
     } SRDispatchUpscaleDesc;
 
     typedef SRReturnCode (*SRCreateFunc)(SRUpscaleContext *, const struct SRCreateUpscaleContextDesc *desc);
+
     typedef SRReturnCode (*SRInitFunc)(SRUpscaleContext *);
+
     typedef SRReturnCode (*SRDestroyFunc)(SRUpscaleContext *context);
+
     typedef SRReturnCode (*SRQueryFunc)(SRUpscaleContext *, SRUpscaleContextQueryResult *, int queryType);
+
     typedef SRReturnCode (*SRDispatchUpscaleFunc)(SRUpscaleContext *context, const struct SRDispatchUpscaleDesc *desc);
+
     typedef SRReturnCode (*SRShutdownFunc)();
 
-    typedef struct SRUpscaleContextCallbacks
-    {
+    typedef struct SRUpscaleContextCallbacks {
         SRCreateFunc pCreate;
         SRInitFunc pInit;
         SRDestroyFunc pDestroy;
@@ -177,22 +166,21 @@ extern "C"
         SRShutdownFunc pShutdown;
     } SRUpscaleContextCallbacks;
 
-    struct SRUpscaleContext
-    {
+    struct SRUpscaleContext {
         SRUpscaleContextCallbacks callbacks; // SRAPI内部设置的，外部模块别动
         SRCreateUpscaleContextDesc desc;
         void *userContext;
     };
 
-    typedef struct SRUpscaleProvider
-    {
+    typedef struct SRUpscaleProvider {
         SRUpscaleContextCallbacks callbacks;
         uint64_t providerId;
     } SRUpscaleProvider;
 
     typedef SRReturnCode (*SRUpscaleProviderSupplierFunc)(SRUpscaleProvider *outProviders);
+
     typedef SRReturnCode (*SRUpscaleProviderSupplierCountFunc)(uint32_t *outCount);
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif

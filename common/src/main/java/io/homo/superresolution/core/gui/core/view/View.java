@@ -20,6 +20,7 @@ package io.homo.superresolution.core.gui.core.view;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.TooltipRenderer;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -40,6 +41,7 @@ public class View {
     private float viewportHeight;
     private boolean layoutDirty = true;
     private MaterialDialog activeDialog;
+    private final TooltipRenderer tooltipRenderer = new TooltipRenderer();
 
     public View() {
         this.rootNode = new YogaNode();
@@ -145,6 +147,9 @@ public class View {
             activeDialog.render(ctx, inputState);
             //renderDebugLayoutBounds(ctx, activeDialog);
         }
+
+        String tooltip = collectTooltip();
+        renderTooltip(ctx, inputState, tooltip);
     }
 
     public void showDialog(MaterialDialog dialog) {
@@ -288,6 +293,66 @@ public class View {
     public void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
         frames.forEach((frameEntry -> frameEntry.frame.setDebugBoundsVisible(layout, render, hitTest)));
 
+    }
+
+    private AbstractWidget<?> findTopHoveredWidgetInTree(AbstractWidget<?> widget) {
+        if (widget == null || !widget.isVisible() || widget.isDisabled()) {
+            return null;
+        }
+
+        if (widget instanceof ILayoutContainer container) {
+            List<ILayoutElement> children = container.getChildren();
+            for (int i = children.size() - 1; i >= 0; i--) {
+                ILayoutElement child = children.get(i);
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    AbstractWidget<?> found = findTopHoveredWidgetInTree(childWidget);
+                    if (found != null) {
+                        return found;
+                    }
+                }
+            }
+        }
+
+        return widget.isHovered() ? widget : null;
+    }
+
+    private AbstractWidget<?> findTopHoveredWidget() {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
+            AbstractWidget<?> dialogHovered = findTopHoveredWidgetInTree(activeDialog);
+            if (dialogHovered != null) {
+                return dialogHovered;
+            }
+        }
+
+        for (int i = frames.size() - 1; i >= 0; i--) {
+            FrameEntry entry = frames.get(i);
+            AbstractWidget<?> root = entry.frame.getRoot();
+            if (root == null || !root.isVisible() || root.isDisabled()) {
+                continue;
+            }
+            AbstractWidget<?> hovered = findTopHoveredWidgetInTree(root);
+            if (hovered != null) {
+                return hovered;
+            }
+        }
+        return null;
+    }
+
+    private String collectTooltip() {
+        AbstractWidget<?> hovered = findTopHoveredWidget();
+        if (hovered == null) {
+            return null;
+        }
+        for (String tooltip : hovered.collectTooltipChain()) {
+            if (tooltip != null && !tooltip.isEmpty()) {
+                return tooltip;
+            }
+        }
+        return null;
+    }
+
+    private void renderTooltip(RenderContext ctx, UIInputState inputState, String tooltip) {
+        tooltipRenderer.render(ctx, inputState, tooltip);
     }
 
     private void renderDebugLayoutBounds(RenderContext ctx, AbstractWidget<?> widget) {

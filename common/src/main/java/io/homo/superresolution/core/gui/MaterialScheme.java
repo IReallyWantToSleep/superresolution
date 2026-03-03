@@ -20,7 +20,7 @@ package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
-import io.homo.superresolution.core.gui.google.material.scheme.SchemeContent;
+import io.homo.superresolution.core.gui.google.material.scheme.*;
 import io.homo.superresolution.core.utils.Color;
 
 public class MaterialScheme {
@@ -153,18 +153,26 @@ public class MaterialScheme {
     }
 
     public static MaterialScheme from(MaterialTheme theme, Color color) {
-        return switch (theme) {
-            case Dark -> new MaterialScheme(theme, new SchemeContent(
-                    Hct.fromInt(color.integer()),
-                    true,
-                    0
-            ));
-            case Light -> new MaterialScheme(theme, new SchemeContent(
-                    Hct.fromInt(color.integer()),
-                    false,
-                    0
-            ));
+        return from(theme, color, SchemeVariant.CONTENT, 0.0f);
+    }
+
+    public static MaterialScheme from(MaterialTheme theme, Color color, SchemeVariant variant, double contrastLevel) {
+        Hct sourceColor = Hct.fromInt(color.integer());
+        boolean isDark = theme == MaterialTheme.Dark;
+
+        DynamicScheme dynamicScheme = switch (variant) {
+            case MONOCHROME -> new SchemeMonochrome(sourceColor, isDark, contrastLevel);
+            case NEUTRAL -> new SchemeNeutral(sourceColor, isDark, contrastLevel);
+            case TONAL_SPOT -> new SchemeTonalSpot(sourceColor, isDark, contrastLevel);
+            case VIBRANT -> new SchemeVibrant(sourceColor, isDark, contrastLevel);
+            case EXPRESSIVE -> new SchemeExpressive(sourceColor, isDark, contrastLevel);
+            case FIDELITY -> new SchemeFidelity(sourceColor, isDark, contrastLevel);
+            case CONTENT -> new SchemeContent(sourceColor, isDark, contrastLevel);
+            case RAINBOW -> new SchemeRainbow(sourceColor, isDark, contrastLevel);
+            case FRUIT_SALAD -> new SchemeFruitSalad(sourceColor, isDark, contrastLevel);
         };
+
+        return new MaterialScheme(theme, dynamicScheme);
     }
 
     public Color surfaceDim() {

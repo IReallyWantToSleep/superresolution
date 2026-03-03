@@ -5,46 +5,46 @@ message(STATUS "生成XeSS模块")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (NOT (ON_WINDOWS) )
+if (NOT (ON_WINDOWS))
     message(FATAL_ERROR "${LIB_PLATFORM} 平台不支持XeSS")
-endif()
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+endif ()
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_definitions(-DON_WIN64)
     add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
-else()
+else ()
     message(FATAL_ERROR "不支持的平台: ${CMAKE_SYSTEM_NAME}")
-endif()
-if(MSVC)
+endif ()
+if (MSVC)
     add_compile_options(/utf-8 /ZI)
-endif()
+endif ()
 find_package(Vulkan REQUIRED)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 link_directories(
-    ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
-    ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}
-    ${PROJECT_SOURCE_DIR}/third_party/XeSS/lib
+        ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
+        ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}
+        ${PROJECT_SOURCE_DIR}/third_party/XeSS/lib
 )
 include_directories(
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/../SRNativeMain/include
-    ${PROJECT_SOURCE_DIR}/third_party
-    ${PROJECT_SOURCE_DIR}/third_party/XeSS/inc
-    ${PROJECT_SOURCE_DIR}/src
+        ${PROJECT_SOURCE_DIR}/include
+        ${PROJECT_SOURCE_DIR}/../SRNativeMain/include
+        ${PROJECT_SOURCE_DIR}/third_party
+        ${PROJECT_SOURCE_DIR}/third_party/XeSS/inc
+        ${PROJECT_SOURCE_DIR}/src
 )
 aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
 add_library(SR_XESS_LIB SHARED ${ALL_SRC})
 set_target_properties(SR_XESS_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionXeSS+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(SR_XESS_LIB
-        SR_MAIN_LIB
-        libxess
-        ${Vulkan_LIBRARIES}
+            SR_MAIN_LIB
+            libxess
+            ${Vulkan_LIBRARIES}
     )
-else()
+else ()
     target_link_libraries(SR_XESS_LIB
-        SR_MAIN_LIB
-        libxess
-        ${Vulkan_LIBRARIES}
+            SR_MAIN_LIB
+            libxess
+            ${Vulkan_LIBRARIES}
     )
-endif()
+endif ()
 

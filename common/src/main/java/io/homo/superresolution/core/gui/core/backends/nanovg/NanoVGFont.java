@@ -19,8 +19,10 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
+import org.lwjgl.system.MemoryUtil;
 
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -38,16 +40,27 @@ public class NanoVGFont implements IFont {
     }
 
     public void load() {
-        try {
-            Path tempFile = Files.createTempFile("grapheneui-font-" + UUID.randomUUID(), ".ttf");
-            InputStream fontStream = getClass().getResourceAsStream(path);
+        if (id != -1) return;
+
+        try (InputStream fontStream = getClass().getResourceAsStream(path)) {
+
             if (fontStream == null) {
-                throw new RuntimeException("字体路径不存在: " + path);
+                throw new IllegalStateException("Font resource not found: " + path);
             }
-            Files.copy(fontStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            fontStream.close();
-            id = NanoVG.context.rawContext.createFont(name, tempFile.toString());
-            tempFile.toFile().delete();
+
+            byte[] bytes = fontStream.readAllBytes();
+
+            ByteBuffer fontBuffer = MemoryUtil.memAlloc(bytes.length);
+            fontBuffer.put(bytes);
+            fontBuffer.flip();
+            id = NanoVG.context.rawContext.createFontMem(name, fontBuffer, 0);
+
+            if (id == -1) {
+                MemoryUtil.memFree(fontBuffer);
+                throw new RuntimeException("NanoVG createFontMem failed: " + name);
+            }
+
+            //TODO: 这里存在内存泄漏风险，后续需要在不需要字体时调用MemoryUtil.memFree(fontBuffer)释放内存
         } catch (Exception e) {
             throw new RuntimeException("字体加载失败: " + name, e);
         }

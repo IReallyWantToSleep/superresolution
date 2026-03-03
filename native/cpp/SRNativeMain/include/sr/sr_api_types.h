@@ -2,24 +2,19 @@
 
 #include <stdint.h>
 #ifdef __cplusplus
-extern "C"
-{
-#endif
-    typedef struct
-    {
+extern "C" {
+    #endif
+    typedef struct {
         uint32_t x;
         uint32_t y;
     } SRVectorUint2;
 
-    typedef struct
-    {
+    typedef struct {
         float x;
         float y;
     } SRVectorFloat2;
 
-    typedef enum SRTextureResourceUsage
-    {
-
+    typedef enum SRTextureResourceUsage {
         SR_RESOURCE_USAGE_READ_ONLY = 0,
         SR_RESOURCE_USAGE_RENDERTARGET = (1 << 0),
         SR_RESOURCE_USAGE_UAV = (1 << 1),
@@ -30,8 +25,7 @@ extern "C"
         SR_RESOURCE_USAGE_DCC_RENDERTARGET = (1 << 15),
     } SRResourceUsage;
 
-    typedef enum SRTextureResourceStates
-    {
+    typedef enum SRTextureResourceStates {
         SR_RESOURCE_STATE_COMMON = (1 << 0),
         SR_RESOURCE_STATE_UNORDERED_ACCESS = (1 << 1),
         SR_RESOURCE_STATE_COMPUTE_READ = (1 << 2),
@@ -46,8 +40,7 @@ extern "C"
         SR_RESOURCE_STATE_DEPTH_ATTACHEMENT = (1 << 9),
     } SRResourceStates;
 
-    typedef enum SRTextureFormat
-    {
+    typedef enum SRTextureFormat {
         //Colors
         SR_TEXTURE_FORMAT_UNKNOWN,
         SR_TEXTURE_FORMAT_R32G32B32A32_TYPELESS,
@@ -91,8 +84,7 @@ extern "C"
         SR_TEXTURE_FORMAT_D32_SFLOAT,
     } SRTextureFormat;
 
-    typedef struct SRTextureResourceDescription
-    {
+    typedef struct SRTextureResourceDescription {
         SRTextureFormat format;
         uint32_t width;
         uint32_t height;
@@ -100,6 +92,6 @@ extern "C"
         SRResourceUsage usage;
     } SRTextureResourceDescription;
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif

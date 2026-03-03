@@ -8,7 +8,10 @@
     return (SRReturnCode)SR_RETURN_CODE_ERROR
 
 
-FfxResource srTextureResourceToFfxResource(const SRTextureResource * srTex);
-FfxResource srTextureResourceToFfxOutputResource(const SRTextureResource * srTex);
+FfxResource srTextureResourceToFfxResource(const SRTextureResource *srTex);
+
+FfxResource srTextureResourceToFfxOutputResource(const SRTextureResource *srTex);
+
 FfxResourceUsage srTextureResourceUsageToFfx(SRResourceUsage usage);
+
 FfxSurfaceFormat srTextureFormatToFfxSurfaceFormat(SRTextureFormat format);

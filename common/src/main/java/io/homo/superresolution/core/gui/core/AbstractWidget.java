@@ -33,6 +33,8 @@ import io.homo.superresolution.core.impl.Destroyable;
 import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -390,6 +392,25 @@ public abstract class AbstractWidget<
     public T setTooltip(String tooltip) {
         this.tooltipSupplier = () -> Optional.ofNullable(tooltip);
         return (T) this;
+    }
+
+    /**
+     * 从当前 widget 开始，逐级向父级收集 tooltip 文本。
+     * 内层（当前）在前，外层在后。
+     */
+    public List<String> collectTooltipChain() {
+        List<String> tooltips = new ArrayList<>();
+        AbstractWidget<?> current = this;
+        while (current != null) {
+            Optional<String> tooltip = current.getTooltip();
+            tooltip.filter(t -> !t.isEmpty()).ifPresent(tooltips::add);
+
+            if (!(current.getParent() instanceof AbstractWidget<?> parentWidget)) {
+                break;
+            }
+            current = parentWidget;
+        }
+        return tooltips;
     }
 
     public void destroy() {

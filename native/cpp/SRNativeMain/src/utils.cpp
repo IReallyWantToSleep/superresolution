@@ -3,8 +3,7 @@
 #include <vector>
 #include "define.h"
 
-void java_log(JNIEnv *env, char *msg, int level)
-{
+void java_log(JNIEnv *env, char *msg, int level) {
     jclass cpp_helper = env->FindClass(JAVA_CPPHELPER_CLASS);
     jmethodID methodID = env->GetStaticMethodID(cpp_helper, "CPP_Log", "(Ljava/lang/String;I)V");
     jstring jmsg = env->NewStringUTF(msg);
@@ -12,7 +11,6 @@ void java_log(JNIEnv *env, char *msg, int level)
     env->DeleteLocalRef(jmsg);
 }
 
-bool ToCppBool(jboolean value)
-{
+bool ToCppBool(jboolean value) {
     return value == JNI_TRUE;
 }

@@ -268,6 +268,8 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         ctx.popAlpha();
         ctx.restore();
         ctx.restore();
+
+        this.setTooltip(text);
     }
 
     @Override

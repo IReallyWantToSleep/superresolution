@@ -7,70 +7,60 @@
 #include <cstdlib>
 #include "sr/fsr/sr_provider.h"
 
-struct SRFsr2PrivateData
-{
+struct SRFsr2PrivateData {
     FfxInterface *ffxInterface;
     FfxFsr2Context *context;
     void *scratchBuffer;
 };
 
 #ifdef __cplusplus
-extern "C"
-{
-#endif
+extern "C" {
+    #endif
 
-    SR_API SRReturnCode srFfxFsr2VkInitUpscaleContext(SRUpscaleContext *context)
-    {
+    SR_API SRReturnCode srFfxFsr2VkInitUpscaleContext(SRUpscaleContext *context) {
         const SRCreateUpscaleContextDesc *desc = &context->desc;
-        SRFsr2PrivateData *privateData = (SRFsr2PrivateData *)context->userContext;
+        SRFsr2PrivateData *privateData = (SRFsr2PrivateData *) context->userContext;
 
         FfxFsr2ContextDescription fsrContexDesc = {};
         fsrContexDesc.flags = 0;
-        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEBUG)
-        {
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEBUG) {
             fsrContexDesc.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
         }
-        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
-        {
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE) {
             fsrContexDesc.flags |= FFX_FSR2_ENABLE_AUTO_EXPOSURE;
         }
-        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED)
-        {
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED) {
             fsrContexDesc.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
         }
-        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED)
-        {
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED) {
             fsrContexDesc.flags |= FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION;
         }
-        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)
-        {
+        if (desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR) {
             fsrContexDesc.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
         }
-        
+
         fsrContexDesc.backendInterface = *(privateData->ffxInterface);
         fsrContexDesc.maxRenderSize = {desc->renderSize.x, desc->renderSize.y};
         fsrContexDesc.displaySize = {desc->upscaledSize.x, desc->upscaledSize.y};
-        fsrContexDesc.fpMessage = desc->messageCallback ? reinterpret_cast<FfxFsr2Message>(desc->messageCallback) : nullptr;
+        fsrContexDesc.fpMessage = desc->messageCallback
+                                      ? reinterpret_cast<FfxFsr2Message>(desc->messageCallback)
+                                      : nullptr;
 
         FfxErrorCode code = ffxFsr2ContextCreate(privateData->context, &fsrContexDesc);
-        if (code != FFX_OK)
-        {
-            if (desc->messageCallback)
-            {
+        if (code != FFX_OK) {
+            if (desc->messageCallback) {
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 Context init failed");
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(code).c_str());
             }
-            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+            return (SRReturnCode) SR_RETURN_CODE_ERROR;
         }
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr2VkCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc)
-    {
-        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN)
-        {
-            if (desc->messageCallback)
-            {
+    SR_API SRReturnCode srFfxFsr2VkCreateUpscaleContext(SRUpscaleContext *context,
+                                                        const SRCreateUpscaleContextDesc *desc) {
+        if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN) {
+            if (desc->messageCallback) {
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 Vulkan only supports Vulkan");
             }
             return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
@@ -82,15 +72,16 @@ extern "C"
             (PFN_vkGetDeviceProcAddr)(desc->renderDeviceInfo.vulkan.deviceProcAddr),
         };
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
-        size_t scratchBufferSize = ffxGetScratchMemorySizeVK((VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
-        void* scratchBuffer = malloc(scratchBufferSize);
+        size_t scratchBufferSize = ffxGetScratchMemorySizeVK(
+            (VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
+        void *scratchBuffer = malloc(scratchBufferSize);
         memset(scratchBuffer, 0, scratchBufferSize);
-        FfxInterface* ffxInterface = new FfxInterface();
-        if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1); _rc != FFX_OK)
-        {
+        FfxInterface *ffxInterface = new FfxInterface();
+        if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1);
+            _rc != FFX_OK) {
             free(scratchBuffer);
             delete ffxInterface;
-            return (SRReturnCode)SR_RETURN_CODE_ERROR;
+            return (SRReturnCode) SR_RETURN_CODE_ERROR;
         }
 
         FfxFsr2Context *fsr2Context = new FfxFsr2Context();
@@ -102,22 +93,18 @@ extern "C"
 
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
         context->userContext = privateData;
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr2VkDestroyUpscaleContext(SRUpscaleContext *context)
-    {
-        if (!context || !context->userContext)
-        {
+    SR_API SRReturnCode srFfxFsr2VkDestroyUpscaleContext(SRUpscaleContext *context) {
+        if (!context || !context->userContext) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
 
-        SRFsr2PrivateData *privateData = (SRFsr2PrivateData *)context->userContext;
-        
-        if (!privateData->context)
-        {
-            if (privateData->scratchBuffer)
-            {
+        SRFsr2PrivateData *privateData = (SRFsr2PrivateData *) context->userContext;
+
+        if (!privateData->context) {
+            if (privateData->scratchBuffer) {
                 free(privateData->scratchBuffer);
                 privateData->scratchBuffer = nullptr;
             }
@@ -128,70 +115,64 @@ extern "C"
         }
 
         FfxErrorCode errorCode = ffxFsr2ContextDestroy(privateData->context);
-        
-        if (errorCode != FFX_OK)
-        {
-            if (context->desc.messageCallback)
-            {
+
+        if (errorCode != FFX_OK) {
+            if (context->desc.messageCallback) {
                 context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 Context destroy failed");
             }
         }
-        
-        if (privateData->scratchBuffer)
-        {
+
+        if (privateData->scratchBuffer) {
             free(privateData->scratchBuffer);
             privateData->scratchBuffer = nullptr;
         }
-        
+
         delete privateData->context;
         privateData->context = nullptr;
-        
+
         delete privateData->ffxInterface;
         privateData->ffxInterface = nullptr;
-        
+
         delete privateData;
         context->userContext = nullptr;
-        
-        return (errorCode != FFX_OK) ? (SRReturnCode)SR_RETURN_CODE_ERROR : (SRReturnCode)SR_RETURN_CODE_OK;
+
+        return (errorCode != FFX_OK) ? (SRReturnCode) SR_RETURN_CODE_ERROR : (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr2VkQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType)
-    {
-        switch (queryType)
-        {
-        case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO:
-        {
-            static SRQueryVersionResult outResult = {};
-            outResult.versionId = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
-            outResult.versionNumber = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR, FFX_FSR2_VERSION_PATCH);
-            result->data = &outResult;
-            break;
+    SR_API SRReturnCode srFfxFsr2VkQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
+                                                SRUpscaleContextQueryType queryType) {
+        switch (queryType) {
+            case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO: {
+                static SRQueryVersionResult outResult = {};
+                outResult.versionId = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR,
+                                                      FFX_FSR2_VERSION_PATCH);
+                outResult.versionNumber = SR_MAKE_VERSION(FFX_FSR2_VERSION_MAJOR, FFX_FSR2_VERSION_MINOR,
+                                                          FFX_FSR2_VERSION_PATCH);
+                result->data = &outResult;
+                break;
+            }
+            case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO: {
+                FfxEffectMemoryUsage usage = {};
+                ffxFsr2ContextGetGpuMemoryUsage(((SRFsr2PrivateData *) context->userContext)->context, &usage);
+                static SRQueryGpuMemoryResult outResult = {};
+                outResult.gpuMemory = usage.totalUsageInBytes;
+                result->data = &outResult;
+                break;
+            }
+            case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE: {
+                static SRQueryAvailabilityResult outResult = {};
+                outResult.isAvailable = true;
+                result->data = &outResult;
+                break;
+            }
+            default:
+                break;
         }
-        case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO:
-        {
-            FfxEffectMemoryUsage usage = {};
-            ffxFsr2ContextGetGpuMemoryUsage(((SRFsr2PrivateData *)context->userContext)->context, &usage);
-            static SRQueryGpuMemoryResult outResult = {};
-            outResult.gpuMemory = usage.totalUsageInBytes;
-            result->data = &outResult;
-            break;
-        }
-        case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
-        {
-            static SRQueryAvailabilityResult outResult = {};
-            outResult.isAvailable = true;
-            result->data = &outResult;
-            break;
-        }
-        default:
-            break;
-        }
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr2VkDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc)
-    {
-        FfxFsr2Context *fsr2Context = ((SRFsr2PrivateData *)context->userContext)->context;
+    SR_API SRReturnCode srFfxFsr2VkDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc) {
+        FfxFsr2Context *fsr2Context = ((SRFsr2PrivateData *) context->userContext)->context;
 
         FfxFsr2DispatchDescription dispatchDesc = {};
         dispatchDesc.commandList = ffxGetCommandListVK(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
@@ -224,14 +205,13 @@ extern "C"
         dispatchDesc.cameraFovAngleVertical = desc->cameraFovAngleVertical;
         dispatchDesc.viewSpaceToMetersFactor = desc->viewSpaceToMetersFactor;
         SRFSR_CHECK(ffxFsr2ContextDispatch(fsr2Context, &dispatchDesc));
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srFfxFsr2VkShutdown()
-    {
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+    SR_API SRReturnCode srFfxFsr2VkShutdown() {
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif

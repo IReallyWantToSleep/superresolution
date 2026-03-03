@@ -19,12 +19,12 @@ extern "C" {
         ensureInitialized();
         outProvider[0] = g_providers[0];
         outProvider[1] = g_providers[1];
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srGetFfxFSRUpscaleProvidersCount(uint32_t *outCount) {
         ensureInitialized();
         *outCount = 2;
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 }

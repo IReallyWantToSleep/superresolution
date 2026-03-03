@@ -14,12 +14,12 @@ extern "C" {
     SR_API SRReturnCode srGetXeSSUpscaleProviders(SRUpscaleProvider *outProvider) {
         ensureInitialized();
         outProvider[0] = g_providers[0];
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srGetXeSSUpscaleProvidersCount(uint32_t *outCount) {
         ensureInitialized();
         *outCount = 1;
-        return (SRReturnCode)SR_RETURN_CODE_OK;
+        return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 }

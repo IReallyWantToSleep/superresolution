@@ -11,16 +11,16 @@
 #endif
 
 #ifdef __cplusplus
-extern "C"
-{
-#endif
+extern "C" {
+    #endif
     SR_API SRReturnCode srShutdown();
+
     SR_API SRReturnCode srCreateUpscaleContext(
         SRUpscaleContext *outContext,
         SRUpscaleProvider *provider,
         const SRCreateUpscaleContextDesc *desc);
 
-    SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context);
+    SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext * context);
 
     SR_API SRReturnCode srQueryUpscaleContext(
         SRUpscaleContext *context,
@@ -28,7 +28,7 @@ extern "C"
         SRUpscaleContextQueryType queryType);
 
     SR_API SRReturnCode srInitUpscaleContext(
-        SRUpscaleContext *context);
+        SRUpscaleContext * context);
 
     SR_API SRReturnCode srDispatchUpscale(
         SRUpscaleContext *context,
@@ -40,11 +40,12 @@ extern "C"
 
     SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         const std::string &libPath,
-        const std::string &getProvidersFuncName,      // SRUpscaleProviderSupplierFunc
+        const std::string &getProvidersFuncName, // SRUpscaleProviderSupplierFunc
         const std::string &getProvidersCountFuncName, // SRUpscaleProviderSupplierCountFunc
         SRMessageCallback messageCallback);
 
     SR_API GLenum srTextureFormatToGlFormat(SRTextureFormat fmt);
+
     SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt);
 
     SR_API SRReturnCode srParamsSetBool(
@@ -126,8 +127,9 @@ extern "C"
         const SRContextExtraParams *params,
         const char *name,
         void **outValue);
-    SR_API void srDestroyExtraParams(SRContextExtraParams *params);
 
-#ifdef __cplusplus
+    SR_API void srDestroyExtraParams(SRContextExtraParams * params);
+
+    #ifdef __cplusplus
 }
 #endif

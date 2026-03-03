@@ -6,6 +6,6 @@
 #include "fsr3.h"
 
 extern "C" {
-    SR_API SRReturnCode srGetFfxFSRUpscaleProviders(SRUpscaleProvider *outProvider);
-    SR_API SRReturnCode srGetFfxFSRUpscaleProvidersCount(uint32_t *outCount);
+    SR_API SRReturnCode srGetFfxFSRUpscaleProviders(SRUpscaleProvider * outProvider);
+    SR_API SRReturnCode srGetFfxFSRUpscaleProvidersCount(uint32_t * outCount);
 }
