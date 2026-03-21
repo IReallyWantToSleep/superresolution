@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.shader;
 
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.SuperResolutionNative;
@@ -247,7 +248,9 @@ public class ShaderCompiler {
 
         identityBuilder
                 .append(shaderProgram.getDescription().shaderName())
-                .append(String.join("|", sortedDefines));
+                .append(String.join("|", sortedDefines))
+                .append(Platform.currentPlatform.getMinecraftVersion())
+                .append(Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID));
         return Md5CaculateUtil.getMD5(identityBuilder.toString());
     }
 
@@ -267,7 +270,9 @@ public class ShaderCompiler {
                 .collect(Collectors.toList());
         identityBuilder
                 .append(shaderProgram.getDescription().shaderName())
-                .append(String.join("|", sortedDefines));
+                .append(String.join("|", sortedDefines))
+                .append(Platform.currentPlatform.getMinecraftVersion())
+                .append(Platform.currentPlatform.getModVersionString(SuperResolution.MOD_ID));
         return Md5CaculateUtil.getMD5(identityBuilder.toString());
     }
 

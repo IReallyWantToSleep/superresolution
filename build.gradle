@@ -36,9 +36,9 @@ allprojects {
         def gitCommitHash = providers.exec {
             commandLine 'git', 'rev-parse', '--short', 'HEAD'
         }.standardOutput.asText.get().trim()
-        version = "${rootProject.mod_version}-dev-${gitCommitHash}"
+        version = "${rootProject.mod_version}+dev.${gitCommitHash}.${is_vulkan ? "vulkan" : "opengl"}"
     } else {
-        version = rootProject.mod_version
+        version = "${rootProject.mod_version}+${is_vulkan ? "vulkan" : "opengl"}"
     }
 
     repositories {
@@ -259,7 +259,7 @@ tasks.named("buildAllVersions") {
 
 tasks.register("uploadToModrinth") {
     doLast {
-        def changelogFile = new File("CHANGELOG.md")
+        def changelogFile = new File(java.nio.file.Path.of(rootDir.toPath().toAbsolutePath().toString(), "CHANGELOG.md").toString())
         if (!changelogFile.exists()) {
             throw new GradleException("CHANGELOG.md not found!")
         }

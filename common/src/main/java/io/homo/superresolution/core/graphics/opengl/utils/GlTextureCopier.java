@@ -83,7 +83,7 @@ public class GlTextureCopier {
         }
         ShaderDescription.Builder builder =
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/copy.comp.glsl", true));
-
+        builder.name("copy-texture." + key.replace("->", "to").replace(",", "+"));
         builder.addDefine("COPY_CHANNEL", String.valueOf(copyOperation.getMappings().size()));
         for (int i = 0; i < copyOperation.getMappings().size(); i++) {
             CopyOperation.ChannelMapping map = copyOperation.getMappings().get(i);
