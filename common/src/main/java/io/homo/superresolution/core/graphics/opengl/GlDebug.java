@@ -52,7 +52,6 @@ public class GlDebug {
         if (!SuperResolutionConfig.isEnableDebug()) {
             return;
         }
-
         if (GL.getCapabilities().GL_KHR_debug) {
             KHRDebug.glPushDebugGroup(
                     KHRDebug.GL_DEBUG_SOURCE_APPLICATION,

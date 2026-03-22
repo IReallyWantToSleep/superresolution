@@ -10,13 +10,15 @@
         "core.IrisRenderingPipelineMixin",
         "core.RenderTargetsAccessor",
         "core.ShaderPackAccessor",
-        "core.ShaderPackMixin"
-    ],
-    "mixins": [
+        "core.ShaderPackMixin",
         "core.IrisMixin",
+        "core.MixinTheFuckingStupidGLDebug",
         "core.PackRenderTargetDirectivesAccessor",
         "core.PackRenderTargetDirectivesMixin",
         "core.PipelineManagerMixin"
+    ],
+    "mixins": [
+
     ],
     "injectors": {
         "defaultRequire": 1

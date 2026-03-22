@@ -31,14 +31,13 @@ plugins {
 
 allprojects {
     group = rootProject.group
-    def isDev = rootProject.findProperty('is_dev')?.toString()?.toBoolean() ?: false
-    if (isDev) {
+    if (gradle.ext.isDev) {
         def gitCommitHash = providers.exec {
             commandLine 'git', 'rev-parse', '--short', 'HEAD'
         }.standardOutput.asText.get().trim()
-        version = "${rootProject.mod_version}+dev.${gitCommitHash}.${is_vulkan ? "vulkan" : "opengl"}"
+        version = "${rootProject.mod_version}+dev.${gitCommitHash}.${gradle.ext.isVulkan ? "vulkan" : "opengl"}"
     } else {
-        version = "${rootProject.mod_version}+${is_vulkan ? "vulkan" : "opengl"}"
+        version = "${rootProject.mod_version}+${gradle.ext.isVulkan ? "vulkan" : "opengl"}"
     }
 
     repositories {

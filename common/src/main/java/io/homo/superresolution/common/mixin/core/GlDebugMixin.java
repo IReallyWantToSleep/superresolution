@@ -34,7 +34,7 @@ public class GlDebugMixin {
 
     @Inject(method = "printDebugLog", at = @At("TAIL"))
     private static void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null) return;
+        if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null || severity == 33387) return;
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
         for (StackTraceElement element : elements) {
@@ -60,7 +60,7 @@ public class GlDebugMixin {
 
     @Inject(method = "printDebugLog", at = @At("TAIL"))
     private void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null) return;
+        if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null || severity == 33387) return;
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
         for (StackTraceElement element : elements) {

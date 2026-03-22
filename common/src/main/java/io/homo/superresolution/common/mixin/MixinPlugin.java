@@ -57,7 +57,9 @@ public class MixinPlugin implements IMixinConfigPlugin {
         if (name.contains("ForceOpenGLVersion_WindowMixin")) {
             return !(Platform.currentPlatform.isModLoaded("threatengl") ||
                     Platform.currentPlatform.isModLoaded("gpu_tape") ||
-                    Platform.currentPlatform.isModLoaded("gpu_booster"));
+                    Platform.currentPlatform.isModLoaded("gpu_booster") ||
+                    // AR的fabric移植同样会覆盖opengl版本
+                    (Platform.currentPlatform.isModLoaded("acceleratedrendering") && dev.architectury.platform.Platform.isFabric()));
         }
         return true;
     }

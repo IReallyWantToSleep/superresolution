@@ -90,8 +90,8 @@ def writeDefines() {
         sb.append("MC_" + ver.replace(".", "_") + "=" + verCode + "\n")
     }
     sb.append("MC_VER=" + toVersionCode(versionConfig.common.minecraftVersion) + "\n")
-    if (is_dev) sb.append("IS_DEV=1\n")
-    if (is_vulkan) sb.append("IS_VULKAN=1\n")
+    if (gradle.ext.isDev) sb.append("IS_DEV=1\n")
+    if (gradle.ext.isVulkan) sb.append("IS_VULKAN=1\n")
     def outputFile = new File(projectDir.asWritable().absolutePath, "build.properties")
     def newText = sb.toString()
     if (!outputFile.exists() || outputFile.text != newText) {

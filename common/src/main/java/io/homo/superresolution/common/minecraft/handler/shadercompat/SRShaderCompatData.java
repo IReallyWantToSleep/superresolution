@@ -164,7 +164,7 @@ public class SRShaderCompatData {
 
         public int getJitterSequenceLength(ShaderPipelineContext context) {
             if (jitterSequenceLength.source == SourceConfig.SourceType.CONST){
-                if (jitterSequenceLength.type == SourceConfig.ValueType.VECTOR2F) {
+                if (jitterSequenceLength.type == SourceConfig.ValueType.INT) {
                     return Integer.parseInt((jitterSequenceLength.value).toString());
                 } else {
                     throw new IllegalArgumentException("Invalid type for jitterSequenceLength: " + jitterSequenceLength.type);

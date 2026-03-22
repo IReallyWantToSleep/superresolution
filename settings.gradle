@@ -56,7 +56,10 @@ gradle.ext.set(
 )
 rootProject.properties.put("minecraft_version", gradle.ext.versionConfigSrc.common.minecraft_version)
 gradle.ext.set("minecraft_version", gradle.ext.versionConfigSrc.common.minecraft_version)
+gradle.ext.isVulkan = is_vulkan == null ? false : is_vulkan.toString().toBoolean()
+gradle.ext.isDev = is_dev == null ? false : is_dev.toString()?.toBoolean() ?: false
 if (!nativeOnlyMode) {
+    println("✅️ 图形API " + (gradle.ext.isVulkan ? "Vulkan" : "OpenGL"))
     println("❇️ 当前Minecraft版本 $gradle.ext.versionConfigSrc.common.minecraft_version")
     for (loader in gradle.ext.versionConfigSrc.common.platforms) {
         def loaderName = loader.strip()
