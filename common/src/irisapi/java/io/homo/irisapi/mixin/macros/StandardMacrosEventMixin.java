@@ -26,17 +26,24 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.ArrayList;
 
 @Mixin(StandardMacros.class)
 public class StandardMacrosEventMixin {
-    @Inject(method = "createStandardEnvironmentDefines", at = @At("TAIL"), cancellable = true, remap = false)
-    private static void triggerMacroRegistrationEvent(CallbackInfoReturnable<ImmutableList<StringPair>> cir) {
-        var defines = new ArrayList<>(cir.getReturnValue());
-
-        defines.addAll(MacroRegistry.collectMacros());
-
-        cir.setReturnValue(ImmutableList.copyOf(defines));
+    @Inject(
+            method = "createStandardEnvironmentDefines",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/gl/shader/StandardMacros;getIrisDefines()Ljava/util/List;"
+            ), remap = false,
+            locals = LocalCapture.CAPTURE_FAILHARD
+    )
+    private static void triggerMacroRegistrationEvent(
+            CallbackInfoReturnable<ImmutableList<StringPair>> cir,
+            ArrayList<StringPair> standardDefines
+    ) {
+        standardDefines.addAll(MacroRegistry.collectMacros());
     }
 }

@@ -132,7 +132,14 @@ class ModrinthUploader {
                 .gameVersions(gameVersions)
                 .loaders([loader])
                 .versionType(versionType)
-                .versionNumber("${gameVersions.first()}-${modVersion}-${loader}")
+                .versionNumber(
+                        "${gameVersions.first()}-${modVersion}-${loader}"
+                        .replace("opengl","gl")
+                        .replace("vulkan","vk")
+                        .replace("neoforge","neo")
+                        .replace("forge","forge")
+                        .replace("fabric","fabric")
+                )
                 .name("Super Resolution $modVersion for $loaderName $versionRangeDisplay")
                 .changelog(changelog.replaceAll("\r\n", "\n"))
                 .build()
