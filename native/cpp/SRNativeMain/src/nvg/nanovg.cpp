@@ -2388,7 +2388,7 @@ extern "C" {
     }
 
     static float nvg__getFontScale(NVGstate *state) {
-        return nvg__minf(nvg__quantize(nvg__getAverageScale(state->xform), 0.01f), 4.0f);
+        return nvg__minf(nvg__quantize(nvg__getAverageScale(state->xform), 0.005f), 4.0f);
     }
 
     static void nvg__flushTextTexture(NVGcontext *ctx) {
@@ -2462,8 +2462,8 @@ extern "C" {
         FONStextIter iter, prevIter;
         FONSquad q;
         NVGvertex *verts;
-        float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
-        float invscale = 1.0f / scale;
+        float fontScale = ctx->devicePxRatio;   // 光留下DPI缩放，原版的逻辑导致transform scale频繁变化时字体抖动
+        float invscale = 1.0f / fontScale;
         int cverts = 0;
         int nverts = 0;
         int isFlipped = nvg__isTransformFlipped(state->xform);
@@ -2474,9 +2474,9 @@ extern "C" {
         if (state->fontId == FONS_INVALID)
             return x;
 
-        fonsSetSize(ctx->fs, state->fontSize * scale);
-        fonsSetSpacing(ctx->fs, state->letterSpacing * scale);
-        fonsSetBlur(ctx->fs, state->fontBlur * scale);
+        fonsSetSize(ctx->fs, state->fontSize * fontScale);
+        fonsSetSpacing(ctx->fs, state->letterSpacing * fontScale);
+        fonsSetBlur(ctx->fs, state->fontBlur * fontScale);
         fonsSetAlign(ctx->fs, state->textAlign);
         fonsSetFont(ctx->fs, state->fontId);
 
@@ -2540,7 +2540,7 @@ extern "C" {
 
         nvg__renderText(ctx, verts, nverts);
 
-        return iter.nextx / scale;
+        return iter.nextx / fontScale;
     }
 
     int nvg__textBreakLines(NVGcontext *ctx, const char *string, const char *end, float breakRowWidth, NVGtextRow *rows,

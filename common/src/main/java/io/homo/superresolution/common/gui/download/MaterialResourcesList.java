@@ -35,24 +35,28 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownloadList> {
-
+public class MaterialResourcesList extends MaterialContainerWidget<MaterialResourcesList> {
     private final ExtraResources extraResources;
     private final DirectoryEnsurer targetDirectory;
-    private final Map<ExtraResource, MaterialDownloadListItem> itemMap = new LinkedHashMap<>();
+    private final Map<ExtraResource, MaterialResourcesListItem> itemMap = new LinkedHashMap<>();
     private final ContainerWidget listContainer;
     private volatile Thread downloadManagerThread;
     private volatile boolean downloading = false;
-
-    private MaterialDownloadList(ExtraResources extraResources, DirectoryEnsurer targetDirectory) {
+    private final boolean enableDownload;
+    private MaterialResourcesList(
+            ExtraResources extraResources,
+            DirectoryEnsurer targetDirectory,
+            boolean enableDownload
+    ) {
         this.extraResources = extraResources;
         this.targetDirectory = targetDirectory;
+        this.enableDownload = enableDownload;
         getLayoutNode().setDebugName("MaterialDownloadList");
 
         listContainer = ContainerWidget.create();
 
         for (ExtraResource resource : extraResources.getResources()) {
-            MaterialDownloadListItem item = new MaterialDownloadListItem(resource);
+            MaterialResourcesListItem item = new MaterialResourcesListItem(resource, targetDirectory, enableDownload);
             item.layout().setWidthPercent(100);
             itemMap.put(resource, item);
             listContainer.addChild(item);
@@ -61,19 +65,27 @@ public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownlo
         addChild(listContainer);
     }
 
-    public static MaterialDownloadList create(ExtraResources extraResources, DirectoryEnsurer targetDirectory) {
-        return new MaterialDownloadList(extraResources, targetDirectory);
+    public static MaterialResourcesList createDownload(ExtraResources extraResources, DirectoryEnsurer targetDirectory) {
+        #if !ENABLE_AUTO_DOWNLOAD
+        throw new UnsupportedOperationException("Auto-download is disabled in this build.");
+        #else
+        return new MaterialResourcesList(extraResources, targetDirectory, true);
+        #endif
+    }
+
+    public static MaterialResourcesList createFileChoose(ExtraResources extraResources, DirectoryEnsurer targetDirectory) {
+        return new MaterialResourcesList(extraResources, targetDirectory, false);
     }
 
     public ExtraResources getExtraResources() {
         return extraResources;
     }
 
-    public MaterialDownloadListItem getItem(ExtraResource resource) {
+    public MaterialResourcesListItem getItem(ExtraResource resource) {
         return itemMap.get(resource);
     }
 
-    public Collection<MaterialDownloadListItem> getItems() {
+    public Collection<MaterialResourcesListItem> getItems() {
         return Collections.unmodifiableCollection(itemMap.values());
     }
 
@@ -88,16 +100,16 @@ public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownlo
         downloading = true;
         extraResources.resetCancelState();
 
-        for (MaterialDownloadListItem item : itemMap.values()) {
-            if (item.getState() != MaterialDownloadListItem.DownloadState.COMPLETED) {
+        for (MaterialResourcesListItem item : itemMap.values()) {
+            if (item.getState() != MaterialResourcesListItem.DownloadState.COMPLETED) {
                 item.resetToPending();
             }
         }
 
         downloadManagerThread = new Thread(() -> {
             List<ExtraResource> toDownload = new ArrayList<>();
-            for (Map.Entry<ExtraResource, MaterialDownloadListItem> entry : itemMap.entrySet()) {
-                if (entry.getValue().getState() != MaterialDownloadListItem.DownloadState.COMPLETED) {
+            for (Map.Entry<ExtraResource, MaterialResourcesListItem> entry : itemMap.entrySet()) {
+                if (entry.getValue().getState() != MaterialResourcesListItem.DownloadState.COMPLETED) {
                     toDownload.add(entry.getKey());
                 }
             }
@@ -112,7 +124,7 @@ public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownlo
                     ExtraResource.ResourceSource.Type.Remote,
                     targetDirectory,
                     (resource, totalBytesOrDownloaded, progressOrSize) -> {
-                        MaterialDownloadListItem item = itemMap.get(resource);
+                        MaterialResourcesListItem item = itemMap.get(resource);
                         if (item != null) {
                             long total = Math.max(0, totalBytesOrDownloaded);
                             long downloaded = Math.max(0, (long) progressOrSize);
@@ -123,13 +135,13 @@ public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownlo
                         }
                     },
                     (resource, file) -> {
-                        MaterialDownloadListItem item = itemMap.get(resource);
+                        MaterialResourcesListItem item = itemMap.get(resource);
                         if (item != null) {
                             item.markCompleted();
                         }
                     },
                     (resource, code) -> {
-                        MaterialDownloadListItem item = itemMap.get(resource);
+                        MaterialResourcesListItem item = itemMap.get(resource);
                         if (item != null) {
                             if (code == ExtraResource.ErrorCode.Cancelled) {
                                 item.markCancelled();
@@ -154,9 +166,9 @@ public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownlo
         }
         downloading = false;
 
-        for (MaterialDownloadListItem item : itemMap.values()) {
-            if (item.getState() == MaterialDownloadListItem.DownloadState.DOWNLOADING ||
-                    item.getState() == MaterialDownloadListItem.DownloadState.PENDING) {
+        for (MaterialResourcesListItem item : itemMap.values()) {
+            if (item.getState() == MaterialResourcesListItem.DownloadState.DOWNLOADING ||
+                    item.getState() == MaterialResourcesListItem.DownloadState.PENDING) {
                 item.markCancelled();
             }
         }
@@ -165,8 +177,8 @@ public class MaterialDownloadList extends MaterialContainerWidget<MaterialDownlo
     public void retryDownload() {
         cancelDownload();
 
-        for (MaterialDownloadListItem item : itemMap.values()) {
-            if (item.getState() != MaterialDownloadListItem.DownloadState.COMPLETED) {
+        for (MaterialResourcesListItem item : itemMap.values()) {
+            if (item.getState() != MaterialResourcesListItem.DownloadState.COMPLETED) {
                 item.resetToPending();
             }
         }

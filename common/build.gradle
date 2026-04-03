@@ -1,3 +1,4 @@
+import kotlin.Pair
 import multiversion.BasePlatformConfig
 import multiversion.Dependency
 
@@ -49,14 +50,24 @@ repositories {
             includeGroup "org.appliedenergistics.yoga"
         }
     }
+    flatDir {
+        dirs '../libs'
+    }
 }
 
-static Dependency findIris(BasePlatformConfig config) {
+static Pair<Dependency,Boolean> findIris(BasePlatformConfig config) {
     if (config.dependencies) {
         if (config.dependencies.modrinth) {
             for (var dep : config.dependencies.modrinth) {
                 if (dep.name.trim() == "iris" || dep.name.trim() == "oculus") {
-                    return dep
+                    return new Pair<>(dep, false)
+                }
+            }
+        }
+        if (config.dependencies.local) {
+            for (var dep : config.dependencies.local) {
+                if (dep.name.contains("iris") || dep.name.contains("oculus")) {
+                    return new Pair<>(dep, true)
                 }
             }
         }
@@ -96,7 +107,7 @@ dependencies {
     }
 
     //搜索Iris依赖
-    Dependency irisDependency = null;
+    Pair<Dependency,Boolean> irisDependency = null;
     String irisPlatform = null;
 
     if (versionConfig.neoforge && irisDependency == null) {
@@ -115,7 +126,15 @@ dependencies {
     }
 
     if (irisDependency != null) {
-        compileOnly "maven.modrinth:${irisDependency.name}:${irisDependency.version}-${irisPlatform},${irisDependency.minecraftVersion == null ? versionConfig.common.minecraftVersion : irisDependency.minecraftVersion}"
+        if (irisDependency.getSecond()) {
+            compileOnly(name: irisDependency.getFirst().name, ext: 'jar')
+        } else {
+            if (irisPlatform.equals("neoforge")) {
+                compileOnly "maven.modrinth:${irisDependency.getFirst().name}:${irisDependency.getFirst().version}-neo,${irisDependency.getFirst().minecraftVersion != null ? irisDependency.getFirst().minecraftVersion : versionConfig.common.minecraftVersion}"
+            } else {
+                modCompileOnly "maven.modrinth:${irisDependency.getFirst().name}:${irisDependency.getFirst().version}-forge,${irisDependency.getFirst().minecraftVersion != null ? irisDependency.getFirst().minecraftVersion : versionConfig.common.minecraftVersion}"
+            }
+        }
     }
 }
 

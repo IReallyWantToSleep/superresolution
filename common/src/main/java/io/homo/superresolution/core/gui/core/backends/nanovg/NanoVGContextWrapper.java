@@ -82,27 +82,25 @@ public class NanoVGContextWrapper {
         }
         frameBuffer.bind(FrameBufferBindPoint.All);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        if (true) {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
-            glBlitFramebuffer(
-                    0,
-                    0,
-                    Minecraft.getInstance().getMainRenderTarget().width,
-                    Minecraft.getInstance().getMainRenderTarget().height,
-                    0,
-                    0,
-                    frameBuffer.getWidth(),
-                    frameBuffer.getHeight(),
-                    GL_COLOR_BUFFER_BIT,
-                    GL_LINEAR
-            );
-        }
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
+        glBlitFramebuffer(
+                0,
+                0,
+                Minecraft.getInstance().getMainRenderTarget().width,
+                Minecraft.getInstance().getMainRenderTarget().height,
+                0,
+                0,
+                frameBuffer.getWidth(),
+                frameBuffer.getHeight(),
+                GL_COLOR_BUFFER_BIT,
+                GL_LINEAR
+        );
         globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
         rawContext.beginFrame(
                 screenSize.x,
                 screenSize.y,
-                globalScale
+                globalScale * 1.2f
         );
         rawContext.reset();
         rawContext.scale(1, 1);

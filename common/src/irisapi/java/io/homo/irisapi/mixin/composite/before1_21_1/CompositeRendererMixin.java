@@ -22,7 +22,7 @@ import io.homo.irisapi.IrisCompositePassType;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 
-#if MC_VER < MC_1_21_1
+#if MC_VER < MC_1_19_2
 import net.irisshaders.iris.shaderpack.programs.ComputeSource;
 import net.irisshaders.iris.shaderpack.programs.ProgramSource;
 import net.irisshaders.iris.shaderpack.properties.PackDirectives;
@@ -60,7 +60,7 @@ import net.irisshaders.iris.pathways.CenterDepthSampler;
 #endif
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
-    #if MC_VER < MC_1_21_1
+    #if MC_VER < MC_1_19_2
     @Shadow(remap = false)
     @Final
     private ImmutableList<Object> passes;

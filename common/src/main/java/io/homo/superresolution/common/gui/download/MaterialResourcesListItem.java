@@ -22,44 +22,66 @@ import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialSymbols;
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.core.utils.DirectoryEnsurer;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import org.joml.Vector2f;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDownloadListItem> {
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
+public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialResourcesListItem> {
     private final ExtraResource resource;
-    private final IconWidget iconWidget;
+    private final DirectoryEnsurer targetDirectory;
+    private final AbstractWidget<?> iconWidget;
     private final MaterialLabel nameLabel;
     private final MaterialLabel infoLabel;
+    private final MaterialLabel filePathLabel;
     private final MaterialLinearProgressIndicator progressBar;
+    private final MaterialButton selectFileButton;
     private final ContainerWidget contentContainer = ContainerWidget.create();
     private final ContainerWidget textContainer = ContainerWidget.create();
     private final ContainerWidget iconContainer = ContainerWidget.create();
     private final ContainerWidget progressContainer = ContainerWidget.create();
+    private final ContainerWidget rightButtonContainer = ContainerWidget.create();
+    private final boolean enableDownload;
     private volatile DownloadState state = DownloadState.PENDING;
     private volatile long downloadedBytes = 0;
     private volatile long totalBytes = 0;
     private volatile ExtraResource.ErrorCode errorCode;
+    private volatile String selectedPath = null;
 
-    public MaterialDownloadListItem(ExtraResource resource) {
+    public MaterialResourcesListItem(
+            ExtraResource resource,
+            DirectoryEnsurer targetDirectory,
+            boolean enableDownload
+    ) {
+        this.enableDownload = enableDownload;
         this.resource = resource;
+        this.targetDirectory = targetDirectory;
         getLayoutNode().setDebugName("MaterialDownloadListItem");
-
-
+        
+        // 左侧图标
         iconWidget = new IconWidget();
         iconWidget.setElementSize(24, 24);
         iconContainer.addChild(iconWidget);
         addChild(iconContainer);
 
+        // 标题标签
         nameLabel = MaterialLabel.create()
                 .text(resource.getName())
                 .fontSize(14)
@@ -67,19 +89,55 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
         nameLabel.style().sizeToContent(true);
         textContainer.addChild(nameLabel);
 
-        infoLabel = MaterialLabel.create()
-                .text(() -> getInfoText())
-                .fontSize(12)
-                .color(scheme -> getInfoColor(scheme));
-        infoLabel.style().sizeToContent(true);
-        textContainer.addChild(infoLabel);
+        // 信息标签或文件路径标签
+        if (enableDownload) {
+            infoLabel = MaterialLabel.create()
+                    .text(() -> getInfoText())
+                    .fontSize(12)
+                    .color(scheme -> getInfoColor(scheme));
+            infoLabel.style().sizeToContent(true);
+            textContainer.addChild(infoLabel);
+            filePathLabel = null;
+        } else {
+            filePathLabel = MaterialLabel.create()
+                    .text(() -> (
+                            selectedPath != null ?((
+                                selectedPath != null ? selectedPath : "未选择文件")
+                                                  .substring(0,Math.min(71, (selectedPath != null ? selectedPath : "未选择文件").length()))) + "..."
+                                    : "未选择文件"
+                            )
+                    )
+                    .fontSize(12)
+                    .color(scheme -> scheme.onSurfaceVariant());
+            filePathLabel.style().sizeToContent(false);
+            textContainer.addChild(filePathLabel);
+            infoLabel = null;
+        }
 
         contentContainer.addChild(textContainer);
 
-        progressBar = new MaterialLinearProgressIndicator();
-        progressContainer.addChild(progressBar);
-        contentContainer.addChild(progressContainer);
+        // 进度条或选择文件按钮
+        if (enableDownload) {
+            progressBar = new MaterialLinearProgressIndicator();
+            progressContainer.addChild(progressBar);
+            contentContainer.addChild(progressContainer);
+            selectFileButton = null;
+        } else {
+            progressBar = null;
+            // 选择按钮放在右侧容器中
+            selectFileButton = MaterialButton.create(MaterialButtonSize.ExtraSmall)
+                    .variant(MaterialButtonVariant.Outlined)
+                    .text("选择")
+                    .icon(MaterialSymbols.iconFileOpen());
+            selectFileButton.onClick(event -> onSelectFileButtonClicked());
+            rightButtonContainer.addChild(selectFileButton);
+            // 右侧按钮容器不添加到 contentContainer，而是直接添加到根容器
+        }
+        
         addChild(contentContainer);
+        if (!enableDownload) {
+            addChild(rightButtonContainer);
+        }
     }
 
     private static String formatBytes(long bytes) {
@@ -104,16 +162,20 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
         this.downloadedBytes = downloadedBytes;
         this.totalBytes = totalBytes;
         this.state = DownloadState.DOWNLOADING;
-        if (totalBytes > 0) {
-            progressBar.setProgress((float) downloadedBytes / totalBytes);
-        } else {
-            progressBar.setProgress(0f);
+        if (enableDownload && progressBar != null) {
+            if (totalBytes > 0) {
+                progressBar.setProgress((float) downloadedBytes / totalBytes);
+            } else {
+                progressBar.setProgress(0f);
+            }
         }
     }
 
     public void markCompleted() {
         this.state = DownloadState.COMPLETED;
-        progressBar.setProgress(1f);
+        if (enableDownload && progressBar != null) {
+            progressBar.setProgress(1f);
+        }
     }
 
     public void markError(ExtraResource.ErrorCode code) {
@@ -134,7 +196,39 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
         this.downloadedBytes = 0;
         this.totalBytes = 0;
         this.errorCode = null;
-        progressBar.setProgress(0f);
+        if (enableDownload && progressBar != null) {
+            progressBar.setProgress(0f);
+        }
+    }
+
+    private void onSelectFileButtonClicked() {
+        String selected = TinyFileDialogs.tinyfd_openFileDialog("选择文件", null, null, null, false);
+        if (selected != null && !selected.isEmpty()) {
+            copyFileToTarget(selected);
+        }
+    }
+
+    private void copyFileToTarget(String sourcePath) {
+        try {
+            Path source = Path.of(sourcePath);
+            Path target = targetDirectory.getPath().resolve(resource.getName());
+            
+            // 创建目标目录
+            if (target.getParent() != null) {
+                Files.createDirectories(target.getParent());
+            }
+            
+            // 复制文件
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+            
+            // 更新状态
+            this.selectedPath = sourcePath;
+            this.state = DownloadState.SELECTED;
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.state = DownloadState.ERROR;
+            this.errorCode = ExtraResource.ErrorCode.PermissionDenied;
+        }
     }
 
     private String getInfoText() {
@@ -152,6 +246,8 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
                 return "下载中...";
             case COMPLETED:
                 return "已完成";
+            case SELECTED:
+                return "已选择";
             case ERROR:
                 if (errorCode != null) {
                     return switch (errorCode) {
@@ -173,6 +269,7 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
     private Color getInfoColor(MaterialScheme scheme) {
         return switch (state) {
             case COMPLETED -> scheme.primary();
+            case SELECTED -> scheme.primary();
             case ERROR -> scheme.error();
             case CANCELLED -> scheme.onSurfaceVariant();
             default -> scheme.onSurfaceVariant();
@@ -184,6 +281,7 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
             case PENDING -> MaterialSymbols.iconCloudDownload();
             case DOWNLOADING -> MaterialSymbols.iconDownloading();
             case COMPLETED -> MaterialSymbols.iconDownloadDone();
+            case SELECTED -> MaterialSymbols.iconFileOpen();
             case ERROR -> MaterialSymbols.iconError();
             case CANCELLED -> MaterialSymbols.iconFileDownloadOff();
         };
@@ -196,28 +294,58 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
     @Override
     public void layouting(RenderContext ctx) {
         super.layouting(ctx);
-        progressContainer.layout().setWidthPercent(100);
-        contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
-        contentContainer.layout().setFlexGrow(1f);
-        contentContainer.layout().setPadding(YogaEdge.LEFT, 8);
-        contentContainer.layout().setGap(YogaGutter.COLUMN, 4);
-        textContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
-        textContainer.layout().setWidthPercent(100);
-        textContainer.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
-        textContainer.layout().setAlignItems(YogaAlign.CENTER);
-        textContainer.layout().setMargin(YogaEdge.BOTTOM, 4);
+
+        // 整体布局：行方向
         layout().setFlexDirection(YogaFlexDirection.ROW);
         layout().setWidthPercent(100);
         layout().setAlignItems(YogaAlign.CENTER);
         layout().setPadding(YogaEdge.HORIZONTAL, 0);
+
+        // 左侧图标容器
         iconContainer.layout().setWidth(24);
         iconContainer.layout().setHeight(40);
         iconContainer.layout().setMargin(YogaEdge.RIGHT, 8);
         iconContainer.layout().setAlignItems(YogaAlign.CENTER);
         iconContainer.layout().setJustifyContent(YogaJustify.CENTER);
         iconContainer.layout().setFlexShrink(0);
-        progressBar.layout().setWidthPercent(100);
-        progressBar.layout().setHeight(4);
+
+        if (enableDownload) {
+            // 下载模式：原有布局
+            progressContainer.layout().setWidthPercent(100);
+
+            contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+            contentContainer.layout().setFlexGrow(1f);
+            contentContainer.layout().setPadding(YogaEdge.LEFT, 8);
+            contentContainer.layout().setGap(YogaGutter.COLUMN, 4);
+
+            textContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
+            textContainer.layout().setWidthPercent(100);
+            textContainer.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+            textContainer.layout().setAlignItems(YogaAlign.CENTER);
+            textContainer.layout().setMargin(YogaEdge.BOTTOM, 4);
+
+            if (progressBar != null) {
+                progressBar.layout().setWidthPercent(100);
+                progressBar.layout().setHeight(4);
+            }
+        } else {
+            // 文件选择模式：{ {图标}, { {文件名}, {文件路径} }, {选择按钮} }
+
+            // 中间内容容器：垂直排列文件名和文件路径
+            contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+            contentContainer.layout().setFlexGrow(1f);
+            contentContainer.layout().setMargin(YogaEdge.RIGHT, 8);
+
+            // 文本容器：垂直排列
+            textContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+            textContainer.layout().setAlignItems(YogaAlign.FLEX_START);
+            textContainer.layout().setJustifyContent(YogaJustify.CENTER);
+
+            // 右侧选择按钮
+            rightButtonContainer.layout().setFlexShrink(0);
+            rightButtonContainer.layout().setAlignItems(YogaAlign.CENTER);
+            rightButtonContainer.layout().setJustifyContent(YogaJustify.CENTER);
+        }
     }
 
     @Override
@@ -228,13 +356,18 @@ public class MaterialDownloadListItem extends MaterialContainerWidget<MaterialDo
     @Override
     protected void renderSelf(RenderContext ctx, UIInputState inputState) {
         ((YogaNode) nameLabel.layout()).markDirtyAndPropagate();
-        ((YogaNode) infoLabel.layout()).markDirtyAndPropagate();
+        if (enableDownload && infoLabel != null) {
+            ((YogaNode) infoLabel.layout()).markDirtyAndPropagate();
+        } else if (!enableDownload && filePathLabel != null) {
+            ((YogaNode) filePathLabel.layout()).markDirtyAndPropagate();
+        }
     }
 
     public enum DownloadState {
         PENDING,
         DOWNLOADING,
         COMPLETED,
+        SELECTED,
         ERROR,
         CANCELLED
     }

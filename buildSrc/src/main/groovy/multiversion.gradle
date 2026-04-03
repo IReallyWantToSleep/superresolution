@@ -92,6 +92,7 @@ def writeDefines() {
     sb.append("MC_VER=" + toVersionCode(versionConfig.common.minecraftVersion) + "\n")
     if (gradle.ext.isDev) sb.append("IS_DEV=1\n")
     if (gradle.ext.isVulkan) sb.append("IS_VULKAN=1\n")
+    if (gradle.ext.isEnableAutoDownload) sb.append("ENABLE_AUTO_DOWNLOAD=1\n")
     def outputFile = new File(projectDir.asWritable().absolutePath, "build.properties")
     def newText = sb.toString()
     if (!outputFile.exists() || outputFile.text != newText) {

@@ -83,7 +83,7 @@ jobs:
         with:
           name: native-libs-linux
           path: |
-            common/src/main/resources/lib/**/*.so
+            common/src/main/resources/lib/**/*
           if-no-files-found: error
 
   build-native-windows:
@@ -148,7 +148,7 @@ jobs:
         with:
           name: native-libs-windows
           path: |
-            common/src/main/resources/lib/**/*.dll
+            common/src/main/resources/lib/**/*
           if-no-files-found: error
 
   build-and-upload:

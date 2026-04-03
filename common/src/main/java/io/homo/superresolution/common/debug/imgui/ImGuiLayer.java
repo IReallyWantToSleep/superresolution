@@ -150,7 +150,8 @@ public class ImGuiLayer {
 
     private void drawImage(String label, int textureId, int texWidth, int texHeight, float previewHeight) {
         ImGui.text(label + " " + texWidth + " " + texHeight);
-        ImGui.image(textureId, PREVIEW_WIDTH, previewHeight, 0, 1, 1, 0);
+        ImGui.image(textureId, PREVIEW_WIDTH, previewHeight, 0, 1, 1, 0,
+                0,0,0,1);
     }
 
     private void drawImageIfExists(String label, Object handle, int texWidth, int texHeight, float previewHeight) {

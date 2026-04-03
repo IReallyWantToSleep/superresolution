@@ -76,6 +76,9 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
             Color color,
             TextAlign align,
             boolean wrap) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
         if (align == null) {
             align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
         }
@@ -141,6 +144,9 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
     public TextMetrics calculateTextMetrics(String fontName, float fontSize,
                                             String text, float maxWidth,
                                             float lineHeight, boolean wrap) {
+        if (text == null || text.isEmpty()) {
+            return new TextMetrics(List.of(), 0, 0);
+        }
         contextPtr.save();
 
         contextPtr.fontSize(fontSize);

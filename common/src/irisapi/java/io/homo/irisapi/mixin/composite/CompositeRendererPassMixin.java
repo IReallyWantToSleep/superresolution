@@ -28,7 +28,7 @@ public class CompositeRendererPassMixin implements NamedCompositePass {
     @Unique
     private String superresolution$name0;
 
-    #if MC_VER < MC_1_21_1
+    #if MC_VER < MC_1_20_1
     @Override
     public String superresolution$getName() {
         return superresolution$name0;

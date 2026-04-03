@@ -471,6 +471,8 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         if (!initialized) {
             return;
         }
+        //还原RenderTarget
+        RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
         colorTexture.destroy();
         depthTexture.destroy();
         renderTarget.destroy();

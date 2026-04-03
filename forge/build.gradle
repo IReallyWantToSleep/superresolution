@@ -28,6 +28,9 @@ repositories {
             includeGroup "org.appliedenergistics.yoga"
         }
     }
+    flatDir {
+        dirs '../libs'
+    }
 }
 
 legacyForge {
@@ -111,15 +114,15 @@ dependencies {
     for (lib in versionConfig.forge.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {
-                modCompileOnly(files("../libs/" + lib.name + ".jar"))
+                modCompileOnly(name :lib.name, ext: 'jar')
             } else {
-                modImplementation(files("../libs/" + lib.name + ".jar"))
+                modImplementation(name :lib.name, ext: 'jar')
             }
         } else {
             if (lib.compileOnly) {
-                compileOnly(files("../libs/" + lib.name + ".jar"))
+                compileOnly(name :lib.name, ext: 'jar')
             } else {
-                implementation(files("../libs/" + lib.name + ".jar"))
+                implementation(name :lib.name, ext: 'jar')
             }
         }
     }

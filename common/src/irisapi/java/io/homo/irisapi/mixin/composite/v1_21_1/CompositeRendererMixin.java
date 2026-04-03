@@ -39,7 +39,7 @@ import java.util.Objects;
 
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
-    #if MC_VER >= MC_1_21_1 && MC_VER <= MC_1_21_4
+    #if MC_VER >= MC_1_20_1 && MC_VER <= MC_1_21_4
     @Shadow(remap = false)
     @Final
     private ImmutableList<Object> passes;

@@ -90,7 +90,6 @@ public abstract class NanoVGScreen<T> extends Screen {
             nvg.resetTransform();
             nvg.globalScale(scaleManager.guiScale());
             nvg.globalAlpha(1.0f);
-
             NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
             ctx.setGuiScale(scaleManager.guiScale());
             ctx.setDpiScale(scaleManager.dpiScale());

@@ -33,7 +33,7 @@ import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
-import io.homo.superresolution.common.gui.download.MaterialDownloadList;
+import io.homo.superresolution.common.gui.download.MaterialResourcesList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.*;
@@ -653,7 +653,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private void openLostResourceDialog(List<ExtraResource> resources) {
-        MaterialDownloadList downloadList = MaterialDownloadList.create(
+        #if ENABLE_AUTO_DOWNLOAD
+        MaterialResourcesList downloadList = MaterialResourcesList.createDownload(
                 new ExtraResources(resources),
                 SuperResolutionConstants.NATIVE_LIBRARIES_DIR
         );
@@ -677,9 +678,46 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .onDismiss(d -> {
                     downloadList.cancelDownload();
                 });
-
+        downloadDialog.style().minWidth(400f);
+        downloadDialog.style().maxWidth(600f);
         getView().showDialog(downloadDialog);
         downloadList.startDownload();
+        #else
+        MaterialResourcesList resourcesList = MaterialResourcesList.createFileChoose(
+                new ExtraResources(resources),
+                SuperResolutionConstants.NATIVE_LIBRARIES_DIR
+        );
+        resourcesList.layout().setWidthPercent(100);
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconInfo())
+                .headline(Text.literal("从本地选取缺少的资源").getString())
+                .content(resourcesList)
+                .supportingText(Text.literal("该算法需要一些额外的资源才能正常工作，你需要手动下载并从本地选择这些资源。在完成前，你可能无法使用此算法。\n\n如果你执意使用，那么你的游戏可能会崩溃哦~").getString());
+        dialog.style().minWidth(400f);
+        dialog.style().maxWidth(600f);
+        if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
+            dialog.addAction(
+                    Text.literal("下载DLSS (Windows)").getString(),
+                    MaterialButtonVariant.Outlined,
+                    d->{
+                openExternalLink("https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll");
+            });
+        }
+        if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
+            dialog.addAction(
+                    Text.literal("下载XeSS (Windows)").getString(),
+                    MaterialButtonVariant.Outlined,
+                    d->{
+                        openExternalLink("https://raw.githubusercontent.com/intel/xess/refs/heads/main/bin/libxess.dll");
+                    });
+        }
+        dialog.addAction(Text.literal("完成").getString(), MaterialButtonVariant.Text, d -> {
+            d.dismiss();
+        });
+
+
+        getView().showDialog(dialog);
+        #endif
     }
 
     private Frame createAdvancedFrame() {

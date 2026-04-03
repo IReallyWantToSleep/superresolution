@@ -4,7 +4,6 @@
         "minecraft_version": "1.20.1",
         "parchment_version": "1.20.1:2023.09.03",
         "platforms": [
-            "fabric",
             "forge"
         ],
         "lwjgl_version": "3.3.3",
@@ -77,10 +76,6 @@
                     "version": "25.1.0_Forge_1.20"
                 },
                 {
-                    "name": "oculus",
-                    "version": "1.20.1-1.8.0"
-                },
-                {
                     "name": "embeddium",
                     "version": "0.3.31+mc1.20.1"
                 },
@@ -115,6 +110,10 @@
                 }
             ],
             "local": [
+                {
+                    "name": "oculus-shit-mc1.20.1-1.8.0",
+                    "isMod": true
+                }
             ]
         }
     }
