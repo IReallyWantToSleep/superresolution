@@ -52,7 +52,7 @@ public class AlgorithmDescriptions {
     public static final AlgorithmDescription<FSR1> FSR1 =
             new AlgorithmDescription<>(
                     FSR1.class,
-                    "FSR1",
+                    "AMD FSR 1",
                     "fsr1",
                     "AMD FidelityFX Super Resolution 1",
                     Requirement.nothing()
@@ -64,7 +64,7 @@ public class AlgorithmDescriptions {
     public static final AlgorithmDescription<FSR2> FSR2 =
             new AlgorithmDescription<>(
                     FSR2.class,
-                    "FSR2",
+                    "AMD FSR 2 (OpenGL)",
                     "fsr2",
                     "AMD FidelityFX Super Resolution 2 (OpenGL)",
                     Requirement.nothing()
@@ -77,7 +77,7 @@ public class AlgorithmDescriptions {
     public static final AlgorithmDescription<FfxFSR> FSR =
             new AlgorithmDescription<>(
                     FfxFSR.class,
-                    "FSR",
+                    "AMD FSR",
                     "fsr",
                     "AMD FidelityFX Super Resolution",
                     Requirement.nothing()
@@ -91,7 +91,7 @@ public class AlgorithmDescriptions {
     public static final AlgorithmDescription<XeSS> XESS =
             new AlgorithmDescription<>(
                     XeSS.class,
-                    "XeSS",
+                    "Intel XeSS",
                     "xess",
                     "Intel Xe Super Sampling",
                     Requirement.nothing()
@@ -114,7 +114,7 @@ public class AlgorithmDescriptions {
     public static final AlgorithmDescription<DLSS> DLSS =
             new AlgorithmDescription<>(
                     DLSS.class,
-                    "DLSS",
+                    "NVIDIA DLSS",
                     "dlss",
                     "NVIDIA DLSS",
                     Requirement.nothing()

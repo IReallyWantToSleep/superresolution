@@ -419,6 +419,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 if (algorithmDescription.equals(AlgorithmDescriptions.XESS) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
                                     return false;
                                 }
+                                if (algorithmDescription.equals(AlgorithmDescriptions.ANIME4K) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
+                                    return false;
+                                }
                                 return true;
                             }
                     );

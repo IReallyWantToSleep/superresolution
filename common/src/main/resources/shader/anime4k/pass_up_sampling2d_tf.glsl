@@ -4,10 +4,10 @@ layout(local_size_x=16, local_size_y=16, local_size_z=1) in;
 
 #ifdef VULKAN
 layout(set=0, binding=0) uniform sampler2D input_1_tf;
-layout(set=0, binding=1, rgba32f) uniform writeonly image2D out_up_sampling2d_tf;
+layout(set=0, binding=0, rgba16f) uniform writeonly image2D out_up_sampling2d_tf;
 #else
 layout(binding=0) uniform sampler2D input_1_tf;
-layout(binding=1, rgba32f) uniform writeonly image2D out_up_sampling2d_tf;
+layout(binding=0, rgba16f) uniform writeonly image2D out_up_sampling2d_tf;
 #endif
 
 void main() {
