@@ -28,9 +28,6 @@ import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobBuilders;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
-import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
@@ -46,7 +43,8 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
+
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import org.lwjgl.opengl.GL41;
 
@@ -64,6 +62,7 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public void initialize(InitializationDescription desc) {
+        this.initDesc = desc;
         buffer = Std140StructBuilder.start()
                 .vec4Entry("ViewportInfo")
                 .build();
@@ -82,12 +81,11 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler().storage().attachmentColor())
                         .label("Sgsr1Output")
                         .build());
-        outputFbo = GlFrameBuffer.create(
-                output,
-                null,
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight());
-        outputFbo.label("Sgsr1OutputFbo");
+        outputFbo = RenderSystems.current().device().createFramebuffer(
+                FramebufferDescription.create()
+                        .colorAttachment(output)
+                        .label("Sgsr1OutputFbo")
+                        .build());
         sgsrShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .vertex(ShaderSource.file(ShaderType.Vertex, "/shader/sgsr/v1/sgsr1_shader.vert.glsl"))
@@ -115,8 +113,6 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .frameBuffer(outputFbo)
         );
         quadVertexBuffer = FullscreenQuad.create(RenderSystems.current().device());
-
-        this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
     }
 
     @Override
@@ -175,8 +171,8 @@ public class Sgsr1 extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
-        output.resize(width, height);
-        outputFbo.resizeFrameBuffer(width, height);
+        destroy();
+        initialize(initDesc);
     }
 
     @Override

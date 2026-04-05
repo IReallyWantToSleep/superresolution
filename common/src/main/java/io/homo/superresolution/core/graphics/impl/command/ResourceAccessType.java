@@ -16,20 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.impl.grape;
+package io.homo.superresolution.core.graphics.impl.command;
 
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+public enum ResourceAccessType {
+    UNDEFINED,
+    SAMPLED_READ,
+    STORAGE_READ,
+    STORAGE_WRITE,
+    STORAGE_READ_WRITE,
+    COLOR_ATTACHMENT_WRITE,
+    DEPTH_ATTACHMENT_WRITE,
+    TRANSFER_SRC,
+    TRANSFER_DST;
 
-public interface IGrapeJob {
-    /**
-     * 把作业提交到命令缓冲区
-     *
-     * @param commandBuffer 目标命令缓冲区
-     */
-    void execute(ICommandBuffer commandBuffer);
-
-    /**
-     * 销毁作业资源
-     */
-    void destroy();
+    public boolean includesWrite() {
+        return this == STORAGE_WRITE || this == STORAGE_READ_WRITE
+                || this == COLOR_ATTACHMENT_WRITE || this == DEPTH_ATTACHMENT_WRITE
+                || this == TRANSFER_DST;
+    }
 }

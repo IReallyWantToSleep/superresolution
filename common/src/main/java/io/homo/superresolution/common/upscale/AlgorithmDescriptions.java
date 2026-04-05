@@ -26,6 +26,7 @@ import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.upscale.anime4k.Anime4K;
 import io.homo.superresolution.common.upscale.dlss.DLSS;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
@@ -157,6 +158,18 @@ public class AlgorithmDescriptions {
                             .isFalse(Gl::isLegacy)
                             .isTrue(Gl::isSupportDSA)
             );
+    public static final AlgorithmDescription<Anime4K> ANIME4K =
+            new AlgorithmDescription<>(
+                    Anime4K.class,
+                    "Anime4K",
+                    "anime4k",
+                    "Anime4K",
+                    Requirement.nothing()
+                            .glMajorVersion(4)
+                            .glMinorVersion(3)
+                            .isFalse(Gl::isLegacy)
+                            .isTrue(Gl::isSupportDSA)
+            );
 
     public static void registryAlgorithms() {
         AlgorithmRegistry.registry(NONE);
@@ -167,6 +180,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(DLSS);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
+        AlgorithmRegistry.registry(ANIME4K);
         SuperResolutionAPI.EVENT_BUS.post(new AlgorithmRegisterEvent());
     }
 }

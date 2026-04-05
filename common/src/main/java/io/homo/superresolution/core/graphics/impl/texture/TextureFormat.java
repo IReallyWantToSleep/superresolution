@@ -42,6 +42,14 @@ public enum TextureFormat {
             TextureComponent.B,
             TextureComponent.A
     ),
+    RGBA32F(
+            GL_RGBA32F, VK_FORMAT_R32G32B32A32_SFLOAT,
+            DataType.FLOAT,
+            TextureComponent.R,
+            TextureComponent.G,
+            TextureComponent.B,
+            TextureComponent.A
+    ),
     RGB8(
             GL_RGB8, VK_FORMAT_R8G8B8_UNORM,
             DataType.UNSIGNED_NORMALIZED,
@@ -226,6 +234,7 @@ public enum TextureFormat {
             case RG32F -> 8;
             case R32F, R32UI -> 4;
             case RGBA16F, RGBA16 -> 8;
+            case RGBA32F -> 16;
             case RGB16F, DEPTH32F_STENCIL8 -> 6;
             case R11G11B10F -> 4;
             case DEPTH32F, DEPTH32, DEPTH_COMPONENT -> 4;

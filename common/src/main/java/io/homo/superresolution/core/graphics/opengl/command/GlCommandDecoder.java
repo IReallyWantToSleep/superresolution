@@ -20,12 +20,13 @@ package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
+import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
@@ -42,75 +43,66 @@ import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import org.lwjgl.opengl.GL44;
 
+import java.util.Map;
+
 import static io.homo.superresolution.core.graphics.opengl.GlDebug.*;
 import static org.lwjgl.opengl.GL43.*;
 
 public class GlCommandDecoder implements ICommandDecoder {
     private final GlDevice device;
+    private final ResourceStateTracker stateTracker = new ResourceStateTracker();
 
     public GlCommandDecoder(GlDevice device) {
         this.device = device;
     }
 
-    private void putGlCommand(ICommandBuffer commandBuffer, Runnable glCalls) {
-        requireGlCommandBuffer(commandBuffer, "putGlCommand")._addGlCalls(glCalls);
+    private static int glBarrierForAccess(ResourceAccessType access) {
+        return switch (access) {
+            case SAMPLED_READ -> GL_TEXTURE_FETCH_BARRIER_BIT;
+            case STORAGE_READ, STORAGE_WRITE, STORAGE_READ_WRITE -> GL_SHADER_IMAGE_ACCESS_BARRIER_BIT;
+            case TRANSFER_SRC, TRANSFER_DST -> GL_TEXTURE_UPDATE_BARRIER_BIT;
+            case COLOR_ATTACHMENT_WRITE -> GL_FRAMEBUFFER_BARRIER_BIT;
+            default -> 0;
+        };
     }
 
-    private GlCommandBuffer requireGlCommandBuffer(ICommandBuffer commandBuffer, String action) {
-        if (commandBuffer == null) {
-            throw new IllegalArgumentException(action + ": commandBuffer为null");
-        }
-        if (commandBuffer instanceof GlCommandBuffer glCommandBuffer) {
-            return glCommandBuffer;
-        }
-        throw new IllegalArgumentException(action + ": commandBuffer类型错误: " + commandBuffer.getClass().getName());
+    private static int glBarrierBit(MemoryBarrierType type) {
+        return switch (type) {
+            case STORAGE_IMAGE_WRITE -> GL_SHADER_IMAGE_ACCESS_BARRIER_BIT;
+            case TEXTURE_FETCH -> GL_TEXTURE_FETCH_BARRIER_BIT;
+            case UNIFORM_BUFFER -> GL_UNIFORM_BARRIER_BIT;
+            case SHADER_STORAGE -> GL_SHADER_STORAGE_BARRIER_BIT;
+            case BUFFER_UPDATE -> GL_BUFFER_UPDATE_BARRIER_BIT;
+            case ALL -> GL_ALL_BARRIER_BITS;
+        };
     }
 
-    private void requireTexture(ITexture texture, String action) {
-        if (texture == null) {
-            throw new IllegalArgumentException(action + ": 输入的纹理对象为null");
-        }
+    @Override
+    public ResourceStateTracker getStateTracker() {
+        return stateTracker;
     }
 
-    private void requireBuffer(IBuffer buffer, String action) {
-        if (buffer == null) {
-            throw new IllegalArgumentException(action + ": 输入的缓冲对象为null");
-        }
+    @Override
+    public void declareExternalResource(ITexture texture, ResourceAccessType currentState) {
+        throw new UnsupportedOperationException("？");
     }
 
-    private void requireRangeInclusive(float value, float min, float max, String action, String name) {
-        if (value < min || value > max) {
-            throw new IllegalArgumentException(action + ": " + name + "超出范围[" + min + "," + max + "]");
+    @Override
+    public void restoreExternalResource(ICommandBuffer commandBuffer, ITexture texture, ResourceAccessType targetState) {
+        requireGlCommandBuffer(commandBuffer, "restoreExternalResource");
+        ResourceState current = stateTracker.getState(texture);
+        if (current.accessType().includesWrite()) {
+            int bit = glBarrierForAccess(targetState);
+            if (bit != 0) {
+                int finalBit = bit;
+                putGlCommand(commandBuffer, () -> {
+                    GlDebug.pushGroup(0x7180002, "Restore External Resource Barrier");
+                    glMemoryBarrier(finalBit);
+                    GlDebug.popGroup();
+                });
+            }
         }
-    }
-
-    private void requireRangeInclusive(int value, int min, int max, String action, String name) {
-        if (value < min || value > max) {
-            throw new IllegalArgumentException(action + ": " + name + "超出范围[" + min + "," + max + "]");
-        }
-    }
-
-    private void requirePositive(int value, String action, String name) {
-        if (value <= 0) {
-            throw new IllegalArgumentException(action + ": " + name + "必须为正数");
-        }
-    }
-
-    private void requireNonNegative(int value, String action, String name) {
-        if (value < 0) {
-            throw new IllegalArgumentException(action + ": " + name + "不能为负数");
-        }
-    }
-
-    private void requireNonNegative(long value, String action, String name) {
-        if (value < 0) {
-            throw new IllegalArgumentException(action + ": " + name + "不能为负数");
-        }
-    }
-
-    private int mipSize(int baseSize, int level) {
-        int size = baseSize >> level;
-        return Math.max(1, size);
+        stateTracker.setState(texture, new ResourceState(targetState));
     }
 
     @Override
@@ -582,7 +574,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                     glPipeline.descriptorSet().update();
                     glPipeline.descriptorSet().apply();
                 }
-                GlDebug.popGroup();
+                GlDebug.popGroup(); // Setup Render Pipeline
             }
 
             {
@@ -591,11 +583,9 @@ public class GlCommandDecoder implements ICommandDecoder {
                     glVertexBuffer.getVao().bind();
                     glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
                 }
-                GlDebug.popGroup();
+                GlDebug.popGroup(); // Setup Vertex Buffer
             }
             GlDebug.popGroup(); // Begin Render Pass
-        });
-        putGlCommand(commandBuffer, () -> {
             glDrawArrays(switch (primitiveType) {
                 case Lines -> GL_LINES;
                 case Triangle -> GL_TRIANGLES;
@@ -611,7 +601,8 @@ public class GlCommandDecoder implements ICommandDecoder {
         });
         glRenderPass.end((GlCommandBuffer) commandBuffer);
         putGlCommand(commandBuffer, () -> {
-            GlDebug.popGroup();
+            GlDebug.popGroup(); // End Render Pass
+            GlDebug.popGroup(); // Render Pass
         });
     }
 
@@ -633,7 +624,16 @@ public class GlCommandDecoder implements ICommandDecoder {
         requirePositive(groupCountX, "dispatch", "groupCountX");
         requirePositive(groupCountY, "dispatch", "groupCountY");
         requirePositive(groupCountZ, "dispatch", "groupCountZ");
+
+        int preBarrierMask = computePreDispatchBarrier(computePipeline);
+
         putGlCommand(commandBuffer, () -> {
+            if (preBarrierMask != 0) {
+                GlDebug.pushGroup(0x7180003, "Barrier");
+                glMemoryBarrier(preBarrierMask);
+                GlDebug.popGroup();
+            }
+
             GlDebug.pushGroup(0x7160001, "Compute");
             GlDebug.pushGroup(0x7160000, "Setup Compute Pipeline");
             if (computePipeline instanceof GlComputePipeline glPipeline) {
@@ -643,7 +643,23 @@ public class GlCommandDecoder implements ICommandDecoder {
             GlDebug.popGroup();
 
             glDispatchCompute(groupCountX, groupCountY, groupCountZ);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            GlDebug.popGroup();
+        });
+
+        updateStateAfterDispatch(computePipeline);
+    }
+
+    @Override
+    public void memoryBarrier(ICommandBuffer commandBuffer, MemoryBarrierType... barriers) {
+        requireGlCommandBuffer(commandBuffer, "memoryBarrier");
+        int mask = 0;
+        for (MemoryBarrierType barrier : barriers) {
+            mask |= glBarrierBit(barrier);
+        }
+        int finalMask = mask;
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7180001, "Memory Barrier");
+            glMemoryBarrier(finalMask);
             GlDebug.popGroup();
         });
     }
@@ -651,6 +667,131 @@ public class GlCommandDecoder implements ICommandDecoder {
     @Override
     public IDevice getDevice() {
         return device;
+    }
+
+    private void putGlCommand(ICommandBuffer commandBuffer, Runnable glCalls) {
+        requireGlCommandBuffer(commandBuffer, "putGlCommand")._addGlCalls(glCalls);
+    }
+
+    private GlCommandBuffer requireGlCommandBuffer(ICommandBuffer commandBuffer, String action) {
+        if (commandBuffer == null) {
+            throw new IllegalArgumentException(action + ": commandBuffer为null");
+        }
+        if (commandBuffer instanceof GlCommandBuffer glCommandBuffer) {
+            return glCommandBuffer;
+        }
+        throw new IllegalArgumentException(action + ": commandBuffer类型错误: " + commandBuffer.getClass().getName());
+    }
+
+    private void requireTexture(ITexture texture, String action) {
+        if (texture == null) {
+            throw new IllegalArgumentException(action + ": 输入的纹理对象为null");
+        }
+    }
+
+    private void requireBuffer(IBuffer buffer, String action) {
+        if (buffer == null) {
+            throw new IllegalArgumentException(action + ": 输入的缓冲对象为null");
+        }
+    }
+
+    private void requireRangeInclusive(float value, float min, float max, String action, String name) {
+        if (value < min || value > max) {
+            throw new IllegalArgumentException(action + ": " + name + "超出范围[" + min + "," + max + "]");
+        }
+    }
+
+    private void requireRangeInclusive(int value, int min, int max, String action, String name) {
+        if (value < min || value > max) {
+            throw new IllegalArgumentException(action + ": " + name + "超出范围[" + min + "," + max + "]");
+        }
+    }
+
+    private void requirePositive(int value, String action, String name) {
+        if (value <= 0) {
+            throw new IllegalArgumentException(action + ": " + name + "必须为正数");
+        }
+    }
+
+    private void requireNonNegative(int value, String action, String name) {
+        if (value < 0) {
+            throw new IllegalArgumentException(action + ": " + name + "不能为负数");
+        }
+    }
+
+    private void requireNonNegative(long value, String action, String name) {
+        if (value < 0) {
+            throw new IllegalArgumentException(action + ": " + name + "不能为负数");
+        }
+    }
+
+    private int mipSize(int baseSize, int level) {
+        int size = baseSize >> level;
+        return Math.max(1, size);
+    }
+
+    private int computePreDispatchBarrier(ComputePipeline pipeline) {
+        PipelineDescriptorSet descriptorSet = pipeline.descriptorSet();
+        Map<String, PipelineDescriptorSet.ResourceBinding> bindings = descriptorSet.getBindings();
+        int mask = 0;
+
+        for (Map.Entry<String, PipelineDescriptorSet.ResourceBinding> entry : bindings.entrySet()) {
+            String name = entry.getKey();
+            PipelineDescriptorSet.ResourceBinding binding = entry.getValue();
+            if (binding.resource() instanceof ITexture texture) {
+                ResourceAccessType target = deriveAccessType(pipeline, name, binding);
+                ResourceState prev = stateTracker.getState(texture);
+                if (prev.accessType().includesWrite()) {
+                    mask |= glBarrierForAccess(target);
+                }
+            } else if (binding.resource() instanceof IBuffer buffer) {
+                ResourceState prev = stateTracker.getState(buffer);
+                if (prev.accessType().includesWrite()) {
+                    if (binding.type() == PipelineDescriptorSet.ResourceType.UNIFORM_BUFFER) {
+                        mask |= GL_UNIFORM_BARRIER_BIT;
+                    } else {
+                        mask |= GL_SHADER_STORAGE_BARRIER_BIT;
+                    }
+                }
+            }
+        }
+        return mask;
+    }
+
+    private void updateStateAfterDispatch(ComputePipeline pipeline) {
+        PipelineDescriptorSet descriptorSet = pipeline.descriptorSet();
+        Map<String, PipelineDescriptorSet.ResourceBinding> bindings = descriptorSet.getBindings();
+
+        for (Map.Entry<String, PipelineDescriptorSet.ResourceBinding> entry : bindings.entrySet()) {
+            String name = entry.getKey();
+            PipelineDescriptorSet.ResourceBinding binding = entry.getValue();
+            ResourceAccessType access = deriveAccessType(pipeline, name, binding);
+            if (binding.resource() instanceof ITexture texture) {
+                stateTracker.setState(texture, new ResourceState(access));
+            } else if (binding.resource() instanceof IBuffer buffer) {
+                stateTracker.setState(buffer, new ResourceState(access));
+            }
+        }
+    }
+
+    private ResourceAccessType deriveAccessType(ComputePipeline pipeline, String name,
+                                                PipelineDescriptorSet.ResourceBinding binding) {
+        return switch (binding.type()) {
+            case SAMPLER_TEXTURE -> ResourceAccessType.SAMPLED_READ;
+            case STORAGE_IMAGE -> {
+                ShaderResourceDescription desc = pipeline.shader().getDescription()
+                        .resourcesLayout().getResource(name);
+                if (desc != null) {
+                    yield switch (desc.access()) {
+                        case Read -> ResourceAccessType.STORAGE_READ;
+                        case Write -> ResourceAccessType.STORAGE_WRITE;
+                        case Both -> ResourceAccessType.STORAGE_READ_WRITE;
+                    };
+                }
+                yield ResourceAccessType.STORAGE_READ_WRITE;
+            }
+            case UNIFORM_BUFFER -> ResourceAccessType.SAMPLED_READ;
+        };
     }
 
     private int getGlType(VertexAttributeFormat format) {

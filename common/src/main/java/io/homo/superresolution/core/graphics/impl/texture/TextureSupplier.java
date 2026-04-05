@@ -85,9 +85,4 @@ public class TextureSupplier implements ITexture {
     public void destroy() {
         supplier.get().destroy();
     }
-
-    @Override
-    public void resize(int width, int height) {
-        supplier.get().resize(width, height);
-    }
 }

@@ -16,12 +16,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.impl.grape;
+package io.homo.superresolution.core.graphics.impl.texture;
 
-public enum GrapeJobType {
-    Graphics,
-    Compute,
-    CopyTexture,
-    CopyBuffer,
-    ClearTexture
+public interface ITextureView extends ITexture {
+    /**
+     * 获取父纹理
+     */
+    ITexture getParent();
+
+    /**
+     * 获取视图描述
+     */
+    TextureViewDescription getViewDescription();
+
+    /**
+     * 获取基础 mip 级别
+     */
+    default int getBaseMipLevel() {
+        return getViewDescription().getBaseMipLevel();
+    }
+
+    /**
+     * 获取 mip 级别数量
+     */
+    default int getMipLevelCount() {
+        return getViewDescription().getMipLevelCount();
+    }
 }
+

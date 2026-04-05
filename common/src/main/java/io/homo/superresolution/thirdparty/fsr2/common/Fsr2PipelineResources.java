@@ -19,10 +19,8 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.impl.Destroyable;
 import org.joml.Vector2f;
 
@@ -212,7 +210,7 @@ public class Fsr2PipelineResources {
                 if (desc.size.y != 1) {
                     throw new RuntimeException(desc.label);
                 }
-                GlTexture1D tex = (GlTexture1D) RenderSystems.current().device().createTexture(
+                ITexture tex = RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture1D)
                                 .usages(TextureUsages.create().storage().sampler())
@@ -238,7 +236,7 @@ public class Fsr2PipelineResources {
 
                 resourceEntry.setResource(tex);
             } else if (desc.dim == 2) {
-                GlTexture2D tex = (GlTexture2D) RenderSystems.current().device().createTexture(
+                ITexture tex = RenderSystems.current().device().createTexture(
                         TextureDescription.create()
                                 .type(TextureType.Texture2D)
                                 .usages(TextureUsages.create().storage().sampler())
@@ -266,6 +264,26 @@ public class Fsr2PipelineResources {
             } else {
                 throw new RuntimeException(desc.label);
             }
+        }
+
+        ITexture luminanceTex = (ITexture) resources.get(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource();
+        if (luminanceTex != null) {
+            int availableMips = luminanceTex.getMipmapSettings().resolveLevels(luminanceTex.getWidth(), luminanceTex.getHeight());
+            if (availableMips < 6) {
+                throw new IllegalStateException(
+                        "SCENE_LUMINANCE texture requires at least 6 mip levels (0-5), but only has " + availableMips +
+                        " (size=" + luminanceTex.getWidth() + "x" + luminanceTex.getHeight() + ")"
+                );
+            }
+            ITextureView mip5View = RenderSystems.current().device().createTextureView(
+                    TextureViewDescription.create(luminanceTex)
+                            .baseMipLevel(5)
+                            .mipLevelCount(1)
+                            .build()
+            );
+            Fsr2ResourceEntry mip5Entry = resources.get(Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5);
+            mip5Entry.setResource(mip5View);
+            mip5Entry.setNeedDestroy(true);
         }
     }
 
@@ -314,7 +332,7 @@ public class Fsr2PipelineResources {
 
         public Fsr2ResourceType type() {
             return resource == null ? Fsr2ResourceType.NULL :
-                    (resource instanceof GlBuffer ? Fsr2ResourceType.UBO : Fsr2ResourceType.TEXTURE);
+                    (resource instanceof IBuffer ? Fsr2ResourceType.UBO : Fsr2ResourceType.TEXTURE);
         }
 
         public Fsr2ResourceCreateDescription getDescription() {

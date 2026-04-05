@@ -32,8 +32,8 @@ import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCom
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -327,12 +327,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         }
         GlDebug.pushGroup(64108436, "SR Upscale");
         AlgorithmManager.update();
-        if (SuperResolutionConfig.isGenerateMotionVectors()) {
-            MotionVectorsGenerator.update(
-                    colorTexture.getInternalTexture(),
-                    depthTexture.getInternalTexture()
-            );
-        }
+        // MotionVectorsGenerator 已被弃用
         DispatchResource dispatchResource = getDispatchResource(
                 compositeRenderer,
                 preExposure,

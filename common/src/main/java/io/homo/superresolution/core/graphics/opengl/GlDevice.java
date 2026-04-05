@@ -21,32 +21,32 @@ package io.homo.superresolution.core.graphics.opengl;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
-import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
-import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.sampler.SamplerDescription;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
+import io.homo.superresolution.core.graphics.opengl.command.GlCommandBuffer;
 import io.homo.superresolution.core.graphics.opengl.command.GlCommandDecoder;
 import io.homo.superresolution.core.graphics.opengl.command.GlCommandPool;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
-import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture1D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.opengl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+
+import java.util.Collections;
+import java.util.EnumSet;
 
 public class GlDevice implements IDevice {
     private final GlCommandDecoder commandDecoder;
@@ -69,6 +69,50 @@ public class GlDevice implements IDevice {
     }
 
     @Override
+    public GlSampler createSampler(SamplerDescription description) {
+        return new GlSampler(description);
+    }
+
+    @Override
+    public GlTextureView createTextureView(TextureViewDescription description) {
+        return GlTextureView.create(description);
+    }
+
+    @Override
+    public GlFrameBuffer createFramebuffer(FramebufferDescription description) {
+        ITexture colorTex = description.getColorAttachment();
+        ITexture depthTex = description.getDepthAttachment();
+
+        if (colorTex == null && description.getColorFormat() != null) {
+            colorTex = createTexture(TextureDescription.create()
+                    .type(TextureType.Texture2D)
+                    .format(description.getColorFormat())
+                    .size(description.getWidth(), description.getHeight())
+                    .usages(TextureUsages.create().storage().sampler().attachmentColor())
+                    .build());
+        }
+        if (depthTex == null && description.getDepthFormat() != null) {
+            depthTex = createTexture(TextureDescription.create()
+                    .type(TextureType.Texture2D)
+                    .format(description.getDepthFormat())
+                    .size(description.getWidth(), description.getHeight())
+                    .usages(TextureUsages.create().storage().sampler().attachmentDepth())
+                    .build());
+        }
+
+        GlFrameBuffer fbo = GlFrameBuffer.create(
+                colorTex,
+                depthTex,
+                description.getWidth(),
+                description.getHeight()
+        );
+        if (description.getLabel() != null) {
+            fbo.label(description.getLabel());
+        }
+        return fbo;
+    }
+
+    @Override
     public GlShaderProgram createShaderProgram(ShaderDescription description) {
         return new GlShaderProgram(description);
     }
@@ -84,7 +128,7 @@ public class GlDevice implements IDevice {
     }
 
     @Override
-    public RenderPass createRenderPass(RenderPass.Builder builder) {
+    public GlRenderPass createRenderPass(RenderPass.Builder builder) {
         return new GlRenderPass(
                 (GraphicsPipeline) builder.getPipeline(),
                 builder.getFrameBuffer(),
@@ -93,12 +137,12 @@ public class GlDevice implements IDevice {
     }
 
     @Override
-    public PipelineDescriptorSet createDescriptorSet(IShaderProgram shader) {
+    public GlPipelineDescriptorSet createDescriptorSet(IShaderProgram shader) {
         return new GlPipelineDescriptorSet(shader);
     }
 
     @Override
-    public ComputePipeline createComputePipeline(ComputePipeline.Builder builder) {
+    public GlComputePipeline createComputePipeline(ComputePipeline.Builder builder) {
         return new GlComputePipeline(
                 builder.shader(),
                 createDescriptorSet(builder.shader())
@@ -106,7 +150,7 @@ public class GlDevice implements IDevice {
     }
 
     @Override
-    public GraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder) {
+    public GlGraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder) {
         return new GlGraphicsPipeline(
                 builder.shader(),
                 builder.rasterization(),
@@ -119,26 +163,26 @@ public class GlDevice implements IDevice {
     }
 
     @Override
-    public ICommandBuffer createCommandBuffer() {
+    public GlCommandBuffer createCommandBuffer() {
         return defaultCommandPool.createCommandBuffer();
     }
 
     @Override
-    public ICommandPool createCommandPool(CommandPoolFlags... flags) {
-        java.util.EnumSet<CommandPoolFlags> poolFlags = java.util.EnumSet.noneOf(CommandPoolFlags.class);
+    public GlCommandPool createCommandPool(CommandPoolFlags... flags) {
+        EnumSet<CommandPoolFlags> poolFlags = EnumSet.noneOf(CommandPoolFlags.class);
         if (flags != null) {
-            java.util.Collections.addAll(poolFlags, flags);
+            Collections.addAll(poolFlags, flags);
         }
         return new GlCommandPool(this, poolFlags);
     }
 
     @Override
-    public ICommandPool defaultCommandPool() {
+    public GlCommandPool defaultCommandPool() {
         return defaultCommandPool;
     }
 
     @Override
-    public ICommandDecoder commandDecoder() {
+    public GlCommandDecoder commandDecoder() {
         return commandDecoder;
     }
 

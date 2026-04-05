@@ -21,79 +21,66 @@ package io.homo.superresolution.core.graphics.opengl.texture;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
-public class GlTextureView implements ITexture {
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_1D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+
+public class GlTextureView implements ITextureView {
     private final ITexture parent;
-    private final int type;
-    private final int minLevel;
-    private final int numLevels;
-    private final int minLayer;
-    private final int numLayers;
+    private final TextureViewDescription viewDescription;
     private int id;
 
-    private GlTextureView(ITexture parent, int type, int minLevel,
-                          int numLevels, int minLayer, int numLayers,
-                          int id) {
+    private GlTextureView(ITexture parent, TextureViewDescription viewDescription, int id) {
         this.parent = parent;
-        this.type = type;
-        this.minLevel = minLevel;
-        this.numLevels = numLevels;
-        this.minLayer = minLayer;
-        this.numLayers = numLayers;
+        this.viewDescription = viewDescription;
         this.id = id;
     }
 
-    public static GlTextureView create(ITexture parent, int type,
-                                       int minLevel, int numLevels,
-                                       int minLayer, int numLayers) {
+    public static GlTextureView create(TextureViewDescription description) {
+        ITexture parent = description.getParent();
         if (parent == null) {
             throw new IllegalArgumentException("Parent texture cannot be null");
         }
         if (parent.handle() == 0) {
             throw new IllegalStateException("Parent texture is not initialized");
         }
+
+        int glTarget = switch (parent.getTextureType()) {
+            case Texture1D -> GL_TEXTURE_1D;
+            case Texture2D -> GL_TEXTURE_2D;
+        };
+
         int viewId = Gl.DSA.createTextureView(
                 (int) parent.handle(),
-                type,
+                glTarget,
                 parent.getTextureFormat().gl(),
-                minLevel,
-                numLevels,
-                minLayer,
-                numLayers
+                description.getBaseMipLevel(),
+                description.getMipLevelCount(),
+                0,   // baseArrayLayer
+                1    // layerCount
         );
 
-        return new GlTextureView(
-                parent,
-                type,
-                minLevel,
-                numLevels,
-                minLayer,
-                numLayers,
-                viewId
-        );
+        return new GlTextureView(parent, description, viewId);
     }
 
+    @Deprecated
+    public static GlTextureView create(ITexture parent, int type,
+                                       int minLevel, int numLevels,
+                                       int minLayer, int numLayers) {
+        TextureViewDescription desc = TextureViewDescription.create(parent)
+                .baseMipLevel(minLevel)
+                .mipLevelCount(numLevels)
+                .build();
+        return create(desc);
+    }
+
+    @Override
     public ITexture getParent() {
         return parent;
     }
 
-    public int getType() {
-        return type;
-    }
-
-    public int getMinLevel() {
-        return minLevel;
-    }
-
-    public int getNumLevels() {
-        return numLevels;
-    }
-
-    public int getMinLayer() {
-        return minLayer;
-    }
-
-    public int getNumLayers() {
-        return numLayers;
+    @Override
+    public TextureViewDescription getViewDescription() {
+        return viewDescription;
     }
 
     @Override
@@ -131,28 +118,24 @@ public class GlTextureView implements ITexture {
         return parent.getMipmapSettings();
     }
 
+    @Override
     public TextureDescription getTextureDescription() {
         return parent.getTextureDescription();
     }
 
     @Override
     public int getWidth() {
-        return parent.getWidth();
+        return viewDescription.getWidth();
     }
 
     @Override
     public int getHeight() {
-        return parent.getHeight();
+        return viewDescription.getHeight();
     }
 
     @Override
     public void destroy() {
         Gl.DSA.deleteTexture(this.id);
         this.id = -1;
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        throw new RuntimeException("GlTextureView不可更改大小");
     }
 }

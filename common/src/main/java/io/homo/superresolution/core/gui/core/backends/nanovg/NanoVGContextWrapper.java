@@ -20,7 +20,9 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -52,11 +54,12 @@ public class NanoVGContextWrapper {
     public NanoVGContextWrapper(int nvgFlags) {
         rawContext = new io.homo.superresolution.thirdparty.nanovg.NanoVGContext(nvgFlags);
         rastPtr = 0;
-        frameBuffer = GlFrameBuffer.create(
-                TextureFormat.R11G11B10F,
-                TextureFormat.DEPTH24_STENCIL8,
-                (int) MinecraftWindow.getWindowWidth(),
-                (int) MinecraftWindow.getWindowHeight()
+        frameBuffer = (GlFrameBuffer) RenderSystems.current().device().createFramebuffer(
+                FramebufferDescription.create()
+                        .colorFormat(TextureFormat.R11G11B10F)
+                        .depthFormat(TextureFormat.DEPTH24_STENCIL8)
+                        .size((int) MinecraftWindow.getWindowWidth(), (int) MinecraftWindow.getWindowHeight())
+                        .build()
         );
         frameBuffer.setClearColorRGBA(0, 0, 0, 1);
     }

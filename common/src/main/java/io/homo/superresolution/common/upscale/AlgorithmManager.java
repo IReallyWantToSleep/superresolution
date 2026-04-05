@@ -36,8 +36,12 @@ import org.joml.Matrix4f;
 public class AlgorithmManager {
     public static AlgorithmParam param = new AlgorithmParam();
 
+    /**
+     * @deprecated MotionVectorsGenerator 已被弃用
+     */
+    @Deprecated
     public static GlFrameBuffer getMotionVectorsFrameBuffer() {
-        return (GlFrameBuffer) MotionVectorsGenerator.getMotionVectorsFrameBuffer();
+        return null;
     }
 
     public static void destroy() {
@@ -45,7 +49,6 @@ public class AlgorithmManager {
     }
 
     public static void resize(int width, int height) {
-        MotionVectorsGenerator.resize();
     }
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
@@ -205,7 +208,6 @@ public class AlgorithmManager {
     }
 
     public static void init() {
-        MotionVectorsGenerator.init();
     }
 
     public static void update() {

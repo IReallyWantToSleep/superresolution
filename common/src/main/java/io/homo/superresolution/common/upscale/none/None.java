@@ -60,12 +60,14 @@ public class None extends AbstractAlgorithm {
         return true;
     }
 
+    @Override
     public void destroy() {
         if (cachedFrameBufferId > 0) {
             Gl.DSA.deleteFramebuffer(cachedFrameBufferId);
         }
     }
 
+    @Override
     public void resize(int width, int height) {
     }
 
@@ -132,11 +134,6 @@ public class None extends AbstractAlgorithm {
         @Override
         public DepthStencilAttachment getDepthStencilAttachment() {
             return null;
-        }
-
-        @Override
-        public void resizeFrameBuffer(int width, int height) {
-            throw new UnsupportedOperationException();
         }
 
         @Override

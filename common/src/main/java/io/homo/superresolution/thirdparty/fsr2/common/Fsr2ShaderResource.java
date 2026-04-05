@@ -19,39 +19,42 @@
 package io.homo.superresolution.thirdparty.fsr2.common;
 
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeJobResource;
-import io.homo.superresolution.core.graphics.impl.grape.GrapeResourceAccess;
+import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
+import io.homo.superresolution.core.graphics.impl.sampler.SamplerDescription;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 
-import java.util.UUID;
 import java.util.function.Supplier;
 
 public class Fsr2ShaderResource {
     private static ITexture nullTexture;
-    public GrapeResourceAccess access = GrapeResourceAccess.Read;
+    public ShaderResourceAccess access = ShaderResourceAccess.Read;
     public int binding = -1;
     public Supplier<Fsr2PipelineResources.Fsr2ResourceEntry> resourceEntry = null;
     public Supplier<Fsr2PipelineResourceType> resourceType = null;
     public String resourceName;
-    public GlSampler sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
+    public ISampler sampler = RenderSystems.current().device().createSampler(
+            SamplerDescription.create()
+                    .filterMode(TextureFilterMode.Nearest)
+                    .build()
+    );
 
-    public GlSampler sampler() {
+    public ISampler sampler() {
         return sampler;
     }
 
-    public Fsr2ShaderResource sampler(GlSampler sampler) {
+    public Fsr2ShaderResource sampler(ISampler sampler) {
         this.sampler = sampler;
         return this;
     }
 
-    public GrapeResourceAccess access() {
+    public ShaderResourceAccess access() {
         return access;
     }
 
-    public Fsr2ShaderResource access(GrapeResourceAccess access) {
+    public Fsr2ShaderResource access(ShaderResourceAccess access) {
         this.access = access;
         return this;
     }
@@ -91,57 +94,50 @@ public class Fsr2ShaderResource {
         return this;
     }
 
-    public GrapeJobResource<?> getResourceDescription(Fsr2Context context) {
+    public void bindToDescriptorSet(String name, PipelineDescriptorSet ds, Fsr2Context context) {
         if (this.resourceType != null) {
             this.resourceEntry = () -> context.resources.resource(resourceType.get());
         }
-        Fsr2PipelineResourceType resourceType = context.resources.resourceEntriesMap().get(resourceEntry.get());
-        if (resourceType == null) {
-            throw new RuntimeException();
+
+        if (this.resourceEntry == null) {
+            throw new IllegalStateException(
+                    "FSR2 shader resource '" + name + "' has no resourceEntry or resourceType set"
+            );
         }
-        String name = resourceName != null ? resourceName : access == GrapeResourceAccess.Read ? resourceType.srvShaderName() : resourceType.uavShaderName();
-        if (name == null) {
-            name = "RESOURCE+" + UUID.randomUUID() + "+" + binding;
-        } else if (resourceName == null) {
-            name = name + "+" + binding;
+
+        Fsr2PipelineResources.Fsr2ResourceEntry entry = resourceEntry.get();
+
+        if (entry == null) {
+            throw new IllegalStateException(
+                    "FSR2 shader resource '" + name + "' resolved to a null resource entry"
+            );
         }
-        if (resourceEntry.get().type() == Fsr2PipelineResources.Fsr2ResourceType.UBO) {
-            return
-                    GrapeJobResource.UniformBuffer.create((GlBuffer) resourceEntry.get().getResource());
+
+        if (entry.type() == Fsr2PipelineResources.Fsr2ResourceType.UBO) {
+            ds.uniformBuffer(name, (IBuffer) entry.getResource());
         } else {
-            ITexture textureSupplier = TextureSupplier.of(() -> {
-                if (this.resourceType != null) {
-                    this.resourceEntry = () -> context.resources.resource(this.resourceType.get());
+            ITexture texture = (ITexture) entry.getResource();
+
+            if (texture == null) {
+                if (nullTexture == null) {
+                    nullTexture = RenderSystems.current().device().createTexture(
+                            TextureDescription.create()
+                                    .width(1)
+                                    .height(1)
+                                    .type(TextureType.Texture2D)
+                                    .format(TextureFormat.RGBA8)
+                                    .usages(TextureUsages.create().storage().sampler())
+                                    .label("SRFSR2NullTexture")
+                                    .build()
+                    );
                 }
-                Fsr2PipelineResourceType _resourceType = context.resources.resourceEntriesMap().get(resourceEntry.get());
-                ITexture texture = (ITexture) resourceEntry.get().getResource();
-                if (texture == null) {
-                    if (_resourceType == Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_5) {
-                        if (context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource() != null) {
-                            GlTexture2D texture2D = ((GlTexture2D) context.resources.resource(Fsr2PipelineResourceType.SCENE_LUMINANCE).getResource());
-                            return texture2D.getMipView(Math.min(texture2D.getMipmapLevel(), 5));
-                        }
-                    }
-                    if (nullTexture == null) {
-                        nullTexture = RenderSystems.current().device().createTexture(
-                                TextureDescription.create()
-                                        .width(1)
-                                        .height(1)
-                                        .type(TextureType.Texture2D)
-                                        .format(TextureFormat.RGBA8)
-                                        .usages(TextureUsages.create().storage().sampler())
-                                        .label("SRFSR2NullTexture")
-                                        .build()
-                        );
-                    }
-                    return nullTexture;
-                }
-                return texture;
-            });
-            if (access != GrapeResourceAccess.Read) {
-                return GrapeJobResource.StorageTexture.create(textureSupplier, access);
+                texture = nullTexture;
+            }
+
+            if (access != ShaderResourceAccess.Read) {
+                ds.storageImage(name, texture);
             } else {
-                return GrapeJobResource.SamplerTexture.create(textureSupplier);
+                ds.samplerTexture(name, texture);
             }
         }
     }

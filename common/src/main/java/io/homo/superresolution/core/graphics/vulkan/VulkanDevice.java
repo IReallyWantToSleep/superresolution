@@ -25,14 +25,20 @@ import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
 import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
+import io.homo.superresolution.core.graphics.impl.sampler.SamplerDescription;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureViewDescription;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import org.lwjgl.system.MemoryStack;
@@ -41,6 +47,8 @@ import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -60,7 +68,7 @@ public class VulkanDevice implements IDevice {
         this.physicalDevice = physicalDevice;
         this.device = device;
         this.mainQueue = new VulkanQueue(this, graphicsQueueFamilyIndex);
-        this.commandManager = new VulkanCommandPool(this, java.util.EnumSet.of(CommandPoolFlags.Reset));
+        this.commandManager = new VulkanCommandPool(this, EnumSet.of(CommandPoolFlags.Reset));
         this.defaultCommandPool = commandManager;
         this.commandDecoder = new VulkanCommandDecoder(this);
     }
@@ -68,6 +76,22 @@ public class VulkanDevice implements IDevice {
     @Override
     public ITexture createTexture(TextureDescription description) {
         return new VulkanTexture(this, description);
+    }
+
+    @Override
+    public ISampler createSampler(SamplerDescription description) {
+        return new VulkanSampler(this, description);
+    }
+
+    @Override
+    public ITextureView createTextureView(TextureViewDescription description) {
+        return new VulkanTextureView(this, description);
+    }
+
+    @Override
+    public IFrameBuffer createFramebuffer(FramebufferDescription description) {
+        // TODO: Vulkan framebuffer 实现
+        return null;
     }
 
     @Override

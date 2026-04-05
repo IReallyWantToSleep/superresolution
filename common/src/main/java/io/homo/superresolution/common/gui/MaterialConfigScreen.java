@@ -690,14 +690,14 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         resourcesList.layout().setWidthPercent(100);
         MaterialDialog dialog = MaterialDialog.create()
                 .icon(MaterialSymbols.iconInfo())
-                .headline(Text.literal("从本地选取缺少的资源").getString())
+                .headline(Text.translatable("superresolution.screen.config.dialog.local_resource.title").getString())
                 .content(resourcesList)
-                .supportingText(Text.literal("该算法需要一些额外的资源才能正常工作，你需要手动下载并从本地选择这些资源。在完成前，你可能无法使用此算法。\n\n如果你执意使用，那么你的游戏可能会崩溃哦~").getString());
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.local_resource.description").getString());
         dialog.style().minWidth(400f);
         dialog.style().maxWidth(600f);
         if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
             dialog.addAction(
-                    Text.literal("下载DLSS (Windows)").getString(),
+                    Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_dlss_windows").getString(),
                     MaterialButtonVariant.Outlined,
                     d->{
                 openExternalLink("https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll");
@@ -705,13 +705,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         }
         if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
             dialog.addAction(
-                    Text.literal("下载XeSS (Windows)").getString(),
+                    Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_xess_windows").getString(),
                     MaterialButtonVariant.Outlined,
                     d->{
                         openExternalLink("https://raw.githubusercontent.com/intel/xess/refs/heads/main/bin/libxess.dll");
                     });
         }
-        dialog.addAction(Text.literal("完成").getString(), MaterialButtonVariant.Text, d -> {
+        dialog.addAction(Text.translatable("superresolution.screen.config.dialog.local_resource.action.done").getString(), MaterialButtonVariant.Text, d -> {
             d.dismiss();
         });
 
@@ -1163,12 +1163,27 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         ContainerWidget container = createStandardContainer();
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.about"));
 
+        ContainerWidget contributorSectionRow = new ContainerWidget();
+        contributorSectionRow.layout().setFlexDirection(YogaFlexDirection.ROW);
+        contributorSectionRow.layout().setWidthPercent(100);
+        contributorSectionRow.layout().setAlignItems(YogaAlign.CENTER);
+        contributorSectionRow.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+        contributorSectionRow.layout().setMargin(YogaEdge.BOTTOM, 6);
+
         MaterialLabel contributorSection = MaterialLabel.create()
                 .text(Text.translatable("superresolution.screen.info.text.contributors").getString())
                 .fontSize(18)
                 .color(MaterialScheme::secondary);
-        contributorSection.layout().setMargin(YogaEdge.BOTTOM, 6);
-        container.addChild(contributorSection);
+        contributorSectionRow.addChild(contributorSection);
+
+        MaterialLabel contributorOrderHint = MaterialLabel.create()
+                .text(Text.translatable("superresolution.screen.info.text.contributors_order_random").getString())
+                .fontSize(11)
+                .color(MaterialScheme::onSurfaceVariant);
+        contributorOrderHint.style().sizeToContent(true);
+        contributorSectionRow.addChild(contributorOrderHint);
+
+        container.addChild(contributorSectionRow);
 
         InfoCard contributorsCard = new InfoCard();
         List<ContributorInfo> contributors = new ArrayList<>(List.of(

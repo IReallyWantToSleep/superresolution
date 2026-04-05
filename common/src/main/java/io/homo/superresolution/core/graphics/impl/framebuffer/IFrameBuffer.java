@@ -65,16 +65,6 @@ public interface IFrameBuffer extends Destroyable, GpuObject {
     DepthStencilAttachment getDepthStencilAttachment();
 
     /**
-     * 调整帧缓冲区尺寸
-     *
-     * @param width  新宽度（像素单位）
-     * @param height 新高度（像素单位）
-     *
-     * @throws IllegalArgumentException 当尺寸值无效时抛出
-     */
-    void resizeFrameBuffer(int width, int height);
-
-    /**
      * 获取附件纹理的标识符
      *
      * @param attachmentType 附件类型（如颜色附件0、深度附件等）

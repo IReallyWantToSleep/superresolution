@@ -46,7 +46,7 @@
                 },
                 {
                     "name": "voxy",
-                    "version": "0.2.11-alpha",
+                    "version": "0.2.13-alpha",
                     "use_jarjar": true
                 }
             ],

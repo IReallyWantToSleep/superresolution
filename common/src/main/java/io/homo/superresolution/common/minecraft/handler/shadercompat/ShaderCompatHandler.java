@@ -20,12 +20,14 @@ package io.homo.superresolution.common.minecraft.handler.shadercompat;
 
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetType;
+import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
@@ -121,19 +123,19 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         callOnRenderTargets(
                 (renderTarget) -> {
                     if (renderTarget.getWidth() != screenWidth || renderTarget.getHeight() != screenHeight) {
-                        renderTarget.resizeFrameBuffer(
-                                screenWidth,
-                                screenHeight
-                        );
+                        if (renderTarget instanceof MinecraftRenderTargetWrapper wrapper) {
+                            wrapper.resizeFrameBuffer(screenWidth, screenHeight);
+                        } else if (renderTarget instanceof GlFrameBuffer glFbo) {
+                            glFbo.resizeFrameBuffer(screenWidth, screenHeight);
+                        }
                     }
                 }
         );
         IFrameBuffer handRenderTarget = getRenderTarget(MinecraftRenderTargetType.HAND);
-        if (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight) {
-            handRenderTarget.resizeFrameBuffer(
-                    screenWidth,
-                    screenHeight
-            );
+        if (handRenderTarget != null && (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight)) {
+            if (handRenderTarget instanceof GlFrameBuffer glFbo) {
+                glFbo.resizeFrameBuffer(screenWidth, screenHeight);
+            }
         }
     }
 

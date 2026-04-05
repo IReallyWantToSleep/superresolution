@@ -84,6 +84,16 @@ public class CompatDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
+    public void samplerParameterf(int sampler, int pname, float param) {
+        glSamplerParameterf(sampler, pname, param);
+    }
+
+    @Override
+    public void samplerParameterfv(int sampler, int pname, float[] params) {
+        glSamplerParameterfv(sampler, pname, params);
+    }
+
+    @Override
     public void deleteSampler(int sampler) {
         glDeleteSamplers(sampler);
     }

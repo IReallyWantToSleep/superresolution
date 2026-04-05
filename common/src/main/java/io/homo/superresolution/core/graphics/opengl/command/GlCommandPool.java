@@ -20,7 +20,6 @@ package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
 
@@ -39,7 +38,12 @@ public class GlCommandPool implements ICommandPool {
     }
 
     @Override
-    public ICommandBuffer createCommandBuffer(CommandBufferBehavior behavior) {
+    public GlCommandBuffer createCommandBuffer() {
+        return createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
+    }
+
+    @Override
+    public GlCommandBuffer createCommandBuffer(CommandBufferBehavior behavior) {
         GlCommandBuffer commandBuffer = new GlCommandBuffer(device, this, behavior);
         if (behavior != CommandBufferBehavior.OneTimeSubmit) {
             buffers.add(commandBuffer);

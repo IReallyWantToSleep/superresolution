@@ -26,6 +26,10 @@ public interface IGlDirectStateAccess {
 
     void samplerParameteri(int sampler, int pname, int param);
 
+    void samplerParameterf(int sampler, int pname, float param);
+
+    void samplerParameterfv(int sampler, int pname, float[] params);
+
     void deleteSampler(int sampler);
 
     /// 纹理

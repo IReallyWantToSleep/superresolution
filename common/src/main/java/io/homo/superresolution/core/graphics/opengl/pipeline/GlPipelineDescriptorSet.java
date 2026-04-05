@@ -21,6 +21,7 @@ package io.homo.superresolution.core.graphics.opengl.pipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
@@ -71,13 +72,21 @@ public class GlPipelineDescriptorSet extends PipelineDescriptorSet {
                         glBindTexture(GL_TEXTURE_2D, (int) texture.handle());
                     }
                     glUniform1i(glGetUniformLocation((int) shader.handle(), name), binding.bindingPoint());
+
+                    if (binding.sampler() != null) {
+                        Gl.DSA.bindSampler(binding.bindingPoint(), (int) binding.sampler().handle());
+                    } else {
+                        Gl.DSA.bindSampler(binding.bindingPoint(), 0);
+                    }
                 }
 
                 case STORAGE_IMAGE -> {
+                    ITexture tex = (ITexture) binding.resource();
+                    int mipLevel = (tex instanceof ITextureView view) ? view.getBaseMipLevel() : 0;
                     Gl.DSA.bindImageTexture(
                             binding.bindingPoint(),
-                            (int) binding.resource().handle(),
-                            0,
+                            (int) tex.handle(),
+                            mipLevel,
                             false,
                             0,
                             switch (shader.getDescription().resourcesLayout().getResource(name).access()) {
@@ -85,7 +94,7 @@ public class GlPipelineDescriptorSet extends PipelineDescriptorSet {
                                 case Write -> GL_WRITE_ONLY;
                                 case Both -> GL_READ_WRITE;
                             },
-                            ((ITexture) binding.resource()).getTextureFormat().gl()
+                            tex.getTextureFormat().gl()
                     );
                 }
             }

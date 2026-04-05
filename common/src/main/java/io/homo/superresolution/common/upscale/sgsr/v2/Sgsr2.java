@@ -34,12 +34,12 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.Std140StructBuilder;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredData;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBufferAttachment;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.impl.Destroyable;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -51,7 +51,7 @@ public class Sgsr2 extends AbstractAlgorithm {
     private SgsrVariant currentVariant;
     private StructuredData paramsData;
     private GlBuffer paramsUbo;
-    private GlFrameBuffer output;
+    private IFrameBuffer output;
 
     private int sameFrameNum = 0;
 
@@ -67,19 +67,19 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public void initialize(InitializationDescription desc) {
-        this.output = new GlFrameBuffer();
-        output.addAttachment(new GlFrameBufferAttachment(
-                GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR,
-                RenderSystems.current().device().createTexture(TextureDescription.create()
+        this.initDesc = desc;
+        ITexture outputTex = RenderSystems.current().device().createTexture(TextureDescription.create()
                         .type(TextureType.Texture2D)
                         .width(RenderHandlerManager.getRenderWidth())
                         .height(RenderHandlerManager.getRenderHeight())
                         .usages(TextureUsages.create().sampler().storage().sampler())
                         .format(SuperResolutionConfig.getInternalTextureFormat())
                         .label("Sgsr2Output")
-                        .build())
-        ));
-        this.resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
+                        .build());
+        this.output = RenderSystems.current().device().createFramebuffer(
+                FramebufferDescription.create()
+                        .colorAttachment(outputTex)
+                        .build());
         paramsData = Std140StructBuilder.start()
                 .vec2Entry("renderSize")
                 .vec2Entry("displaySize")
@@ -110,20 +110,30 @@ public class Sgsr2 extends AbstractAlgorithm {
         updateParams(dispatchResource);
         variantInstance.setOutput(output);
         variantInstance.dispatch(dispatchResource, this);
-        return false;
+        return true;
     }
 
     @Override
     public void destroy() {
         safeVariantInstance(Destroyable::destroy);
-        paramsData.free();
-        paramsUbo.destroy();
+        if (output != null) {
+            output.destroy();
+            output = null;
+        }
+        if (paramsData != null) {
+            paramsData.free();
+            paramsData = null;
+        }
+        if (paramsUbo != null) {
+            paramsUbo.destroy();
+            paramsUbo = null;
+        }
     }
 
     @Override
     public void resize(int width, int height) {
-        safeVariantInstance((sgsrVariant -> sgsrVariant.resize(width, height)));
-        this.output.resizeFrameBuffer(width, height);
+        destroy();
+        initialize(initDesc);
     }
 
     @Override

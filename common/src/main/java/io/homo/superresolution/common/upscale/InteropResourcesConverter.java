@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
@@ -57,7 +58,6 @@ public class InteropResourcesConverter {
     private static RenderPass depthPreprocessRenderPass;
     private static IFrameBuffer depthPreprocessFrameBuffer;
 
-    //private static RenderGrape renderGrape;
     private static boolean isInit = false;
 
     private static String toComputeShaderFormatQualifier(TextureFormat format) {
@@ -186,7 +186,11 @@ public class InteropResourcesConverter {
         if (isInit) {
             return;
         }
-        depthPreprocessFrameBuffer = GlFrameBuffer.create(null, TextureFormat.DEPTH32F, 16, 16);
+        depthPreprocessFrameBuffer = RenderSystems.current().device().createFramebuffer(
+                FramebufferDescription.create()
+                        .depthFormat(TextureFormat.DEPTH32F)
+                        .size(16, 16)
+                        .build());
         initShaders();
         isInit = true;
     }

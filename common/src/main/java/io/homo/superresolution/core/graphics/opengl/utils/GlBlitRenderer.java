@@ -84,11 +84,6 @@ public class GlBlitRenderer {
         }
 
         @Override
-        public void resizeFrameBuffer(int width, int height) {
-
-        }
-
-        @Override
         public int getTextureId(FrameBufferAttachmentType attachmentType) {
             return 0;
         }

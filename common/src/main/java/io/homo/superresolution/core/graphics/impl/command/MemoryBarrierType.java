@@ -16,22 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.impl.grape;
+package io.homo.superresolution.core.graphics.impl.command;
 
-/**
- * 管线资源的访问权限类型
- */
-public enum GrapeResourceAccess {
-    /**
-     * 只读
-     */
-    Read,
-    /**
-     * 只写
-     */
-    Write,
-    /**
-     * 可读可写
-     */
-    Both
+public enum MemoryBarrierType {
+    STORAGE_IMAGE_WRITE,
+    TEXTURE_FETCH,
+    UNIFORM_BUFFER,
+    SHADER_STORAGE,
+    BUFFER_UPDATE,
+    ALL
 }

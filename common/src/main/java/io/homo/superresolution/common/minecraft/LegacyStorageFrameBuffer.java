@@ -302,11 +302,6 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
         public void destroy() {
             throw new UnsupportedOperationException();
         }
-
-        @Override
-        public void resize(int width, int height) {
-            throw new UnsupportedOperationException();
-        }
     }
 
     @Override
@@ -318,6 +313,8 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
 public class LegacyStorageFrameBuffer {
     public LegacyStorageFrameBuffer(boolean useDepth) {
         throw new RuntimeException();
+    }
+    public void resizeFrameBuffer(int width, int height) {
     }
 }
 #endif

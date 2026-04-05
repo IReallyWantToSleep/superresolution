@@ -19,23 +19,24 @@
 package io.homo.superresolution.common.minecraft;
 
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
 public class HandRenderTarget {
     public static IBindableFrameBuffer handRenderTarget;
 
     public static IBindableFrameBuffer getHandRenderTarget() {
         if (handRenderTarget == null) {
-            handRenderTarget = GlFrameBuffer.create(
-                    RenderHandlerManager.getScreenWidth(),
-                    RenderHandlerManager.getScreenHeight()
+            handRenderTarget = (IBindableFrameBuffer) RenderSystems.current().device().createFramebuffer(
+                    FramebufferDescription.create()
+                            .colorFormat(TextureFormat.RGBA8)
+                            .depthFormat(TextureFormat.DEPTH24)
+                            .size(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight())
+                            .build()
             );
             handRenderTarget.setClearColorRGBA(0, 0, 0, 0);
-            handRenderTarget.resizeFrameBuffer(
-                    RenderHandlerManager.getScreenWidth(),
-                    RenderHandlerManager.getScreenHeight()
-            );
             handRenderTarget.clearFrameBuffer();
         }
         return handRenderTarget;

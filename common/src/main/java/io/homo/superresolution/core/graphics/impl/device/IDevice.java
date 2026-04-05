@@ -24,14 +24,20 @@ import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandDecoder;
 import io.homo.superresolution.core.graphics.impl.command.ICommandPool;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
+import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
+import io.homo.superresolution.core.graphics.impl.sampler.SamplerDescription;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureViewDescription;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 
@@ -44,6 +50,33 @@ public interface IDevice {
      * @return 新创建的纹理对象
      */
     ITexture createTexture(TextureDescription description);
+
+    /**
+     * 创建一个采样器。
+     *
+     * @param description 采样器描述对象
+     *
+     * @return 新创建的采样器对象
+     */
+    ISampler createSampler(SamplerDescription description);
+
+    /**
+     * 创建纹理视图。
+     *
+     * @param description 纹理视图描述对象
+     *
+     * @return 新创建的纹理视图对象
+     */
+    ITextureView createTextureView(TextureViewDescription description);
+
+    /**
+     * 创建帧缓冲区。
+     *
+     * @param description 帧缓冲区描述对象
+     *
+     * @return 新创建的帧缓冲区对象
+     */
+    IFrameBuffer createFramebuffer(FramebufferDescription description);
 
     /**
      * 创建一个着色器程序。

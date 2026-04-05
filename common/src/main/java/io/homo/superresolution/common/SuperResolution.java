@@ -45,7 +45,6 @@ import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
 import net.minecraft.client.Minecraft;
@@ -56,7 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class SuperResolution implements Resizable, Destroyable {
+public final class SuperResolution implements Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
     public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");

@@ -22,6 +22,8 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
+import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.CullMode;
@@ -35,7 +37,6 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
@@ -52,9 +53,9 @@ public class GlTextureCopier {
     private static final Map<String, RenderPass> programMap = new HashMap<>();
     private static final Map<String, GlComputePipeline> computeProgramMap = new HashMap<>();
     private static GlSampler sampler;
-    private static GlFrameBuffer cachedFrameBuffer;
+    private static IFrameBuffer cachedFrameBuffer;
 
-    public static GlFrameBuffer getCachedFrameBuffer() {
+    public static IFrameBuffer getCachedFrameBuffer() {
         return cachedFrameBuffer;
     }
 
@@ -152,7 +153,7 @@ public class GlTextureCopier {
     public static void copy(CopyOperation copyOperation) {
         GlDebug.pushGroup(GlDebug.nextCopyId(), "CopyTexture");
         if (sampler == null) {
-            sampler = GlSampler.create(GlSampler.SamplerType.LinearClamp);
+            sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
         }
         if (toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()) != null) {
             GlComputePipeline pipeline = getOrCreateComputeProgram(copyOperation);
@@ -180,7 +181,11 @@ public class GlTextureCopier {
 
         try (GlState state = new GlState(GlState.STATE_READ_FBO | GlState.STATE_DRAW_FBO)) {
             if (cachedFrameBuffer == null) {
-                cachedFrameBuffer = GlFrameBuffer.create(copyOperation.getDstTexture(), null);
+                cachedFrameBuffer = RenderSystems.current().device().createFramebuffer(
+                        FramebufferDescription.create()
+                                .colorAttachment(copyOperation.getDstTexture())
+                                .build()
+                );
                 cachedFrameBuffer.label("CopyOperationTempFrameBuffer");
             }
             GlRenderPass pass = (GlRenderPass) getOrCreateProgram(copyOperation);

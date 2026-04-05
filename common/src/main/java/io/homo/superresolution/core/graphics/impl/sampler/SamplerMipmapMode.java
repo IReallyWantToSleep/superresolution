@@ -16,22 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.impl.grape;
+package io.homo.superresolution.core.graphics.impl.sampler;
 
-/**
- * 管线资源的类型
- */
-public enum GrapeResourceType {
-    /**
-     * 只读纹理
-     */
-    SamplerTexture,
-    /**
-     * 可读可写的纹理
-     */
-    StorageTexture,
-    /**
-     * UBO
-     */
-    UniformBuffer
+import static org.lwjgl.vulkan.VK10.VK_SAMPLER_MIPMAP_MODE_LINEAR;
+import static org.lwjgl.vulkan.VK10.VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+public enum SamplerMipmapMode {
+    None,
+    Nearest,
+    Linear;
+
+    public int vk() {
+        return switch (this) {
+            case None, Nearest -> VK_SAMPLER_MIPMAP_MODE_NEAREST;
+            case Linear -> VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        };
+    }
 }
+

@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.impl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.GpuObject;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
@@ -46,19 +47,25 @@ public abstract class PipelineDescriptorSet {
     }
 
     public PipelineDescriptorSet uniformBuffer(String name, int binding, IBuffer buffer) {
-        bindings.put(name, new ResourceBinding(ResourceType.UNIFORM_BUFFER, binding, buffer));
+        bindings.put(name, new ResourceBinding(ResourceType.UNIFORM_BUFFER, binding, buffer, null));
         dirty = true;
         return this;
     }
 
     public PipelineDescriptorSet samplerTexture(String name, int binding, ITexture texture) {
-        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture));
+        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture, null));
+        dirty = true;
+        return this;
+    }
+
+    public PipelineDescriptorSet samplerTexture(String name, int binding, ITexture texture, ISampler sampler) {
+        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture, sampler));
         dirty = true;
         return this;
     }
 
     public PipelineDescriptorSet storageImage(String name, int binding, ITexture texture) {
-        bindings.put(name, new ResourceBinding(ResourceType.STORAGE_IMAGE, binding, texture));
+        bindings.put(name, new ResourceBinding(ResourceType.STORAGE_IMAGE, binding, texture, null));
         dirty = true;
         return this;
     }
@@ -78,6 +85,10 @@ public abstract class PipelineDescriptorSet {
         return samplerTexture(name, getBinding(name), texture);
     }
 
+    public PipelineDescriptorSet samplerTexture(String name, ITexture texture, ISampler sampler) {
+        return samplerTexture(name, getBinding(name), texture, sampler);
+    }
+
     public PipelineDescriptorSet storageImage(String name, ITexture texture) {
         return storageImage(name, getBinding(name), texture);
     }
@@ -89,11 +100,19 @@ public abstract class PipelineDescriptorSet {
         }
     }
 
+    public Map<String, ResourceBinding> getBindings() {
+        return java.util.Collections.unmodifiableMap(bindings);
+    }
+
+    public IShaderProgram getShader() {
+        return shader;
+    }
+
     public abstract void apply();
 
     protected abstract void updateImpl();
 
-    protected enum ResourceType {
+    public enum ResourceType {
         UNIFORM_BUFFER,
         SAMPLER_TEXTURE,
         STORAGE_IMAGE
@@ -103,11 +122,13 @@ public abstract class PipelineDescriptorSet {
         final ResourceType type;
         final GpuObject resource;
         final int bindingPoint;
+        final ISampler sampler;
 
-        ResourceBinding(ResourceType type, int bindingPoint, GpuObject resource) {
+        ResourceBinding(ResourceType type, int bindingPoint, GpuObject resource, ISampler sampler) {
             this.type = type;
             this.resource = resource;
             this.bindingPoint = bindingPoint;
+            this.sampler = sampler;
         }
 
         public ResourceType type() {
@@ -120,6 +141,10 @@ public abstract class PipelineDescriptorSet {
 
         public int bindingPoint() {
             return bindingPoint;
+        }
+
+        public ISampler sampler() {
+            return sampler;
         }
     }
 

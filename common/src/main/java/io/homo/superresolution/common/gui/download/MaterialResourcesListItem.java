@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.gui.download;
 
 import io.homo.superresolution.api.registry.ExtraResource;
+import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialSymbols;
@@ -75,13 +76,11 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         this.targetDirectory = targetDirectory;
         getLayoutNode().setDebugName("MaterialDownloadListItem");
         
-        // 左侧图标
         iconWidget = new IconWidget();
         iconWidget.setElementSize(24, 24);
         iconContainer.addChild(iconWidget);
         addChild(iconContainer);
 
-        // 标题标签
         nameLabel = MaterialLabel.create()
                 .text(resource.getName())
                 .fontSize(14)
@@ -89,7 +88,6 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         nameLabel.style().sizeToContent(true);
         textContainer.addChild(nameLabel);
 
-        // 信息标签或文件路径标签
         if (enableDownload) {
             infoLabel = MaterialLabel.create()
                     .text(() -> getInfoText())
@@ -100,13 +98,14 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             filePathLabel = null;
         } else {
             filePathLabel = MaterialLabel.create()
-                    .text(() -> (
-                            selectedPath != null ?((
-                                selectedPath != null ? selectedPath : "未选择文件")
-                                                  .substring(0,Math.min(71, (selectedPath != null ? selectedPath : "未选择文件").length()))) + "..."
-                                    : "未选择文件"
-                            )
-                    )
+                    .text(() -> {
+                        String noFile = Text.translatable("superresolution.screen.download.no_file_selected").getString();
+                        if (selectedPath != null) {
+                            String display = selectedPath.length() > 71 ? selectedPath.substring(0, 71) + "..." : selectedPath;
+                            return display;
+                        }
+                        return noFile;
+                    })
                     .fontSize(12)
                     .color(scheme -> scheme.onSurfaceVariant());
             filePathLabel.style().sizeToContent(false);
@@ -116,7 +115,6 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
 
         contentContainer.addChild(textContainer);
 
-        // 进度条或选择文件按钮
         if (enableDownload) {
             progressBar = new MaterialLinearProgressIndicator();
             progressContainer.addChild(progressBar);
@@ -124,14 +122,12 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             selectFileButton = null;
         } else {
             progressBar = null;
-            // 选择按钮放在右侧容器中
             selectFileButton = MaterialButton.create(MaterialButtonSize.ExtraSmall)
                     .variant(MaterialButtonVariant.Outlined)
-                    .text("选择")
+                    .text(Text.translatable("superresolution.screen.download.button.select_file").getString())
                     .icon(MaterialSymbols.iconFileOpen());
             selectFileButton.onClick(event -> onSelectFileButtonClicked());
             rightButtonContainer.addChild(selectFileButton);
-            // 右侧按钮容器不添加到 contentContainer，而是直接添加到根容器
         }
         
         addChild(contentContainer);
@@ -202,7 +198,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
     }
 
     private void onSelectFileButtonClicked() {
-        String selected = TinyFileDialogs.tinyfd_openFileDialog("选择文件", null, null, null, false);
+        String selected = TinyFileDialogs.tinyfd_openFileDialog(Text.translatable("superresolution.screen.download.dialog.select_file_title").getString(), null, null, null, false);
         if (selected != null && !selected.isEmpty()) {
             copyFileToTarget(selected);
         }
@@ -213,15 +209,12 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             Path source = Path.of(sourcePath);
             Path target = targetDirectory.getPath().resolve(resource.getName());
             
-            // 创建目标目录
             if (target.getParent() != null) {
                 Files.createDirectories(target.getParent());
             }
             
-            // 复制文件
             Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
             
-            // 更新状态
             this.selectedPath = sourcePath;
             this.state = DownloadState.SELECTED;
         } catch (Exception e) {
@@ -234,7 +227,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
     private String getInfoText() {
         switch (state) {
             case PENDING:
-                return "等待中...";
+                return Text.translatable("superresolution.screen.download.state.pending").getString();
             case DOWNLOADING:
                 if (totalBytes > 0) {
                     float progressPercent = (float) downloadedBytes / totalBytes * 100;
@@ -243,24 +236,24 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
                 if (downloadedBytes > 0) {
                     return formatBytes(downloadedBytes);
                 }
-                return "下载中...";
+                return Text.translatable("superresolution.screen.download.state.downloading").getString();
             case COMPLETED:
-                return "已完成";
+                return Text.translatable("superresolution.screen.download.state.completed").getString();
             case SELECTED:
-                return "已选择";
+                return Text.translatable("superresolution.screen.download.state.selected").getString();
             case ERROR:
                 if (errorCode != null) {
                     return switch (errorCode) {
-                        case NetworkError -> "网络错误";
-                        case FileNotFound -> "文件未找到";
-                        case PermissionDenied -> "权限不足";
-                        case Cancelled -> "已取消";
-                        default -> "未知错误";
+                        case NetworkError -> Text.translatable("superresolution.screen.download.error.network").getString();
+                        case FileNotFound -> Text.translatable("superresolution.screen.download.error.file_not_found").getString();
+                        case PermissionDenied -> Text.translatable("superresolution.screen.download.error.permission_denied").getString();
+                        case Cancelled -> Text.translatable("superresolution.screen.download.state.cancelled").getString();
+                        default -> Text.translatable("superresolution.screen.download.error.unknown").getString();
                     };
                 }
-                return "错误";
+                return Text.translatable("superresolution.screen.download.state.error").getString();
             case CANCELLED:
-                return "已取消";
+                return Text.translatable("superresolution.screen.download.state.cancelled").getString();
             default:
                 return "";
         }
@@ -295,13 +288,11 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
     public void layouting(RenderContext ctx) {
         super.layouting(ctx);
 
-        // 整体布局：行方向
         layout().setFlexDirection(YogaFlexDirection.ROW);
         layout().setWidthPercent(100);
         layout().setAlignItems(YogaAlign.CENTER);
         layout().setPadding(YogaEdge.HORIZONTAL, 0);
 
-        // 左侧图标容器
         iconContainer.layout().setWidth(24);
         iconContainer.layout().setHeight(40);
         iconContainer.layout().setMargin(YogaEdge.RIGHT, 8);
@@ -310,7 +301,6 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         iconContainer.layout().setFlexShrink(0);
 
         if (enableDownload) {
-            // 下载模式：原有布局
             progressContainer.layout().setWidthPercent(100);
 
             contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
@@ -329,19 +319,14 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
                 progressBar.layout().setHeight(4);
             }
         } else {
-            // 文件选择模式：{ {图标}, { {文件名}, {文件路径} }, {选择按钮} }
-
-            // 中间内容容器：垂直排列文件名和文件路径
             contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
             contentContainer.layout().setFlexGrow(1f);
             contentContainer.layout().setMargin(YogaEdge.RIGHT, 8);
 
-            // 文本容器：垂直排列
             textContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
             textContainer.layout().setAlignItems(YogaAlign.FLEX_START);
             textContainer.layout().setJustifyContent(YogaJustify.CENTER);
 
-            // 右侧选择按钮
             rightButtonContainer.layout().setFlexShrink(0);
             rightButtonContainer.layout().setAlignItems(YogaAlign.CENTER);
             rightButtonContainer.layout().setJustifyContent(YogaJustify.CENTER);

@@ -97,9 +97,4 @@ public class GlOnlyNameTexture implements ITexture {
     public void destroy() {
 
     }
-
-    @Override
-    public void resize(int width, int height) {
-
-    }
 }

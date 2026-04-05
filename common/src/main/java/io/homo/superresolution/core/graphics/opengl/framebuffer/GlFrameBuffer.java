@@ -288,29 +288,6 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     }
 
     @Override
-    public void resizeFrameBuffer(int width, int height) {
-        if (width < 1 || height < 1) {
-            throw new RuntimeException("%s %s".formatted(width, height));
-        }
-
-        for (GlFrameBufferAttachment attachment : attachments) {
-            attachment.texture.resize(width, height);
-        }
-        Gl.DSA.deleteFramebuffer(frameBufferId);
-
-        this.frameBufferId = Gl.DSA.createFramebuffer();
-        this.width = width;
-        this.height = height;
-        ArrayList<GlFrameBufferAttachment> temp = new ArrayList<>(attachments);
-        attachments.clear();
-        for (GlFrameBufferAttachment attachment : temp) {
-            addAttachment(attachment);
-        }
-        validate();
-        updateDebugLabel(getDebugLabel());
-    }
-
-    @Override
     public int getTextureId(FrameBufferAttachmentType attachmentType) {
         return (int) switch (attachmentType) {
             case Color -> colorAttachment != null ? colorAttachment.texture.handle() : -1;
@@ -369,6 +346,31 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         this.label = label;
     }
 
+    public void resizeFrameBuffer(int width, int height) {
+        if (width < 1 || height < 1) {
+            throw new RuntimeException("%s %s".formatted(width, height));
+        }
+
+        ArrayList<GlFrameBufferAttachment> newAttachments = new ArrayList<>();
+        for (GlFrameBufferAttachment attachment : attachments) {
+            TextureDescription oldDesc = attachment.texture.getTextureDescription();
+            attachment.texture.destroy();
+            ITexture newTex = RenderSystems.current().device().createTexture(oldDesc.withSize(width, height));
+            newAttachments.add(new GlFrameBufferAttachment(attachment.type, newTex));
+        }
+        Gl.DSA.deleteFramebuffer(frameBufferId);
+
+        this.frameBufferId = Gl.DSA.createFramebuffer();
+        this.width = width;
+        this.height = height;
+        attachments.clear();
+        for (GlFrameBufferAttachment attachment : newAttachments) {
+            addAttachment(attachment);
+        }
+        validate();
+        updateDebugLabel(getDebugLabel());
+    }
+
     @Override
     public void bind(FrameBufferBindPoint bindPoint, boolean setViewport) {
         int target = resolveBindTarget(bindPoint);
@@ -396,12 +398,12 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     @Override
     public String getDebugLabel() {
         return label != null ? label : "FrameBuffer-%s|Color-%s|Depth-%s|DepthStencil-%s"
-                .formatted(
-                        handle(),
-                        colorAttachment != null ? colorAttachment.texture.string() : "None",
-                        depthAttachment != null ? depthAttachment.texture.string() : "None",
-                        depthStencilAttachment != null ? depthStencilAttachment.texture.string() : "None"
-                );
+                                       .formatted(
+                                               handle(),
+                                               colorAttachment != null ? colorAttachment.texture.string() : "None",
+                                               depthAttachment != null ? depthAttachment.texture.string() : "None",
+                                               depthStencilAttachment != null ? depthStencilAttachment.texture.string() : "None"
+                                       );
     }
 
     @Override

@@ -7,13 +7,13 @@ import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
@@ -426,7 +426,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         public VulkanTexture outputColorVkTexture;
 
         public GlTexture2D flippedOutputGlTexture;
-        public GlFrameBuffer outputFrameBuffer;
+        public IFrameBuffer outputFrameBuffer;
 
         public VkGlInteropSemaphore glFinish;
         public VkGlInteropSemaphore upscaleVkFinish;
@@ -561,7 +561,10 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                             .build()
             );
 
-            this.outputFrameBuffer = GlFrameBuffer.create(this.flippedOutputGlTexture, null);
+            this.outputFrameBuffer = RenderSystems.current().device().createFramebuffer(
+                    FramebufferDescription.create()
+                            .colorAttachment(this.flippedOutputGlTexture)
+                            .build());
 
             this.glFinish = VkGlInteropSemaphore.create(vkDevice);
             this.upscaleVkFinish = VkGlInteropSemaphore.create(vkDevice);

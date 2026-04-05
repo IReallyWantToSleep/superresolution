@@ -17,6 +17,7 @@ precision mediump float;
 #define ZERO_COPY_DATA COPY_DATA(0.0)
 
 layout(local_size_x = 16, local_size_y = 16) in;
+// 注意：即使使用 texelFetch，在 GLSL 中依然通过 sampler2D 变量进行操作
 layout(binding = 0) uniform sampler2D tex;
 layout(binding = 0, COPY_DST_FORMAT) uniform writeonly image2D outImage;
 
@@ -54,24 +55,21 @@ COPY_DATA setComponent(COPY_DATA d, int idx, float v) {
 
 void main() {
     ivec2 texCoord = ivec2(gl_GlobalInvocationID.xy);
-
     ivec2 imgSize = imageSize(outImage);
 
     if (texCoord.x >= imgSize.x || texCoord.y >= imgSize.y) {
         return;
     }
 
-    vec2 normalizedTexCoord = vec2(texCoord) / vec2(imgSize);
-
     COPY_DATA srcData;
     #if COPY_CHANNEL == 1
-        srcData = texture(tex, normalizedTexCoord).r;
+        srcData = texelFetch(tex, texCoord, 0).r;
     #elif COPY_CHANNEL == 2
-        srcData = texture(tex, normalizedTexCoord).rg;
+        srcData = texelFetch(tex, texCoord, 0).rg;
     #elif COPY_CHANNEL == 3
-        srcData = texture(tex, normalizedTexCoord).rgb;
+        srcData = texelFetch(tex, texCoord, 0).rgb;
     #elif COPY_CHANNEL == 4
-        srcData = texture(tex, normalizedTexCoord).rgba;
+        srcData = texelFetch(tex, texCoord, 0).rgba;
     #endif
 
     COPY_DATA dstData = ZERO_COPY_DATA;

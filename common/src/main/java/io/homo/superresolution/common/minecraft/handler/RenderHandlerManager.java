@@ -84,7 +84,7 @@ public class RenderHandlerManager {
         return false;
     }
 
-    private static void updateHandler() {
+    public static void updateHandler() {
         if (needUpdateHandler()) {
             if (handler != null) {
                 handler.destroy();

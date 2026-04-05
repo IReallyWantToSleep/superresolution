@@ -85,8 +85,4 @@ public class GlImportableTexture2D extends GlTexture2D {
         glDeleteMemoryObjectsEXT(glMemoryObject);
     }
 
-    @Override
-    public void resize(int width, int height) {
-        throw new UnsupportedOperationException();
-    }
 }

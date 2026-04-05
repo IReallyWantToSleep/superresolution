@@ -1,0 +1,555 @@
+{
+  "version": 1,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "output_texture": "add_tf",
+  "intermediate_textures": [
+    {
+      "name": "conv2d_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_1_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_2_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_3_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_4_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_5_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_6_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_7_tf",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_7_tf1",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "conv2d_7_tf2",
+      "scale": [
+        0.5,
+        0.5
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "depth_to_space2_tf",
+      "scale": [
+        1.0,
+        1.0
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "up_sampling2d_tf",
+      "scale": [
+        1.0,
+        1.0
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    },
+    {
+      "name": "add_tf",
+      "scale": [
+        1.0,
+        1.0
+      ],
+      "components": 4,
+      "format": "rgba32f"
+    }
+  ],
+  "passes": [
+    {
+      "file": "pass_conv2d_tf.glsl",
+      "function": "pass_conv2d_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "inputColor",
+          "source": "inputColor",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_tf",
+        "source": "conv2d_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_1_tf.glsl",
+      "function": "pass_conv2d_1_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_tf",
+          "source": "conv2d_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_1_tf",
+        "source": "conv2d_1_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_1_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_2_tf.glsl",
+      "function": "pass_conv2d_2_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_1_tf",
+          "source": "conv2d_1_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_2_tf",
+        "source": "conv2d_2_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_2_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_3_tf.glsl",
+      "function": "pass_conv2d_3_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_2_tf",
+          "source": "conv2d_2_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_3_tf",
+        "source": "conv2d_3_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_3_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_4_tf.glsl",
+      "function": "pass_conv2d_4_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_3_tf",
+          "source": "conv2d_3_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_4_tf",
+        "source": "conv2d_4_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_4_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_5_tf.glsl",
+      "function": "pass_conv2d_5_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_4_tf",
+          "source": "conv2d_4_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_5_tf",
+        "source": "conv2d_5_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_5_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_6_tf.glsl",
+      "function": "pass_conv2d_6_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_5_tf",
+          "source": "conv2d_5_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_conv2d_6_tf",
+        "source": "conv2d_6_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_6_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_7_tf.glsl",
+      "function": "pass_conv2d_7_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_tf",
+          "source": "conv2d_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 1,
+          "name": "conv2d_1_tf",
+          "source": "conv2d_1_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 2,
+          "name": "conv2d_2_tf",
+          "source": "conv2d_2_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 3,
+          "name": "conv2d_3_tf",
+          "source": "conv2d_3_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 4,
+          "name": "conv2d_4_tf",
+          "source": "conv2d_4_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 5,
+          "name": "conv2d_5_tf",
+          "source": "conv2d_5_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 6,
+          "name": "conv2d_6_tf",
+          "source": "conv2d_6_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 7,
+        "name": "out_conv2d_7_tf",
+        "source": "conv2d_7_tf",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_7_tf",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_7_tf1.glsl",
+      "function": "pass_conv2d_7_tf1",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_tf",
+          "source": "conv2d_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 1,
+          "name": "conv2d_1_tf",
+          "source": "conv2d_1_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 2,
+          "name": "conv2d_2_tf",
+          "source": "conv2d_2_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 3,
+          "name": "conv2d_3_tf",
+          "source": "conv2d_3_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 4,
+          "name": "conv2d_4_tf",
+          "source": "conv2d_4_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 5,
+          "name": "conv2d_5_tf",
+          "source": "conv2d_5_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 6,
+          "name": "conv2d_6_tf",
+          "source": "conv2d_6_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 7,
+        "name": "out_conv2d_7_tf1",
+        "source": "conv2d_7_tf1",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_7_tf1",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_conv2d_7_tf2.glsl",
+      "function": "pass_conv2d_7_tf2",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_tf",
+          "source": "conv2d_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 1,
+          "name": "conv2d_1_tf",
+          "source": "conv2d_1_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 2,
+          "name": "conv2d_2_tf",
+          "source": "conv2d_2_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 3,
+          "name": "conv2d_3_tf",
+          "source": "conv2d_3_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 4,
+          "name": "conv2d_4_tf",
+          "source": "conv2d_4_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 5,
+          "name": "conv2d_5_tf",
+          "source": "conv2d_5_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 6,
+          "name": "conv2d_6_tf",
+          "source": "conv2d_6_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 7,
+        "name": "out_conv2d_7_tf2",
+        "source": "conv2d_7_tf2",
+        "format": "rgba32f"
+      },
+      "output": "conv2d_7_tf2",
+      "scale": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "file": "pass_depth_to_space2_tf.glsl",
+      "function": "pass_depth_to_space2_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "conv2d_7_tf",
+          "source": "conv2d_7_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 1,
+          "name": "conv2d_7_tf1",
+          "source": "conv2d_7_tf1",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 2,
+          "name": "conv2d_7_tf2",
+          "source": "conv2d_7_tf2",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 3,
+        "name": "out_depth_to_space2_tf",
+        "source": "depth_to_space2_tf",
+        "format": "rgba32f"
+      },
+      "output": "depth_to_space2_tf",
+      "scale": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "file": "pass_up_sampling2d_tf.glsl",
+      "function": "pass_up_sampling2d_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "inputColor",
+          "source": "inputColor",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 1,
+        "name": "out_up_sampling2d_tf",
+        "source": "up_sampling2d_tf",
+        "format": "rgba32f"
+      },
+      "output": "up_sampling2d_tf",
+      "scale": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "file": "pass_add_tf.glsl",
+      "function": "pass_add_tf",
+      "samplers": [
+        {
+          "binding": 0,
+          "name": "depth_to_space2_tf",
+          "source": "depth_to_space2_tf",
+          "filter": "NEAREST"
+        },
+        {
+          "binding": 1,
+          "name": "up_sampling2d_tf",
+          "source": "up_sampling2d_tf",
+          "filter": "NEAREST"
+        }
+      ],
+      "image": {
+        "binding": 2,
+        "name": "out_add_tf",
+        "source": "add_tf",
+        "format": "rgba32f"
+      },
+      "output": "add_tf",
+      "scale": [
+        1.0,
+        1.0
+      ]
+    }
+  ]
+}

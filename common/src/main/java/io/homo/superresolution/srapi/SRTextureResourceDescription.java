@@ -66,6 +66,7 @@ public class SRTextureResourceDescription {
             case R16_SNORM -> SRSurfaceFormat.R16_SNORM;
             case R11G11B10F -> SRSurfaceFormat.R11G11B10_FLOAT;
             case RGBA16 -> SRSurfaceFormat.R16G16B16A16_TYPELESS;
+            case RGBA32F -> SRSurfaceFormat.R32G32B32A32_FLOAT;
         };
 
         this.width = texture.getWidth();

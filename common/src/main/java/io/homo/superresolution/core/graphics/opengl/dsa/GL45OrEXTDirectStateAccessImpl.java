@@ -37,6 +37,16 @@ public class GL45OrEXTDirectStateAccessImpl implements IGlDirectStateAccess {
     }
 
     @Override
+    public void samplerParameterf(int sampler, int pname, float param) {
+        GL45C.glSamplerParameterf(sampler, pname, param);
+    }
+
+    @Override
+    public void samplerParameterfv(int sampler, int pname, float[] params) {
+        GL45C.glSamplerParameterfv(sampler, pname, params);
+    }
+
+    @Override
     public void deleteSampler(int sampler) {
         GL45C.glDeleteSamplers(sampler);
     }

@@ -28,7 +28,6 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.minecraft.*;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.common.upscale.MotionVectorsGenerator;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
@@ -38,12 +37,15 @@ import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.joml.Vector2f;
@@ -68,18 +70,19 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     public void initialize() {
         RenderSystem.assertOnRenderThread();
         #if MC_VER > MC_1_21_4
-        renderTarget = io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer.create(
-                SuperResolutionConfig.getInternalTextureFormat(),
-                TextureFormat.DEPTH32, //mojang用的depth32，为了保证兼容性SR也得用DEPTH32
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight()
+        renderTarget = (IBindableFrameBuffer) RenderSystems.current().device().createFramebuffer(
+                FramebufferDescription.create()
+                        .colorFormat(SuperResolutionConfig.getInternalTextureFormat())
+                        .depthFormat(TextureFormat.DEPTH32)
+                        .size(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight())
+                        .build()
         );
         #else
         renderTarget = new LegacyStorageFrameBuffer(true);
         #endif
         renderTarget.label("SRMainRenderTarget");
         renderTarget.setClearColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
-        renderTarget.resizeFrameBuffer(
+        resizeRenderTarget(renderTarget,
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight()
         );
@@ -167,7 +170,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
     }
 
     private void resizeRenderTarget(IFrameBuffer renderTarget, int width, int height) {
-        renderTarget.resizeFrameBuffer(width, height);
+        if (renderTarget instanceof MinecraftRenderTargetWrapper wrapper) {
+            wrapper.resizeFrameBuffer(width, height);
+        } else if (renderTarget instanceof LegacyStorageFrameBuffer legacy) {
+            legacy.resizeFrameBuffer(width, height);
+        } else if (renderTarget instanceof GlFrameBuffer glFbo) {
+            glFbo.resizeFrameBuffer(width, height);
+        }
     }
 
     private boolean checkRenderWorldCallPos(CallType type) {
@@ -243,27 +252,13 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                     DispatchResource dispatchResource;
                     {
                         GlDebug.pushGroup(0x7190002, "Prepare Dispatch Resource");
-                        if (SuperResolutionConfig.isGenerateMotionVectors()) {
-                            MotionVectorsGenerator.update(
-                                    colorTexture,
-                                    renderTarget.getTexture(FrameBufferAttachmentType.AnyDepth)
-                            );
-                            dispatchResource = AlgorithmManager.getDispatchResource(
-                                    colorTexture,
-                                    depthTexture,
-                                    AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color),
-                                    new Vector2f(0),
-                                    0
-                            );
-                        } else {
-                            dispatchResource = AlgorithmManager.getDispatchResource(
-                                    colorTexture,
-                                    depthTexture,
-                                    null,
-                                    new Vector2f(0),
-                                    0
-                            );
-                        }
+                        dispatchResource = AlgorithmManager.getDispatchResource(
+                                colorTexture,
+                                depthTexture,
+                                null,
+                                new Vector2f(0),
+                                0
+                        );
                         GlDebug.popGroup();
                     }
 
@@ -388,32 +383,24 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         callOnRenderTargets(
                 (renderTarget) -> {
                     if (renderTarget.getWidth() != renderWidth || renderTarget.getHeight() != renderHeight) {
-                        renderTarget.resizeFrameBuffer(
-                                renderWidth,
-                                renderHeight
-                        );
+                        resizeRenderTarget(renderTarget, renderWidth, renderHeight);
                     }
                 }, true
         );
         IFrameBuffer handRenderTarget = getRenderTarget(MinecraftRenderTargetType.HAND);
-        if (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight) {
-            handRenderTarget.resizeFrameBuffer(
-                    screenWidth,
-                    screenHeight
-            );
+        if (handRenderTarget != null && (handRenderTarget.getWidth() != screenWidth || handRenderTarget.getHeight() != screenHeight)) {
+            resizeRenderTarget(handRenderTarget, screenWidth, screenHeight);
         }
 
         if (colorTexture.getWidth() != renderWidth || colorTexture.getHeight() != renderHeight) {
-            colorTexture.resize(
-                    renderWidth,
-                    renderHeight
-            );
+            TextureDescription colorDesc = colorTexture.getTextureDescription().withSize(renderWidth, renderHeight);
+            colorTexture.destroy();
+            colorTexture = RenderSystems.current().device().createTexture(colorDesc);
         }
         if (depthTexture.getWidth() != renderWidth || depthTexture.getHeight() != renderHeight) {
-            depthTexture.resize(
-                    renderWidth,
-                    renderHeight
-            );
+            TextureDescription depthDesc = depthTexture.getTextureDescription().withSize(renderWidth, renderHeight);
+            depthTexture.destroy();
+            depthTexture = RenderSystems.current().device().createTexture(depthDesc);
         }
     }
 

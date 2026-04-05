@@ -76,6 +76,20 @@ public class TextureDescription {
         return mipmapSettings;
     }
 
+    public TextureDescription withSize(int newWidth, int newHeight) {
+        TextureDescription copy = new TextureDescription();
+        copy.width = newWidth;
+        copy.height = newHeight;
+        copy.format = this.format;
+        copy.type = this.type;
+        copy.usages = this.usages;
+        copy.filterMode = this.filterMode;
+        copy.wrapMode = this.wrapMode;
+        copy.mipmapSettings = this.mipmapSettings;
+        copy.label = this.label;
+        return copy;
+    }
+
     @Override
     public String toString() {
         return "TextureDescription{" +

@@ -21,10 +21,10 @@ package io.homo.superresolution.common.upscale.sgsr.v2;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.impl.Resizable;
 
-public abstract class AbstractSgsrVariant implements Resizable, Destroyable {
+public abstract class AbstractSgsrVariant implements Destroyable {
     protected IFrameBuffer output;
+    protected Sgsr2 parentSgsr;
 
     public void setOutput(IFrameBuffer output) {
         this.output = output;
@@ -33,4 +33,6 @@ public abstract class AbstractSgsrVariant implements Resizable, Destroyable {
     public abstract void dispatch(DispatchResource resource, Sgsr2 sgsr);
 
     public abstract void init(Sgsr2 sgsr);
+
+    public abstract void resize(int width, int height);
 }

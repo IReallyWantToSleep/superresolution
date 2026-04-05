@@ -121,9 +121,4 @@ public class FrameBufferTextureAdapter implements ITexture {
     public void destroy() {
         throw new UnsupportedOperationException("This method is not implemented yet.");
     }
-
-    @Override
-    public void resize(int width, int height) {
-        throw new UnsupportedOperationException("This method is not implemented yet.");
-    }
 }

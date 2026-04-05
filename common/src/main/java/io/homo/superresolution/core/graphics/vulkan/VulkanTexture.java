@@ -31,7 +31,7 @@ import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK11.*;
 
-public class VulkanTexture implements ITexture {
+public class VulkanTexture implements ITexture, VulkanLayoutTracked {
     private final VulkanDevice device;
     private final TextureDescription description;
     private final boolean isExternal;
@@ -319,7 +319,6 @@ public class VulkanTexture implements ITexture {
         return exportedHandle;
     }
 
-    @Override
     public void resize(int newWidth, int newHeight) {
         if (newWidth == width && newHeight == height) {
             return;
@@ -376,6 +375,14 @@ public class VulkanTexture implements ITexture {
             );
         }
         currentLayout = newLayout;
+    }
+
+    public int getCurrentLayout() {
+        return currentLayout;
+    }
+
+    public void setCurrentLayout(int layout) {
+        this.currentLayout = layout;
     }
 
     @Override

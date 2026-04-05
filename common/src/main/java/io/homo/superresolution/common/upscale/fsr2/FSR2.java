@@ -32,7 +32,7 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.thirdparty.fsr2.common.*;
 import org.joml.Matrix4f;
@@ -41,7 +41,7 @@ import org.joml.Vector2f;
 
 public class FSR2 extends AbstractAlgorithm {
     public Fsr2Context fsr2Context;
-    private GlFrameBuffer outputFbo;
+    private IFrameBuffer outputFbo;
     private GlTexture2D output;
     private GlTexture2D exposureTexture;
 
@@ -52,6 +52,7 @@ public class FSR2 extends AbstractAlgorithm {
 
     @Override
     public void initialize(InitializationDescription desc) {
+        this.initDesc = desc;
         output = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(RenderHandlerManager.getScreenWidth())
@@ -61,13 +62,11 @@ public class FSR2 extends AbstractAlgorithm {
                 .label("SRFsr2Output")
                 .build()
         );
-        outputFbo = GlFrameBuffer.create(
-                output,
-                null,
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        );
-        outputFbo.label("SRFsr2OutputFbo");
+        outputFbo = RenderSystems.current().device().createFramebuffer(
+                FramebufferDescription.create()
+                        .colorAttachment(output)
+                        .label("SRFsr2OutputFbo")
+                        .build());
         exposureTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(1)
@@ -89,10 +88,6 @@ public class FSR2 extends AbstractAlgorithm {
                 )
         );
         fsr2Context.init();
-        this.resize(
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        );
     }
 
     @Override
@@ -100,6 +95,7 @@ public class FSR2 extends AbstractAlgorithm {
         return dispatchFSR2(dispatchResource);
     }
 
+    @Override
     public void destroy() {
         this.output.destroy();
         outputFbo.destroy();
@@ -107,16 +103,10 @@ public class FSR2 extends AbstractAlgorithm {
         exposureTexture.destroy();
     }
 
+    @Override
     public void resize(int width, int height) {
-        RenderSystem.assertOnRenderThread();
-        this.output.resize(width, height);
-        outputFbo.resizeFrameBuffer(width, height);
-        fsr2Context.resize(new Fsr2Dimensions(
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight(),
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight()
-        ));
+        destroy();
+        initialize(initDesc);
     }
 
     @Override
@@ -140,7 +130,6 @@ public class FSR2 extends AbstractAlgorithm {
             return false;
         }
         Matrix4f projectionMatrix = dispatchResource.projectionMatrix();
-        float m11 = projectionMatrix.m11();
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
         dispatchDescription.setColor(resources.colorTexture());

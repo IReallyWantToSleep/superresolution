@@ -18,15 +18,24 @@
 
 package io.homo.superresolution.thirdparty.fsr2.common;
 
-import io.homo.superresolution.core.graphics.impl.grape.RenderGrape;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import org.joml.Vector2i;
+import org.joml.Vector3i;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public abstract class Fsr2Pipeline {
     protected final Fsr2Context context;
-    public RenderGrape pipeline = new RenderGrape();
+    protected ComputePipeline computePipeline;
+    protected Supplier<Vector3i> workGroupSupplier;
+    protected final Map<String, IBuffer> uboBindings = new LinkedHashMap<>();
+    protected final Map<String, Fsr2ShaderResource> shaderResourceBindings = new LinkedHashMap<>();
 
     public Fsr2Pipeline(Fsr2Context context) {
         this.context = context;
@@ -89,5 +98,18 @@ public abstract class Fsr2Pipeline {
     }
 
     public abstract void execute(Fsr2PipelineDispatchResource dispatchResource);
+
+    protected void dispatchCompute(ICommandBuffer commandBuffer) {
+        for (var entry : uboBindings.entrySet()) {
+            computePipeline.descriptorSet().uniformBuffer(entry.getKey(), entry.getValue());
+        }
+        for (var entry : shaderResourceBindings.entrySet()) {
+            entry.getValue().bindToDescriptorSet(entry.getKey(), computePipeline.descriptorSet(), context);
+        }
+        computePipeline.descriptorSet().update();
+        Vector3i wg = workGroupSupplier.get();
+        RenderSystems.current().device().commandDecoder().dispatch(
+                commandBuffer, computePipeline, wg.x, wg.y, wg.z);
+    }
 }
 

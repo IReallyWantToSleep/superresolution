@@ -16,8 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.impl;
+package io.homo.superresolution.core.graphics.impl.sampler;
 
-public interface Resizable {
-    void resize(int width, int height);
+import io.homo.superresolution.core.graphics.impl.GpuObject;
+import io.homo.superresolution.core.impl.Destroyable;
+
+public interface ISampler extends GpuObject, Destroyable {
+    SamplerDescription getSamplerDescription();
 }
+

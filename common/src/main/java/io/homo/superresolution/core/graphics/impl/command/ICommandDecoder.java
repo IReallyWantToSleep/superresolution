@@ -27,6 +27,12 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 
 public interface ICommandDecoder {
+    ResourceStateTracker getStateTracker();
+
+    void declareExternalResource(ITexture texture, ResourceAccessType currentState);
+
+    void restoreExternalResource(ICommandBuffer commandBuffer, ITexture texture, ResourceAccessType targetState);
+
     void clearTextureRGBA(ICommandBuffer commandBuffer, ITexture texture, float[] color);
 
     void clearTextureDepth(ICommandBuffer commandBuffer, ITexture texture, float depth);
@@ -48,6 +54,8 @@ public interface ICommandDecoder {
     void draw(ICommandBuffer commandBuffer, RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex);
 
     void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ);
+
+    void memoryBarrier(ICommandBuffer commandBuffer, MemoryBarrierType... barriers);
 
     IDevice getDevice();
 }

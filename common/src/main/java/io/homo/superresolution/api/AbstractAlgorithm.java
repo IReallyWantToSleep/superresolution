@@ -19,14 +19,13 @@
 package io.homo.superresolution.api;
 
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.impl.Resizable;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.common.upscale.DispatchResource;
 
 import java.util.List;
 
-public abstract class AbstractAlgorithm implements Resizable, Destroyable {
+public abstract class AbstractAlgorithm implements Destroyable {
     protected InputResourceSet getResources() {
         return resources;
     }
@@ -81,7 +80,6 @@ public abstract class AbstractAlgorithm implements Resizable, Destroyable {
      * @param width  新的宽度(游戏屏幕宽度)。
      * @param height 新的高度(游戏屏幕高度)。
      */
-    @Override
     public abstract void resize(int width, int height);
 
     /**

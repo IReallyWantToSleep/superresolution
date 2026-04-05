@@ -21,6 +21,7 @@ package io.homo.superresolution.common.mixin.core;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,6 +38,7 @@ public class GlDebugMixin {
         if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null || severity == 33387) return;
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
+
         for (StackTraceElement element : elements) {
             LOGGER.error("    {}", element.toString());
         }

@@ -25,6 +25,8 @@ public class IrisMixin {
 
     @Inject(method = "reload",at=@At("TAIL"))
     private static void reloadMixin(CallbackInfo ci) {
+        RenderHandlerManager.updateHandler();
+
         SuperResolution.recreateAlgorithm();
         SuperResolutionConfig.resolutionChangeCallback.run();
     }
