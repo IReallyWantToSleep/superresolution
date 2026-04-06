@@ -58,7 +58,7 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         updateState();
     }
 
-    protected static FrameBufferRenderTargetAdapter ofRenderTarget(IFrameBuffer frameBuffer) {
+    public static FrameBufferRenderTargetAdapter ofRenderTarget(IFrameBuffer frameBuffer) {
         return new FrameBufferRenderTargetAdapter(frameBuffer);
     }
 

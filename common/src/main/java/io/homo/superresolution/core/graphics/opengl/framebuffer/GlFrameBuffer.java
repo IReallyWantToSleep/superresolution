@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.opengl.framebuffer;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.minecraft.FrameBufferRenderTargetAdapter;
 import io.homo.superresolution.common.minecraft.RenderTargetCache;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
@@ -45,6 +46,8 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     private int width;
     private int height;
     private String label;
+
+    private FrameBufferRenderTargetAdapter minecraftRenderTarget;
 
     public GlFrameBuffer() {
 
@@ -339,7 +342,10 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
 
     @Override
     public RenderTarget asMcRenderTarget() {
-        return RenderTargetCache.cacheOf(this);
+        if (minecraftRenderTarget == null) {
+            minecraftRenderTarget = FrameBufferRenderTargetAdapter.ofRenderTarget(this);
+        }
+        return minecraftRenderTarget;
     }
 
     public void label(String label) {
@@ -369,6 +375,11 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         }
         validate();
         updateDebugLabel(getDebugLabel());
+
+        if (minecraftRenderTarget != null) {
+            minecraftRenderTarget = null;
+            minecraftRenderTarget = FrameBufferRenderTargetAdapter.ofRenderTarget(this);
+        }
     }
 
     @Override

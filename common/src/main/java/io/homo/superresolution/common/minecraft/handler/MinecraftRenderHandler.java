@@ -402,6 +402,7 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
             depthTexture.destroy();
             depthTexture = RenderSystems.current().device().createTexture(depthDesc);
         }
+
     }
 
     public void onRenderHandBegin() {
