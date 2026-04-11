@@ -1,4 +1,6 @@
 {
+    "modmenu.nameTranslation.super_resolution": "Super Resolution",
+    "modmenu.descriptionTranslation.super_resolution": "Meow",
     "key.super_resolution.open_config": "Open Configuration Interface",
     "superresolution.algo.description.header": "FSR1 --- AMD FidelityFX Super Resolution 1\nFSR2 --- AMD FidelityFX Super Resolution 2\nNIS --- NVIDIA Image Scaling\nSGSR --- Snapdragon™ Game Super Resolution",
     "superresolution.algo.display_name.fsr1": "FSR1",
