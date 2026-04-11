@@ -22,13 +22,18 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.neoforge.compat.sodium.SodiumOptionScreen;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.common.NeoForge;
 
 
 @Mod(value = SuperResolution.MOD_ID, dist = Dist.CLIENT)
@@ -40,6 +45,24 @@ public final class SuperResolutionNeoForge {
             SodiumOptionScreen.register();
         }
         SuperResolution.registerEvents();
+        if (container.getEventBus() != null){
+            container.getEventBus().addListener(SuperResolutionNeoForge::onClientSetup);
+            container.getEventBus().addListener(SuperResolutionNeoForge::registerBindings);
+        }
+    }
+
+    @SubscribeEvent
+    public static void registerBindings(RegisterKeyMappingsEvent event) {
+        event.register(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
+        if (SuperResolutionConfig.isEnableDatasetGenerator()) {
+            event.register(DataSetGenerator.SAVE_KEYMAPPING);
+            event.register(DataSetGenerator.SEQUENCE_KEYMAPPING);
+        }
         SuperResolutionKeyMapping.registerKeyMapping();
+    }
+
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        SuperResolution.onClientSetup();
     }
 }

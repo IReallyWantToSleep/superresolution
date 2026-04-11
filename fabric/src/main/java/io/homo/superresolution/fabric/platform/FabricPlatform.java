@@ -66,4 +66,10 @@ public class FabricPlatform extends Platform {
         return SharedConstants.VERSION_STRING;
         #endif
     }
+
+
+    public boolean isForge(){return false;}
+    public boolean isNeoForge(){return false;}
+    public boolean isForgeLike(){return false;}
+    public  boolean isFabric(){return true;}
 }

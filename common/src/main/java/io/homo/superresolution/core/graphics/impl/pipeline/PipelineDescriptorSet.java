@@ -23,6 +23,7 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +92,30 @@ public abstract class PipelineDescriptorSet {
 
     public PipelineDescriptorSet storageImage(String name, ITexture texture) {
         return storageImage(name, getBinding(name), texture);
+    }
+
+    public PipelineDescriptorSet samplerTexture(String name, int binding, ITextureView view) {
+        return samplerTexture(name, binding, (ITexture) view);
+    }
+
+    public PipelineDescriptorSet samplerTexture(String name, int binding, ITextureView view, ISampler sampler) {
+        return samplerTexture(name, binding, (ITexture) view, sampler);
+    }
+
+    public PipelineDescriptorSet storageImage(String name, int binding, ITextureView view) {
+        return storageImage(name, binding, (ITexture) view);
+    }
+
+    public PipelineDescriptorSet samplerTexture(String name, ITextureView view) {
+        return samplerTexture(name, getBinding(name), (ITexture) view);
+    }
+
+    public PipelineDescriptorSet samplerTexture(String name, ITextureView view, ISampler sampler) {
+        return samplerTexture(name, getBinding(name), (ITexture) view, sampler);
+    }
+
+    public PipelineDescriptorSet storageImage(String name, ITextureView view) {
+        return storageImage(name, getBinding(name), (ITexture) view);
     }
 
     public void update() {

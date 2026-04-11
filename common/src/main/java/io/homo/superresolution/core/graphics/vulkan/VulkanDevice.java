@@ -90,43 +90,60 @@ public class VulkanDevice implements IDevice {
 
     @Override
     public IFrameBuffer createFramebuffer(FramebufferDescription description) {
-        // TODO: Vulkan framebuffer 实现
-        return null;
+        return new VulkanFramebuffer(this, description);
     }
 
     @Override
     public IShaderProgram createShaderProgram(ShaderDescription description) {
-        return null;
+        VulkanShaderProgram program = new VulkanShaderProgram(this, description);
+        program.compile();
+        return program;
     }
 
     @Override
     public IVertexBuffer createVertexBuffer(VertexBufferDescription description) {
-        return null;
+        return new VulkanVertexBuffer(this, description);
     }
 
     @Override
     public IBuffer createBuffer(BufferDescription description) {
-        return null;
+        return new VulkanBuffer(this, description);
     }
 
     @Override
     public RenderPass createRenderPass(RenderPass.Builder builder) {
-        return null;
+        return new VulkanRenderPass(
+                this,
+                (GraphicsPipeline) builder.getPipeline(),
+                builder.getFrameBuffer(),
+                builder.getClearState()
+        );
     }
 
     @Override
     public PipelineDescriptorSet createDescriptorSet(IShaderProgram shader) {
-        return null;
+        return new VulkanPipelineDescriptorSet(this, shader);
     }
 
     @Override
     public ComputePipeline createComputePipeline(ComputePipeline.Builder builder) {
-        return null;
+        PipelineDescriptorSet descriptorSet = createDescriptorSet(builder.shader());
+        return new VulkanComputePipeline(this, builder.shader(), descriptorSet);
     }
 
     @Override
     public GraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder) {
-        return null;
+        PipelineDescriptorSet descriptorSet = createDescriptorSet(builder.shader());
+        return new VulkanGraphicsPipeline(
+                this,
+                builder.shader(),
+                builder.rasterization(),
+                builder.depthStencil(),
+                builder.colorBlend(),
+                builder.dynamicStates(),
+                builder.vertexFormat(),
+                descriptorSet
+        );
     }
 
     @Override

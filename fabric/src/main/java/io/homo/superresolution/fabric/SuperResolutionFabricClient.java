@@ -19,10 +19,14 @@
 package io.homo.superresolution.fabric;
 
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.fabric.compat.sodium.SodiumOptionScreen;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.loader.api.FabricLoader;
 
 public final class SuperResolutionFabricClient implements ClientModInitializer {
@@ -33,5 +37,12 @@ public final class SuperResolutionFabricClient implements ClientModInitializer {
         if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             SodiumOptionScreen.register();
         }
+        SuperResolution.onClientSetup();
+        KeyBindingHelper.registerKeyBinding(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
+        if (SuperResolutionConfig.isEnableDatasetGenerator()) {
+            KeyBindingHelper.registerKeyBinding(DataSetGenerator.SAVE_KEYMAPPING);
+            KeyBindingHelper.registerKeyBinding(DataSetGenerator.SEQUENCE_KEYMAPPING);
+        }
+        SuperResolutionKeyMapping.registerKeyMapping();
     }
 }

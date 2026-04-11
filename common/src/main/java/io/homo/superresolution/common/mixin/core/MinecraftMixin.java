@@ -21,11 +21,13 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
+import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -55,6 +57,7 @@ public abstract class MinecraftMixin {
     private void onLoadDone(CallbackInfo ci) {
         SuperResolution.gameIsLoaded = true;
         SuperResolution.onGameLoadFinished();
+        SuperResolution.onClientStarted();
     }
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
@@ -64,7 +67,7 @@ public abstract class MinecraftMixin {
             super_resolution$cacheHeight = RenderHandlerManager.getScreenHeight();
             Minecraft.getInstance().resizeDisplay();
         }
-        org.lwjgl.opengl.GL11.glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
+        GL11.glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         PerformanceTracker.push("Frame");
         RenderHandlerManager.onFrameBegin();
     }
@@ -73,15 +76,22 @@ public abstract class MinecraftMixin {
     private void onRenderEnd(CallbackInfo ci) {
         RenderHandlerManager.onFrameEnd();
         PerformanceTracker.pop("Frame");
+        SuperResolution.onClientTickEnd();
     }
 
     @Inject(method = "resizeDisplay", at = @At(value = "HEAD"), cancellable = true)
     private void onResize(CallbackInfo ci) {
         if (
-                io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceWidth() <= 1 ||
-                        io.homo.superresolution.common.minecraft.MinecraftWindow.getWindowSourceHeight() <= 1
+                MinecraftWindow.getWindowSourceWidth() <= 1 ||
+                        MinecraftWindow.getWindowSourceHeight() <= 1
         ) {
             ci.cancel();
         }
+    }
+
+    //just like fabric`s invoke point
+    @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;)V"))
+    public void onDestroy(CallbackInfo ci) {
+        SuperResolution.onClientStopping();
     }
 }

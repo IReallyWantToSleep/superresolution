@@ -19,8 +19,6 @@
 package io.homo.superresolution.common;
 
 import com.google.common.collect.ImmutableList;
-import dev.architectury.event.events.client.ClientLifecycleEvent;
-import dev.architectury.event.events.client.ClientTickEvent;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.SuperResolutionAPI;
@@ -97,50 +95,47 @@ public final class SuperResolution implements Destroyable {
         ShaderCompatHandler.irisApiReloadShader();
     }
 
-    public static void registerEvents() {
-        ClientLifecycleEvent.CLIENT_SETUP.register(
-                (minecraft) -> {
-                    SuperResolutionKeyMapping.registerKeyMapping();
-                    if (Platform.currentPlatform.isInstallIris()) {
-                        try {
-                            Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler").getMethod("registerEventListeners").invoke(null);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-        );
-        ClientLifecycleEvent.CLIENT_STARTED.register(
-                (minecraft) -> {
-                    if (gameIsStarted) {
-                        SuperResolution.LOGGER.warn("似乎有什么东西在重复初始化SR");
-                        return;
-                    }
-                    SuperResolutionConfig.SPEC.load();
-                    gameIsStarted = true;
-                    SuperResolutionKeyMapping.registerKeyMapping();
-                    instance = new SuperResolution();
-                    SuperResolution.check();
-                    SuperResolution.preInit();
-                    SuperResolution.initRendering();
-                    SuperResolution.getInstance().init();
-                    MaterialUI.init();
+    public static void onClientStarted() {
+        if (gameIsStarted) {
+            SuperResolution.LOGGER.warn("似乎有什么东西在重复初始化SR");
+            return;
+        }
+        SuperResolutionConfig.SPEC.load();
+        gameIsStarted = true;
+        SuperResolutionKeyMapping.registerKeyMapping();
+        instance = new SuperResolution();
+        SuperResolution.check();
+        SuperResolution.preInit();
+        SuperResolution.initRendering();
+        SuperResolution.getInstance().init();
+        MaterialUI.init();
+    }
 
+    public static void onClientStopping() {
+        SuperResolution.getInstance().destroy();
+    }
 
-                }
-        );
-        ClientLifecycleEvent.CLIENT_STOPPING.register(
-                (minecraft) -> {
-                    SuperResolution.getInstance().destroy();
-                }
-        );
-        ClientTickEvent.CLIENT_POST.register(minecraft -> {
-            while (SuperResolutionKeyMapping.OPENGUI_KEYMAPPING.consumeClick()) {
-                minecraft.setScreen(
-                        ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
-                );
+    public static void onClientSetup() {
+        SuperResolutionKeyMapping.registerKeyMapping();
+        if (Platform.currentPlatform.isInstallIris()) {
+            try {
+                Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler").getMethod("registerEventListeners").invoke(null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+
             }
-        });
+        }
+    }
+
+    public static void onClientTickEnd() {
+        while (SuperResolutionKeyMapping.OPENGUI_KEYMAPPING.consumeClick()) {
+            minecraft.setScreen(
+                    ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
+            );
+        }
+    }
+
+    public static void registerEvents() {
     }
 
     public static void preInit() {

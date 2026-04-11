@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.dataset;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
@@ -64,14 +63,14 @@ import static org.lwjgl.opengl.GL33.*;
 public class DataSetGenerator {
     public static File OUTPUT_DIR = Paths.get(SuperResolutionConfig.DATASET_PATH.get()).toFile();
     #if MC_VER > MC_1_21_8
-    private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
+    public static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F7,
             SuperResolutionKeyMapping.CATEGORY
     );
     #else
-    private static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
+    public static final KeyMapping SAVE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.save_data",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F7,
@@ -79,14 +78,14 @@ public class DataSetGenerator {
     );
     #endif
     #if MC_VER > MC_1_21_8
-    private static final KeyMapping SEQUENCE_KEYMAPPING = new KeyMapping(
+    public static final KeyMapping SEQUENCE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.sequence_capture",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F8,
             SuperResolutionKeyMapping.CATEGORY
     );
     #else
-    private static final KeyMapping SEQUENCE_KEYMAPPING = new KeyMapping(
+    public static final KeyMapping SEQUENCE_KEYMAPPING = new KeyMapping(
             "key.super_resolution.sequence_capture",
             InputConstants.Type.KEYSYM,
             InputConstants.KEY_F8,
@@ -135,8 +134,7 @@ public class DataSetGenerator {
 
 
     public static void init() {
-        KeyMappingRegistry.register(SAVE_KEYMAPPING);
-        KeyMappingRegistry.register(SEQUENCE_KEYMAPPING);
+
         SuperResolutionAPI.EVENT_BUS.addListener(DataSetGenerator::onLevelBegin);
         SuperResolutionAPI.EVENT_BUS.addListener(DataSetGenerator::onLevelEnd);
     }

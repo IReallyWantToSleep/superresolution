@@ -16,14 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
+import utils.MinecraftVersion
 import utils.ModrinthUploader
 import groovy.json.JsonSlurper
 import org.gradle.api.logging.configuration.ConsoleOutput
 import org.gradle.api.tasks.GradleBuild
 
 plugins {
-    id 'fabric-loom' version '1.16.0-alpha.9' apply false
-    id 'net.neoforged.moddev' version '2.0.139' apply false
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("26.1")) {
+
+    }
+    id 'fabric-loom' version '1.16.1' apply false
+    id 'net.neoforged.moddev' version '2.0.141' apply false
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
     id 'multiversion'
     id 'multiversion-neoform'

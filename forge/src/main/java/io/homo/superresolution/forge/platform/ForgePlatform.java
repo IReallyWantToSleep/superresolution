@@ -69,4 +69,9 @@ public class ForgePlatform extends Platform {
     public Path getGameFolder() {
         return FMLPaths.GAMEDIR.get();
     }
+
+    public boolean isForge(){return true;}
+    public boolean isNeoForge(){return false;}
+    public boolean isForgeLike(){return true;}
+    public  boolean isFabric(){return false;}
 }

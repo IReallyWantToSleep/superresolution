@@ -83,4 +83,9 @@ public class NeoForgePlatform extends Platform {
         return FMLLoader.getGamePath();
         #endif
     }
+
+    public boolean isForge(){return false;}
+    public boolean isNeoForge(){return true;}
+    public boolean isForgeLike(){return true;}
+    public  boolean isFabric(){return false;}
 }

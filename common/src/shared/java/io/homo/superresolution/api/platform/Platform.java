@@ -52,4 +52,10 @@ public abstract class Platform {
     }
 
     public abstract String getMinecraftVersion();
+
+    public abstract boolean isForge();
+    public abstract boolean isNeoForge();
+    public abstract boolean isForgeLike();
+    public abstract boolean isFabric();
+
 }

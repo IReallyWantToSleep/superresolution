@@ -143,7 +143,7 @@ dependencies {
     //implementation "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux"
     //libraries(jarJar "org.lwjgl:lwjgl-nanovg:$versionConfig.common.lwjglVersion:natives-linux")
 
-    implementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
+    if (versionConfig.common.architecturyApiVersion!=null)implementation "dev.architectury:architectury-neoforge:$versionConfig.common.architecturyApiVersion"
     implementation "net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8"
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
         def depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion != null ? lib.minecraftVersion : versionConfig.common.minecraftVersion}"

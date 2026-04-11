@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.impl.framebuffer;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
 public class FramebufferDescription {
@@ -94,6 +95,14 @@ public class FramebufferDescription {
         public Builder depthAttachment(ITexture depthTexture) {
             description.depthAttachment = depthTexture;
             return this;
+        }
+
+        public Builder colorAttachment(ITextureView view) {
+            return colorAttachment((ITexture) view);
+        }
+
+        public Builder depthAttachment(ITextureView view) {
+            return depthAttachment((ITexture) view);
         }
 
         public Builder colorFormat(TextureFormat format) {

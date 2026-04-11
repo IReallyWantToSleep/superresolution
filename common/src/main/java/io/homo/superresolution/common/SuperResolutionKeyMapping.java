@@ -19,7 +19,6 @@
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import dev.architectury.registry.client.keymappings.KeyMappingRegistry;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
 import net.minecraft.client.KeyMapping;
@@ -60,7 +59,6 @@ public class SuperResolutionKeyMapping {
                 DataSetGenerator.init();
             }
 
-            KeyMappingRegistry.register(OPENGUI_KEYMAPPING);
         }
         registeredKeyMapping = true;
     }

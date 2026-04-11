@@ -1,0 +1,80 @@
+{
+    "skip_build": true,
+    "common": {
+        "java_version": 25,
+        "minecraft_version": "26.1.2",
+        "parchment_version": null,
+        "platforms": [
+            "fabric",
+            "neoforge"
+        ],
+        "lwjgl_version": "3.4.1",
+        "architectury_api_version": null,
+        "neoforge": {
+            "minecraft_version_range": "[26.1.1,26.1.2)"
+        },
+        "fabric": {
+            "minecraft_version_range": [
+                "~26.1.2",
+                "~26.1.1"
+            ]
+        },
+        "cloth_config_version": null,
+        "mod_artifact_minecraft_ver": "26.1.x",
+        "neoform_version": "26.1.2-1"
+    },
+    "fabric": {
+        "loader_version": "0.19.1",
+        "api_version": "0.145.4+26.1.2",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "iris",
+                    "version": "1.10.9+26.1-fabric"
+                },
+                {
+                    "name": "sodium",
+                    "version": "0.8.9-beta.4+mc26.1.1"
+                },
+                {
+                    "name": "spark",
+                    "version": "1.10.172-fabric"
+                },
+                {
+                    "name": "fabric-permissions-api",
+                    "version": "0.6.1",
+                    "minecraft_version": "1.21.11"
+                }
+            ],
+            "local": []
+        },
+        "modmenu_version": "18.0.0-alpha.8"
+    },
+    "neoforge": {
+        "loader_version": "26.1.2.0-beta",
+        "dependencies": {
+            "modrinth": [
+                {
+                    "name": "spark",
+                    "version": "1.10.172-neoforge"
+                },
+                {
+                    "name": "sodium",
+                    "version": "0.8.9-beta.4+mc26.1.1"
+                },
+                {
+                    "name": "iris",
+                    "version": "1.10.9+26.1-neoforge"
+                },
+                {
+                    "name": "distanthorizons",
+                    "version": "2.4.5-b-1.21.11",
+                    "compileOnly": true,
+                    "minecraft_version": "1.21.11"
+                }
+            ],
+            "local": [
+            ]
+        }
+    }
+}

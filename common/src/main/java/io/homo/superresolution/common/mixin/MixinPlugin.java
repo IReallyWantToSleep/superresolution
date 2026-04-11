@@ -59,7 +59,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
                     Platform.currentPlatform.isModLoaded("gpu_tape") ||
                     Platform.currentPlatform.isModLoaded("gpu_booster") ||
                     // AR的fabric移植同样会覆盖opengl版本
-                    (Platform.currentPlatform.isModLoaded("acceleratedrendering") && dev.architectury.platform.Platform.isFabric()));
+                    (Platform.currentPlatform.isModLoaded("acceleratedrendering") && Platform.currentPlatform.isFabric()));
         }
         return true;
     }
