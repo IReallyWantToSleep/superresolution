@@ -19,15 +19,11 @@
 package io.homo.superresolution.common.gui;
 #if MC_VER > MC_1_21_5
 
+import com.mojang.blaze3d.pipeline.ColorTargetState;
 import net.minecraft.client.renderer.ShaderDefines;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.platform.DepthTestFunction;
-import com.mojang.blaze3d.platform.LogicOp;
-import com.mojang.blaze3d.platform.PolygonMode;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.platform.*;
+import com.mojang.blaze3d.pipeline.*;
+import com.mojang.blaze3d.vertex.*;
 #endif
 
 #if MC_VER > MC_1_21_10
@@ -46,6 +42,23 @@ public class CustomActionRenderPipeline extends RenderPipeline {
     public CustomActionRenderPipeline(
             Runnable action
     ) {
+        #if MC_VER > MC_1_21_11
+        super(
+                Identifier.withDefaultNamespace(""),
+                Identifier.withDefaultNamespace(""),
+                Identifier.withDefaultNamespace(""),
+                ShaderDefines.EMPTY,
+                List.of(),
+                List.of(),
+                ColorTargetState.DEFAULT,
+                DepthStencilState.DEFAULT,
+                PolygonMode.FILL,
+                false,
+                DefaultVertexFormat.POSITION_TEX_COLOR,
+                VertexFormat.Mode.QUADS,
+                0
+        );
+        #else
         super(
                 #if MC_VER > MC_1_21_10
                 Identifier.withDefaultNamespace(""),
@@ -73,6 +86,7 @@ public class CustomActionRenderPipeline extends RenderPipeline {
                 1,
                 1
         );
+        #endif
         this.action = action;
     }
 

@@ -25,6 +25,7 @@ import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
@@ -271,8 +272,8 @@ public class DataSetGenerator {
                     texture.getTextureFormat().getChannelCount(),
                     id,
                     previousId,
-                    "0.05",
-                    String.valueOf(Minecraft.getInstance().gameRenderer.getDepthFar())
+                    String.valueOf(MinecraftUtils.getCameraNear()),
+                    String.valueOf(MinecraftUtils.getCameraFar())
             );
         }
         return "%s-%s_%s-%s_%s.%s+%s.texture.bin".formatted(
@@ -499,7 +500,7 @@ public class DataSetGenerator {
         seqFences[slot] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         seqPboFrameIndex[slot] = frameIdx;
 
-        seqFrameDepthFar.add((float) Minecraft.getInstance().gameRenderer.getDepthFar());
+        seqFrameDepthFar.add(MinecraftUtils.getCameraFar());
 
         seqPboHead = (seqPboHead + 1) % PBO_RING_SIZE;
         seqPboCount++;

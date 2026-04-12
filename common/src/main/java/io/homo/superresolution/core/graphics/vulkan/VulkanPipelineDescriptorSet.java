@@ -34,20 +34,17 @@ import java.util.Map;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRPushDescriptor.VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
     private final VulkanDevice device;
     private long descriptorSetLayout = VK_NULL_HANDLE;
-    private long descriptorPool = VK_NULL_HANDLE;
-    private long descriptorSet = VK_NULL_HANDLE;
 
     public VulkanPipelineDescriptorSet(VulkanDevice device, IShaderProgram shader) {
         super(shader);
         this.device = device;
         createDescriptorSetLayout();
-        createDescriptorPool();
-        allocateDescriptorSet();
     }
 
     private void createDescriptorSetLayout() {
@@ -71,6 +68,7 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
 
             VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)
+                    .flags(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR)
                     .pBindings(layoutBindings);
 
             LongBuffer pLayout = stack.mallocLong(1);
@@ -80,73 +78,14 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
         }
     }
 
-    private void createDescriptorPool() {
-        ShaderResourcesLayout layout = shader.getDescription().resourcesLayout();
-        Map<String, ShaderResourceDescription> resources = layout.getResources();
-
-        int uboCount = 0, samplerCount = 0, storageCount = 0;
-        for (ShaderResourceDescription res : resources.values()) {
-            switch (res.type()) {
-                case UniformBuffer -> uboCount++;
-                case SamplerTexture -> samplerCount++;
-                case StorageTexture -> storageCount++;
-            }
-        }
-
-        try (MemoryStack stack = stackPush()) {
-            int poolSizeCount = 0;
-            if (uboCount > 0) poolSizeCount++;
-            if (samplerCount > 0) poolSizeCount++;
-            if (storageCount > 0) poolSizeCount++;
-
-            if (poolSizeCount == 0) {
-                poolSizeCount = 1;
-            }
-
-            VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.calloc(poolSizeCount, stack);
-            int idx = 0;
-            if (uboCount > 0) {
-                poolSizes.get(idx++).type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER).descriptorCount(uboCount);
-            }
-            if (samplerCount > 0) {
-                poolSizes.get(idx++).type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER).descriptorCount(samplerCount);
-            }
-            if (storageCount > 0) {
-                poolSizes.get(idx++).type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE).descriptorCount(storageCount);
-            }
-            if (idx == 0) {
-                poolSizes.get(0).type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER).descriptorCount(1);
-            }
-
-            VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO)
-                    .flags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
-                    .maxSets(1)
-                    .pPoolSizes(poolSizes);
-
-            LongBuffer pPool = stack.mallocLong(1);
-            VK_CHECK(vkCreateDescriptorPool(device.getVkDevice(), poolInfo, null, pPool),
-                    "Failed to create descriptor pool");
-            descriptorPool = pPool.get(0);
-        }
-    }
-
-    private void allocateDescriptorSet() {
-        try (MemoryStack stack = stackPush()) {
-            VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO)
-                    .descriptorPool(descriptorPool)
-                    .pSetLayouts(stack.longs(descriptorSetLayout));
-
-            LongBuffer pSet = stack.mallocLong(1);
-            VK_CHECK(vkAllocateDescriptorSets(device.getVkDevice(), allocInfo, pSet),
-                    "Failed to allocate descriptor set");
-            descriptorSet = pSet.get(0);
-        }
-    }
-
     @Override
     protected void updateImpl() {
+        // Push descriptors 模式下不需要预更新；
+        // 实际的 descriptor 推送在 VulkanCommandDecoder 录制命令时完成。
+        // 基类的 dirty flag 已经在 update() 中被清除。
+    }
+
+    void pushDescriptors(VkCommandBuffer cmd, int bindPoint, long pipelineLayout) {
         if (bindings.isEmpty()) return;
 
         try (MemoryStack stack = stackPush()) {
@@ -157,7 +96,6 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                 ResourceBinding binding = entry.getValue();
                 VkWriteDescriptorSet write = writes.get(i);
                 write.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
-                        .dstSet(descriptorSet)
                         .dstBinding(binding.bindingPoint())
                         .dstArrayElement(0)
                         .descriptorCount(1);
@@ -201,13 +139,18 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                 i++;
             }
 
-            vkUpdateDescriptorSets(device.getVkDevice(), writes, null);
+            KHRPushDescriptor.vkCmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, 0, writes);
         }
+        dirty = false;
+    }
+
+    boolean needsPush() {
+        return dirty;
     }
 
     @Override
     public void apply() {
-        //Vulkan中 Descriptor Set 的绑定由CmdDec那边处理
+        // Vulkan中 Descriptor 的推送由 VulkanCommandDecoder 在录制命令时处理
     }
 
     private long resolveImageView(ITexture textureOrView) {
@@ -273,19 +216,10 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
         return descriptorSetLayout;
     }
 
-    public long getDescriptorSet() {
-        return descriptorSet;
-    }
-
     public void destroy() {
         if (defaultSampler != VK_NULL_HANDLE) {
             vkDestroySampler(device.getVkDevice(), defaultSampler, null);
             defaultSampler = VK_NULL_HANDLE;
-        }
-        if (descriptorPool != VK_NULL_HANDLE) {
-            vkDestroyDescriptorPool(device.getVkDevice(), descriptorPool, null);
-            descriptorPool = VK_NULL_HANDLE;
-            descriptorSet = VK_NULL_HANDLE;
         }
         if (descriptorSetLayout != VK_NULL_HANDLE) {
             vkDestroyDescriptorSetLayout(device.getVkDevice(), descriptorSetLayout, null);

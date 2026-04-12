@@ -16,35 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.irisapi.mixin.composite.after1_21_4;
+package io.homo.irisapi.mixin.composite.after1_21_11;
 
-import io.homo.irisapi.IrisCompositePassType;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
-import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 
-#if MC_VER > MC_1_21_4 && MC_VER < MC_26_1
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+
+#if MC_VER > MC_1_21_11
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+import org.spongepowered.asm.mixin.Final;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import io.homo.irisapi.IrisCompositePassType;
 import io.homo.irisapi.IrisReflectionUtils;
 import io.homo.irisapi.NamedCompositePass;
 import io.homo.irisapi.PassEventHandler;
 import io.homo.irisapi.handlers.IrisRenderingPipelineHandler;
-
 #endif
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
-    #if MC_VER > MC_1_21_4 && MC_VER < MC_26_1
+    #if MC_VER > MC_1_21_11
     @Shadow(remap = false)
     @Final
     private ImmutableList<Object> passes;
@@ -72,7 +71,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -91,7 +89,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -112,7 +109,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -132,7 +128,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -152,7 +147,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -173,7 +167,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -194,7 +187,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {

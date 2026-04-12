@@ -17,7 +17,19 @@
  */
 
 package io.homo.superresolution.common.mixin.gui;
+#if MC_VER > MC_1_21_11
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
+@Mixin(GuiGraphicsExtractor.class)
+public interface GuiGraphicsAccessor {
+    @Accessor("guiRenderState")
+    GuiRenderState getGuiRenderState();
+}
+
+#else
 import net.minecraft.client.gui.GuiGraphics;
 #if MC_VER > MC_1_21_5
 import net.minecraft.client.gui.render.state.GuiRenderState;
@@ -32,3 +44,6 @@ public interface GuiGraphicsAccessor {
     GuiRenderState getGuiRenderState();
     #endif
 }
+
+#endif
+

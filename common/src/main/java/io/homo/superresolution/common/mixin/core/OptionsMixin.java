@@ -27,13 +27,13 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-#if !MC_VER > MC_1_21_10
+#if !(MC_VER > MC_1_21_10)
 import net.minecraft.client.GraphicsStatus;
 
 #endif
 @Mixin(Options.class)
 public class OptionsMixin {
-    #if !MC_VER > MC_1_21_10
+    #if !(MC_VER > MC_1_21_10)
     @Final
     @Shadow
     private OptionInstance<GraphicsStatus> graphicsMode;

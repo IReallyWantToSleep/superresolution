@@ -5,14 +5,15 @@
     "compatibilityLevel": "JAVA_8",
     "minVersion": "0.8",
     "client": [
-        "macros.StandardMacrosEventMixin",
-        "uniform.CommonUniformsEventMixin",
         "composite.CompositeRendererAccessor",
         "composite.CompositeRendererPassMixin",
         "composite.IrisRenderingPipelineAccessor",
         "composite.after1_21_4.CompositeRendererMixin",
         "composite.before1_21_1.CompositeRendererMixin",
-        "composite.v1_21_1.CompositeRendererMixin"
+        "composite.v1_21_1.CompositeRendererMixin",
+        "composite.after1_21_11.CompositeRendererMixin",
+        "macros.StandardMacrosEventMixin",
+        "uniform.CommonUniformsEventMixin"
     ],
     "mixins": [
     ],

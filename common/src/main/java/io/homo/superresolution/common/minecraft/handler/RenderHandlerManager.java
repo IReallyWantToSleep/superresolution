@@ -29,6 +29,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
@@ -95,7 +96,7 @@ public class RenderHandlerManager {
             } else {
                 handler = new MinecraftRenderHandler();
             }
-            minecraft.resizeDisplay();
+            MinecraftUtils.resize();
             handler.initialize();
         }
     }

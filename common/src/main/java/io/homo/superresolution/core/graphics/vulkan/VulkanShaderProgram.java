@@ -58,6 +58,7 @@ public class VulkanShaderProgram implements IShaderProgram {
         for (Map.Entry<ShaderType, ShaderSource> entry : description.sourceMap().entrySet()) {
             ShaderType type = entry.getKey();
             ShaderSource source = entry.getValue();
+            source.addDefine("SR_VULKAN", "1");
             long module = compileShaderModule(type, source);
             shaderModules.put(type, module);
         }

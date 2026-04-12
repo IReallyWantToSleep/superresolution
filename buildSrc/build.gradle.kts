@@ -1,0 +1,19 @@
+plugins {
+    id("groovy-gradle-plugin")
+    `kotlin-dsl`
+    groovy
+}
+
+repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    maven(url = "https://jitpack.io")
+}
+
+dependencies {
+    implementation("com.electronwill.night-config:toml:3.6.0")
+    implementation("com.electronwill.night-config:core:3.6.0")
+    implementation("dev.masecla:Modrinth4J:2.2.0")
+    implementation(gradleApi())
+    implementation(localGroovy())
+}

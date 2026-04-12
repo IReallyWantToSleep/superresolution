@@ -40,19 +40,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
-
-    @Shadow
-    #if MC_VER < MC_1_21_4
-    protected abstract double getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
-
-    @Shadow
-    @Final
-    private Minecraft minecraft;
-
-    #else
-    protected abstract float getFov(Camera activeRenderInfo, float partialTicks, boolean useFOVSetting);
-
-    #endif
     @Inject(method = "resize", at = @At(value = "HEAD"))
     private void onResize(int i, int j, CallbackInfo ci) {
         if (SuperResolution.isInit && SuperResolution.gameIsLoaded) {

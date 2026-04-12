@@ -21,6 +21,7 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -53,11 +54,15 @@ public abstract class MinecraftMixin {
     @Unique
     private int super_resolution$cacheHeight = 0;
 
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), method = "<init>")
+    private void onClientStarted(net.minecraft.client.main.GameConfig data, CallbackInfo ci) {
+        SuperResolution.onClientStarted();
+    }
+
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
         SuperResolution.gameIsLoaded = true;
         SuperResolution.onGameLoadFinished();
-        SuperResolution.onClientStarted();
     }
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
@@ -65,7 +70,7 @@ public abstract class MinecraftMixin {
         if (super_resolution$cacheWidth != RenderHandlerManager.getScreenWidth() || super_resolution$cacheHeight != RenderHandlerManager.getScreenHeight()) {
             super_resolution$cacheWidth = RenderHandlerManager.getScreenWidth();
             super_resolution$cacheHeight = RenderHandlerManager.getScreenHeight();
-            Minecraft.getInstance().resizeDisplay();
+            MinecraftUtils.resize();
         }
         GL11.glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         PerformanceTracker.push("Frame");
@@ -79,6 +84,7 @@ public abstract class MinecraftMixin {
         SuperResolution.onClientTickEnd();
     }
 
+    #if MC_VER <= MC_1_21_11
     @Inject(method = "resizeDisplay", at = @At(value = "HEAD"), cancellable = true)
     private void onResize(CallbackInfo ci) {
         if (
@@ -88,6 +94,17 @@ public abstract class MinecraftMixin {
             ci.cancel();
         }
     }
+    #else
+    @Inject(method = "resizeGui", at = @At(value = "HEAD"), cancellable = true)
+    private void onResize(CallbackInfo ci) {
+        if (
+                MinecraftWindow.getWindowSourceWidth() <= 1 ||
+                        MinecraftWindow.getWindowSourceHeight() <= 1
+        ) {
+            ci.cancel();
+        }
+    }
+    #endif
 
     //just like fabric`s invoke point
     @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;)V"))

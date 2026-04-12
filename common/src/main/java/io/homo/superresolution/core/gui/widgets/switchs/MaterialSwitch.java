@@ -51,7 +51,25 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
 
     public MaterialSwitch setChecked(boolean checked) {
         if (checked != isChecked()) {
-            toggleChecked();
+            this.checked = checked;
+            if (handlePositionAnimator != null) {
+                handlePositionAnimator.cancel();
+                handlePositionAnimator.set(checked ? getBounds().width - 32 : 0f);
+            }
+            if (handleSizeAnimator != null) {
+                handleSizeAnimator.cancel();
+                handleSizeAnimator.set(checked
+                        ? ((style().showCheckedIconWhenEnable() || style().showCheckedIconAlways())
+                                ? MaterialSwitchSize.Default.handleSizeCheckedWithIcon()
+                                : MaterialSwitchSize.Default.handleSizeChecked())
+                        : ((style().showUncheckedIconWhenEnable() || style().showUncheckedIconAlways())
+                                ? MaterialSwitchSize.Default.handleSizeWithIcon()
+                                : MaterialSwitchSize.Default.handleSize()));
+            }
+            if (changeAnimator != null) {
+                changeAnimator.cancel();
+                changeAnimator.set(0f);
+            }
         }
         return this;
     }

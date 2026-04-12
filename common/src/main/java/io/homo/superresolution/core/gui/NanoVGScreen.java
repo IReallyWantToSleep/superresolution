@@ -21,7 +21,6 @@ package io.homo.superresolution.core.gui;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.core.graphics.opengl.texture.GlSampler;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -36,9 +35,12 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
+#if MC_VER < MC_26_1
 import net.minecraft.client.gui.GuiGraphics;
+#endif
+
 import net.minecraft.client.gui.screens.Screen;
-#if MC_VER >MC_1_21_6 && false
+#if MC_VER > MC_1_21_6 && false
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -77,8 +79,14 @@ public abstract class NanoVGScreen<T> extends Screen {
         MouseCursor.ARROW.use();
     }
 
+    #if MC_VER > MC_1_21_11
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int mouseX_, int mouseY_, float partialTick) {
+    public void extractRenderState(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics, int mouseX_, int mouseY_, float partialTick)
+    #else
+    @Override
+    public void render(@NotNull GuiGraphics guiGraphics, int mouseX_, int mouseY_, float partialTick)
+    #endif
+    {
         float mouseX = (float) transformPos(mouseX_);
         float mouseY = (float) transformPos(mouseY_);
         drawBefore(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
@@ -88,6 +96,7 @@ public abstract class NanoVGScreen<T> extends Screen {
             nvg.begin(true);
             nvg.resetGlobalTransform();
             nvg.resetTransform();
+
             nvg.globalScale(scaleManager.guiScale());
             nvg.globalAlpha(1.0f);
             NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
@@ -106,8 +115,18 @@ public abstract class NanoVGScreen<T> extends Screen {
         };
         #if MC_VER > MC_1_21_5
         ((io.homo.superresolution.common.mixin.gui.GuiGraphicsAccessor) guiGraphics)
-                .getGuiRenderState().submitGuiElement(
-                        new net.minecraft.client.gui.render.state.GuiElementRenderState() {
+                #if MC_VER > MC_1_21_11
+                .getGuiRenderState().addGuiElement
+                #else
+                .getGuiRenderState().submitGuiElement
+                #endif
+                        (
+                        #if MC_VER > MC_1_21_11
+                        new net.minecraft.client.renderer.state.gui.GuiElementRenderState()
+                        #else
+                        new net.minecraft.client.gui.render.state.GuiElementRenderState()
+                        #endif
+                        {
                             @Override
                             public @Nullable net.minecraft.client.gui.navigation.ScreenRectangle bounds() {
                                 return new net.minecraft.client.gui.navigation.ScreenRectangle(
@@ -199,13 +218,23 @@ public abstract class NanoVGScreen<T> extends Screen {
 
     }
 
+    #if MC_VER > MC_1_21_11
+    public void drawAfter(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
+
+    }
+
+    public void drawBefore(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
+
+    }
+    #else
     public void drawAfter(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
 
     }
 
     public void drawBefore(GuiGraphics guiGraphics, int mouseX, int mouseY, float delta) {
-        //super.renderBackground(guiGraphics, mouseX, mouseY, delta);
+        //super.renderBackground(guiGraphics);
     }
+    #endif
 
     public void drawWidgets(RenderContext ctx, UIInputState inputState) {
         Vector2f screenSize = MinecraftWindow.getWindowSize();
@@ -268,7 +297,11 @@ public abstract class NanoVGScreen<T> extends Screen {
     #if MC_VER > MC_1_21_8
     @Override
     public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
+        #if MC_VER > MC_1_21_11
+        dispatchCharTypedToFrame(((char) event.codepoint()), 0);
+        #else
         dispatchCharTypedToFrame(((char) event.codepoint()), event.modifiers());
+        #endif
         return true;
     }
 
@@ -386,10 +419,24 @@ public abstract class NanoVGScreen<T> extends Screen {
     }
 
     #else
+
+    #if MC_VER > MC_1_21_11
     @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractMenuBackground(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics)
+    {
         return;
     }
+    @Override
+    protected void extractBlurredBackground(net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
+        return;
+    }
+    #else
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick)
+    {
+        return;
+    }
+    #endif
     #endif
 
 }

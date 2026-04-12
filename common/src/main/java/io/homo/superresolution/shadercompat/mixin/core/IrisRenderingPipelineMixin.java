@@ -18,19 +18,21 @@
 
 package io.homo.superresolution.shadercompat.mixin.core;
 
-import com.mojang.blaze3d.textures.GpuTexture;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import net.irisshaders.iris.gl.texture.DepthBufferFormat;
 import net.irisshaders.iris.pathways.colorspace.ColorSpace;
 import net.irisshaders.iris.pathways.colorspace.ColorSpaceConverter;
 import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
-import net.irisshaders.iris.shaderpack.properties.PackDirectives;
-import net.irisshaders.iris.targets.RenderTargets;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
+#if MC_VER >= MC_1_21_11
 import org.spongepowered.asm.mixin.Unique;
+import net.irisshaders.iris.shaderpack.properties.PackDirectives;
+import net.irisshaders.iris.targets.RenderTargets;
+import net.irisshaders.iris.gl.texture.DepthBufferFormat;
+import com.mojang.blaze3d.textures.GpuTexture;
+#endif
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -60,6 +62,7 @@ public class IrisRenderingPipelineMixin {
         );
     }
 
+    #if MC_VER >= MC_1_21_11
     @Unique
     private Object lastDepthTexture = null;
 
@@ -96,4 +99,5 @@ public class IrisRenderingPipelineMixin {
         }
         return instance.resizeIfNeeded(newDepthBufferVersion, newDepthTextureId, newWidth, newHeight, newDepthFormat, packDirectives);
     }
+    #endif
 }

@@ -204,7 +204,7 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoi
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 
-class FrameBufferRenderTargetAdapter extends RenderTarget {
+public class FrameBufferRenderTargetAdapter extends RenderTarget {
     private IBindableFrameBuffer frameBuffer;
 
     FrameBufferRenderTargetAdapter(IBindableFrameBuffer frameBuffer) {
@@ -213,7 +213,7 @@ class FrameBufferRenderTargetAdapter extends RenderTarget {
         updateState();
     }
 
-    protected static FrameBufferRenderTargetAdapter ofRenderTarget(IBindableFrameBuffer frameBuffer) {
+    public static FrameBufferRenderTargetAdapter ofRenderTarget(IBindableFrameBuffer frameBuffer) {
         return new FrameBufferRenderTargetAdapter(frameBuffer);
     }
 

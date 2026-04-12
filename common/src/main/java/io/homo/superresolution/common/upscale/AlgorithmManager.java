@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -178,8 +179,8 @@ public class AlgorithmManager {
                 PerformanceTracker.getLastResultCPU("Frame"),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
-                0.05F,
-                Minecraft.getInstance().gameRenderer.getDepthFar(),
+                MinecraftUtils.getCameraNear(),
+                MinecraftUtils.getCameraFar(),
                 jitterOffset,
                 jitterSequenceLength,
                 param.currentModelViewMatrix,

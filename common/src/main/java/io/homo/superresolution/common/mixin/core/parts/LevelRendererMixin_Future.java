@@ -17,21 +17,39 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin_Future {
+    #if MC_VER > MC_1_21_11
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void renderLevel(
-            GraphicsResourceAllocator allocator, 
-            DeltaTracker deltaTracker, 
-            boolean renderBlockOutline, 
-            Camera camera, 
-            Matrix4f matrix4f1, 
-            Matrix4f projectionMatrix, 
-            Matrix4f frustumMatrix, 
-            GpuBufferSlice bufferSlice, 
-            Vector4f vector4f, 
-            boolean bool2, 
+            GraphicsResourceAllocator resourceAllocator,
+            DeltaTracker deltaTracker,
+            boolean renderOutline,
+            net.minecraft.client.renderer.state.level.CameraRenderState cameraState,
+            org.joml.Matrix4fc modelViewMatrix,
+            GpuBufferSlice terrainFog,
+            Vector4f fogColor,
+            boolean shouldRenderSky,
+            net.minecraft.client.renderer.chunk.ChunkSectionsToRender chunkSectionsToRender,
+            CallbackInfo ci
+    ) {
+        AlgorithmManager.setMatrixVanilla(cameraState.projectionMatrix, new Matrix4f(modelViewMatrix));
+    }
+    #else
+    @Inject(method = "renderLevel", at = @At("HEAD"))
+    private void renderLevel(
+            GraphicsResourceAllocator allocator,
+            DeltaTracker deltaTracker,
+            boolean renderBlockOutline,
+            Camera camera,
+            Matrix4f matrix4f1,
+            Matrix4f projectionMatrix,
+            Matrix4f frustumMatrix,
+            GpuBufferSlice bufferSlice,
+            Vector4f vector4f,
+            boolean bool2,
             CallbackInfo ci
     ) {
         AlgorithmManager.setMatrixVanilla(projectionMatrix, frustumMatrix);
     }
+    #endif
 }
 #endif

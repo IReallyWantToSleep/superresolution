@@ -39,7 +39,6 @@
         "fabricloader": "*",
         "minecraft": "{versionRange}",
         "java": ">=${javaVersion}",
-        "architectury": "*",
         "fabric-api": "*"
     },
     "suggests": {

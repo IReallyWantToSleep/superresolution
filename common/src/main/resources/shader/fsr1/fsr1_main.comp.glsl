@@ -24,7 +24,7 @@
 //--insert--define--//
 
 //扩展
-#extension GL_GOOGLE_include_directive: require
+#extension GL_GOOGLE_include_directive : require
 #if FSR_FP16_CRITERIA == 1
 #extension GL_EXT_shader_16bit_storage: require
 #extension GL_EXT_shader_explicit_arithmetic_types: require
@@ -34,109 +34,156 @@
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 //输入/输出
-#if FSR_EASU == 1
-layout(binding = 0) uniform sampler2D inImage;
-layout(binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
-#endif
-#if FSR_RCAS == 1
-layout(binding = 0, SR_INTERNAL_TEXTURE_FORMAT) readonly uniform image2D inImage;
-layout(binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
+#if SR_VULKAN
+    #if FSR_EASU == 1
+    layout(set = 0,binding = 0) uniform sampler2D inImage;
+    layout(set = 0,binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
+    #endif
+    #if FSR_RCAS == 1
+    layout(set = 0,binding = 0, SR_INTERNAL_TEXTURE_FORMAT) readonly uniform image2D inImage;
+    layout(set = 0,binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
+    #endif
+#else
+    #if FSR_EASU == 1
+    layout(binding = 0) uniform sampler2D inImage;
+    layout(binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
+    #endif
+    #if FSR_RCAS == 1
+    layout(binding = 0, SR_INTERNAL_TEXTURE_FORMAT) readonly uniform image2D inImage;
+    layout(binding = 1, SR_INTERNAL_TEXTURE_FORMAT) writeonly uniform image2D outImage;
+    #endif
 #endif
 //uniforms
-layout(binding = 0, std140) uniform fsr1_data_t {
+#if SR_VULKAN
+layout(set = 0,binding = 2, std140) uniform fsr1_data_t {
     vec2 renderViewportSize;
     vec2 containerTextureSize;
     vec2 upscaledViewportSize;
     float sharpness;
 } fsr1_data;
-//类型
-#if FSR_HALF == 1
-#define VEC4 f16vec4
-#define VEC3 f16vec3
-#define VEC2 f16vec2
-#define FLOAT float16_t
-#define UNIT uint16_t
 #else
-#define VEC4 vec4
-#define VEC3 vec3
-#define VEC2 vec2
-#define FLOAT float
-#define UNIT uint
+layout(binding = 2, std140) uniform fsr1_data_t {
+    vec2 renderViewportSize;
+    vec2 containerTextureSize;
+    vec2 upscaledViewportSize;
+    float sharpness;
+} fsr1_data;
 #endif
+
+#define A_GPU 1
+#define A_GLSL 1
 
 #if FSR_HALF == 1
-uint16_t halfBitsToUint16(float16_t v) {
-    return uint16_t(packFloat2x16(f16vec2(v, 0)));
-}
-u16vec2 halfBitsToUint16(f16vec2 v) {
-    return u16vec2(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)));
-}
-u16vec3 halfBitsToUint16(f16vec3 v) {
-    return u16vec3(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)), packFloat2x16(f16vec2(v.z, 0)));
-}
-u16vec4 halfBitsToUint16(f16vec4 v) {
-    return u16vec4(packFloat2x16(f16vec2(v.x, 0)), packFloat2x16(f16vec2(v.y, 0)), packFloat2x16(f16vec2(v.z, 0)), packFloat2x16(f16vec2(v.w, 0)));
-}
-
-float16_t uint16BitsToHalf(uint16_t v) {
-    return unpackFloat2x16(uint(v)).x;
-}
-f16vec2 uint16BitsToHalf(u16vec2 v) {
-    return f16vec2(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x);
-}
-f16vec3 uint16BitsToHalf(u16vec3 v) {
-    return f16vec3(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x, unpackFloat2x16(uint(v.z)).x);
-}
-f16vec4 uint16BitsToHalf(u16vec4 v) {
-    return f16vec4(unpackFloat2x16(uint(v.x)).x, unpackFloat2x16(uint(v.y)).x, unpackFloat2x16(uint(v.z)).x, unpackFloat2x16(uint(v.w)).x);
-}
-
-uint32_t packUint2x16(u16vec2 v) {
-    return (uint(v.y) << 16) | uint(v.x);
-}
-u16vec2 unpackUint2x16(uint32_t v) {
-    return u16vec2(v & 0xffff, (v >> 16) & 0xffff);
-}
+    #define A_HALF
+    #define A_NO_16_BIT_CAST 1
 #endif
 
-#include "fsr1/fsr1_common.glsl"
-#if FSR_HALF == 1
-#if FSR_RCAS == 1
-#include "fsr1/fsr1_rcas_fp16.comp.glsl"
-#endif
+#include "fsr1/ffx_a.h"
+
 #if FSR_EASU == 1
-#include "fsr1/fsr1_easu_fp16.comp.glsl"
+    #if FSR_HALF == 1
+        #define FSR_EASU_H 1
+    #else
+        #define FSR_EASU_F 1
+    #endif
 #endif
-#define FsrEasu FsrEasuH
-#define FsrRcas FsrRcasH
-#else
+
 #if FSR_RCAS == 1
-#include "fsr1/fsr1_rcas.comp.glsl"
+    #if FSR_HALF == 1
+        #define FSR_RCAS_H 1
+    #else
+        #define FSR_RCAS_F 1
+    #endif
 #endif
+
 #if FSR_EASU == 1
-#include "fsr1/fsr1_easu.comp.glsl"
+    #if FSR_HALF == 1
+AH4 FsrEasuRH(AF2 p) { return AH4(textureGather(inImage, p, 0)); }
+AH4 FsrEasuGH(AF2 p) { return AH4(textureGather(inImage, p, 1)); }
+AH4 FsrEasuBH(AF2 p) { return AH4(textureGather(inImage, p, 2)); }
+    #else
+AF4 FsrEasuRF(AF2 p) { return AF4(textureGather(inImage, p, 0)); }
+AF4 FsrEasuGF(AF2 p) { return AF4(textureGather(inImage, p, 1)); }
+AF4 FsrEasuBF(AF2 p) { return AF4(textureGather(inImage, p, 2)); }
+    #endif
 #endif
-#define FsrEasu FsrEasuF
-#define FsrRcas FsrRcasF
+
+#if FSR_RCAS == 1
+    #if FSR_HALF == 1
+AH4 FsrRcasLoadH(ASW2 p) { return AH4(imageLoad(inImage, ivec2(p))); }
+void FsrRcasInputH(inout AH1 r, inout AH1 g, inout AH1 b) {}
+    #else
+AF4 FsrRcasLoadF(ASU2 p) { return AF4(imageLoad(inImage, ivec2(p))); }
+void FsrRcasInputF(inout AF1 r, inout AF1 g, inout AF1 b) {}
+    #endif
 #endif
+
+
+#include "fsr1/ffx_fsr1.h"
+
+bool fsr1InBounds(uvec2 p, uvec2 sizeXY) {
+    return p.x < sizeXY.x && p.y < sizeXY.y;
+}
+
+
 
 #if FSR_RCAS == 1
 void mainRcas() {
     uvec4 const0;
     FsrRcasCon(const0, fsr1_data.sharpness);
+    uvec2 sizeXY = uvec2(imageSize(outImage));
     uvec2 gxy = ARmp8x8(gl_LocalInvocationID.x) + uvec2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
-    VEC3 gamma2Color = VEC3(0, 0, 0);
-    FsrRcas(gamma2Color.r, gamma2Color.g, gamma2Color.b, gxy, const0);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH1 outR = AH1_(0.0), outG = AH1_(0.0), outB = AH1_(0.0);
+        FsrRcasH(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(AF1(outR), AF1(outG), AF1(outB), 1.0));
+        #else
+        AF1 outR = AF1_(0.0), outG = AF1_(0.0), outB = AF1_(0.0);
+        FsrRcasF(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(outR, outG, outB, 1.0));
+        #endif
+    }
+
     gxy.x += 8;
-    FsrRcas(gamma2Color.r, gamma2Color.g, gamma2Color.b, gxy, const0);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH1 outR = AH1_(0.0), outG = AH1_(0.0), outB = AH1_(0.0);
+        FsrRcasH(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(AF1(outR), AF1(outG), AF1(outB), 1.0));
+        #else
+        AF1 outR = AF1_(0.0), outG = AF1_(0.0), outB = AF1_(0.0);
+        FsrRcasF(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(outR, outG, outB, 1.0));
+        #endif
+    }
+
     gxy.y += 8;
-    FsrRcas(gamma2Color.r, gamma2Color.g, gamma2Color.b, gxy, const0);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH1 outR = AH1_(0.0), outG = AH1_(0.0), outB = AH1_(0.0);
+        FsrRcasH(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(AF1(outR), AF1(outG), AF1(outB), 1.0));
+        #else
+        AF1 outR = AF1_(0.0), outG = AF1_(0.0), outB = AF1_(0.0);
+        FsrRcasF(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(outR, outG, outB, 1.0));
+        #endif
+    }
+
     gxy.x -= 8;
-    FsrRcas(gamma2Color.r, gamma2Color.g, gamma2Color.b, gxy, const0);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH1 outR = AH1_(0.0), outG = AH1_(0.0), outB = AH1_(0.0);
+        FsrRcasH(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(AF1(outR), AF1(outG), AF1(outB), 1.0));
+        #else
+        AF1 outR = AF1_(0.0), outG = AF1_(0.0), outB = AF1_(0.0);
+        FsrRcasF(outR, outG, outB, gxy, const0);
+        imageStore(outImage, ivec2(gxy), vec4(outR, outG, outB, 1.0));
+        #endif
+    }
 }
 #endif
 #if FSR_EASU == 1
@@ -150,19 +197,59 @@ void mainEasu() {
         float(fsr1_data.upscaledViewportSize.x),
         float(fsr1_data.upscaledViewportSize.y));
 
+    uvec2 sizeXY = uvec2(imageSize(outImage));
     uvec2 gxy = ARmp8x8(gl_LocalInvocationID.x) + uvec2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
-    VEC3 gamma2Color = VEC3(0, 0, 0);
-    FsrEasu(gamma2Color, gxy, const0, const1, const2, const3);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH3 gamma2Color = AH3_(0.0);
+        FsrEasuH(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(AF3(gamma2Color), 1.0));
+        #else
+        AF3 gamma2Color = AF3_(0.0);
+        FsrEasuF(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(gamma2Color, 1.0));
+        #endif
+    }
+
     gxy.x += 8;
-    FsrEasu(gamma2Color, gxy, const0, const1, const2, const3);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH3 gamma2Color = AH3_(0.0);
+        FsrEasuH(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(AF3(gamma2Color), 1.0));
+        #else
+        AF3 gamma2Color = AF3_(0.0);
+        FsrEasuF(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(gamma2Color, 1.0));
+        #endif
+    }
+
     gxy.y += 8;
-    FsrEasu(gamma2Color, gxy, const0, const1, const2, const3);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH3 gamma2Color = AH3_(0.0);
+        FsrEasuH(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(AF3(gamma2Color), 1.0));
+        #else
+        AF3 gamma2Color = AF3_(0.0);
+        FsrEasuF(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(gamma2Color, 1.0));
+        #endif
+    }
+
     gxy.x -= 8;
-    FsrEasu(gamma2Color, gxy, const0, const1, const2, const3);
-    imageStore(outImage, ivec2(gxy), vec4(vec3(gamma2Color), 0.0));
+    if (fsr1InBounds(gxy, sizeXY)) {
+        #if FSR_HALF == 1
+        AH3 gamma2Color = AH3_(0.0);
+        FsrEasuH(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(AF3(gamma2Color), 1.0));
+        #else
+        AF3 gamma2Color = AF3_(0.0);
+        FsrEasuF(gamma2Color, gxy, const0, const1, const2, const3);
+        imageStore(outImage, ivec2(gxy), vec4(gamma2Color, 1.0));
+        #endif
+    }
 }
 #endif
 

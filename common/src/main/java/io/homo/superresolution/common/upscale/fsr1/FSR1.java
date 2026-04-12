@@ -27,25 +27,15 @@ import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
-import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
-import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.command.*;
+import io.homo.superresolution.core.graphics.impl.framebuffer.*;
+import io.homo.superresolution.core.graphics.impl.pipeline.*;
+import io.homo.superresolution.core.graphics.impl.shader.*;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-import io.homo.superresolution.core.graphics.opengl.GlDevice;
-import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanCommandBufferRing;
+import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.*;
+import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.vulkan.*;
 import org.joml.Vector3i;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
@@ -61,7 +51,7 @@ public class FSR1 extends AbstractAlgorithm {
     private StructuredData fsr1UBOData;
     private IBuffer fsr1UBO;
 
-    #if !IS_VULKAN
+    #if !(IS_VULKAN == 1)
     private ITexture fsr1TempTexture;
     private IFrameBuffer outputFbo;
     private ITexture output;
@@ -104,7 +94,7 @@ public class FSR1 extends AbstractAlgorithm {
                 .vec2Entry("upscaledViewportSize")
                 .floatEntry("sharpness")
                 .build();
-        #if !IS_VULKAN
+        #if !(IS_VULKAN == 1)
         fsr1UBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(fsr1UBOData.size())
@@ -119,7 +109,7 @@ public class FSR1 extends AbstractAlgorithm {
         #endif
         fsr1UBO.setBufferData(fsr1UBOData);
         initShader();
-        #if !IS_VULKAN
+        #if !(IS_VULKAN == 1)
         fsr1TempTexture = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
@@ -148,7 +138,7 @@ public class FSR1 extends AbstractAlgorithm {
         #endif
     }
 
-    #if IS_VULKAN
+    #if (IS_VULKAN == 1)
     private void createVkResources() {
         VulkanDevice vkDevice = RenderSystems.vulkan().device();
         GlDevice glDevice = RenderSystems.opengl().device();
@@ -239,7 +229,7 @@ public class FSR1 extends AbstractAlgorithm {
 
         Vector3i workGroupSize = getWorkGroupSize();
 
-        #if !IS_VULKAN
+        #if !(IS_VULKAN == 1)
         // EASU pass
         fsr1EASUPipeline.descriptorSet().samplerTexture("inImage", getResources().colorTexture());
         fsr1EASUPipeline.descriptorSet().storageImage("outImage", fsr1TempTexture);
@@ -307,7 +297,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
-        #if IS_VULKAN
+        #if (IS_VULKAN == 1)
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
         commandBufferRing.destroy();
         destroyVkResources();
@@ -335,7 +325,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        #if IS_VULKAN
+        #if (IS_VULKAN == 1)
         return Math.toIntExact(flippedOutputGlTexture.handle());
         #else
         return Math.toIntExact(output.handle());
@@ -344,7 +334,7 @@ public class FSR1 extends AbstractAlgorithm {
 
     public void initShader() {
         int fp16 = SuperResolutionConfig.SPECIAL.FSR1.FP16.get() ? checkFP16Support() : 0;
-        #if IS_VULKAN
+        #if (IS_VULKAN == 1)
         fsr1EASUShader = RenderSystems.vulkan().device().createShaderProgram(
                 ShaderDescription
                         .compute(ShaderSource.file(ShaderType.Compute,
@@ -354,7 +344,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_EASU", String.valueOf(1))
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
-                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .uniformBuffer("fsr1_data", 2, (int) fsr1UBOData.size())
                         .uniformSamplerTexture("inImage", 0)
                         .uniformStorageTexture("outImage", ShaderResourceAccess.Write, 1)
                         .build());
@@ -367,7 +357,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_RCAS", String.valueOf(1))
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
-                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .uniformBuffer("fsr1_data", 2, (int) fsr1UBOData.size())
                         .uniformStorageTexture("inImage", ShaderResourceAccess.Read, 0)
                         .uniformStorageTexture("outImage", ShaderResourceAccess.Write, 1)
                         .build());
@@ -383,7 +373,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_EASU", String.valueOf(1))
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
-                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .uniformBuffer("fsr1_data", 2, (int) fsr1UBOData.size())
                         .uniformSamplerTexture("inImage", 0)
                         .uniformStorageTexture("outImage", ShaderResourceAccess.Write, 1)
                         .build());
@@ -396,7 +386,7 @@ public class FSR1 extends AbstractAlgorithm {
                         .addDefine("FSR_HALF", String.valueOf(fp16 == 0 ? 0 : 1))
                         .addDefine("FSR_RCAS", String.valueOf(1))
                         .addDefine("SR_INTERNAL_TEXTURE_FORMAT", SuperResolutionConfig.getInternalTextureFormatGlslFormatQualifier())
-                        .uniformBuffer("fsr1_data", 0, (int) fsr1UBOData.size())
+                        .uniformBuffer("fsr1_data", 2, (int) fsr1UBOData.size())
                         .uniformStorageTexture("inImage", ShaderResourceAccess.Read, 0)
                         .uniformStorageTexture("outImage", ShaderResourceAccess.Write, 1)
                         .build());

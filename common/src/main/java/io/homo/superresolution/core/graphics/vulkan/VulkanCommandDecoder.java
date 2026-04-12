@@ -346,8 +346,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
         transitionDescriptorBindings(cmd, graphicsPipeline.descriptorSet(), graphicsPipeline);
 
-        vkDescriptorSet.updateImpl();
-
         vkGraphicsPipeline.ensurePipelineCreated(vkRenderPass.getRenderPass());
 
         // begin render pass
@@ -391,11 +389,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipeline());
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    vkGraphicsPipeline.getPipelineLayout(), 0,
-                    stack.longs(vkDescriptorSet.getDescriptorSet()), null);
-        }
+        vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipelineLayout());
 
         graphicsPipeline.applyDynamicStates(commandBuffer);
 
@@ -427,15 +421,9 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
         transitionDescriptorBindings(cmd, computePipeline.descriptorSet(), computePipeline);
 
-        vkDescriptorSet.updateImpl();
-
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipeline());
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                    vkComputePipeline.getPipelineLayout(), 0,
-                    stack.longs(vkDescriptorSet.getDescriptorSet()), null);
-        }
+        vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
 
         vkCmdDispatch(cmd, groupCountX, groupCountY, groupCountZ);
 

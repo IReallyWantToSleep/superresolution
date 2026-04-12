@@ -1,5 +1,6 @@
 {
     "skip_build": true,
+    "unobfuscated": true,
     "common": {
         "java_version": 25,
         "minecraft_version": "26.1.2",

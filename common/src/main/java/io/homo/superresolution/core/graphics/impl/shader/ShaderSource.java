@@ -25,6 +25,7 @@ import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 import io.homo.superresolution.core.utils.FileReadHelper;
 import net.minecraft.client.Minecraft;
 
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -118,9 +119,14 @@ public class ShaderSource {
             if (Platform.currentPlatform.isDevelopmentEnvironment()) {
                 try {
                     Path gameDir = Minecraft.getInstance().gameDirectory.toPath().toAbsolutePath();
-                    Path commonResources = gameDir.getParent().getParent()
+                    Path commonResources = gameDir.getParent().getParent().getParent()
                             .resolve("common/src/main/resources");
-                    Path shaderPath = commonResources.resolve(source).toAbsolutePath();
+                    String sourcePath = source.replace("/", FileSystems.getDefault().getSeparator());
+                    //吞掉第一个`/`不然resolve时直接当成绝对路径了
+                    if (sourcePath.startsWith(FileSystems.getDefault().getSeparator())) {
+                        sourcePath = sourcePath.substring(1);
+                    }
+                    Path shaderPath = commonResources.resolve(sourcePath).toAbsolutePath();
 
                     if (Files.exists(shaderPath)) {
                         shaderSource = Files.readString(shaderPath);

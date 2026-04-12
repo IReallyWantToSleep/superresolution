@@ -27,6 +27,7 @@ import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
@@ -139,8 +140,8 @@ public class IrisShaderCompatUpscaleDispatcher {
                 PerformanceTracker.getLastResultCPU("Frame"),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
-                0.05F,
-                Minecraft.getInstance().gameRenderer.getDepthFar(),
+                MinecraftUtils.getCameraNear(),
+                MinecraftUtils.getCameraFar(),
                 getJitterOffset(),
                 getJitterSequenceLength(),
                 param.currentModelViewMatrix,

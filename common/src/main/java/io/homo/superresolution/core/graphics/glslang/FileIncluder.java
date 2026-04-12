@@ -23,6 +23,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.utils.FileReadHelper;
 import net.minecraft.client.Minecraft;
 
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,7 +45,7 @@ public class FileIncluder {
             return source;
         }
 
-        SuperResolution.LOGGER.debug("加载ShaderInclude失败 {}", fullPath);
+        SuperResolution.LOGGER.error("加载着色器头文件失败 {}", fullPath);
         return """
                 #error "include failed %s"
                 """.formatted(fullPath);
@@ -73,18 +74,21 @@ public class FileIncluder {
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {
             try {
                 Path gameDir = Minecraft.getInstance().gameDirectory.toPath().toAbsolutePath();
-                Path commonResources = gameDir.getParent().getParent()
+                Path commonResources = gameDir.getParent().getParent().getParent()
                         .resolve("common/src/main/resources");
-
-                String relativePath = path.startsWith("/") ? path.substring(1) : path;
+                String relativePath = path.replace("/", FileSystems.getDefault().getSeparator());
+                //吞掉第一个`/`不然resolve时直接当成绝对路径了
+                if (relativePath.startsWith(FileSystems.getDefault().getSeparator())) {
+                    relativePath = relativePath.substring(1);
+                }
                 Path includePath = commonResources.resolve(relativePath).toAbsolutePath();
 
                 if (Files.exists(includePath)) {
                     source = Files.readString(includePath);
-                    SuperResolution.LOGGER.debug("加载ShaderInclude (Dev): {}", includePath);
+                    SuperResolution.LOGGER.error("加载着色器头文件 (Dev): {}", includePath);
                 }
             } catch (Throwable e) {
-                SuperResolution.LOGGER.warn("开发环境ShaderInclude热加载失败: {}", e.getMessage());
+                SuperResolution.LOGGER.warn("开发环境着色器头文件热加载失败: {}", e.getMessage());
                 e.printStackTrace();
             }
         }
