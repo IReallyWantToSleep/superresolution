@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.gui;
 #if MC_VER > MC_1_21_5
 
-import com.mojang.blaze3d.pipeline.ColorTargetState;
 import net.minecraft.client.renderer.ShaderDefines;
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.pipeline.*;

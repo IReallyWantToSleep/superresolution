@@ -167,3 +167,4 @@ __pycache__
 /native/cpp/SRNativeMain/libraries/
 /.claude/
 /common/src/main/resources/lib/
+.gradle*

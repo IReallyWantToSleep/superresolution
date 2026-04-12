@@ -215,3 +215,7 @@ tasks.named<ProcessResources>("processResources") {
         }
     }
 }
+
+tasks.matching { it.name == "remapSourcesJar" }.configureEach {
+    enabled = false
+}

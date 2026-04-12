@@ -79,6 +79,8 @@ allprojects {
             options.release.set((rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.javaVersion)
             options.compilerArgs.add("-Xplugin:Manifold")
             options.encoding = "UTF-8"
+            options.isFork = true
+            options.forkOptions.memoryMaximumSize = "4g"
         }
 
         dependencies {

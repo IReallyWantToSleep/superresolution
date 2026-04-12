@@ -52,7 +52,7 @@ legacyForge {
             additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}"))
             additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("net.neoforged:bus:8.0.5"))
         }
-        client {
+        create("client") {
             client()
             gameDirectory = rootProject.file("runs/forge")
         }
@@ -62,10 +62,12 @@ legacyForge {
             sourceSet(extensions.getByType(SourceSetContainer::class.java).getByName("main"))
         }
     }
-    if (versionConfig.common.parchmentVersion != null) {
+    val parchmentVersion = versionConfig.common.parchmentVersion
+    if (parchmentVersion != null) {
+        val parchmentParts = parchmentVersion.split(":")
         parchment {
-            minecraftVersion = versionConfig.common.parchmentVersion.split(":")[0]
-            mappingsVersion = versionConfig.common.parchmentVersion.split(":")[1]
+            minecraftVersion = parchmentParts[0]
+            mappingsVersion = parchmentParts[1]
         }
     }
 }
@@ -130,7 +132,7 @@ dependencies {
 
 sourceSets.forEach {
     val dir = layout.buildDirectory.dir("sourcesSets/${it.name}")
-    it.output.resourcesDir = dir.get().asFile
+    it.output.setResourcesDir(dir.get().asFile)
     it.java.destinationDirectory.set(dir)
 }
 
