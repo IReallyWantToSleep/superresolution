@@ -55,7 +55,7 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven(url = "https://maven.neoforged.net")
+        maven(url = "https://maven.neoforged.net/releases")
         maven(url = "https://maven.aliyun.com/repository/central")
         maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
         maven(url = "https://maven.architectury.dev/")
