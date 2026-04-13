@@ -22,6 +22,10 @@ package io.homo.superresolution.common.minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 
 #if MC_VER > MC_1_21_4
+    #if MC_VER <= MC_1_21_11
+    //He delete this line on commit 09d38666d75667565cec2e34664260e32ad1e639, but we need to use it here.
+    import com.mojang.blaze3d.opengl.GlDevice;
+    #endif
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.opengl.DirectStateAccess;
@@ -51,14 +55,17 @@ public class MinecraftRenderTargetUtil {
         }
     }
     #else
-    static {
-        try {
-            cachedGlDeviceClass = Class.forName("com.mojang.blaze3d.opengl.GlDevice");
-            cachedGlDeviceDirectStateAccessMethod = cachedGlDeviceClass.getMethod("directStateAccess");
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        }
-    }
+    //On <=1.21.11
+    //java.lang.RuntimeException: java.lang.ClassNotFoundException: com.mojang.blaze3d.opengl.GlDevice 
+
+//    static {
+//        try {
+//            cachedGlDeviceClass = Class.forName("com.mojang.blaze3d.opengl.GlDevice");
+//            cachedGlDeviceDirectStateAccessMethod = cachedGlDeviceClass.getMethod("directStateAccess");
+//        } catch (Throwable e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
     #endif
 
     #if MC_VER > MC_1_21_11
@@ -76,7 +83,8 @@ public class MinecraftRenderTargetUtil {
     #else
     public static int getFboId(RenderTarget renderTarget) {
         try {
-            return ((GlTexture) Objects.requireNonNull(renderTarget.getColorTexture())).getFbo((DirectStateAccess) cachedGlDeviceDirectStateAccessMethod.invoke(RenderSystem.getDevice()), renderTarget.getDepthTexture());
+            //Rollback to 57b8c0474b29f511d88faba108b43e869f282192
+            return ((GlTexture) Objects.requireNonNull(renderTarget.getColorTexture())).getFbo(((GlDevice) RenderSystem.getDevice()).directStateAccess(), renderTarget.getDepthTexture());
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
