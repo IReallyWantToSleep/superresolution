@@ -302,14 +302,16 @@ public class FSR1 extends AbstractAlgorithm {
         commandBufferRing.destroy();
         destroyVkResources();
         #else
-        output.destroy();
-        fsr1TempTexture.destroy();
-        outputFbo.destroy();
+        if (output != null) { output.destroy(); output = null; }
+        if (fsr1TempTexture != null) { fsr1TempTexture.destroy(); fsr1TempTexture = null; }
+        if (outputFbo != null) { outputFbo.destroy(); outputFbo = null; }
         #endif
-        fsr1EASUShader.destroy();
-        fsr1RCASShader.destroy();
-        fsr1UBOData.free();
-        fsr1UBO.destroy();
+        if (fsr1EASUShader != null) { fsr1EASUShader.destroy(); fsr1EASUShader = null; }
+        if (fsr1RCASShader != null) { fsr1RCASShader.destroy(); fsr1RCASShader = null; }
+        if (fsr1UBOData != null) { fsr1UBOData.free(); fsr1UBOData = null; }
+        if (fsr1UBO != null) { fsr1UBO.destroy(); fsr1UBO = null; }
+        if (fsr1EASUPipeline != null) { fsr1EASUPipeline.destroy(); fsr1EASUPipeline = null; }
+        if (fsr1RCASPipeline != null) { fsr1RCASPipeline.destroy(); fsr1RCASPipeline = null; }
     }
 
     @Override

@@ -98,7 +98,7 @@ dependencies {
     val lwjglVulkanDep = implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
     if (lwjglVulkanDep != null) jarJar(lwjglVulkanDep)
 
-    modImplementation("dev.architectury:architectury-forge:${versionConfig.common.architecturyApiVersion}")
+    //modImplementation("dev.architectury:architectury-forge:${versionConfig.common.architecturyApiVersion}")
     implementation("net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb")
 
     val busDep = implementation("net.neoforged:bus:8.0.5")

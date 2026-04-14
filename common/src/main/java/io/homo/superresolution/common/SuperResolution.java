@@ -244,6 +244,10 @@ public final class SuperResolution implements Destroyable {
             } catch (Exception e) {
                 SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
                 e.printStackTrace();
+                if (currentAlgorithm != null) {
+                    try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
+                }
+                currentAlgorithm = null;
             }
         }
 
@@ -273,6 +277,10 @@ public final class SuperResolution implements Destroyable {
                 return true;
             } catch (Exception e) {
                 LOGGER.error("初始化算法 {} 时失败：", algorithmDescription.getDisplayName(), e);
+                if (currentAlgorithm != null) {
+                    try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
+                }
+                currentAlgorithm = null;
             }
         }
         return false;

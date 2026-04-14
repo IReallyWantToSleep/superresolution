@@ -32,6 +32,23 @@
 #extension GL_NV_gpu_shader5: enable
 #endif
 
+// GL_NV_gpu_shader5 provides float16_t/uint16_t types but lacks the bit-cast
+// built-ins that ffx_a.h expects. Polyfill them using standard GLSL functions.
+#if FSR_FP16_CRITERIA == 2
+float16_t uint16BitsToHalf(uint16_t v) { return float16_t(unpackHalf2x16(uint(v)).x); }
+f16vec2 uint16BitsToHalf(u16vec2 v) { return f16vec2(uint16BitsToHalf(v.x), uint16BitsToHalf(v.y)); }
+f16vec3 uint16BitsToHalf(u16vec3 v) { return f16vec3(uint16BitsToHalf(v.x), uint16BitsToHalf(v.y), uint16BitsToHalf(v.z)); }
+f16vec4 uint16BitsToHalf(u16vec4 v) { return f16vec4(uint16BitsToHalf(v.x), uint16BitsToHalf(v.y), uint16BitsToHalf(v.z), uint16BitsToHalf(v.w)); }
+
+uint16_t halfBitsToUint16(float16_t v) { return uint16_t(packHalf2x16(vec2(float(v), 0.0))); }
+u16vec2 halfBitsToUint16(f16vec2 v) { return u16vec2(halfBitsToUint16(v.x), halfBitsToUint16(v.y)); }
+u16vec3 halfBitsToUint16(f16vec3 v) { return u16vec3(halfBitsToUint16(v.x), halfBitsToUint16(v.y), halfBitsToUint16(v.z)); }
+u16vec4 halfBitsToUint16(f16vec4 v) { return u16vec4(halfBitsToUint16(v.x), halfBitsToUint16(v.y), halfBitsToUint16(v.z), halfBitsToUint16(v.w)); }
+
+uint packUint2x16(u16vec2 v) { return uint(v.x) | (uint(v.y) << 16u); }
+u16vec2 unpackUint2x16(uint v) { return u16vec2(uint16_t(v & 0xFFFFu), uint16_t(v >> 16u)); }
+#endif
+
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 //输入/输出
 #if SR_VULKAN
@@ -75,9 +92,9 @@ layout(binding = 2, std140) uniform fsr1_data_t {
 
 #if FSR_HALF == 1
     #define A_HALF
-    #define A_NO_16_BIT_CAST 1
 #endif
 
+#define A_SKIP_EXT
 #include "fsr1/ffx_a.h"
 
 #if FSR_EASU == 1

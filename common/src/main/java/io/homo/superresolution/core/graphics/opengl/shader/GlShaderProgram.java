@@ -86,15 +86,32 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
 
     protected String preprocessShaderCode(String code) {
         List<String> codeLines = List.of(code.split("\n"));
+        List<String> extensionLines = new ArrayList<>();
         List<String> preprocessedCodeLines = new ArrayList<>();
         for (String line : codeLines) {
             if (line.trim().startsWith("#line")) {
                 continue;
             }
-            if (line.trim().startsWith("#extension") && line.contains("GL_GOOGLE_include_directive")) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("#extension")) {
+                if (trimmed.contains("GL_GOOGLE_include_directive")) {
+                    continue;
+                }
+                extensionLines.add(line);
                 continue;
             }
             preprocessedCodeLines.add(line);
+        }
+        // Insert #extension directives right after #version
+        if (!extensionLines.isEmpty()) {
+            int insertPos = 0;
+            for (int i = 0; i < preprocessedCodeLines.size(); i++) {
+                if (preprocessedCodeLines.get(i).trim().startsWith("#version")) {
+                    insertPos = i + 1;
+                    break;
+                }
+            }
+            preprocessedCodeLines.addAll(insertPos, extensionLines);
         }
         return String.join("\n", preprocessedCodeLines);
     }

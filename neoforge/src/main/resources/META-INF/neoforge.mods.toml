@@ -20,13 +20,6 @@ versionRange = "${versionRange}"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.super_resolution]]
-modId = "architectury"
-mandatory = true
-versionRange = "[*,)"
-ordering = "NONE"
-side = "BOTH"
-
 [mods."sodium:options"]
 "mixin.features.render.gui.debug" = false
 "mixin.workarounds" = false
