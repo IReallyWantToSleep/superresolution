@@ -69,6 +69,7 @@ public final class SuperResolution implements Destroyable {
     public static None defaultAlgorithm = new None();
     public static boolean isInit;
     public static boolean isPreInit;
+    public static boolean isRenderingInitialized = false;
     public static boolean gameIsLoaded = false;
     public static boolean gameIsStarted = false;
     public static AlgorithmDescription<?> algorithmDescription;
@@ -218,6 +219,7 @@ public final class SuperResolution implements Destroyable {
 
             RenderHandlerManager.initialize();
             AlgorithmManager.init();
+            isRenderingInitialized = true;
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
         }
     }
@@ -345,6 +347,7 @@ public final class SuperResolution implements Destroyable {
 
     public void destroy() {
         isInit = false;
+        isRenderingInitialized = false;
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
         }

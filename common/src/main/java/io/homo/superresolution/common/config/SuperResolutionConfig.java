@@ -327,10 +327,16 @@ public class SuperResolutionConfig {
             UPSCALE_ALGO.set(algo.codeName);
         }
 
+        // rendering 初始化前不做 support 检查——Vulkan/GL caps 未就绪会误报，
+        // 旧实现里还会 setUpscaleAlgorithm 触发 createAlgorithm 级联失败。
+        if (!SuperResolution.isRenderingInitialized) {
+            return algo;
+        }
+
         if (!algo.requirement.check().support() && !Platform.currentPlatform.isDevelopmentEnvironment()) {
             SuperResolution.LOGGER.warn("算法 {} 不支持，回退到默认算法", algo.displayName);
             AlgorithmDescription<?> defaultAlgo = getDefaultAlgorithm();
-            setUpscaleAlgorithm(defaultAlgo);
+            UPSCALE_ALGO.set(defaultAlgo.codeName);
             return defaultAlgo;
         }
 
