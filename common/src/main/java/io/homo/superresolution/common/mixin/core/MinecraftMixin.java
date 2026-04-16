@@ -76,6 +76,8 @@ public abstract class MinecraftMixin {
             super_resolution$cacheHeight = RenderHandlerManager.getScreenHeight();
             MinecraftUtils.resize();
         }
+        // 窗口 resize 去抖——尺寸稳定后触发一次算法重建。
+        SuperResolution.tickResize();
         GL11.glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         PerformanceTracker.push("Frame");
         RenderHandlerManager.onFrameBegin();

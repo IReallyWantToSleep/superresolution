@@ -78,6 +78,12 @@ public final class SuperResolution implements Destroyable {
     public static int cachedWidth;
     public static int cachedHeight;
     public static Thread renderThread;
+
+    // 窗口拖拽时每帧触发 resize；算法重建昂贵，去抖到尺寸稳定后执行一次。
+    private static final long RESIZE_DEBOUNCE_MS = 120L;
+    private static volatile boolean pendingResize = false;
+    private static volatile long pendingResizeDeadlineMs = 0L;
+
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
 
@@ -329,8 +335,30 @@ public final class SuperResolution implements Destroyable {
     }
 
     public void resize(int width, int height) {
-        cachedWidth = MinecraftWindow.getWindowWidth();
-        cachedHeight = MinecraftWindow.getWindowHeight();
+        if (width == cachedWidth && height == cachedHeight && !pendingResize) {
+            return;
+        }
+        // 立刻更新 cached 让上游比较立即等价，实际重建交给 tickResize 去抖后执行。
+        cachedWidth = width;
+        cachedHeight = height;
+        pendingResize = true;
+        pendingResizeDeadlineMs = System.currentTimeMillis() + RESIZE_DEBOUNCE_MS;
+    }
+
+    /** 每帧调用；尺寸稳定 RESIZE_DEBOUNCE_MS 后才真正重建算法。 */
+    public static void tickResize() {
+        if (!pendingResize) return;
+        if (System.currentTimeMillis() < pendingResizeDeadlineMs) return;
+        pendingResize = false;
+        SuperResolution self = getInstance();
+        if (self != null) {
+            self.applyPendingResize();
+        }
+    }
+
+    private void applyPendingResize() {
+        int w = MinecraftWindow.getWindowWidth();
+        int h = MinecraftWindow.getWindowHeight();
         if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmResizeEvent(
@@ -341,14 +369,17 @@ public final class SuperResolution implements Destroyable {
                             RenderHandlerManager.getRenderHeight()
                     )
             );
-            currentAlgorithm.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+            currentAlgorithm.resize(w, h);
+            // 分辨率变了，时序历史无效。
+            currentAlgorithm.invalidateHistory();
         }
-        AlgorithmManager.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+        AlgorithmManager.resize(w, h);
     }
 
     public void destroy() {
         isInit = false;
         isRenderingInitialized = false;
+        pendingResize = false;
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
         }
