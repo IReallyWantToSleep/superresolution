@@ -89,11 +89,12 @@ public final class SuperResolution implements Destroyable {
         }
     }
 
-    public static void onGameLoadFinished(){
+    public static void onGameLoadFinished() {
         SuperResolution.createAlgorithm();
-
-        //TODO: 这是个临时的补丁，我实在修不好第一次进世界时超分质量差的问题（）
-        ShaderCompatHandler.irisApiReloadShader();
+        // 替代旧 Iris.reload() hack：兜底失效时序历史，避免在菜单阶段被 dispatch 消耗掉 reset。
+        if (currentAlgorithm != null) {
+            currentAlgorithm.invalidateHistory();
+        }
     }
 
     public static void onClientStarted() {

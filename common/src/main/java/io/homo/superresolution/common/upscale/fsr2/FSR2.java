@@ -147,7 +147,7 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.sharpness = 1 - SuperResolutionConfig.getSharpness();
         dispatchDescription.frameTimeDelta = dispatchResource.frameTimeDelta();
         dispatchDescription.preExposure = dispatchResource.preExposure();
-        dispatchDescription.reset = false;
+        dispatchDescription.reset = consumeHistoryReset();
         dispatchDescription.cameraNear = dispatchResource.cameraNear();
         dispatchDescription.cameraFar = dispatchResource.cameraFar();
         dispatchDescription.cameraFovAngleVertical = cameraFovAngleVertical;

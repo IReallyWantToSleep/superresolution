@@ -163,7 +163,7 @@ public class DLSS extends SRApiAlgorithm {
         desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
         desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
         desc.setViewSpaceToMetersFactor(1.0f);
-        desc.setReset(false);
+        desc.setReset(consumeHistoryReset());
         desc.setFlags(0);
         SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
         if (code != SRReturnCode.OK) {
