@@ -16,15 +16,16 @@
 # 支持的算法
 
 * FSR1
-* FSR2 (基于C++版本2.2.1(2.3.2)移植到Java，可能与原版有略微不同)
+* FSR2
 * SGSR2
 * SGSR1
-* NIS ~~(正在开发)~~
+* DLSS
+* XeSS
+* FSR3
 
 # 其它功能
 
-*
-光影包内的超分辨率支持，[文档](https://github.com/187J3X1-114514/superresolution/wiki/Shaderpack-Interface-documentation)
+* 光影包内的超分辨率支持，[文档](https://github.com/187J3X1-114514/superresolution/wiki/Shaderpack-Interface-documentation)
 
 # 兼容性
 
@@ -32,6 +33,7 @@
 * Iris 正常工作
 * 遥远的地平线(Distant Horizons) 正常工作
 * Embeddium 正常工作
+* Voxy 正常工作
 * OptiFine 没有测试
 
 # 要求
@@ -80,11 +82,6 @@ git clone https://github.com/187J3X1-114514/superresolution
 cd superresolution
 ./gradlew buildAllVersions
 ```
-
-# 计划功能
-
-* 内置ASR 2.3
-* 实现Vulkan与OpenGL共享纹理 (真实现了的话，直接支持FSR3,DLSS)
 
 ---
 
