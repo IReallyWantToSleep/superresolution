@@ -178,10 +178,13 @@ public class IrisShaderCompatEventHandler {
 
 
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            AlgorithmDescription<?> selectedAlgorithm = SuperResolution.algorithmDescription != null
+                ? SuperResolution.algorithmDescription
+                : SuperResolutionConfig.getUpscaleAlgorithm();
             event.registerMacro("SR_ENABLE", "1");
             event.registerMacro("SR_DISABLE", "0");
             event.registerMacro("SR_ALGO_SUPPORTS_JITTER",
-                    SuperResolution.getCurrentAlgorithm().isSupportJitter() ? "1" : "0");
+                AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
             event.registerMacro("SR_USING_ALGO", Integer.toString(
                     idMap.get(SuperResolutionConfig.getUpscaleAlgorithm())));
             event.registerMacro("SR_SHOULD_APPLY_SCALE", "1");
@@ -200,7 +203,7 @@ public class IrisShaderCompatEventHandler {
             event.registerMacro("SR_RENDER_SCALE_FACTOR",
                     Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
             event.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
-                    Integer.toString(AlgorithmManager.getJitterSequenceLength()));
+                    Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             event.registerMacro("SR_ALGO_DLSS_RENDERPRESET",
                     SuperResolutionConfig.getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSS) ?
                             Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :

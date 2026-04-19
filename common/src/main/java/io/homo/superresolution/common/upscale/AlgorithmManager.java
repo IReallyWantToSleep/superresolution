@@ -21,6 +21,8 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
@@ -54,6 +56,26 @@ public class AlgorithmManager {
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
         return type.getRequirement().check().support();
+    }
+
+    public static boolean supportsJitter(AlgorithmDescription<?> type) {
+        return type == AlgorithmDescriptions.FSR2
+                || type == AlgorithmDescriptions.FSR
+                || type == AlgorithmDescriptions.XESS
+                || type == AlgorithmDescriptions.DLSS;
+    }
+
+    public static int getConfiguredJitterSequenceLength() {
+        AlgorithmDescription<?> type = SuperResolution.algorithmDescription != null
+                ? SuperResolution.algorithmDescription
+                : SuperResolutionConfig.getUpscaleAlgorithm();
+        if (!supportsJitter(type)) {
+            return 0;
+        }
+        return Fsr2Utils.ffxFsr2GetJitterPhaseCount(
+                RenderHandlerManager.getRenderWidth(),
+                RenderHandlerManager.getScreenWidth()
+        );
     }
 
     public static float extractVerticalFovDegrees(Matrix4f projectionMatrix) {
@@ -151,10 +173,7 @@ public class AlgorithmManager {
 
     public static int getJitterSequenceLength() {
         if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
-            return Fsr2Utils.ffxFsr2GetJitterPhaseCount(
-                    RenderHandlerManager.getRenderWidth(),
-                    RenderHandlerManager.getScreenWidth()
-            );
+            return getConfiguredJitterSequenceLength();
         }
         return 0;
     }
