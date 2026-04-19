@@ -88,7 +88,7 @@ public class RenderTestScreen extends NanoVGScreen<RenderTestScreen> {
             return true;
         }
         if (event.key() == 293) { // GLFW_KEY_F4
-            Minecraft.getInstance().setScreen(new RhiRenderTestScreen());
+
             return true;
         }
         return super.keyPressed(event);
