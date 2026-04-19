@@ -96,10 +96,14 @@ public final class SuperResolution implements Destroyable {
     }
 
     public static void onGameLoadFinished() {
-        SuperResolution.createAlgorithm();
+        if (currentAlgorithm == null) {
+            SuperResolution.createAlgorithm();
+        }
 
-        //iris加载光影在SR前面,导致SuperResolution.getCurrentAlgorithm().isSupportJitter()一直是false，所以在这里reload一次光影
-        ShaderCompatHandler.irisApiReloadShader();
+        if (currentAlgorithm != null) {
+            // 避免重新触发整套 Iris/Voxy pipeline reload；这里只需要丢弃首帧的时序历史。
+            currentAlgorithm.invalidateHistory();
+        }
     }
 
     public static void onClientStarted() {
