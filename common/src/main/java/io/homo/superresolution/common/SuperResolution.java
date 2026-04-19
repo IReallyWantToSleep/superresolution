@@ -96,14 +96,7 @@ public final class SuperResolution implements Destroyable {
     }
 
     public static void onGameLoadFinished() {
-        if (currentAlgorithm == null) {
-            SuperResolution.createAlgorithm();
-        }
-
-        if (currentAlgorithm != null) {
-            // 避免重新触发整套 Iris/Voxy pipeline reload；这里只需要丢弃首帧的时序历史。
-            currentAlgorithm.invalidateHistory();
-        }
+        SuperResolution.createAlgorithm();
     }
 
     public static void onClientStarted() {
