@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,39 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.impl.command;
+package io.homo.superresolution.thirdparty.nanovg;
 
-import io.homo.superresolution.core.graphics.impl.device.IDevice;
+public enum NanoVGBackendMode {
+    GL_LEGACY(0),
+    @Deprecated
+    RHI_DIRECT(1);
 
-public interface ICommandBuffer {
-    void begin();
+    private final int nativeValue;
 
-    void end();
-
-    void reset();
-
-    void destroy();
-
-    void submit(IDevice device);
-
-    IDevice getDevice();
-
-    ICommandDecoder decoder();
-
-    ICommandPool ownerPool();
-
-    CommandBufferState state();
-
-    default boolean isInFlight() {
-        return state() == CommandBufferState.Pending;
+    NanoVGBackendMode(int nativeValue) {
+        this.nativeValue = nativeValue;
     }
 
-    default boolean isFenceSignaled() {
-        return !isInFlight();
+    public int getNativeValue() {
+        return nativeValue;
     }
-
-    default void waitForFence() { /* noop */ }
-
-    CommandBufferBehavior behavior();
 }
-

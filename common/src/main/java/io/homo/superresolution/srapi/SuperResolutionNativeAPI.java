@@ -62,10 +62,14 @@ public class SuperResolutionNativeAPI {
     }
 
     public static SRReturnCode srDestroyUpscaleContext(SRUpscaleContext context) {
-        if (context.nativePtr < 1) {
-            return SRReturnCode.ERROR;
+        if (context == null || context.nativePtr < 1) {
+            return SRReturnCode.NULL_POINTER;
         }
-        return SRReturnCode.fromValue(SuperResolutionNative.NsrDestroyUpscaleContext(context.nativePtr));
+        SRReturnCode code = SRReturnCode.fromValue(SuperResolutionNative.NsrDestroyUpscaleContext(context.nativePtr));
+        if (code == SRReturnCode.OK) {
+            context.nativePtr = 0;
+        }
+        return code;
     }
 
     public static SRReturnCode srDispatchUpscale(

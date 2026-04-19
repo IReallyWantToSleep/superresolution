@@ -46,9 +46,6 @@ import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
-import org.lwjgl.opengl.GL41;
-
-import java.util.Optional;
 
 public class Sgsr1 extends AbstractAlgorithm {
     private IShaderProgram sgsrShader;
@@ -98,20 +95,21 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .uniformSamplerTexture("ps0", 1)
                         .build());
         sgsrShader.compile();
+        renderPass = RenderSystems.current().device().createRenderPass(
+                RenderPass.builder()
+                        .clearColorOnBegin(0,0,0,0,1)
+                        .frameBuffer(outputFbo)
+        );
         sgsrPipeline = GlGraphicsPipeline.builder()
                 .shader(sgsrShader)
+                .renderPass(renderPass)
+                .primitiveType(PrimitiveType.TriangleStrip)
                 .rasterization(r -> r.cullMode(CullMode.None))
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
                 .vertexFormat(FullscreenQuad.getVertexFormat())
                 .build(RenderSystems.opengl().device());
-        renderPass = RenderSystems.current().device().createRenderPass(
-                RenderPass.builder()
-                        .clearColorOnBegin(0,0,0,0,1)
-                        .pipeline(sgsrPipeline)
-                        .frameBuffer(outputFbo)
-        );
         quadVertexBuffer = FullscreenQuad.create(RenderSystems.current().device());
     }
 
@@ -129,31 +127,29 @@ public class Sgsr1 extends AbstractAlgorithm {
         buffer.fillBuffer();
         ubo.setBufferData(buffer);
         ubo.upload();
-        //GL41.glDisable(GL41.GL_DEPTH_TEST);
-        //GL41.glDisable(GL41.GL_CULL_FACE);
         sgsrPipeline.descriptorSet().samplerTexture("ps0",dispatchResource.resources().colorTexture());
         sgsrPipeline.descriptorSet().uniformBuffer("sgsr1_data", ubo);
+        sgsrPipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
-        commandBuffer.getDecoder().setViewport(
+        commandBuffer.decoder().setViewport(
                 commandBuffer,
                 0,
                 0,
                 dispatchResource.screenWidth(),
                 dispatchResource.screenHeight()
         );
-        commandBuffer.getDecoder().draw(
+        commandBuffer.decoder().beginRenderPass(commandBuffer, renderPass);
+        commandBuffer.decoder().bindPipeline(commandBuffer, sgsrPipeline);
+        commandBuffer.decoder().draw(
                 commandBuffer,
-                renderPass,
-                PrimitiveType.TriangleStrip,
                 quadVertexBuffer,
                 quadVertexBuffer.getVertexCount(),
                 0
         );
+        commandBuffer.decoder().endRenderPass(commandBuffer);
         commandBuffer.end();
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
-        //GL41.glEnable(GL41.GL_DEPTH_TEST);
-        //GL41.glEnable(GL41.GL_CULL_FACE);
         return true;
     }
 

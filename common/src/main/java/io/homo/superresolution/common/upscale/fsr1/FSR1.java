@@ -244,8 +244,10 @@ public class FSR1 extends AbstractAlgorithm {
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
-        RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, fsr1EASUPipeline, workGroupSize.x, workGroupSize.y, workGroupSize.z);
-        RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, fsr1RCASPipeline, workGroupSize.x, workGroupSize.y, workGroupSize.z);
+        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, fsr1EASUPipeline);
+        RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, workGroupSize.x, workGroupSize.y, workGroupSize.z);
+        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, fsr1RCASPipeline);
+        RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, workGroupSize.x, workGroupSize.y, workGroupSize.z);
         commandBuffer.end();
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         #else
@@ -273,8 +275,10 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1RCASPipeline.descriptorSet().update();
 
         vkCommandBuffer.begin();
-        vulkanDevice.commandDecoder().dispatch(vkCommandBuffer, fsr1EASUPipeline, workGroupSize.x, workGroupSize.y, workGroupSize.z);
-        vulkanDevice.commandDecoder().dispatch(vkCommandBuffer, fsr1RCASPipeline, workGroupSize.x, workGroupSize.y, workGroupSize.z);
+        vulkanDevice.commandDecoder().bindPipeline(vkCommandBuffer, fsr1EASUPipeline);
+        vulkanDevice.commandDecoder().dispatch(vkCommandBuffer, workGroupSize.x, workGroupSize.y, workGroupSize.z);
+        vulkanDevice.commandDecoder().bindPipeline(vkCommandBuffer, fsr1RCASPipeline);
+        vulkanDevice.commandDecoder().dispatch(vkCommandBuffer, workGroupSize.x, workGroupSize.y, workGroupSize.z);
         vkCommandBuffer.end();
 
         vulkanDevice.submitCommandBuffer(

@@ -30,24 +30,17 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public abstract class RenderPass implements Destroyable {
-    protected final GraphicsPipeline pipeline;
     protected final IFrameBuffer frameBuffer;
     protected final PassClearState clearState;
 
-    protected RenderPass(GraphicsPipeline pipeline,
-                         IFrameBuffer frameBuffer,
+    protected RenderPass(IFrameBuffer frameBuffer,
                          PassClearState clearState) {
-        this.pipeline = pipeline;
         this.frameBuffer = frameBuffer;
         this.clearState = clearState;
     }
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    public GraphicsPipeline pipeline() {
-        return pipeline;
     }
 
     public IFrameBuffer frameBuffer() {
@@ -77,13 +70,7 @@ public abstract class RenderPass implements Destroyable {
 
     public static class Builder {
         private final PassClearState.Builder clearStateBuilder = PassClearState.builder();
-        private GraphicsPipeline pipeline;
         private IFrameBuffer frameBuffer;
-
-        public Builder pipeline(GraphicsPipeline pipeline) {
-            this.pipeline = pipeline;
-            return this;
-        }
 
         public Builder frameBuffer(IFrameBuffer frameBuffer) {
             this.frameBuffer = frameBuffer;
@@ -126,17 +113,10 @@ public abstract class RenderPass implements Destroyable {
         }
 
         public RenderPass build(IDevice device) {
-            if (pipeline == null) {
-                throw new IllegalStateException("Pipeline is required");
-            }
             if (frameBuffer == null) {
                 throw new IllegalStateException("FrameBuffer is required");
             }
             return device.createRenderPass(this);
-        }
-
-        public IPipeline getPipeline() {
-            return pipeline;
         }
 
         public IFrameBuffer getFrameBuffer() {

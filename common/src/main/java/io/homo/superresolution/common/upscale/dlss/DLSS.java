@@ -129,7 +129,7 @@ public class DLSS extends SRApiAlgorithm {
     @Override
     protected void destroySRApiContext() {
         if (context != null) {
-            SRReturnCode code = SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+            SRReturnCode code = context.destroy();
             if (code != SRReturnCode.OK) {
                 SuperResolution.LOGGER.error("Failed to destroy upscale context. Return code: {}", code);
                 throw new RuntimeException("Failed to destroy upscale context");

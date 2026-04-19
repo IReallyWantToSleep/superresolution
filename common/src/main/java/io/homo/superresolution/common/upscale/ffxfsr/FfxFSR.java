@@ -126,7 +126,7 @@ public class FfxFSR extends SRApiAlgorithm {
     protected void destroySRApiContext() {
         if (context != null) {
             if (context.nativePtr > 0) {
-                SRReturnCode code = SuperResolutionNativeAPI.srDestroyUpscaleContext(context);
+                SRReturnCode code = context.destroy();
                 if (code != SRReturnCode.OK) {
                     SuperResolution.LOGGER.error("Failed to destroy FSR context: {}", code);
                 }

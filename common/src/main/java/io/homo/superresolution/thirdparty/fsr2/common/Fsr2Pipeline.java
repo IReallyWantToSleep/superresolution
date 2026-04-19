@@ -108,8 +108,9 @@ public abstract class Fsr2Pipeline {
         }
         computePipeline.descriptorSet().update();
         Vector3i wg = workGroupSupplier.get();
+        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, computePipeline);
         RenderSystems.current().device().commandDecoder().dispatch(
-                commandBuffer, computePipeline, wg.x, wg.y, wg.z);
+            commandBuffer, wg.x, wg.y, wg.z);
     }
 }
 

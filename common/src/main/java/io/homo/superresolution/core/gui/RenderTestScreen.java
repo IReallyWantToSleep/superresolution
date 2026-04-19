@@ -20,11 +20,10 @@ package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.test.RenderTest;
 import io.homo.superresolution.core.utils.Color;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 
@@ -44,17 +43,9 @@ public class RenderTestScreen extends NanoVGScreen<RenderTestScreen> {
     public void draw(RenderContext ctx, UIInputState inputState) {
         Vector2f screenSize = MinecraftWindow.getWindowSize();
         screenSize.mul(1 / ctx.guiScale());
-        ctx.rect(0, 0, screenSize.x, screenSize.y, Color.rgb(30, 30, 30), true);
 
-        if (testMode == 0) {
-            RenderTest.drawTestPath(ctx);
-        } else if (testMode == 1) {
-            RenderTest.drawTestText(ctx);
-        } else if (testMode == 2) {
-            RenderTest.drawTestAlpha(ctx);
-        } else if (testMode == 3) {
-            RenderTest.drawTestScissor(ctx);
-        }
+        ctx.rect(0, 0, screenSize.x, screenSize.y, Color.rgb(30, 30, 30), true);
+        renderTestByMode(ctx);
 
         String modeName = switch (testMode) {
             case 0 -> "路径";
@@ -67,7 +58,7 @@ public class RenderTestScreen extends NanoVGScreen<RenderTestScreen> {
         ctx.drawAlignedText(
                 ctx.font(),
                 12,
-                "测试: " + modeName + " (F3)",
+            "测试: " + modeName + " (F3) | NanoVG -> RHI(F4)",
                 10, screenSize.y - 30, screenSize.x - 20, 20,
                 Color.rgb(200, 200, 200),
                 null,
@@ -77,14 +68,30 @@ public class RenderTestScreen extends NanoVGScreen<RenderTestScreen> {
         super.draw(ctx, inputState);
     }
 
+    private void renderTestByMode(RenderContext ctx) {
+        if (testMode == 0) {
+            RenderTest.drawTestPath(ctx);
+        } else if (testMode == 1) {
+            RenderTest.drawTestText(ctx);
+        } else if (testMode == 2) {
+            RenderTest.drawTestAlpha(ctx);
+        } else if (testMode == 3) {
+            RenderTest.drawTestScissor(ctx);
+        }
+    }
 
     #if MC_VER > MC_1_21_8
+    @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
         if (event.key() == 292) { // GLFW_KEY_F3
             testMode = (testMode + 1) % 4;
             return true;
         }
-        return false;
+        if (event.key() == 293) { // GLFW_KEY_F4
+            Minecraft.getInstance().setScreen(new RhiRenderTestScreen());
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     #else
@@ -94,7 +101,7 @@ public class RenderTestScreen extends NanoVGScreen<RenderTestScreen> {
             testMode = (testMode + 1) % 4;
             return true;
         }
-        return false;
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
     #endif
 

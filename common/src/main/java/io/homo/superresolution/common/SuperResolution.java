@@ -97,10 +97,9 @@ public final class SuperResolution implements Destroyable {
 
     public static void onGameLoadFinished() {
         SuperResolution.createAlgorithm();
-        // 替代旧 Iris.reload() hack：兜底失效时序历史，避免在菜单阶段被 dispatch 消耗掉 reset。
-        if (currentAlgorithm != null) {
-            currentAlgorithm.invalidateHistory();
-        }
+
+        //iris加载光影在SR前面,导致SuperResolution.getCurrentAlgorithm().isSupportJitter()一直是false，所以在这里reload一次光影
+        ShaderCompatHandler.irisApiReloadShader();
     }
 
     public static void onClientStarted() {

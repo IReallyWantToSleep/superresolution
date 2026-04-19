@@ -20,8 +20,11 @@ package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +35,10 @@ public class GlCommandBuffer implements ICommandBuffer {
     private final ICommandPool ownerPool;
     private final CommandBufferBehavior behavior;
     private CommandBufferState state = CommandBufferState.Executable;
+    private GlRenderPass activeRenderPass;
+    private GlGraphicsPipeline boundGraphicsPipeline;
+    private GlComputePipeline boundComputePipeline;
+    private boolean renderPassActive;
 
     public GlCommandBuffer(GlDevice device, ICommandPool ownerPool, CommandBufferBehavior behavior) {
         this.device = device;
@@ -54,6 +61,7 @@ public class GlCommandBuffer implements ICommandBuffer {
         if (state == CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is already recording");
         }
+        clearRenderPassState();
         state = CommandBufferState.Recording;
     }
 
@@ -61,6 +69,9 @@ public class GlCommandBuffer implements ICommandBuffer {
     public void end() {
         if (state != CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is not recording");
+        }
+        if (renderPassActive) {
+            throw new IllegalStateException("Command buffer still has an active render pass; call endRenderPass first");
         }
         state = CommandBufferState.Executable;
     }
@@ -71,6 +82,7 @@ public class GlCommandBuffer implements ICommandBuffer {
             throw new IllegalStateException("Cannot reset a destroyed command buffer");
         }
         glCalls.clear();
+        clearRenderPassState();
         state = CommandBufferState.Executable;
     }
 
@@ -80,6 +92,7 @@ public class GlCommandBuffer implements ICommandBuffer {
             return;
         }
         glCalls.clear();
+        clearRenderPassState();
         state = CommandBufferState.Destroyed;
     }
 
@@ -104,7 +117,7 @@ public class GlCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public ICommandDecoder getDecoder() {
+    public ICommandDecoder decoder() {
         return device.commandDecoder();
     }
 
@@ -121,5 +134,56 @@ public class GlCommandBuffer implements ICommandBuffer {
     @Override
     public CommandBufferBehavior behavior() {
         return behavior;
+    }
+
+    void beginRenderPass(GlRenderPass renderPass) {
+        if (state != CommandBufferState.Recording) {
+            throw new IllegalStateException("Command buffer is not in recording state");
+        }
+        if (renderPassActive) {
+            throw new IllegalStateException("Render pass is already active");
+        }
+        this.activeRenderPass = renderPass;
+        this.boundGraphicsPipeline = null;
+        this.renderPassActive = true;
+    }
+
+    void endRenderPass() {
+        if (!renderPassActive) {
+            throw new IllegalStateException("No active render pass to end");
+        }
+        boundGraphicsPipeline = null;
+        clearRenderPassState();
+    }
+
+    void bindGraphicsPipeline(GlGraphicsPipeline pipeline) {
+        this.boundGraphicsPipeline = pipeline;
+    }
+
+    void bindComputePipeline(GlComputePipeline pipeline) {
+        this.boundComputePipeline = pipeline;
+    }
+
+    GlGraphicsPipeline getBoundGraphicsPipeline() {
+        return boundGraphicsPipeline;
+    }
+
+    GlComputePipeline getBoundComputePipeline() {
+        return boundComputePipeline;
+    }
+
+    boolean isRenderPassActive() {
+        return renderPassActive;
+    }
+
+    GlRenderPass getActiveRenderPass() {
+        return activeRenderPass;
+    }
+
+    private void clearRenderPassState() {
+        activeRenderPass = null;
+        boundGraphicsPipeline = null;
+        boundComputePipeline = null;
+        renderPassActive = false;
     }
 }

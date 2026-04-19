@@ -20,9 +20,11 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.*;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 import org.lwjgl.system.MemoryStack;
@@ -44,13 +46,15 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
 
     public VulkanGraphicsPipeline(VulkanDevice device,
                                   IShaderProgram shader,
+                                  RenderPass renderPass,
                                   RasterizationState rasterization,
                                   DepthStencilState depthStencil,
                                   ColorBlendState colorBlend,
                                   DynamicStateFlags dynamicStates,
+                                  PrimitiveType primitiveType,
                                   VertexFormat vertexFormat,
                                   PipelineDescriptorSet descriptorSet) {
-        super(shader, rasterization, depthStencil, colorBlend, dynamicStates, vertexFormat, descriptorSet);
+                    super(shader, renderPass, rasterization, depthStencil, colorBlend, dynamicStates, primitiveType, vertexFormat, descriptorSet);
         this.device = device;
 
         if (!(shader instanceof VulkanShaderProgram vkShader)) {
@@ -59,12 +63,16 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
         if (!(descriptorSet instanceof VulkanPipelineDescriptorSet vkDescSet)) {
             throw new IllegalArgumentException("DescriptorSet must be a VulkanPipelineDescriptorSet");
         }
+        if (!(renderPass instanceof VulkanRenderPass vkRenderPass)) {
+            throw new IllegalArgumentException("RenderPass must be a VulkanRenderPass");
+        }
 
         if (!vkShader.isCompiled()) {
             vkShader.compile();
         }
 
         createPipelineLayout(vkDescSet);
+        ensurePipelineCreated(vkRenderPass.getRenderPass());
     }
 
     private void createPipelineLayout(VulkanPipelineDescriptorSet descriptorSet) {
@@ -135,7 +143,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             // Input assembly
             VkPipelineInputAssemblyStateCreateInfo inputAssembly = VkPipelineInputAssemblyStateCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO)
-                    .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+                    .topology(toVkPrimitiveTopology(primitiveType()))
                     .primitiveRestartEnable(false);
 
             // Viewport/scissor (dynamic)
@@ -340,6 +348,15 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             case ReverseSubtract -> VK_BLEND_OP_REVERSE_SUBTRACT;
             case Min -> VK_BLEND_OP_MIN;
             case Max -> VK_BLEND_OP_MAX;
+        };
+    }
+
+    private static int toVkPrimitiveTopology(PrimitiveType type) {
+        return switch (type) {
+            case Triangle -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            case TriangleStrip -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+            case Lines -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            case Points -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
         };
     }
 }

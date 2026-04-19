@@ -80,9 +80,6 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
 
     @Override
     protected void updateImpl() {
-        // Push descriptors 模式下不需要预更新；
-        // 实际的 descriptor 推送在 VulkanCommandDecoder 录制命令时完成。
-        // 基类的 dirty flag 已经在 update() 中被清除。
     }
 
     void pushDescriptors(VkCommandBuffer cmd, int bindPoint, long pipelineLayout) {
@@ -150,7 +147,6 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
 
     @Override
     public void apply() {
-        // Vulkan中 Descriptor 的推送由 VulkanCommandDecoder 在录制命令时处理
     }
 
     private long resolveImageView(ITexture textureOrView) {

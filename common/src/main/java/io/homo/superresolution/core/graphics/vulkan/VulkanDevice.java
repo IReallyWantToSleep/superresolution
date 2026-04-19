@@ -114,7 +114,6 @@ public class VulkanDevice implements IDevice {
     public RenderPass createRenderPass(RenderPass.Builder builder) {
         return new VulkanRenderPass(
                 this,
-                (GraphicsPipeline) builder.getPipeline(),
                 builder.getFrameBuffer(),
                 builder.getClearState()
         );
@@ -137,10 +136,12 @@ public class VulkanDevice implements IDevice {
         return new VulkanGraphicsPipeline(
                 this,
                 builder.shader(),
+            builder.renderPass(),
                 builder.rasterization(),
                 builder.depthStencil(),
                 builder.colorBlend(),
                 builder.dynamicStates(),
+            builder.primitiveType(),
                 builder.vertexFormat(),
                 descriptorSet
         );

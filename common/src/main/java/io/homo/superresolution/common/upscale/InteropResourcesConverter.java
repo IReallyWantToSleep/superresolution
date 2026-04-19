@@ -141,19 +141,20 @@ public class InteropResourcesConverter {
                         .build()
         );
         depthPreprocessShader.compile();
+        depthPreprocessRenderPass = RenderSystems.current().device().createRenderPass(
+                RenderPass.builder()
+                        .frameBuffer(depthPreprocessFrameBuffer)
+                        .clearDepthOnBegin(1.0f)
+        );
         depthPreprocessPipeline = RenderSystems.current().device().createGraphicsPipeline(
                 GraphicsPipeline.builder()
                         .shader(depthPreprocessShader)
+                        .renderPass(depthPreprocessRenderPass)
+                        .primitiveType(PrimitiveType.TriangleStrip)
                         .rasterization((r) -> r.cullMode(CullMode.None))
                         .depthStencil((r) -> r.depthCompareOp(CompareOp.Always).depthTestEnable(true).depthWriteEnable(true))
                         .dynamicStates(DynamicStateFlags.Viewport)
                         .vertexFormat(FullscreenQuad.getVertexFormat())
-        );
-        depthPreprocessRenderPass = RenderSystems.current().device().createRenderPass(
-                RenderPass.builder()
-                        .pipeline(depthPreprocessPipeline)
-                        .frameBuffer(depthPreprocessFrameBuffer)
-                        .clearDepthOnBegin(1.0f)
         );
     }
 
@@ -171,9 +172,9 @@ public class InteropResourcesConverter {
         computePipeline.descriptorSet().storageImage("outputTexture", output);
         computePipeline.descriptorSet().update();
         commandBuffer.begin();
+        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, computePipeline);
         RenderSystems.current().device().commandDecoder().dispatch(
                 commandBuffer,
-                computePipeline,
                 (input.getWidth() + 15) / 16,
                 (input.getHeight() + 15) / 16,
                 1
@@ -219,14 +220,15 @@ public class InteropResourcesConverter {
                     outputDepth.getWidth(),
                     outputDepth.getHeight()
             );
+            RenderSystems.opengl().device().commandDecoder().beginRenderPass(commandBuffer, depthPreprocessRenderPass);
+            RenderSystems.opengl().device().commandDecoder().bindPipeline(commandBuffer, depthPreprocessPipeline);
             RenderSystems.opengl().device().commandDecoder().draw(
                     commandBuffer,
-                    depthPreprocessRenderPass,
-                    PrimitiveType.TriangleStrip,
                     FullscreenQuad.create(RenderSystems.opengl().device()),
                     4,
                     0
             );
+            RenderSystems.opengl().device().commandDecoder().endRenderPass(commandBuffer);
             commandBuffer.end();
             RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         }
@@ -243,9 +245,9 @@ public class InteropResourcesConverter {
         flipMotionVectorYPipeline.descriptorSet().storageImage("outputMotionVector", output);
         flipMotionVectorYPipeline.descriptorSet().update();
         commandBuffer.begin();
+        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, flipMotionVectorYPipeline);
         RenderSystems.current().device().commandDecoder().dispatch(
                 commandBuffer,
-                flipMotionVectorYPipeline,
                 (input.getWidth() + 15) / 16,
                 (input.getHeight() + 15) / 16,
                 1

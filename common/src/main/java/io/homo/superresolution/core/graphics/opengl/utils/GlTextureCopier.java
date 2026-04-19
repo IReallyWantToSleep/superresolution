@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 
 public class GlTextureCopier {
     private static final Map<String, RenderPass> programMap = new HashMap<>();
+    private static final Map<String, GlGraphicsPipeline> graphicsPipelineMap = new HashMap<>();
     private static final Map<String, GlComputePipeline> computeProgramMap = new HashMap<>();
     private static GlSampler sampler;
     private static IFrameBuffer cachedFrameBuffer;
@@ -127,19 +128,21 @@ public class GlTextureCopier {
 
         GlShaderProgram program = RenderSystems.opengl().device().createShaderProgram(builder.build());
         program.compile();
+        RenderPass renderPass = RenderPass.builder()
+            .frameBuffer(getCachedFrameBuffer())
+            .build(RenderSystems.opengl().device());
         GlGraphicsPipeline graphicsPipeline = (GlGraphicsPipeline) GlGraphicsPipeline.builder()
                 .shader(program)
+            .renderPass(renderPass)
+                .primitiveType(PrimitiveType.TriangleStrip)
                 .rasterization(r -> r.cullMode(CullMode.None))
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
                 .vertexFormat(FullscreenQuad.getVertexFormat())
                 .build(RenderSystems.opengl().device());
-        RenderPass renderPass = RenderPass.builder()
-                .pipeline(graphicsPipeline)
-                .frameBuffer(getCachedFrameBuffer())
-                .build(RenderSystems.opengl().device());
         programMap.put(key, renderPass);
+        graphicsPipelineMap.put(key, graphicsPipeline);
         return renderPass;
     }
 
@@ -165,9 +168,9 @@ public class GlTextureCopier {
             pipeline.descriptorSet().update();
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();
+                RenderSystems.opengl().device().commandDecoder().bindPipeline(commandBuffer, pipeline);
             RenderSystems.opengl().device().commandDecoder().dispatch(
                     commandBuffer,
-                    pipeline,
                     (int) Math.ceil((double) copyOperation.getSrcTexture().getWidth() / 16),
                     (int) Math.ceil((double) copyOperation.getSrcTexture().getHeight() / 16),
                     1
@@ -189,21 +192,23 @@ public class GlTextureCopier {
                 cachedFrameBuffer.label("CopyOperationTempFrameBuffer");
             }
             GlRenderPass pass = (GlRenderPass) getOrCreateProgram(copyOperation);
-            pass.pipeline().descriptorSet()
+                GlGraphicsPipeline graphicsPipeline = graphicsPipelineMap.get(mappingKey(copyOperation.getMappings()));
+                graphicsPipeline.descriptorSet()
                     .samplerTexture("tex", copyOperation.getSrcTexture());
-            pass.pipeline().descriptorSet().update();
+                graphicsPipeline.descriptorSet().update();
             IVertexBuffer vertexBuffer = FullscreenQuad.create(RenderSystems.opengl().device());
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();
+            RenderSystems.opengl().device().commandDecoder().beginRenderPass(commandBuffer, pass);
+                RenderSystems.opengl().device().commandDecoder().bindPipeline(commandBuffer, graphicsPipeline);
             RenderSystems.opengl().device().commandDecoder()
                     .draw(
                             commandBuffer,
-                            pass,
-                            PrimitiveType.TriangleStrip,
                             vertexBuffer,
                             4,
                             0
                     );
+            RenderSystems.opengl().device().commandDecoder().endRenderPass(commandBuffer);
             commandBuffer.end();
             RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
         }

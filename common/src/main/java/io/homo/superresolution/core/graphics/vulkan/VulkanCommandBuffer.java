@@ -35,6 +35,10 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private long reusableFence = VK_NULL_HANDLE;
     private boolean inFlight = false;
     private VkCommandBuffer nativeCommandBuffer;
+    private VulkanRenderPass activeRenderPass;
+    private VulkanGraphicsPipeline boundGraphicsPipeline;
+    private VulkanComputePipeline boundComputePipeline;
+    private boolean renderPassActive;
 
     public VulkanCommandBuffer(VulkanDevice vulkanDevice, VulkanCommandPool ownerPool, CommandBufferBehavior behavior) {
         this.vulkanDevice = vulkanDevice;
@@ -62,6 +66,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
                     .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             VK_CHECK(vkBeginCommandBuffer(nativeCommandBuffer, beginInfo));
         }
+        clearRenderPassState();
         state = CommandBufferState.Recording;
     }
 
@@ -70,6 +75,9 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         ensureNotDestroyed();
         if (state != CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is not in recording state");
+        }
+        if (renderPassActive) {
+            throw new IllegalStateException("Command buffer still has an active render pass; call endRenderPass first");
         }
         VK_CHECK(vkEndCommandBuffer(nativeCommandBuffer));
         state = CommandBufferState.Executable;
@@ -86,6 +94,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         }
         ensureNotInFlight();
         VK_CHECK(vkResetCommandBuffer(nativeCommandBuffer, 0));
+        clearRenderPassState();
         state = CommandBufferState.Executable;
     }
 
@@ -102,6 +111,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         ownerPool.freeCommandBuffer(nativeCommandBuffer);
         ownerPool.onCommandBufferDestroyed(this);
         nativeCommandBuffer = null;
+        clearRenderPassState();
         state = CommandBufferState.Destroyed;
     }
 
@@ -124,7 +134,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public ICommandDecoder getDecoder() {
+    public ICommandDecoder decoder() {
         return vulkanDevice.commandDecoder();
     }
 
@@ -199,6 +209,51 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         inFlight = true;
     }
 
+    void beginRenderPass(VulkanRenderPass renderPass) {
+        ensureNotDestroyed();
+        if (state != CommandBufferState.Recording) {
+            throw new IllegalStateException("Command buffer is not in recording state");
+        }
+        if (renderPassActive) {
+            throw new IllegalStateException("Render pass is already active");
+        }
+        this.activeRenderPass = renderPass;
+        this.boundGraphicsPipeline = null;
+        this.renderPassActive = true;
+    }
+
+    void endRenderPass() {
+        if (!renderPassActive) {
+            throw new IllegalStateException("No active render pass to end");
+        }
+        boundGraphicsPipeline = null;
+        clearRenderPassState();
+    }
+
+    void bindGraphicsPipeline(VulkanGraphicsPipeline pipeline) {
+        this.boundGraphicsPipeline = pipeline;
+    }
+
+    void bindComputePipeline(VulkanComputePipeline pipeline) {
+        this.boundComputePipeline = pipeline;
+    }
+
+    VulkanGraphicsPipeline getBoundGraphicsPipeline() {
+        return boundGraphicsPipeline;
+    }
+
+    VulkanComputePipeline getBoundComputePipeline() {
+        return boundComputePipeline;
+    }
+
+    boolean isRenderPassActive() {
+        return renderPassActive;
+    }
+
+    VulkanRenderPass getActiveRenderPass() {
+        return activeRenderPass;
+    }
+
     private void ensureNotDestroyed() {
         if (state == CommandBufferState.Destroyed || nativeCommandBuffer == null) {
             throw new IllegalStateException("Command buffer is destroyed");
@@ -212,5 +267,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         if (!isFenceSignaled()) {
             throw new IllegalStateException("Command buffer is still in-flight");
         }
+    }
+
+    private void clearRenderPassState() {
+        activeRenderPass = null;
+        boundGraphicsPipeline = null;
+        boundComputePipeline = null;
+        renderPassActive = false;
     }
 }

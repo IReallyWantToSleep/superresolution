@@ -20,7 +20,6 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PassClearState;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -39,9 +38,9 @@ public class VulkanRenderPass extends RenderPass {
     private long renderPass = VK_NULL_HANDLE;
     private long framebuffer = VK_NULL_HANDLE;
 
-    public VulkanRenderPass(VulkanDevice device, GraphicsPipeline pipeline,
+    public VulkanRenderPass(VulkanDevice device,
                             IFrameBuffer frameBuffer, PassClearState clearState) {
-        super(pipeline, frameBuffer, clearState);
+        super(frameBuffer, clearState);
         this.device = device;
 
         if (!(frameBuffer instanceof VulkanFramebuffer vkFb)) {

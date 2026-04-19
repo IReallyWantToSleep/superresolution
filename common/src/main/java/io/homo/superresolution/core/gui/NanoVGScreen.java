@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
@@ -27,11 +26,6 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGRenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
-import io.homo.superresolution.core.gui.core.frame.Frame;
-import io.homo.superresolution.core.gui.core.view.View;
-import io.homo.superresolution.core.gui.core.AbstractWidget;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.utils.MouseCursor;
 import net.minecraft.client.Minecraft;
@@ -39,7 +33,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 
-import net.minecraft.client.gui.screens.Screen;
 #if MC_VER > MC_1_21_6 && false
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
@@ -49,20 +42,14 @@ import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.GL41;
 
-public abstract class NanoVGScreen<T> extends Screen {
+public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
     protected final NanoVGContextWrapper nvg;
     protected final GuiScaleManager scaleManager;
-    protected View view = new View();
-    protected Frame defaultFrame = new Frame();
-    protected YogaNode defaultFrameLayout;
 
     protected NanoVGScreen(Component title) {
         super(title);
         nvg = NanoVG.context;
         scaleManager = GuiScaleManager.getInstance();
-        defaultFrameLayout = view.addFrame(defaultFrame);
-        defaultFrameLayout.setWidthPercent(100);
-        defaultFrameLayout.setHeightPercent(100);
         buildWidgets();
         
     }
@@ -113,69 +100,7 @@ public abstract class NanoVGScreen<T> extends Screen {
             ctx.flush();
             nvg.end();
         };
-        #if MC_VER > MC_1_21_5
-        ((io.homo.superresolution.common.mixin.gui.GuiGraphicsAccessor) guiGraphics)
-                #if MC_VER > MC_1_21_11
-                .getGuiRenderState().addGuiElement
-                #else
-                .getGuiRenderState().submitGuiElement
-                #endif
-                        (
-                        #if MC_VER > MC_1_21_11
-                        new net.minecraft.client.renderer.state.gui.GuiElementRenderState()
-                        #else
-                        new net.minecraft.client.gui.render.state.GuiElementRenderState()
-                        #endif
-                        {
-                            @Override
-                            public @Nullable net.minecraft.client.gui.navigation.ScreenRectangle bounds() {
-                                return new net.minecraft.client.gui.navigation.ScreenRectangle(
-                                        0,
-                                        0,
-                                        10000,
-                                        10000
-                                );
-                            }
-
-
-                            public void buildVertices(VertexConsumer vertexConsumer, float v) {
-                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
-                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
-                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
-                                vertexConsumer.addVertex(0, 0, 0).setUv(0, 0).setColor(0, 0, 0, 0);
-                            }
-
-                            //对于1.21.11+
-                            public void buildVertices(VertexConsumer vertexConsumer) {
-                                buildVertices(vertexConsumer, 0);
-                            }
-
-                            @Override
-                            public com.mojang.blaze3d.pipeline.RenderPipeline pipeline() {
-                                return new io.homo.superresolution.common.gui.CustomActionRenderPipeline(
-                                        renderAction
-                                );
-                            }
-
-                            @Override
-                            public net.minecraft.client.gui.render.TextureSetup textureSetup() {
-                                return net.minecraft.client.gui.render.TextureSetup.noTexture();
-                            }
-
-                            @Override
-                            public @Nullable net.minecraft.client.gui.navigation.ScreenRectangle scissorArea() {
-                                return new net.minecraft.client.gui.navigation.ScreenRectangle(
-                                        0,
-                                        0,
-                                        10000,
-                                        10000
-                                );
-                            }
-                        }
-                );
-        #else
-        renderAction.run();
-        #endif
+        GuiRenderInjector.submit(guiGraphics, renderAction);
 
         drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
     }
@@ -241,202 +166,8 @@ public abstract class NanoVGScreen<T> extends Screen {
         view.setViewport(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
         view.render(ctx, inputState);
     }
-
-    protected void setRoot(AbstractWidget<?> root) {
-        this.defaultFrame.setRoot(root);
-    }
-
-    protected void enableDebugRender(boolean enabled) {
-        view.setDebugRenderEnabled(enabled);
-    }
-
-    protected void setDebugBoundsVisible(boolean layout, boolean render, boolean hitTest) {
-        view.setDebugBoundsVisible(layout, render, hitTest);
-    }
-
-    protected View getView() {
-        return view;
-    }
-
-    protected Frame getDefaultFrame() {
-        return defaultFrame;
-    }
-
-    protected void dispatchMouseMoveToFrame(float x, float y) {
-        view.dispatchMouseMove(x, y);
-    }
-
-    protected void dispatchMousePressToFrame(float x, float y, int button) {
-        view.dispatchMousePress(x, y, button);
-    }
-
-    protected void dispatchMouseReleaseToFrame(float x, float y, int button) {
-        view.dispatchMouseRelease(x, y, button);
-    }
-
-    protected void dispatchMouseScrollToFrame(float x, float y, double scroll) {
-        view.dispatchMouseScroll(x, y, scroll);
-    }
-
-    protected void dispatchMouseDragToFrame(float mouseX, float mouseY, float dragX, float dragY, int button) {
-        view.dispatchMouseDrag(mouseX, mouseY, dragX, dragY, button);
-    }
-
-    protected void dispatchKeyPressToFrame(int keyCode, int scancode, int modifiers) {
-        view.dispatchKeyPress(keyCode, scancode, modifiers);
-    }
-
-    protected void dispatchKeyReleaseToFrame(int keyCode, int scancode, int modifiers) {
-        view.dispatchKeyRelease(keyCode, scancode, modifiers);
-    }
-
-    protected void dispatchCharTypedToFrame(char codePoint, int modifiers) {
-        view.dispatchCharTyped(codePoint, modifiers);
-    }
-
-    #if MC_VER > MC_1_21_8
     @Override
-    public boolean charTyped(net.minecraft.client.input.CharacterEvent event) {
-        #if MC_VER > MC_1_21_11
-        dispatchCharTypedToFrame(((char) event.codepoint()), 0);
-        #else
-        dispatchCharTypedToFrame(((char) event.codepoint()), event.modifiers());
-        #endif
-        return true;
-    }
-
-    @Override
-    public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
-        dispatchKeyReleaseToFrame(event.key(), event.scancode(), event.modifiers());
-        super.keyPressed(event);
-        return true;
-    }
-
-    @Override
-    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
-        dispatchKeyPressToFrame(event.key(), event.scancode(), event.modifiers());
-        super.keyPressed(event);
-        return true;
-    }
-
-    @Override
-    public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
-        dispatchMouseDragToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), (float) transformPos(dragX), (float) transformPos(dragY), event.button());
-        super.mouseDragged(event, dragX, dragY);
-        return true;
-    }
-
-    @Override
-    public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        dispatchMouseReleaseToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
-        super.mouseReleased(event);
-        return true;
-    }
-
-    @Override
-    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean idk) {
-        dispatchMousePressToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
-        super.mouseClicked(event, idk);
-        return true;
-    }
-
-    #else
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        dispatchMousePressToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), button);
-        super.mouseClicked(mouseX, mouseY, button);
-        return true;
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        dispatchMouseReleaseToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), button);
-        super.mouseReleased(mouseX, mouseY, button);
-        return true;
-    }
-
-    @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        dispatchMouseDragToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), (float) transformPos(dragX), (float) transformPos(dragY), button);
-        super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
-        return true;
-    }
-
-    @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        dispatchKeyReleaseToFrame(keyCode, scanCode, modifiers);
-        super.keyReleased(keyCode, scanCode, modifiers);
-        return true;
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        dispatchKeyPressToFrame(keyCode, scanCode, modifiers);
-        super.keyPressed(keyCode, scanCode, modifiers);
-        return true;
-    }
-
-    @Override
-    public boolean charTyped(char codePoint, int modifiers) {
-        dispatchCharTypedToFrame(codePoint, modifiers);
-        return true;
-    }
-    #endif
-
-    #if MC_VER > MC_1_20_1
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        dispatchMouseScrollToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), transformPos(scrollY));
-        super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-        return true;
-    }
-
-    #else
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX) {
-        dispatchMouseScrollToFrame((float) transformPos(mouseX), (float) transformPos(mouseY), transformPos(scrollX));
-        super.mouseScrolled(mouseX, mouseY, scrollX);
-        return true;
-    }
-    #endif
-
-
-    @Override
-    public void mouseMoved(double mouseX, double mouseY) {
-        dispatchMouseMoveToFrame((float) transformPos(mouseX), (float) transformPos(mouseY));
-        super.mouseMoved(mouseX, mouseY);
-    }
-
-
     protected double transformPos(double pos) {
         return (Minecraft.getInstance().getWindow().getGuiScale() * pos) / nvg.globalScale();
     }
-
-    #if MC_VER <= MC_1_20_1
-    @Override
-    public void renderBackground(GuiGraphics guiGraphics) {
-        return;
-    }
-
-    #else
-
-    #if MC_VER > MC_1_21_11
-    @Override
-    public void extractMenuBackground(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics)
-    {
-        return;
-    }
-    @Override
-    protected void extractBlurredBackground(net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
-        return;
-    }
-    #else
-    @Override
-    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick)
-    {
-        return;
-    }
-    #endif
-    #endif
-
 }

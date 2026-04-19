@@ -303,38 +303,38 @@ extern "C" {
         xess_context_handle_t xessContext = ((SRXeSSPrivateData *) context->userContext)->xessContext;
         xess_coord_t renderSize = ((SRXeSSPrivateData *) context->userContext)->renderSize;
 
-        xess_vk_execute_params_t *execute_params = new xess_vk_execute_params_t();
+        xess_vk_execute_params_t executeParams = {};
         if (desc->color.exist) {
-            execute_params->colorTexture = srTextureResourceToXeSSResource(&desc->color);
+            executeParams.colorTexture = srTextureResourceToXeSSResource(&desc->color);
             // execute_params.inputColorBase = {0,0};
         }
         if (desc->depth.exist) {
-            execute_params->depthTexture = srTextureResourceToXeSSResource(&desc->depth);
+            executeParams.depthTexture = srTextureResourceToXeSSResource(&desc->depth);
             // execute_params.inputDepthBase = {renderSize.x,renderSize.y};
         }
         if (desc->motionVectors.exist) {
-            execute_params->velocityTexture = srTextureResourceToXeSSResource(&desc->motionVectors);
+            executeParams.velocityTexture = srTextureResourceToXeSSResource(&desc->motionVectors);
             // execute_params.inputMotionVectorBase = {renderSize.x,renderSize.y};
         }
         if (desc->exposure.exist) {
-            execute_params->exposureScaleTexture = srTextureResourceToXeSSResource(&desc->exposure);
+            executeParams.exposureScaleTexture = srTextureResourceToXeSSResource(&desc->exposure);
         }
         if (desc->reactive.exist) {
-            execute_params->responsivePixelMaskTexture = srTextureResourceToXeSSResource(&desc->reactive);
+            executeParams.responsivePixelMaskTexture = srTextureResourceToXeSSResource(&desc->reactive);
         }
         if (desc->output.exist) {
-            execute_params->outputTexture = srTextureResourceToXeSSResource(&desc->output);
+            executeParams.outputTexture = srTextureResourceToXeSSResource(&desc->output);
         }
-        execute_params->jitterOffsetX = desc->jitterOffset.x;
-        execute_params->jitterOffsetY = desc->jitterOffset.y;
-        execute_params->exposureScale = desc->preExposure;
-        execute_params->resetHistory = desc->reset ? 1 : 0;
-        execute_params->inputWidth = desc->renderSize.x;
-        execute_params->inputHeight = desc->renderSize.y;
+        executeParams.jitterOffsetX = desc->jitterOffset.x;
+        executeParams.jitterOffsetY = desc->jitterOffset.y;
+        executeParams.exposureScale = desc->preExposure;
+        executeParams.resetHistory = desc->reset ? 1 : 0;
+        executeParams.inputWidth = desc->renderSize.x;
+        executeParams.inputHeight = desc->renderSize.y;
         g_xessFunctions.xessSetVelocityScale(xessContext, desc->motionVectorScale.x, desc->motionVectorScale.y);
         auto status = g_xessFunctions.xessVKExecute(xessContext,
                                                     desc->commandList.apiCommandBuffer.vulkan.commandBuffer,
-                                                    execute_params);
+                                                    &executeParams);
         if (status != XESS_RESULT_SUCCESS) {
             ((SRXeSSPrivateData *) context->userContext)->
                     messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS execute failed");
@@ -346,6 +346,12 @@ extern "C" {
     }
 
     SR_API SRReturnCode srXeSSShutdown() {
+        if (g_xessModule) {
+            FreeLibrary(g_xessModule);
+            g_xessModule = nullptr;
+        }
+        g_xessFunctions = {};
+        g_xessFunctionsLoaded = false;
         return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 

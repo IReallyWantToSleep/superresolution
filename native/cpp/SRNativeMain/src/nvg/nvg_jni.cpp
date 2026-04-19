@@ -3,8 +3,14 @@
 #include "io_homo_superresolution_thirdparty_nanovg_NanoVGPaint.h"
 #include "nvg/all.h"
 #include <string>
+#include <cstring>
 #include "define.h"
+
 static JNIEnv *g0_envForCallback = nullptr;
+
+static constexpr jint NANOVG_BACKEND_MODE_GL_LEGACY = 0;
+static constexpr jint NANOVG_BACKEND_MODE_RHI_DIRECT = 1;
+static constexpr const char *NANOVG_RHI_BRIDGE_CLASS = "io/homo/superresolution/thirdparty/nanovg/NanoVGRhiBridge";
 
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nGetNanoVGColorR(
     JNIEnv *, jobject, jlong ptr) {
@@ -133,15 +139,274 @@ void loadGlFunctions(void *(getGLFunctionAddress)(const char *), GlFunctionTable
             getGLFunctionAddress("glVertexAttribPointer");
 }
 
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_createContext(
-    JNIEnv *env, jclass, jint flags) {
+static jclass findRhiBridgeClass(JNIEnv *env) {
+    return env->FindClass(NANOVG_RHI_BRIDGE_CLASS);
+}
+
+static jobject makeDirectBuffer(JNIEnv *env, const void *ptr, int bytes) {
+    if (!ptr || bytes <= 0) {
+        return nullptr;
+    }
+    return env->NewDirectByteBuffer(const_cast<void *>(ptr), bytes);
+}
+
+static int rhiCreateTextureCallback(void *, int imageId, int type, int w, int h, int imageFlags,
+                                    const unsigned char *data, int dataSize) {
+    if (!g0_envForCallback) {
+        return 0;
+    }
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return 0;
+    }
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nCreateTexture",
+            "(IIIIILjava/nio/ByteBuffer;I)Z");
+    if (!method) {
+        return 0;
+    }
+
+    jobject dataBuffer = makeDirectBuffer(env, data, dataSize);
+    jboolean ok = env->CallStaticBooleanMethod(
+            bridgeClass,
+            method,
+            imageId,
+            type,
+            w,
+            h,
+            imageFlags,
+            dataBuffer,
+            dataSize);
+    if (dataBuffer) {
+        env->DeleteLocalRef(dataBuffer);
+    }
+    return ok == JNI_TRUE ? 1 : 0;
+}
+
+static int rhiRegisterExternalTextureCallback(void *, int imageId, unsigned int externalTextureHandle,
+                                              int w, int h, int imageFlags) {
+    if (!g0_envForCallback) {
+        return 0;
+    }
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return 0;
+    }
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nRegisterExternalTexture",
+            "(IIIII)Z");
+    if (!method) {
+        return 0;
+    }
+    jboolean ok = env->CallStaticBooleanMethod(
+            bridgeClass,
+            method,
+            imageId,
+            (jint) externalTextureHandle,
+            w,
+            h,
+            imageFlags);
+    return ok == JNI_TRUE ? 1 : 0;
+}
+
+static int rhiUpdateTextureCallback(void *, int imageId, int x, int y, int w, int h,
+                                    const unsigned char *data, int dataSize) {
+    if (!g0_envForCallback) {
+        return 0;
+    }
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return 0;
+    }
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nUpdateTexture",
+            "(IIIIILjava/nio/ByteBuffer;I)Z");
+    if (!method) {
+        return 0;
+    }
+
+    jobject dataBuffer = makeDirectBuffer(env, data, dataSize);
+    jboolean ok = env->CallStaticBooleanMethod(
+            bridgeClass,
+            method,
+            imageId,
+            x,
+            y,
+            w,
+            h,
+            dataBuffer,
+            dataSize);
+    if (dataBuffer) {
+        env->DeleteLocalRef(dataBuffer);
+    }
+    return ok == JNI_TRUE ? 1 : 0;
+}
+
+static int rhiDeleteTextureCallback(void *, int imageId) {
+    if (!g0_envForCallback) {
+        return 0;
+    }
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return 0;
+    }
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nDeleteTexture",
+            "(I)V");
+    if (!method) {
+        return 0;
+    }
+    env->CallStaticVoidMethod(bridgeClass, method, imageId);
+    return 1;
+}
+
+static void rhiViewportCallback(void *, float width, float height, float devicePixelRatio) {
+    if (!g0_envForCallback) {
+        return;
+    }
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return;
+    }
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nViewport",
+            "(FFF)V");
+    if (!method) {
+        return;
+    }
+    env->CallStaticVoidMethod(bridgeClass, method, width, height, devicePixelRatio);
+}
+
+static void rhiFlushCallback(void *, float viewWidth, float viewHeight,
+                             const void *verts, int nverts,
+                             const void *paths, int npaths,
+                             const void *calls, int ncalls,
+                             const unsigned char *uniforms, int uniformBytes, int fragSize) {
+    if (!g0_envForCallback) {
+        return;
+    }
+
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return;
+    }
+
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nFlush",
+            "(FFLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;II)V");
+    if (!method) {
+        return;
+    }
+
+    int vertsBytes = nverts * (int) sizeof(NVGvertex);
+    int pathsBytes = npaths * (int) sizeof(NVGRHIPath);
+    int callsBytes = ncalls * (int) sizeof(NVGRHICall);
+
+    jobject vertsBuffer = makeDirectBuffer(env, verts, vertsBytes);
+    jobject pathsBuffer = makeDirectBuffer(env, paths, pathsBytes);
+    jobject callsBuffer = makeDirectBuffer(env, calls, callsBytes);
+    jobject uniformsBuffer = makeDirectBuffer(env, uniforms, uniformBytes);
+
+    env->CallStaticVoidMethod(
+            bridgeClass,
+            method,
+            viewWidth,
+            viewHeight,
+            vertsBuffer,
+            nverts,
+            pathsBuffer,
+            npaths,
+            callsBuffer,
+            ncalls,
+            uniformsBuffer,
+            uniformBytes,
+            fragSize);
+
+    if (vertsBuffer) env->DeleteLocalRef(vertsBuffer);
+    if (pathsBuffer) env->DeleteLocalRef(pathsBuffer);
+    if (callsBuffer) env->DeleteLocalRef(callsBuffer);
+    if (uniformsBuffer) env->DeleteLocalRef(uniformsBuffer);
+}
+
+static void rhiDestroyCallback(void *) {
+    if (!g0_envForCallback) {
+        return;
+    }
+    JNIEnv *env = g0_envForCallback;
+    jclass bridgeClass = findRhiBridgeClass(env);
+    if (!bridgeClass) {
+        return;
+    }
+    jmethodID method = env->GetStaticMethodID(
+            bridgeClass,
+            "nDestroy",
+            "()V");
+    if (!method) {
+        return;
+    }
+    env->CallStaticVoidMethod(bridgeClass, method);
+}
+
+static NVGRHICallbacks g_rhiCallbacks = {
+        rhiCreateTextureCallback,
+        rhiRegisterExternalTextureCallback,
+        rhiUpdateTextureCallback,
+        rhiDeleteTextureCallback,
+        rhiViewportCallback,
+        rhiFlushCallback,
+        rhiDestroyCallback
+};
+
+static jlong createContextInternal(JNIEnv *env, jint flags, jint backendMode) {
     g0_envForCallback = env;
-    try {
+
+    if (backendMode == NANOVG_BACKEND_MODE_GL_LEGACY) {
         GlFunctionTable glFuncTable = {};
         loadGlFunctions(java_glfwGetProcAddress, &glFuncTable);
         NanoVGContext *ctx = new NanoVGContext(flags, glFuncTable);
         ctx->Reset();
         return (jlong) ctx;
+    }
+
+    if (backendMode == NANOVG_BACKEND_MODE_RHI_DIRECT) {
+        env->ThrowNew(
+            env->FindClass("java/lang/UnsupportedOperationException"),
+            "NanoVG RHI callback backend is disabled");
+        return 0;
+    }
+
+    env->ThrowNew(
+        env->FindClass("java/lang/IllegalArgumentException"),
+        "Unknown NanoVG backend mode");
+    return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_createContext(
+    JNIEnv *env, jclass, jint flags) {
+    try {
+        return createContextInternal(env, flags, NANOVG_BACKEND_MODE_GL_LEGACY);
+    } catch (const std::exception &e) {
+        env->ThrowNew(env->FindClass("java/lang/RuntimeException"), e.what());
+        return 0;
+    }
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateContextEx(
+    JNIEnv *env, jclass, jint flags, jint backendMode) {
+    try {
+        return createContextInternal(env, flags, backendMode);
     } catch (const std::exception &e) {
         env->ThrowNew(env->FindClass("java/lang/RuntimeException"), e.what());
         return 0;

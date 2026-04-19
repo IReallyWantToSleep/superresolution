@@ -21,10 +21,10 @@ package io.homo.superresolution.core.graphics.impl.command;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
+import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
-import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 
 public interface ICommandDecoder {
     ResourceStateTracker getStateTracker();
@@ -51,9 +51,17 @@ public interface ICommandDecoder {
 
     void setBlendConstants(ICommandBuffer commandBuffer, float r, float g, float b, float a);
 
-    void draw(ICommandBuffer commandBuffer, RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex);
+    void beginRenderPass(ICommandBuffer commandBuffer, RenderPass renderPass);
 
-    void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ);
+    void endRenderPass(ICommandBuffer commandBuffer);
+
+    void bindPipeline(ICommandBuffer commandBuffer, GraphicsPipeline pipeline);
+
+    void bindPipeline(ICommandBuffer commandBuffer, ComputePipeline pipeline);
+
+    void draw(ICommandBuffer commandBuffer, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex);
+
+    void dispatch(ICommandBuffer commandBuffer, int groupCountX, int groupCountY, int groupCountZ);
 
     void memoryBarrier(ICommandBuffer commandBuffer, MemoryBarrierType... barriers);
 

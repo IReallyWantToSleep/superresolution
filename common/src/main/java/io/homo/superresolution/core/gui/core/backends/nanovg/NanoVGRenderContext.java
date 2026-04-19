@@ -32,6 +32,7 @@ import java.util.Stack;
 import java.util.function.Consumer;
 
 public class NanoVGRenderContext implements RenderContext {
+    private static final int NVG_IMAGE_NODELETE = 1 << 16;
 
     private final NanoVGContextWrapper nvg;
     private final RenderTree renderTree;
@@ -532,7 +533,7 @@ public class NanoVGRenderContext implements RenderContext {
                 (int) texture.handle(),
                 texture.getWidth(),
                 texture.getHeight(),
-                0
+                NVG_IMAGE_NODELETE
         );
         return image;
     }

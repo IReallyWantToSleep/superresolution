@@ -71,6 +71,8 @@ SRTextureResourceDescription fromJavaSRTextureResourceDesc(JNIEnv *env, jobject 
         jclass formatCls = env->GetObjectClass(formatObj);
         jfieldID valueFieldId = env->GetFieldID(formatCls, "value", "I");
         formatValue = env->GetIntField(formatObj, valueFieldId);
+        env->DeleteLocalRef(formatCls);
+        env->DeleteLocalRef(formatObj);
     }
 
     SRTextureResourceDescription desc = {};
@@ -79,6 +81,7 @@ SRTextureResourceDescription fromJavaSRTextureResourceDesc(JNIEnv *env, jobject 
     desc.height = height;
     desc.mipmapCount = mipmapCount;
     desc.usage = static_cast<SRResourceUsage>(usage);
+    env->DeleteLocalRef(cls);
     return desc;
 }
 
@@ -104,6 +107,10 @@ SRTextureResource fromJavaSRTextureResourceVK(JNIEnv *env, jobject obj) {
     resource.handle = reinterpret_cast<void *>(image);
     resource.desc = desc;
     resource.imageView = reinterpret_cast<void *>(imageView);
+    if (descObj != nullptr) {
+        env->DeleteLocalRef(descObj);
+    }
+    env->DeleteLocalRef(cls);
     return resource;
 }
 
@@ -120,6 +127,7 @@ void *java_vkGetDeviceProcAddr(void *device, const char *name) {
         "(Ljava/lang/String;)J");
 
     if (!methodID) {
+        g_envForCallback->DeleteLocalRef(cpp_helper);
         std::cout << "methodID is null!!!!!!!!!!!!!!" << std::endl;
         return nullptr;
     }
@@ -127,6 +135,7 @@ void *java_vkGetDeviceProcAddr(void *device, const char *name) {
     jstring jmsg = g_envForCallback->NewStringUTF(name);
     jlong jlongValue = g_envForCallback->CallStaticLongMethod(cpp_helper, methodID, jmsg);
     g_envForCallback->DeleteLocalRef(jmsg);
+    g_envForCallback->DeleteLocalRef(cpp_helper);
 
     return reinterpret_cast<void *>(jlongValue);
 }
@@ -144,6 +153,7 @@ void *java_glfwGetProcAddress(void *device, const char *name) {
         "(Ljava/lang/String;)J");
 
     if (!methodID) {
+        g_envForCallback->DeleteLocalRef(cpp_helper);
         std::cout << "methodID is null!!!!!!!!!!!!!!" << std::endl;
         return nullptr;
     }
@@ -151,6 +161,7 @@ void *java_glfwGetProcAddress(void *device, const char *name) {
     jstring jmsg = g_envForCallback->NewStringUTF(name);
     jlong jlongValue = g_envForCallback->CallStaticLongMethod(cpp_helper, methodID, jmsg);
     g_envForCallback->DeleteLocalRef(jmsg);
+    g_envForCallback->DeleteLocalRef(cpp_helper);
 
     return reinterpret_cast<void *>(jlongValue);
 }
@@ -437,8 +448,10 @@ extern "C" {
         SRUpscaleProvider *provider = new SRUpscaleProvider();
         SRReturnCode code = srGetUpscaleProvider(provider, static_cast<uint64_t>(providerId));
 
-        if (code != SR_RETURN_CODE_OK)
+        if (code != SR_RETURN_CODE_OK) {
+            delete provider;
             return code;
+        }
 
         jclass providerCls = env->GetObjectClass(outProvider);
         jfieldID nativePtrField = env->GetFieldID(providerCls, "nativePtr", "J");

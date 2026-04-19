@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.gui.MaterialConfigScreen;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -44,11 +46,14 @@ import io.homo.superresolution.core.utils.Color;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
 
     private MaterialScheme materialScheme;
     private String currentContentKey = "general";
-    private java.util.Map<String, Frame> contentFrames;
+    private Map<String, Frame> contentFrames;
     private YogaNode navigationDrawerLayout;
     private YogaNode contentLayout;
     private Frame currentContentFrame;
@@ -61,7 +66,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
     @Override
     protected void buildWidgets() {
         materialScheme = MaterialScheme.from(MaterialTheme.Dark, Color.from("#6750A4"));
-        contentFrames = new java.util.HashMap<>();
+        contentFrames = new HashMap<>();
         currentContentKey = "general";
 
         getView().removeFrame(getDefaultFrame());
@@ -689,6 +694,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addItem("界面", MaterialSymbols.iconPalette(), "interface")
                 .addItem("调试", MaterialSymbols.iconBugReport(), "debug")
                 .addItem("渲染测试", MaterialSymbols.iconScience(), "render_test")
+                .addItem("WOW", MaterialSymbols.iconScience(), "wow")
                 .addDivider()
                 .addSectionHeader("示例")
                 .addItem("选项示例", MaterialSymbols.iconSettings(), "options")
@@ -703,6 +709,8 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                     String key = String.valueOf(item.getValue());
                     if ("render_test".equals(key)) {
                         Minecraft.getInstance().setScreen(new RenderTestScreen());
+                    }else if ("wow".equals(key)) {
+                        Minecraft.getInstance().setScreen(new MaterialConfigScreen(this));
                     } else {
                         switchContentFrame(key);
                     }

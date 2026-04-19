@@ -1,5 +1,5 @@
 {
-    "modmenu.nameTranslation.super_resolution": "超级解析度",
+    "modmenu.nameTranslation.super_resolution": "超分辨率",
     "modmenu.descriptionTranslation.super_resolution": "喵",
     "key.super_resolution.open_config": "打开配置界面",
     "superresolution.algo.description.header": "FSR1 --- AMD FidelityFX Super Resolution 1\nFSR2 --- AMD FidelityFX Super Resolution 2\nNIS --- NVIDIA Image Scaling\nSGSR --- Snapdragon™ Game Super Resolution",

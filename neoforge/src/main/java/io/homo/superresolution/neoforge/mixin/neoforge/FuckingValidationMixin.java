@@ -28,9 +28,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.function.BiFunction;
 //坏狐狸在高版本引入了ValidationLayer，iris恰好跟这玩意冲突
-#if MC_VER >= MC_1_21_10
+#if MC_VER >= MC_1_21_10 && MC_VER < MC_26_1
 import com.mojang.blaze3d.opengl.GlDevice;
-import com.mojang.blaze3d.shaders.ShaderType;
 import com.mojang.blaze3d.systems.GpuDevice;
 
 
@@ -44,7 +43,7 @@ public class FuckingValidationMixin {
             #if MC_VER > MC_1_21_10
             com.mojang.blaze3d.shaders.ShaderSource defaultShaderSource,
             #else
-            BiFunction<net.minecraft.resources.ResourceLocation, ShaderType, String> defaultShaderSource,
+            BiFunction<net.minecraft.resources.ResourceLocation, com.mojang.blaze3d.shaders.ShaderType, String> defaultShaderSource,
             #endif
             boolean enableDebugLabels,
             CallbackInfoReturnable<GpuDevice> cir

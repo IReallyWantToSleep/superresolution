@@ -25,35 +25,48 @@ import io.homo.superresolution.core.graphics.impl.pipeline.state.DepthStencilSta
 import io.homo.superresolution.core.graphics.impl.pipeline.state.DynamicStateFlags;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.RasterizationState;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 
 import java.util.function.Consumer;
 
 public abstract class GraphicsPipeline implements IPipeline {
     private final IShaderProgram shader;
+    private final RenderPass renderPass;
     private final RasterizationState rasterization;
     private final DepthStencilState depthStencil;
     private final ColorBlendState colorBlend;
     private final DynamicStateFlags dynamicStates;
     private final PipelineDescriptorSet descriptorSet;
     private final VertexFormat vertexFormat;
+    private final PrimitiveType primitiveType;
     private final DynamicState currentDynamicState = new DynamicState();
 
     public GraphicsPipeline(IShaderProgram shader,
+                            RenderPass renderPass,
                             RasterizationState rasterization,
                             DepthStencilState depthStencil,
                             ColorBlendState colorBlend,
                             DynamicStateFlags dynamicStates,
+                            PrimitiveType primitiveType,
                             VertexFormat vertexFormat,
                             PipelineDescriptorSet descriptorSet) {
         if (shader == null) {
             throw new IllegalArgumentException("Shader cannot be null");
         }
+        if (renderPass == null) {
+            throw new IllegalArgumentException("RenderPass cannot be null");
+        }
         this.shader = shader;
+        this.renderPass = renderPass;
         this.rasterization = rasterization != null ? rasterization : RasterizationState.defaults();
         this.depthStencil = depthStencil != null ? depthStencil : DepthStencilState.disabled();
         this.colorBlend = colorBlend != null ? colorBlend : ColorBlendState.defaults();
         this.dynamicStates = dynamicStates != null ? dynamicStates : DynamicStateFlags.ViewportScissor;
+        if (primitiveType == null) {
+            throw new IllegalArgumentException("Primitive type cannot be null");
+        }
+        this.primitiveType = primitiveType;
         this.descriptorSet = descriptorSet;
         this.vertexFormat = vertexFormat;
     }
@@ -70,6 +83,10 @@ public abstract class GraphicsPipeline implements IPipeline {
         return rasterization;
     }
 
+    public RenderPass renderPass() {
+        return renderPass;
+    }
+
     public DepthStencilState depthStencil() {
         return depthStencil;
     }
@@ -80,6 +97,10 @@ public abstract class GraphicsPipeline implements IPipeline {
 
     public DynamicStateFlags dynamicStates() {
         return dynamicStates;
+    }
+
+    public PrimitiveType primitiveType() {
+        return primitiveType;
     }
 
     @Override
@@ -138,21 +159,21 @@ public abstract class GraphicsPipeline implements IPipeline {
 
     public void applyDynamicStates(ICommandBuffer cmd) {
         if (currentDynamicState.viewportDirty && dynamicStates.has(DynamicStateFlags.Viewport)) {
-            cmd.getDecoder().setViewport(cmd, currentDynamicState.viewportX, currentDynamicState.viewportY,
+            cmd.decoder().setViewport(cmd, currentDynamicState.viewportX, currentDynamicState.viewportY,
                     currentDynamicState.viewportWidth, currentDynamicState.viewportHeight);
             currentDynamicState.viewportDirty = false;
         }
         if (currentDynamicState.scissorDirty && dynamicStates.has(DynamicStateFlags.Scissor)) {
-            cmd.getDecoder().setScissor(cmd, currentDynamicState.scissorX, currentDynamicState.scissorY,
+            cmd.decoder().setScissor(cmd, currentDynamicState.scissorX, currentDynamicState.scissorY,
                     currentDynamicState.scissorWidth, currentDynamicState.scissorHeight);
             currentDynamicState.scissorDirty = false;
         }
         if (currentDynamicState.lineWidthDirty && dynamicStates.has(DynamicStateFlags.LineWidth)) {
-            cmd.getDecoder().setLineWidth(cmd, currentDynamicState.lineWidth);
+            cmd.decoder().setLineWidth(cmd, currentDynamicState.lineWidth);
             currentDynamicState.lineWidthDirty = false;
         }
         if (currentDynamicState.blendConstantsDirty && dynamicStates.has(DynamicStateFlags.BlendConstants)) {
-            cmd.getDecoder().setBlendConstants(cmd, currentDynamicState.blendConstantR,
+            cmd.decoder().setBlendConstants(cmd, currentDynamicState.blendConstantR,
                     currentDynamicState.blendConstantG,
                     currentDynamicState.blendConstantB,
                     currentDynamicState.blendConstantA);
@@ -162,10 +183,12 @@ public abstract class GraphicsPipeline implements IPipeline {
 
     public static class Builder {
         private IShaderProgram shader;
+        private RenderPass renderPass;
         private RasterizationState rasterization = RasterizationState.defaults();
         private DepthStencilState depthStencil = DepthStencilState.disabled();
         private ColorBlendState colorBlend = ColorBlendState.defaults();
         private DynamicStateFlags dynamicStates = DynamicStateFlags.ViewportScissor;
+        private PrimitiveType primitiveType;
         private VertexFormat vertexFormat;
 
         public VertexFormat vertexFormat() {
@@ -188,6 +211,10 @@ public abstract class GraphicsPipeline implements IPipeline {
             return shader;
         }
 
+        public RenderPass renderPass() {
+            return renderPass;
+        }
+
         public RasterizationState rasterization() {
             return rasterization;
         }
@@ -204,8 +231,17 @@ public abstract class GraphicsPipeline implements IPipeline {
             return dynamicStates;
         }
 
+        public PrimitiveType primitiveType() {
+            return primitiveType;
+        }
+
         public Builder shader(IShaderProgram shader) {
             this.shader = shader;
+            return this;
+        }
+
+        public Builder renderPass(RenderPass renderPass) {
+            this.renderPass = renderPass;
             return this;
         }
 
@@ -235,12 +271,23 @@ public abstract class GraphicsPipeline implements IPipeline {
             return this;
         }
 
+        public Builder primitiveType(PrimitiveType primitiveType) {
+            this.primitiveType = primitiveType;
+            return this;
+        }
+
         public GraphicsPipeline build(IDevice device) {
             if (shader == null) {
                 throw new IllegalStateException("Shader is required");
             }
             if (vertexFormat == null) {
                 throw new IllegalStateException("Vertex format is required");
+            }
+            if (renderPass == null) {
+                throw new IllegalStateException("RenderPass is required");
+            }
+            if (primitiveType == null) {
+                throw new IllegalStateException("Primitive type is required");
             }
             return device.createGraphicsPipeline(this);
         }

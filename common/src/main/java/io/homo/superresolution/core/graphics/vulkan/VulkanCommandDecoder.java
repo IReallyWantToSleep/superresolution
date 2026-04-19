@@ -29,7 +29,6 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceD
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
-import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -325,14 +324,19 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void draw(ICommandBuffer commandBuffer, RenderPass renderPass, PrimitiveType primitiveType, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
-        VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
+    public void beginRenderPass(ICommandBuffer commandBuffer, RenderPass renderPass) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("beginRenderPass: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
+        if (renderPass == null) {
+            throw new IllegalArgumentException("beginRenderPass: renderPass为null");
+        }
+        if (!(renderPass instanceof VulkanRenderPass vkRenderPass)) {
+            throw new IllegalArgumentException("beginRenderPass: renderPass类型错误: " + renderPass.getClass().getName());
+        }
+
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
-        VulkanRenderPass vkRenderPass = (VulkanRenderPass) renderPass;
-        VulkanFramebuffer vkFramebuffer = (VulkanFramebuffer) renderPass.frameBuffer();
-        GraphicsPipeline graphicsPipeline = renderPass.pipeline();
-        VulkanGraphicsPipeline vkGraphicsPipeline = (VulkanGraphicsPipeline) graphicsPipeline;
-        VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) graphicsPipeline.descriptorSet();
+        VulkanFramebuffer vkFramebuffer = (VulkanFramebuffer) vkRenderPass.frameBuffer();
 
         ITexture colorAttachment = vkFramebuffer.getColorAttachmentTexture();
         if (colorAttachment != null) {
@@ -344,11 +348,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             transitionTexture(cmd, depthAttachment, ResourceAccessType.DEPTH_ATTACHMENT_WRITE);
         }
 
-        transitionDescriptorBindings(cmd, graphicsPipeline.descriptorSet(), graphicsPipeline);
-
-        vkGraphicsPipeline.ensurePipelineCreated(vkRenderPass.getRenderPass());
-
-        // begin render pass
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
@@ -387,11 +386,115 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             vkCmdBeginRenderPass(cmd, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
 
+        vcb.beginRenderPass(vkRenderPass);
+    }
+
+    @Override
+    public void bindPipeline(ICommandBuffer commandBuffer, GraphicsPipeline pipeline) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("bindPipeline(graphics): commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
+        if (!vcb.isRenderPassActive()) {
+            throw new IllegalStateException("bindPipeline(graphics): 当前没有活动的render pass，请先调用 beginRenderPass");
+        }
+        if (pipeline == null) {
+            throw new IllegalArgumentException("bindPipeline(graphics): pipeline为null");
+        }
+        if (!(pipeline instanceof VulkanGraphicsPipeline vkGraphicsPipeline)) {
+            throw new IllegalArgumentException("bindPipeline(graphics): pipeline类型错误: " + pipeline.getClass().getName());
+        }
+
+        VulkanRenderPass activePass = vcb.getActiveRenderPass();
+        if (pipeline.renderPass() != activePass) {
+            throw new IllegalStateException("bindPipeline(graphics): pipeline.renderPass 与当前活动 render pass 不匹配");
+        }
+
+        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+        vkGraphicsPipeline.ensurePipelineCreated(activePass.getRenderPass());
+        transitionDescriptorBindings(cmd, pipeline.descriptorSet(), pipeline);
+
+        VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipeline());
-
         vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipelineLayout());
+        pipeline.applyDynamicStates(commandBuffer);
+        vcb.bindGraphicsPipeline(vkGraphicsPipeline);
+    }
 
-        graphicsPipeline.applyDynamicStates(commandBuffer);
+    @Override
+    public void bindPipeline(ICommandBuffer commandBuffer, ComputePipeline pipeline) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("bindPipeline(compute): commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
+        if (vcb.isRenderPassActive()) {
+            throw new IllegalStateException("bindPipeline(compute): render pass进行中，不能绑定compute pipeline");
+        }
+        if (pipeline == null) {
+            throw new IllegalArgumentException("bindPipeline(compute): pipeline为null");
+        }
+        if (!(pipeline instanceof VulkanComputePipeline vkComputePipeline)) {
+            throw new IllegalArgumentException("bindPipeline(compute): pipeline类型错误: " + pipeline.getClass().getName());
+        }
+
+        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+        transitionDescriptorBindings(cmd, pipeline.descriptorSet(), pipeline);
+        VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
+
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipeline());
+        vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
+        vcb.bindComputePipeline(vkComputePipeline);
+    }
+
+    @Override
+    public void endRenderPass(ICommandBuffer commandBuffer) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("endRenderPass: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
+        if (!vcb.isRenderPassActive()) {
+            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
+        }
+
+        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+        VulkanRenderPass activePass = vcb.getActiveRenderPass();
+        VulkanFramebuffer vkFramebuffer = (VulkanFramebuffer) activePass.frameBuffer();
+
+        vkCmdEndRenderPass(cmd);
+
+        ITexture colorAttachment = vkFramebuffer.getColorAttachmentTexture();
+        if (colorAttachment != null) {
+            stateTracker.setState(colorAttachment, new ResourceState(ResourceAccessType.COLOR_ATTACHMENT_WRITE));
+        }
+
+        ITexture depthAttachment = vkFramebuffer.getDepthAttachmentTexture();
+        if (depthAttachment != null) {
+            stateTracker.setState(depthAttachment, new ResourceState(ResourceAccessType.DEPTH_ATTACHMENT_WRITE));
+        }
+
+        vcb.endRenderPass();
+    }
+
+    @Override
+    public void draw(ICommandBuffer commandBuffer, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
+        VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
+        if (!vcb.isRenderPassActive()) {
+            throw new IllegalStateException("draw: 当前没有活动的render pass，请先调用 beginRenderPass");
+        }
+        VulkanGraphicsPipeline vkGraphicsPipeline = vcb.getBoundGraphicsPipeline();
+        if (vkGraphicsPipeline == null) {
+            throw new IllegalStateException("draw: 当前未绑定图形管线，请先调用 bindPipeline(graphics)");
+        }
+
+        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+        GraphicsPipeline graphicsPipeline = vkGraphicsPipeline;
+
+        if (vertexBuffer == null) {
+            throw new IllegalArgumentException("draw: vertexBuffer为null");
+        }
+        if (vertexCount <= 0) {
+            throw new IllegalArgumentException("draw: vertexCount必须为正数");
+        }
+        if (firstVertex < 0) {
+            throw new IllegalArgumentException("draw: firstVertex不能为负数");
+        }
 
         if (vertexBuffer != null) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -400,39 +503,28 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
 
         vkCmdDraw(cmd, vertexCount, 1, firstVertex, 0);
-
-        // end render pass
-        vkCmdEndRenderPass(cmd);
-
-        if (colorAttachment != null) {
-            stateTracker.setState(colorAttachment, new ResourceState(ResourceAccessType.COLOR_ATTACHMENT_WRITE));
-        }
-        if (depthAttachment != null) {
-            stateTracker.setState(depthAttachment, new ResourceState(ResourceAccessType.DEPTH_ATTACHMENT_WRITE));
-        }
     }
 
     @Override
-    public void dispatch(ICommandBuffer commandBuffer, ComputePipeline computePipeline, int groupCountX, int groupCountY, int groupCountZ) {
+    public void dispatch(ICommandBuffer commandBuffer, int groupCountX, int groupCountY, int groupCountZ) {
         VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
+        if (vcb.isRenderPassActive()) {
+            throw new IllegalStateException("dispatch: render pass进行中，不能执行compute dispatch");
+        }
+        VulkanComputePipeline vkComputePipeline = vcb.getBoundComputePipeline();
+        if (vkComputePipeline == null) {
+            throw new IllegalStateException("dispatch: 当前未绑定计算管线，请先调用 bindPipeline(compute)");
+        }
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
-        VulkanComputePipeline vkComputePipeline = (VulkanComputePipeline) computePipeline;
-        VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) computePipeline.descriptorSet();
-
-        transitionDescriptorBindings(cmd, computePipeline.descriptorSet(), computePipeline);
-
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipeline());
-
-        vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
 
         vkCmdDispatch(cmd, groupCountX, groupCountY, groupCountZ);
 
-        PipelineDescriptorSet descriptorSet = computePipeline.descriptorSet();
+        PipelineDescriptorSet descriptorSet = vkComputePipeline.descriptorSet();
         Map<String, PipelineDescriptorSet.ResourceBinding> bindings = descriptorSet.getBindings();
         for (Map.Entry<String, PipelineDescriptorSet.ResourceBinding> entry : bindings.entrySet()) {
             String name = entry.getKey();
             PipelineDescriptorSet.ResourceBinding binding = entry.getValue();
-            ResourceAccessType access = deriveAccessType(computePipeline, name, binding);
+            ResourceAccessType access = deriveAccessType(vkComputePipeline, name, binding);
             ITexture trackTarget = resolveTrackingTarget(binding);
             if (trackTarget != null) {
                 stateTracker.setState(trackTarget, new ResourceState(access));

@@ -19,7 +19,9 @@
 package io.homo.superresolution.common.gui;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.gui.WidgetDesignScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 public class ConfigScreenBuilder {
 

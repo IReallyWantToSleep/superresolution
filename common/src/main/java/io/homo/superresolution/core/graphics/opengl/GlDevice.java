@@ -130,7 +130,6 @@ public class GlDevice implements IDevice {
     @Override
     public GlRenderPass createRenderPass(RenderPass.Builder builder) {
         return new GlRenderPass(
-                (GraphicsPipeline) builder.getPipeline(),
                 builder.getFrameBuffer(),
                 builder.getClearState()
         );
@@ -153,10 +152,12 @@ public class GlDevice implements IDevice {
     public GlGraphicsPipeline createGraphicsPipeline(GraphicsPipeline.Builder builder) {
         return new GlGraphicsPipeline(
                 builder.shader(),
+                builder.renderPass(),
                 builder.rasterization(),
                 builder.depthStencil(),
                 builder.colorBlend(),
                 builder.dynamicStates(),
+                builder.primitiveType(),
                 builder.vertexFormat(),
                 createDescriptorSet(builder.shader())
         );

@@ -57,12 +57,18 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     }
 
     public void updateSize() {
+        updateSize(null);
+    }
+
+    public void updateSize(RenderContext ctx) {
         MaterialMenuSize size = style().size();
 
         float maxItemWidth = 0;
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof MaterialMenuGroup group) {
-                maxItemWidth = Math.max(maxItemWidth, group.computeContentWidth());
+        if (ctx != null) {
+            for (ILayoutElement child : getChildren()) {
+                if (child instanceof MaterialMenuGroup group) {
+                    maxItemWidth = Math.max(maxItemWidth, group.computeContentWidth(ctx));
+                }
             }
         }
 
@@ -243,7 +249,7 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
     @Override
     public void layouting(RenderContext ctx) {
-        updateSize();
+        updateSize(ctx);
         super.layouting(ctx);
     }
 

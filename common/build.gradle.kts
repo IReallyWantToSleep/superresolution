@@ -84,6 +84,12 @@ fun findIris(config: BasePlatformConfig?): Pair<Dependency, Boolean>? {
 
     return null
 }
+fun findFirstConfiguration(vararg names: String): String {
+    return names.firstOrNull { name -> configurations.findByName(name) != null } ?: names.last()
+}
+fun DependencyHandler.modCompileOnlyCompat(notation: Any) =
+    add(findFirstConfiguration("modCompileOnly", "compileOnly"), notation)
+
 
 dependencies {
     compileOnly("org.spongepowered:mixin:0.8.5")
@@ -133,7 +139,7 @@ dependencies {
                     "maven.modrinth:${dep.name}:${dep.version}-neo,${dep.minecraftVersion ?: versionConfig.common.minecraftVersion}"
                 )
             } else {
-                "modCompileOnly"(
+                modCompileOnlyCompat(
                     "maven.modrinth:${dep.name}:${dep.version}-forge,${dep.minecraftVersion ?: versionConfig.common.minecraftVersion}"
                 )
             }

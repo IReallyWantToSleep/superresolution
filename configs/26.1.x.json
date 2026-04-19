@@ -6,13 +6,12 @@
         "minecraft_version": "26.1.2",
         "parchment_version": null,
         "platforms": [
-            "fabric",
-            "neoforge"
+            "fabric"
         ],
         "lwjgl_version": "3.4.1",
         "architectury_api_version": null,
         "neoforge": {
-            "minecraft_version_range": "[26.1.1,26.1.2)"
+            "minecraft_version_range": "[26.1.1,26.1.3)"
         },
         "fabric": {
             "minecraft_version_range": [

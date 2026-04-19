@@ -21,7 +21,6 @@ package io.homo.superresolution.core.gui.widgets.select;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -89,7 +88,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     @Override
     public void layouting(RenderContext ctx) {
         if (autoWidth && widthDirty) {
-            recalculateWidth();
+            recalculateWidth(ctx);
         }
         updateSize();
         super.layouting(ctx);
@@ -540,25 +539,17 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         }
     }
 
-    private void recalculateWidth() {
+    private void recalculateWidth(RenderContext ctx) {
         if (!autoWidth || options.isEmpty()) {
             widthDirty = false;
             return;
         }
         MaterialSelectSize size = style().size();
         float maxTextWidth = 0;
-        try {
-            NanoVG.context.save();
-            NanoVG.context.fontSize(size.inputFontSize());
-            for (SelectOption<T> option : options) {
-                float tw = NanoVG.RENDERER.TEXT.measureTextWidth(
-                        option.displayText(), size.inputFontSize(), size.inputFontSize() + 1);
-                maxTextWidth = Math.max(maxTextWidth, tw);
-            }
-            NanoVG.context.restore();
-        } catch (Exception e) {
-            widthDirty = true;
-            return;
+        for (SelectOption<T> option : options) {
+            float tw = ctx.measureTextWidth(
+                    option.displayText(), size.inputFontSize(), size.inputFontSize() + 1);
+            maxTextWidth = Math.max(maxTextWidth, tw);
         }
 
         float fieldPadding = size.horizontalPadding() * 2;

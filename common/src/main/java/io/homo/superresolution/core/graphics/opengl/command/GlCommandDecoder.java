@@ -522,23 +522,109 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
+    public void beginRenderPass(ICommandBuffer commandBuffer, RenderPass renderPass) {
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "beginRenderPass");
+        if (renderPass == null) {
+            throw new IllegalArgumentException("beginRenderPass: renderPass为null");
+        }
+        if (!(renderPass instanceof GlRenderPass glRenderPass)) {
+            throw new IllegalArgumentException("beginRenderPass: renderPass类型错误: " + renderPass.getClass().getName());
+        }
+        glCommandBuffer.beginRenderPass(glRenderPass);
+
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7170001, "Render Pass");
+            GlDebug.pushGroup(0x7170002, "Begin Render Pass");
+            glRenderPass.bind();
+            GlDebug.popGroup();
+        });
+        glRenderPass.begin(glCommandBuffer);
+    }
+
+    @Override
+    public void bindPipeline(ICommandBuffer commandBuffer, GraphicsPipeline pipeline) {
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "bindPipeline(graphics)");
+        if (!glCommandBuffer.isRenderPassActive()) {
+            throw new IllegalStateException("bindPipeline(graphics): 当前没有活动的render pass，请先调用 beginRenderPass");
+        }
+        if (pipeline == null) {
+            throw new IllegalArgumentException("bindPipeline(graphics): pipeline为null");
+        }
+        if (!(pipeline instanceof GlGraphicsPipeline glPipeline)) {
+            throw new IllegalArgumentException("bindPipeline(graphics): pipeline类型错误: " + pipeline.getClass().getName());
+        }
+        if (pipeline.renderPass() != glCommandBuffer.getActiveRenderPass()) {
+            throw new IllegalStateException("bindPipeline(graphics): pipeline.renderPass 与当前活动 render pass 不匹配");
+        }
+
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7170003, "Setup Render Pipeline");
+            glUseProgram((int) glPipeline.shader().handle());
+            glPipeline.setupRenderStates();
+            glPipeline.descriptorSet().update();
+            glPipeline.descriptorSet().apply();
+            GlDebug.popGroup();
+        });
+        glPipeline.applyDynamicStates(commandBuffer);
+        glCommandBuffer.bindGraphicsPipeline(glPipeline);
+    }
+
+    @Override
+    public void bindPipeline(ICommandBuffer commandBuffer, ComputePipeline pipeline) {
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "bindPipeline(compute)");
+        if (glCommandBuffer.isRenderPassActive()) {
+            throw new IllegalStateException("bindPipeline(compute): render pass进行中，不能绑定compute pipeline");
+        }
+        if (pipeline == null) {
+            throw new IllegalArgumentException("bindPipeline(compute): pipeline为null");
+        }
+        if (!(pipeline instanceof GlComputePipeline glPipeline)) {
+            throw new IllegalArgumentException("bindPipeline(compute): pipeline类型错误: " + pipeline.getClass().getName());
+        }
+
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7160000, "Setup Compute Pipeline");
+            glUseProgram((int) glPipeline.shader().handle());
+            glPipeline.descriptorSet().apply();
+            GlDebug.popGroup();
+        });
+        glCommandBuffer.bindComputePipeline(glPipeline);
+    }
+
+    @Override
+    public void endRenderPass(ICommandBuffer commandBuffer) {
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "endRenderPass");
+        if (!glCommandBuffer.isRenderPassActive()) {
+            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
+        }
+
+        GlRenderPass glRenderPass = glCommandBuffer.getActiveRenderPass();
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7170005, "End Render Pass");
+        });
+        glRenderPass.end(glCommandBuffer);
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.popGroup(); // End Render Pass
+            GlDebug.popGroup(); // Render Pass
+        });
+
+        glCommandBuffer.endRenderPass();
+    }
+
+    @Override
     public void draw(
             ICommandBuffer commandBuffer,
-            RenderPass renderPass,
-            PrimitiveType primitiveType,
             IVertexBuffer vertexBuffer,
             int vertexCount,
             int firstVertex
     ) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "draw");
-        if (renderPass == null) {
-            throw new IllegalArgumentException("draw: renderPass为null");
+        if (!glCommandBuffer.isRenderPassActive()) {
+            throw new IllegalStateException("draw: 当前没有活动的render pass，请先调用 beginRenderPass");
         }
-        if (!(renderPass instanceof GlRenderPass glRenderPass)) {
-            throw new IllegalArgumentException("draw: renderPass类型错误: " + renderPass.getClass().getName());
-        }
-        if (primitiveType == null) {
-            throw new IllegalArgumentException("draw: primitiveType为null");
+        GlGraphicsPipeline pipeline = glCommandBuffer.getBoundGraphicsPipeline();
+        if (pipeline == null) {
+            throw new IllegalStateException("draw: 当前未绑定图形管线，请先调用 bindPipeline(graphics)");
         }
         if (vertexBuffer == null) {
             throw new IllegalArgumentException("draw: vertexBuffer为null");
@@ -551,41 +637,15 @@ public class GlCommandDecoder implements ICommandDecoder {
         if (firstVertex + vertexCount > vertexBuffer.getVertexCount()) {
             throw new IllegalArgumentException("draw: 顶点范围超出vertexBuffer大小");
         }
-        if (!(renderPass.pipeline() instanceof GlGraphicsPipeline)) {
-            throw new IllegalArgumentException("draw: pipeline类型错误: " + renderPass.pipeline().getClass().getName());
-        }
-        putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170001, "Render Pass");
-        });
-        putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170002, "Begin Render Pass");
-            glRenderPass.bind();
-        });
-        //这里会把pass开始时的清理操作命令全放在commandBuffer
-        glRenderPass.begin(glCommandBuffer);
-        putGlCommand(commandBuffer, () -> {
-            {
-                GlDebug.pushGroup(0x7170003, "Setup Render Pipeline");
-                GraphicsPipeline pipeline = renderPass.pipeline();
-                if (pipeline instanceof GlGraphicsPipeline glPipeline) {
-                    glUseProgram((int) glPipeline.shader().handle());
-                    glPipeline.setupRenderStates();
-                    glPipeline.applyDynamicStates(commandBuffer);
-                    glPipeline.descriptorSet().update();
-                    glPipeline.descriptorSet().apply();
-                }
-                GlDebug.popGroup(); // Setup Render Pipeline
-            }
 
-            {
-                GlDebug.pushGroup(0x7170004, "Setup Vertex Buffer");
-                if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
-                    glVertexBuffer.getVao().bind();
-                    glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
-                }
-                GlDebug.popGroup(); // Setup Vertex Buffer
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7170004, "Setup Vertex Buffer");
+            if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
+                glVertexBuffer.getVao().bind();
+                glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
             }
-            GlDebug.popGroup(); // Begin Render Pass
+            GlDebug.popGroup();
+            PrimitiveType primitiveType = pipeline.primitiveType();
             glDrawArrays(switch (primitiveType) {
                 case Lines -> GL_LINES;
                 case Triangle -> GL_TRIANGLES;
@@ -596,30 +656,22 @@ public class GlCommandDecoder implements ICommandDecoder {
                 glVertexBuffer.getVao().unbind();
             }
         });
-        putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170005, "End Render Pass");
-        });
-        glRenderPass.end((GlCommandBuffer) commandBuffer);
-        putGlCommand(commandBuffer, () -> {
-            GlDebug.popGroup(); // End Render Pass
-            GlDebug.popGroup(); // Render Pass
-        });
     }
 
     @Override
     public void dispatch(
             ICommandBuffer commandBuffer,
-            ComputePipeline computePipeline,
             int groupCountX,
             int groupCountY,
             int groupCountZ
     ) {
-        requireGlCommandBuffer(commandBuffer, "dispatch");
-        if (computePipeline == null) {
-            throw new IllegalArgumentException("dispatch: computePipeline为null");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "dispatch");
+        if (glCommandBuffer.isRenderPassActive()) {
+            throw new IllegalStateException("dispatch: render pass进行中，不能执行compute dispatch");
         }
-        if (!(computePipeline instanceof GlComputePipeline)) {
-            throw new IllegalArgumentException("dispatch: computePipeline类型错误: " + computePipeline.getClass().getName());
+        GlComputePipeline computePipeline = glCommandBuffer.getBoundComputePipeline();
+        if (computePipeline == null) {
+            throw new IllegalStateException("dispatch: 当前未绑定计算管线，请先调用 bindPipeline(compute)");
         }
         requirePositive(groupCountX, "dispatch", "groupCountX");
         requirePositive(groupCountY, "dispatch", "groupCountY");
@@ -635,13 +687,6 @@ public class GlCommandDecoder implements ICommandDecoder {
             }
 
             GlDebug.pushGroup(0x7160001, "Compute");
-            GlDebug.pushGroup(0x7160000, "Setup Compute Pipeline");
-            if (computePipeline instanceof GlComputePipeline glPipeline) {
-                glUseProgram((int) glPipeline.shader().handle());
-                glPipeline.descriptorSet().apply();
-            }
-            GlDebug.popGroup();
-
             glDispatchCompute(groupCountX, groupCountY, groupCountZ);
             GlDebug.popGroup();
         });

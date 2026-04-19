@@ -20,8 +20,10 @@ package io.homo.superresolution.core.graphics.opengl.pipeline;
 
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
+import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.*;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
+import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 
 import static org.lwjgl.opengl.GL41.*;
@@ -29,19 +31,23 @@ import static org.lwjgl.opengl.GL41.*;
 public class GlGraphicsPipeline extends GraphicsPipeline {
     public GlGraphicsPipeline(
             IShaderProgram shader,
+            RenderPass renderPass,
             RasterizationState rasterization,
             DepthStencilState depthStencil,
             ColorBlendState colorBlend,
             DynamicStateFlags dynamicStates,
+            PrimitiveType primitiveType,
             VertexFormat vertexFormat,
             PipelineDescriptorSet descriptorSet
     ) {
         super(
                 shader,
+                renderPass,
                 rasterization,
                 depthStencil,
                 colorBlend,
                 dynamicStates,
+                primitiveType,
                 vertexFormat,
                 descriptorSet);
     }

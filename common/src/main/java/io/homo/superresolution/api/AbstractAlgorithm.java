@@ -34,7 +34,7 @@ public abstract class AbstractAlgorithm implements Destroyable {
 
     protected InitializationDescription initDesc = new InitializationDescription();
 
-    /** true 时下一次 dispatch 请求底层时序算法丢弃累积历史。新实例默认 true。 */
+    /** true 时下一次 dispatch 请求算法丢弃累积历史。新实例默认 true。 */
     protected boolean needsHistoryReset = true;
 
     public AbstractAlgorithm() {
@@ -48,7 +48,7 @@ public abstract class AbstractAlgorithm implements Destroyable {
         return r;
     }
 
-    /** 令时序历史失效。世界加载/场景切换/传送时调用。 */
+    /** 令时序历史失效。世界加载/传送时调用。 */
     public void invalidateHistory() {
         needsHistoryReset = true;
     }

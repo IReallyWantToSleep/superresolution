@@ -75,11 +75,11 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         return true;
     }
 
-    public float computeContentWidth() {
+    public float computeContentWidth(RenderContext ctx) {
         float max = 0;
         for (ILayoutElement child : getChildren()) {
             if (child instanceof MaterialMenuItem item) {
-                max = Math.max(max, item.computeContentWidth());
+                max = Math.max(max, item.computeContentWidth(ctx));
             }
         }
         return max;

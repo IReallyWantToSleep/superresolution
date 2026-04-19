@@ -28,7 +28,6 @@ import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -375,13 +374,9 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         return fadeAnimator.get();
     }
 
-    public float computeContentWidth() {
+    public float computeContentWidth(RenderContext ctx) {
         MaterialMenuItemSize size = style().size();
-        NanoVG.context.save();
-        NanoVG.context.fontSize(size.fontSize());
-
-        float textWidth = NanoVG.RENDERER.TEXT.measureTextWidth(textSupplier.get(), size.fontSize(), size.fontSize());
-        NanoVG.context.restore();
+        float textWidth = ctx.measureTextWidth(textSupplier.get(), size.fontSize(), size.fontSize());
 
         float iconWidth = 0;
         if (iconSupplier.get() != null) {

@@ -134,17 +134,15 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         return SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
     // 否则分配内存并执行实际转换(在Windows上使用Windows API)
-    wchar_t *widePath = new wchar_t[wideLen];
-    MultiByteToWideChar(CP_UTF8, 0, libPath.c_str(), -1, widePath, wideLen);
-    HMODULE dll = LoadLibraryW(widePath);
-    // 调用完回收内存（Should we use try{}finally{} here?）
-    delete[] widePath;
+    std::wstring widePath(static_cast<size_t>(wideLen), L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, libPath.c_str(), -1, widePath.data(), static_cast<int>(wideLen));
+    HMODULE dll = LoadLibraryW(widePath.c_str());
     if (!dll) {
         if (messageCallback) {
             std::wstring error = L"Failed to load DLL: ";
             error += std::to_wstring(GetLastError());
             error += L" Path: ";
-            error += widePath;
+            error += widePath.c_str();
             messageCallback(SR_MESSAGE_TYPE_ERROR, error.c_str());
         }
         return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
@@ -491,8 +489,10 @@ SR_API SRReturnCode srParamsSetString(
         return SR_RETURN_CODE_ERROR;
 
     char *valueCopy = strdup(value);
-    if (!valueCopy)
+    if (!valueCopy) {
+        free(nameCopy);
         return SR_RETURN_CODE_ERROR;
+    }
     SRContextExtraParam *param = &params->extraParams[params->extraParamCount];
     param->name = nameCopy;
     param->valueType = SR_PARAM_VALUE_TYPE_STRING;

@@ -42,7 +42,7 @@ public class ForceOpenGLVersion_WindowMixin {
     }
 
     @Inject(method = "createGlfwWindow", at = @At(value = "TAIL"), remap = false)
-    private static void showWindow(int width, int height, String title, long monitor, GpuBackend backend, CallbackInfoReturnable<Long> cir) {
+    private static void showWindow(int width, int height, String title, long monitor, com.mojang.blaze3d.systems.GpuBackend backend, CallbackInfoReturnable<Long> cir) {
         //TODO:**SR**似乎会导致游戏窗口不会自己出现（？），暂时先这样解决
         if (cir.getReturnValueJ() > 0)glfwShowWindow(cir.getReturnValueJ());
     }
