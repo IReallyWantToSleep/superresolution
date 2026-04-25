@@ -92,6 +92,31 @@ public class View {
         return frames.stream().map(e -> e.frame).toList();
     }
 
+    public void setFrameRenderAlpha(Frame frame, float alpha) {
+        FrameEntry entry = findFrameEntry(frame);
+        if (entry == null) {
+            return;
+        }
+        entry.renderAlpha = Math.max(0f, Math.min(1f, alpha));
+    }
+
+    public void setFrameRenderOffsetY(Frame frame, float offsetY) {
+        FrameEntry entry = findFrameEntry(frame);
+        if (entry == null) {
+            return;
+        }
+        entry.renderOffsetY = offsetY;
+    }
+
+    public void resetFrameRenderState(Frame frame) {
+        FrameEntry entry = findFrameEntry(frame);
+        if (entry == null) {
+            return;
+        }
+        entry.renderAlpha = 1f;
+        entry.renderOffsetY = 0f;
+    }
+
     public void markLayoutDirty() {
         this.layoutDirty = true;
     }
@@ -136,9 +161,11 @@ public class View {
             float y = node.getLayoutY();
 
             ctx.save();
-            ctx.translate(x, y);
+            ctx.translate(x, y + entry.renderOffsetY);
+            ctx.pushAlpha(entry.renderAlpha);
 
             entry.frame.render(ctx, inputState);
+            ctx.popAlpha();
             ctx.restore();
         }
 
@@ -383,10 +410,23 @@ public class View {
     private static class FrameEntry {
         final Frame frame;
         final YogaNode layoutNode;
+        float renderAlpha;
+        float renderOffsetY;
 
         FrameEntry(Frame frame, YogaNode layoutNode) {
             this.frame = frame;
             this.layoutNode = layoutNode;
+            this.renderAlpha = 1f;
+            this.renderOffsetY = 0f;
         }
+    }
+
+    private FrameEntry findFrameEntry(Frame frame) {
+        for (FrameEntry entry : frames) {
+            if (entry.frame == frame) {
+                return entry;
+            }
+        }
+        return null;
     }
 }

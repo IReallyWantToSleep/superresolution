@@ -32,6 +32,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +43,24 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
 
     private static boolean isLoadingShader;
+
+    private static volatile boolean irisReloadReflectionInitialized;
+    private static Method irisReloadMethod;
+
+    private static volatile boolean irisApiReflectionInitialized;
+    private static Method irisApiGetInstanceMethod;
+    private static Method irisApiIsShaderPackInUseMethod;
+
+    private static volatile boolean shaderCompatUtilsReflectionInitialized;
+    private static Method shouldApplySuperResolutionChangesMethod;
+    private static Method getCurrentShaderPackConfigMethod;
+    private static Method getCurrentConfigMethod;
+
+    private static volatile boolean shaderCompatDispatcherReflectionInitialized;
+    private static Field shaderCompatColorTextureField;
+    private static Field shaderCompatDepthTextureField;
+    private static Throwable shaderCompatDispatcherReflectionError;
+
     public static boolean isLoadingShader() {
         return isLoadingShader;
     }
@@ -48,46 +68,135 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     public static void setLoadingShader(boolean loadingShader) {
         isLoadingShader = loadingShader;
     }
+
+    private static void initIrisReloadReflection() {
+        if (irisReloadReflectionInitialized) {
+            return;
+        }
+        synchronized (ShaderCompatHandler.class) {
+            if (irisReloadReflectionInitialized) {
+                return;
+            }
+            try {
+                Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
+                irisReloadMethod = irisApiClazz.getMethod("reload");
+            } catch (Throwable ignored) {
+            }
+            irisReloadReflectionInitialized = true;
+        }
+    }
+
+    private static void initIrisApiReflection() {
+        if (irisApiReflectionInitialized) {
+            return;
+        }
+        synchronized (ShaderCompatHandler.class) {
+            if (irisApiReflectionInitialized) {
+                return;
+            }
+            try {
+                Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+                irisApiGetInstanceMethod = irisApiClazz.getMethod("getInstance");
+                irisApiIsShaderPackInUseMethod = irisApiClazz.getMethod("isShaderPackInUse");
+            } catch (Throwable ignored) {
+            }
+            irisApiReflectionInitialized = true;
+        }
+    }
+
+    private static void initShaderCompatUtilsReflection() {
+        if (shaderCompatUtilsReflectionInitialized) {
+            return;
+        }
+        synchronized (ShaderCompatHandler.class) {
+            if (shaderCompatUtilsReflectionInitialized) {
+                return;
+            }
+            try {
+                Class<?> shaderCompatUtilsClass = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUtils");
+                shouldApplySuperResolutionChangesMethod = shaderCompatUtilsClass.getMethod("shouldApplySuperResolutionChanges");
+                getCurrentShaderPackConfigMethod = shaderCompatUtilsClass.getMethod("getCurrentShaderPackConfig");
+                getCurrentConfigMethod = shaderCompatUtilsClass.getMethod("getCurrentConfig");
+            } catch (Throwable ignored) {
+            }
+            shaderCompatUtilsReflectionInitialized = true;
+        }
+    }
+
+    private static void initShaderCompatDispatcherReflection() {
+        if (shaderCompatDispatcherReflectionInitialized) {
+            return;
+        }
+        synchronized (ShaderCompatHandler.class) {
+            if (shaderCompatDispatcherReflectionInitialized) {
+                return;
+            }
+            try {
+                Class<?> dispatcherClass = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher");
+                shaderCompatColorTextureField = dispatcherClass.getField("colorTexture");
+                shaderCompatDepthTextureField = dispatcherClass.getField("depthTexture");
+            } catch (Throwable e) {
+                shaderCompatDispatcherReflectionError = e;
+            }
+            shaderCompatDispatcherReflectionInitialized = true;
+        }
+    }
+
     public static void irisApiReloadShader() {
+        initIrisReloadReflection();
+        if (irisReloadMethod == null) {
+            return;
+        }
         try {
-            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
-            irisApiClazz.getMethod("reload").invoke(null);
+            irisReloadMethod.invoke(null);
         } catch (Throwable ignored) {
         }
     }
 
     public static boolean irisApiIsShaderPackInUse() {
+        initIrisApiReflection();
+        if (irisApiGetInstanceMethod == null || irisApiIsShaderPackInUseMethod == null) {
+            return false;
+        }
         try {
-            Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-            Object irisApiInstance = irisApiClazz.getMethod("getInstance").invoke(null);
-            return (boolean) irisApiClazz.getMethod("isShaderPackInUse").invoke(irisApiInstance);
+            Object irisApiInstance = irisApiGetInstanceMethod.invoke(null);
+            return (boolean) irisApiIsShaderPackInUseMethod.invoke(irisApiInstance);
         } catch (Throwable ignored) {
         }
         return false;
     }
 
     public static boolean dontHackMinecraftRenderingPipeline() {
+        initShaderCompatUtilsReflection();
+        if (shouldApplySuperResolutionChangesMethod == null) {
+            return false;
+        }
         try {
-            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUtils");
-            return (Boolean) irisApiClazz.getMethod("shouldApplySuperResolutionChanges").invoke(null);
+            return (Boolean) shouldApplySuperResolutionChangesMethod.invoke(null);
         } catch (Throwable e) {
             return false;
         }
     }
 
     public static Optional<SRShaderCompatData> getShaderPackCompatConfig() {
+        initShaderCompatUtilsReflection();
+        if (getCurrentShaderPackConfigMethod == null) {
+            return Optional.empty();
+        }
         try {
-            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUtils");
-            return (Optional<SRShaderCompatData>) irisApiClazz.getMethod("getCurrentShaderPackConfig").invoke(null);
+            return (Optional<SRShaderCompatData>) getCurrentShaderPackConfigMethod.invoke(null);
         } catch (Throwable e) {
             return Optional.empty();
         }
     }
 
     public static Optional<SRShaderCompatData.WorldProfile> getCurrentLevelCompatConfig() {
+        initShaderCompatUtilsReflection();
+        if (getCurrentConfigMethod == null) {
+            return Optional.empty();
+        }
         try {
-            Class<?> irisApiClazz = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUtils");
-            Object result = irisApiClazz.getMethod("getCurrentConfig").invoke(null);
+            Object result = getCurrentConfigMethod.invoke(null);
             // getCurrentConfig() 返回 Optional<WorldProfile>，需要先转换为 Optional 再取内容
             Optional<?> opt = (Optional<?>) result;
             return opt.map(o -> (SRShaderCompatData.WorldProfile) o);
@@ -211,30 +320,38 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
 
     }
 
-    private Class<?> getShaderCompatUpscaleDispatcher() throws ClassNotFoundException {
-        return Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher");
-    }
-
     @Nullable
     public ITexture getColorTexture() {
+        initShaderCompatDispatcherReflection();
+        if (shaderCompatDispatcherReflectionError != null) {
+            throw new RuntimeException(shaderCompatDispatcherReflectionError);
+        }
+        if (shaderCompatColorTextureField == null) {
+            return null;
+        }
         try {
-            Class<?> dispatcherClass = getShaderCompatUpscaleDispatcher();
-            ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) dispatcherClass.getField("colorTexture").get(null));
+            ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) shaderCompatColorTextureField.get(null));
             if (textureInfo == null) return null;
             return textureInfo.getInternalTexture();
-        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Nullable
     public ITexture getDepthTexture() {
+        initShaderCompatDispatcherReflection();
+        if (shaderCompatDispatcherReflectionError != null) {
+            throw new RuntimeException(shaderCompatDispatcherReflectionError);
+        }
+        if (shaderCompatDepthTextureField == null) {
+            return null;
+        }
         try {
-            Class<?> dispatcherClass = getShaderCompatUpscaleDispatcher();
-            ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) dispatcherClass.getField("depthTexture").get(null));
+            ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) shaderCompatDepthTextureField.get(null));
             if (textureInfo == null) return null;
             return textureInfo.getInternalTexture();
-        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }

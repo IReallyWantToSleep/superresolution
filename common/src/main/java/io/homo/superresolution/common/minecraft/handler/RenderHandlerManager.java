@@ -232,20 +232,23 @@ public class RenderHandlerManager {
         return SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getRenderScaleFactor() : 1;
     }
 
+    // 某些算法的最小输入尺寸为32x32（比如DLSS），但Minecraft几乎不会小于这个尺寸
+    // 当然，除了Windows上最小化窗口时😅，所以这里直接写死32
+    // fuck Windows & Microsoft
     public static int getRenderHeight() {
-        return (int) Math.max(getScreenHeight() * getScaleFactor(), 1);
+        return (int) Math.max(getScreenHeight() * getScaleFactor(), 32);
     }
 
     public static int getRenderWidth() {
-        return (int) Math.max(getScreenWidth() * getScaleFactor(), 1);
+        return (int) Math.max(getScreenWidth() * getScaleFactor(), 32);
     }
 
     public static int getScreenHeight() {
-        return Math.max(MinecraftWindow.getWindowHeight(), 1);
+        return Math.max(MinecraftWindow.getWindowHeight(), 32);
     }
 
     public static int getScreenWidth() {
-        return Math.max(MinecraftWindow.getWindowWidth(), 1);
+        return Math.max(MinecraftWindow.getWindowWidth(), 32);
     }
 
     public static Vector2i getScreenSize() {

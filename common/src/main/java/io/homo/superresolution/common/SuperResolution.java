@@ -355,6 +355,8 @@ public final class SuperResolution implements Destroyable {
     private void applyPendingResize() {
         int w = MinecraftWindow.getWindowWidth();
         int h = MinecraftWindow.getWindowHeight();
+        w = Math.max(32,w) ;
+        h = Math.max(32,h);
         if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmResizeEvent(
@@ -365,7 +367,10 @@ public final class SuperResolution implements Destroyable {
                             RenderHandlerManager.getRenderHeight()
                     )
             );
-            currentAlgorithm.resize(w, h);
+            currentAlgorithm.resize(
+                    w,
+                    h
+            );
             // 分辨率变了，时序历史无效。
             currentAlgorithm.invalidateHistory();
         }

@@ -445,11 +445,12 @@ public class SuperResolutionConfig {
     }
 
     public static float getUpscaleRatio() {
-        return UPSCALE_RATIO.get();
+        return Math.max(UPSCALE_RATIO.get(),getMinUpscaleRatio());
     }
 
     public static void setUpscaleRatio(float value) {
         boolean resolutionChanged = getUpscaleRatio() != value;
+        value = Math.max(value, getMinUpscaleRatio());
         UPSCALE_RATIO.set(value);
         if (resolutionChanged) {
             resolutionChangeCallback.run();
@@ -613,6 +614,13 @@ public class SuperResolutionConfig {
     }
     public static float getMinUpscaleRatio() {
         if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+            return 1.0f;
+        }
+        if (
+                getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSS) ||
+                        getUpscaleAlgorithm().equals(AlgorithmDescriptions.XESS)
+
+        ) {
             return 1.0f;
         }
         return 0.5f;

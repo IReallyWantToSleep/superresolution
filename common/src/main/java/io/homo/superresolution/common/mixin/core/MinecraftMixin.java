@@ -63,6 +63,17 @@ public abstract class MinecraftMixin {
         SuperResolution.onClientStarted();
     }
 
+    /*
+    @Inject(at = @At(value = "TAIL"), method = "doWorldLoad")
+    private void onJoinLevel(CallbackInfo ci) {
+        SuperResolution.onJoinLevel();
+    }
+
+    @Inject(at = @At(value = "TAIL"), method = "setLevel")
+    private void onLevelChanged(CallbackInfo ci) {
+        SuperResolution.onLevelChanged();
+    }
+    */
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
         SuperResolution.gameIsLoaded = true;
