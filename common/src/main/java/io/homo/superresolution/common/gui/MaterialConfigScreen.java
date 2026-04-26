@@ -89,6 +89,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
+    private static final String ABOUT_MODRINTH_URL = "https://modrinth.com/mod/superresolution";
+    private static final String ABOUT_GITHUB_URL = "https://github.com/187J3X1-114514/superresolution";
     private static final long CONTENT_TRANSITION_FADE_OUT_DURATION_MS = 150L;
     private static final long CONTENT_TRANSITION_FADE_IN_DURATION_MS = 150L;
     private static final long CONTENT_TRANSITION_TOTAL_DURATION_MS =
@@ -1330,6 +1332,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         ScrollableFrame frame = createStandardScrollableFrame();
         ContainerWidget container = createStandardContainer();
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.about"));
+        container.addChild(createAboutBrandCard());
 
         ContainerWidget contributorSectionRow = new ContainerWidget();
         contributorSectionRow.layout().setFlexDirection(YogaFlexDirection.ROW);
@@ -1453,6 +1456,80 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         finalizeFrame(frame, container);
         return frame;
+    }
+
+        private InfoCard createAboutBrandCard() {
+        InfoCard card = new InfoCard();
+            card.layout().setAlignItems(YogaAlign.CENTER);
+            card.layout().setJustifyContent(YogaJustify.CENTER);
+
+            ContainerWidget row = new ContainerWidget();
+        row.layout().setFlexDirection(YogaFlexDirection.ROW);
+        row.layout().setWidthPercent(100);
+        row.layout().setAlignItems(YogaAlign.CENTER);
+        row.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+        row.layout().setGap(YogaGutter.COLUMN, 12);
+
+        ContainerWidget brandColumn = new ContainerWidget();
+        brandColumn.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        brandColumn.layout().setWidthPercent(60);
+        brandColumn.layout().setAlignItems(YogaAlign.CENTER);
+        brandColumn.layout().setJustifyContent(YogaJustify.CENTER);
+        brandColumn.layout().setGap(YogaGutter.COLUMN, 8);
+
+        StaticLogoWidget logoWidget = new StaticLogoWidget(100f);
+        brandColumn.addChild(logoWidget);
+
+        MaterialLabel nameLabel = MaterialLabel.create()
+            .text("Super Resolution")
+            .fontSize(20)
+                .lineHeight(20)
+            .color(MaterialScheme::onSurface);
+        nameLabel.style().sizeToContent(true);
+        brandColumn.addChild(nameLabel);
+
+        MaterialLabel versionLabel = MaterialLabel.create()
+            .text(safeGetModVersion())
+            .fontSize(8)
+                .lineHeight(8)
+            .color(MaterialScheme::onSurfaceVariant);
+        versionLabel.style().sizeToContent(true);
+        brandColumn.addChild(versionLabel);
+        if (Platform.currentPlatform.isDevelopmentEnvironment()){
+            MaterialLabel devEnvLabel = MaterialLabel.create()
+                    .text("Development Environment")
+                    .fontSize(8)
+                    .lineHeight(8)
+                    .color(MaterialScheme::onSurfaceVariant);
+            devEnvLabel.style().sizeToContent(true);
+            brandColumn.addChild(devEnvLabel);
+        }
+
+        ContainerWidget actionColumn = new ContainerWidget();
+        actionColumn.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        actionColumn.layout().setWidthPercent(40);
+        actionColumn.layout().setAlignItems(YogaAlign.CENTER);
+        actionColumn.layout().setJustifyContent(YogaJustify.CENTER);
+        actionColumn.layout().setGap(YogaGutter.ROW, 10);
+
+        MaterialButton modrinthButton = MaterialButton.tonal("Modrinth")
+                .icon(MaterialSymbols.iconOpenInNew())
+            .size(MaterialButtonSize.Small);
+        modrinthButton.onClick(e -> openExternalLink(ABOUT_MODRINTH_URL));
+        actionColumn.addChild(modrinthButton);
+
+        MaterialButton githubButton = MaterialButton.tonal("Github")
+                .icon(MaterialSymbols.iconOpenInNew())
+            .size(MaterialButtonSize.Small);
+        githubButton.onClick(e -> openExternalLink(ABOUT_GITHUB_URL));
+        actionColumn.addChild(githubButton);
+
+        row.addChild(brandColumn);
+        row.addChild(actionColumn);
+        card.addChild(row);
+        card.layout().setMargin(YogaEdge.BOTTOM, 6);
+            card.layout().setHeight(256);
+        return card;
     }
 
     private ContainerWidget createInfoLine(String name, String value) {
@@ -1716,6 +1793,34 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     scheme().onSurface(),
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                     false
+            );
+        }
+    }
+
+    private static class StaticLogoWidget extends MaterialWidget<StaticLogoWidget> {
+        private final float logoSize;
+
+        StaticLogoWidget(float logoSize) {
+            this.logoSize = logoSize;
+            setElementSize(logoSize, logoSize);
+        }
+
+        @Override
+        protected void init() {
+        }
+
+        @Override
+        protected boolean isInteractive() {
+            return false;
+        }
+
+        @Override
+        public void render(RenderContext ctx, UIInputState inputState) {
+            LogoRenderer.Logo.render(
+                    ctx,
+                    scheme().primary(),
+                    logoSize,
+                    getBounds().getCenter()
             );
         }
     }
