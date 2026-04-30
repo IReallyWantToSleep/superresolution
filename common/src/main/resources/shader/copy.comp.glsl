@@ -17,7 +17,6 @@ precision mediump float;
 #define ZERO_COPY_DATA COPY_DATA(0.0)
 
 layout(local_size_x = 16, local_size_y = 16) in;
-// 注意：即使使用 texelFetch，在 GLSL 中依然通过 sampler2D 变量进行操作
 layout(binding = 0) uniform sampler2D tex;
 layout(binding = 0, COPY_DST_FORMAT) uniform writeonly image2D outImage;
 

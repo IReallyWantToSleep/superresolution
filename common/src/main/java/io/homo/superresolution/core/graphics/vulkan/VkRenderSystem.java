@@ -255,6 +255,8 @@ public class VkRenderSystem implements IRenderSystem {
             VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
                     .pNext(deviceFeatures12.address());
+            VkPhysicalDeviceProperties deviceProperties = VkPhysicalDeviceProperties.calloc(stack);
+            vkGetPhysicalDeviceProperties(physicalDevice, deviceProperties);
             deviceFeatures2.features().shaderInt16(deviceSupportsShaderInt16);
             deviceFeatures2.features().shaderStorageImageWriteWithoutFormat(deviceSupportsShaderStorageImageWriteWithoutFormat);
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)

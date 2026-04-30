@@ -21,8 +21,10 @@ package io.homo.superresolution.core.graphics.impl.shader;
 import io.homo.superresolution.core.graphics.impl.GpuObject;
 
 public interface IShaderProgram extends GpuObject {
+    @Deprecated
     void compile();
 
+    @Deprecated
     boolean isCompiled();
 
     void destroy();

@@ -98,9 +98,10 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             inFlight = inFlightFrames[currentFrameIndex];
             upscaleFinishSemaphore = inFlight.upscaleVkFinish;
             glFinishSemaphore = inFlight.glFinish;
-            if (inFlight.commandBuffer != null) {
-                inFlight.commandBuffer.waitForFence();
-            }
+            // commandBufferRing的acquire会帮我们waitForFence
+            //if (inFlight.commandBuffer != null) {
+            //    inFlight.commandBuffer.waitForFence();
+            //}
             processInputResources(inFlight, dispatchResource);
             glFinishSemaphore.signalOpenGL(
                     new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
@@ -311,25 +312,13 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     }
 
     private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
-        InteropResourcesConverter.flipY(
-                dispatchResource.resources().colorTexture(),
-                inFlight.inputColorGlTexture);
-        InteropResourcesConverter.flipY(
-                dispatchResource.resources().depthTexture(),
-                inFlight.inputDepthGlTexture);
-        if (dispatchResource.resources().motionVectorsTexture() != null) {
-            InteropResourcesConverter.flipMotionVectorY(
-                    dispatchResource.resources().motionVectorsTexture(),
-                    inFlight.inputMotionVectorsGlTexture);
-        }
-        if (dispatchResource.resources().exposureTexture() != null) {
-            GlTextureCopier.copy(
-                    CopyOperation.create()
-                            .src(dispatchResource.resources().exposureTexture())
-                            .dst(inFlight.inputExposureGlTexture)
-                            .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
-            );
-        }
+
+        InteropResourcesConverter.processInputTextures(
+                dispatchResource.resources().colorTexture(), inFlight.inputColorGlTexture,
+                dispatchResource.resources().depthTexture(), inFlight.inputDepthGlTexture,
+                dispatchResource.resources().motionVectorsTexture(), inFlight.inputMotionVectorsGlTexture,
+                dispatchResource.resources().exposureTexture(), inFlight.inputExposureGlTexture
+        );
     }
 
     public record FrameData(

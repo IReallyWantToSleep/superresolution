@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom") version "1.16.1"
+    id("net.fabricmc.fabric-loom-remap") version "1.16.1"
 }
 
 @Suppress("UNCHECKED_CAST")
