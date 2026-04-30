@@ -56,7 +56,6 @@ import java.util.List;
 public final class SuperResolution implements Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
-    public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-CPP");
     public static final List<String> INCOMPATIBLE_MODS = ImmutableList.<String>builder()
             .add("resolutioncontrol-plus-plus")
             .add("resolutioncontrol-plus")

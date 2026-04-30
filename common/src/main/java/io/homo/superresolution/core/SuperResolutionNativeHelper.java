@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationTargetException;
 
 public class SuperResolutionNativeHelper {
-    public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution-Native");
+    public static final Logger LOGGER_CPP = LoggerFactory.getLogger("SuperResolution/Native");
 
     public static void CPP_Log(String msg, int level) {
         switch (level) {

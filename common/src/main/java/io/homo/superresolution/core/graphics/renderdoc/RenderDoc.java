@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 
 public class RenderDoc {
-    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-RenderDoc");
+    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/RenderDoc");
     public static RenderdocLibrary.RenderdocApi renderdoc;
 
     private RenderDoc() {

@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import static org.lwjgl.opengl.GL43.*;
 
 public class GraphicsCapabilities {
-    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-GraphicsCapabilities");
+    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/GraphicsCapabilities");
 
     private static final ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
     private static Set<String> glExtensions = null;

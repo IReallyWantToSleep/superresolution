@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import static org.lwjgl.opengl.GL11.*;
 
 public class Fsr2Context {
-    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-FSR2");
+    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/FSR2");
 
     /// ///////////////////
     public Fsr2Pipeline accumulatePipeline;

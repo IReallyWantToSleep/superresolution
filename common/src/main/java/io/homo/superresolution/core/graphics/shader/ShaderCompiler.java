@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 import static org.lwjgl.opengl.ARBGLSPIRV.GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
 
 public class ShaderCompiler {
-    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution-ShaderCompiler");
+    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/ShaderCompiler");
 
     static {
         createCacheDir();
