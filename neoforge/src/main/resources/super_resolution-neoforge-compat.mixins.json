@@ -11,10 +11,11 @@
         "simpleclouds.DefaultPipelineMixin",
         "simpleclouds.ShaderSupportPipelineMixin",
         "sodium.SodiumOptionsGUIMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
+        "iris.DHCompatInternalMixin"
     ],
     "mixins": [
-        "iris.DHCompatInternalMixin"
+
     ],
     "injectors": {
         "defaultRequire": 1

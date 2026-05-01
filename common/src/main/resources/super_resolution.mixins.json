@@ -32,10 +32,11 @@
         "gui.AbstractWidgetAccessor",
         "gui.GameRendererAccessor",
         "gui.GuiGraphicsAccessor",
-        "gui.GuiRendererMixin"
+        "gui.GuiRendererMixin",
+        "gui.GuiRendererDrawAccessor"
     ],
     "mixins": [
-        "gui.GuiRendererDrawAccessor"
+
     ],
     "injectors": {
         "defaultRequire": 1

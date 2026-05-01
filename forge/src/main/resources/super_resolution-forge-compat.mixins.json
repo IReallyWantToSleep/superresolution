@@ -11,10 +11,11 @@
         "oculus.GlFramebufferMixin",
         "simpleclouds.DefaultPipelineMixin",
         "simpleclouds.ShaderSupportPipelineMixin",
-        "sodiumoptionsapi.SodiumOptionsTabFrameMixin"
+        "sodiumoptionsapi.SodiumOptionsTabFrameMixin",
+        "oculus.DHCompatInternalMixin"
+
     ],
     "mixins": [
-        "oculus.DHCompatInternalMixin"
     ],
     "injectors": {
         "defaultRequire": 1
