@@ -48,6 +48,7 @@ import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
@@ -179,6 +180,11 @@ public class VulkanDevice implements IDevice {
         submitCommandBuffer(vkCommandBuffer, null, null, null);
     }
 
+    @Override
+    public void uploadTextureData(ITexture texture, ByteBuffer data, int x, int y, int width, int height) {
+
+    }
+
     public VulkanTexture createTextureExt(
             TextureDescription description,
             boolean isExternal,
@@ -249,6 +255,7 @@ public class VulkanDevice implements IDevice {
             VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
             commandBuffer.markSubmitted();
         }
+        reapCompletedTransientResources();
         return fence;
     }
 
@@ -267,6 +274,7 @@ public class VulkanDevice implements IDevice {
             VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
             commandBuffer.markSubmitted();
         }
+        reapCompletedTransientResources();
     }
 
     /**
@@ -298,5 +306,11 @@ public class VulkanDevice implements IDevice {
 
     public VulkanQueue getMainQueue() {
         return mainQueue;
+    }
+
+    private void reapCompletedTransientResources() {
+        for (VulkanCommandBuffer buffer : commandManager.getAllocatedBuffers()) {
+            buffer.destroyTransientResourcesIfComplete();
+        }
     }
 }

@@ -381,10 +381,16 @@ static jlong createContextInternal(JNIEnv *env, jint flags, jint backendMode) {
     }
 
     if (backendMode == NANOVG_BACKEND_MODE_RHI_DIRECT) {
-        env->ThrowNew(
-            env->FindClass("java/lang/UnsupportedOperationException"),
-            "NanoVG RHI callback backend is disabled");
-        return 0;
+        GlFunctionTable glFuncTable = {};
+        loadGlFunctions(java_glfwGetProcAddress, &glFuncTable);
+        NanoVGContext *ctx = new NanoVGContext(
+            flags,
+            NVG_BACKEND_RHI_DIRECT,
+            glFuncTable,
+            &g_rhiCallbacks,
+            nullptr);
+        ctx->Reset();
+        return (jlong) ctx;
     }
 
     env->ThrowNew(
@@ -414,7 +420,8 @@ extern "C" JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanov
 }
 
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nDeleteContext(
-    JNIEnv *, jclass, jlong ptr) {
+    JNIEnv *env, jclass, jlong ptr) {
+    g0_envForCallback = env;
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     if (ctx) {
         delete ctx;
@@ -422,7 +429,8 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
 }
 
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nBeginFrame(
-    JNIEnv *, jclass, jlong ptr, jfloat windowWidth, jfloat windowHeight, jfloat devicePixelRatio) {
+    JNIEnv *env, jclass, jlong ptr, jfloat windowWidth, jfloat windowHeight, jfloat devicePixelRatio) {
+    g0_envForCallback = env;
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     ctx->BeginFrame(windowWidth, windowHeight, devicePixelRatio);
 }
@@ -434,7 +442,8 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
 }
 
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nEndFrame(
-    JNIEnv *, jclass, jlong ptr) {
+    JNIEnv *env, jclass, jlong ptr) {
+    g0_envForCallback = env;
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     ctx->EndFrame();
 }
@@ -605,13 +614,15 @@ JNIEXPORT jfloatArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_Nan
 }
 
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateImageFromHandle(
-    JNIEnv *, jclass, jlong ptr, jint textureId, jint w, jint h, jint imageFlags) {
+    JNIEnv *env, jclass, jlong ptr, jint textureId, jint w, jint h, jint imageFlags) {
+    g0_envForCallback = env;
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     return ctx->CreateImageFromHandle(textureId, w, h, imageFlags);
 }
 
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nDeleteImage(
-    JNIEnv *, jclass, jlong ptr, jint image) {
+    JNIEnv *env, jclass, jlong ptr, jint image) {
+    g0_envForCallback = env;
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     ctx->DeleteImage(image);
 }

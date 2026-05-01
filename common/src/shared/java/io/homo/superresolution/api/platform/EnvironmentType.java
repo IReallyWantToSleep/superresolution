@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,5 +19,6 @@
 package io.homo.superresolution.api.platform;
 
 public enum EnvironmentType {
-    CLIENT, SERVER
+    CLIENT,
+    SERVER
 }

@@ -149,6 +149,11 @@ tasks.named<ProcessResources>("processResources") {
             line.replace("\"{versionRange}\"", "\"$forgeVersionRange\"")
         }
     }
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+        exclude("**/libSuperResolution*+*+release.*")
+    } else {
+        exclude("**/libSuperResolution*+*+debug.*")
+    }
 }
 
 tasks.named<Jar>("jar") {

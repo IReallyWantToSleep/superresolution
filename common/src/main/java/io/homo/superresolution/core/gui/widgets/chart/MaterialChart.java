@@ -480,12 +480,16 @@ public class MaterialChart extends MaterialWidget<MaterialChart> {
         float dashLen = 5f;
         float gapLen = 3f;
         float cx = x;
+        ctx.beginPath();
+        ctx.strokeColor(avgColor);
         ctx.strokeWidth(s.averageLineWidth());
         while (cx < x + w) {
             float endX = Math.min(cx + dashLen, x + w);
-            ctx.line(cx, ay, endX, ay, s.averageLineWidth(), avgColor);
+            ctx.line(cx, ay, endX, ay);
             cx += dashLen + gapLen;
         }
+        ctx.endPath(false);
+
 
         String avgLabel = "avg: " + formatValue(avg);
         float labelW = ctx.measureTextWidth(avgLabel, s.labelFontSize(), s.labelFontSize() + 2);

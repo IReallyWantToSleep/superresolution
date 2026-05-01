@@ -21,6 +21,8 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 
 public class NanoVG {
+    public static final boolean USE_RHI = true;
+
     public static NanoVGRenderers RENDERER;
     public static NanoVGContextWrapper context;
 

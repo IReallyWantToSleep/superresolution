@@ -20,7 +20,6 @@ package io.homo.superresolution.thirdparty.nanovg;
 
 public enum NanoVGBackendMode {
     GL_LEGACY(0),
-    @Deprecated
     RHI_DIRECT(1);
 
     private final int nativeValue;

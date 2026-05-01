@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
@@ -39,10 +40,14 @@ import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.OpenGLException;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL44;
+import org.lwjgl.system.MemoryUtil;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static io.homo.superresolution.core.graphics.opengl.GlDebug.*;
@@ -107,7 +112,7 @@ public class GlCommandDecoder implements ICommandDecoder {
 
     @Override
     public void clearTextureRGBA(ICommandBuffer commandBuffer, ITexture texture, float[] color) {
-        requireGlCommandBuffer(commandBuffer, "clearTextureRGBA");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "clearTextureRGBA");
         requireTexture(texture, "clearTextureRGBA");
         if (color == null || color.length == 0) {
             throw new IllegalArgumentException("clearTextureRGBA: 颜色数组为空");
@@ -179,6 +184,7 @@ public class GlCommandDecoder implements ICommandDecoder {
 
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
                     glDeleteFramebuffers(fbo);
+                    glCommandBuffer.executionStateCache().invalidateAll();
                 } finally {
                     popGroup();
                 }
@@ -188,7 +194,7 @@ public class GlCommandDecoder implements ICommandDecoder {
 
     @Override
     public void clearTextureDepth(ICommandBuffer commandBuffer, ITexture texture, float depth) {
-        requireGlCommandBuffer(commandBuffer, "clearTextureDepth");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "clearTextureDepth");
         requireTexture(texture, "clearTextureDepth");
         requireRangeInclusive(depth, 0.0f, 1.0f, "clearTextureDepth", "深度值");
 
@@ -258,6 +264,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                     }
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
                     glDeleteFramebuffers(fbo);
+                    glCommandBuffer.executionStateCache().invalidateAll();
                 } finally {
                     popGroup();
                 }
@@ -267,7 +274,7 @@ public class GlCommandDecoder implements ICommandDecoder {
 
     @Override
     public void clearTextureStencil(ICommandBuffer commandBuffer, ITexture texture, int stencil) {
-        requireGlCommandBuffer(commandBuffer, "clearTextureStencil");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "clearTextureStencil");
         requireTexture(texture, "clearTextureStencil");
         requireRangeInclusive(stencil, 0, 255, "clearTextureStencil", "模板值");
         TextureFormat format = texture.getTextureFormat();
@@ -322,6 +329,7 @@ public class GlCommandDecoder implements ICommandDecoder {
 
                 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
                 glDeleteFramebuffers(fbo);
+                glCommandBuffer.executionStateCache().invalidateAll();
             } finally {
                 popGroup();
             }
@@ -475,49 +483,98 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
+    public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data) {
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "writeToBuffer");
+        requireBuffer(dst, "writeToBuffer");
+        requireNonNegative(dstOffset, "writeToBuffer", "dstOffset");
+        if (data == null) {
+            throw new IllegalArgumentException("writeToBuffer: data为null");
+        }
+
+        ByteBuffer src = data.duplicate();
+        int size = src.remaining();
+        if (size <= 0) {
+            return;
+        }
+        if (dstOffset + size > dst.getSize()) {
+            throw new IllegalArgumentException("writeToBuffer: 写入范围超出缓冲大小");
+        }
+
+        ByteBuffer snapshot = MemoryUtil.memAlloc(size);
+        snapshot.put(src);
+        snapshot.flip();
+        int target = glTargetFor(dst.getUsage());
+        int bindingQuery = glBindingQueryFor(target);
+
+        putGlCommand(commandBuffer, () -> {
+            int previous = glGetInteger(bindingQuery);
+            glBindBuffer(target, (int) dst.handle());
+            glBufferSubData(target, dstOffset, snapshot.duplicate());
+            glBindBuffer(target, previous);
+            MemoryUtil.memFree(snapshot);
+        });
+    }
+
+    @Override
     public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
-        requireGlCommandBuffer(commandBuffer, "setViewport");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "setViewport");
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("setViewport: width/height必须为正数");
         }
         putGlCommand(commandBuffer, () -> {
+            if (glCommandBuffer.executionStateCache().matchesViewport(x, y, width, height)) {
+                return;
+            }
             glViewport((int) x, (int) y, (int) width, (int) height);
+            glCommandBuffer.executionStateCache().recordViewport(x, y, width, height);
         });
     }
 
     @Override
     public void setScissor(ICommandBuffer commandBuffer, int x, int y, int width, int height) {
-        requireGlCommandBuffer(commandBuffer, "setScissor");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "setScissor");
         requireNonNegative(x, "setScissor", "x");
         requireNonNegative(y, "setScissor", "y");
         if (width < 0 || height < 0) {
             throw new IllegalArgumentException("setScissor: width/height不能为负数");
         }
         putGlCommand(commandBuffer, () -> {
+            if (glCommandBuffer.executionStateCache().matchesScissor(x, y, width, height)) {
+                return;
+            }
             glScissor(x, y, width, height);
+            glCommandBuffer.executionStateCache().recordScissor(x, y, width, height);
         });
     }
 
     @Override
     public void setLineWidth(ICommandBuffer commandBuffer, float width) {
-        requireGlCommandBuffer(commandBuffer, "setLineWidth");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "setLineWidth");
         if (width <= 0) {
             throw new IllegalArgumentException("setLineWidth: width必须为正数");
         }
         putGlCommand(commandBuffer, () -> {
+            if (glCommandBuffer.executionStateCache().matchesLineWidth(width)) {
+                return;
+            }
             glLineWidth(width);
+            glCommandBuffer.executionStateCache().recordLineWidth(width);
         });
     }
 
     @Override
     public void setBlendConstants(ICommandBuffer commandBuffer, float r, float g, float b, float a) {
-        requireGlCommandBuffer(commandBuffer, "setBlendConstants");
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "setBlendConstants");
         requireRangeInclusive(r, 0.0f, 1.0f, "setBlendConstants", "r");
         requireRangeInclusive(g, 0.0f, 1.0f, "setBlendConstants", "g");
         requireRangeInclusive(b, 0.0f, 1.0f, "setBlendConstants", "b");
         requireRangeInclusive(a, 0.0f, 1.0f, "setBlendConstants", "a");
         putGlCommand(commandBuffer, () -> {
+            if (glCommandBuffer.executionStateCache().matchesBlendConstants(r, g, b, a)) {
+                return;
+            }
             glBlendColor(r, g, b, a);
+            glCommandBuffer.executionStateCache().recordBlendConstants(r, g, b, a);
         });
     }
 
@@ -542,6 +599,29 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
+    public void endRenderPass(ICommandBuffer commandBuffer) {
+        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "endRenderPass");
+        if (!glCommandBuffer.isRenderPassActive()) {
+            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
+        }
+
+        GlRenderPass glRenderPass = glCommandBuffer.getActiveRenderPass();
+        putGlCommand(commandBuffer, () -> {
+            GlDebug.pushGroup(0x7170005, "End Render Pass");
+        });
+        glRenderPass.end(glCommandBuffer);
+        putGlCommand(commandBuffer, () -> {
+            glBindVertexArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glCommandBuffer.executionStateCache().invalidateAll();
+            GlDebug.popGroup(); // End Render Pass
+            GlDebug.popGroup(); // Render Pass
+        });
+
+        glCommandBuffer.endRenderPass();
+    }
+
+    @Override
     public void bindPipeline(ICommandBuffer commandBuffer, GraphicsPipeline pipeline) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "bindPipeline(graphics)");
         if (!glCommandBuffer.isRenderPassActive()) {
@@ -557,15 +637,25 @@ public class GlCommandDecoder implements ICommandDecoder {
             throw new IllegalStateException("bindPipeline(graphics): pipeline.renderPass 与当前活动 render pass 不匹配");
         }
 
+        GlPipelineDescriptorSet descriptorSet = (GlPipelineDescriptorSet) glPipeline.descriptorSet();
+        descriptorSet.update();
+        PipelineDescriptorSet.DescriptorSnapshot descriptorSnapshot = descriptorSet.createSnapshot();
+        glPipeline.applyDynamicStates(commandBuffer);
+
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170003, "Setup Render Pipeline");
-            glUseProgram((int) glPipeline.shader().handle());
-            glPipeline.setupRenderStates();
-            glPipeline.descriptorSet().update();
-            glPipeline.descriptorSet().apply();
+            GlDebug.pushGroup(0x7170003, "Bind Render Pipeline");
+            GlCommandBuffer.ExecutionStateCache stateCache = glCommandBuffer.executionStateCache();
+            int programHandle = (int) glPipeline.shader().handle();
+            if (!stateCache.matchesProgram(programHandle)) {
+                glUseProgram(programHandle);
+                stateCache.recordProgram(programHandle);
+            }
+            if (glCommandBuffer.getBoundGraphicsPipeline() != glPipeline) {
+                glPipeline.setupRenderStates(stateCache);
+            }
+            descriptorSet.applyFromSnapshot(descriptorSnapshot, stateCache);
             GlDebug.popGroup();
         });
-        glPipeline.applyDynamicStates(commandBuffer);
         glCommandBuffer.bindGraphicsPipeline(glPipeline);
     }
 
@@ -582,33 +672,22 @@ public class GlCommandDecoder implements ICommandDecoder {
             throw new IllegalArgumentException("bindPipeline(compute): pipeline类型错误: " + pipeline.getClass().getName());
         }
 
+        GlPipelineDescriptorSet descriptorSet = (GlPipelineDescriptorSet) glPipeline.descriptorSet();
+        descriptorSet.update();
+        PipelineDescriptorSet.DescriptorSnapshot descriptorSnapshot = descriptorSet.createSnapshot();
+
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7160000, "Setup Compute Pipeline");
-            glUseProgram((int) glPipeline.shader().handle());
-            glPipeline.descriptorSet().apply();
+            GlDebug.pushGroup(0x7160000, "Bind Compute Pipeline");
+            GlCommandBuffer.ExecutionStateCache stateCache = glCommandBuffer.executionStateCache();
+            int programHandle = (int) glPipeline.shader().handle();
+            if (!stateCache.matchesProgram(programHandle)) {
+                glUseProgram(programHandle);
+                stateCache.recordProgram(programHandle);
+            }
+            descriptorSet.applyFromSnapshot(descriptorSnapshot, stateCache);
             GlDebug.popGroup();
         });
         glCommandBuffer.bindComputePipeline(glPipeline);
-    }
-
-    @Override
-    public void endRenderPass(ICommandBuffer commandBuffer) {
-        GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "endRenderPass");
-        if (!glCommandBuffer.isRenderPassActive()) {
-            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
-        }
-
-        GlRenderPass glRenderPass = glCommandBuffer.getActiveRenderPass();
-        putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170005, "End Render Pass");
-        });
-        glRenderPass.end(glCommandBuffer);
-        putGlCommand(commandBuffer, () -> {
-            GlDebug.popGroup(); // End Render Pass
-            GlDebug.popGroup(); // Render Pass
-        });
-
-        glCommandBuffer.endRenderPass();
     }
 
     @Override
@@ -639,12 +718,27 @@ public class GlCommandDecoder implements ICommandDecoder {
         }
 
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170004, "Setup Vertex Buffer");
+            GlDebug.pushGroup(0x7180004, "Draw");
+
+            GlCommandBuffer.ExecutionStateCache stateCache = glCommandBuffer.executionStateCache();
             if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
-                glVertexBuffer.getVao().bind();
-                glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
+                boolean needToBindVao = !stateCache.matchesVao(glVertexBuffer.getVao());
+                boolean needToBindArrayBuffer = !stateCache.matchesArrayBuffer(glVertexBuffer);
+                if (needToBindArrayBuffer || needToBindVao) {
+                    GlDebug.pushGroup(0x7170004, "Setup Vertex Buffer");
+                }
+                if (needToBindVao) {
+                    glVertexBuffer.getVao().bind();
+                    stateCache.recordVao(glVertexBuffer.getVao());
+                }
+                if (needToBindArrayBuffer) {
+                    glBindBuffer(GL_ARRAY_BUFFER, (int) vertexBuffer.handle());
+                    stateCache.recordArrayBuffer(glVertexBuffer);
+                }
+                if (needToBindArrayBuffer || needToBindVao) {
+                    GlDebug.popGroup();
+                }
             }
-            GlDebug.popGroup();
             PrimitiveType primitiveType = pipeline.primitiveType();
             glDrawArrays(switch (primitiveType) {
                 case Lines -> GL_LINES;
@@ -652,9 +746,8 @@ public class GlCommandDecoder implements ICommandDecoder {
                 case TriangleStrip -> GL_TRIANGLE_STRIP;
                 case Points -> GL_POINTS;
             }, firstVertex, vertexCount);
-            if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
-                glVertexBuffer.getVao().unbind();
-            }
+            GlDebug.popGroup();
+
         });
     }
 
@@ -773,6 +866,24 @@ public class GlCommandDecoder implements ICommandDecoder {
     private int mipSize(int baseSize, int level) {
         int size = baseSize >> level;
         return Math.max(1, size);
+    }
+
+    private int glTargetFor(BufferUsage usage) {
+        return switch (usage) {
+            case Ubo -> GL_UNIFORM_BUFFER;
+            case CopySrc -> GL_COPY_READ_BUFFER;
+            case CopyDst -> GL_COPY_WRITE_BUFFER;
+            default -> GL_ARRAY_BUFFER;
+        };
+    }
+
+    private int glBindingQueryFor(int target) {
+        return switch (target) {
+            case GL_UNIFORM_BUFFER -> GL_UNIFORM_BUFFER_BINDING;
+            case GL_COPY_READ_BUFFER -> GL_COPY_READ_BUFFER_BINDING;
+            case GL_COPY_WRITE_BUFFER -> GL_COPY_WRITE_BUFFER_BINDING;
+            default -> GL_ARRAY_BUFFER_BINDING;
+        };
     }
 
     private int computePreDispatchBarrier(ComputePipeline pipeline) {

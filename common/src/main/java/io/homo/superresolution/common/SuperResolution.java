@@ -340,6 +340,16 @@ public final class SuperResolution implements Destroyable {
         pendingResizeDeadlineMs = System.currentTimeMillis() + RESIZE_DEBOUNCE_MS;
     }
 
+    public void forceResize(int width, int height) {
+        cachedWidth = width;
+        cachedHeight = height;
+        pendingResize = false;
+        SuperResolution self = getInstance();
+        if (self != null) {
+            self.applyPendingResize();
+        }
+    }
+
     /** 每帧调用；尺寸稳定 RESIZE_DEBOUNCE_MS 后才真正重建算法。 */
     public static void tickResize() {
         if (!pendingResize) return;

@@ -48,25 +48,31 @@ public abstract class PipelineDescriptorSet {
     }
 
     public PipelineDescriptorSet uniformBuffer(String name, int binding, IBuffer buffer) {
-        bindings.put(name, new ResourceBinding(ResourceType.UNIFORM_BUFFER, binding, buffer, null));
+        bindings.put(name, new ResourceBinding(ResourceType.UNIFORM_BUFFER, binding, buffer, null, 0L, buffer.getSize()));
+        dirty = true;
+        return this;
+    }
+
+    public PipelineDescriptorSet uniformBufferRange(String name, int binding, IBuffer buffer, long offset, long range) {
+        bindings.put(name, new ResourceBinding(ResourceType.UNIFORM_BUFFER, binding, buffer, null, offset, range));
         dirty = true;
         return this;
     }
 
     public PipelineDescriptorSet samplerTexture(String name, int binding, ITexture texture) {
-        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture, null));
+        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture, null, 0L, 0L));
         dirty = true;
         return this;
     }
 
     public PipelineDescriptorSet samplerTexture(String name, int binding, ITexture texture, ISampler sampler) {
-        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture, sampler));
+        bindings.put(name, new ResourceBinding(ResourceType.SAMPLER_TEXTURE, binding, texture, sampler, 0L, 0L));
         dirty = true;
         return this;
     }
 
     public PipelineDescriptorSet storageImage(String name, int binding, ITexture texture) {
-        bindings.put(name, new ResourceBinding(ResourceType.STORAGE_IMAGE, binding, texture, null));
+        bindings.put(name, new ResourceBinding(ResourceType.STORAGE_IMAGE, binding, texture, null, 0L, 0L));
         dirty = true;
         return this;
     }
@@ -80,6 +86,10 @@ public abstract class PipelineDescriptorSet {
 
     public PipelineDescriptorSet uniformBuffer(String name, IBuffer buffer) {
         return uniformBuffer(name, getBinding(name), buffer);
+    }
+
+    public PipelineDescriptorSet uniformBufferRange(String name, IBuffer buffer, long offset, long range) {
+        return uniformBufferRange(name, getBinding(name), buffer, offset, range);
     }
 
     public PipelineDescriptorSet samplerTexture(String name, ITexture texture) {
@@ -148,12 +158,16 @@ public abstract class PipelineDescriptorSet {
         final GpuObject resource;
         final int bindingPoint;
         final ISampler sampler;
+        final long offset;
+        final long range;
 
-        ResourceBinding(ResourceType type, int bindingPoint, GpuObject resource, ISampler sampler) {
+        ResourceBinding(ResourceType type, int bindingPoint, GpuObject resource, ISampler sampler, long offset, long range) {
             this.type = type;
             this.resource = resource;
             this.bindingPoint = bindingPoint;
             this.sampler = sampler;
+            this.offset = offset;
+            this.range = range;
         }
 
         public ResourceType type() {
@@ -170,6 +184,14 @@ public abstract class PipelineDescriptorSet {
 
         public ISampler sampler() {
             return sampler;
+        }
+
+        public long offset() {
+            return offset;
+        }
+
+        public long range() {
+            return range;
         }
     }
 

@@ -179,6 +179,22 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                     .depthCompareOp(toVkCompareOp(ds.depthCompareOp()))
                     .depthBoundsTestEnable(false)
                     .stencilTestEnable(ds.stencilTestEnable());
+                depthStencilInfo.front()
+                    .failOp(toVkStencilOp(ds.stencilFailOpFront()))
+                    .passOp(toVkStencilOp(ds.stencilPassOpFront()))
+                    .depthFailOp(toVkStencilOp(ds.stencilDepthFailOpFront()))
+                    .compareOp(toVkCompareOp(ds.stencilCompareOpFront()))
+                    .compareMask(ds.stencilCompareMask())
+                    .writeMask(ds.stencilWriteMask())
+                    .reference(ds.stencilReference());
+                depthStencilInfo.back()
+                    .failOp(toVkStencilOp(ds.stencilFailOpBack()))
+                    .passOp(toVkStencilOp(ds.stencilPassOpBack()))
+                    .depthFailOp(toVkStencilOp(ds.stencilDepthFailOpBack()))
+                    .compareOp(toVkCompareOp(ds.stencilCompareOpBack()))
+                    .compareMask(ds.stencilCompareMask())
+                    .writeMask(ds.stencilWriteMask())
+                    .reference(ds.stencilReference());
 
             // Color blend
             ColorBlendState blend = colorBlend();
@@ -357,6 +373,19 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             case TriangleStrip -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
             case Lines -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
             case Points -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        };
+    }
+
+    private static int toVkStencilOp(StencilOp op) {
+        return switch (op) {
+            case Keep -> VK_STENCIL_OP_KEEP;
+            case Zero -> VK_STENCIL_OP_ZERO;
+            case Replace -> VK_STENCIL_OP_REPLACE;
+            case IncrementAndClamp -> VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+            case DecrementAndClamp -> VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+            case Invert -> VK_STENCIL_OP_INVERT;
+            case IncrementAndWrap -> VK_STENCIL_OP_INCREMENT_AND_WRAP;
+            case DecrementAndWrap -> VK_STENCIL_OP_DECREMENT_AND_WRAP;
         };
     }
 }

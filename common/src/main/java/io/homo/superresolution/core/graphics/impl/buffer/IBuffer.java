@@ -21,6 +21,8 @@ package io.homo.superresolution.core.graphics.impl.buffer;
 import io.homo.superresolution.core.graphics.impl.GpuObject;
 import io.homo.superresolution.core.impl.Destroyable;
 
+import java.nio.ByteBuffer;
+
 
 public interface IBuffer extends GpuObject, Destroyable {
     /**
@@ -36,6 +38,14 @@ public interface IBuffer extends GpuObject, Destroyable {
     long getSize();
 
     BufferUsage getUsage();
+
+    ByteBuffer map(int offsetInBytes, int lengthInBytes, boolean write);
+
+    default ByteBuffer map(boolean write) {
+        return map(0, Math.toIntExact(getSize()), write);
+    }
+
+    void unmap();
 
     void setBufferData(IBufferData bufferData);
 

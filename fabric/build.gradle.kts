@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom-remap") version "1.16.1"
+    id("net.fabricmc.fabric-loom") version "1.16.1"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -214,6 +214,11 @@ tasks.named<ProcessResources>("processResources") {
         filter { line: String ->
             line.replace("\"{versionRange}\"", fabricVersionRange)
         }
+    }
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+        exclude("**/libSuperResolution*+*+release.*")
+    } else {
+        exclude("**/libSuperResolution*+*+debug.*")
     }
 }
 

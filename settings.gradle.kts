@@ -73,6 +73,7 @@ gradle.extensions.extraProperties["minecraft_version"] = minecraftVersion
 gradle.extensions.extraProperties["isVulkan"] = providers.gradleProperty("is_vulkan").orNull?.toBoolean() ?: false
 gradle.extensions.extraProperties["isDev"] = providers.gradleProperty("is_dev").orNull?.toBoolean() ?: false
 gradle.extensions.extraProperties["isEnableAutoDownload"] = providers.gradleProperty("enable_auto_download").orNull?.toBoolean() ?: false
+gradle.extensions.extraProperties["isUseDebugLib"] = providers.gradleProperty("use_debug_lib").orNull?.toBoolean() ?: false
 
 if (!nativeOnlyMode) {
     val isVulkan = gradle.extensions.extraProperties["isVulkan"] as Boolean

@@ -45,8 +45,12 @@ import io.homo.superresolution.core.graphics.opengl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.EnumSet;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.GL_RG;
 
 public class GlDevice implements IDevice {
     private final GlCommandDecoder commandDecoder;
@@ -197,5 +201,21 @@ public class GlDevice implements IDevice {
             return new GlImportableTexture2D((VulkanTexture) exportedTexture);
         }
         throw new IllegalArgumentException();
+    }
+
+    @Override
+    public void uploadTextureData(ITexture texture, ByteBuffer data, int x, int y, int width, int height) {
+        if (!(texture instanceof GlTexture2D glTexture)) {
+            throw new IllegalArgumentException("uploadTextureData: 仅支持 GlTexture2D，实际类型: " + texture.getClass().getSimpleName());
+        }
+        TextureFormat format = texture.getTextureFormat();
+        int pixelFormat = switch (format) {
+            case RGBA8, RGBA16, RGBA16F, RGBA32F -> GL_RGBA;
+            case RGB8, RGB16F -> GL_RGB;
+            case R8, R16F, R32F, R32UI, R16_SNORM -> GL_RED;
+            case RG8, RG16F, RG32F -> GL_RG;
+            default -> throw new IllegalArgumentException("uploadTextureData: 不支持的纹理格式: " + format);
+        };
+        glTexture.uploadData(0, x, y, width, height, pixelFormat, GL_UNSIGNED_BYTE, data, 1);
     }
 }

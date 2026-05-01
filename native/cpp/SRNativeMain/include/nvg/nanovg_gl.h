@@ -73,6 +73,7 @@ extern "C"
         int triangleOffset;
         int triangleCount;
         int uniformOffset;
+        int uniformCount;
         int blendSrcRGB;
         int blendDstRGB;
         int blendSrcAlpha;
@@ -207,6 +208,7 @@ struct GLNVGcall
     int triangleOffset;
     int triangleCount;
     int uniformOffset;
+    int uniformCount;
     GLNVGblend blendFunc;
 };
 typedef struct GLNVGcall GLNVGcall;
@@ -844,7 +846,26 @@ static int glnvg__renderUpdateTexture(void *uptr, int image, int x, int y, int w
         {
             int channels = tex->type == NVG_TEXTURE_RGBA ? 4 : 1;
             int dataSize = data ? (w * h * channels) : 0;
-            return gl->rhiCallbacks.updateTexture(gl->rhiUserPtr, image, x, y, w, h, data, dataSize);
+            if (!data || dataSize <= 0)
+                return gl->rhiCallbacks.updateTexture(gl->rhiUserPtr, image, x, y, w, h, data, dataSize);
+
+            if (w <= 0 || h <= 0 || x < 0 || y < 0 || x + w > tex->width || y + h > tex->height)
+                return 0;
+
+            unsigned char *packed = (unsigned char *)malloc((size_t)dataSize);
+            if (packed == NULL)
+                return 0;
+
+            for (int row = 0; row < h; row++)
+            {
+                const unsigned char *src = data + ((size_t)(y + row) * tex->width + x) * channels;
+                unsigned char *dst = packed + (size_t)row * w * channels;
+                memcpy(dst, src, (size_t)w * channels);
+            }
+
+            int ok = gl->rhiCallbacks.updateTexture(gl->rhiUserPtr, image, x, y, w, h, packed, dataSize);
+            free(packed);
+            return ok;
         }
         return 1;
     }
@@ -1497,6 +1518,7 @@ static void glnvg__renderFill(void *uptr, NVGpaint *paint, NVGcompositeOperation
         call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
         if (call->uniformOffset == -1)
             goto error;
+        call->uniformCount = 2;
         // Simple shader for stencil
         frag = nvg__fragUniformPtr(gl, call->uniformOffset);
         memset(frag, 0, sizeof(*frag));
@@ -1511,6 +1533,7 @@ static void glnvg__renderFill(void *uptr, NVGpaint *paint, NVGcompositeOperation
         call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
         if (call->uniformOffset == -1)
             goto error;
+        call->uniformCount = 1;
         // Fill shader
         glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, fringe, fringe, -1.0f);
     }
@@ -1569,6 +1592,7 @@ static void glnvg__renderStroke(void *uptr, NVGpaint *paint, NVGcompositeOperati
         call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
         if (call->uniformOffset == -1)
             goto error;
+        call->uniformCount = 2;
 
         glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, strokeWidth, fringe,
                             -1.0f);
@@ -1581,6 +1605,7 @@ static void glnvg__renderStroke(void *uptr, NVGpaint *paint, NVGcompositeOperati
         call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
         if (call->uniformOffset == -1)
             goto error;
+        call->uniformCount = 1;
         glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, strokeWidth, fringe,
                             -1.0f);
     }
@@ -1621,6 +1646,7 @@ static void glnvg__renderTriangles(void *uptr, NVGpaint *paint, NVGcompositeOper
     call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
     if (call->uniformOffset == -1)
         goto error;
+    call->uniformCount = 1;
     frag = nvg__fragUniformPtr(gl, call->uniformOffset);
     glnvg__convertPaint(gl, frag, paint, scissor, 1.0f, fringe, -1.0f);
     frag->type = NSVG_SHADER_IMG;

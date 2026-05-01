@@ -55,6 +55,7 @@ public class RenderHandlerManager {
     public static int frameCount = 0;
     private static IBindableFrameBuffer originRenderTarget;
 
+    private static boolean needResize;
     public static void initialize() {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
@@ -96,13 +97,21 @@ public class RenderHandlerManager {
             } else {
                 handler = new MinecraftRenderHandler();
             }
-            MinecraftUtils.resize();
             handler.initialize();
+            needResize = true;
         }
     }
 
     public static void onFrameBegin() {
         frameCount++;
+        if (needResize) {
+            MinecraftUtils.resize();
+            SuperResolution.getCurrentAlgorithm().resize(
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight()
+            );
+            needResize = false;
+        }
     }
 
     public static void onFrameEnd() {

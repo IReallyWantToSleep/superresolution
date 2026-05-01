@@ -32,89 +32,195 @@ public class GlDebug {
     public static final int DEBUG_GROUP_COPY_ID_BEGIN = DEBUG_GROUP_COMPUTE_ID_BEGIN + 0xF0000;
     public static final int DEBUG_GROUP_CLEAR_ID_BEGIN = DEBUG_GROUP_COPY_ID_BEGIN + 0xF0000;
     public static final int DEBUG_GROUP_STATE_ID_BEGIN = DEBUG_GROUP_CLEAR_ID_BEGIN + 0xF0000;
-    private static final AtomicInteger stateIdCounter = new AtomicInteger(DEBUG_GROUP_STATE_ID_BEGIN);
-    private static final AtomicInteger clearIdCounter = new AtomicInteger(DEBUG_GROUP_CLEAR_ID_BEGIN);
-    private static final AtomicInteger copyIdCounter = new AtomicInteger(DEBUG_GROUP_COPY_ID_BEGIN);
-    private static final AtomicInteger computeIdCounter = new AtomicInteger(DEBUG_GROUP_COMPUTE_ID_BEGIN);
-    private static final AtomicInteger drawIdCounter = new AtomicInteger(DEBUG_GROUP_DRAW_ID_BEGIN);
-    private static final AtomicInteger commandBufferIdCounter = new AtomicInteger(DEBUG_GROUP_COMMANDBUFFER_ID_BEGIN);
+    private static final GlDebugBackend DEBUG_IMPL = new DebugImpl();
+    private static final GlDebugBackend NO_OP_IMPL = new NoOpImpl();
+    private static volatile GlDebugBackend backend = SuperResolutionConfig.isEnableDebug() ? DEBUG_IMPL : NO_OP_IMPL;
 
     public static void popGroup() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return;
-        }
-        if (GL.getCapabilities().GL_KHR_debug) {
-            KHRDebug.glPopDebugGroup();
-        }
+        backend.popGroup();
     }
 
     public static void pushGroup(int id, String name) {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return;
-        }
-        if (GL.getCapabilities().GL_KHR_debug) {
-            KHRDebug.glPushDebugGroup(
-                    KHRDebug.GL_DEBUG_SOURCE_APPLICATION,
-                    id,
-                    StringUtils.abbreviate(name, 255)
-            );
-        }
+        backend.pushGroup(id, name);
     }
 
     public static void objectLabel(int type, int id, String label) {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return;
-        }
-
-        if (GL.getCapabilities().GL_KHR_debug) {
-            KHRDebug.glObjectLabel(type, id, StringUtils.abbreviate(label, 255));
-        }
+        backend.objectLabel(type, id, label);
     }
 
+    public static void setEnabled(boolean enabled) {
+        backend = enabled ? DEBUG_IMPL : NO_OP_IMPL;
+    }
+
+    public static void useDebugImpl() {
+        setEnabled(true);
+    }
+
+    public static void useNoOpImpl() {
+        setEnabled(false);
+    }
+
+    public static void refreshFromConfig() {
+        setEnabled(SuperResolutionConfig.isEnableDebug());
+    }
+
+    public static boolean isEnabled() {
+        return backend == DEBUG_IMPL;
+    }
 
     public static int nextCommandBufferId() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return 0;
-        }
-        return commandBufferIdCounter.getAndIncrement();
+        return backend.nextCommandBufferId();
     }
 
 
     public static int nextDrawId() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return 0;
-        }
-        return drawIdCounter.getAndIncrement();
+        return backend.nextDrawId();
     }
 
 
     public static int nextComputeId() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return 0;
-        }
-        return computeIdCounter.getAndIncrement();
+        return backend.nextComputeId();
     }
 
 
     public static int nextClearId() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return 0;
-        }
-        return clearIdCounter.getAndIncrement();
+        return backend.nextClearId();
     }
 
 
     public static int nextCopyId() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
-            return 0;
-        }
-        return copyIdCounter.getAndIncrement();
+        return backend.nextCopyId();
     }
 
     public static int nextStateId() {
-        if (!SuperResolutionConfig.isEnableDebug()) {
+        return backend.nextStateId();
+    }
+
+    private interface GlDebugBackend {
+        void popGroup();
+
+        void pushGroup(int id, String name);
+
+        void objectLabel(int type, int id, String label);
+
+        int nextCommandBufferId();
+
+        int nextDrawId();
+
+        int nextComputeId();
+
+        int nextClearId();
+
+        int nextCopyId();
+
+        int nextStateId();
+    }
+
+    private static final class NoOpImpl implements GlDebugBackend {
+        @Override
+        public void popGroup() {
+        }
+
+        @Override
+        public void pushGroup(int id, String name) {
+        }
+
+        @Override
+        public void objectLabel(int type, int id, String label) {
+        }
+
+        @Override
+        public int nextCommandBufferId() {
             return 0;
         }
-        return stateIdCounter.getAndIncrement();
+
+        @Override
+        public int nextDrawId() {
+            return 0;
+        }
+
+        @Override
+        public int nextComputeId() {
+            return 0;
+        }
+
+        @Override
+        public int nextClearId() {
+            return 0;
+        }
+
+        @Override
+        public int nextCopyId() {
+            return 0;
+        }
+
+        @Override
+        public int nextStateId() {
+            return 0;
+        }
+    }
+
+    private static final class DebugImpl implements GlDebugBackend {
+        private final AtomicInteger stateIdCounter = new AtomicInteger(DEBUG_GROUP_STATE_ID_BEGIN);
+        private final AtomicInteger clearIdCounter = new AtomicInteger(DEBUG_GROUP_CLEAR_ID_BEGIN);
+        private final AtomicInteger copyIdCounter = new AtomicInteger(DEBUG_GROUP_COPY_ID_BEGIN);
+        private final AtomicInteger computeIdCounter = new AtomicInteger(DEBUG_GROUP_COMPUTE_ID_BEGIN);
+        private final AtomicInteger drawIdCounter = new AtomicInteger(DEBUG_GROUP_DRAW_ID_BEGIN);
+        private final AtomicInteger commandBufferIdCounter = new AtomicInteger(DEBUG_GROUP_COMMANDBUFFER_ID_BEGIN);
+
+        @Override
+        public void popGroup() {
+            if (GL.getCapabilities().GL_KHR_debug) {
+                KHRDebug.glPopDebugGroup();
+            }
+        }
+
+        @Override
+        public void pushGroup(int id, String name) {
+            if (GL.getCapabilities().GL_KHR_debug) {
+                KHRDebug.glPushDebugGroup(
+                        KHRDebug.GL_DEBUG_SOURCE_APPLICATION,
+                        id,
+                        StringUtils.abbreviate(name, 255)
+                );
+            }
+        }
+
+        @Override
+        public void objectLabel(int type, int id, String label) {
+            if (GL.getCapabilities().GL_KHR_debug) {
+                KHRDebug.glObjectLabel(type, id, StringUtils.abbreviate(label, 255));
+            }
+        }
+
+        @Override
+        public int nextCommandBufferId() {
+            return commandBufferIdCounter.getAndIncrement();
+        }
+
+        @Override
+        public int nextDrawId() {
+            return drawIdCounter.getAndIncrement();
+        }
+
+        @Override
+        public int nextComputeId() {
+            return computeIdCounter.getAndIncrement();
+        }
+
+        @Override
+        public int nextClearId() {
+            return clearIdCounter.getAndIncrement();
+        }
+
+        @Override
+        public int nextCopyId() {
+            return copyIdCounter.getAndIncrement();
+        }
+
+        @Override
+        public int nextStateId() {
+            return stateIdCounter.getAndIncrement();
+        }
     }
 }

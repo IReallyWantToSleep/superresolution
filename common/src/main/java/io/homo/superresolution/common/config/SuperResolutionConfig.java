@@ -44,6 +44,7 @@ import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.gui.MaterialTheme;
 import io.homo.superresolution.core.gui.SchemeVariant;
@@ -287,14 +288,15 @@ public class SuperResolutionConfig {
         SPEC = builder.build();
         resolutionChangeCallback = () -> {
             RenderHandlerManager.resize();
-            SuperResolution.getInstance().resize(
-                    RenderHandlerManager.getScreenWidth(),
-                    RenderHandlerManager.getScreenHeight()
-            );
             Minecraft.getInstance().gameRenderer.resize(
                     RenderHandlerManager.getScreenWidth(),
                     RenderHandlerManager.getScreenHeight()
             );
+            SuperResolution.getInstance().forceResize(
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight()
+            );
+
         };
     }
 
@@ -543,6 +545,7 @@ public class SuperResolutionConfig {
 
     public static void setEnableDebug(boolean value) {
         ENABLE_DEBUG.set(value);
+        GlDebug.setEnabled(value);
     }
 
     public static boolean isForceDisableShaderCompat() {
@@ -558,7 +561,11 @@ public class SuperResolutionConfig {
     }
 
     public static void setDisableUpscaleOnVanilla(boolean value) {
+        boolean lastEnableUpscale = isEnableUpscale();
         DISABLE_UPSCALE_ON_VANILLA.set(value);
+        if (lastEnableUpscale != isEnableUpscale()){
+            resolutionChangeCallback.run();
+        }
     }
 
     public static boolean isEnableExperimentalFeatures() {

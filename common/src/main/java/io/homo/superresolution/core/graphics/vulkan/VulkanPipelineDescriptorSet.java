@@ -102,8 +102,8 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                         IBuffer buffer = (IBuffer) binding.resource();
                         VkDescriptorBufferInfo.Buffer bufferInfo = VkDescriptorBufferInfo.calloc(1, stack)
                                 .buffer(buffer.handle())
-                                .offset(0)
-                                .range(buffer.getSize());
+                            .offset(binding.offset())
+                            .range(binding.range());
                         write.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
                                 .pBufferInfo(bufferInfo);
                     }

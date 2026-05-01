@@ -23,7 +23,7 @@ import java.util.List;
 
 public class NanoVGContext {
     private static final int DEFAULT_FLAGS = 0;
-    private static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.GL_LEGACY;
+    private static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.RHI_DIRECT;
     private long nativeHandle;
 
     public NanoVGContext(int flags) {
@@ -32,10 +32,7 @@ public class NanoVGContext {
 
     public NanoVGContext(int flags, NanoVGBackendMode backendMode) {
         NanoVGBackendMode resolvedMode = backendMode == null ? DEFAULT_BACKEND_MODE : backendMode;
-        if (resolvedMode != NanoVGBackendMode.GL_LEGACY) {
-            throw new UnsupportedOperationException("NanoVG RHI callback backend is disabled");
-        }
-        this.nativeHandle = createContext(flags);
+        this.nativeHandle = nCreateContextEx(flags, resolvedMode.getNativeValue());
         if (this.nativeHandle == 0) {
             throw new RuntimeException("Failed to create NanoVG context");
         }

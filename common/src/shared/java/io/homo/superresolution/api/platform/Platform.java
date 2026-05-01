@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025. 187J3X1-114514
+ * Copyright (c) 2025-2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,16 +46,20 @@ public abstract class Platform {
     public abstract void init();
 
     public boolean isInstallIris() {
-        if (isInstallIris == null)
+        if (isInstallIris == null) {
             isInstallIris = currentPlatform.isModLoaded("iris") || currentPlatform.isModLoaded("oculus");
+        }
         return isInstallIris;
     }
 
     public abstract String getMinecraftVersion();
 
     public abstract boolean isForge();
+
     public abstract boolean isNeoForge();
+
     public abstract boolean isForgeLike();
+
     public abstract boolean isFabric();
 
 }

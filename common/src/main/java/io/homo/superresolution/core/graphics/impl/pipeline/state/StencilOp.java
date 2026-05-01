@@ -16,8 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.platform;
+package io.homo.superresolution.core.graphics.impl.pipeline.state;
 
-public abstract class IrisPlatform {
-    public abstract boolean isShaderPackInUse();
+public enum StencilOp {
+    Keep,
+    Zero,
+    Replace,
+    IncrementAndClamp,
+    DecrementAndClamp,
+    Invert,
+    IncrementAndWrap,
+    DecrementAndWrap
 }

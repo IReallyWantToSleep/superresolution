@@ -26,6 +26,8 @@ import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 
+import java.nio.ByteBuffer;
+
 public interface ICommandDecoder {
     ResourceStateTracker getStateTracker();
 
@@ -42,6 +44,8 @@ public interface ICommandDecoder {
     void copyTexture(ICommandBuffer commandBuffer, ITexture src, ITexture dst, int srcX0, int srcY0, int srcX1, int srcY1, int srcLevel, int dstX0, int dstY0, int dstX1, int dstY1, int dstLevel);
 
     void copyBuffer(ICommandBuffer commandBuffer, IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size);
+
+    void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data);
 
     void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height);
 

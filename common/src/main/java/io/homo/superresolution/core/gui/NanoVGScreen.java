@@ -19,9 +19,13 @@
 package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGRenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
@@ -41,6 +45,15 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL42;
+
+import static org.lwjgl.opengl.GL11.GL_BLEND;
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_ONE;
+import static org.lwjgl.opengl.GL11.GL_ZERO;
+import static org.lwjgl.opengl.GL11.glEnable;
+import static org.lwjgl.opengl.GL30.*;
 
 public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
     protected final NanoVGContextWrapper nvg;
@@ -80,25 +93,63 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
         scaleManager.update();
         Runnable renderAction = () -> {
             GL41.glBindSampler(0, 0);
-            nvg.begin(true);
-            nvg.resetGlobalTransform();
-            nvg.resetTransform();
+            boolean useRhi = NanoVG.USE_RHI;
+            if (useRhi) {
+                NanoVGRhiBridge.setTargetFramebuffer(nvg.frameBuffer);
+                NanoVGRhiBridge.beginBatch(RenderSystems.current().device());
+            }
+            boolean frameBegun = false;
+            try {
+                nvg.begin(true);
+                frameBegun = true;
+                nvg.resetGlobalTransform();
+                nvg.resetTransform();
 
-            nvg.globalScale(scaleManager.guiScale());
-            nvg.globalAlpha(1.0f);
-            NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
-            ctx.setGuiScale(scaleManager.guiScale());
-            ctx.setDpiScale(scaleManager.dpiScale());
-            Vector2f screenSize = MinecraftWindow.getWindowSize();
-            ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
+                nvg.globalScale(scaleManager.guiScale());
+                nvg.globalAlpha(1.0f);
+                NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
+                ctx.setGuiScale(scaleManager.guiScale());
+                ctx.setDpiScale(scaleManager.dpiScale());
+                Vector2f screenSize = MinecraftWindow.getWindowSize();
+                ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
 
-            draw(ctx, new UIInputState(
-                    new Vector2f(mouseX, mouseY),
-                    PerformanceTracker.getLastResultCPU("Frame") / 1_000_000f
-            ));
+                draw(ctx, new UIInputState(
+                        new Vector2f(mouseX, mouseY),
+                        PerformanceTracker.getLastResultCPU("Frame") / 1_000_000f
+                ));
 
-            ctx.flush();
-            nvg.end();
+                ctx.flush();
+            } finally {
+                try {
+                    if (frameBegun && !useRhi) {
+                        nvg.end();
+                    }
+                } finally {
+                    if (useRhi) {
+                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) nvg.frameBuffer.handle());
+                        nvg.rawContext.endFrame();
+                        NanoVGRhiBridge.endBatch();
+                        glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) nvg.frameBuffer.handle());
+                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
+                        glEnable(GL_BLEND);
+                        GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
+
+                        glBlitFramebuffer(
+                                0,
+                                0,
+                                nvg.frameBuffer.getWidth(),
+                                nvg.frameBuffer.getHeight(),
+                                0,
+                                0,
+                                Minecraft.getInstance().getMainRenderTarget().width,
+                                Minecraft.getInstance().getMainRenderTarget().height,
+                                GL_COLOR_BUFFER_BIT,
+                                GL_LINEAR
+                        );
+                        GlStates.pop("nanovg-frame").restore();
+                    }
+                }
+            }
         };
         GuiRenderInjector.submit(guiGraphics, renderAction);
 

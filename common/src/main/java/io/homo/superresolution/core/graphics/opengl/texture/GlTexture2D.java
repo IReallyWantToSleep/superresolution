@@ -113,9 +113,14 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
 
     public void uploadData(int mipLevel, int xoffset, int yoffset, int width, int height,
                            int format, int type, ByteBuffer data, int alignment) {
-        glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+        try (GlState ignored = new GlState(GlState.STATE_UNPACK | GlState.STATE_PIXEL_UNPACK_BUFFER)) {
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+            glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
-        Gl.DSA.textureSubImage2D(
+            Gl.DSA.textureSubImage2D(
                 this.id,
                 mipLevel,
                 xoffset,
@@ -125,7 +130,8 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
                 format,
                 type,
                 MemoryUtil.memAddress(data)
-        );
+            );
+        }
     }
 
     public void uploadData(int format, int type, ByteBuffer data) {

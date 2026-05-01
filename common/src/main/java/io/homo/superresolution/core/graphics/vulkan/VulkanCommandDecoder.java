@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
@@ -32,6 +34,7 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import static org.lwjgl.vulkan.VK10.*;
@@ -77,6 +80,23 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             case DEPTH_ATTACHMENT_WRITE -> VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
             case TRANSFER_SRC -> VK_ACCESS_TRANSFER_READ_BIT;
             case TRANSFER_DST -> VK_ACCESS_TRANSFER_WRITE_BIT;
+        };
+    }
+
+    private static int vkStageFor(BufferUsage usage) {
+        return switch (usage) {
+            case StaticDraw, DynamicDraw -> VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+            case Ubo -> VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            case CopySrc, CopyDst -> VK_PIPELINE_STAGE_TRANSFER_BIT;
+        };
+    }
+
+    private static int vkAccessFor(BufferUsage usage) {
+        return switch (usage) {
+            case StaticDraw, DynamicDraw -> VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT;
+            case Ubo -> VK_ACCESS_UNIFORM_READ_BIT;
+            case CopySrc -> VK_ACCESS_TRANSFER_READ_BIT;
+            case CopyDst -> VK_ACCESS_TRANSFER_WRITE_BIT;
         };
     }
 
@@ -257,6 +277,48 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .size(size);
             vkCmdCopyBuffer(cmd, src.handle(), dst.handle(), copyRegion);
         }
+    }
+
+    @Override
+    public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("writeToBuffer: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
+        if (!(dst instanceof VulkanBuffer vkBuffer)) {
+            throw new IllegalArgumentException("writeToBuffer: buffer类型错误: " + dst.getClass().getName());
+        }
+        if (data == null) {
+            throw new IllegalArgumentException("writeToBuffer: data为null");
+        }
+        if (dstOffset < 0) {
+            throw new IllegalArgumentException("writeToBuffer: dstOffset不能为负数");
+        }
+
+        ByteBuffer src = data.duplicate();
+        int size = src.remaining();
+        if (size <= 0) {
+            return;
+        }
+        if (dstOffset + size > dst.getSize()) {
+            throw new IllegalArgumentException("writeToBuffer: 写入范围超出缓冲大小");
+        }
+
+        if (vkBuffer.getUsage() == BufferUsage.CopySrc) {
+            vkBuffer.writeHostVisible(src, Math.toIntExact(dstOffset));
+            return;
+        }
+
+        VulkanBuffer stagingBuffer = new VulkanBuffer(
+                vulkanDevice,
+                BufferDescription.create()
+                        .size(size)
+                        .usage(BufferUsage.CopySrc)
+                        .build()
+        );
+        stagingBuffer.writeHostVisible(src, 0);
+        copyBuffer(commandBuffer, stagingBuffer, vkBuffer, 0, dstOffset, size);
+        insertTransferWriteBarrier(vcb.getNativeCommandBuffer(), vkBuffer, dstOffset, size);
+        vcb.addTransientResource(stagingBuffer);
     }
 
     @Override
@@ -558,6 +620,29 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public IDevice getDevice() {
         return vulkanDevice;
+    }
+
+    void insertTransferWriteBarrier(VkCommandBuffer commandBuffer, VulkanBuffer buffer, long offset, long size) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferMemoryBarrier.Buffer barrier = VkBufferMemoryBarrier.calloc(1, stack)
+                    .sType(VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER)
+                    .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                    .dstAccessMask(vkAccessFor(buffer.getUsage()))
+                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .buffer(buffer.handle())
+                    .offset(offset)
+                    .size(size);
+            vkCmdPipelineBarrier(
+                    commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    vkStageFor(buffer.getUsage()),
+                    0,
+                    null,
+                    barrier,
+                    null
+            );
+        }
     }
 
     private ResourceAccessType deriveAccessType(ComputePipeline pipeline, String name,

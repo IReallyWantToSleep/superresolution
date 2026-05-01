@@ -20,9 +20,13 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
+import io.homo.superresolution.core.impl.Destroyable;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK10.*;
@@ -39,6 +43,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private VulkanGraphicsPipeline boundGraphicsPipeline;
     private VulkanComputePipeline boundComputePipeline;
     private boolean renderPassActive;
+    private final List<Destroyable> transientResources = new ArrayList<>();
 
     public VulkanCommandBuffer(VulkanDevice vulkanDevice, VulkanCommandPool ownerPool, CommandBufferBehavior behavior) {
         this.vulkanDevice = vulkanDevice;
@@ -104,6 +109,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
             return;
         }
         ensureNotInFlight();
+        destroyTransientResources();
         if (reusableFence != VK_NULL_HANDLE) {
             ownerPool.getFencePool().destroyFence(reusableFence);
             reusableFence = VK_NULL_HANDLE;
@@ -163,11 +169,13 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     public boolean isFenceSignaled() {
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
+            destroyTransientResourcesIfComplete();
             return true;
         }
         int status = vkGetFenceStatus(vulkanDevice.getVkDevice(), reusableFence);
         if (status == VK_SUCCESS) {
             inFlight = false;
+            destroyTransientResourcesIfComplete();
             return true;
         }
         if (status == VK_NOT_READY) {
@@ -181,10 +189,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     public void waitForFence() {
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
+            destroyTransientResourcesIfComplete();
             return;
         }
         VK_CHECK(vkWaitForFences(vulkanDevice.getVkDevice(), reusableFence, true, Long.MAX_VALUE));
         inFlight = false;
+        destroyTransientResourcesIfComplete();
     }
 
     @Override
@@ -254,6 +264,16 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         return activeRenderPass;
     }
 
+    void addTransientResource(Destroyable destroyable) {
+        transientResources.add(destroyable);
+    }
+
+    void destroyTransientResourcesIfComplete() {
+        if (!transientResources.isEmpty() && !isInFlight()) {
+            destroyTransientResources();
+        }
+    }
+
     private void ensureNotDestroyed() {
         if (state == CommandBufferState.Destroyed || nativeCommandBuffer == null) {
             throw new IllegalStateException("Command buffer is destroyed");
@@ -274,5 +294,15 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         boundGraphicsPipeline = null;
         boundComputePipeline = null;
         renderPassActive = false;
+    }
+
+    private void destroyTransientResources() {
+        if (transientResources.isEmpty()) {
+            return;
+        }
+        for (Destroyable destroyable : transientResources) {
+            destroyable.destroy();
+        }
+        transientResources.clear();
     }
 }

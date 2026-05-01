@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.core;
 #if MC_VER < MC_1_21_5
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class GlDebugMixin {
 
     @Inject(method = "printDebugLog", at = @At("TAIL"))
     private static void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null || severity == 33387) return;
+        if (!GlDebug.isEnabled() || SuperResolution.renderThread == null || severity == 33387) return;
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
 
@@ -48,7 +48,7 @@ public class GlDebugMixin {
 #else
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
@@ -62,7 +62,7 @@ public class GlDebugMixin {
 
     @Inject(method = "printDebugLog", at = @At("TAIL"))
     private void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        if (!SuperResolutionConfig.isEnableDebug() || SuperResolution.renderThread == null || severity == 33387 || type == 0x8251) return;
+        if (!GlDebug.isEnabled() || SuperResolution.renderThread == null || severity == 33387 || type == 0x8251) return;
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
         for (StackTraceElement element : elements) {

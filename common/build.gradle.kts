@@ -215,3 +215,12 @@ artifacts {
     add("commonResources", irisapiSourceSet.resources.sourceDirectories.singleFile)
     add("commonResources", sharedSourceSet.resources.sourceDirectories.singleFile)
 }
+
+
+tasks.named<ProcessResources>("processResources") {
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+        exclude("**/libSuperResolution*+*+release.*")
+    } else {
+        exclude("**/libSuperResolution*+*+debug.*")
+    }
+}

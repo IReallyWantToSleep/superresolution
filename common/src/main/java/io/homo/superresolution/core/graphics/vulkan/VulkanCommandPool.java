@@ -134,9 +134,7 @@ public class VulkanCommandPool implements ICommandPool {
     @Override
     public VulkanCommandBuffer createCommandBuffer(CommandBufferBehavior behavior) {
         VulkanCommandBuffer commandBuffer = new VulkanCommandBuffer(device, this, behavior);
-        if (behavior != CommandBufferBehavior.OneTimeSubmit) {
-            allocatedBuffers.add(commandBuffer);
-        }
+        allocatedBuffers.add(commandBuffer);
         return commandBuffer;
     }
 

@@ -192,4 +192,9 @@ tasks.named<ProcessResources>("processResources") {
     if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.8")) {
         exclude("META-INF/services/net.neoforged.neoforgespi.earlywindow.*")
     }
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+        exclude("**/libSuperResolution*+*+release.*")
+    } else {
+        exclude("**/libSuperResolution*+*+debug.*")
+    }
 }
