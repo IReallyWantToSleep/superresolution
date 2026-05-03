@@ -180,7 +180,9 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(DLSS);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
-        AlgorithmRegistry.registry(ANIME4K);
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) {
+            AlgorithmRegistry.registry(ANIME4K);
+        }
         SuperResolutionAPI.EVENT_BUS.post(new AlgorithmRegisterEvent());
     }
 }
