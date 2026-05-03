@@ -86,6 +86,7 @@
     "superresolution.screen.download.state.error": "Error",
     "superresolution.screen.download.state.pending": "Pending...",
     "superresolution.screen.download.state.selected": "Selected",
+    "superresolution.screen.config.dialog.local_resource.title": "Missing Resources",
     "superresolution.screen.config.dialog.local_resource.description": "This algorithm requires additional resources to work properly. You need to manually download and select them from local files. You may not be able to use this algorithm until done.",
     "superresolution.screen.config.dialog.local_resource.action.download_dlss_windows": "Download DLSS (Windows)",
     "superresolution.screen.config.dialog.local_resource.action.download_xess_windows": "Download XeSS (Windows)",

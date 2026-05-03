@@ -120,13 +120,6 @@ public final class NanoVGRhiBridge {
     private NanoVGRhiBridge() {
     }
 
-    /**
-     * 设置 NanoVG RHI 绘制的目标帧缓冲区。
-     * 调用方需在每次 NVG 渲染前设置（通常是当前绑定的 FBO）。
-     * framebuffer 变更时会清空 RenderPass 与 Pipeline 缓存。
-     *
-     * @param framebuffer 目标帧缓冲区，传 null 则 nFlush 中止绘制
-     */
     public static void setTargetFramebuffer(IFrameBuffer framebuffer) {
         if (targetFramebuffer != framebuffer) {
             closeActiveBatch(true);

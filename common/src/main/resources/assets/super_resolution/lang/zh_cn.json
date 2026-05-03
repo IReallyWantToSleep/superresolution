@@ -86,6 +86,7 @@
     "superresolution.screen.download.state.error": "错误",
     "superresolution.screen.download.state.pending": "等待中……",
     "superresolution.screen.download.state.selected": "已选择",
+    "superresolution.screen.config.dialog.local_resource.title": "缺失资源",
     "superresolution.screen.config.dialog.local_resource.description": "该算法需要一些额外的资源才能正常工作，你需要手动下载并从本地选择这些资源。在完成前，你可能无法使用此算法。",
     "superresolution.screen.config.dialog.local_resource.action.download_dlss_windows": "下载DLSS (Windows)",
     "superresolution.screen.config.dialog.local_resource.action.download_xess_windows": "下载XeSS (Windows)",
