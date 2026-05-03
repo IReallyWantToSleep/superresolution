@@ -59,7 +59,6 @@ jobs:
             native-libs-linux-
 
       - name: Install Python packages
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
@@ -124,7 +123,6 @@ jobs:
             native-libs-windows-
 
       - name: Install Python packages
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize

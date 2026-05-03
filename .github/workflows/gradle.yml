@@ -25,37 +25,31 @@ jobs:
             native-libs-linux-
 
       - name: Install dependencies
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         run: |
           sudo apt update
           sudo apt install -y cmake build-essential ninja-build
 
       - name: Install Vulkan SDK
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: humbletim/install-vulkan-sdk@033219e2d69dd4d3e873e217eb385fdd4b4438f4
         with:
           version: 1.4.321.1
           cache: true
 
       - name: Validate Gradle wrapper
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: gradle/actions/wrapper-validation@v4
 
       - name: Setup JDK 21
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: temurin
 
       - name: Set up Clang
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
 
       - name: Setup Gradle
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
@@ -67,7 +61,6 @@ jobs:
             caches/build-cache-1
 
       - name: Install Python packages
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
@@ -107,25 +100,21 @@ jobs:
             native-libs-windows-
 
       - name: Install Vulkan SDK
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: humbletim/install-vulkan-sdk@033219e2d69dd4d3e873e217eb385fdd4b4438f4
         with:
           version: 1.4.321.1
           cache: true
 
       - name: Validate Gradle wrapper
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: gradle/actions/wrapper-validation@v4
 
       - name: Setup JDK 21
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: temurin
 
       - name: Setup Gradle
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
@@ -137,7 +126,6 @@ jobs:
             caches/build-cache-1
 
       - name: Install Python packages
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
