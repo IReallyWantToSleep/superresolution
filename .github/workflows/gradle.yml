@@ -71,12 +71,10 @@ jobs:
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         working-directory: native/cpp
         run: python init.py
 
       - name: Build native libraries (Linux)
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         id: build
         run: ./gradlew buildNative
         continue-on-error: true
@@ -143,12 +141,10 @@ jobs:
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         working-directory: native/cpp
         run: python init.py
 
       - name: Build native libraries (Windows)
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         id: build
         run: .\gradlew.bat buildNative
         continue-on-error: true
