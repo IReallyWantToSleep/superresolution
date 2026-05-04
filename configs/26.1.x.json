@@ -21,7 +21,7 @@
             ]
         },
         "cloth_config_version": null,
-        "mod_artifact_minecraft_ver": "26.1.x",
+        "mod_artifact_minecraft_ver": "26.1",
         "neoform_version": "26.1.2-1"
     },
     "fabric": {

@@ -21,6 +21,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(binding = 1) uniform highp sampler2D InputColor;
 layout(binding = 2) uniform highp sampler2D InputDepth;
 layout(binding = 3) uniform highp sampler2D InputVelocity;
+layout(binding = 4) uniform highp sampler2D InputExposure;
 layout(binding = 0, rgba16f) uniform writeonly mediump image2D MotionDepthClipAlphaBuffer;
 layout(binding = 1, r32ui) uniform writeonly highp uimage2D YCoCgColor;
 
@@ -40,8 +41,23 @@ layout(binding = 0) uniform Params
     uint reset; /**< If accumulation should be reset -- eg last scene != current scene as in a camera cut      */
 } params;
 
+vec3 PrepareRgb(vec3 fRgb, float fExposure, float fPreExposure)
+{
+    fRgb /= fPreExposure;
+    fRgb *= fExposure;
+
+    fRgb = clamp(fRgb, 0.0f, 65504.0f);
+
+    return fRgb;
+}
+
 void main()
 {
+    float sharedExposure = texelFetch(InputExposure, ivec2(0), 0).x;
+    if (sharedExposure == 0.0)
+    {
+        sharedExposure = 1.0;
+    }
     mediump float Exposure_co_rcp = params.preExposure;
     vec2 ViewportSizeInverse = params.displaySizeRcp.xy;
     uvec2 InputPos = gl_GlobalInvocationID.xy;
@@ -110,9 +126,7 @@ void main()
     ////////////compute luma
     mediump vec3 Colorrgb = texelFetch(InputColor, ivec2(InputPos), 0).xyz;
 
-    ///simple tonemap
-    float ColorMax = max(max(Colorrgb.x, Colorrgb.y), Colorrgb.z) + Exposure_co_rcp;
-    Colorrgb /= vec3(ColorMax);
+    Colorrgb = PrepareRgb(Colorrgb, sharedExposure, Exposure_co_rcp);
 
     vec3 Colorycocg;
     Colorycocg.x = 0.25 * (Colorrgb.x + 2.0 * Colorrgb.y + Colorrgb.z);

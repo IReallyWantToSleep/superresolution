@@ -70,6 +70,9 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         convertPipeline.descriptorSet().samplerTexture("InputColor", sgsr.getInputResourceSet().colorTexture());
         convertPipeline.descriptorSet().samplerTexture("InputDepth", sgsr.getInputResourceSet().depthTexture());
         convertPipeline.descriptorSet().samplerTexture("InputVelocity", sgsr.getInputResourceSet().motionVectorsTexture());
+        if (sgsr.getInputResourceSet().exposureTexture() != null) {
+            convertPipeline.descriptorSet().samplerTexture("InputExposure", sgsr.getInputResourceSet().exposureTexture());
+        }
         convertPipeline.descriptorSet().storageImage("YCoCgColor", YCoCgColor);
         convertPipeline.descriptorSet().storageImage("MotionDepthAlphaBuffer", MotionDepthAlphaBuffer);
         convertPipeline.descriptorSet().uniformBuffer("Params", sgsr.getParams());
@@ -121,7 +124,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                         .uniformStorageTexture("LumaHistory", 5)
                         .build());
         activateShader.compile();
-        activatePipeline = (ComputePipeline) GlComputePipeline.builder()
+        activatePipeline = GlComputePipeline.builder()
                 .shader(activateShader)
                 .build(RenderSystems.opengl().device());
 
@@ -137,11 +140,12 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                         .uniformSamplerTexture("InputColor", 2)
                         .uniformSamplerTexture("InputDepth", 3)
                         .uniformSamplerTexture("InputVelocity", 4)
+                        .uniformSamplerTexture("InputExposure", 7)
                         .uniformStorageTexture("YCoCgColor", 5)
                         .uniformStorageTexture("MotionDepthAlphaBuffer", 6)
                         .build());
         convertShader.compile();
-        convertPipeline = (ComputePipeline) GlComputePipeline.builder()
+        convertPipeline = GlComputePipeline.builder()
                 .shader(convertShader)
                 .build(RenderSystems.opengl().device());
 
@@ -160,7 +164,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                         .uniformStorageTexture("SceneColorOutput", 5)
                         .build());
         upscaleShader.compile();
-        upscalePipeline = (ComputePipeline) GlComputePipeline.builder()
+        upscalePipeline = GlComputePipeline.builder()
                 .shader(upscaleShader)
                 .build(RenderSystems.opengl().device());
 
@@ -239,11 +243,5 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         PrevLumaHistory.destroy();
         LumaHistory.destroy();
         YCoCgColor.destroy();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        destroy();
-        init(parentSgsr);
     }
 }

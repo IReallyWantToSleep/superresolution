@@ -66,7 +66,7 @@ public class MaterialResourcesList extends MaterialContainerWidget<MaterialResou
     }
 
     public static MaterialResourcesList createDownload(ExtraResources extraResources, DirectoryEnsurer targetDirectory) {
-        #if !(ENABLE_AUTO_DOWNLOAD == 1)
+        #if ENABLE_AUTO_DOWNLOAD != 1
         throw new UnsupportedOperationException("Auto-download is disabled in this build.");
         #else
         return new MaterialResourcesList(extraResources, targetDirectory, true);
@@ -75,6 +75,7 @@ public class MaterialResourcesList extends MaterialContainerWidget<MaterialResou
 
     public static MaterialResourcesList createFileChoose(ExtraResources extraResources, DirectoryEnsurer targetDirectory) {
         return new MaterialResourcesList(extraResources, targetDirectory, false);
+
     }
 
     public ExtraResources getExtraResources() {

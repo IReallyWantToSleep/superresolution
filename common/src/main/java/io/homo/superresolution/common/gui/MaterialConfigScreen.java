@@ -802,7 +802,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private void openLostResourceDialog(List<ExtraResource> resources) {
-        #if (ENABLE_AUTO_DOWNLOAD == 1)
+        #if ENABLE_AUTO_DOWNLOAD == 1
         MaterialResourcesList downloadList = MaterialResourcesList.createDownload(
                 new ExtraResources(resources),
                 SuperResolutionConstants.NATIVE_LIBRARIES_DIR

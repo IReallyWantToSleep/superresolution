@@ -22,6 +22,8 @@ layout(binding = 1) uniform highp sampler2D InputOpaqueColor;
 layout(binding = 2) uniform highp sampler2D InputColor;
 layout(binding = 3) uniform highp sampler2D InputDepth;
 layout(binding = 4) uniform highp sampler2D InputVelocity;
+layout(binding = 7) uniform highp sampler2D InputExposure;
+
 layout(binding = 5, r32ui) uniform writeonly highp uimage2D YCoCgColor;
 layout(binding = 6, rgba16f) uniform writeonly mediump image2D MotionDepthAlphaBuffer;
 
@@ -41,8 +43,24 @@ layout(std140, binding = 0) uniform Params
     uint reset; /**< If accumulation should be reset -- eg last scene != current scene as in a camera cut      */
 } params;
 
+vec3 PrepareRgb(vec3 fRgb, float fExposure, float fPreExposure)
+{
+    fRgb /= fPreExposure;
+    fRgb *= fExposure;
+
+    fRgb = clamp(fRgb, 0.0f, 65504.0f);
+
+    return fRgb;
+}
+//shared float sharedExposure;
+
 void main()
 {
+    float sharedExposure = texelFetch(InputExposure, ivec2(0), 0).x;
+    if (sharedExposure == 0.0)
+    {
+        sharedExposure = 1.0;
+    }
     mediump float h0 = params.preExposure;
     vec2 ViewportSizeInverse = params.displaySizeRcp.xy;
     uvec2 InputPos = gl_GlobalInvocationID.xy;
@@ -100,7 +118,7 @@ void main()
     mediump vec3 Colorrgb = texelFetch(InputColor, ivec2(InputPos), 0).xyz;
 
     ///simple tonemap
-    Colorrgb /= vec3(max(max(Colorrgb.x, Colorrgb.y), Colorrgb.z) + h0);
+    Colorrgb = PrepareRgb(Colorrgb, sharedExposure, h0);
 
     vec3 Colorycocg;
     Colorycocg.x = 0.25 * (Colorrgb.x + 2.0 * Colorrgb.y + Colorrgb.z);
@@ -115,7 +133,7 @@ void main()
     mediump vec3 Colorprergb = texelFetch(InputOpaqueColor, ivec2(InputPos), 0).xyz;
 
     ///simple tonemap
-    Colorprergb /= max(max(Colorprergb.x, Colorprergb.y), Colorprergb.z) + h0;
+    Colorprergb = PrepareRgb(Colorprergb, sharedExposure, h0);
     mediump vec3 delta = abs(Colorrgb - Colorprergb);
     mediump float alpha_mask = max(delta.x, max(delta.y, delta.z));
     alpha_mask = (0.35f * 1000.0f) * alpha_mask;

@@ -57,7 +57,6 @@ void main()
 {
     float Biasmax_viewportXScale = min(float(params.displaySize.x) / float(params.renderSize.x), 1.99); //Biasmax_viewportXScale
     float scalefactor = min(20.0, pow((float(params.displaySize.x) / float(params.renderSize.x)) * (float(params.displaySize.y) / float(params.renderSize.y)), 3.0));
-    float f2 = params.preExposure; //1.0;   //preExposure
     vec2 HistoryInfoViewportSizeInverse = params.displaySizeRcp;
     vec2 HistoryInfoViewportSize = vec2(params.displaySize);
     vec2 InputJitter = params.jitterOffset;

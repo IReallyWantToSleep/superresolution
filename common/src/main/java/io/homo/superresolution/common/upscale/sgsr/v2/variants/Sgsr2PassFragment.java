@@ -37,9 +37,4 @@ public class Sgsr2PassFragment extends AbstractSgsrVariant {
     public void destroy() {
 
     }
-
-    @Override
-    public void resize(int width, int height) {
-
-    }
 }

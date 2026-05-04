@@ -70,8 +70,8 @@ public class Sgsr2 extends AbstractAlgorithm {
         this.initDesc = desc;
         ITexture outputTex = RenderSystems.current().device().createTexture(TextureDescription.create()
                         .type(TextureType.Texture2D)
-                        .width(RenderHandlerManager.getRenderWidth())
-                        .height(RenderHandlerManager.getRenderHeight())
+                        .width(RenderHandlerManager.getScreenWidth())
+                        .height(RenderHandlerManager.getScreenHeight())
                         .usages(TextureUsages.create().sampler().storage().sampler())
                         .format(SuperResolutionConfig.getInternalTextureFormat())
                         .label("Sgsr2Output")
@@ -116,6 +116,7 @@ public class Sgsr2 extends AbstractAlgorithm {
     @Override
     public void destroy() {
         safeVariantInstance(Destroyable::destroy);
+        variantInstance = null;
         if (output != null) {
             output.destroy();
             output = null;
@@ -130,10 +131,13 @@ public class Sgsr2 extends AbstractAlgorithm {
         }
     }
 
+
     @Override
     public void resize(int width, int height) {
         destroy();
         initialize(initDesc);
+        safeVariantInstance(Destroyable::destroy);
+        variantInstance = null;
     }
 
     @Override

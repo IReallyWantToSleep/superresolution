@@ -163,6 +163,9 @@ public abstract class PipelineDescriptorSet {
 
         ResourceBinding(ResourceType type, int bindingPoint, GpuObject resource, ISampler sampler, long offset, long range) {
             this.type = type;
+            if (resource == null) {
+                throw new NullPointerException("Resource is null");
+            }
             this.resource = resource;
             this.bindingPoint = bindingPoint;
             this.sampler = sampler;

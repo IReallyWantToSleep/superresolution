@@ -34,5 +34,4 @@ public abstract class AbstractSgsrVariant implements Destroyable {
 
     public abstract void init(Sgsr2 sgsr);
 
-    public abstract void resize(int width, int height);
 }

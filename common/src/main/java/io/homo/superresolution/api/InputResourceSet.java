@@ -25,7 +25,6 @@ public record InputResourceSet(
         ITexture colorTexture,
         ITexture depthTexture,
         ITexture motionVectorsTexture,
-        /** Exposure texture (optional), null if not provided by shader pack / config */
         @Nullable ITexture exposureTexture
 ) {
 

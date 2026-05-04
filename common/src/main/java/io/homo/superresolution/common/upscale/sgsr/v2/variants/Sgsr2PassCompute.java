@@ -81,7 +81,6 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, wg.x, wg.y, wg.z);
         RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, upscalePipeline);
         RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, wg.x, wg.y, wg.z);
-
         commandBuffer.end();
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
     }
@@ -178,11 +177,5 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         MotionDepthClipAlphaBuffer.destroy();
         YCoCgColor.destroy();
 
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        destroy();
-        init(parentSgsr);
     }
 }
