@@ -200,8 +200,12 @@ public class IrisShaderCompatEventHandler {
                     Integer.toString(SuperResolutionAPI.getScreenHeight()));
             event.registerMacro("SR_UPSCALE_RATIO",
                     Float.toString(SuperResolutionConfig.getUpscaleRatio()));
+            event.registerMacro("SR_UPSCALE_RATIO_HALF",
+                    Float.toString(SuperResolutionConfig.getUpscaleRatio()*0.5F));
             event.registerMacro("SR_RENDER_SCALE_FACTOR",
                     Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
+            event.registerMacro("SR_RENDER_SCALE_FACTOR_HALF",
+                    Float.toString(SuperResolutionConfig.getRenderScaleFactor()*0.5F));
             event.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
                     Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             event.registerMacro("SR_ALGO_DLSS_RENDERPRESET",

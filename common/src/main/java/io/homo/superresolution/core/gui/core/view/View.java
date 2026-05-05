@@ -217,10 +217,7 @@ public class View {
     public void dispatchMousePress(float x, float y, int button) {
         if (activeDialog != null) {
             activeDialog.handleMousePress(x, y, button);
-            //正在淡入时依旧让Frame接受事件
-            if (!(!activeDialog.isDismissing() && activeDialog.isShowing())) {
-                return;
-            }
+            if (!activeDialog.isFadeIn()) return;
         }
         for (int i = frames.size() - 1; i >= 0; i--) {
             FrameEntry entry = frames.get(i);
@@ -240,10 +237,7 @@ public class View {
     public void dispatchMouseRelease(float x, float y, int button) {
         if (activeDialog != null) {
             activeDialog.handleMouseRelease(x, y, button);
-            //正在淡入时依旧让Frame接受事件，避免类似于按钮被点击后正常接收Press事件但未接收Release事件的问题
-            if (!(!activeDialog.isDismissing() && activeDialog.isShowing())) {
-                return;
-            }
+            if (!activeDialog.isFadeIn()) return;
         }
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;

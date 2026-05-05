@@ -165,9 +165,12 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
                 .memoryTypeIndex(findMemoryType(
                         memRequirements.memoryTypeBits(),
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-
+        VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
+                .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
+                .image(image);
+        allocInfo.pNext(dedicatedAllocInfo.address());
         if (exportable) {
-            allocInfo.pNext(VulkanInterop.IMPL.createVkExportMemoryAllocateInfo(stack).address());
+            dedicatedAllocInfo.pNext(VulkanInterop.IMPL.createVkExportMemoryAllocateInfo(stack).address());
         }
 
         LongBuffer pMemory = stack.mallocLong(1);

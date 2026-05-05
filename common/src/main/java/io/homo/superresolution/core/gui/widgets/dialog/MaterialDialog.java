@@ -55,6 +55,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
     private AbstractWidget<?> contentWidget;
     private View parentView;
     private boolean showing = false;
+    private boolean isFadeIn = false;
     private Consumer<MaterialDialog> onDismiss;
     private boolean built = false;
     private AbstractWidget<?> hoveredInDialog;
@@ -206,15 +207,26 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
         return dismissPending;
     }
 
+    public boolean isFadeIn() {
+        return isFadeIn;
+    }
+
     public void show(View view) {
         this.parentView = view;
         this.showing = true;
+        this.isFadeIn = true;
         this.dismissPending = false;
         build();
 
         fadeAnimator = new Animator.FloatAnimator(0f, 1f);
         fadeAnimator.duration(FADE_IN_DURATION);
         fadeAnimator.timeInterpolator(TimeInterpolator.easeOutCubic());
+        fadeAnimator.onLifecycle(new Animator.AnimatorLifecycleListener() {
+            @Override
+            public void onEnd() {
+                isFadeIn = false;
+            }
+        });
         fadeAnimator.start();
     }
 

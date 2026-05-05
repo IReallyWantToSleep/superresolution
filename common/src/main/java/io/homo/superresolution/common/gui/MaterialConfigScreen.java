@@ -844,6 +844,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .supportingText(Text.translatable("superresolution.screen.config.dialog.local_resource.description").getString());
         dialog.style().minWidth(400f);
         dialog.style().maxWidth(600f);
+        dialog.scrimDismiss(false);
         if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
             dialog.addAction(
                     Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_dlss_windows").getString(),
