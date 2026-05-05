@@ -18,33 +18,27 @@
 
 package io.homo.superresolution.forge;
 
-import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.dataset.DataSetGenerator;
-import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-
-import io.homo.superresolution.forge.compat.sodium.SodiumOptionScreen;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.network.NetworkConstants;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.fml.IExtensionPoint;
 
-@Mod(value = SuperResolution.MOD_ID)
-public final class SuperResolutionForge {
-
-    public SuperResolutionForge() {
-        SuperResolutionConfig.SPEC.load();
-        ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class, () -> new ConfigScreenHandler.ConfigScreenFactory((mc, screen) -> ConfigScreenBuilder.create().buildConfigScreen(screen)));
-        ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class, () -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
-        if (io.homo.superresolution.api.platform.Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
-            SodiumOptionScreen.register();
+@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+public class SuperResolutionEventSubscriberForge {
+    @SubscribeEvent
+    public static void registerBindings(RegisterKeyMappingsEvent event) {
+        event.register(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
+        if (SuperResolutionConfig.isEnableDatasetGenerator()) {
+            event.register(DataSetGenerator.SAVE_KEYMAPPING);
+            event.register(DataSetGenerator.SEQUENCE_KEYMAPPING);
         }
-        SuperResolution.registerEvents();
+    }
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        SuperResolution.onClientSetup();
     }
 }

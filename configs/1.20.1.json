@@ -91,10 +91,6 @@
                     "version": "forge-1.20.1-1.0.10"
                 },
                 {
-                    "name": "spark",
-                    "version": "1.10.53-forge"
-                },
-                {
                     "name": "simple-clouds",
                     "version": "0.6.3+1.20.1-forge",
                     "compileOnly": true
@@ -106,8 +102,9 @@
             ],
             "local": [
                 {
-                    "name": "oculus-shit-mc1.20.1-1.8.0",
-                    "isMod": true
+                    "name": "oculus-shit-mc1.20.1-1.8.0-dev",
+                    "isMod": true,
+                    "use_jarjar": true
                 }
             ]
         }
