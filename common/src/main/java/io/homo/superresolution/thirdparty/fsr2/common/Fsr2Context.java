@@ -21,6 +21,7 @@ package io.homo.superresolution.thirdparty.fsr2.common;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.thirdparty.fsr2.common.struct.Fsr2CBFSR2;
@@ -111,19 +112,19 @@ public class Fsr2Context {
         this.fsr2RcasConstantsUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2RcasConstants.size())
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .build()
         );
         this.fsr2SpdConstantsUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2SpdConstants.size())
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .build()
         );
         this.fsr2ConstantsUBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2Constants.size())
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .build()
         );
 

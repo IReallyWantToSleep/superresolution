@@ -22,11 +22,11 @@ import java.util.Objects;
 
 public class BufferDescription {
     private final long size;
-    private final BufferUsage usage;
+    private final BufferUsages usages;
 
-    protected BufferDescription(long size, BufferUsage usage) {
+    protected BufferDescription(long size, BufferUsages usages) {
         this.size = size;
-        this.usage = usage;
+        this.usages = usages;
     }
 
     public static Builder create() {
@@ -37,21 +37,21 @@ public class BufferDescription {
         return size;
     }
 
-    public BufferUsage usage() {
-        return usage;
+    public BufferUsages usage() {
+        return usages;
     }
 
     @Override
     public String toString() {
         return "BufferDescription{" +
                 "size=" + size +
-                ", usage=" + usage +
+                ", usage=" + usages +
                 '}';
     }
 
     public static class Builder {
+        private final BufferUsages usages = BufferUsages.create();
         private long size;
-        private BufferUsage usage;
 
         public Builder size(long size) {
             if (size <= 0) {
@@ -62,7 +62,12 @@ public class BufferDescription {
         }
 
         public Builder usage(BufferUsage usage) {
-            this.usage = Objects.requireNonNull(usage, "Usage cannot be null");
+            this.usages.add(Objects.requireNonNull(usage, "Usage cannot be null"));
+            return this;
+        }
+
+        public Builder usages(BufferUsages usages) {
+            this.usages.add(usages.getUsages().toArray(new BufferUsage[0]));
             return this;
         }
 
@@ -70,10 +75,10 @@ public class BufferDescription {
             if (size <= 0) {
                 throw new IllegalStateException("Size must be set to a positive value");
             }
-            if (usage == null) {
+            if (usages.isEmpty()) {
                 throw new IllegalStateException("Usage must be set");
             }
-            return new BufferDescription(size, usage);
+            return new BufferDescription(size, usages);
         }
     }
 }

@@ -65,7 +65,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 .build();
         ubo = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .size(buffer.size())
                         .build());
         output = RenderSystems.current().device().createTexture(
@@ -96,7 +96,6 @@ public class Sgsr1 extends AbstractAlgorithm {
         sgsrShader.compile();
         renderPass = RenderSystems.current().device().createRenderPass(
                 RenderPass.builder()
-                        .clearColorOnBegin(0,0,0,0,1)
                         .frameBuffer(outputFbo)
         );
         sgsrPipeline = GlGraphicsPipeline.builder()

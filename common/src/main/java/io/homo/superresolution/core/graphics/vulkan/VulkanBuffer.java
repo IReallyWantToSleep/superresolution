@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import org.lwjgl.system.MemoryStack;
@@ -39,7 +40,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class VulkanBuffer implements IBuffer {
     private final VulkanDevice device;
     private final long size;
-    private final BufferUsage usage;
+    private final BufferUsages usages;
     private final boolean hostVisible;
     private long buffer = VK_NULL_HANDLE;
     private long memory = VK_NULL_HANDLE;
@@ -53,8 +54,8 @@ public class VulkanBuffer implements IBuffer {
     public VulkanBuffer(VulkanDevice device, BufferDescription description) {
         this.device = device;
         this.size = description.size();
-        this.usage = description.usage();
-        this.hostVisible = usage == BufferUsage.CopySrc;
+        this.usages = description.usage();
+        this.hostVisible = usages.has(BufferUsage.TransferSrc);
 
         try (MemoryStack stack = stackPush()) {
             createBuffer(stack);
@@ -64,19 +65,27 @@ public class VulkanBuffer implements IBuffer {
 
     private static int translateUsage(BufferUsage usage) {
         return switch (usage) {
-            case Ubo -> VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            case Ubo -> VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
             case StaticDraw, DynamicDraw ->
-                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            case CopySrc -> VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            case CopyDst -> VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            case TransferSrc -> VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            case TransferDst -> VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         };
+    }
+
+    private static int translateUsage(BufferUsages usage) {
+        int flags = 0;
+        for (BufferUsage u : usage.getUsages()) {
+            flags |= translateUsage(u);
+        }
+        return flags;
     }
 
     private void createBuffer(MemoryStack stack) {
         VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
                 .size(size)
-                .usage(translateUsage(usage))
+                .usage(translateUsage(usages))
                 .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
         LongBuffer pBuffer = stack.mallocLong(1);
@@ -128,8 +137,8 @@ public class VulkanBuffer implements IBuffer {
     }
 
     @Override
-    public BufferUsage getUsage() {
-        return usage;
+    public BufferUsages getUsages() {
+        return usages;
     }
 
     @Override

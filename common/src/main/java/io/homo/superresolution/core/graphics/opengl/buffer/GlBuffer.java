@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.opengl.buffer;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.lwjgl.opengl.GL15;
@@ -32,15 +33,15 @@ import static org.lwjgl.opengl.GL45.*;
 public class GlBuffer implements IBuffer {
     private final int glId;
     private final long size;
-    private final BufferUsage usage;
+    private final BufferUsages usages;
     private ByteBuffer mappedBuffer;
     private boolean mapped;
 
     public GlBuffer(BufferDescription description) {
         this.size = description.size();
-        this.usage = description.usage();
+        this.usages = description.usage();
         this.glId = Gl.DSA.createBuffer();
-        int target = getGlTarget();
+        int target = getGlTarget(usages.getUsages().get(0));
         int previous = GL15.glGetInteger(getGlBindingQuery(target));
         GL15.glBindBuffer(target, glId);
         GL15.glBufferData(target, this.size, getGlUsage());
@@ -53,8 +54,8 @@ public class GlBuffer implements IBuffer {
     }
 
     @Override
-    public BufferUsage getUsage() {
-        return usage;
+    public BufferUsages getUsages() {
+        return usages;
     }
 
     @Override
@@ -64,7 +65,7 @@ public class GlBuffer implements IBuffer {
             throw new IllegalStateException("Buffer is already mapped");
         }
 
-        int target = getGlTarget();
+        int target = getGlTarget(usages.getUsages().get(0));
         int previous = GL15.glGetInteger(getGlBindingQuery(target));
         GL15.glBindBuffer(target, glId);
         mappedBuffer = GL30.glMapBufferRange(
@@ -89,7 +90,7 @@ public class GlBuffer implements IBuffer {
             throw new IllegalStateException("Buffer is not mapped");
         }
 
-        int target = getGlTarget();
+        int target = getGlTarget(usages.getUsages().get(0));
         int previous = GL15.glGetInteger(getGlBindingQuery(target));
         GL15.glBindBuffer(target, glId);
         boolean success = GL15.glUnmapBuffer(target);
@@ -107,22 +108,17 @@ public class GlBuffer implements IBuffer {
         return glId;
     }
 
-    private int getGlTarget() {
+    private int getGlTarget(BufferUsage usage) {
         return switch (usage) {
             case Ubo -> GL_UNIFORM_BUFFER;
-            case CopySrc -> GL_COPY_READ_BUFFER;
-            case CopyDst -> GL_COPY_WRITE_BUFFER;
+            case TransferSrc -> GL_COPY_READ_BUFFER;
+            case TransferDst -> GL_COPY_WRITE_BUFFER;
             default -> GL_ARRAY_BUFFER;
         };
     }
 
     private int getGlUsage() {
-        return switch (usage) {
-            case StaticDraw -> GL_STATIC_DRAW;
-            case DynamicDraw -> GL_DYNAMIC_DRAW;
-            case Ubo -> GL_DYNAMIC_DRAW;
-            default -> GL_STATIC_DRAW;
-        };
+        return GL_DYNAMIC_DRAW;
     }
 
     private int getGlBindingQuery(int target) {
@@ -141,21 +137,6 @@ public class GlBuffer implements IBuffer {
         if ((long) offsetInBytes + lengthInBytes > size) {
             throw new IllegalArgumentException("Buffer range exceeds buffer size");
         }
-    }
-
-    private void writeNow(ByteBuffer data, int offsetInBytes) {
-        ByteBuffer src = data.duplicate();
-        int lengthInBytes = src.remaining();
-        validateRange(offsetInBytes, lengthInBytes);
-        if (mapped) {
-            throw new IllegalStateException("Cannot update a mapped buffer");
-        }
-
-        int target = getGlTarget();
-        int previous = GL15.glGetInteger(getGlBindingQuery(target));
-        GL15.glBindBuffer(target, glId);
-        GL15.glBufferSubData(target, offsetInBytes, src);
-        GL15.glBindBuffer(target, previous);
     }
 
     @Override

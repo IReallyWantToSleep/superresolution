@@ -24,6 +24,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+@Deprecated
 public interface IBufferData {
     /**
      * 数据源

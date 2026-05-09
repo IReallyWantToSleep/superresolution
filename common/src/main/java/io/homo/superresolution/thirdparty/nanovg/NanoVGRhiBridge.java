@@ -21,6 +21,7 @@ package io.homo.superresolution.thirdparty.nanovg;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
@@ -504,7 +505,7 @@ public final class NanoVGRhiBridge {
             frameUniformBuffer = device.createBuffer(
                     BufferDescription.create()
                             .size(16)
-                            .usage(BufferUsage.Ubo)
+                            .usages(BufferUsages.create().ubo().transferDst())
                             .build()
             );
         }
@@ -513,7 +514,7 @@ public final class NanoVGRhiBridge {
             fragUniformBuffer = device.createBuffer(
                     BufferDescription.create()
                             .size(1024)
-                            .usage(BufferUsage.Ubo)
+                            .usages(BufferUsages.create().ubo().transferDst())
                             .build()
             );
         }
@@ -873,7 +874,7 @@ public final class NanoVGRhiBridge {
         fragUniformBuffer = device.createBuffer(
                 BufferDescription.create()
                         .size(Math.max(requiredBytes, 1024))
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .build()
         );
     }

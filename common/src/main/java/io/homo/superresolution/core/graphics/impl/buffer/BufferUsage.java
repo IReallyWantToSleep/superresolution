@@ -22,6 +22,6 @@ public enum BufferUsage {
     StaticDraw,
     DynamicDraw,
     Ubo,
-    CopySrc,
-    CopyDst
+    TransferSrc,
+    TransferDst
 }

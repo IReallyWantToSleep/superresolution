@@ -98,7 +98,6 @@ public class VkRenderSystem implements IRenderSystem {
         VkPhysicalDevice physicalDevice = selectPhysicalDevice();
         capabilities.init(instance, physicalDevice);
         this.vulkanDevice = createLogicalDeviceWithCapabilities(physicalDevice);
-        vulkanDevice.getCommandManager().init();
         LOGGER.info("Vulkan 初始化完成");
     }
 

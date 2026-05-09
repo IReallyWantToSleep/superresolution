@@ -29,7 +29,7 @@ public interface IBuffer extends GpuObject, Destroyable {
 
     long getSize();
 
-    BufferUsage getUsage();
+    BufferUsages getUsages();
 
     ByteBuffer map(int offsetInBytes, int lengthInBytes, boolean write);
 

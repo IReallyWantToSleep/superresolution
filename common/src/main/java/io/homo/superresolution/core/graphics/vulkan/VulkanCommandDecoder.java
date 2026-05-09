@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
@@ -89,17 +90,33 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             case StaticDraw, DynamicDraw -> VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
             case Ubo ->
                     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-            case CopySrc, CopyDst -> VK_PIPELINE_STAGE_TRANSFER_BIT;
+            case TransferSrc, TransferDst -> VK_PIPELINE_STAGE_TRANSFER_BIT;
         };
+    }
+
+    private static int vkStageFor(BufferUsages usages) {
+        int flags = 0;
+        for (BufferUsage usage : usages.getUsages()) {
+            flags |= vkStageFor(usage);
+        }
+        return flags;
     }
 
     private static int vkAccessFor(BufferUsage usage) {
         return switch (usage) {
             case StaticDraw, DynamicDraw -> VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_INDEX_READ_BIT;
             case Ubo -> VK_ACCESS_UNIFORM_READ_BIT;
-            case CopySrc -> VK_ACCESS_TRANSFER_READ_BIT;
-            case CopyDst -> VK_ACCESS_TRANSFER_WRITE_BIT;
+            case TransferSrc -> VK_ACCESS_TRANSFER_READ_BIT;
+            case TransferDst -> VK_ACCESS_TRANSFER_WRITE_BIT;
         };
+    }
+
+    private static int vkAccessFor(BufferUsages usages) {
+        int flags = 0;
+        for (BufferUsage usage : usages.getUsages()) {
+            flags |= vkAccessFor(usage);
+        }
+        return flags;
     }
 
     @Override
@@ -304,7 +321,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             throw new IllegalArgumentException("writeToBuffer: 写入范围超出缓冲大小");
         }
 
-        if (vkBuffer.getUsage() == BufferUsage.CopySrc) {
+        if (vkBuffer.getUsages().has(BufferUsage.TransferSrc)) {
             vkBuffer.writeHostVisible(src, Math.toIntExact(dstOffset));
             return;
         }
@@ -313,7 +330,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                 vulkanDevice,
                 BufferDescription.create()
                         .size(size)
-                        .usage(BufferUsage.CopySrc)
+                        .usage(BufferUsage.TransferSrc)
                         .build()
         );
         stagingBuffer.writeHostVisible(src, 0);
@@ -632,7 +649,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             VkBufferMemoryBarrier.Buffer barrier = VkBufferMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER)
                     .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
-                    .dstAccessMask(vkAccessFor(buffer.getUsage()))
+                    .dstAccessMask(vkAccessFor(buffer.getUsages()))
                     .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .buffer(buffer.handle())
@@ -641,7 +658,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             vkCmdPipelineBarrier(
                     commandBuffer,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    vkStageFor(buffer.getUsage()),
+                    vkStageFor(buffer.getUsages()),
                     0,
                     null,
                     barrier,

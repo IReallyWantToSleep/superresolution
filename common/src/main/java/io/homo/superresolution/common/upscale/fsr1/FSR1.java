@@ -98,13 +98,13 @@ public class FSR1 extends AbstractAlgorithm {
         fsr1UBO = RenderSystems.current().device().createBuffer(
                 BufferDescription.create()
                         .size(fsr1UBOData.size())
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .build());
         #else
         fsr1UBO = RenderSystems.vulkan().device().createBuffer(
                 BufferDescription.create()
                         .size(fsr1UBOData.size())
-                        .usage(BufferUsage.Ubo)
+                        .usages(BufferUsages.create().ubo().transferDst())
                         .build());
         #endif
         initShader();

@@ -39,6 +39,7 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureViewDescription;
+import io.homo.superresolution.core.graphics.impl.validation.ValidatedCommandDecoder;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import org.lwjgl.system.MemoryStack;
@@ -60,18 +61,19 @@ public class VulkanDevice implements IDevice {
     private final VkPhysicalDevice physicalDevice;
     private final VkDevice device;
     private final VulkanQueue mainQueue;
-    private final VulkanCommandPool commandManager;
     private final VulkanCommandPool defaultCommandPool;
     private final VulkanCommandDecoder commandDecoder;
+    private final ValidatedCommandDecoder validatedCommandDecoder;
 
 
     public VulkanDevice(VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
         this.physicalDevice = physicalDevice;
         this.device = device;
         this.mainQueue = new VulkanQueue(this, graphicsQueueFamilyIndex);
-        this.commandManager = new VulkanCommandPool(this, EnumSet.of(CommandPoolFlags.Reset));
-        this.defaultCommandPool = commandManager;
+        this.defaultCommandPool= new VulkanCommandPool(this, EnumSet.of(CommandPoolFlags.Reset));
         this.commandDecoder = new VulkanCommandDecoder(this);
+        this.validatedCommandDecoder = new ValidatedCommandDecoder(commandDecoder);
+        defaultCommandPool.init();
     }
 
     @Override
@@ -171,7 +173,7 @@ public class VulkanDevice implements IDevice {
 
     @Override
     public ICommandDecoder commandDecoder() {
-        return commandDecoder;
+        return validatedCommandDecoder;
     }
 
     @Override
@@ -277,21 +279,9 @@ public class VulkanDevice implements IDevice {
         reapCompletedTransientResources();
     }
 
-    /**
-     * 获取VulkanCommandManager实例
-     *
-     * @return VulkanCommandManager实例
-     */
-    public VulkanCommandPool getCommandManager() {
-        return commandManager;
-    }
-
-    /**
-     * 销毁资源
-     */
     public void destroy() {
-        if (commandManager != null) {
-            commandManager.destroy();
+        if (defaultCommandPool != null) {
+            defaultCommandPool.destroy();
         }
         LOGGER.debug("VulkanDevice 资源已清理");
     }
@@ -309,7 +299,7 @@ public class VulkanDevice implements IDevice {
     }
 
     private void reapCompletedTransientResources() {
-        for (VulkanCommandBuffer buffer : commandManager.getAllocatedBuffers()) {
+        for (VulkanCommandBuffer buffer : defaultCommandPool.getAllocatedBuffers()) {
             buffer.destroyTransientResourcesIfComplete();
         }
     }

@@ -501,7 +501,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         ByteBuffer snapshot = MemoryUtil.memAlloc((int) size);
         snapshot.put(src);
         snapshot.flip();
-        int target = glTargetFor(dst.getUsage());
+        int target = glTargetFor(BufferUsage.TransferDst);
         int bindingQuery = glBindingQueryFor(target);
 
         putGlCommand(commandBuffer, () -> {
@@ -869,8 +869,8 @@ public class GlCommandDecoder implements ICommandDecoder {
     private int glTargetFor(BufferUsage usage) {
         return switch (usage) {
             case Ubo -> GL_UNIFORM_BUFFER;
-            case CopySrc -> GL_COPY_READ_BUFFER;
-            case CopyDst -> GL_COPY_WRITE_BUFFER;
+            case TransferSrc -> GL_COPY_READ_BUFFER;
+            case TransferDst -> GL_COPY_WRITE_BUFFER;
             default -> GL_ARRAY_BUFFER;
         };
     }
