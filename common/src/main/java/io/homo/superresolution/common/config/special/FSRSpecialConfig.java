@@ -20,13 +20,11 @@ package io.homo.superresolution.common.config.special;
 
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.config.ModConfigSpecBuilder;
-import io.homo.superresolution.api.config.values.single.BooleanValue;
 import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.ffxfsr.FSRVersion;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Version;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;

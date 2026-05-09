@@ -272,7 +272,7 @@ public class Fsr2PipelineResources {
             if (availableMips < 6) {
                 throw new IllegalStateException(
                         "SCENE_LUMINANCE texture requires at least 6 mip levels (0-5), but only has " + availableMips +
-                        " (size=" + luminanceTex.getWidth() + "x" + luminanceTex.getHeight() + ")"
+                                " (size=" + luminanceTex.getWidth() + "x" + luminanceTex.getHeight() + ")"
                 );
             }
             ITextureView mip5View = RenderSystems.current().device().createTextureView(

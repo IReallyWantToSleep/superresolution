@@ -23,9 +23,13 @@ import org.jetbrains.annotations.Nullable;
 
 public record InputResourceSet(
         ITexture colorTexture,
+
         ITexture depthTexture,
+
         ITexture motionVectorsTexture,
-        @Nullable ITexture exposureTexture
+
+        @Nullable
+        ITexture exposureTexture
 ) {
 
 }

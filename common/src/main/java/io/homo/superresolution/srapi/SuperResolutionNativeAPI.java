@@ -261,7 +261,7 @@ public class SuperResolutionNativeAPI {
         return SuperResolutionNative.NsrParamGetValueAsPointer(paramPtr);
     }
 
-    public static SRReturnCode srShutdown(){
+    public static SRReturnCode srShutdown() {
         return SRReturnCode.fromValue(SuperResolutionNative.NsrShutdown());
     }
 }

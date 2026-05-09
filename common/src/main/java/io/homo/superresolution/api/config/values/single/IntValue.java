@@ -35,7 +35,9 @@ public class IntValue extends ConfigValue<Integer> {
 
     @Override
     public boolean isValid(Object value) {
-        if (value == null) return false;
+        if (value == null) {
+            return false;
+        }
         if (value instanceof Number) {
             return validator.test(((Number) value).intValue());
         }
@@ -53,10 +55,18 @@ public class IntValue extends ConfigValue<Integer> {
 
     @Override
     protected Integer convertType(Object value) {
-        if (value instanceof Long) return ((Long) value).intValue();
-        if (value instanceof Integer) return (Integer) value;
-        if (value instanceof Number) return ((Number) value).intValue();
-        if (value instanceof String) return Integer.parseInt((String) value);
+        if (value instanceof Long) {
+            return ((Long) value).intValue();
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        if (value instanceof String) {
+            return Integer.parseInt((String) value);
+        }
         return null;
     }
 }

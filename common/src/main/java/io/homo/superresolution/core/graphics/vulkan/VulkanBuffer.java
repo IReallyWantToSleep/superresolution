@@ -21,7 +21,6 @@ package io.homo.superresolution.core.graphics.vulkan;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
-import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -32,6 +31,7 @@ import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
@@ -62,6 +62,16 @@ public class VulkanBuffer implements IBuffer {
         }
     }
 
+    private static int translateUsage(BufferUsage usage) {
+        return switch (usage) {
+            case Ubo -> VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            case StaticDraw, DynamicDraw ->
+                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            case CopySrc -> VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            case CopyDst -> VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        };
+    }
+
     private void createBuffer(MemoryStack stack) {
         VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
@@ -80,8 +90,8 @@ public class VulkanBuffer implements IBuffer {
         vkGetBufferMemoryRequirements(device.getVkDevice(), buffer, memReqs);
 
         int memoryProperties = hostVisible
-            ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
         VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
@@ -110,15 +120,6 @@ public class VulkanBuffer implements IBuffer {
             }
         }
         throw new VulkanException("Failed to find suitable memory type for buffer");
-    }
-
-    private static int translateUsage(BufferUsage usage) {
-        return switch (usage) {
-            case Ubo -> VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            case StaticDraw, DynamicDraw -> VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            case CopySrc -> VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            case CopyDst -> VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        };
     }
 
     @Override

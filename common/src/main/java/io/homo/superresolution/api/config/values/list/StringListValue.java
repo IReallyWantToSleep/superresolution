@@ -37,7 +37,9 @@ public class StringListValue extends ListValue<String> {
                 defaultSupplier,
                 comment,
                 obj -> {
-                    if (obj == null) return null;
+                    if (obj == null) {
+                        return null;
+                    }
 
                     return obj.toString();
                 },

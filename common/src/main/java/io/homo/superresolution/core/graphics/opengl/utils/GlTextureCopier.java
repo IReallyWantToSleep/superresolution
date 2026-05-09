@@ -129,11 +129,11 @@ public class GlTextureCopier {
         GlShaderProgram program = RenderSystems.opengl().device().createShaderProgram(builder.build());
         program.compile();
         RenderPass renderPass = RenderPass.builder()
-            .frameBuffer(getCachedFrameBuffer())
-            .build(RenderSystems.opengl().device());
+                .frameBuffer(getCachedFrameBuffer())
+                .build(RenderSystems.opengl().device());
         GlGraphicsPipeline graphicsPipeline = (GlGraphicsPipeline) GlGraphicsPipeline.builder()
                 .shader(program)
-            .renderPass(renderPass)
+                .renderPass(renderPass)
                 .primitiveType(PrimitiveType.TriangleStrip)
                 .rasterization(r -> r.cullMode(CullMode.None))
                 .depthStencil(r -> r.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
@@ -191,10 +191,10 @@ public class GlTextureCopier {
                 cachedFrameBuffer.label("CopyOperationTempFrameBuffer");
             }
             GlRenderPass pass = (GlRenderPass) getOrCreateProgram(copyOperation);
-                GlGraphicsPipeline graphicsPipeline = graphicsPipelineMap.get(mappingKey(copyOperation.getMappings()));
-                graphicsPipeline.descriptorSet()
+            GlGraphicsPipeline graphicsPipeline = graphicsPipelineMap.get(mappingKey(copyOperation.getMappings()));
+            graphicsPipeline.descriptorSet()
                     .samplerTexture("tex", copyOperation.getSrcTexture());
-                graphicsPipeline.descriptorSet().update();
+            graphicsPipeline.descriptorSet().update();
             IVertexBuffer vertexBuffer = FullscreenQuad.create(RenderSystems.opengl().device());
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();

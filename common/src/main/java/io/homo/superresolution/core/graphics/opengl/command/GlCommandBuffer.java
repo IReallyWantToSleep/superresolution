@@ -24,10 +24,10 @@ import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttac
 import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendState;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.DepthStencilState;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.RasterizationState;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
+import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
 
 import java.util.ArrayList;
@@ -40,12 +40,12 @@ public class GlCommandBuffer implements ICommandBuffer {
     private final GlDevice device;
     private final ICommandPool ownerPool;
     private final CommandBufferBehavior behavior;
+    private final ExecutionStateCache executionStateCache = new ExecutionStateCache();
     private CommandBufferState state = CommandBufferState.Executable;
     private GlRenderPass activeRenderPass;
     private GlGraphicsPipeline boundGraphicsPipeline;
     private GlComputePipeline boundComputePipeline;
     private boolean renderPassActive;
-    private final ExecutionStateCache executionStateCache = new ExecutionStateCache();
 
     public GlCommandBuffer(GlDevice device, ICommandPool ownerPool, CommandBufferBehavior behavior) {
         this.device = device;
@@ -201,6 +201,11 @@ public class GlCommandBuffer implements ICommandBuffer {
     }
 
     public static final class ExecutionStateCache {
+        private final Map<Integer, UniformBufferBindingSnapshot> uniformBufferBindings = new HashMap<>();
+        private final Map<Integer, SamplerBindingSnapshot> samplerBindings = new HashMap<>();
+        private final Map<Integer, StorageImageBindingSnapshot> storageImageBindings = new HashMap<>();
+        private final Map<ProgramResourceKey, Integer> samplerUniformBindings = new HashMap<>();
+        private final Map<ProgramResourceKey, Integer> uniformBlockBindings = new HashMap<>();
         private int currentProgram = -1;
         private int activeTextureUnit = -1;
         private Object currentVao;
@@ -212,11 +217,6 @@ public class GlCommandBuffer implements ICommandBuffer {
         private ScissorSnapshot scissorSnapshot;
         private Float lineWidth;
         private BlendConstantsSnapshot blendConstantsSnapshot;
-        private final Map<Integer, UniformBufferBindingSnapshot> uniformBufferBindings = new HashMap<>();
-        private final Map<Integer, SamplerBindingSnapshot> samplerBindings = new HashMap<>();
-        private final Map<Integer, StorageImageBindingSnapshot> storageImageBindings = new HashMap<>();
-        private final Map<ProgramResourceKey, Integer> samplerUniformBindings = new HashMap<>();
-        private final Map<ProgramResourceKey, Integer> uniformBlockBindings = new HashMap<>();
 
         public void invalidateAll() {
             currentProgram = -1;
@@ -311,11 +311,11 @@ public class GlCommandBuffer implements ICommandBuffer {
             }
             return frontFace
                     ? depthStencilSnapshot.stencilCompareOpFront() == compareOp
-                    && depthStencilSnapshot.stencilReference() == reference
-                    && depthStencilSnapshot.stencilCompareMask() == compareMask
+                      && depthStencilSnapshot.stencilReference() == reference
+                      && depthStencilSnapshot.stencilCompareMask() == compareMask
                     : depthStencilSnapshot.stencilCompareOpBack() == compareOp
-                    && depthStencilSnapshot.stencilReference() == reference
-                    && depthStencilSnapshot.stencilCompareMask() == compareMask;
+                      && depthStencilSnapshot.stencilReference() == reference
+                      && depthStencilSnapshot.stencilCompareMask() == compareMask;
         }
 
         public boolean matchesStencilOp(boolean frontFace, Object failOp, Object depthFailOp, Object passOp) {
@@ -324,11 +324,11 @@ public class GlCommandBuffer implements ICommandBuffer {
             }
             return frontFace
                     ? depthStencilSnapshot.stencilFailOpFront() == failOp
-                    && depthStencilSnapshot.stencilDepthFailOpFront() == depthFailOp
-                    && depthStencilSnapshot.stencilPassOpFront() == passOp
+                      && depthStencilSnapshot.stencilDepthFailOpFront() == depthFailOp
+                      && depthStencilSnapshot.stencilPassOpFront() == passOp
                     : depthStencilSnapshot.stencilFailOpBack() == failOp
-                    && depthStencilSnapshot.stencilDepthFailOpBack() == depthFailOp
-                    && depthStencilSnapshot.stencilPassOpBack() == passOp;
+                      && depthStencilSnapshot.stencilDepthFailOpBack() == depthFailOp
+                      && depthStencilSnapshot.stencilPassOpBack() == passOp;
         }
 
         public void recordDepthStencilState(DepthStencilState state) {
@@ -473,10 +473,18 @@ public class GlCommandBuffer implements ICommandBuffer {
             return colorBlendSnapshot.attachment(attachmentIndex);
         }
 
-        private record ProgramResourceKey(int programHandle, String name) {
+        private record ProgramResourceKey(int programHandle,
+
+                                          String name) {
         }
 
-        private record ViewportSnapshot(float x, float y, float width, float height) {
+        private record ViewportSnapshot(float x,
+
+                                        float y,
+
+                                        float width,
+
+                                        float height) {
             private boolean matches(float otherX, float otherY, float otherWidth, float otherHeight) {
                 return Float.compare(x, otherX) == 0
                         && Float.compare(y, otherY) == 0
@@ -485,13 +493,25 @@ public class GlCommandBuffer implements ICommandBuffer {
             }
         }
 
-        private record ScissorSnapshot(int x, int y, int width, int height) {
+        private record ScissorSnapshot(int x,
+
+                                       int y,
+
+                                       int width,
+
+                                       int height) {
             private boolean matches(int otherX, int otherY, int otherWidth, int otherHeight) {
                 return x == otherX && y == otherY && width == otherWidth && height == otherHeight;
             }
         }
 
-        private record BlendConstantsSnapshot(float r, float g, float b, float a) {
+        private record BlendConstantsSnapshot(float r,
+
+                                              float g,
+
+                                              float b,
+
+                                              float a) {
             private boolean matches(float otherR, float otherG, float otherB, float otherA) {
                 return Float.compare(r, otherR) == 0
                         && Float.compare(g, otherG) == 0
@@ -500,13 +520,21 @@ public class GlCommandBuffer implements ICommandBuffer {
             }
         }
 
-        private record UniformBufferBindingSnapshot(long handle, long offset, long range) {
+        private record UniformBufferBindingSnapshot(long handle,
+
+                                                    long offset,
+
+                                                    long range) {
             private boolean matches(long otherHandle, long otherOffset, long otherRange) {
                 return handle == otherHandle && offset == otherOffset && range == otherRange;
             }
         }
 
-        private record SamplerBindingSnapshot(int textureTarget, long textureHandle, long samplerHandle) {
+        private record SamplerBindingSnapshot(int textureTarget,
+
+                                              long textureHandle,
+
+                                              long samplerHandle) {
             private boolean matches(int otherTextureTarget, long otherTextureHandle, long otherSamplerHandle) {
                 return textureTarget == otherTextureTarget
                         && textureHandle == otherTextureHandle
@@ -514,7 +542,13 @@ public class GlCommandBuffer implements ICommandBuffer {
             }
         }
 
-        private record StorageImageBindingSnapshot(long textureHandle, int mipLevel, int access, int format) {
+        private record StorageImageBindingSnapshot(long textureHandle,
+
+                                                   int mipLevel,
+
+                                                   int access,
+
+                                                   int format) {
             private boolean matches(long otherTextureHandle, int otherMipLevel, int otherAccess, int otherFormat) {
                 return textureHandle == otherTextureHandle
                         && mipLevel == otherMipLevel
@@ -525,9 +559,13 @@ public class GlCommandBuffer implements ICommandBuffer {
 
         private record RasterizationSnapshot(
                 Object polygonMode,
+
                 Object cullMode,
+
                 Object frontFace,
+
                 boolean depthClampEnable,
+
                 boolean rasterizerDiscardEnable
         ) {
             private static RasterizationSnapshot of(RasterizationState state) {
@@ -551,19 +589,33 @@ public class GlCommandBuffer implements ICommandBuffer {
 
         private record DepthStencilSnapshot(
                 boolean depthTestEnable,
+
                 boolean depthWriteEnable,
+
                 Object depthCompareOp,
+
                 boolean stencilTestEnable,
+
                 Object stencilCompareOpFront,
+
                 Object stencilCompareOpBack,
+
                 Object stencilFailOpFront,
+
                 Object stencilPassOpFront,
+
                 Object stencilDepthFailOpFront,
+
                 Object stencilFailOpBack,
+
                 Object stencilPassOpBack,
+
                 Object stencilDepthFailOpBack,
+
                 int stencilCompareMask,
+
                 int stencilWriteMask,
+
                 int stencilReference
         ) {
             private static DepthStencilSnapshot of(DepthStencilState state) {
@@ -607,12 +659,19 @@ public class GlCommandBuffer implements ICommandBuffer {
 
         private record ColorBlendAttachmentSnapshot(
                 boolean blendEnable,
+
                 Object srcColorBlendFactor,
+
                 Object dstColorBlendFactor,
+
                 Object colorBlendOp,
+
                 Object srcAlphaBlendFactor,
+
                 Object dstAlphaBlendFactor,
+
                 Object alphaBlendOp,
+
                 int colorWriteMask
         ) {
             private static ColorBlendAttachmentSnapshot of(ColorBlendAttachment attachment) {

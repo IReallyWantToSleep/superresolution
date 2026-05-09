@@ -48,10 +48,6 @@ public class GlDebug {
         backend.objectLabel(type, id, label);
     }
 
-    public static void setEnabled(boolean enabled) {
-        backend = enabled ? DEBUG_IMPL : NO_OP_IMPL;
-    }
-
     public static void useDebugImpl() {
         setEnabled(true);
     }
@@ -66,6 +62,10 @@ public class GlDebug {
 
     public static boolean isEnabled() {
         return backend == DEBUG_IMPL;
+    }
+
+    public static void setEnabled(boolean enabled) {
+        backend = enabled ? DEBUG_IMPL : NO_OP_IMPL;
     }
 
     public static int nextCommandBufferId() {

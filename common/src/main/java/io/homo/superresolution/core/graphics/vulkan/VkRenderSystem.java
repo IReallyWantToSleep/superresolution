@@ -62,6 +62,14 @@ public class VkRenderSystem implements IRenderSystem {
         return buffer.rewind();
     }
 
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
     public VkInstance getVulkanInstance() {
         return instance;
     }
@@ -154,14 +162,6 @@ public class VkRenderSystem implements IRenderSystem {
             VK_CHECK(vkCreateInstance(createInfo, null, instancePtr), "Failed to create VkInstance");
             instance = VkReflectionHelper.createVkInstanceSafely(instancePtr.get(0), createInfo);
         }
-    }
-
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
     }
 
     private VkPhysicalDevice selectPhysicalDevice() {

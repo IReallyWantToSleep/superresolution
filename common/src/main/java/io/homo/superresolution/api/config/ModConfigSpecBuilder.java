@@ -32,9 +32,9 @@ import java.util.function.Supplier;
 public class ModConfigSpecBuilder {
     protected final Map<List<String>, ConfigValue<?>> values = new LinkedHashMap<>();
     protected final Map<List<String>, String> comments = new HashMap<>();
+    protected final ConfigSpec spec = new ConfigSpec();
     protected boolean autoSave = false;
     protected boolean autoReload = false;
-    protected final ConfigSpec spec = new ConfigSpec();
     protected List<String> lastPath = List.of();
     protected Path configPath;
 

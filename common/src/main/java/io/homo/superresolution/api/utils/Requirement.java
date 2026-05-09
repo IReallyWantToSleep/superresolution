@@ -18,7 +18,10 @@
 
 package io.homo.superresolution.api.utils;
 
-import io.homo.superresolution.api.platform.*;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.api.platform.SystemArchitecture;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 
@@ -29,6 +32,7 @@ public class Requirement {
     private final Set<String> requiredGlExtensions = new HashSet<>();
     private final Set<OperatingSystem> supportedOS = new HashSet<>();
     private final Set<String> requiredVulkanDeviceExtensions = new HashSet<>();
+    private final List<Supplier<Boolean>> additionalChecks = new ArrayList<>();
     private int glMajorVersion = -1;
     private int glMinorVersion = -1;
     private int vulkanMajorVersion = -1;
@@ -36,7 +40,6 @@ public class Requirement {
     private int vulkanPatchVersion = -1;
     private boolean requiresDevEnv = false;
     private boolean requiresVulkan = false;
-    private final List<Supplier<Boolean>> additionalChecks = new ArrayList<>();
 
     private Requirement() {
 
@@ -132,7 +135,9 @@ public class Requirement {
     }
 
     private boolean checkVulkanVersion() {
-        if (vulkanMajorVersion == -1) return true;
+        if (vulkanMajorVersion == -1) {
+            return true;
+        }
 
         int[] current = GraphicsCapabilities.getVulkanVersion();
         return current[0] > vulkanMajorVersion ||
@@ -149,7 +154,9 @@ public class Requirement {
     private boolean checkAdditionalConditions() {
         for (Supplier<Boolean> dep : additionalChecks) {
             try {
-                if (!dep.get()) return false;
+                if (!dep.get()) {
+                    return false;
+                }
             } catch (Exception e) {
                 return false;
             }
@@ -203,7 +210,9 @@ public class Requirement {
     }
 
     private boolean checkOSCompatibility() {
-        if (supportedOS.isEmpty()) return true;
+        if (supportedOS.isEmpty()) {
+            return true;
+        }
 
         final OperatingSystem current = Platform.currentPlatform.getOS();
         return supportedOS.stream()
@@ -212,7 +221,9 @@ public class Requirement {
     }
 
     private boolean checkGLVersion() {
-        if (glMajorVersion == -1) return true;
+        if (glMajorVersion == -1) {
+            return true;
+        }
 
         final int[] currentVersion = GraphicsCapabilities.getGLVersion();
         return currentVersion[0] > glMajorVersion ||
@@ -273,12 +284,19 @@ public class Requirement {
 
     public record Result(
             boolean osSupported,
+
             boolean glVersionMet,
+
             boolean glExtensionsPresent,
+
             boolean environmentValid,
+
             boolean vulkanAvailable,
+
             boolean vulkanVersionMet,
+
             boolean vulkanDeviceExtensionsMet,
+
             boolean additionalConditionsMet
     ) {
         public boolean support() {

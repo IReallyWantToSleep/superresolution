@@ -46,18 +46,20 @@ public interface ICommandDecoder {
 
     void copyBuffer(ICommandBuffer commandBuffer, IBuffer src, IBuffer dst, long srcOffset, long dstOffset, long size);
 
-    default void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data){
+    default void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data) {
         writeToBuffer(commandBuffer, dst, dstOffset, data.remaining(), data);
     }
 
     void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, long size, ByteBuffer data);
-    default void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, IBufferData data){
+
+    default void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, IBufferData data) {
         writeToBuffer(commandBuffer, dst, dstOffset, data.asByteBuffer());
     }
 
-    default void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, long size, IBufferData data){
+    default void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, long size, IBufferData data) {
         writeToBuffer(commandBuffer, dst, dstOffset, size, data.asByteBuffer());
     }
+
     void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height);
 
     void setScissor(ICommandBuffer commandBuffer, int x, int y, int width, int height);

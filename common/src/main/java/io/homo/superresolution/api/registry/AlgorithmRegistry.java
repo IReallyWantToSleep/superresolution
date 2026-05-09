@@ -19,11 +19,10 @@
 package io.homo.superresolution.api.registry;
 
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-
-import java.util.Map;
-
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+
+import java.util.Map;
 
 public class AlgorithmRegistry {
     private static final Map<String, AlgorithmDescription<?>> algorithmMap = new Object2ObjectLinkedOpenHashMap<>();

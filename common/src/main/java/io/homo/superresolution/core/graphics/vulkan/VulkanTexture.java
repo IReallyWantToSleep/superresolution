@@ -352,7 +352,7 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
             return;
         }
         try (MemoryStack stack = stackPush()) {
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1,stack)
+            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
                     .oldLayout(currentLayout)
                     .newLayout(newLayout)

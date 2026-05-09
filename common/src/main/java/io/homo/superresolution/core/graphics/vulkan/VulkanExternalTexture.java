@@ -20,7 +20,9 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkImageMemoryBarrier;
+import org.lwjgl.vulkan.VkImageSubresourceRange;
+import org.lwjgl.vulkan.VkImageViewCreateInfo;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
@@ -128,6 +130,15 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         return new VulkanExternalTexture(
                 device, image, view, true, format, type, width, height, mipLevels, initialLayout
         );
+    }
+
+    private static int resolveAspectMask(TextureFormat format) {
+        if (format.isDepthStencil()) {
+            return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        } else if (format.isDepth()) {
+            return VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        return VK_IMAGE_ASPECT_COLOR_BIT;
     }
 
     public int getCurrentLayout() {
@@ -251,19 +262,12 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
 
     @Override
     public void destroy() {
-        if (destroyed) return;
+        if (destroyed) {
+            return;
+        }
         if (ownsView && imageView != VK_NULL_HANDLE) {
             vkDestroyImageView(device.getVkDevice(), imageView, null);
         }
         destroyed = true;
-    }
-
-    private static int resolveAspectMask(TextureFormat format) {
-        if (format.isDepthStencil()) {
-            return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        } else if (format.isDepth()) {
-            return VK_IMAGE_ASPECT_DEPTH_BIT;
-        }
-        return VK_IMAGE_ASPECT_COLOR_BIT;
     }
 }

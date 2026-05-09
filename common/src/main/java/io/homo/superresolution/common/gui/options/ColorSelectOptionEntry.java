@@ -47,7 +47,8 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
     protected ContainerWidget sliderContainer;
     protected ContainerWidget contentContainer;
 
-    protected Consumer<Color> valueChangeListener = (value)->{};
+    protected Consumer<Color> valueChangeListener = (value) -> {
+    };
 
     private boolean suppressSliderChangeEvent = false;
 
@@ -204,7 +205,7 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
         colorPanelWidget = new ColorPanelWidget();
         colorPanelWidget.layout().setHeightPercent(100);
         colorPanelWidget.layout().setWidth(48);
-        colorPanelWidget.layout().setMargin(YogaEdge.RIGHT,12);
+        colorPanelWidget.layout().setMargin(YogaEdge.RIGHT, 12);
         contentContainer.addChild(colorPanelWidget);
         contentContainer.addChild(sliderContainer);
 
@@ -250,7 +251,7 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
         return this;
     }
 
-    public class ColorPanelWidget extends AbstractWidget<ColorPanelWidget>{
+    public class ColorPanelWidget extends AbstractWidget<ColorPanelWidget> {
 
         @Override
         protected void init() {

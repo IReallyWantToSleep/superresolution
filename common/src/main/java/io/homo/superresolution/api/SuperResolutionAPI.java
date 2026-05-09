@@ -28,6 +28,7 @@ import net.neoforged.bus.api.IEventBus;
 
 public class SuperResolutionAPI {
     public static final IEventBus EVENT_BUS = BusBuilder.builder().build();
+
     public static IFrameBuffer getOriginMinecraftFrameBuffer() {
         return RenderHandlerManager.getOriginRenderTarget();
     }

@@ -19,8 +19,8 @@
 package io.homo.superresolution.core.gui.core.view;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
-import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.TooltipRenderer;
+import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
@@ -37,11 +37,11 @@ import java.util.List;
 public class View {
     private final List<FrameEntry> frames = new ArrayList<>();
     private final YogaNode rootNode;
+    private final TooltipRenderer tooltipRenderer = new TooltipRenderer();
     private float viewportWidth;
     private float viewportHeight;
     private boolean layoutDirty = true;
     private MaterialDialog activeDialog;
-    private final TooltipRenderer tooltipRenderer = new TooltipRenderer();
 
     public View() {
         this.rootNode = new YogaNode();
@@ -217,7 +217,9 @@ public class View {
     public void dispatchMousePress(float x, float y, int button) {
         if (activeDialog != null) {
             activeDialog.handleMousePress(x, y, button);
-            if (!activeDialog.isFadeIn()) return;
+            if (!activeDialog.isFadeIn()) {
+                return;
+            }
         }
         for (int i = frames.size() - 1; i >= 0; i--) {
             FrameEntry entry = frames.get(i);
@@ -237,7 +239,9 @@ public class View {
     public void dispatchMouseRelease(float x, float y, int button) {
         if (activeDialog != null) {
             activeDialog.handleMouseRelease(x, y, button);
-            if (!activeDialog.isFadeIn()) return;
+            if (!activeDialog.isFadeIn()) {
+                return;
+            }
         }
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
@@ -401,6 +405,15 @@ public class View {
         }
     }
 
+    private FrameEntry findFrameEntry(Frame frame) {
+        for (FrameEntry entry : frames) {
+            if (entry.frame == frame) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
     private static class FrameEntry {
         final Frame frame;
         final YogaNode layoutNode;
@@ -413,14 +426,5 @@ public class View {
             this.renderAlpha = 1f;
             this.renderOffsetY = 0f;
         }
-    }
-
-    private FrameEntry findFrameEntry(Frame frame) {
-        for (FrameEntry entry : frames) {
-            if (entry.frame == frame) {
-                return entry;
-            }
-        }
-        return null;
     }
 }

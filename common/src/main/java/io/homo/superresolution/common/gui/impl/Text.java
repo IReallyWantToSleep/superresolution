@@ -46,12 +46,12 @@ public class Text {
     }
 
     @Override
-    public String toString() {
-        return getString();
+    public boolean equals(Object obj) {
+        return obj instanceof Text && ((Text) obj).translatable == translatable && value.equals(((Text) obj).value);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Text && ((Text) obj).translatable == translatable && value.equals(((Text) obj).value);
+    public String toString() {
+        return getString();
     }
 }

@@ -132,11 +132,11 @@ public class GlBlitRenderer {
             );
             program.compile();
 
-                renderPass = RenderPass.builder()
+            renderPass = RenderPass.builder()
                     .frameBuffer(cachedFrameBuffer)
                     .build(RenderSystems.opengl().device());
 
-                graphicsPipeline = (GlGraphicsPipeline) GlGraphicsPipeline.builder()
+            graphicsPipeline = (GlGraphicsPipeline) GlGraphicsPipeline.builder()
                     .shader(program)
                     .renderPass(renderPass)
                     .primitiveType(PrimitiveType.TriangleStrip)

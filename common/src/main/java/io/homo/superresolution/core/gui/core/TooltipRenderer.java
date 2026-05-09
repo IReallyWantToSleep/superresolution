@@ -232,19 +232,6 @@ public class TooltipRenderer {
         lastTooltip = "";
     }
 
-    public enum TooltipPosition {
-        AUTO,
-        TOP,
-        BOTTOM,
-        LEFT,
-        RIGHT,
-        LEFT_TOP,
-        RIGHT_TOP,
-        LEFT_BOTTOM,
-        RIGHT_BOTTOM,
-        LEFT_CENTER
-    }
-
     private Vector2f calculatePosition(float targetX, float targetY,
                                        float width, float height,
                                        TooltipPosition pos,
@@ -333,5 +320,18 @@ public class TooltipRenderer {
                 );
             }
         }
+    }
+
+    public enum TooltipPosition {
+        AUTO,
+        TOP,
+        BOTTOM,
+        LEFT,
+        RIGHT,
+        LEFT_TOP,
+        RIGHT_TOP,
+        LEFT_BOTTOM,
+        RIGHT_BOTTOM,
+        LEFT_CENTER
     }
 }

@@ -350,7 +350,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
     private float getCornerSize() {
         return pressAnimator == null ? (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                : style().size().squareCornerSize()) : pressAnimator.get();
+                                        : style().size().squareCornerSize()) : pressAnimator.get();
     }
 
     private ButtonColors getButtonColors() {

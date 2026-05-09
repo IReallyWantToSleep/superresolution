@@ -20,14 +20,14 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialElevation;
-import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
 
 import java.util.ArrayList;
 import java.util.List;

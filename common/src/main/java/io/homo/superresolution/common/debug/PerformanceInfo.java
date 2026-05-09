@@ -42,12 +42,16 @@ public class PerformanceInfo {
     }
 
     public static long getAsNano(String name) {
-        if (usingTimeMap.get(name) == null) return -1L;
+        if (usingTimeMap.get(name) == null) {
+            return -1L;
+        }
         return usingTimeMap.get(name);
     }
 
     public static float getAsMillis(String name) {
-        if (usingTimeMap.get(name) == null) return -1L;
+        if (usingTimeMap.get(name) == null) {
+            return -1L;
+        }
         return (float) usingTimeMap.get(name) / 1000000L;
     }
 }

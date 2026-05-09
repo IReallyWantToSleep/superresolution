@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.core.utils.Color;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -30,7 +29,8 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
     protected Number min;
     protected Number value;
     protected Function<Number, String> valueFormater;
-    protected Consumer<Number> valueChangeListener = (v)->{};
+    protected Consumer<Number> valueChangeListener = (v) -> {
+    };
 
     public NumberSliderBuilder(Text name, Number value, Number max, Number min) {
         super(name, value);
@@ -38,6 +38,7 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
         this.min = min;
         this.value = value;
     }
+
     public Consumer<Number> getValueChangeListener() {
         return valueChangeListener;
     }
@@ -46,6 +47,7 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
         this.valueChangeListener = valueChangeListener;
         return this;
     }
+
     public Number getValue() {
         return value;
     }

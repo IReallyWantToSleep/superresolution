@@ -31,7 +31,7 @@ public class Color {
                     color[2],
                     255
             };
-        }else {
+        } else {
             this.color = color;
         }
     }

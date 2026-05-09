@@ -20,7 +20,6 @@ package io.homo.superresolution.api.event;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import net.neoforged.bus.api.Event;
 
 public class AlgorithmDispatchFinishEvent extends Event {

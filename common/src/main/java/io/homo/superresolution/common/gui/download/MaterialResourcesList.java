@@ -26,23 +26,20 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.utils.DirectoryEnsurer;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MaterialResourcesList extends MaterialContainerWidget<MaterialResourcesList> {
     private final ExtraResources extraResources;
     private final DirectoryEnsurer targetDirectory;
     private final Map<ExtraResource, MaterialResourcesListItem> itemMap = new LinkedHashMap<>();
     private final ContainerWidget listContainer;
+    private final boolean enableDownload;
     private volatile Thread downloadManagerThread;
     private volatile boolean downloading = false;
-    private final boolean enableDownload;
+
     private MaterialResourcesList(
             ExtraResources extraResources,
             DirectoryEnsurer targetDirectory,

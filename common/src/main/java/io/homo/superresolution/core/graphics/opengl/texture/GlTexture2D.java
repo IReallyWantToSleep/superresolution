@@ -121,15 +121,15 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
             glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
             Gl.DSA.textureSubImage2D(
-                this.id,
-                mipLevel,
-                xoffset,
-                yoffset,
-                width,
-                height,
-                format,
-                type,
-                MemoryUtil.memAddress(data)
+                    this.id,
+                    mipLevel,
+                    xoffset,
+                    yoffset,
+                    width,
+                    height,
+                    format,
+                    type,
+                    MemoryUtil.memAddress(data)
             );
         }
     }

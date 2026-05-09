@@ -55,14 +55,18 @@ public class ImguiMain implements Destroyable {
     }
 
     public void destroy() {
-        if (!initDone) return;
+        if (!initDone) {
+            return;
+        }
         imGuiGl3.shutdown();
         imGuiGlfw.shutdown();
         ImGui.destroyContext();
     }
 
     public void render() {
-        if (!initDone || !SuperResolutionConfig.isEnableImgui()) return;
+        if (!initDone || !SuperResolutionConfig.isEnableImgui()) {
+            return;
+        }
         imGuiGlfw.newFrame();
         imGuiGl3.newFrame();
         ImGui.newFrame();

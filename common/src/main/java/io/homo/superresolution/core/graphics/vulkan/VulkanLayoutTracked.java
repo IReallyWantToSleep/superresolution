@@ -20,5 +20,6 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 interface VulkanLayoutTracked {
     int getCurrentLayout();
+
     void setCurrentLayout(int layout);
 }

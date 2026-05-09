@@ -70,9 +70,9 @@ public class Fsr2v221RCASPipeline extends Fsr2Pipeline {
                 .shader(program)
                 .build(RenderSystems.opengl().device());
         workGroupSupplier = (() -> new Vector3i(
-                                calculateDispatchGrid(context.dimensions.screenWidth(), context.dimensions.screenHeight()),
-                                1
-                        ));
+                calculateDispatchGrid(context.dimensions.screenWidth(), context.dimensions.screenHeight()),
+                1
+        ));
 
         uboBindings.put("cbFSR2", context.fsr2ConstantsUBO);
         uboBindings.put("cbRCAS", context.fsr2RcasConstantsUBO);
@@ -82,7 +82,7 @@ public class Fsr2v221RCASPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(0)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.srvShaderName(),
@@ -96,7 +96,7 @@ public class Fsr2v221RCASPipeline extends Fsr2Pipeline {
                         .binding(1)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.UPSCALED_OUTPUT.uavShaderName(),
@@ -104,7 +104,7 @@ public class Fsr2v221RCASPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.UPSCALED_OUTPUT)
                         .binding(2)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
     }
 

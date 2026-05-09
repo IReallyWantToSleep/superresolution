@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.thirdparty.fsr2.common;
 
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
@@ -32,10 +31,10 @@ import java.util.function.Supplier;
 
 public abstract class Fsr2Pipeline {
     protected final Fsr2Context context;
-    protected ComputePipeline computePipeline;
-    protected Supplier<Vector3i> workGroupSupplier;
     protected final Map<String, IBuffer> uboBindings = new LinkedHashMap<>();
     protected final Map<String, Fsr2ShaderResource> shaderResourceBindings = new LinkedHashMap<>();
+    protected ComputePipeline computePipeline;
+    protected Supplier<Vector3i> workGroupSupplier;
 
     public Fsr2Pipeline(Fsr2Context context) {
         this.context = context;

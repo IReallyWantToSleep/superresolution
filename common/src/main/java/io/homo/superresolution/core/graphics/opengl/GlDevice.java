@@ -196,13 +196,6 @@ public class GlDevice implements IDevice {
         commandBuffer.submit(this);
     }
 
-    public GlImportableTexture2D createTextureImportable(ITexture exportedTexture) {
-        if (exportedTexture instanceof VulkanTexture) {
-            return new GlImportableTexture2D((VulkanTexture) exportedTexture);
-        }
-        throw new IllegalArgumentException();
-    }
-
     @Override
     public void uploadTextureData(ITexture texture, ByteBuffer data, int x, int y, int width, int height) {
         if (!(texture instanceof GlTexture2D glTexture)) {
@@ -217,5 +210,12 @@ public class GlDevice implements IDevice {
             default -> throw new IllegalArgumentException("uploadTextureData: 不支持的纹理格式: " + format);
         };
         glTexture.uploadData(0, x, y, width, height, pixelFormat, GL_UNSIGNED_BYTE, data, 1);
+    }
+
+    public GlImportableTexture2D createTextureImportable(ITexture exportedTexture) {
+        if (exportedTexture instanceof VulkanTexture) {
+            return new GlImportableTexture2D((VulkanTexture) exportedTexture);
+        }
+        throw new IllegalArgumentException();
     }
 }

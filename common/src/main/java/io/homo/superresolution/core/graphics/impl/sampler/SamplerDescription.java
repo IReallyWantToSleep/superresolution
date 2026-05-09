@@ -83,7 +83,7 @@ public class SamplerDescription {
         return switch (minFilter) {
             case Nearest -> switch (mipmapMode) {
                 case Nearest -> GL_NEAREST_MIPMAP_NEAREST;
-                case Linear ->GL_NEAREST_MIPMAP_LINEAR;
+                case Linear -> GL_NEAREST_MIPMAP_LINEAR;
                 default -> minFilter.gl();
             };
             case Linear -> switch (mipmapMode) {

@@ -29,8 +29,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ListValue<E> extends ConfigValue<List<E>> {
-    private final Function<Object, E> elementConverter;
     protected final Predicate<E> elementValidator;
+    private final Function<Object, E> elementConverter;
 
     public ListValue(
             List<String> path,
@@ -56,9 +56,15 @@ public class ListValue<E> extends ConfigValue<List<E>> {
     }
 
     private static <E> boolean defaultListEquals(List<E> list1, List<E> list2) {
-        if (list1 == list2) return true;
-        if (list1 == null || list2 == null) return false;
-        if (list1.size() != list2.size()) return false;
+        if (list1 == list2) {
+            return true;
+        }
+        if (list1 == null || list2 == null) {
+            return false;
+        }
+        if (list1.size() != list2.size()) {
+            return false;
+        }
         for (int i = 0; i < list1.size(); i++) {
             if (!Objects.equals(list1.get(i), list2.get(i))) {
                 return false;
@@ -69,11 +75,17 @@ public class ListValue<E> extends ConfigValue<List<E>> {
 
     @Override
     public boolean isValid(Object value) {
-        if (value == null) return false;
-        if (!(value instanceof List<?> list)) return false;
+        if (value == null) {
+            return false;
+        }
+        if (!(value instanceof List<?> list)) {
+            return false;
+        }
 
         for (Object element : list) {
-            if (element == null) return false;
+            if (element == null) {
+                return false;
+            }
             try {
                 E converted = elementConverter.apply(element);
                 if (converted == null || !elementValidator.test(converted)) {
@@ -97,7 +109,9 @@ public class ListValue<E> extends ConfigValue<List<E>> {
 
     @Override
     protected List<E> convertType(Object value) {
-        if (value == null) return getDefault();
+        if (value == null) {
+            return getDefault();
+        }
         if (value instanceof List) {
             return ((List<?>) value).stream()
                     .filter(e -> e != null)

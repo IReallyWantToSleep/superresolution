@@ -85,16 +85,6 @@ public class SpecialConfigDescription<T> {
         return this;
     }
 
-    public SpecialConfigDescription<T> setName(Function<T, Optional<Component>> name) {
-        this.name = name;
-        return this;
-    }
-
-    public SpecialConfigDescription<T> setName(Component name) {
-        this.name = (a) -> Optional.of(name);
-        return this;
-    }
-
     public Pair<Float, Float> getValueRange() {
         return valueRange;
     }
@@ -117,6 +107,16 @@ public class SpecialConfigDescription<T> {
         return name.apply(getValue()).orElse(Component.empty());
     }
 
+    public SpecialConfigDescription<T> setName(Function<T, Optional<Component>> name) {
+        this.name = name;
+        return this;
+    }
+
+    public SpecialConfigDescription<T> setName(Component name) {
+        this.name = (a) -> Optional.of(name);
+        return this;
+    }
+
     public Component getValueName() {
         return valueName.apply(getValue()).orElse(Component.empty());
     }
@@ -127,14 +127,14 @@ public class SpecialConfigDescription<T> {
         return this;
     }
 
+    public Function<T, Optional<Component>> getValueNameSupplier() {
+        return valueName;
+    }
+
     public SpecialConfigDescription<T> setValueNameSupplier(Function<T, Optional<Component>> valueNameSupplier) {
         valueNameIsSupplier = true;
         this.valueName = valueNameSupplier;
         return this;
-    }
-
-    public Function<T, Optional<Component>> getValueNameSupplier() {
-        return valueName;
     }
 
     @SuppressWarnings("unchecked")

@@ -35,7 +35,9 @@ public class FloatValue extends ConfigValue<Float> {
 
     @Override
     public boolean isValid(Object value) {
-        if (value == null) return false;
+        if (value == null) {
+            return false;
+        }
         if (value instanceof Number) {
             return validator.test(((Number) value).floatValue());
         }
@@ -54,10 +56,18 @@ public class FloatValue extends ConfigValue<Float> {
     @Override
     protected Float convertType(Object value) {
 
-        if (value instanceof Float) return (Float) value;
-        if (value instanceof Double) return ((Double) value).floatValue();
-        if (value instanceof Number) return ((Number) value).floatValue();
-        if (value instanceof String) return Float.parseFloat((String) value);
+        if (value instanceof Float) {
+            return (Float) value;
+        }
+        if (value instanceof Double) {
+            return ((Double) value).floatValue();
+        }
+        if (value instanceof Number) {
+            return ((Number) value).floatValue();
+        }
+        if (value instanceof String) {
+            return Float.parseFloat((String) value);
+        }
         return null;
     }
 }

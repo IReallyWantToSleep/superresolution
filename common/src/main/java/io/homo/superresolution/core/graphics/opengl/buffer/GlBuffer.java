@@ -21,7 +21,6 @@ package io.homo.superresolution.core.graphics.opengl.buffer;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
-import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL30;

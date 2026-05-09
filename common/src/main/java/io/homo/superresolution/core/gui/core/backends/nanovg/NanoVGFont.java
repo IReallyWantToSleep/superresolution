@@ -23,10 +23,6 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 
 
 public class NanoVGFont implements IFont {
@@ -40,7 +36,9 @@ public class NanoVGFont implements IFont {
     }
 
     public void load() {
-        if (id != -1) return;
+        if (id != -1) {
+            return;
+        }
 
         try (InputStream fontStream = getClass().getResourceAsStream(path)) {
 

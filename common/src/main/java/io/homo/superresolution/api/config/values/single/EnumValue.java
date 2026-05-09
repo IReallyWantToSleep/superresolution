@@ -34,7 +34,9 @@ public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
 
     @Override
     public boolean isValid(Object value) {
-        if (value == null) return false;
+        if (value == null) {
+            return false;
+        }
         if (value instanceof String) {
             try {
                 Enum.valueOf(enumClass, (String) value);
@@ -57,9 +59,12 @@ public class EnumValue<T extends Enum<T>> extends ConfigValue<T> {
 
     @Override
     protected T convertType(Object value) {
-        if (enumClass.isInstance(value)) return enumClass.cast(value);
-        if (value instanceof String)
+        if (enumClass.isInstance(value)) {
+            return enumClass.cast(value);
+        }
+        if (value instanceof String) {
             return Enum.valueOf(enumClass, (String) value);
+        }
         return null;
     }
 }

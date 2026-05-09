@@ -38,16 +38,16 @@ public class ExtraResource {
         this.sources = Collections.unmodifiableList(sources);
     }
 
+    public static Builder builder(String name) {
+        return new Builder(name);
+    }
+
     public String getName() {
         return name;
     }
 
     public List<ResourceSource> getSources() {
         return sources;
-    }
-
-    public static Builder builder(String name) {
-        return new Builder(name);
     }
 
     private boolean isCancelled(ErrorListener errorListener) {

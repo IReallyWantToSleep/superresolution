@@ -21,7 +21,6 @@ package io.homo.superresolution.core.graphics;
 import org.lwjgl.opengl.EXTMemoryObject;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -47,11 +46,11 @@ public class GraphicsDevice {
         this.deviceName = deviceName;
     }
 
-    public static GraphicsDevice createFromOpenGL(){
-        if (GL.getCapabilities().GL_EXT_memory_object){
+    public static GraphicsDevice createFromOpenGL() {
+        if (GL.getCapabilities().GL_EXT_memory_object) {
             byte[] deviceUUID = new byte[UUID_SIZE];
             byte[] driverUUID = new byte[UUID_SIZE];
-            try (MemoryStack stack = MemoryStack.stackPush()){
+            try (MemoryStack stack = MemoryStack.stackPush()) {
                 ByteBuffer deviceUUIDBuf = stack.calloc(UUID_SIZE);
                 ByteBuffer driverUUIDBuf = stack.calloc(UUID_SIZE);
 
@@ -66,16 +65,16 @@ public class GraphicsDevice {
                 deviceUUIDBuf.get(deviceUUID);
                 driverUUIDBuf.get(driverUUID);
             }
-            return new GraphicsDevice(deviceUUID, driverUUID,GL20.glGetString(GL20.GL_RENDERER));
+            return new GraphicsDevice(deviceUUID, driverUUID, GL20.glGetString(GL20.GL_RENDERER));
         }
         throw new UnsupportedOperationException("GL_EXT_memory_object is not supported");
     }
 
-    public static GraphicsDevice createFromVulkan(VkPhysicalDevice physicalDevice){
+    public static GraphicsDevice createFromVulkan(VkPhysicalDevice physicalDevice) {
         byte[] deviceUUID = new byte[UUID_SIZE];
         byte[] driverUUID = new byte[UUID_SIZE];
         String deviceName;
-        try (MemoryStack stack = MemoryStack.stackPush()){
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             VkPhysicalDeviceIDProperties idProperties = VkPhysicalDeviceIDProperties.calloc(stack);
             idProperties.sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES);
             VkPhysicalDeviceProperties2 properties2 = VkPhysicalDeviceProperties2.calloc(stack);
@@ -93,11 +92,17 @@ public class GraphicsDevice {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
         GraphicsDevice that = (GraphicsDevice) obj;
         for (int i = 0; i < UUID_SIZE; i++) {
-            if (this.deviceUUID[i] != that.deviceUUID[i]) return false;
+            if (this.deviceUUID[i] != that.deviceUUID[i]) {
+                return false;
+            }
         }
         return true;
     }

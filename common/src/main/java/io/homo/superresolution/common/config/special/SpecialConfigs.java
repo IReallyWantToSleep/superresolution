@@ -19,8 +19,8 @@
 package io.homo.superresolution.common.config.special;
 
 import io.homo.superresolution.api.config.ModConfigSpecBuilder;
-import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.core.impl.Pair;
 
 import java.util.HashMap;
 import java.util.Map;

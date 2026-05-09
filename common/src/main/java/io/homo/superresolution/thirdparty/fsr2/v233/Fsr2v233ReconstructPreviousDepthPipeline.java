@@ -79,9 +79,9 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                 .shader(program)
                 .build(RenderSystems.opengl().device());
         workGroupSupplier = (() -> new Vector3i(
-                                calculateDispatchGrid(context.dimensions.renderWidth(), context.dimensions.renderHeight()),
-                                1
-                        ));
+                calculateDispatchGrid(context.dimensions.renderWidth(), context.dimensions.renderHeight()),
+                1
+        ));
 
         uboBindings.put("cbFSR2", context.fsr2ConstantsUBO);
 
@@ -91,7 +91,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_MOTION_VECTORS)
                         .binding(7)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_DEPTH.srvShaderName(),
@@ -99,7 +99,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_DEPTH)
                         .binding(8)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_COLOR.srvShaderName(),
@@ -108,7 +108,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .binding(9)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_EXPOSURE.srvShaderName(),
@@ -116,7 +116,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(10)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LUMA_HISTORY.srvShaderName(),
@@ -130,7 +130,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .binding(11)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH.uavShaderName(),
@@ -138,7 +138,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH)
                         .binding(0)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_MOTION_VECTORS.uavShaderName(),
@@ -152,7 +152,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .binding(1)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_DEPTH.uavShaderName(),
@@ -160,7 +160,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.DILATED_DEPTH)
                         .binding(2)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.PREPARED_INPUT_COLOR.uavShaderName(),
@@ -169,7 +169,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .binding(3)
                         .access(ShaderResourceAccess.Both)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LUMA_HISTORY.uavShaderName(),
@@ -183,7 +183,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .binding(4)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LOCK_INPUT_LUMA.uavShaderName(),
@@ -191,7 +191,7 @@ public class Fsr2v233ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.LOCK_INPUT_LUMA)
                         .binding(6)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
 
     }

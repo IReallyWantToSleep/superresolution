@@ -81,9 +81,9 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                 .shader(program)
                 .build(RenderSystems.opengl().device());
         workGroupSupplier = (() -> new Vector3i(
-                                calculateDispatchGrid(context.dimensions.renderWidth(), context.dimensions.renderHeight()),
-                                1
-                        ));
+                calculateDispatchGrid(context.dimensions.renderWidth(), context.dimensions.renderHeight()),
+                1
+        ));
 
         uboBindings.put("cbFSR2", context.fsr2ConstantsUBO);
 
@@ -94,7 +94,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH)
                         .binding(11)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_MOTION_VECTORS.srvShaderName(),
@@ -107,7 +107,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.DILATED_MOTION_VECTORS.srvShaderName())
                         .binding(12)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_DEPTH.srvShaderName(),
@@ -115,7 +115,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.DILATED_DEPTH)
                         .binding(13)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_REACTIVE_MASK.srvShaderName(),
@@ -123,7 +123,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_REACTIVE_MASK)
                         .binding(3)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
 
         shaderResourceBindings.put(
@@ -132,7 +132,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_TRANSPARENCY_AND_COMPOSITION_MASK)
                         .binding(4)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.PREPARED_INPUT_COLOR.srvShaderName(),
@@ -141,7 +141,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .binding(5)
                         .access(ShaderResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_MOTION_VECTORS.srvShaderName(),
@@ -155,7 +155,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .binding(6)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_MOTION_VECTORS.srvShaderName(),
@@ -163,7 +163,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_MOTION_VECTORS)
                         .binding(7)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_COLOR.srvShaderName(),
@@ -172,7 +172,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .binding(8)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_DEPTH.srvShaderName(),
@@ -180,7 +180,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_DEPTH)
                         .binding(9)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INPUT_EXPOSURE.srvShaderName(),
@@ -188,7 +188,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(10)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS.uavShaderName(),
@@ -197,7 +197,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .binding(1)
                         .access(ShaderResourceAccess.Both)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.PREPARED_INPUT_COLOR.uavShaderName(),
@@ -206,7 +206,7 @@ public class Fsr2v233DepthClipPipeline extends Fsr2Pipeline {
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .binding(2)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
     }
 

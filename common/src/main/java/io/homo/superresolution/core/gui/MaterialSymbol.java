@@ -18,12 +18,12 @@
 
 package io.homo.superresolution.core.gui;
 
-import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
-import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
-import org.joml.Vector2f;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.utils.Color;
+import org.joml.Vector2f;
 
 public class MaterialSymbol {
     private final String name;

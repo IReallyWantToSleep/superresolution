@@ -43,10 +43,10 @@ public interface ITexture extends Destroyable, GpuObject {
 
     default String string() {
         return getTextureDescription().getLabel() != null ? getTextureDescription().getLabel() : "ITexture{" +
-                "id=" + handle() +
-                "format=" + getTextureFormat() +
-                "width=" + getWidth() +
-                "height=" + getHeight() +
-                '}';
+                                                                                                 "id=" + handle() +
+                                                                                                 "format=" + getTextureFormat() +
+                                                                                                 "width=" + getWidth() +
+                                                                                                 "height=" + getHeight() +
+                                                                                                 '}';
     }
 }

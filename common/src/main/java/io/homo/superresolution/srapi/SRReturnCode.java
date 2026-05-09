@@ -28,8 +28,8 @@ public enum SRReturnCode {
     INVALID_PROVIDER_LIBRARY(6),
     INVALID_ARGUMENT(7),
     UNSUPPORTED(8);
-    public final int value;
     private static final SRReturnCode[] values = values();
+    public final int value;
 
     SRReturnCode(int value) {
         this.value = value;

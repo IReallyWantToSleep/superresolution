@@ -118,8 +118,8 @@ public class Fsr2v233AccumulateSharpenPipeline extends Fsr2Pipeline {
                                 !context.config.getFlags().isEnableDisplayResolutionMotionVectors() ?
                                         () -> Fsr2PipelineResourceType.INPUT_MOTION_VECTORS :
                                         () -> context.isOddFrame() ?
-                                                Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2 :
-                                                Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1
+                                              Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2 :
+                                              Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1
                         )
                         .resourceName(
                                 !context.config.getFlags().isEnableDisplayResolutionMotionVectors() ?

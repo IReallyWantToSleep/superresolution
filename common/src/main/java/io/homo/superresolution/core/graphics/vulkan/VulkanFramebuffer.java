@@ -74,22 +74,30 @@ public class VulkanFramebuffer implements IFrameBuffer {
     }
 
     public long resolveColorImageView() {
-        if (colorAttachment == null) return VK_NULL_HANDLE;
+        if (colorAttachment == null) {
+            return VK_NULL_HANDLE;
+        }
         return resolveAttachmentView(colorAttachment);
     }
 
     public long resolveDepthImageView() {
-        if (depthAttachment == null) return VK_NULL_HANDLE;
+        if (depthAttachment == null) {
+            return VK_NULL_HANDLE;
+        }
         return resolveAttachmentView(depthAttachment);
     }
 
     public long resolveColorImage() {
-        if (colorAttachment == null) return VK_NULL_HANDLE;
+        if (colorAttachment == null) {
+            return VK_NULL_HANDLE;
+        }
         return resolveImage(colorAttachment);
     }
 
     public long resolveDepthImage() {
-        if (depthAttachment == null) return VK_NULL_HANDLE;
+        if (depthAttachment == null) {
+            return VK_NULL_HANDLE;
+        }
         return resolveImage(depthAttachment);
     }
 

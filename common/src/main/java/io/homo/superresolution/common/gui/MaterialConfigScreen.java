@@ -417,9 +417,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 })
                 .build();
         builder.colorSelectOption(
-                Text.translatable("superresolution.screen.config.options.label.theme_color"),
-                SuperResolutionConfig.getThemeColor())
-                .setDefaultValue(()->Color.from("#78DC77"))
+                        Text.translatable("superresolution.screen.config.options.label.theme_color"),
+                        SuperResolutionConfig.getThemeColor())
+                .setDefaultValue(() -> Color.from("#78DC77"))
                 .setValueChangeListener(value -> {
                     MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
                             SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
@@ -451,7 +451,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         1.0f,
                         -1.0f)
                 .setStep(0.2)
-                .setValueFormater((value)-> String.format("%.0f",value.doubleValue()*100) + "%")
+                .setValueFormater((value) -> String.format("%.0f", value.doubleValue() * 100) + "%")
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.theme_contrast_level"))
                 .setDefaultValue(() -> 0.0f)
                 .setValueChangeListener(value -> {
@@ -523,7 +523,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         openLostResourceDialog(lostResources);
                         return false;
                     }
-                    if (!SuperResolutionConfig.setUpscaleAlgorithm(algo)){
+                    if (!SuperResolutionConfig.setUpscaleAlgorithm(algo)) {
                         openCreateAlgorithmFailedDialog(algo);
                         algoSelectRef[0].setSelectedValue(SuperResolutionConfig.getUpscaleAlgorithm());
                     }
@@ -911,15 +911,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
                 .build();
         builder.enumSelectorOption(
-                Text.translatable("superresolution.screen.config.options.label.interop_sync_mode"),
-                InteropSyncMode.class,
-                SuperResolutionConfig.getInteropSyncMode())
+                        Text.translatable("superresolution.screen.config.options.label.interop_sync_mode"),
+                        InteropSyncMode.class,
+                        SuperResolutionConfig.getInteropSyncMode())
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
                 .setDefaultValue(InteropSyncMode.LowLatency)
-                .setEnumNameProvider(mode -> ((InteropSyncMode)mode).toString())
-                .setSaveConsumer((value)->{
+                .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
+                .setSaveConsumer((value) -> {
                     SuperResolutionConfig.setInteropSyncMode(value);
-                    if (SuperResolution.currentAlgorithm instanceof SRApiAlgorithm){
+                    if (SuperResolution.currentAlgorithm instanceof SRApiAlgorithm) {
                         SuperResolution.recreateAlgorithm();
                     }
                 })
@@ -959,7 +959,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
                 .setDefaultValue(() -> false)
                 .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
-                .setEnableRequirement(()->false)
+                .setEnableRequirement(() -> false)
                 .build();
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
@@ -1011,10 +1011,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     private void addLabeledOptionGroup(ContainerWidget container, Text groupLabel, Consumer<OptionBuilder> configurator) {
         TitlePill groupPill = createTitlePill(
-            groupLabel.getString(),
-            GROUP_TITLE_PILL_FONT_SIZE,
-            GROUP_TITLE_PILL_MIN_HEIGHT,
-            GROUP_TITLE_PILL_HORIZONTAL_PADDING,
+                groupLabel.getString(),
+                GROUP_TITLE_PILL_FONT_SIZE,
+                GROUP_TITLE_PILL_MIN_HEIGHT,
+                GROUP_TITLE_PILL_HORIZONTAL_PADDING,
                 -1
         );
         groupPill.layout().setMargin(YogaEdge.TOP, 8);
@@ -1043,7 +1043,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             float horizontalPadding,
             float radius
     ) {
-        return new TitlePill(text, fontSize, minHeight, horizontalPadding,radius);
+        return new TitlePill(text, fontSize, minHeight, horizontalPadding, radius);
     }
 
     private void finalizeFrame(ScrollableFrame frame, ContainerWidget container) {
@@ -1251,7 +1251,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.environment"));
 
         TitlePill label = createSectionPill(
-            Text.translatable("superresolution.screen.config.info.environment.base").getString()
+                Text.translatable("superresolution.screen.config.info.environment.base").getString()
         );
         label.layout().setMargin(YogaEdge.TOP, 8);
         label.layout().setMargin(YogaEdge.BOTTOM, 6);
@@ -1263,7 +1263,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         envCard.addChild(createInfoLine(Text.translatable("superresolution.screen.config.info.environment.system").getString(), safeGetOperatingSystem()));
         container.addChild(envCard);
         TitlePill labelOGL = createSectionPill(
-            Text.translatable("superresolution.screen.config.info.environment.opengl").getString()
+                Text.translatable("superresolution.screen.config.info.environment.opengl").getString()
         );
         labelOGL.layout().setMargin(YogaEdge.TOP, 8);
         labelOGL.layout().setMargin(YogaEdge.BOTTOM, 6);
@@ -1275,7 +1275,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 GraphicsCapabilities.getGLExtensions()
         ));
         TitlePill labelVK = createSectionPill(
-            Text.translatable("superresolution.screen.config.info.environment.vulkan").getString()
+                Text.translatable("superresolution.screen.config.info.environment.vulkan").getString()
         );
         labelVK.layout().setMargin(YogaEdge.TOP, 8);
         labelVK.layout().setMargin(YogaEdge.BOTTOM, 6);
@@ -1343,7 +1343,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         contributorSectionRow.layout().setMargin(YogaEdge.BOTTOM, 6);
 
         TitlePill contributorSection = createSectionPill(
-            Text.translatable("superresolution.screen.info.text.contributors").getString()
+                Text.translatable("superresolution.screen.info.text.contributors").getString()
         );
         contributorSectionRow.addChild(contributorSection);
 
@@ -1374,7 +1374,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("Tahnass", Text.translatable("superresolution.screen.config.info.about.contributor.tahnass.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/tahnass.png"),
                 new ContributorInfo("StarsShine11904", Text.translatable("superresolution.screen.config.info.about.contributor.starsshine11904.desc").getString(), "https://github.com/StarsShine11904", "/assets/super_resolution/textures/gui/contributors/StarsShine11904.png")
 
-                ));
+        ));
         Collections.shuffle(contributors);
         for (ContributorInfo contributor : contributors) {
             contributorsCard.addChild(createContributorRow(contributor));
@@ -1382,7 +1382,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         container.addChild(contributorsCard);
 
         TitlePill librarySection = createSectionPill(
-            Text.translatable("superresolution.screen.config.info.about.libraries").getString()
+                Text.translatable("superresolution.screen.config.info.about.libraries").getString()
         );
         librarySection.layout().setMargin(YogaEdge.TOP, 12);
         librarySection.layout().setMargin(YogaEdge.BOTTOM, 6);
@@ -1415,7 +1415,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         }
         container.addChild(librariesCard);
         TitlePill legalSection = createSectionPill(
-            Text.translatable("superresolution.screen.config.info.about.legal_notices").getString()
+                Text.translatable("superresolution.screen.config.info.about.legal_notices").getString()
         );
         legalSection.layout().setMargin(YogaEdge.TOP, 12);
         legalSection.layout().setMargin(YogaEdge.BOTTOM, 6);
@@ -1460,12 +1460,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
-        private InfoCard createAboutBrandCard() {
+    private InfoCard createAboutBrandCard() {
         InfoCard card = new InfoCard();
-            card.layout().setAlignItems(YogaAlign.CENTER);
-            card.layout().setJustifyContent(YogaJustify.CENTER);
+        card.layout().setAlignItems(YogaAlign.CENTER);
+        card.layout().setJustifyContent(YogaJustify.CENTER);
 
-            ContainerWidget row = new ContainerWidget();
+        ContainerWidget row = new ContainerWidget();
         row.layout().setFlexDirection(YogaFlexDirection.ROW);
         row.layout().setWidthPercent(100);
         row.layout().setAlignItems(YogaAlign.CENTER);
@@ -1483,21 +1483,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         brandColumn.addChild(logoWidget);
 
         MaterialLabel nameLabel = MaterialLabel.create()
-            .text("Super Resolution")
-            .fontSize(20)
+                .text("Super Resolution")
+                .fontSize(20)
                 .lineHeight(20)
-            .color(MaterialScheme::onSurface);
+                .color(MaterialScheme::onSurface);
         nameLabel.style().sizeToContent(true);
         brandColumn.addChild(nameLabel);
 
         MaterialLabel versionLabel = MaterialLabel.create()
-            .text(safeGetModVersion())
-            .fontSize(8)
+                .text(safeGetModVersion())
+                .fontSize(8)
                 .lineHeight(8)
-            .color(MaterialScheme::onSurfaceVariant);
+                .color(MaterialScheme::onSurfaceVariant);
         versionLabel.style().sizeToContent(true);
         brandColumn.addChild(versionLabel);
-        if (Platform.currentPlatform.isDevelopmentEnvironment()){
+        if (Platform.currentPlatform.isDevelopmentEnvironment()) {
             MaterialLabel devEnvLabel = MaterialLabel.create()
                     .text("Development Environment")
                     .fontSize(8)
@@ -1516,13 +1516,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         MaterialButton modrinthButton = MaterialButton.tonal("Modrinth")
                 .icon(MaterialSymbols.iconOpenInNew())
-            .size(MaterialButtonSize.Small);
+                .size(MaterialButtonSize.Small);
         modrinthButton.onClick(e -> openExternalLink(ABOUT_MODRINTH_URL));
         actionColumn.addChild(modrinthButton);
 
         MaterialButton githubButton = MaterialButton.tonal("Github")
                 .icon(MaterialSymbols.iconOpenInNew())
-            .size(MaterialButtonSize.Small);
+                .size(MaterialButtonSize.Small);
         githubButton.onClick(e -> openExternalLink(ABOUT_GITHUB_URL));
         actionColumn.addChild(githubButton);
 
@@ -1530,7 +1530,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         row.addChild(actionColumn);
         card.addChild(row);
         card.layout().setMargin(YogaEdge.BOTTOM, 6);
-            card.layout().setHeight(256);
+        card.layout().setHeight(256);
         return card;
     }
 
@@ -1746,7 +1746,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         private final float horizontalPadding;
         private final float radius;
 
-        TitlePill(String text, float fontSize, float minHeight, float horizontalPadding,float radius) {
+        TitlePill(String text, float fontSize, float minHeight, float horizontalPadding, float radius) {
             this.text = text == null ? "" : text;
             this.fontSize = fontSize;
             this.minHeight = minHeight;

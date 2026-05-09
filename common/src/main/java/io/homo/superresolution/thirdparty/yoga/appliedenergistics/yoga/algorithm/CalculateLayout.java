@@ -809,9 +809,9 @@ public class CalculateLayout {
                             float childCrossSize = childStyle.getAspectRatio().isDefined()
                                     ? child.getStyle().computeMarginForAxis(
                                     crossAxis, availableInnerWidth) +
-                                    (isMainAxisRow
-                                            ? childMainSize / childStyle.getAspectRatio().unwrap()
-                                            : childMainSize * childStyle.getAspectRatio().unwrap())
+                                      (isMainAxisRow
+                                       ? childMainSize / childStyle.getAspectRatio().unwrap()
+                                       : childMainSize * childStyle.getAspectRatio().unwrap())
                                     : flexLine.getLayout().getCrossDim();
 
                             childMainSize += child.getStyle().computeMarginForAxis(
@@ -917,11 +917,11 @@ public class CalculateLayout {
                     ? availableInnerCrossDim + paddingAndBorderAxisCross
                     : node.hasDefiniteLength(FlexDirectionUtil.dimension(crossAxis), crossAxisOwnerSize)
                     ? node.getResolvedDimension(
-                            direction,
-                            FlexDirectionUtil.dimension(crossAxis),
-                            crossAxisOwnerSize,
-                            ownerWidth)
-                    .unwrap()
+                    direction,
+                    FlexDirectionUtil.dimension(crossAxis),
+                    crossAxisOwnerSize,
+                    ownerWidth)
+                      .unwrap()
                     : totalLineCrossDim + paddingAndBorderAxisCross;
 
             final float innerCrossDim = boundAxis(

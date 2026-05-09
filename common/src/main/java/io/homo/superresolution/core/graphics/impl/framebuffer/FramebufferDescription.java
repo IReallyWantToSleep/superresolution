@@ -59,16 +59,28 @@ public class FramebufferDescription {
     }
 
     public int getWidth() {
-        if (width > 0) return width;
-        if (colorAttachment != null) return colorAttachment.getWidth();
-        if (depthAttachment != null) return depthAttachment.getWidth();
+        if (width > 0) {
+            return width;
+        }
+        if (colorAttachment != null) {
+            return colorAttachment.getWidth();
+        }
+        if (depthAttachment != null) {
+            return depthAttachment.getWidth();
+        }
         throw new IllegalStateException("Framebuffer must have at least one attachment or explicit size");
     }
 
     public int getHeight() {
-        if (height > 0) return height;
-        if (colorAttachment != null) return colorAttachment.getHeight();
-        if (depthAttachment != null) return depthAttachment.getHeight();
+        if (height > 0) {
+            return height;
+        }
+        if (colorAttachment != null) {
+            return colorAttachment.getHeight();
+        }
+        if (depthAttachment != null) {
+            return depthAttachment.getHeight();
+        }
         throw new IllegalStateException("Framebuffer must have at least one attachment or explicit size");
     }
 

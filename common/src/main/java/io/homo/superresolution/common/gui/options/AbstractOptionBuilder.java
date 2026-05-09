@@ -20,7 +20,6 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.core.gui.MaterialScheme;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;

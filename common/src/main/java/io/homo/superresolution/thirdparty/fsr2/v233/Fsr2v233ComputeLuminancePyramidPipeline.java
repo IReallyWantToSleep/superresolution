@@ -74,27 +74,27 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                 .shader(program)
                 .build(RenderSystems.opengl().device());
         workGroupSupplier = (() -> {
-                            int[] dispatchThreadGroupCountXY = new int[2];
-                            int[] rectInfo = new int[]{
-                                    0,
-                                    0,
-                                    context.dimensions.renderWidth(),
-                                    context.dimensions.renderHeight()
-                            };
-                            int[] workGroupOffset = new int[]{
-                                    rectInfo[0] / 64,
-                                    rectInfo[1] / 64
-                            };
-                            int endIndexX = (rectInfo[0] + rectInfo[2] - 1) / 64;
-                            int endIndexY = (rectInfo[1] + rectInfo[3] - 1) / 64;
-                            dispatchThreadGroupCountXY[0] = endIndexX + 1 - workGroupOffset[0];
-                            dispatchThreadGroupCountXY[1] = endIndexY + 1 - workGroupOffset[1];
-                            return new Vector3i(
-                                    dispatchThreadGroupCountXY[0],
-                                    dispatchThreadGroupCountXY[1],
-                                    1
-                            );
-                        });
+            int[] dispatchThreadGroupCountXY = new int[2];
+            int[] rectInfo = new int[]{
+                    0,
+                    0,
+                    context.dimensions.renderWidth(),
+                    context.dimensions.renderHeight()
+            };
+            int[] workGroupOffset = new int[]{
+                    rectInfo[0] / 64,
+                    rectInfo[1] / 64
+            };
+            int endIndexX = (rectInfo[0] + rectInfo[2] - 1) / 64;
+            int endIndexY = (rectInfo[1] + rectInfo[3] - 1) / 64;
+            dispatchThreadGroupCountXY[0] = endIndexX + 1 - workGroupOffset[0];
+            dispatchThreadGroupCountXY[1] = endIndexY + 1 - workGroupOffset[1];
+            return new Vector3i(
+                    dispatchThreadGroupCountXY[0],
+                    dispatchThreadGroupCountXY[1],
+                    1
+            );
+        });
 
         uboBindings.put("cbFSR2", context.fsr2ConstantsUBO);
         uboBindings.put("cbSPD", context.fsr2SpdConstantsUBO);
@@ -106,7 +106,7 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .binding(0)
                         .access(ShaderResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.SPD_ATOMIC_COUNT.uavShaderName(),
@@ -114,7 +114,7 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.SPD_ATOMIC_COUNT)
                         .binding(1)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         //shaderResourceBindings.put(
         //        Fsr2PipelineResourceType.SCENE_LUMINANCE_MIPMAP_SHADING_CHANGE.uavShaderName(),
@@ -132,7 +132,7 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .binding(3)
                         .access(ShaderResourceAccess.Both)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.AUTO_EXPOSURE.uavShaderName(),
@@ -140,7 +140,7 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.AUTO_EXPOSURE)
                         .binding(4)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
 
     }

@@ -45,12 +45,6 @@ public class EnumSelectorBuilder<T extends Enum<T>> extends AbstractOptionBuilde
         return this;
     }
 
-    @Override
-    public EnumSelectorBuilder<T> setDefaultValue(@Nullable Supplier<T> defaultValue) {
-        this.defaultValue = defaultValue;
-        return this;
-    }
-
     public EnumSelectorBuilder<T> setDefaultValue(@NotNull T defaultValue) {
         Objects.requireNonNull(defaultValue, "Default value must not be null");
         this.defaultValue = () -> defaultValue;
@@ -70,5 +64,11 @@ public class EnumSelectorBuilder<T extends Enum<T>> extends AbstractOptionBuilde
             entry.setErrorSupplier(v -> errorSupplier.apply(v));
         }
         return (EnumListEntry<T>) finishBuild(entry);
+    }
+
+    @Override
+    public EnumSelectorBuilder<T> setDefaultValue(@Nullable Supplier<T> defaultValue) {
+        this.defaultValue = defaultValue;
+        return this;
     }
 }

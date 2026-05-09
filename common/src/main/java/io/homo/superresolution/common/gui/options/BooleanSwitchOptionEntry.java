@@ -19,8 +19,6 @@
 package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 

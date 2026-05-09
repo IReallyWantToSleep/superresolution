@@ -69,9 +69,9 @@ public class Fsr2v233LockPipeline extends Fsr2Pipeline {
                 .shader(program)
                 .build(RenderSystems.opengl().device());
         workGroupSupplier = (() -> new Vector3i(
-                                calculateDispatchGrid(context.dimensions.renderWidth(), context.dimensions.renderHeight()),
-                                1
-                        ));
+                calculateDispatchGrid(context.dimensions.renderWidth(), context.dimensions.renderHeight()),
+                1
+        ));
 
         uboBindings.put("cbFSR2", context.fsr2ConstantsUBO);
         shaderResourceBindings.put(
@@ -80,7 +80,7 @@ public class Fsr2v233LockPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.LOCK_INPUT_LUMA)
                         .binding(0)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.NEW_LOCKS.uavShaderName(),
@@ -88,7 +88,7 @@ public class Fsr2v233LockPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.NEW_LOCKS)
                         .binding(1)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH.uavShaderName(),
@@ -96,7 +96,7 @@ public class Fsr2v233LockPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH)
                         .binding(2)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
     }
 

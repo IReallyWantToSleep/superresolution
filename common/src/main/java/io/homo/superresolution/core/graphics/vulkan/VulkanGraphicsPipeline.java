@@ -54,7 +54,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                                   PrimitiveType primitiveType,
                                   VertexFormat vertexFormat,
                                   PipelineDescriptorSet descriptorSet) {
-                    super(shader, renderPass, rasterization, depthStencil, colorBlend, dynamicStates, primitiveType, vertexFormat, descriptorSet);
+        super(shader, renderPass, rasterization, depthStencil, colorBlend, dynamicStates, primitiveType, vertexFormat, descriptorSet);
         this.device = device;
 
         if (!(shader instanceof VulkanShaderProgram vkShader)) {
@@ -73,6 +73,111 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
 
         createPipelineLayout(vkDescSet);
         ensurePipelineCreated(vkRenderPass.getRenderPass());
+    }
+
+    private static int toVkFormat(VertexAttributeFormat format) {
+        return switch (format) {
+            case FLOAT -> VK_FORMAT_R32_SFLOAT;
+            case FLOAT2 -> VK_FORMAT_R32G32_SFLOAT;
+            case FLOAT3 -> VK_FORMAT_R32G32B32_SFLOAT;
+            case FLOAT4 -> VK_FORMAT_R32G32B32A32_SFLOAT;
+            case INT -> VK_FORMAT_R32_SINT;
+            case INT2 -> VK_FORMAT_R32G32_SINT;
+            case INT3 -> VK_FORMAT_R32G32B32_SINT;
+            case INT4 -> VK_FORMAT_R32G32B32A32_SINT;
+            case UINT -> VK_FORMAT_R32_UINT;
+            case UINT2 -> VK_FORMAT_R32G32_UINT;
+            case UINT3 -> VK_FORMAT_R32G32B32_UINT;
+            case UINT4 -> VK_FORMAT_R32G32B32A32_UINT;
+            case BYTE4_NORMALIZED -> VK_FORMAT_R8G8B8A8_SNORM;
+            case UBYTE4_NORMALIZED -> VK_FORMAT_R8G8B8A8_UNORM;
+            case SHORT2 -> VK_FORMAT_R16G16_SINT;
+            case SHORT4 -> VK_FORMAT_R16G16B16A16_SINT;
+            case USHORT2 -> VK_FORMAT_R16G16_UINT;
+            case USHORT4 -> VK_FORMAT_R16G16B16A16_UINT;
+        };
+    }
+
+    private static int toVkPolygonMode(PolygonMode mode) {
+        return switch (mode) {
+            case Fill -> VK_POLYGON_MODE_FILL;
+            case Line -> VK_POLYGON_MODE_LINE;
+            case Point -> VK_POLYGON_MODE_POINT;
+        };
+    }
+
+    private static int toVkCullMode(CullMode mode) {
+        return switch (mode) {
+            case None -> VK_CULL_MODE_NONE;
+            case Front -> VK_CULL_MODE_FRONT_BIT;
+            case Back -> VK_CULL_MODE_BACK_BIT;
+            case FrontAndBack -> VK_CULL_MODE_FRONT_AND_BACK;
+        };
+    }
+
+    private static int toVkCompareOp(CompareOp op) {
+        return switch (op) {
+            case Never -> VK_COMPARE_OP_NEVER;
+            case Less -> VK_COMPARE_OP_LESS;
+            case Equal -> VK_COMPARE_OP_EQUAL;
+            case LessEqual -> VK_COMPARE_OP_LESS_OR_EQUAL;
+            case Greater -> VK_COMPARE_OP_GREATER;
+            case NotEqual -> VK_COMPARE_OP_NOT_EQUAL;
+            case GreaterEqual -> VK_COMPARE_OP_GREATER_OR_EQUAL;
+            case Always -> VK_COMPARE_OP_ALWAYS;
+        };
+    }
+
+    private static int toVkBlendFactor(BlendFactor factor) {
+        return switch (factor) {
+            case Zero -> VK_BLEND_FACTOR_ZERO;
+            case One -> VK_BLEND_FACTOR_ONE;
+            case SrcColor -> VK_BLEND_FACTOR_SRC_COLOR;
+            case OneMinusSrcColor -> VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+            case DstColor -> VK_BLEND_FACTOR_DST_COLOR;
+            case OneMinusDstColor -> VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+            case SrcAlpha -> VK_BLEND_FACTOR_SRC_ALPHA;
+            case OneMinusSrcAlpha -> VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            case DstAlpha -> VK_BLEND_FACTOR_DST_ALPHA;
+            case OneMinusDstAlpha -> VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+            case ConstantColor -> VK_BLEND_FACTOR_CONSTANT_COLOR;
+            case OneMinusConstantColor -> VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+            case ConstantAlpha -> VK_BLEND_FACTOR_CONSTANT_ALPHA;
+            case OneMinusConstantAlpha -> VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+            case SrcAlphaSaturate -> VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+        };
+    }
+
+    private static int toVkBlendOp(BlendOp op) {
+        return switch (op) {
+            case Add -> VK_BLEND_OP_ADD;
+            case Subtract -> VK_BLEND_OP_SUBTRACT;
+            case ReverseSubtract -> VK_BLEND_OP_REVERSE_SUBTRACT;
+            case Min -> VK_BLEND_OP_MIN;
+            case Max -> VK_BLEND_OP_MAX;
+        };
+    }
+
+    private static int toVkPrimitiveTopology(PrimitiveType type) {
+        return switch (type) {
+            case Triangle -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            case TriangleStrip -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+            case Lines -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            case Points -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+        };
+    }
+
+    private static int toVkStencilOp(StencilOp op) {
+        return switch (op) {
+            case Keep -> VK_STENCIL_OP_KEEP;
+            case Zero -> VK_STENCIL_OP_ZERO;
+            case Replace -> VK_STENCIL_OP_REPLACE;
+            case IncrementAndClamp -> VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+            case DecrementAndClamp -> VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+            case Invert -> VK_STENCIL_OP_INVERT;
+            case IncrementAndWrap -> VK_STENCIL_OP_INCREMENT_AND_WRAP;
+            case DecrementAndWrap -> VK_STENCIL_OP_DECREMENT_AND_WRAP;
+        };
     }
 
     private void createPipelineLayout(VulkanPipelineDescriptorSet descriptorSet) {
@@ -179,7 +284,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                     .depthCompareOp(toVkCompareOp(ds.depthCompareOp()))
                     .depthBoundsTestEnable(false)
                     .stencilTestEnable(ds.stencilTestEnable());
-                depthStencilInfo.front()
+            depthStencilInfo.front()
                     .failOp(toVkStencilOp(ds.stencilFailOpFront()))
                     .passOp(toVkStencilOp(ds.stencilPassOpFront()))
                     .depthFailOp(toVkStencilOp(ds.stencilDepthFailOpFront()))
@@ -187,7 +292,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                     .compareMask(ds.stencilCompareMask())
                     .writeMask(ds.stencilWriteMask())
                     .reference(ds.stencilReference());
-                depthStencilInfo.back()
+            depthStencilInfo.back()
                     .failOp(toVkStencilOp(ds.stencilFailOpBack()))
                     .passOp(toVkStencilOp(ds.stencilPassOpBack()))
                     .depthFailOp(toVkStencilOp(ds.stencilDepthFailOpBack()))
@@ -228,10 +333,18 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             // Dynamic states
             List<Integer> dynStates = new ArrayList<>();
             DynamicStateFlags dsf = dynamicStates();
-            if (dsf.has(DynamicStateFlags.Viewport)) dynStates.add(VK_DYNAMIC_STATE_VIEWPORT);
-            if (dsf.has(DynamicStateFlags.Scissor)) dynStates.add(VK_DYNAMIC_STATE_SCISSOR);
-            if (dsf.has(DynamicStateFlags.LineWidth)) dynStates.add(VK_DYNAMIC_STATE_LINE_WIDTH);
-            if (dsf.has(DynamicStateFlags.BlendConstants)) dynStates.add(VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+            if (dsf.has(DynamicStateFlags.Viewport)) {
+                dynStates.add(VK_DYNAMIC_STATE_VIEWPORT);
+            }
+            if (dsf.has(DynamicStateFlags.Scissor)) {
+                dynStates.add(VK_DYNAMIC_STATE_SCISSOR);
+            }
+            if (dsf.has(DynamicStateFlags.LineWidth)) {
+                dynStates.add(VK_DYNAMIC_STATE_LINE_WIDTH);
+            }
+            if (dsf.has(DynamicStateFlags.BlendConstants)) {
+                dynStates.add(VK_DYNAMIC_STATE_BLEND_CONSTANTS);
+            }
 
             var dynamicStatesBuffer = stack.mallocInt(dynStates.size());
             for (int ds2 : dynStates) dynamicStatesBuffer.put(ds2);
@@ -282,110 +395,5 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             vkDestroyPipelineLayout(device.getVkDevice(), pipelineLayout, null);
             pipelineLayout = VK_NULL_HANDLE;
         }
-    }
-
-    private static int toVkFormat(VertexAttributeFormat format) {
-        return switch (format) {
-            case FLOAT -> VK_FORMAT_R32_SFLOAT;
-            case FLOAT2 -> VK_FORMAT_R32G32_SFLOAT;
-            case FLOAT3 -> VK_FORMAT_R32G32B32_SFLOAT;
-            case FLOAT4 -> VK_FORMAT_R32G32B32A32_SFLOAT;
-            case INT -> VK_FORMAT_R32_SINT;
-            case INT2 -> VK_FORMAT_R32G32_SINT;
-            case INT3 -> VK_FORMAT_R32G32B32_SINT;
-            case INT4 -> VK_FORMAT_R32G32B32A32_SINT;
-            case UINT -> VK_FORMAT_R32_UINT;
-            case UINT2 -> VK_FORMAT_R32G32_UINT;
-            case UINT3 -> VK_FORMAT_R32G32B32_UINT;
-            case UINT4 -> VK_FORMAT_R32G32B32A32_UINT;
-            case BYTE4_NORMALIZED -> VK_FORMAT_R8G8B8A8_SNORM;
-            case UBYTE4_NORMALIZED -> VK_FORMAT_R8G8B8A8_UNORM;
-            case SHORT2 -> VK_FORMAT_R16G16_SINT;
-            case SHORT4 -> VK_FORMAT_R16G16B16A16_SINT;
-            case USHORT2 -> VK_FORMAT_R16G16_UINT;
-            case USHORT4 -> VK_FORMAT_R16G16B16A16_UINT;
-        };
-    }
-
-    private static int toVkPolygonMode(PolygonMode mode) {
-        return switch (mode) {
-            case Fill -> VK_POLYGON_MODE_FILL;
-            case Line -> VK_POLYGON_MODE_LINE;
-            case Point -> VK_POLYGON_MODE_POINT;
-        };
-    }
-
-    private static int toVkCullMode(CullMode mode) {
-        return switch (mode) {
-            case None -> VK_CULL_MODE_NONE;
-            case Front -> VK_CULL_MODE_FRONT_BIT;
-            case Back -> VK_CULL_MODE_BACK_BIT;
-            case FrontAndBack -> VK_CULL_MODE_FRONT_AND_BACK;
-        };
-    }
-
-    private static int toVkCompareOp(CompareOp op) {
-        return switch (op) {
-            case Never -> VK_COMPARE_OP_NEVER;
-            case Less -> VK_COMPARE_OP_LESS;
-            case Equal -> VK_COMPARE_OP_EQUAL;
-            case LessEqual -> VK_COMPARE_OP_LESS_OR_EQUAL;
-            case Greater -> VK_COMPARE_OP_GREATER;
-            case NotEqual -> VK_COMPARE_OP_NOT_EQUAL;
-            case GreaterEqual -> VK_COMPARE_OP_GREATER_OR_EQUAL;
-            case Always -> VK_COMPARE_OP_ALWAYS;
-        };
-    }
-
-    private static int toVkBlendFactor(BlendFactor factor) {
-        return switch (factor) {
-            case Zero -> VK_BLEND_FACTOR_ZERO;
-            case One -> VK_BLEND_FACTOR_ONE;
-            case SrcColor -> VK_BLEND_FACTOR_SRC_COLOR;
-            case OneMinusSrcColor -> VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-            case DstColor -> VK_BLEND_FACTOR_DST_COLOR;
-            case OneMinusDstColor -> VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-            case SrcAlpha -> VK_BLEND_FACTOR_SRC_ALPHA;
-            case OneMinusSrcAlpha -> VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            case DstAlpha -> VK_BLEND_FACTOR_DST_ALPHA;
-            case OneMinusDstAlpha -> VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-            case ConstantColor -> VK_BLEND_FACTOR_CONSTANT_COLOR;
-            case OneMinusConstantColor -> VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-            case ConstantAlpha -> VK_BLEND_FACTOR_CONSTANT_ALPHA;
-            case OneMinusConstantAlpha -> VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-            case SrcAlphaSaturate -> VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
-        };
-    }
-
-    private static int toVkBlendOp(BlendOp op) {
-        return switch (op) {
-            case Add -> VK_BLEND_OP_ADD;
-            case Subtract -> VK_BLEND_OP_SUBTRACT;
-            case ReverseSubtract -> VK_BLEND_OP_REVERSE_SUBTRACT;
-            case Min -> VK_BLEND_OP_MIN;
-            case Max -> VK_BLEND_OP_MAX;
-        };
-    }
-
-    private static int toVkPrimitiveTopology(PrimitiveType type) {
-        return switch (type) {
-            case Triangle -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            case TriangleStrip -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-            case Lines -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-            case Points -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-        };
-    }
-
-    private static int toVkStencilOp(StencilOp op) {
-        return switch (op) {
-            case Keep -> VK_STENCIL_OP_KEEP;
-            case Zero -> VK_STENCIL_OP_ZERO;
-            case Replace -> VK_STENCIL_OP_REPLACE;
-            case IncrementAndClamp -> VK_STENCIL_OP_INCREMENT_AND_CLAMP;
-            case DecrementAndClamp -> VK_STENCIL_OP_DECREMENT_AND_CLAMP;
-            case Invert -> VK_STENCIL_OP_INVERT;
-            case IncrementAndWrap -> VK_STENCIL_OP_INCREMENT_AND_WRAP;
-            case DecrementAndWrap -> VK_STENCIL_OP_DECREMENT_AND_WRAP;
-        };
     }
 }

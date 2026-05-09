@@ -87,7 +87,7 @@ public class ColorUtil {
                     return toArray((String) code, "rgb");
                 } else if (((String) code).length() == 9) {
                     return toArray((String) code, "rgba");
-                }else {
+                } else {
                     throw new IllegalArgumentException("Unsupported color code format: " + code);
                 }
             } else {

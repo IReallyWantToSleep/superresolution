@@ -24,12 +24,12 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
-import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResourceType;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
@@ -41,32 +41,31 @@ import java.util.Map;
 
 public class ImGuiLayer {
 
-    private static final int PREVIEW_WIDTH = 500;
-
-    public float[] blurPhi = new float[1];
-    public float[] blurM = new float[1];
     public static final float[] jitterScaleAlgo = new float[1];
     public static final float[] jitterScaleShader = new float[1];
     public static final int[] jitterOffsetFrameOffsetAlgo = new int[1];
     public static final int[] jitterOffsetFrameOffsetShader = new int[1];
-
     public static final float[] jitterOffset = new float[4];
+    private static final int PREVIEW_WIDTH = 500;
+    public float[] blurPhi = new float[1];
+    public float[] blurM = new float[1];
+
     public void imgui() {
         float previewHeight = ((float) PREVIEW_WIDTH / RenderHandlerManager.getScreenWidth()) * RenderHandlerManager.getScreenHeight();
 
         ImGui.begin("DEBUG");
         drawCaptureButtons();
-        ImGui.sliderFloat("jitterScaleAlgo",jitterScaleAlgo,-3,3);
-        ImGui.sliderFloat("jitterScaleShader",jitterScaleShader,-3,3);
-        ImGui.sliderInt("jitterOffsetFrameOffsetAlgo",jitterOffsetFrameOffsetAlgo,-3,3);
-        ImGui.sliderInt("jitterOffsetFrameOffsetShader",jitterOffsetFrameOffsetShader,-3,3);
+        ImGui.sliderFloat("jitterScaleAlgo", jitterScaleAlgo, -3, 3);
+        ImGui.sliderFloat("jitterScaleShader", jitterScaleShader, -3, 3);
+        ImGui.sliderInt("jitterOffsetFrameOffsetAlgo", jitterOffsetFrameOffsetAlgo, -3, 3);
+        ImGui.sliderInt("jitterOffsetFrameOffsetShader", jitterOffsetFrameOffsetShader, -3, 3);
 
-        ImGui.text("Shader Jitter: %.2f  %.2f".formatted(jitterOffset[0],jitterOffset[1]));
-        ImGui.text("Algo Jitter: %.2f  %.2f".formatted(jitterOffset[2],jitterOffset[3]));
+        ImGui.text("Shader Jitter: %.2f  %.2f".formatted(jitterOffset[0], jitterOffset[1]));
+        ImGui.text("Algo Jitter: %.2f  %.2f".formatted(jitterOffset[2], jitterOffset[3]));
 
         ImGui.text("Jitter: %s  %s".formatted(
-                Math.abs(jitterOffset[0] - jitterOffset[2]) < 1e-6,
-                Math.abs(jitterOffset[1] - jitterOffset[3]) < 1e-6
+                        Math.abs(jitterOffset[0] - jitterOffset[2]) < 1e-6,
+                        Math.abs(jitterOffset[1] - jitterOffset[3]) < 1e-6
                 )
         );
 
@@ -83,16 +82,26 @@ public class ImGuiLayer {
 
 
     private void drawCaptureButtons() {
-        if (ImGui.button("Capture")) SuperResolutionAPI.debugRenderdocCapture();
-        if (ImGui.button("CaptureUpscale")) SuperResolutionAPI.debugRenderdocCaptureUpscale();
-        if (ImGui.button("CaptureVulkan")) SuperResolutionAPI.debugRenderdocCaptureVulkan();
-        if (ImGui.button("TriggerCapture")) SuperResolutionAPI.debugRenderdocTriggerCapture();
+        if (ImGui.button("Capture")) {
+            SuperResolutionAPI.debugRenderdocCapture();
+        }
+        if (ImGui.button("CaptureUpscale")) {
+            SuperResolutionAPI.debugRenderdocCaptureUpscale();
+        }
+        if (ImGui.button("CaptureVulkan")) {
+            SuperResolutionAPI.debugRenderdocCaptureVulkan();
+        }
+        if (ImGui.button("TriggerCapture")) {
+            SuperResolutionAPI.debugRenderdocTriggerCapture();
+        }
     }
 
 
     private void drawProjectionMatrix() {
         Matrix4f m = AlgorithmManager.param.currentProjectionMatrix;
-        if (m == null) return;
+        if (m == null) {
+            return;
+        }
 
         float[] values = new float[16];
         m.get(values);
@@ -123,9 +132,10 @@ public class ImGuiLayer {
                  ClassNotFoundException ignored) {
         }
 
-        if (AlgorithmManager.getMotionVectorsFrameBuffer() != null)
+        if (AlgorithmManager.getMotionVectorsFrameBuffer() != null) {
             drawImage("Generated Motion Vectors", AlgorithmManager.getMotionVectorsFrameBuffer().getTextureId(FrameBufferAttachmentType.Color),
                     RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(), height);
+        }
 
         drawImage("Upscale Output", SuperResolution.currentAlgorithm.getOutputTextureId(),
                 RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(), height);
@@ -135,11 +145,15 @@ public class ImGuiLayer {
 
     private void drawFsr2Resources(float height) {
         if (SuperResolutionConfig.getUpscaleAlgorithm() != AlgorithmDescriptions.FSR2
-                || !(SuperResolution.getCurrentAlgorithm() instanceof FSR2 fsr2)) return;
+                || !(SuperResolution.getCurrentAlgorithm() instanceof FSR2 fsr2)) {
+            return;
+        }
 
         Fsr2Context context = fsr2.fsr2Context;
         for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
-            if (entry.getValue().getResource() == null || entry.getValue().getResource() instanceof GlBuffer) continue;
+            if (entry.getValue().getResource() == null || entry.getValue().getResource() instanceof GlBuffer) {
+                continue;
+            }
 
             ITexture texture = (ITexture) entry.getValue().getResource();
             drawImage(entry.getValue().getDescription().label, (int) texture.handle(),
@@ -154,7 +168,9 @@ public class ImGuiLayer {
     }
 
     private void drawImageIfExists(String label, Object handle, int texWidth, int texHeight, float previewHeight) {
-        if (handle == null) return;
+        if (handle == null) {
+            return;
+        }
         if (handle instanceof Integer id) {
             drawImage(label, id, texWidth, texHeight, previewHeight);
         } else if (handle instanceof Long id) {

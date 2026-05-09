@@ -18,13 +18,12 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.core.gui.core.animator.Animator;
+import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.core.gui.core.animator.Animator;
-import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -175,13 +174,6 @@ public class MaterialRipple {
 
     public static class SingleRipple {
         private static final float PRESSED_ALPHA = 0.08f;
-        private Animator.FloatAnimator radiusAnimator;
-        private Animator.FloatAnimator originAnimator;
-        private Animator.FloatAnimator alphaAnimator;
-
-        private Animator.AnimatorLifecycleListener radiusListener;
-        private Animator.AnimatorLifecycleListener alphaListener;
-
         private final Vector2f rippleStartCenter;
         private final Vector2f rippleTargetCenter;
         private final Vector2f currentCenter;
@@ -190,6 +182,11 @@ public class MaterialRipple {
         private final long enterStartedAtMillis;
         private final float maxRippleRadius;
         private final float startRippleRadius;
+        private Animator.FloatAnimator radiusAnimator;
+        private Animator.FloatAnimator originAnimator;
+        private Animator.FloatAnimator alphaAnimator;
+        private Animator.AnimatorLifecycleListener radiusListener;
+        private Animator.AnimatorLifecycleListener alphaListener;
         private volatile boolean isProcessingCallback = false;
 
         private RippleState state = RippleState.IDLE;
@@ -296,9 +293,15 @@ public class MaterialRipple {
 
             state = RippleState.EXPANDING;
 
-            if (radiusAnimator.isRunning()) radiusAnimator.cancel();
-            if (originAnimator.isRunning()) originAnimator.cancel();
-            if (alphaAnimator.isRunning()) alphaAnimator.cancel();
+            if (radiusAnimator.isRunning()) {
+                radiusAnimator.cancel();
+            }
+            if (originAnimator.isRunning()) {
+                originAnimator.cancel();
+            }
+            if (alphaAnimator.isRunning()) {
+                alphaAnimator.cancel();
+            }
 
             radiusAnimator.removeLifecycleListener(radiusListener);
             alphaAnimator.removeLifecycleListener(alphaListener);
@@ -440,13 +443,21 @@ public class MaterialRipple {
         }
 
         public void update() {
-            if (radiusAnimator != null) radiusAnimator.update();
-            if (originAnimator != null) originAnimator.update();
-            if (alphaAnimator != null) alphaAnimator.update();
+            if (radiusAnimator != null) {
+                radiusAnimator.update();
+            }
+            if (originAnimator != null) {
+                originAnimator.update();
+            }
+            if (alphaAnimator != null) {
+                alphaAnimator.update();
+            }
         }
 
         public void destroy() {
-            if (isDestroy) return;
+            if (isDestroy) {
+                return;
+            }
             isDestroy = true;
             state = RippleState.IDLE;
 

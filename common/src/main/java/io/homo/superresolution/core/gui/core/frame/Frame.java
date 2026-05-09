@@ -115,9 +115,187 @@ public class Frame implements IFrame {
         ctx.applyTransform(transform);
         widget.render(ctx, inputState);
         ctx.restore();
-    }    @Override
+    }
+
+    @Override
     public AbstractWidget<?> getRoot() {
         return root;
+    }
+
+    @Override
+    public void setRoot(AbstractWidget<?> root) {
+        this.root = root;
+        markLayoutDirty();
+    }
+
+    @Override
+    public void setViewport(float width, float height) {
+        if (this.viewportWidth != width || this.viewportHeight != height) {
+            this.viewportWidth = width;
+            this.viewportHeight = height;
+            markLayoutDirty();
+        }
+    }
+
+    @Override
+    public Rectangle getViewport() {
+        return new Rectangle(0, 0, viewportWidth, viewportHeight);
+    }
+
+    @Override
+    public void calculateLayout() {
+        if (root == null) {
+            return;
+        }
+
+        root.getLayoutNode().setWidth(viewportWidth);
+        root.getLayoutNode().setHeight(viewportHeight);
+        root.getLayoutNode().setPosition(YogaEdge.LEFT, 0);
+        root.getLayoutNode().setPosition(YogaEdge.TOP, 0);
+        root.getLayoutNode().setPositionType(YogaPositionType.ABSOLUTE);
+        root.getLayoutNode().calculateLayout(viewportWidth, viewportHeight);
+
+        layoutDirty = false;
+    }
+
+    @Override
+    public void render(RenderContext ctx, UIInputState inputState) {
+        if (root == null) {
+            return;
+        }
+
+        layoutWidgets(root, ctx);
+
+        calculateLayout();
+
+        renderList.clear();
+        collectRenderables(root, renderList);
+        renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
+        for (RenderEntry entry : renderList.stream().filter((entry) -> !isOutsideViewport(entry.widget(), entry.accumulatedTransform())).toList()) {
+            renderWidget(ctx, inputState, entry);
+        }
+    }
+
+    @Override
+    public void dispatchMouseMove(float x, float y) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+
+        Set<AbstractWidget<?>> ancestorChain = new HashSet<>();
+        if (topInteractive != null) {
+            collectAncestorChain(topInteractive, ancestorChain);
+        }
+
+        dispatchMouseMoveRecursive(root, x, y, topInteractive, ancestorChain);
+    }
+
+    @Override
+    public void dispatchMousePress(float x, float y, int button) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+
+        if (topInteractive != null) {
+            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
+            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
+            topInteractive.mousePress(localPos.x, localPos.y, button);
+        }
+
+    }
+
+    @Override
+    public void dispatchMouseRelease(float x, float y, int button) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchMouseReleaseRecursive(root, x, y, button);
+    }
+
+    @Override
+    public void dispatchMouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchMouseDragRecursive(root, mouseX, mouseY, dragX, dragY, button);
+    }
+
+    @Override
+    public void dispatchMouseScroll(float x, float y, double scrollX) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        Vector2f mousePos = new Vector2f(x, y);
+
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+
+        if (topInteractive != null) {
+            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
+            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
+            topInteractive.mouseScroll(localPos.x, localPos.y, scrollX);
+        }
+    }
+
+    @Override
+    public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchKeyPressRecursive(root, keyCode, scancode, modifiers);
+    }
+
+    @Override
+    public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchKeyReleaseRecursive(root, keyCode, scancode, modifiers);
+    }
+
+    @Override
+    public void dispatchCharTyped(char codePoint, int modifiers) {
+        if (root == null || !root.isVisible()) {
+            return;
+        }
+
+        dispatchCharTypedRecursive(root, codePoint, modifiers);
+    }
+
+    @Override
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
+        if (root == null || !root.isVisible()) {
+            return null;
+        }
+
+        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos);
+        if (floatingWidget != null) {
+            return floatingWidget;
+        }
+
+        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE);
+    }
+
+    @Override
+    public void markLayoutDirty() {
+        layoutDirty = true;
+    }
+
+    @Override
+    public boolean isLayoutDirty() {
+        return layoutDirty;
     }
 
     private void collectAncestorChain(AbstractWidget<?> widget, Set<AbstractWidget<?>> chain) {
@@ -229,10 +407,6 @@ public class Frame implements IFrame {
                 }
             }
         }
-    }    @Override
-    public void setRoot(AbstractWidget<?> root) {
-        this.root = root;
-        markLayoutDirty();
     }
 
     private void dispatchKeyReleaseRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
@@ -357,13 +531,6 @@ public class Frame implements IFrame {
 
     @Deprecated
     public void setDebugRenderEnabled(boolean enabled) {
-    }    @Override
-    public void setViewport(float width, float height) {
-        if (this.viewportWidth != width || this.viewportHeight != height) {
-            this.viewportWidth = width;
-            this.viewportHeight = height;
-            markLayoutDirty();
-        }
     }
 
     @Deprecated
@@ -391,175 +558,6 @@ public class Frame implements IFrame {
                               Transform accumulatedTransform,
 
                               int zIndex) {
-    }
-
-
-
-    @Override
-    public Rectangle getViewport() {
-        return new Rectangle(0, 0, viewportWidth, viewportHeight);
-    }
-
-
-
-
-
-    @Override
-    public void calculateLayout() {
-        if (root == null) {
-            return;
-        }
-
-        root.getLayoutNode().setWidth(viewportWidth);
-        root.getLayoutNode().setHeight(viewportHeight);
-        root.getLayoutNode().setPosition(YogaEdge.LEFT, 0);
-        root.getLayoutNode().setPosition(YogaEdge.TOP, 0);
-        root.getLayoutNode().setPositionType(YogaPositionType.ABSOLUTE);
-        root.getLayoutNode().calculateLayout(viewportWidth, viewportHeight);
-
-        layoutDirty = false;
-    }
-
-
-    @Override
-    public void render(RenderContext ctx, UIInputState inputState) {
-        if (root == null) {
-            return;
-        }
-
-        layoutWidgets(root, ctx);
-
-        calculateLayout();
-
-        renderList.clear();
-        collectRenderables(root, renderList);
-        renderList.sort(Comparator.comparingInt(RenderEntry::zIndex));
-        for (RenderEntry entry : renderList.stream().filter((entry) -> !isOutsideViewport(entry.widget(), entry.accumulatedTransform())).toList()) {
-            renderWidget(ctx, inputState, entry);
-        }
-    }
-
-
-    @Override
-    public void dispatchMouseMove(float x, float y) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        Vector2f mousePos = new Vector2f(x, y);
-
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
-
-        Set<AbstractWidget<?>> ancestorChain = new HashSet<>();
-        if (topInteractive != null) {
-            collectAncestorChain(topInteractive, ancestorChain);
-        }
-
-        dispatchMouseMoveRecursive(root, x, y, topInteractive, ancestorChain);
-    }
-
-    @Override
-    public void dispatchMousePress(float x, float y, int button) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        Vector2f mousePos = new Vector2f(x, y);
-
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
-
-        if (topInteractive != null) {
-            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
-            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
-            topInteractive.mousePress(localPos.x, localPos.y, button);
-        }
-
-    }
-
-    @Override
-    public void dispatchMouseRelease(float x, float y, int button) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        dispatchMouseReleaseRecursive(root, x, y, button);
-    }
-
-    @Override
-    public void dispatchMouseDrag(float mouseX, float mouseY, float dragX, float dragY, int button) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        dispatchMouseDragRecursive(root, mouseX, mouseY, dragX, dragY, button);
-    }
-
-    @Override
-    public void dispatchMouseScroll(float x, float y, double scrollX) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        Vector2f mousePos = new Vector2f(x, y);
-
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
-
-        if (topInteractive != null) {
-            Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
-            Vector2f localPos = accumulatedTransform.inverseTransformPoint(mousePos);
-            topInteractive.mouseScroll(localPos.x, localPos.y, scrollX);
-        }
-    }
-
-    @Override
-    public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        dispatchKeyPressRecursive(root, keyCode, scancode, modifiers);
-    }
-
-    @Override
-    public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        dispatchKeyReleaseRecursive(root, keyCode, scancode, modifiers);
-    }
-
-    @Override
-    public void dispatchCharTyped(char codePoint, int modifiers) {
-        if (root == null || !root.isVisible()) {
-            return;
-        }
-
-        dispatchCharTypedRecursive(root, codePoint, modifiers);
-    }
-
-    @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
-        if (root == null || !root.isVisible()) {
-            return null;
-        }
-
-        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos);
-        if (floatingWidget != null) {
-            return floatingWidget;
-        }
-
-        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE);
-    }
-
-    @Override
-    public void markLayoutDirty() {
-        layoutDirty = true;
-    }
-
-    @Override
-    public boolean isLayoutDirty() {
-        return layoutDirty;
     }
 
 }

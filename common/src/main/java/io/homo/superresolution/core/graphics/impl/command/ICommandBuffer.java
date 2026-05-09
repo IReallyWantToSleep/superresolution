@@ -65,12 +65,12 @@ public interface ICommandBuffer {
         decoder().clearTextureRGBA(this, texture, color);
     }
 
-    default void clearTextureStencil(ITexture texture, int stencil){
+    default void clearTextureStencil(ITexture texture, int stencil) {
         decoder().clearTextureStencil(this, texture, stencil);
     }
 
 
-    default void clearTextureDepth(ITexture texture, float depth){
+    default void clearTextureDepth(ITexture texture, float depth) {
         decoder().clearTextureDepth(this, texture, depth);
     }
 
@@ -79,62 +79,63 @@ public interface ICommandBuffer {
         decoder().copyTexture(this, src, dst, srcX0, srcY0, srcX1, srcY1, srcLevel, dstX0, dstY0, dstX1, dstY1, dstLevel);
     }
 
-    default void writeToBuffer(IBuffer dst, long dstOffset, ByteBuffer data){
+    default void writeToBuffer(IBuffer dst, long dstOffset, ByteBuffer data) {
         writeToBuffer(dst, dstOffset, data.remaining(), data);
     }
 
-    default void writeToBuffer(IBuffer dst, long dstOffset, long size, ByteBuffer data){
+    default void writeToBuffer(IBuffer dst, long dstOffset, long size, ByteBuffer data) {
         decoder().writeToBuffer(this, dst, dstOffset, size, data);
     }
 
-    default void writeToBuffer(IBuffer dst, long dstOffset, IBufferData data){
+    default void writeToBuffer(IBuffer dst, long dstOffset, IBufferData data) {
         writeToBuffer(dst, dstOffset, data.asByteBuffer());
     }
 
-    default void writeToBuffer(IBuffer dst, long dstOffset, long size, IBufferData data){
+    default void writeToBuffer(IBuffer dst, long dstOffset, long size, IBufferData data) {
         writeToBuffer(dst, dstOffset, size, data.asByteBuffer());
     }
 
-    default void setViewport(float x, float y, float width, float height){
+    default void setViewport(float x, float y, float width, float height) {
         decoder().setViewport(this, x, y, width, height);
     }
 
-    default void setScissor(int x, int y, int width, int height){
+    default void setScissor(int x, int y, int width, int height) {
         decoder().setScissor(this, x, y, width, height);
     }
 
-    default void setLineWidth(float width){
+    default void setLineWidth(float width) {
         decoder().setLineWidth(this, width);
     }
 
-    default void setBlendConstants(float r, float g, float b, float a){
+    default void setBlendConstants(float r, float g, float b, float a) {
         decoder().setBlendConstants(this, r, g, b, a);
     }
-    default void beginRenderPass(RenderPass renderPass){
+
+    default void beginRenderPass(RenderPass renderPass) {
         decoder().beginRenderPass(this, renderPass);
     }
 
-    default void endRenderPass(){
+    default void endRenderPass() {
         decoder().endRenderPass(this);
     }
 
-    default void bindPipeline(GraphicsPipeline pipeline){
+    default void bindPipeline(GraphicsPipeline pipeline) {
         decoder().bindPipeline(this, pipeline);
     }
 
-    default void bindPipeline(ComputePipeline pipeline){
+    default void bindPipeline(ComputePipeline pipeline) {
         decoder().bindPipeline(this, pipeline);
     }
 
-    default void draw(IVertexBuffer vertexBuffer, int vertexCount, int firstVertex){
+    default void draw(IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
         decoder().draw(this, vertexBuffer, vertexCount, firstVertex);
     }
 
-    default void dispatch(int groupCountX, int groupCountY, int groupCountZ){
+    default void dispatch(int groupCountX, int groupCountY, int groupCountZ) {
         decoder().dispatch(this, groupCountX, groupCountY, groupCountZ);
     }
 
-    default void memoryBarrier(MemoryBarrierType... barriers){
+    default void memoryBarrier(MemoryBarrierType... barriers) {
         decoder().memoryBarrier(this, barriers);
     }
 }

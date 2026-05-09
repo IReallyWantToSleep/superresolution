@@ -18,27 +18,25 @@
 
 package io.homo.superresolution.api;
 
-import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.impl.Destroyable;
 
 import java.util.List;
 
 public abstract class AbstractAlgorithm implements Destroyable {
-    protected InputResourceSet getResources() {
-        return resources;
-    }
-
     protected InputResourceSet resources;
-
     protected InitializationDescription initDesc = new InitializationDescription();
-
     /** true 时下一次 dispatch 请求算法丢弃累积历史。新实例默认 true。 */
     protected boolean needsHistoryReset = true;
 
     public AbstractAlgorithm() {
 
+    }
+
+    protected InputResourceSet getResources() {
+        return resources;
     }
 
     /** 读取并清除历史复位标志。 */

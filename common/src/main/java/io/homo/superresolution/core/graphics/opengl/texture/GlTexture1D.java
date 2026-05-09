@@ -105,13 +105,13 @@ public class GlTexture1D implements ITexture, IDebuggableObject {
             glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
             glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
             Gl.DSA.textureSubImage1D(
-                this.id,
-                mipLevel,
-                xoffset,
-                width,
-                format,
-                type,
-                MemoryUtil.memAddress(data)
+                    this.id,
+                    mipLevel,
+                    xoffset,
+                    width,
+                    format,
+                    type,
+                    MemoryUtil.memAddress(data)
             );
         }
     }

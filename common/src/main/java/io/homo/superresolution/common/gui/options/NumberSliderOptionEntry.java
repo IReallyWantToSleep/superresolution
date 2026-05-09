@@ -19,15 +19,14 @@
 package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
-import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
-import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -41,8 +40,9 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
     protected Number min;
     protected Number step;
     protected Function<Number, String> valueFormater;
+    protected Consumer<Number> valueChangeListener = (value) -> {
+    };
     private boolean suppressSliderChangeEvent = false;
-    protected Consumer<Number> valueChangeListener = (value)->{};
 
     public NumberSliderOptionEntry(
             Text name,
@@ -109,6 +109,25 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
         container.addControl(sliderContainer);
     }
 
+    @Override
+    public Number value() {
+        return slider != null ? slider.value() : value;
+    }
+
+    @Override
+    public void tick(RenderContext ctx) {
+        boolean enabled = updateRequirements();
+        slider.setDisabled(!enabled);
+        if (step.doubleValue() > 1e-6) {
+            double range = max.doubleValue() - min.doubleValue();
+            if (step.doubleValue() / range > 0.08) {
+                slider.style().steps(true);
+            } else {
+                slider.style().steps(false);
+            }
+        }
+    }
+
     private String formatValue(Number value) {
         if (valueFormater != null) {
             //TODO:在这里设置slider的value formatter似乎不合适
@@ -140,24 +159,5 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
             suppressSliderChangeEvent = false;
         }
         return this;
-    }
-
-    @Override
-    public void tick(RenderContext ctx) {
-        boolean enabled = updateRequirements();
-        slider.setDisabled(!enabled);
-        if (step.doubleValue() > 1e-6) {
-            double range = max.doubleValue() - min.doubleValue();
-            if (step.doubleValue()/range > 0.08) {
-                slider.style().steps(true);
-            } else {
-                slider.style().steps(false);
-            }
-        }
-    }
-
-    @Override
-    public Number value() {
-        return slider != null ? slider.value() : value;
     }
 }

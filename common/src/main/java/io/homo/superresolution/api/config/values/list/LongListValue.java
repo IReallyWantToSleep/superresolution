@@ -37,10 +37,16 @@ public class LongListValue extends ListValue<Long> {
                 defaultSupplier,
                 comment,
                 obj -> {
-                    if (obj == null) return null;
+                    if (obj == null) {
+                        return null;
+                    }
 
-                    if (obj instanceof Number) return ((Number) obj).longValue();
-                    if (obj instanceof String) return Long.parseLong((String) obj);
+                    if (obj instanceof Number) {
+                        return ((Number) obj).longValue();
+                    }
+                    if (obj instanceof String) {
+                        return Long.parseLong((String) obj);
+                    }
                     throw new IllegalArgumentException("Cannot convert to Long: " + obj);
                 },
                 elementValidator

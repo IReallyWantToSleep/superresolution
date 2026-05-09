@@ -88,9 +88,9 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                 .shader(program)
                 .build(RenderSystems.opengl().device());
         workGroupSupplier = (() -> new Vector3i(
-                                calculateDispatchGrid(context.dimensions.screenWidth(), context.dimensions.screenHeight()),
-                                1
-                        ));
+                calculateDispatchGrid(context.dimensions.screenWidth(), context.dimensions.screenHeight()),
+                1
+        ));
 
         uboBindings.put("cbFSR2", context.fsr2ConstantsUBO);
 
@@ -100,7 +100,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.INPUT_EXPOSURE)
                         .binding(13)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.DILATED_REACTIVE_MASKS.srvShaderName(),
@@ -109,7 +109,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(14)
                         .access(ShaderResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 !context.config.getFlags().isEnableDisplayResolutionMotionVectors() ?
@@ -120,8 +120,8 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                                 !context.config.getFlags().isEnableDisplayResolutionMotionVectors() ?
                                         () -> Fsr2PipelineResourceType.INPUT_MOTION_VECTORS :
                                         () -> context.isOddFrame() ?
-                                                Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2 :
-                                                Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1
+                                              Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_2 :
+                                              Fsr2PipelineResourceType.INTERNAL_DILATED_MOTION_VECTORS_1
                         )
                         .resourceName(
                                 !context.config.getFlags().isEnableDisplayResolutionMotionVectors() ?
@@ -135,7 +135,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                                         GlSampler.create(GlSampler.SamplerType.NearestClamp)
                         )
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.srvShaderName(),
@@ -148,7 +148,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.srvShaderName())
                         .binding(16)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LOCK_STATUS.srvShaderName(),
@@ -162,7 +162,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(17)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.PREPARED_INPUT_COLOR.srvShaderName(),
@@ -171,7 +171,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(6)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LANCZOS_LUT.srvShaderName(),
@@ -180,7 +180,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(8)
                         .access(ShaderResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT.srvShaderName(),
@@ -189,7 +189,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(9)
                         .access(ShaderResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.SCENE_LUMINANCE.srvShaderName(),
@@ -198,7 +198,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(10)
                         .access(ShaderResourceAccess.Read)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.AUTO_EXPOSURE.srvShaderName(),
@@ -206,7 +206,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.AUTO_EXPOSURE)
                         .binding(11)
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LUMA_HISTORY.srvShaderName(),
@@ -220,7 +220,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .binding(12)
                         .sampler(GlSampler.create(GlSampler.SamplerType.LinearClamp))
                         .access(ShaderResourceAccess.Read)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.uavShaderName(),
@@ -233,7 +233,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.INTERNAL_UPSCALED_COLOR.uavShaderName())
                         .binding(0)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LOCK_STATUS.uavShaderName(),
@@ -246,7 +246,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.LOCK_STATUS.uavShaderName())
                         .binding(1)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.UPSCALED_OUTPUT.uavShaderName(),
@@ -254,7 +254,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.UPSCALED_OUTPUT)
                         .binding(2)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.NEW_LOCKS.uavShaderName(),
@@ -262,7 +262,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceType(Fsr2PipelineResourceType.NEW_LOCKS)
                         .binding(3)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
         shaderResourceBindings.put(
                 Fsr2PipelineResourceType.LUMA_HISTORY.uavShaderName(),
@@ -275,7 +275,7 @@ public class Fsr2v221AccumulateSharpenPipeline extends Fsr2Pipeline {
                         .resourceName(Fsr2PipelineResourceType.LUMA_HISTORY.uavShaderName())
                         .binding(4)
                         .access(ShaderResourceAccess.Both)
-                        
+
         );
     }
 

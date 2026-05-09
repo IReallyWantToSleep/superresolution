@@ -22,7 +22,6 @@ import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.utils.Color;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class ColorSelectBuilder extends AbstractOptionBuilder<Color, ColorSelectOptionEntry, ColorSelectBuilder> {
     protected Color value;

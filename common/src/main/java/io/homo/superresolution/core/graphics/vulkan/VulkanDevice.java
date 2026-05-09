@@ -137,12 +137,12 @@ public class VulkanDevice implements IDevice {
         return new VulkanGraphicsPipeline(
                 this,
                 builder.shader(),
-            builder.renderPass(),
+                builder.renderPass(),
                 builder.rasterization(),
                 builder.depthStencil(),
                 builder.colorBlend(),
                 builder.dynamicStates(),
-            builder.primitiveType(),
+                builder.primitiveType(),
                 builder.vertexFormat(),
                 descriptorSet
         );

@@ -21,12 +21,8 @@ package io.homo.superresolution.common.gui.options;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.impl.ValueHolder;
-import io.homo.superresolution.core.gui.MaterialScheme;
-import io.homo.superresolution.core.gui.core.AbstractContainerWidget;
-import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
-import io.homo.superresolution.core.gui.core.impl.Renderable;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
 import org.jetbrains.annotations.Nullable;
 

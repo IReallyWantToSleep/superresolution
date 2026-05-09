@@ -35,7 +35,9 @@ public class LongValue extends ConfigValue<Long> {
 
     @Override
     public boolean isValid(Object value) {
-        if (value == null) return false;
+        if (value == null) {
+            return false;
+        }
         if (value instanceof Number) {
             return validator.test(((Number) value).longValue());
         }
@@ -53,10 +55,18 @@ public class LongValue extends ConfigValue<Long> {
 
     @Override
     protected Long convertType(Object value) {
-        if (value instanceof Integer) return ((Integer) value).longValue();
-        if (value instanceof Long) return (Long) value;
-        if (value instanceof Number) return ((Number) value).longValue();
-        if (value instanceof String) return Long.parseLong((String) value);
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        if (value instanceof String) {
+            return Long.parseLong((String) value);
+        }
         return null;
     }
 }

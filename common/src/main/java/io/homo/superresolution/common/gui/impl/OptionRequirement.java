@@ -29,8 +29,6 @@ import java.util.stream.Stream;
 
 @FunctionalInterface
 public interface OptionRequirement {
-    boolean check();
-
     @SafeVarargs
     static <T> OptionRequirement isValue(ValueHolder<T> dependency, @Nullable T firstValue, @Nullable T... otherValues) {
         Set<T> values = Stream.concat(
@@ -85,4 +83,6 @@ public interface OptionRequirement {
             return oneFound;
         };
     }
+
+    boolean check();
 }

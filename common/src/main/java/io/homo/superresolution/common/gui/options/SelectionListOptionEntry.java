@@ -20,16 +20,12 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
-import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
-import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
-import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
-import io.homo.superresolution.core.gui.widgets.select.MaterialSelectColors;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import org.jetbrains.annotations.Nullable;
@@ -39,15 +35,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, SelectionListOptionEntry<T>> {
     private static final float SELECT_MIN_WIDTH = 150f;
-    protected List<T> values;
     protected final AtomicInteger index;
     protected final T originalValue;
+    protected List<T> values;
     protected ContainerWidget selectorContainer;
     protected MaterialSelect<T> materialSelect;
     protected Function<T, String> nameProvider;

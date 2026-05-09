@@ -130,17 +130,17 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
     }
 
     @Override
+    protected Rectangle getViewRegion() {
+        return getBounds();
+    }
+
+    @Override
     protected void renderSelf(RenderContext ctx, UIInputState inputState) {
     }
 
     @Override
     public Rectangle getBounds() {
         return super.getBounds();
-    }
-
-    @Override
-    protected Rectangle getViewRegion() {
-        return getBounds();
     }
 
     public ContainerWidget getLeftContainer() {

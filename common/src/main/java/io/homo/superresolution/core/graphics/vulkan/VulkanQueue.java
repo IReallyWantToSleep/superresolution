@@ -53,7 +53,7 @@ public class VulkanQueue {
         return queue;
     }
 
-    public void waitIdle(){
+    public void waitIdle() {
         VK_CHECK(vkQueueWaitIdle(queue), "Failed to wait for queue idle");
     }
 }
