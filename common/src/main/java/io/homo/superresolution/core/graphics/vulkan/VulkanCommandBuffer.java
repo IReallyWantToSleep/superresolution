@@ -28,13 +28,14 @@ import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
+import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanCommandBuffer implements ICommandBuffer {
     private final VulkanDevice vulkanDevice;
     private final VulkanCommandPool ownerPool;
     private final CommandBufferBehavior behavior;
+    private final List<Destroyable> transientResources = new ArrayList<>();
     private CommandBufferState state = CommandBufferState.Executable;
     private long reusableFence = VK_NULL_HANDLE;
     private boolean inFlight = false;
@@ -43,7 +44,6 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private VulkanGraphicsPipeline boundGraphicsPipeline;
     private VulkanComputePipeline boundComputePipeline;
     private boolean renderPassActive;
-    private final List<Destroyable> transientResources = new ArrayList<>();
 
     public VulkanCommandBuffer(VulkanDevice vulkanDevice, VulkanCommandPool ownerPool, CommandBufferBehavior behavior) {
         this.vulkanDevice = vulkanDevice;
@@ -219,7 +219,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         inFlight = true;
     }
 
-    void beginRenderPass(VulkanRenderPass renderPass) {
+    void _beginRenderPass(VulkanRenderPass renderPass) {
         ensureNotDestroyed();
         if (state != CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is not in recording state");
@@ -232,7 +232,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         this.renderPassActive = true;
     }
 
-    void endRenderPass() {
+    void _endRenderPass() {
         if (!renderPassActive) {
             throw new IllegalStateException("No active render pass to end");
         }

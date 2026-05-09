@@ -23,7 +23,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
+import io.homo.superresolution.core.graphics.vulkan.VulkanException;
 import org.lwjgl.vulkan.KHRExternalMemoryFd;
 import org.lwjgl.vulkan.KHRExternalSemaphoreFd;
 import org.lwjgl.vulkan.VK;

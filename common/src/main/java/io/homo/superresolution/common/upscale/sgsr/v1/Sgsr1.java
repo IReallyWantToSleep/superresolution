@@ -132,22 +132,11 @@ public class Sgsr1 extends AbstractAlgorithm {
         sgsrPipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
-        commandBuffer.decoder().setViewport(
-                commandBuffer,
-                0,
-                0,
-                dispatchResource.screenWidth(),
-                dispatchResource.screenHeight()
-        );
-        commandBuffer.decoder().beginRenderPass(commandBuffer, renderPass);
-        commandBuffer.decoder().bindPipeline(commandBuffer, sgsrPipeline);
-        commandBuffer.decoder().draw(
-                commandBuffer,
-                quadVertexBuffer,
-                quadVertexBuffer.getVertexCount(),
-                0
-        );
-        commandBuffer.decoder().endRenderPass(commandBuffer);
+        commandBuffer.setViewport(0, 0, dispatchResource.screenWidth(), dispatchResource.screenHeight());
+        commandBuffer.beginRenderPass(renderPass);
+        commandBuffer.bindPipeline(sgsrPipeline);
+        commandBuffer.draw(quadVertexBuffer, quadVertexBuffer.getVertexCount(), 0);
+        commandBuffer.endRenderPass();
         commandBuffer.end();
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         return true;

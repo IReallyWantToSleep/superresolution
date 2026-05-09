@@ -587,7 +587,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         if (!(renderPass instanceof GlRenderPass glRenderPass)) {
             throw new IllegalArgumentException("beginRenderPass: renderPass类型错误: " + renderPass.getClass().getName());
         }
-        glCommandBuffer.beginRenderPass(glRenderPass);
+        glCommandBuffer._beginRenderPass(glRenderPass);
 
         putGlCommand(commandBuffer, () -> {
             GlDebug.pushGroup(0x7170001, "Render Pass");
@@ -618,7 +618,7 @@ public class GlCommandDecoder implements ICommandDecoder {
             GlDebug.popGroup(); // Render Pass
         });
 
-        glCommandBuffer.endRenderPass();
+        glCommandBuffer._endRenderPass();
     }
 
     @Override

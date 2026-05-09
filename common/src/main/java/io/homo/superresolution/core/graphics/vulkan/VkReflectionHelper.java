@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.utils;
+package io.homo.superresolution.core.graphics.vulkan;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.Checks;

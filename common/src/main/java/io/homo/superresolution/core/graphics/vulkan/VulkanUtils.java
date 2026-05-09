@@ -16,9 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.utils;
-
-import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
+package io.homo.superresolution.core.graphics.vulkan;
 
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 

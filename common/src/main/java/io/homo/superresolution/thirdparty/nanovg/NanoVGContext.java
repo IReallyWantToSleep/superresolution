@@ -23,7 +23,7 @@ import java.util.List;
 
 public class NanoVGContext {
     private static final int DEFAULT_FLAGS = 0;
-    private static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.GL_LEGACY;
+    private static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.RHI_DIRECT;
     private long nativeHandle;
 
     public NanoVGContext(int flags) {

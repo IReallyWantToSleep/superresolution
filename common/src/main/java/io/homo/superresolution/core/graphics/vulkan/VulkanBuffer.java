@@ -23,7 +23,6 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
@@ -33,7 +32,7 @@ import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
+import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -239,7 +238,7 @@ public class VulkanBuffer implements IBuffer {
     private void uploadNow(ByteBuffer data, int offsetInBytes) {
         VulkanCommandBuffer commandBuffer = (VulkanCommandBuffer) device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
         commandBuffer.begin();
-        device.commandDecoder().writeToBuffer(commandBuffer, this, offsetInBytes, data);
+        commandBuffer.writeToBuffer(this, offsetInBytes, data);
         commandBuffer.end();
         commandBuffer.submit(device);
     }

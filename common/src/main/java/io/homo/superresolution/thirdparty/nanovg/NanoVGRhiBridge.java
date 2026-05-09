@@ -843,8 +843,8 @@ public final class NanoVGRhiBridge {
 
         int vertexCount = vertexBytes / VERTEX_STRIDE_BYTES;
         batchState.beginIfNeeded(commandBuffer);
-        device.commandDecoder().bindPipeline(commandBuffer, pipeline);
-        device.commandDecoder().draw(commandBuffer, dynamicVertexBuffer, vertexCount, firstVertex);
+        commandBuffer.bindPipeline(pipeline);
+        commandBuffer.draw(dynamicVertexBuffer, vertexCount, firstVertex);
     }
 
     private static void ensureVertexCapacity(IDevice device, int requiredBytes) {
@@ -983,7 +983,7 @@ public final class NanoVGRhiBridge {
         frame.putFloat(0.0f);
         frame.putFloat(0.0f);
         frame.flip();
-        activeBatchDevice.commandDecoder().writeToBuffer(activeCommandBuffer, frameUniformBuffer, 0, frame);
+        activeCommandBuffer.writeToBuffer(frameUniformBuffer, 0, frame);
     }
 
     private static void uploadFragUniforms(ByteBuffer uniforms, int size) {
@@ -1000,7 +1000,7 @@ public final class NanoVGRhiBridge {
         ByteBuffer frag = BufferUtils.createByteBuffer(size).order(ByteOrder.nativeOrder());
         frag.put(src);
         frag.flip();
-        activeBatchDevice.commandDecoder().writeToBuffer(activeCommandBuffer, fragUniformBuffer, 0, frag);
+        activeCommandBuffer.writeToBuffer(fragUniformBuffer, 0, frag);
     }
 
     private static ByteBuffer packFragUniforms(ByteBuffer uniforms, int uniformBytes, int sourceStride, int targetStride) {
@@ -1454,7 +1454,7 @@ public final class NanoVGRhiBridge {
             if (renderPassActive) {
                 return;
             }
-            commandBuffer.decoder().beginRenderPass(commandBuffer, renderPass);
+            commandBuffer.beginRenderPass(renderPass);
             renderPassActive = true;
         }
 
@@ -1462,7 +1462,7 @@ public final class NanoVGRhiBridge {
             if (!renderPassActive) {
                 return;
             }
-            commandBuffer.decoder().endRenderPass(commandBuffer);
+            commandBuffer.endRenderPass();
             renderPassActive = false;
         }
 

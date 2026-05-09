@@ -48,8 +48,7 @@ public class GlRenderPass extends RenderPass {
             if (clearState.shouldClearColorOnEnd(colorAttachment.index())) {
                 float[] color = clearState.getColorClearValueOnEnd(colorAttachment.index());
                 if (color != null) {
-                    commandBuffer.decoder().clearTextureRGBA(
-                            commandBuffer,
+                    commandBuffer.clearTextureRGBA(
                             colorAttachment.texture(),
                             color
                     );
@@ -58,16 +57,14 @@ public class GlRenderPass extends RenderPass {
         }
         if (clearState.shouldClearDepthOnEnd()) {
             float depth = clearState.getDepthClearValueOnEnd();
-            commandBuffer.decoder().clearTextureDepth(
-                    commandBuffer,
+            commandBuffer.clearTextureDepth(
                     depthStencilAttachment().texture(),
                     depth
             );
         }
         if (clearState.shouldClearStencilOnEnd()) {
             int stencil = clearState.getStencilClearValueOnEnd();
-            commandBuffer.decoder().clearTextureStencil(
-                    commandBuffer,
+            commandBuffer.clearTextureStencil(
                     depthStencilAttachment().texture(),
                     stencil
             );
@@ -79,8 +76,7 @@ public class GlRenderPass extends RenderPass {
             if (clearState.shouldClearColorOnBegin(colorAttachment.index())) {
                 float[] color = clearState.getColorClearValueOnBegin(colorAttachment.index());
                 if (color != null) {
-                    commandBuffer.decoder().clearTextureRGBA(
-                            commandBuffer,
+                    commandBuffer.clearTextureRGBA(
                             colorAttachment.texture(),
                             color
                     );
@@ -89,16 +85,14 @@ public class GlRenderPass extends RenderPass {
         }
         if (clearState.shouldClearDepthOnBegin()) {
             float depth = clearState.getDepthClearValueOnBegin();
-            commandBuffer.decoder().clearTextureDepth(
-                    commandBuffer,
+            commandBuffer.clearTextureDepth(
                     depthStencilAttachment().texture(),
                     depth
             );
         }
         if (clearState.shouldClearStencilOnBegin()) {
             int stencil = clearState.getStencilClearValueOnBegin();
-            commandBuffer.decoder().clearTextureStencil(
-                    commandBuffer,
+            commandBuffer.clearTextureStencil(
                     depthStencilAttachment().texture(),
                     stencil
             );

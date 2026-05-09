@@ -168,9 +168,8 @@ public class GlTextureCopier {
             pipeline.descriptorSet().update();
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();
-                RenderSystems.opengl().device().commandDecoder().bindPipeline(commandBuffer, pipeline);
-            RenderSystems.opengl().device().commandDecoder().dispatch(
-                    commandBuffer,
+            commandBuffer.bindPipeline(pipeline);
+            commandBuffer.dispatch(
                     (int) Math.ceil((double) copyOperation.getSrcTexture().getWidth() / 16),
                     (int) Math.ceil((double) copyOperation.getSrcTexture().getHeight() / 16),
                     1
@@ -199,16 +198,10 @@ public class GlTextureCopier {
             IVertexBuffer vertexBuffer = FullscreenQuad.create(RenderSystems.opengl().device());
             ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
             commandBuffer.begin();
-            RenderSystems.opengl().device().commandDecoder().beginRenderPass(commandBuffer, pass);
-                RenderSystems.opengl().device().commandDecoder().bindPipeline(commandBuffer, graphicsPipeline);
-            RenderSystems.opengl().device().commandDecoder()
-                    .draw(
-                            commandBuffer,
-                            vertexBuffer,
-                            4,
-                            0
-                    );
-            RenderSystems.opengl().device().commandDecoder().endRenderPass(commandBuffer);
+            commandBuffer.beginRenderPass(pass);
+            commandBuffer.bindPipeline(graphicsPipeline);
+            commandBuffer.draw(vertexBuffer, 4, 0);
+            commandBuffer.endRenderPass();
             commandBuffer.end();
             RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
         }

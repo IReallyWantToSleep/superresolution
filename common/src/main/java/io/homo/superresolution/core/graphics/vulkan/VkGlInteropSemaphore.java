@@ -22,7 +22,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
 
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
+import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.opengl.EXTSemaphore.*;
 import static org.lwjgl.vulkan.VK11.*;
 

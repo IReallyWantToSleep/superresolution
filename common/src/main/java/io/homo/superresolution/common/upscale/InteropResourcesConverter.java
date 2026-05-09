@@ -166,9 +166,8 @@ public class InteropResourcesConverter {
         computePipeline.descriptorSet().storageImage("outputTexture", output);
         computePipeline.descriptorSet().update();
         commandBuffer.begin();
-        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, computePipeline);
-        RenderSystems.current().device().commandDecoder().dispatch(
-                commandBuffer,
+        commandBuffer.bindPipeline(computePipeline);
+        commandBuffer.dispatch(
                 (input.getWidth() + 15) / 16,
                 (input.getHeight() + 15) / 16,
                 1
@@ -264,9 +263,8 @@ public class InteropResourcesConverter {
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
-        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, pipeline);
-        RenderSystems.current().device().commandDecoder().dispatch(
-                commandBuffer,
+        commandBuffer.bindPipeline(pipeline);
+        commandBuffer.dispatch(
                 (outputColor.getWidth() + 15) / 16,
                 (outputColor.getHeight() + 15) / 16,
                 1
@@ -285,9 +283,8 @@ public class InteropResourcesConverter {
         flipMotionVectorYPipeline.descriptorSet().storageImage("outputMotionVector", output);
         flipMotionVectorYPipeline.descriptorSet().update();
         commandBuffer.begin();
-        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, flipMotionVectorYPipeline);
-        RenderSystems.current().device().commandDecoder().dispatch(
-                commandBuffer,
+        commandBuffer.bindPipeline(flipMotionVectorYPipeline);
+        commandBuffer.dispatch(
                 (input.getWidth() + 15) / 16,
                 (input.getHeight() + 15) / 16,
                 1

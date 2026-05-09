@@ -21,7 +21,6 @@ package io.homo.superresolution.core.graphics.vulkan;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
-import io.homo.superresolution.core.graphics.vulkan.utils.VulkanException;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
@@ -32,7 +31,7 @@ import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
+import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 

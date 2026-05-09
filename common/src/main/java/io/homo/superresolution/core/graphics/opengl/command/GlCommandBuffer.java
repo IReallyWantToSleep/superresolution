@@ -57,7 +57,8 @@ public class GlCommandBuffer implements ICommandBuffer {
         if (state != CommandBufferState.Recording) {
             throw new IllegalStateException("CommandBuffer is not in recording state");
         }
-        this.glCalls.add(glCalls);
+        //this.glCalls.add(glCalls);
+        glCalls.run();
     }
 
     @Override
@@ -143,7 +144,7 @@ public class GlCommandBuffer implements ICommandBuffer {
         return behavior;
     }
 
-    void beginRenderPass(GlRenderPass renderPass) {
+    void _beginRenderPass(GlRenderPass renderPass) {
         if (state != CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is not in recording state");
         }
@@ -155,7 +156,7 @@ public class GlCommandBuffer implements ICommandBuffer {
         this.renderPassActive = true;
     }
 
-    void endRenderPass() {
+    void _endRenderPass() {
         if (!renderPassActive) {
             throw new IllegalStateException("No active render pass to end");
         }

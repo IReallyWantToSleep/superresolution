@@ -448,7 +448,35 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             vkCmdBeginRenderPass(cmd, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
 
-        vcb.beginRenderPass(vkRenderPass);
+        vcb._beginRenderPass(vkRenderPass);
+    }
+
+    @Override
+    public void endRenderPass(ICommandBuffer commandBuffer) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("endRenderPass: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
+        if (!vcb.isRenderPassActive()) {
+            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
+        }
+
+        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+        VulkanRenderPass activePass = vcb.getActiveRenderPass();
+        VulkanFramebuffer vkFramebuffer = (VulkanFramebuffer) activePass.frameBuffer();
+
+        vkCmdEndRenderPass(cmd);
+
+        ITexture colorAttachment = vkFramebuffer.getColorAttachmentTexture();
+        if (colorAttachment != null) {
+            stateTracker.setState(colorAttachment, new ResourceState(ResourceAccessType.COLOR_ATTACHMENT_WRITE));
+        }
+
+        ITexture depthAttachment = vkFramebuffer.getDepthAttachmentTexture();
+        if (depthAttachment != null) {
+            stateTracker.setState(depthAttachment, new ResourceState(ResourceAccessType.DEPTH_ATTACHMENT_WRITE));
+        }
+
+        vcb._endRenderPass();
     }
 
     @Override
@@ -504,34 +532,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipeline());
         vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
         vcb.bindComputePipeline(vkComputePipeline);
-    }
-
-    @Override
-    public void endRenderPass(ICommandBuffer commandBuffer) {
-        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("endRenderPass: commandBuffer类型错误: " + commandBuffer.getClass().getName());
-        }
-        if (!vcb.isRenderPassActive()) {
-            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
-        }
-
-        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
-        VulkanRenderPass activePass = vcb.getActiveRenderPass();
-        VulkanFramebuffer vkFramebuffer = (VulkanFramebuffer) activePass.frameBuffer();
-
-        vkCmdEndRenderPass(cmd);
-
-        ITexture colorAttachment = vkFramebuffer.getColorAttachmentTexture();
-        if (colorAttachment != null) {
-            stateTracker.setState(colorAttachment, new ResourceState(ResourceAccessType.COLOR_ATTACHMENT_WRITE));
-        }
-
-        ITexture depthAttachment = vkFramebuffer.getDepthAttachmentTexture();
-        if (depthAttachment != null) {
-            stateTracker.setState(depthAttachment, new ResourceState(ResourceAccessType.DEPTH_ATTACHMENT_WRITE));
-        }
-
-        vcb.endRenderPass();
     }
 
     @Override

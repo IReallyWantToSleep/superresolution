@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.utils;
+package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.impl.Destroyable;
@@ -31,7 +31,7 @@ import java.nio.LongBuffer;
 import java.util.Collections;
 import java.util.Set;
 
-import static io.homo.superresolution.core.graphics.vulkan.utils.VulkanUtils.VK_CHECK;
+import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.VK10.*;

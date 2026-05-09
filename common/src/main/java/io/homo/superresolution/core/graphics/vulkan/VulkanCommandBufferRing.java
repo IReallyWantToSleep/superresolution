@@ -16,11 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.graphics.vulkan.utils;
+package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
 public class VulkanCommandBufferRing {
     private final int bufferCount;

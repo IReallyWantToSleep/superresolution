@@ -244,10 +244,10 @@ public class FSR1 extends AbstractAlgorithm {
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
-        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, fsr1EASUPipeline);
-        RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, workGroupSize.x, workGroupSize.y, workGroupSize.z);
-        RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, fsr1RCASPipeline);
-        RenderSystems.current().device().commandDecoder().dispatch(commandBuffer, workGroupSize.x, workGroupSize.y, workGroupSize.z);
+        commandBuffer.bindPipeline(fsr1EASUPipeline);
+        commandBuffer.dispatch(workGroupSize.x, workGroupSize.y, workGroupSize.z);
+        commandBuffer.bindPipeline(fsr1RCASPipeline);
+        commandBuffer.dispatch(workGroupSize.x, workGroupSize.y, workGroupSize.z);
         commandBuffer.end();
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         #else

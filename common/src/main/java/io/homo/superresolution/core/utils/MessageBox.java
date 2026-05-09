@@ -22,6 +22,15 @@ import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 public class MessageBox {
     private static void createMsgBox(String text, String caption, String type) {
+        #if MC_VER > MC_1_21_11
+        TinyFileDialogs.tinyfd_messageBox(
+                caption,
+                text,
+                "ok",
+                type,
+                0
+        );
+        #else
         TinyFileDialogs.tinyfd_messageBox(
                 caption,
                 text,
@@ -29,6 +38,7 @@ public class MessageBox {
                 type,
                 true
         );
+        #endif
     }
 
     public static void createError(String text, String caption) {

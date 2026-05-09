@@ -201,9 +201,8 @@ public class Anime4K extends AbstractAlgorithm {
 
         for (PassBinding pass : passBindings) {
             Vector3i wg = computeWorkGroup(pass.outputTextureName);
-            RenderSystems.current().device().commandDecoder().bindPipeline(commandBuffer, pass.pipeline);
-            RenderSystems.current().device().commandDecoder().dispatch(
-                commandBuffer, wg.x, wg.y, wg.z);
+            commandBuffer.bindPipeline(pass.pipeline);
+            commandBuffer.dispatch(wg.x, wg.y, wg.z);
         }
 
         commandBuffer.end();
