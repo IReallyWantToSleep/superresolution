@@ -99,7 +99,6 @@ public class Sgsr2 extends AbstractAlgorithm {
                 .size(paramsData.size())
                 .build()
         );
-        paramsUbo.setBufferData(paramsData);
     }
 
     @Override
@@ -198,7 +197,6 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsData.setUint("bSameCamera", isCameraStill ? 1 : 0);
         paramsData.setUint("reset", consumeHistoryReset() ? 1 : 0);
         paramsData.fillBuffer();
-        paramsUbo.upload();
     }
 
     private void initVariant() {

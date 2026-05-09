@@ -242,7 +242,6 @@ public class DataSetGenerator {
                             .usage(BufferUsage.Ubo)
                             .build()
             );
-            depthPreprocessConfigUBO.setBufferData(depthPreprocessConfigData);
         }
         if (depthPreprocessShader == null) {
             depthPreprocessShader = RenderSystems.current().device().createShaderProgram(

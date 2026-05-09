@@ -107,7 +107,6 @@ public class FSR1 extends AbstractAlgorithm {
                         .usage(BufferUsage.Ubo)
                         .build());
         #endif
-        fsr1UBO.setBufferData(fsr1UBOData);
         initShader();
         #if !(IS_VULKAN == 1)
         fsr1TempTexture = RenderSystems.current().device().createTexture(
@@ -225,7 +224,6 @@ public class FSR1 extends AbstractAlgorithm {
                 RenderHandlerManager.getScreenHeight());
         fsr1UBOData.setFloat("sharpness", SuperResolutionConfig.getSharpness());
         fsr1UBOData.fillBuffer();
-        fsr1UBO.upload();
 
         Vector3i workGroupSize = getWorkGroupSize();
 
@@ -244,6 +242,7 @@ public class FSR1 extends AbstractAlgorithm {
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
+        commandBuffer.writeToBuffer(fsr1UBO,0, fsr1UBOData);
         commandBuffer.bindPipeline(fsr1EASUPipeline);
         commandBuffer.dispatch(workGroupSize.x, workGroupSize.y, workGroupSize.z);
         commandBuffer.bindPipeline(fsr1RCASPipeline);

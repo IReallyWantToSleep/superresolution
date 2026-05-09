@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.impl.command;
 
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.buffer.IBufferData;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
@@ -79,7 +80,19 @@ public interface ICommandBuffer {
     }
 
     default void writeToBuffer(IBuffer dst, long dstOffset, ByteBuffer data){
-        decoder().writeToBuffer(this, dst, dstOffset, data);
+        writeToBuffer(dst, dstOffset, data.remaining(), data);
+    }
+
+    default void writeToBuffer(IBuffer dst, long dstOffset, long size, ByteBuffer data){
+        decoder().writeToBuffer(this, dst, dstOffset, size, data);
+    }
+
+    default void writeToBuffer(IBuffer dst, long dstOffset, IBufferData data){
+        writeToBuffer(dst, dstOffset, data.asByteBuffer());
+    }
+
+    default void writeToBuffer(IBuffer dst, long dstOffset, long size, IBufferData data){
+        writeToBuffer(dst, dstOffset, size, data.asByteBuffer());
     }
 
     default void setViewport(float x, float y, float width, float height){

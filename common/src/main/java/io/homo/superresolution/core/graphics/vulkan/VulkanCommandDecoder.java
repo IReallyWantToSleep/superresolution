@@ -280,7 +280,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data) {
+    public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset,long size, ByteBuffer data) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
             throw new IllegalArgumentException("writeToBuffer: commandBuffer类型错误: " + commandBuffer.getClass().getName());
         }
@@ -295,7 +295,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
 
         ByteBuffer src = data.duplicate();
-        int size = src.remaining();
         if (size <= 0) {
             return;
         }

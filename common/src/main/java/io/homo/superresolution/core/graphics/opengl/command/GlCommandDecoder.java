@@ -483,7 +483,7 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, ByteBuffer data) {
+    public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset,long size, ByteBuffer data) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "writeToBuffer");
         requireBuffer(dst, "writeToBuffer");
         requireNonNegative(dstOffset, "writeToBuffer", "dstOffset");
@@ -492,7 +492,6 @@ public class GlCommandDecoder implements ICommandDecoder {
         }
 
         ByteBuffer src = data.duplicate();
-        int size = src.remaining();
         if (size <= 0) {
             return;
         }
@@ -500,7 +499,7 @@ public class GlCommandDecoder implements ICommandDecoder {
             throw new IllegalArgumentException("writeToBuffer: 写入范围超出缓冲大小");
         }
 
-        ByteBuffer snapshot = MemoryUtil.memAlloc(size);
+        ByteBuffer snapshot = MemoryUtil.memAlloc((int) size);
         snapshot.put(src);
         snapshot.flip();
         int target = glTargetFor(dst.getUsage());

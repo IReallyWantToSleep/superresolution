@@ -68,7 +68,6 @@ public class Sgsr1 extends AbstractAlgorithm {
                         .usage(BufferUsage.Ubo)
                         .size(buffer.size())
                         .build());
-        ubo.setBufferData(buffer);
         output = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .type(TextureType.Texture2D)
@@ -125,13 +124,12 @@ public class Sgsr1 extends AbstractAlgorithm {
 
         );
         buffer.fillBuffer();
-        ubo.setBufferData(buffer);
-        ubo.upload();
         sgsrPipeline.descriptorSet().samplerTexture("ps0",dispatchResource.resources().colorTexture());
         sgsrPipeline.descriptorSet().uniformBuffer("sgsr1_data", ubo);
         sgsrPipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
+        commandBuffer.writeToBuffer(ubo, 0, buffer);
         commandBuffer.setViewport(0, 0, dispatchResource.screenWidth(), dispatchResource.screenHeight());
         commandBuffer.beginRenderPass(renderPass);
         commandBuffer.bindPipeline(sgsrPipeline);

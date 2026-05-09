@@ -126,9 +126,6 @@ public class Fsr2Context {
                         .usage(BufferUsage.Ubo)
                         .build()
         );
-        this.fsr2SpdConstantsUBO.setBufferData(this.fsr2SpdConstants);
-        this.fsr2ConstantsUBO.setBufferData(this.fsr2Constants);
-        this.fsr2RcasConstantsUBO.setBufferData(this.fsr2RcasConstants);
 
         resources = new Fsr2PipelineResources();
         resources.init(
@@ -222,9 +219,6 @@ public class Fsr2Context {
         fsr2Constants.update(this, dispatchDescription, dimensions);
         fsr2SpdConstants.update(this, dispatchDescription, dimensions);
         fsr2RcasConstants.update(this, dispatchDescription, dimensions);
-        fsr2ConstantsUBO.upload();
-        fsr2SpdConstantsUBO.upload();
-        fsr2RcasConstantsUBO.upload();
 
         Fsr2PipelineDispatchResource pipelineDispatchResource = new Fsr2PipelineDispatchResource(
                 resources,
@@ -234,6 +228,9 @@ public class Fsr2Context {
                 dispatchDescription.commandBuffer
         );
 
+        dispatchDescription.commandBuffer.writeToBuffer(fsr2ConstantsUBO, 0, fsr2Constants);
+        dispatchDescription.commandBuffer.writeToBuffer(fsr2SpdConstantsUBO, 0, fsr2SpdConstants);
+        dispatchDescription.commandBuffer.writeToBuffer(fsr2RcasConstantsUBO, 0, fsr2RcasConstants);
         computeLuminancePyramidPipeline.execute(pipelineDispatchResource);
         reconstructPreviousDepthPipeline.execute(pipelineDispatchResource);
         depthClipPipeline.execute(pipelineDispatchResource);

@@ -34,8 +34,6 @@ public class GlBuffer implements IBuffer {
     private final int glId;
     private final long size;
     private final BufferUsage usage;
-
-    private IBufferData bufferData;
     private ByteBuffer mappedBuffer;
     private boolean mapped;
 
@@ -48,19 +46,6 @@ public class GlBuffer implements IBuffer {
         GL15.glBindBuffer(target, glId);
         GL15.glBufferData(target, this.size, getGlUsage());
         GL15.glBindBuffer(target, previous);
-    }
-
-    @Override
-    public IBufferData data() {
-        return bufferData;
-    }
-
-    @Override
-    public void upload() {
-        if (bufferData == null) {
-            throw new RuntimeException();
-        }
-        writeNow(bufferData.asByteBuffer(), 0);
     }
 
     @Override
@@ -116,11 +101,6 @@ public class GlBuffer implements IBuffer {
         if (!success) {
             throw new RuntimeException("Failed to unmap buffer");
         }
-    }
-
-    @Override
-    public void setBufferData(IBufferData bufferData) {
-        this.bufferData = bufferData;
     }
 
     @Override

@@ -43,7 +43,6 @@ public class VulkanBuffer implements IBuffer {
     private final boolean hostVisible;
     private long buffer = VK_NULL_HANDLE;
     private long memory = VK_NULL_HANDLE;
-    private IBufferData bufferData;
     private ByteBuffer mappedBuffer;
     private boolean mapped;
     private boolean mappedWrite;
@@ -123,19 +122,6 @@ public class VulkanBuffer implements IBuffer {
     }
 
     @Override
-    public IBufferData data() {
-        return bufferData;
-    }
-
-    @Override
-    public void upload() {
-        if (bufferData == null) {
-            throw new IllegalStateException("No buffer data to upload");
-        }
-        uploadNow(bufferData.asByteBuffer(), 0);
-    }
-
-    @Override
     public long getSize() {
         return size;
     }
@@ -201,11 +187,6 @@ public class VulkanBuffer implements IBuffer {
             mappedOffsetInBytes = 0;
             mappedLengthInBytes = 0;
         }
-    }
-
-    @Override
-    public void setBufferData(IBufferData bufferData) {
-        this.bufferData = bufferData;
     }
 
     void writeHostVisible(ByteBuffer data, int offsetInBytes) {

@@ -25,15 +25,7 @@ import java.nio.ByteBuffer;
 
 
 public interface IBuffer extends GpuObject, Destroyable {
-    /**
-     * 获取数据
-     */
-    IBufferData data();
 
-    /**
-     * 上传数据
-     */
-    void upload();
 
     long getSize();
 
@@ -46,7 +38,5 @@ public interface IBuffer extends GpuObject, Destroyable {
     }
 
     void unmap();
-
-    void setBufferData(IBufferData bufferData);
 
 }
