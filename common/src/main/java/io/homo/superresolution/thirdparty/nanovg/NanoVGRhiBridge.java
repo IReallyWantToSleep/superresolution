@@ -23,6 +23,7 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
+import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -39,6 +40,7 @@ import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 
 import java.nio.ByteBuffer;
@@ -176,7 +178,13 @@ public final class NanoVGRhiBridge {
 
         if (data != null && dataSize > 0) {
             ByteBuffer upload = duplicateForUpload(data, dataSize);
-            device.uploadTextureData(texture, upload, 0, 0, width, height);
+            ICommandBuffer commandBuffer = device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
+            commandBuffer.begin();
+            commandBuffer.writeToTexture(texture, upload, 0, 0, width, height);
+            commandBuffer.end();
+            commandBuffer.submit(device);
+            commandBuffer.waitForFence();
+            MemoryUtil.memFree(upload);
         }
 
         ITexture previous = TEXTURES.put(imageId, texture);
@@ -210,7 +218,13 @@ public final class NanoVGRhiBridge {
             return true;
         }
         ByteBuffer upload = duplicateForUpload(data, dataSize);
-        device.uploadTextureData(texture, upload, x, y, width, height);
+        ICommandBuffer commandBuffer = device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
+        commandBuffer.begin();
+        commandBuffer.writeToTexture(texture, upload, x, y, width, height);
+        commandBuffer.end();
+        commandBuffer.submit(device);
+        commandBuffer.waitForFence();
+        MemoryUtil.memFree(upload);
         return true;
     }
 
@@ -474,7 +488,7 @@ public final class NanoVGRhiBridge {
     }
 
     private static ByteBuffer duplicateForUpload(ByteBuffer src, int size) {
-        ByteBuffer copy = BufferUtils.createByteBuffer(size);
+        ByteBuffer copy = MemoryUtil.memAlloc(size);
         ByteBuffer temp = src.duplicate();
         temp.clear();
         int oldLimit = temp.limit();
@@ -531,9 +545,15 @@ public final class NanoVGRhiBridge {
                     .label("NanoVgDummy")
                     .build();
             dummyTexture = device.createTexture(description);
-            ByteBuffer white = BufferUtils.createByteBuffer(4);
+            ByteBuffer white = MemoryUtil.memAlloc(4);
             white.put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).flip();
-            device.uploadTextureData(dummyTexture, white, 0, 0, 1, 1);
+            ICommandBuffer commandBuffer = device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
+            commandBuffer.begin();
+            commandBuffer.writeToTexture(dummyTexture, white, 0, 0, 1, 1);
+            commandBuffer.end();
+            commandBuffer.submit(device);
+            commandBuffer.waitForFence();
+            MemoryUtil.memFree(white);
         }
     }
 

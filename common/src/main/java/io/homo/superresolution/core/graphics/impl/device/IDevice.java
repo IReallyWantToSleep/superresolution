@@ -41,8 +41,6 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureViewDescription
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 
-import java.nio.ByteBuffer;
-
 public interface IDevice {
     /**
      * 创建一个纹理。
@@ -160,17 +158,5 @@ public interface IDevice {
      * 提交命令缓冲区
      */
     void submitCommandBuffer(ICommandBuffer commandBuffer);
-
-    /**
-     * 上传数据到纹理的指定区域。
-     *
-     * @param texture 目标纹理
-     * @param data    像素数据（packed RGBA 或 R，取决于纹理格式）
-     * @param x       目标区域起始 X 坐标
-     * @param y       目标区域起始 Y 坐标
-     * @param width   目标区域宽度
-     * @param height  目标区域高度
-     */
-    void uploadTextureData(ITexture texture, ByteBuffer data, int x, int y, int width, int height);
 
 }

@@ -34,14 +34,12 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
-import io.homo.superresolution.core.graphics.opengl.GlDebug;
-import io.homo.superresolution.core.graphics.opengl.GlDevice;
-import io.homo.superresolution.core.graphics.opengl.GlState;
-import io.homo.superresolution.core.graphics.opengl.OpenGLException;
+import io.homo.superresolution.core.graphics.opengl.*;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
+import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import org.lwjgl.opengl.GL44;
 import org.lwjgl.system.MemoryUtil;
@@ -510,6 +508,63 @@ public class GlCommandDecoder implements ICommandDecoder {
             glBufferSubData(target, dstOffset, snapshot.duplicate());
             glBindBuffer(target, previous);
             MemoryUtil.memFree(snapshot);
+        });
+    }
+
+    @Override
+    public void writeToTexture(ICommandBuffer commandBuffer,ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+        requireTexture(texture, "writeToTexture");
+        if (data == null) {
+            throw new IllegalArgumentException("writeToTexture: data为null");
+        }
+        requireNonNegative(x, "writeToTexture", "x");
+        requireNonNegative(y, "writeToTexture", "y");
+        requireNonNegative(width, "writeToTexture", "width");
+        requireNonNegative(height, "writeToTexture", "height");
+        requireNonNegative(mipLevel, "writeToTexture", "mipLevel");
+
+        TextureFormat format = texture.getTextureFormat();
+        int expectedSize = width * height * format.getBytesPerPixel();
+        if (data.remaining() < expectedSize) {
+            throw new IllegalArgumentException("writeToTexture: 数据大小不足，至少需要 " + expectedSize + " 字节");
+        }
+
+        final int debugId = nextCopyId();
+        final String debugName = "Write To Texture";
+        int pixelFormat = switch (format) {
+            case RGBA8, RGBA16, RGBA16F, RGBA32F -> GL_RGBA;
+            case RGB8, RGB16F -> GL_RGB;
+            case R8, R16F, R32F, R32UI, R16_SNORM -> GL_RED;
+            case RG8, RG16F, RG32F -> GL_RG;
+            default -> throw new IllegalArgumentException("writeToTexture: 不支持的纹理格式: " + format);
+        };
+        ByteBuffer snapshot = MemoryUtil.memAlloc(expectedSize);
+        MemoryUtil.memCopy(MemoryUtil.memAddress(data), MemoryUtil.memAddress(snapshot), expectedSize);
+        putGlCommand(commandBuffer, () -> {
+            pushGroup(debugId, debugName);
+            try {
+                try (GlState ignored = new GlState(GlState.STATE_UNPACK | GlState.STATE_PIXEL_UNPACK_BUFFER | GlState.STATE_PIXEL_PACK_BUFFER)) {
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+                    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+                    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+
+                    Gl.DSA.textureSubImage2D(
+                            (int) texture.handle(),
+                            mipLevel,
+                            x,
+                            y,
+                            width,
+                            height,
+                            pixelFormat,
+                            GL_UNSIGNED_BYTE,
+                            MemoryUtil.memAddress(snapshot)
+                    );
+                    MemoryUtil.memFree(snapshot);
+                }
+            } finally {
+                popGroup();
+            }
         });
     }
 

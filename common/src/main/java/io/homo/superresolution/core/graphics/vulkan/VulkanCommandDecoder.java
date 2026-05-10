@@ -340,6 +340,57 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     }
 
     @Override
+    public void writeToTexture(ICommandBuffer commandBuffer,ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+        //TODO: 完成纹理数据上传
+        if (!(texture instanceof VulkanTexture vkTexture)) {
+            throw new IllegalArgumentException("writeToTexture: texture类型错误: " + texture.getClass().getName());
+        }
+        if (data == null) {
+            throw new IllegalArgumentException("writeToTexture: data为null");
+        }
+        if (x < 0 || y < 0 || width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("writeToTexture: 无效的纹理区域参数");
+        }
+
+        VulkanBuffer stagingBuffer = new VulkanBuffer(
+                vulkanDevice,
+                BufferDescription.create()
+                        .size(data.remaining())
+                        .usage(BufferUsage.TransferSrc)
+                        .build()
+        );
+        stagingBuffer.writeHostVisible(data, 0);
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferImageCopy.Buffer copyRegion = VkBufferImageCopy.calloc(1, stack)
+                    .bufferOffset(0)
+                    .bufferRowLength(0)
+                    .bufferImageHeight(0)
+                    .imageSubresource(VkImageSubresourceLayers.calloc(stack)
+                            .aspectMask(vkTexture.getAspectMask())
+                            .mipLevel(mipLevel)
+                            .baseArrayLayer(0)
+                            .layerCount(1))
+                    .imageOffset(VkOffset3D.calloc(stack).set(x, y, 0))
+                    .imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
+
+            VulkanCommandBuffer vcb = (VulkanCommandBuffer) vulkanDevice.defaultCommandPool().createCommandBuffer();
+            vcb.begin();
+            vkCmdCopyBufferToImage(
+                    vcb.getNativeCommandBuffer(),
+                    stagingBuffer.handle(),
+                    vkTexture.handle(),
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    copyRegion
+            );
+            //insertTransferWriteBarrier(vcb.getNativeCommandBuffer(), vkTexture, mipLevel);
+            vcb.end();
+            vulkanDevice.submitCommandBuffer(vcb);
+            vcb.addTransientResource(stagingBuffer);
+        }
+    }
+
+    @Override
     public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkViewport.Buffer viewport = VkViewport.calloc(1, stack);

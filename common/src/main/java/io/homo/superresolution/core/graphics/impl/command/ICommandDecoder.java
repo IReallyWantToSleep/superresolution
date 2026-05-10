@@ -60,6 +60,12 @@ public interface ICommandDecoder {
         writeToBuffer(commandBuffer, dst, dstOffset, size, data.asByteBuffer());
     }
 
+    void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel);
+
+    default void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height) {
+        writeToTexture(commandBuffer, texture, data, x, y, width, height, 0);
+    }
+
     void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height);
 
     void setScissor(ICommandBuffer commandBuffer, int x, int y, int width, int height);

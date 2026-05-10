@@ -239,7 +239,7 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         imageView = pImageView.get(0);
     }
 
-    private int getAspectMask() {
+    public int getAspectMask() {
         if (description.getFormat().isDepthStencil()) {
             return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
         } else if (description.getFormat().isDepth()) {

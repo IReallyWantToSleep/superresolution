@@ -327,6 +327,31 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
     }
 
     @Override
+    public void writeToTexture(ICommandBuffer commandBuffer,ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+        requireNonNull(commandBuffer, "writeToTexture", "commandBuffer");
+        requireNonNullTexture(texture, "writeToTexture");
+        if (data == null) {
+            throw new IllegalArgumentException("writeToTexture: data cannot be null");
+        }
+        requireValidMipLevel(texture, mipLevel, "writeToTexture", "mipLevel");
+        requireNonNegative(x, "writeToTexture", "x");
+        requireNonNegative(y, "writeToTexture", "y");
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("writeToTexture: width and height must be positive");
+        }
+
+        int maxX = mipSize(texture.getWidth(), mipLevel);
+        int maxY = mipSize(texture.getHeight(), mipLevel);
+        if (x + width > maxX || y + height > maxY) {
+            throw new IllegalArgumentException("writeToTexture: write region exceeds texture dimensions");
+        }
+
+        requireTextureUsage(texture, TextureUsage.TransferDestination, "writeToTexture");
+
+        rawCommandDecoder.writeToTexture(commandBuffer,texture, data, x, y, width, height, mipLevel);
+    }
+
+    @Override
     public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
         requireNonNull(commandBuffer, "setViewport", "commandBuffer");
         requireRecording(commandBuffer, "setViewport");
