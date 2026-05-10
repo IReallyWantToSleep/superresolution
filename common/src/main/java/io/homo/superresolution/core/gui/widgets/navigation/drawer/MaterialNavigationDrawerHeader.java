@@ -74,6 +74,20 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
 
         String title = titleSupplier.get();
         if (title != null && !title.isEmpty()) {
+            //TODO:使用bold变体的字体或许更好
+            ctx.drawAlignedText(
+                    ctx.font(),
+                    FONT_SIZE,
+                    title,
+                    contentX,
+                    centerY,
+                    bounds.width - contentX + bounds.x,
+                    bounds.height,
+                    scheme().onSurfaceVariant(),
+                    TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
+                    false
+            );
+
             ctx.drawAlignedText(
                     ctx.font(),
                     FONT_SIZE,
