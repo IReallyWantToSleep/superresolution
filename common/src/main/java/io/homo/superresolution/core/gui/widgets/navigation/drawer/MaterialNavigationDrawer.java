@@ -100,14 +100,14 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         if (!isVisible()) {
             return;
         }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?>) {
-                AbstractWidget<?> widget = (AbstractWidget<?>) child;
-                if (widget.isVisible()) {
-                    widget.render(ctx, inputState);
-                }
-            }
-        }
+        //for (ILayoutElement child : getChildren()) {
+        //    if (child instanceof AbstractWidget<?>) {
+        //        AbstractWidget<?> widget = (AbstractWidget<?>) child;
+        //        if (widget.isVisible()) {
+        //            widget.render(ctx, inputState);
+        //        }
+        //    }
+        //}
     }
 
     public MaterialNavigationDrawer addHeader(String title, MaterialSymbol icon) {
