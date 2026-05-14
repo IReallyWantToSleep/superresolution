@@ -6,7 +6,7 @@
 
 <div align="center">
 <h1>Super Resolution</h1>
-<a href="docs/README_EN.md">English</a> / <a href="docs/README_JP.md">日本語</a> / <a href="docs/README_ZH.md">简体中文</a>
+<a href="README_EN.md">English</a> / <a href="README_JP.md">日本語</a> / <a href="README_ZH.md">简体中文</a>
 </div>
 
 ----
