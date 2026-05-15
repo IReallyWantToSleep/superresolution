@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class IrisReflectionUtils {
     private static volatile Class<?> passClazz;
@@ -32,6 +33,10 @@ public class IrisReflectionUtils {
     private static volatile Class<?> customUniformClazz;
     private static volatile Field computesField;
     private static volatile Field stageReadsFromAltField;
+
+    private static volatile Class<?> mc1201_passClazz;
+    private static volatile Field mc1201_stageReadsFromAltField;
+
     private static volatile Field customUniform_variablesField;
     private static volatile Field customUniform_uniformOrderField;
 
@@ -53,6 +58,11 @@ public class IrisReflectionUtils {
                         stageReadsFromAltField.setAccessible(true);
                         customUniform_variablesField.setAccessible(true);
                         customUniform_uniformOrderField.setAccessible(true);
+                        try {
+                            mc1201_passClazz = Class.forName("io.homo.irisapi.pipeline.mc1201.NewCompositeRenderer$Pass");
+                            mc1201_stageReadsFromAltField = mc1201_passClazz.getDeclaredField("stageReadsFromAlt");
+                            mc1201_stageReadsFromAltField.setAccessible(true);
+                        }catch (Throwable e){}
                         initialized = true;
                     } catch (Throwable e) {
                         throw new RuntimeException("Failed to initialize IrisReflectionUtils", e);
@@ -83,11 +93,14 @@ public class IrisReflectionUtils {
     public static ImmutableSet<Integer> getCompositePassStateReadsFromAlt(Object object) {
         ensureInitialized();
         try {
-            ImmutableSet<Integer> stageReadsFromAlt = (ImmutableSet<Integer>) stageReadsFromAltField.get(object);
-            if (stageReadsFromAlt == null) {
-                return ImmutableSet.of();
+            if (mc1201_passClazz != null){
+                if (mc1201_passClazz.isInstance(object)){
+                    ImmutableSet<Integer> stageReadsFromAlt = (ImmutableSet<Integer>) mc1201_stageReadsFromAltField.get(object);
+                    return Objects.requireNonNullElseGet(stageReadsFromAlt, ImmutableSet::of);
+                }
             }
-            return stageReadsFromAlt;
+            ImmutableSet<Integer> stageReadsFromAlt = (ImmutableSet<Integer>) stageReadsFromAltField.get(object);
+            return Objects.requireNonNullElseGet(stageReadsFromAlt, ImmutableSet::of);
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Failed to access stateReadsFromAlt field", e);
         }

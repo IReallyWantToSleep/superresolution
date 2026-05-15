@@ -120,7 +120,7 @@ public class DLSS extends SRApiAlgorithm {
         }
         commandBuffer.end();
         vulkanDevice.submitCommandBuffer(commandBuffer);
-        vulkanDevice.getMainQueue().waitIdle();
+        commandBuffer.waitForFence();
     }
 
     @Override

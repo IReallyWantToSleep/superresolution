@@ -18,11 +18,13 @@
 
 package io.homo.irisapi.mixin.composite.before1_21_1;
 
+import com.google.common.collect.ImmutableMap;
 import io.homo.irisapi.IrisCompositePassType;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
+import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
 import org.spongepowered.asm.mixin.Mixin;
 
-#if MC_VER < MC_1_19_2
+#if MC_VER < MC_1_21_1
 import net.irisshaders.iris.shaderpack.programs.ComputeSource;
 import net.irisshaders.iris.shaderpack.programs.ProgramSource;
 import net.irisshaders.iris.shaderpack.properties.PackDirectives;
@@ -60,178 +62,7 @@ import net.irisshaders.iris.pathways.CenterDepthSampler;
 #endif
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
-    #if MC_VER < MC_1_19_2
-    @Shadow(remap = false)
-    @Final
-    private ImmutableList<Object> passes;
+    #if MC_VER < MC_1_21_1
 
-    @Unique
-    private void superresolution$handlePassEvent(int passIndex, PassEventHandler handler) {
-        if (passIndex >= 0 && passIndex < this.passes.size()) {
-            Object pass = this.passes.get(passIndex);
-            handler.handle(
-                    (CompositeRenderer) (Object) this,
-                    (NamedCompositePass) pass,
-                    IrisReflectionUtils.getCompositePassType(pass)
-            );
-        }
-    }
-
-    @Inject(method = "<init>", at = @At("RETURN"), remap = false)
-    private void superresolution$assignPassNames(
-            net.irisshaders.iris.pipeline.WorldRenderingPipeline pipeline,
-            PackDirectives packDirectives,
-            ProgramSource[] sources,
-            ComputeSource[][] computes,
-            RenderTargets renderTargets,
-            ShaderStorageBufferHolder holder,
-            TextureAccess noiseTexture,
-            FrameUpdateNotifier updateNotifier,
-            CenterDepthSampler centerDepthSampler,
-            BufferFlipper bufferFlipper,
-            Supplier<ShadowRenderTargets> shadowTargetsSupplier,
-            TextureStage textureStage,
-            Object2ObjectMap<String, TextureAccess> customTextureIds,
-            Object2ObjectMap<String, TextureAccess> irisCustomTextures,
-            Set<GlImage> customImages,
-            com.google.common.collect.ImmutableMap<Integer, Boolean> explicitPreFlips,
-            CustomUniforms customUniforms,
-            CallbackInfo ci
-    ) {
-        for (int i = 0; i < sources.length && i < this.passes.size(); ++i) {
-            ProgramSource source = sources[i];
-            String name = null;
-
-            if (source != null && source.isValid()) {
-                name = source.getName();
-            } else if (computes != null && computes.length > i && computes[i] != null && computes[i].length > 0 && computes[i][0] != null) {
-                name = computes[i][0].getName();
-            }
-
-            if (name == null) {
-                name = "composite" + i;
-            }
-
-            ((NamedCompositePass) this.passes.get(i)).superresolution$setName(name);
-        }
-    }
-
-    //===========PassStart============//
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Ljava/util/Iterator;next()Ljava/lang/Object;",
-            ordinal = 0,
-            shift = At.Shift.AFTER
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onPassStart(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
-        superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassStart);
-    }
-
-    //===========BeforeRender============//
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Ljava/util/Iterator;next()Ljava/lang/Object;",
-            ordinal = 0,
-            shift = At.Shift.AFTER
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onBeforeRender(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
-        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.Common) {
-            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
-        }
-    }
-
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Lnet/irisshaders/iris/gl/program/Program;unbind()V",
-            ordinal = 0,
-            shift = At.Shift.AFTER
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onBeforeRenderA(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
-        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.Common) {
-            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
-        }
-    }
-
-    //===========AfterRender============//
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Lnet/irisshaders/iris/gl/program/Program;unbind()V"
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onAfterRender(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
-        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
-            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
-        }
-    }
-
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Lnet/irisshaders/iris/pathways/FullScreenQuadRenderer;renderQuad()V",
-            shift = At.Shift.AFTER
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onAfterRenderA(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((ListIterator<?>) var2).previousIndex(), 0);
-        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.ComputeOnly) {
-            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
-        }
-    }
-
-    //===========PassEnd============//
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Lnet/irisshaders/iris/gl/program/Program;unbind()V",
-            shift = At.Shift.AFTER,
-            ordinal = 0
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onPassEnd(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((java.util.ListIterator<?>) var2).previousIndex(), 0);
-        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {
-            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassEnd);
-        }
-    }
-
-    @Inject(method = "renderAll", at = @At(
-            value = "INVOKE",
-            target = "Lnet/irisshaders/iris/gl/blending/BlendModeOverride;restore()V",
-            shift = At.Shift.AFTER,
-            ordinal = 0
-    ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
-    private void onPassEndA(
-            CallbackInfo ci,
-            RenderTarget main,
-            UnmodifiableIterator<?> var2
-    ) {
-        int passIndex = Math.max(((java.util.ListIterator<?>) var2).previousIndex(), 0);
-        if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) != IrisCompositePassType.ComputeOnly) {
-            superresolution$handlePassEvent(passIndex, IrisRenderingPipelineHandler::onCompositePassEnd);
-        }
-    }
     #endif
 }

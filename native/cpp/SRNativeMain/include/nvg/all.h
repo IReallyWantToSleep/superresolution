@@ -187,6 +187,10 @@ public:
 
     void ResetFallbackFonts(const std::string &baseFont);
 
+    void FontSetVariationAxis(int font, const char *axisTag, float value);
+
+    std::vector<std::string> FontGetVariationAxis(int font);
+
     void FontSize(float size);
 
     void FontBlur(float blur);

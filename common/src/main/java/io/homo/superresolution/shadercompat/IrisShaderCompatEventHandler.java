@@ -127,12 +127,12 @@ public class IrisShaderCompatEventHandler {
 
         try {
             //检查renderTargets是不是null以及是否被销毁，否则1.21.5+会报Tried to use destroyed RenderTargets
-            if (((CompositeRendererAccessor) event.getCompositeRenderer()).getRenderTargets() != null) {
+            if ((event.getCompositeRenderer()).getRenderTargets() != null) {
                 if (
                         !(
                                 (RenderTargetsAccessor) (
                                         (
-                                                (CompositeRendererAccessor) event.getCompositeRenderer()
+                                                event.getCompositeRenderer()
                                         )
                                                 .getRenderTargets()
                                 )

@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.irisapi;
+package io.homo.irisapi.mixin.composite.before1_21_1;
 
-import net.irisshaders.iris.pipeline.CompositeRenderer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-@FunctionalInterface
-public interface PassEventHandler {
-    void handle(ICompositeRendererAccessor renderer, NamedCompositePass pass, IrisCompositePassType passType);
+#if MC_VER == MC_1_20_1
+@Mixin(targets = "com.mojang.blaze3d.platform.GlStateManager$TextureState")
+public interface GlStateManagerTextureStateAccessor {
+    @Accessor("binding")
+    int getBinding();
 }
+#else
+@Mixin(targets = "net.minecraft.client.Minecraft")
+public interface GlStateManagerTextureStateAccessor {
+}
+#endif

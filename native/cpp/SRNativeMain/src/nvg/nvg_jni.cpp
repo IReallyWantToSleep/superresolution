@@ -984,6 +984,36 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
     ctx->FontFaceId(font);
 }
 
+JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontSetVariationAxis(
+    JNIEnv *env, jclass, jlong ptr, jint font, jstring axisTag, jfloat value) {
+    NanoVGContext *ctx = (NanoVGContext *) ptr;
+    const char *axisTagStr = nullptr;
+    if (axisTag != nullptr) {
+        axisTagStr = env->GetStringUTFChars(axisTag, nullptr);
+    }
+
+    ctx->FontSetVariationAxis((int)font, axisTagStr, (float)value);
+
+    if (axisTagStr != nullptr) {
+        env->ReleaseStringUTFChars(axisTag, axisTagStr);
+    }
+}
+
+JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontGetVariationAxis(
+    JNIEnv *env, jclass, jlong ptr, jint font) {
+    NanoVGContext *ctx = (NanoVGContext *) ptr;
+    std::vector<std::string> axes = ctx->FontGetVariationAxis((int)font);
+
+    jclass stringClass = env->FindClass("java/lang/String");
+    jobjectArray result = env->NewObjectArray((jsize)axes.size(), stringClass, nullptr);
+    for (jsize i = 0; i < (jsize)axes.size(); ++i) {
+        jstring s = env->NewStringUTF(axes[(size_t)i].c_str());
+        env->SetObjectArrayElement(result, i, s);
+        env->DeleteLocalRef(s);
+    }
+    return result;
+}
+
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineStyle(
     JNIEnv *, jclass, jlong ptr, jint lineStyle) {
     NanoVGContext *ctx = (NanoVGContext *) ptr;

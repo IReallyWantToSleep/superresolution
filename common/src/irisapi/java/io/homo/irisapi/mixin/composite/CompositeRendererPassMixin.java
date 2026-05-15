@@ -23,12 +23,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(targets = {"net.irisshaders.iris.pipeline.CompositeRenderer$Pass"})
+@Mixin(targets = {"net.irisshaders.iris.pipeline.CompositeRenderer$Pass"},remap = false)
 public class CompositeRendererPassMixin implements NamedCompositePass {
     @Unique
     private String superresolution$name0;
 
-    #if MC_VER < MC_1_20_1
+    #if MC_VER <= MC_1_20_1
     @Override
     public String superresolution$getName() {
         return superresolution$name0;

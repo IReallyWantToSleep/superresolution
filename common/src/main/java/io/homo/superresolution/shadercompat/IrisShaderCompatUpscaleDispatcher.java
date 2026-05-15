@@ -19,6 +19,7 @@
 package io.homo.superresolution.shadercompat;
 
 
+import io.homo.irisapi.ICompositeRendererAccessor;
 import io.homo.irisapi.IrisAPI;
 import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.api.InputResourceSet;
@@ -71,7 +72,7 @@ public class IrisShaderCompatUpscaleDispatcher {
     private static SRShaderCompatData.InputTexture lastExposureConfig;
 
 
-    private static CompositeRenderer cachedCompositeRenderer;
+    private static ICompositeRendererAccessor cachedCompositeRenderer;
     private static NamedCompositePass cachedNamedCompositePass;
 
     private static float resolvePreExposure(SRShaderCompatData.SourceConfig config) {
@@ -124,7 +125,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         }
     }
 
-    public static DispatchResource getDispatchResource(CompositeRenderer compositeRenderer,
+    public static DispatchResource getDispatchResource(ICompositeRendererAccessor compositeRenderer,
                                                        float preExposure,
                                                        ITexture resolvedExposureTexture) {
         return new DispatchResource(
@@ -225,7 +226,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         RenderHandlerManager.frameCount = 0;
     }
 
-    public static void dispatchUpscale(CompositeRenderer compositeRenderer, NamedCompositePass pass) {
+    public static void dispatchUpscale(ICompositeRendererAccessor compositeRenderer, NamedCompositePass pass) {
         if (!SuperResolutionConfig.isEnableUpscaleOriginal()) {
             return;
         }
@@ -238,7 +239,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         SRShaderCompatData.UpscaleConfig currentConfig = IrisShaderCompatUtils.getCurrentConfig().get().upscale;
         boolean needUpdate = false;
 
-        if (!compositeRenderer.equals(cachedCompositeRenderer)) {
+        if (!compositeRenderer.isSameInstance(cachedCompositeRenderer)) {
             cachedCompositeRenderer = compositeRenderer;
             needUpdate = true;
         }

@@ -30,17 +30,8 @@ public enum IrisCompositeRenderingPhase {
     Composite,
     Unknown;
 
-    public static IrisCompositeRenderingPhase from(WorldRenderingPipeline pipeline, CompositeRenderer compositeRenderer) {
+    public static IrisCompositeRenderingPhase from(WorldRenderingPipeline pipeline, ICompositeRendererAccessor compositeRenderer) {
         if (!(pipeline instanceof IrisRenderingPipeline)) return Unknown;
-        if (((IrisRenderingPipelineAccessor) pipeline).getCompositeRenderer() == compositeRenderer) {
-            return Composite;
-        } else if (((IrisRenderingPipelineAccessor) pipeline).getDeferredRenderer() == compositeRenderer) {
-            return Deferred;
-        } else if (((IrisRenderingPipelineAccessor) pipeline).getPrepareRenderer() == compositeRenderer) {
-            return Prepare;
-        } else if (((IrisRenderingPipelineAccessor) pipeline).getBeginRenderer() == compositeRenderer) {
-            return Begin;
-        }
-        return Unknown;
+        return compositeRenderer.getPhase();
     }
 }

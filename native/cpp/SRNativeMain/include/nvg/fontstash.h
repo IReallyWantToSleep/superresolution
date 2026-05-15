@@ -20,7 +20,6 @@
 #define FONS_H
 #define FONS_USE_FREETYPE
 #define FONS_INVALID -1
-
 enum FONSflags {
     FONS_ZERO_TOPLEFT = 1,
     FONS_ZERO_BOTTOMLEFT = 2,
@@ -163,6 +162,12 @@ int fonsValidateTexture(FONScontext *s, int *dirty);
 // Draws the stash texture for debugging
 void fonsDrawDebug(FONScontext *s, float x, float y);
 
+// Variation axis support (FreeType backend only)
+int fonsSetVariationAxis(FONScontext *s, int font, const char *axisTag, float value);
+int fonsGetVariationAxisCount(FONScontext *s, int font);
+int fonsGetVariationAxisName(FONScontext *s, int font, int index, char *nameOut, int nameOutSize);
+int fonsGetVariationAxisValue(FONScontext *s, int font, const char *axisTag, float *outValue);
+
 #endif // FONTSTASH_H
 
 
@@ -176,6 +181,7 @@ void fonsDrawDebug(FONScontext *s, float x, float y);
 #include FT_FREETYPE_H
 #include FT_ADVANCES_H
 #include <math.h>
+#include FT_MULTIPLE_MASTERS_H
 
 struct FONSttFontImpl {
     FT_Face font;
@@ -242,6 +248,14 @@ static int fons__maxi(int a, int b) {
     return a > b ? a : b;
 }
 
+static unsigned int fons__hashString(const char *str) {
+    unsigned int h = 5381;
+    int c;
+    while ((c = *str++))
+        h = ((h << 5) + h) + c; // hash * 33 + c
+    return h;
+}
+
 struct FONSglyph {
     unsigned int codepoint;
     int index;
@@ -249,6 +263,7 @@ struct FONSglyph {
     short size, blur;
     short x0, y0, x1, y1;
     short xadv, xoff, yoff;
+    unsigned int variationHash;
 };
 typedef struct FONSglyph FONSglyph;
 
@@ -267,6 +282,11 @@ struct FONSfont {
     int lut[FONS_HASH_LUT_SIZE];
     int fallbacks[FONS_MAX_FALLBACKS];
     int nfallbacks;
+    unsigned int variationHash;
+    char **varAxisTags;
+    float *varAxisValues;
+    int nvarAxes;
+    int cvarAxes;
 };
 typedef struct FONSfont FONSfont;
 
@@ -318,7 +338,24 @@ struct FONScontext {
 FT_Library ftLibrary;
 #endif
 };
+static unsigned int fons__computeVariationHash(FONSfont *font) {
+    unsigned int h = 0;
+    int i;
+    for (i = 0; i < font->nvarAxes; i++) {
+        h ^= fons__hashString(font->varAxisTags[i]);
+        // Quantize float value to 1e-3 to avoid cache misses from tiny differences
+        int quantized = (int)(font->varAxisValues[i] * 1000.0f + 0.5f);
+        h ^= fons__hashint((unsigned int)quantized);
+    }
+    return h;
+}
 
+static void fons__clearFontGlyphs(FONSfont *font) {
+    int i;
+    font->nglyphs = 0;
+    for (i = 0; i < FONS_HASH_LUT_SIZE; i++)
+        font->lut[i] = -1;
+}
 #ifdef FONS_USE_FREETYPE
 
 int fons__tt_init(FONScontext *context) {
@@ -797,6 +834,109 @@ void fonsResetFallbackFont(FONScontext *stash, int base) {
         baseFont->lut[i] = -1;
 }
 
+int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, float value) {
+    FONSfont *f;
+    int i;
+
+    if (stash == NULL) return 0;
+    if (font < 0 || font >= stash->nfonts) return 0;
+    f = stash->fonts[font];
+    if (f->data == NULL) return 0;
+
+#ifdef FONS_USE_FREETYPE
+    // Apply to FreeType face
+    FT_Face ftFace = f->font.font;
+    if (ftFace == NULL) return 0;
+    if (!FT_HAS_MULTIPLE_MASTERS(ftFace)) return 0;
+
+    // Find or add axis entry
+    for (i = 0; i < f->nvarAxes; i++) {
+        if (strcmp(f->varAxisTags[i], axisTag) == 0) {
+            f->varAxisValues[i] = value;
+            goto apply_and_rehash;
+        }
+    }
+
+    // Add new axis
+    if (f->nvarAxes + 1 > f->cvarAxes) {
+        int newCap = f->cvarAxes == 0 ? 4 : f->cvarAxes * 2;
+        char **newTags = (char **)realloc(f->varAxisTags, sizeof(char *) * newCap);
+        float *newVals = (float *)realloc(f->varAxisValues, sizeof(float) * newCap);
+        if (newTags == NULL || newVals == NULL) {
+            if (newTags) free(newTags);
+            if (newVals) free(newVals);
+            return 0;
+        }
+        f->varAxisTags = newTags;
+        f->varAxisValues = newVals;
+        f->cvarAxes = newCap;
+    }
+    f->varAxisTags[f->nvarAxes] = strdup(axisTag);
+    f->varAxisValues[f->nvarAxes] = value;
+    f->nvarAxes++;
+
+apply_and_rehash:
+    // Apply all axes to FreeType
+    {
+        FT_Fixed *coords = (FT_Fixed *)malloc(sizeof(FT_Fixed) * f->nvarAxes);
+        if (coords == NULL) return 0;
+        for (i = 0; i < f->nvarAxes; i++) {
+            coords[i] = (FT_Fixed)(f->varAxisValues[i] * 65536.0f);
+        }
+        FT_Set_Var_Design_Coordinates(ftFace, f->nvarAxes, coords);
+        free(coords);
+    }
+
+    // Recompute variation hash and clear glyph cache
+    f->variationHash = fons__computeVariationHash(f);
+    fons__clearFontGlyphs(f);
+    return 1;
+#else
+    FONS_NOTUSED(axisTag);
+    FONS_NOTUSED(value);
+    FONS_NOTUSED(i);
+    return 0;
+#endif
+}
+
+int fonsGetVariationAxisCount(FONScontext *stash, int font) {
+    FONSfont *f;
+    if (stash == NULL) return 0;
+    if (font < 0 || font >= stash->nfonts) return 0;
+    f = stash->fonts[font];
+    if (f->data == NULL) return 0;
+    return f->nvarAxes;
+}
+
+int fonsGetVariationAxisName(FONScontext *stash, int font, int index, char *nameOut, int nameOutSize) {
+    FONSfont *f;
+    if (stash == NULL) return 0;
+    if (font < 0 || font >= stash->nfonts) return 0;
+    f = stash->fonts[font];
+    if (f->data == NULL) return 0;
+    if (index < 0 || index >= f->nvarAxes) return 0;
+    if (nameOut == NULL || nameOutSize <= 0) return 0;
+    strncpy(nameOut, f->varAxisTags[index], nameOutSize);
+    nameOut[nameOutSize - 1] = '\0';
+    return 1;
+}
+
+int fonsGetVariationAxisValue(FONScontext *stash, int font, const char *axisTag, float *outValue) {
+    FONSfont *f;
+    int i;
+    if (stash == NULL) return 0;
+    if (font < 0 || font >= stash->nfonts) return 0;
+    f = stash->fonts[font];
+    if (f->data == NULL) return 0;
+    for (i = 0; i < f->nvarAxes; i++) {
+        if (strcmp(f->varAxisTags[i], axisTag) == 0) {
+            if (outValue) *outValue = f->varAxisValues[i];
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void fonsSetSize(FONScontext *stash, float size) {
     fons__getState(stash)->size = size;
 }
@@ -852,9 +992,16 @@ void fonsClearState(FONScontext *stash) {
 }
 
 static void fons__freeFont(FONSfont *font) {
+    int i;
     if (font == NULL) return;
     if (font->glyphs) free(font->glyphs);
     if (font->freeData && font->data) free(font->data);
+    if (font->varAxisTags) {
+        for (i = 0; i < font->nvarAxes; i++)
+            free(font->varAxisTags[i]);
+        free(font->varAxisTags);
+    }
+    if (font->varAxisValues) free(font->varAxisValues);
     free(font);
 }
 
@@ -874,6 +1021,12 @@ static int fons__allocFont(FONScontext *stash) {
     if (font->glyphs == NULL) goto error;
     font->cglyphs = FONS_INIT_GLYPHS;
     font->nglyphs = 0;
+
+    font->variationHash = 0;
+    font->varAxisTags = NULL;
+    font->varAxisValues = NULL;
+    font->nvarAxes = 0;
+    font->cvarAxes = 0;
 
     stash->fonts[stash->nfonts++] = font;
     return stash->nfonts - 1;
@@ -1061,7 +1214,8 @@ static FONSglyph *fons__getGlyph(FONScontext *stash, FONSfont *font, unsigned in
     h = fons__hashint(codepoint) & (FONS_HASH_LUT_SIZE - 1);
     i = font->lut[h];
     while (i != -1) {
-        if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur) {
+        if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == isize && font->glyphs[i].blur == iblur &&
+            font->glyphs[i].variationHash == font->variationHash) {
             glyph = &font->glyphs[i];
             if (bitmapOption == FONS_GLYPH_BITMAP_OPTIONAL || (glyph->x0 >= 0 && glyph->y0 >= 0)) {
                 return glyph;
@@ -1116,6 +1270,7 @@ static FONSglyph *fons__getGlyph(FONScontext *stash, FONSfont *font, unsigned in
         glyph->size = isize;
         glyph->blur = iblur;
         glyph->next = 0;
+        glyph->variationHash = font->variationHash;
 
         // Insert char to hash lookup.
         glyph->next = font->lut[h];

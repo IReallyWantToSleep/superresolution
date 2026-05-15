@@ -19,6 +19,7 @@
 package io.homo.superresolution.shadercompat;
 
 import com.google.common.collect.ImmutableSet;
+import io.homo.irisapi.ICompositeRendererAccessor;
 import io.homo.irisapi.IrisReflectionUtils;
 import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -42,14 +43,14 @@ public class IrisTextureResolver {
     private static final String NO_TRANSLUCENT_DEPTH_TEX = "noTranslucentDepthtex";
 
     public static GlOnlyNameTexture getIrisTexture(
-            CompositeRenderer renderer,
+            ICompositeRendererAccessor renderer,
             String name,
             NamedCompositePass pass
     ) {
         return getIrisTexture(renderer, name, pass, false);
     }
     public static GlOnlyNameTexture getIrisTexture(
-            CompositeRenderer renderer,
+            ICompositeRendererAccessor renderer,
             String name,
             NamedCompositePass pass,
             boolean useStageWritesToMain
@@ -85,7 +86,7 @@ public class IrisTextureResolver {
         return name.startsWith(COLOR_PREFIX) || name.startsWith(ALT_PREFIX) || name.startsWith(AUTO_PREFIX);
     }
 
-    public static RenderTarget getIrisColorTextureByName(CompositeRenderer renderer, String name, NamedCompositePass pass, boolean useStageWritesToMain) {
+    public static RenderTarget getIrisColorTextureByName(ICompositeRendererAccessor renderer, String name, NamedCompositePass pass, boolean useStageWritesToMain) {
         return resolveColorTexture(renderer, name,
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId),
@@ -96,7 +97,7 @@ public class IrisTextureResolver {
         );
     }
 
-    public static int getIrisTextureByName(CompositeRenderer renderer, String name,NamedCompositePass pass,boolean useStageWritesToMain) {
+    public static int getIrisTextureByName(ICompositeRendererAccessor renderer, String name,NamedCompositePass pass,boolean useStageWritesToMain) {
         return resolveTexture(renderer, name,
                 texId -> getCompositeRendererRenderTargets(renderer)
                         .getOrCreate(texId)
@@ -111,12 +112,12 @@ public class IrisTextureResolver {
         );
     }
 
-    public static RenderTargets getCompositeRendererRenderTargets(CompositeRenderer renderer) {
-        return ((CompositeRendererAccessor) renderer).getRenderTargets();
+    public static RenderTargets getCompositeRendererRenderTargets(ICompositeRendererAccessor renderer) {
+        return renderer.getRenderTargets();
     }
 
     private static <T> T resolveColorTexture(
-            CompositeRenderer renderer,
+            ICompositeRendererAccessor renderer,
             String name,
             Function<Integer, T> colorResolver,
             Function<Integer, T> colorAltResolver,
@@ -145,7 +146,7 @@ public class IrisTextureResolver {
     }
 
     private static <T> T resolveTexture(
-            CompositeRenderer renderer,
+            ICompositeRendererAccessor renderer,
             String name,
             Function<Integer, T> colorResolver,
             Function<Integer, T> colorAltResolver,
@@ -182,30 +183,30 @@ public class IrisTextureResolver {
     }
 
     #if MC_VER < MC_1_21_5
-    private static int getDepthTexId(CompositeRenderer renderer) {
-        return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTexture();
+    private static int getDepthTexId(ICompositeRendererAccessor renderer) {
+        return renderer.getRenderTargets().getDepthTexture();
     }
 
-    private static int getNoHandDepthTexId(CompositeRenderer renderer) {
-        return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoHand().getTextureId();
+    private static int getNoHandDepthTexId(ICompositeRendererAccessor renderer) {
+        return renderer.getRenderTargets().getDepthTextureNoHand().getTextureId();
     }
 
-    private static int getNoTranslucentDepthTexId(CompositeRenderer renderer) {
-        return ((CompositeRendererAccessor) renderer).getRenderTargets().getDepthTextureNoTranslucents().getTextureId();
+    private static int getNoTranslucentDepthTexId(ICompositeRendererAccessor renderer) {
+        return renderer.getRenderTargets().getDepthTextureNoTranslucents().getTextureId();
     }
     #else
-    private static int getDepthTexId(CompositeRenderer renderer) {
-        return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
+    private static int getDepthTexId(ICompositeRendererAccessor renderer) {
+        return ((com.mojang.blaze3d.opengl.GlTexture) (renderer)
                 .getRenderTargets().getDepthTexture()).glId();
     }
 
-    private static int getNoHandDepthTexId(CompositeRenderer renderer) {
-        return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
+    private static int getNoHandDepthTexId(ICompositeRendererAccessor renderer) {
+        return ((com.mojang.blaze3d.opengl.GlTexture) (renderer)
                 .getRenderTargets().getDepthTextureNoHand()).glId();
     }
 
-    private static int getNoTranslucentDepthTexId(CompositeRenderer renderer) {
-        return ((com.mojang.blaze3d.opengl.GlTexture) ((CompositeRendererAccessor) renderer)
+    private static int getNoTranslucentDepthTexId(ICompositeRendererAccessor renderer) {
+        return ((com.mojang.blaze3d.opengl.GlTexture) (renderer)
                 .getRenderTargets().getDepthTextureNoTranslucents()).glId();
     }
     #endif

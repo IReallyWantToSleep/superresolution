@@ -2347,6 +2347,18 @@ extern "C" {
         nvgResetFallbackFontsId(ctx, nvgFindFont(ctx, baseFont));
     }
 
+    void nvgFontSetVariationAxis(NVGcontext *ctx, int font, const char *axisTag, float value) {
+        fonsSetVariationAxis(ctx->fs, font, axisTag, value);
+    }
+
+    int nvgFontGetVariationAxisCount(NVGcontext *ctx, int font) {
+        return fonsGetVariationAxisCount(ctx->fs, font);
+    }
+
+    int nvgFontGetVariationAxisName(NVGcontext *ctx, int font, int index, char *nameOut, int nameOutSize) {
+        return fonsGetVariationAxisName(ctx->fs, font, index, nameOut, nameOutSize);
+    }
+
     // State setting
     void nvgFontSize(NVGcontext *ctx, float size) {
         NVGstate *state = nvg__getState(ctx);

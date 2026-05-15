@@ -8,12 +8,14 @@
         "composite.CompositeRendererAccessor",
         "composite.CompositeRendererPassMixin",
         "composite.IrisRenderingPipelineAccessor",
+        "composite.after1_21_11.CompositeRendererMixin",
         "composite.after1_21_4.CompositeRendererMixin",
         "composite.before1_21_1.CompositeRendererMixin",
+        "composite.before1_21_1.GlStateManagerTextureStateAccessor",
         "composite.v1_21_1.CompositeRendererMixin",
-        "composite.after1_21_11.CompositeRendererMixin",
         "macros.StandardMacrosEventMixin",
-        "uniform.CommonUniformsEventMixin"
+        "uniform.CommonUniformsEventMixin",
+        "composite.before1_21_1.IrisRenderingPipelineMixin"
     ],
     "mixins": [
     ],

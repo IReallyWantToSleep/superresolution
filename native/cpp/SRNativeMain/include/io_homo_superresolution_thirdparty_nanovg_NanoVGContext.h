@@ -6,666 +6,690 @@
 #define _Included_io_homo_superresolution_thirdparty_nanovg_NanoVGContext
 #ifdef __cplusplus
 extern "C" {
-    #endif
-    #undef io_homo_superresolution_thirdparty_nanovg_NanoVGContext_DEFAULT_FLAGS
-    #define io_homo_superresolution_thirdparty_nanovg_NanoVGContext_DEFAULT_FLAGS 0L
-    /*
+#endif
+#undef io_homo_superresolution_thirdparty_nanovg_NanoVGContext_DEFAULT_FLAGS
+#define io_homo_superresolution_thirdparty_nanovg_NanoVGContext_DEFAULT_FLAGS 0L
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    createContext
  * Signature: (I)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_createContext
-    (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jint);
 
-    /*
+/*
+ * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
+ * Method:    nCreateContextEx
+ * Signature: (II)J
+ */
+JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateContextEx
+  (JNIEnv *, jclass, jint, jint);
+
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nDeleteContext
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nDeleteContext
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nBeginFrame
  * Signature: (JFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nBeginFrame
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCancelFrame
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCancelFrame
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nEndFrame
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nEndFrame
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nGlobalCompositeOperation
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nGlobalCompositeOperation
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nGlobalCompositeBlendFunc
  * Signature: (JII)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nGlobalCompositeBlendFunc
-    (JNIEnv *, jclass, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nGlobalCompositeBlendFuncSeparate
  * Signature: (JIIII)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nGlobalCompositeBlendFuncSeparate
-    (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nSave
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nSave
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRestore
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRestore
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nReset
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nReset
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nShapeAntiAlias
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nShapeAntiAlias
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nStrokeColor
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nStrokeColor
-    (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nColorRGBA
  * Signature: (JIIII)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nColorRGBA
-    (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nColorRGBAf
  * Signature: (JFFFF)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nColorRGBAf
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nStrokePaint
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nStrokePaint
-    (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFillColor
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFillColor
-    (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFillPaint
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFillPaint
-    (JNIEnv *, jclass, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nMiterLimit
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nMiterLimit
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nStrokeWidth
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nStrokeWidth
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nLineCap
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineCap
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nLineJoin
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineJoin
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nGlobalAlpha
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nGlobalAlpha
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nResetTransform
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nResetTransform
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTransform
  * Signature: (JFFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTransform
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTranslate
  * Signature: (JFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTranslate
-    (JNIEnv *, jclass, jlong, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRotate
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRotate
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nSkewX
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nSkewX
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nSkewY
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nSkewY
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nScale
  * Signature: (JFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nScale
-    (JNIEnv *, jclass, jlong, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCurrentTransform
  * Signature: (J)[F
  */
 JNIEXPORT jfloatArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCurrentTransform
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCreateImageFromHandle
  * Signature: (JIIII)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateImageFromHandle
-    (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jint, jint, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nDeleteImage
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nDeleteImage
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nLinearGradient
  * Signature: (JFFFFJJ)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLinearGradient
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nBoxGradient
  * Signature: (JFFFFFFJJ)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nBoxGradient
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRadialGradient
  * Signature: (JFFFFJJ)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRadialGradient
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jlong, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nImagePattern
  * Signature: (JFFFFFIF)J
  */
 JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nImagePattern
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jint, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nScissor
  * Signature: (JFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nScissor
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nIntersectScissor
  * Signature: (JFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nIntersectScissor
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nResetScissor
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nResetScissor
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nBeginPath
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nBeginPath
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nMoveTo
  * Signature: (JFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nMoveTo
-    (JNIEnv *, jclass, jlong, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nLineTo
  * Signature: (JFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineTo
-    (JNIEnv *, jclass, jlong, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nBezierTo
  * Signature: (JFFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nBezierTo
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nQuadTo
  * Signature: (JFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nQuadTo
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nArcTo
  * Signature: (JFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nArcTo
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nClosePath
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nClosePath
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nPathWinding
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nPathWinding
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nArc
  * Signature: (JFFFFFI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nArc
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jint);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRect
  * Signature: (JFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRect
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRoundedRect
  * Signature: (JFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRect
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRoundedRectVarying
  * Signature: (JFFFFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRectVarying
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRoundedRectComplex
  * Signature: (JFFFFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRectComplex
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nRoundedRectEllipse
  * Signature: (JFFFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRectEllipse
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nEllipse
  * Signature: (JFFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nEllipse
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCircle
  * Signature: (JFFF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCircle
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFill
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFill
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nStroke
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nStroke
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCreateFont
  * Signature: (JLjava/lang/String;Ljava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateFont
-    (JNIEnv *, jclass, jlong, jstring, jstring);
+  (JNIEnv *, jclass, jlong, jstring, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCreateFontAtIndex
  * Signature: (JLjava/lang/String;Ljava/lang/String;I)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateFontAtIndex
-    (JNIEnv *, jclass, jlong, jstring, jstring, jint);
+  (JNIEnv *, jclass, jlong, jstring, jstring, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCreateFontMem
  * Signature: (JLjava/lang/String;Ljava/nio/ByteBuffer;I)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateFontMem
-    (JNIEnv *, jclass, jlong, jstring, jobject, jint);
+  (JNIEnv *, jclass, jlong, jstring, jobject, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nCreateFontMemAtIndex
  * Signature: (JLjava/lang/String;Ljava/nio/ByteBuffer;II)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCreateFontMemAtIndex
-    (JNIEnv *, jclass, jlong, jstring, jobject, jint, jint);
+  (JNIEnv *, jclass, jlong, jstring, jobject, jint, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFindFont
  * Signature: (JLjava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFindFont
-    (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nAddFallbackFontId
  * Signature: (JII)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nAddFallbackFontId
-    (JNIEnv *, jclass, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jint, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nAddFallbackFont
  * Signature: (JLjava/lang/String;Ljava/lang/String;)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nAddFallbackFont
-    (JNIEnv *, jclass, jlong, jstring, jstring);
+  (JNIEnv *, jclass, jlong, jstring, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nResetFallbackFontsId
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nResetFallbackFontsId
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nResetFallbackFonts
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nResetFallbackFonts
-    (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFontSize
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontSize
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFontBlur
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontBlur
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextLetterSpacing
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextLetterSpacing
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextLineHeight
  * Signature: (JF)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextLineHeight
-    (JNIEnv *, jclass, jlong, jfloat);
+  (JNIEnv *, jclass, jlong, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextAlign
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextAlign
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFontFaceId
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontFaceId
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    /*
+/*
+ * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
+ * Method:    nFontSetVariationAxis
+ * Signature: (JILjava/lang/String;F)V
+ */
+JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontSetVariationAxis
+  (JNIEnv *, jclass, jlong, jint, jstring, jfloat);
+
+/*
+ * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
+ * Method:    nFontGetVariationAxis
+ * Signature: (JI)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontGetVariationAxis
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nFontFace
  * Signature: (JLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontFace
-    (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nText
  * Signature: (JFFLjava/lang/String;)F
  */
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nText
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jstring);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextBox
  * Signature: (JFFFLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBox
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jstring);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextBounds
  * Signature: (JFFLjava/lang/String;)Lio/homo/superresolution/thirdparty/nanovg/TextBoundsResult;
  */
 JNIEXPORT jobject JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBounds
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jstring);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextBoxBounds
  * Signature: (JFFFLjava/lang/String;)[F
  */
 JNIEXPORT jfloatArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBoxBounds
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jstring);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextGlyphPositions
  * Signature: (JFFLjava/lang/String;)[Lio/homo/superresolution/thirdparty/nanovg/NVGglyphPosition;
  */
 JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextGlyphPositions
-    (JNIEnv *, jclass, jlong, jfloat, jfloat, jstring);
+  (JNIEnv *, jclass, jlong, jfloat, jfloat, jstring);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextMetrics
  * Signature: (J)Lio/homo/superresolution/thirdparty/nanovg/TextMetricsResult;
  */
 JNIEXPORT jobject JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextMetrics
-    (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nTextBreakLines
  * Signature: (JLjava/lang/String;F)[Lio/homo/superresolution/thirdparty/nanovg/NVGtextRow;
  */
 JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextBreakLines
-    (JNIEnv *, jclass, jlong, jstring, jfloat);
+  (JNIEnv *, jclass, jlong, jstring, jfloat);
 
-    /*
+/*
  * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
  * Method:    nLineStyle
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineStyle
-    (JNIEnv *, jclass, jlong, jint);
+  (JNIEnv *, jclass, jlong, jint);
 
-    #ifdef __cplusplus
+#ifdef __cplusplus
 }
 #endif
 #endif

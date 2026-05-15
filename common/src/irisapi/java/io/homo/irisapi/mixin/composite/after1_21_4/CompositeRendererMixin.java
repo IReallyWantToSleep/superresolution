@@ -18,7 +18,7 @@
 
 package io.homo.irisapi.mixin.composite.after1_21_4;
 
-import io.homo.irisapi.IrisCompositePassType;
+import io.homo.irisapi.*;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,9 +36,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import io.homo.irisapi.IrisReflectionUtils;
-import io.homo.irisapi.NamedCompositePass;
-import io.homo.irisapi.PassEventHandler;
 import io.homo.irisapi.handlers.IrisRenderingPipelineHandler;
 
 #endif
@@ -54,7 +51,7 @@ public class CompositeRendererMixin {
         if (passIndex >= 0 && passIndex < this.passes.size()) {
             Object pass = this.passes.get(passIndex);
             handler.handle(
-                    (CompositeRenderer) (Object) this,
+                    new CompositeRendererAccessorImpl_After1201((CompositeRenderer) (Object) this),
                     (NamedCompositePass) pass,
                     IrisReflectionUtils.getCompositePassType(pass)
             );

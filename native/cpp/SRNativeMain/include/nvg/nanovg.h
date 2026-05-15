@@ -577,6 +577,15 @@ extern "C" {
     // Resets fallback fonts by name.
     void nvgResetFallbackFonts(NVGcontext *ctx, const char *baseFont);
 
+    // Sets a variation axis value for a variable font (FreeType backend only).
+    void nvgFontSetVariationAxis(NVGcontext *ctx, int font, const char *axisTag, float value);
+
+    // Returns the number of variation axes for a font.
+    int nvgFontGetVariationAxisCount(NVGcontext *ctx, int font);
+
+    // Gets the name of a variation axis by index. Returns 1 on success, 0 on failure.
+    int nvgFontGetVariationAxisName(NVGcontext *ctx, int font, int index, char *nameOut, int nameOutSize);
+
     // Sets the font size of current text style.
     void nvgFontSize(NVGcontext *ctx, float size);
 

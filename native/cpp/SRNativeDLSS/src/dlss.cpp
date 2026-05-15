@@ -79,7 +79,6 @@ extern "C" {
                 size_t len = std::strlen(param->value.stringValue) + 1;
                 featureDllPath.resize(len);
                 std::mbstowcs(featureDllPath.data(), param->value.stringValue, len);
-
                 pathArray[0] = featureDllPath.c_str();
                 pathListInfo.Path = pathArray;
                 pathListInfo.Length = 1;

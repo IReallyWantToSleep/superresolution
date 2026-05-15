@@ -24,7 +24,7 @@ import net.irisshaders.iris.pipeline.CompositeRenderer;
 
 public class IrisRenderingPipelineHandler {
     public static void onCompositePassStart(
-            CompositeRenderer compositeRenderer,
+            ICompositeRendererAccessor compositeRenderer,
             NamedCompositePass compositePass,
             IrisCompositePassType passType
     ) {
@@ -32,7 +32,7 @@ public class IrisRenderingPipelineHandler {
                 new IrisCompositePassRenderingEvent.PassBegin(
                         compositeRenderer,
                         IrisCompositeRenderingPhase.from(
-                                ((CompositeRendererAccessor) compositeRenderer).getPipeline(),
+                                compositeRenderer.getPipeline(),
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
@@ -43,7 +43,7 @@ public class IrisRenderingPipelineHandler {
     }
 
     public static void onCompositePassEnd(
-            CompositeRenderer compositeRenderer,
+            ICompositeRendererAccessor compositeRenderer,
             NamedCompositePass compositePass,
             IrisCompositePassType passType
     ) {
@@ -51,7 +51,7 @@ public class IrisRenderingPipelineHandler {
                 new IrisCompositePassRenderingEvent.PassEnd(
                         compositeRenderer,
                         IrisCompositeRenderingPhase.from(
-                                ((CompositeRendererAccessor) compositeRenderer).getPipeline(),
+                                compositeRenderer.getPipeline(),
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
@@ -63,7 +63,7 @@ public class IrisRenderingPipelineHandler {
 
 
     public static void onCompositePassDispatchBefore(
-            CompositeRenderer compositeRenderer,
+            ICompositeRendererAccessor compositeRenderer,
             NamedCompositePass compositePass,
             IrisCompositePassType passType
     ) {
@@ -71,7 +71,7 @@ public class IrisRenderingPipelineHandler {
                 new IrisCompositePassRenderingEvent.BeforePassRender(
                         compositeRenderer,
                         IrisCompositeRenderingPhase.from(
-                                ((CompositeRendererAccessor) compositeRenderer).getPipeline(),
+                                compositeRenderer.getPipeline(),
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),
@@ -82,7 +82,7 @@ public class IrisRenderingPipelineHandler {
     }
 
     public static void onCompositePassDispatchAfter(
-            CompositeRenderer compositeRenderer,
+            ICompositeRendererAccessor compositeRenderer,
             NamedCompositePass compositePass,
             IrisCompositePassType passType
     ) {
@@ -90,7 +90,7 @@ public class IrisRenderingPipelineHandler {
                 new IrisCompositePassRenderingEvent.AfterPassRender(
                         compositeRenderer,
                         IrisCompositeRenderingPhase.from(
-                                ((CompositeRendererAccessor) compositeRenderer).getPipeline(),
+                                compositeRenderer.getPipeline(),
                                 compositeRenderer
                         ),
                         compositePass.superresolution$getName(),

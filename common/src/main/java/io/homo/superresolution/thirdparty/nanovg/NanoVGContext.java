@@ -193,6 +193,8 @@ public class NanoVGContext {
     private static native void nTextAlign(long ctx, int align);
 
     private static native void nFontFaceId(long ctx, int font);
+    private static native void nFontSetVariationAxis(long ctx,int font, String axisTag, float value);
+    private static native String[] nFontGetVariationAxis(long ctx,int font);
 
     private static native void nFontFace(long ctx, String font);
 
@@ -534,6 +536,7 @@ public class NanoVGContext {
         return List.of(nTextGlyphPositions(nativeHandle, x, y, string));
     }
 
+
     public TextMetricsResult textMetrics() {
         return nTextMetrics(nativeHandle);
     }
@@ -541,6 +544,14 @@ public class NanoVGContext {
     public List<NVGtextRow> textBreakLines(String string, float breakRowWidth) {
         return List.of(nTextBreakLines(nativeHandle, string, breakRowWidth));
     }
+
+    public void fontSetVariationAxis(int font, String axisTag, float value){
+        nFontSetVariationAxis(nativeHandle,font,axisTag,value);
+    }
+    public List<String> fontGetVariationAxis(int font){
+        return List.of(nFontGetVariationAxis(nativeHandle,font));
+    }
+
 
     public void delete() {
         if (nativeHandle != 0) {

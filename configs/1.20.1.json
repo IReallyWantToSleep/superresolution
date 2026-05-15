@@ -98,13 +98,10 @@
                 {
                     "name": "geckolib",
                     "version": "4.8.2"
-                }
-            ],
-            "local": [
+                },
                 {
-                    "name": "oculus-shit-mc1.20.1-1.8.0-dev",
-                    "isMod": true,
-                    "use_jarjar": true
+                    "name": "oculus",
+                    "version": "1.20.1-1.8.0"
                 }
             ]
         }

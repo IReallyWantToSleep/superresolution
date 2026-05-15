@@ -337,6 +337,25 @@ void NanoVGContext::ResetFallbackFonts(const std::string &baseFont)
     nvgResetFallbackFonts(ctx, baseFont.c_str());
 }
 
+void NanoVGContext::FontSetVariationAxis(int font, const char *axisTag, float value)
+{
+    nvgFontSetVariationAxis(ctx, font, axisTag, value);
+}
+
+std::vector<std::string> NanoVGContext::FontGetVariationAxis(int font)
+{
+    std::vector<std::string> result;
+    int count = nvgFontGetVariationAxisCount(ctx, font);
+    result.reserve(count);
+    for (int i = 0; i < count; i++) {
+        char name[256];
+        if (nvgFontGetVariationAxisName(ctx, font, i, name, sizeof(name))) {
+            result.push_back(std::string(name));
+        }
+    }
+    return result;
+}
+
 void NanoVGContext::FontSize(float size)
 {
     nvgFontSize(ctx, size);

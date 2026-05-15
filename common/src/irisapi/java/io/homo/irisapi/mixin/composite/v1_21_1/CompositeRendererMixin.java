@@ -20,10 +20,7 @@ package io.homo.irisapi.mixin.composite.v1_21_1;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.irisapi.IrisCompositePassType;
-import io.homo.irisapi.IrisReflectionUtils;
-import io.homo.irisapi.NamedCompositePass;
-import io.homo.irisapi.PassEventHandler;
+import io.homo.irisapi.*;
 import io.homo.irisapi.handlers.IrisRenderingPipelineHandler;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import org.spongepowered.asm.mixin.Final;
@@ -39,7 +36,7 @@ import java.util.Objects;
 
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
-    #if MC_VER >= MC_1_20_1 && MC_VER <= MC_1_21_4
+    #if MC_VER >= MC_1_21_1 && MC_VER <= MC_1_21_4
     @Shadow(remap = false)
     @Final
     private ImmutableList<Object> passes;
@@ -58,7 +55,7 @@ public class CompositeRendererMixin {
         Object pass = superresolution$getPass(passIndex);
         Objects.requireNonNull(pass);
         handler.handle(
-                (CompositeRenderer) (Object) this,
+                new CompositeRendererAccessorImpl_After1201(((CompositeRenderer)(Object)this)),
                 (NamedCompositePass) pass,
                 IrisReflectionUtils.getCompositePassType(pass)
         );
