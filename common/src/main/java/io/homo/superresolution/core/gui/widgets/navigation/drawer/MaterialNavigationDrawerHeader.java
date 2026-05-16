@@ -74,7 +74,6 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
 
         String title = titleSupplier.get();
         if (title != null && !title.isEmpty()) {
-            //TODO:使用bold变体的字体或许更好
             ctx.drawAlignedText(
                     ctx.font(),
                     FONT_SIZE,
@@ -83,23 +82,12 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
                     centerY,
                     bounds.width - contentX + bounds.x,
                     bounds.height,
+                    800,
                     scheme().onSurfaceVariant(),
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                     false
             );
 
-            ctx.drawAlignedText(
-                    ctx.font(),
-                    FONT_SIZE,
-                    title,
-                    contentX,
-                    centerY,
-                    bounds.width - contentX + bounds.x,
-                    bounds.height,
-                    scheme().onSurfaceVariant(),
-                    TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
-                    false
-            );
         }
     }
 
@@ -130,7 +118,7 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
         }
         String title = titleSupplier.get();
         if (title != null && !title.isEmpty()) {
-            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE);
+            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE, 800);
         }
         width += ICON_MARGIN_LEFT;
         return width;

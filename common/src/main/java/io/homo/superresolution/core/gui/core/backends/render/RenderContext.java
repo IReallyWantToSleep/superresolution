@@ -26,6 +26,8 @@ import org.joml.Vector2f;
 import java.util.function.Consumer;
 
 public interface RenderContext {
+    float DEFAULT_FONT_WEIGHT = 500;
+
     float guiScale();
 
     void setGuiScale(float scale);
@@ -224,24 +226,85 @@ public interface RenderContext {
 
     IFont font();
 
-    float measureTextWidth(String text, float fontSize, float lineHeight);
+    float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight);
 
-    float measureTextHeight(String text, float fontSize, float lineHeight);
+    float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight);
 
-    Vector2f measureText(String text, float fontSize, float lineHeight);
+    Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight);
 
-    TextMetrics measureTextMetrics(IFont font, float fontSize,
-                                   String text, float maxWidth,
-                                   float lineHeight, boolean wrap);
-
+    TextMetrics measureTextMetrics(IFont font, float fontSize, String text, float maxWidth,
+                                   float lineHeight, float weight, boolean wrap);
 
     void drawAlignedText(IFont font, float fontSize, String text,
-                         float x, float y, float lineMaxWidth, float lineHeight,
+                         float x, float y, float lineMaxWidth, float lineHeight, float weight,
                          Color color, TextAlign align, boolean wrap);
 
     void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
-                         float x, float y, float lineMaxWidth, float lineHeight,
+                         float x, float y, float lineMaxWidth, float lineHeight, float weight,
                          Color color, TextAlign align, boolean wrap);
+
+    default float measureTextWidth(IFont font, String text, float fontSize, float lineHeight) {
+        return measureTextWidth(font, text, fontSize, lineHeight, DEFAULT_FONT_WEIGHT);
+    }
+
+    default float measureTextHeight(IFont font, String text, float fontSize, float lineHeight) {
+        return measureTextHeight(font, text, fontSize, lineHeight, DEFAULT_FONT_WEIGHT);
+    }
+
+    default Vector2f measureText(IFont font, String text, float fontSize, float lineHeight) {
+        return measureText(font, text, fontSize, lineHeight, DEFAULT_FONT_WEIGHT);
+    }
+
+    default TextMetrics measureTextMetrics(IFont font, float fontSize, String text, float maxWidth,
+                                           float lineHeight, boolean wrap) {
+        return measureTextMetrics(font, fontSize, text, maxWidth, lineHeight, DEFAULT_FONT_WEIGHT, wrap);
+    }
+
+    default float measureTextWidth(String text, float fontSize, float lineHeight) {
+        return measureTextWidth(font(), text, fontSize, lineHeight);
+    }
+
+    default float measureTextHeight(String text, float fontSize, float lineHeight) {
+        return measureTextHeight(font(), text, fontSize, lineHeight);
+    }
+
+    default Vector2f measureText(String text, float fontSize, float lineHeight) {
+        return measureText(font(), text, fontSize, lineHeight);
+    }
+
+    default TextMetrics measureTextMetrics(float fontSize, String text, float maxWidth,
+                                           float lineHeight, boolean wrap) {
+        return measureTextMetrics(font(), fontSize, text, maxWidth, lineHeight, wrap);
+    }
+
+    default void drawAlignedText(IFont font, float fontSize, String text,
+                                 float x, float y, float lineMaxWidth, float lineHeight,
+                                 Color color, TextAlign align, boolean wrap) {
+        drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, DEFAULT_FONT_WEIGHT, color, align, wrap);
+    }
+
+    default void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
+                                 float x, float y, float lineMaxWidth, float lineHeight,
+                                 Color color, TextAlign align, boolean wrap) {
+        drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, DEFAULT_FONT_WEIGHT, color, align, wrap);
+    }
+
+    default float measureTextWidth(String text, float fontSize, float lineHeight, float weight) {
+        return measureTextWidth(font(), text, fontSize, lineHeight, weight);
+    }
+
+    default float measureTextHeight(String text, float fontSize, float lineHeight, float weight) {
+        return measureTextHeight(font(), text, fontSize, lineHeight, weight);
+    }
+
+    default Vector2f measureText(String text, float fontSize, float lineHeight, float weight) {
+        return measureText(font(), text, fontSize, lineHeight, weight);
+    }
+
+    default TextMetrics measureTextMetrics(float fontSize, String text, float maxWidth,
+                                           float lineHeight, boolean wrap, float weight) {
+        return measureTextMetrics(font(), fontSize, text, maxWidth, lineHeight, weight, wrap);
+    }
 
     RenderTree renderTree();
 

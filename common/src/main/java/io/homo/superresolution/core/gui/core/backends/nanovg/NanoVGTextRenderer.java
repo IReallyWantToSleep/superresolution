@@ -38,26 +38,38 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         INSTANCE = this;
     }
 
-    public float measureTextWidth(String text, float fontSize, float lineHeight) {
+    public float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight) {
         if (text == null || text.isEmpty()) {
             return 0;
         }
+        contextPtr.fontFace(((NanoVGFont) font).name);
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
+        contextPtr.fontSetVariationAxis(((NanoVGFont) font).id, "wght", weight);
         float[] bounds = contextPtr.textBounds(0, 0, text).bounds;
         return (bounds[2] - bounds[0]);
     }
 
-    public float measureTextHeight(String text, float fontSize, float lineHeight) {
+    public float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        contextPtr.fontFace(((NanoVGFont) font).name);
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
+        contextPtr.fontSetVariationAxis(((NanoVGFont) font).id, "wght", weight);
         float[] bounds = contextPtr.textBounds(0, 0, text).bounds;
         return (bounds[3] - bounds[1]) - 2;
     }
 
-    public Vector2f measureText(String text, float fontSize, float lineHeight) {
+    public Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight) {
+        if (text == null || text.isEmpty()) {
+            return new Vector2f(0);
+        }
+        contextPtr.fontFace(((NanoVGFont) font).name);
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
+        contextPtr.fontSetVariationAxis(((NanoVGFont) font).id, "wght", weight);
         float[] bounds = contextPtr.textBounds(0, 0, text).bounds;
         return new Vector2f(
                 (bounds[2] - bounds[0]),
@@ -66,16 +78,9 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
     }
 
     public void drawAlignedText(
-            IFont font,
-            float fontSize,
-            String text,
-            float startX,
-            float startY,
-            float maxWidth,
-            float lineHeight,
-            Color color,
-            TextAlign align,
-            boolean wrap) {
+            IFont font, float fontSize, String text,
+            float startX, float startY, float maxWidth, float lineHeight,
+            float weight, Color color, TextAlign align, boolean wrap) {
         if (text == null || text.isEmpty()) {
             return;
         }
@@ -85,12 +90,15 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         color = color.copy().alpha((int) (nvg.globalAlpha() * color.alpha()));
         NanoVGColor vgColor = contextPtr.colorRGBA(color.red(), color.green(), color.blue(), color.alpha());
         String fontName = ((NanoVGFont) font).name;
+
         contextPtr.save();
-        TextMetrics metrics = calculateTextMetrics(fontName, fontSize, text, maxWidth, lineHeight, wrap);
+        TextMetrics metrics = calculateTextMetrics(font, fontSize, text, maxWidth, lineHeight, wrap, weight);
         contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
         contextPtr.fontSize(fontSize);
         contextPtr.fontFace(fontName);
+        contextPtr.fontSetVariationAxis(((NanoVGFont) font).id, "wght", weight);
         contextPtr.fillColor(vgColor);
+
         float yPos = startY + 1.5f;
         for (String line : metrics.lines) {
             contextPtr.text(startX, yPos, line);
@@ -99,29 +107,24 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         contextPtr.restore();
     }
 
-
     public void drawAlignedText(
-            IFont font,
-            float fontSize,
-            TextMetrics metrics,
-            float startX,
-            float startY,
-            float maxWidth,
-            float lineHeight,
-            Color color,
-            TextAlign align,
-            boolean wrap) {
+            IFont font, float fontSize, TextMetrics metrics,
+            float startX, float startY, float maxWidth, float lineHeight,
+            float weight, Color color, TextAlign align, boolean wrap) {
         if (align == null) {
             align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
         }
         color = color.copy().alpha((int) (nvg.globalAlpha() * color.alpha()));
         NanoVGColor vgColor = contextPtr.colorRGBA(color.red(), color.green(), color.blue(), color.alpha());
         String fontName = ((NanoVGFont) font).name;
+
         contextPtr.save();
         contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
         contextPtr.fontSize(fontSize);
         contextPtr.fontFace(fontName);
+        contextPtr.fontSetVariationAxis(((NanoVGFont) font).id, "wght", weight);
         contextPtr.fillColor(vgColor);
+
         float yPos = startY + 1.5f;
         for (String line : metrics.lines) {
             contextPtr.text(startX, yPos, line);
@@ -141,17 +144,18 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         };
     }
 
-    public TextMetrics calculateTextMetrics(String fontName, float fontSize,
+    public TextMetrics calculateTextMetrics(IFont font, float fontSize,
                                             String text, float maxWidth,
-                                            float lineHeight, boolean wrap) {
+                                            float lineHeight, boolean wrap,
+                                            float weight) {
         if (text == null || text.isEmpty()) {
             return new TextMetrics(List.of(), 0, 0);
         }
         contextPtr.save();
-
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
-        contextPtr.fontFace(fontName);
+        contextPtr.fontFace(((NanoVGFont) font).name);
+        contextPtr.fontSetVariationAxis(((NanoVGFont) font).id, "wght", weight);
 
         List<String> lines = new ArrayList<>();
         String[] paragraphs = text.split("\n", -1);
@@ -171,7 +175,9 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         }
         float maxLineWidth = 0;
         for (String line : lines) {
-            float width = measureTextWidth(line, fontSize, lineHeight);
+            // 直接使用已设置字重的上下文测量
+            float[] bounds = contextPtr.textBounds(0, 0, line).bounds;
+            float width = bounds[2] - bounds[0];
             if (width > maxLineWidth) {
                 maxLineWidth = width;
             }

@@ -386,45 +386,36 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     @Override
-    public float measureTextWidth(String text, float fontSize, float lineHeight) {
-        return NanoVG.RENDERER.TEXT.measureTextWidth(text, fontSize, lineHeight);
+    public float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight) {
+        return NanoVG.RENDERER.TEXT.measureTextWidth(font, text, fontSize, lineHeight, weight);
     }
 
     @Override
-    public float measureTextHeight(String text, float fontSize, float lineHeight) {
-        return NanoVG.RENDERER.TEXT.measureTextHeight(text, fontSize, lineHeight);
+    public float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight) {
+        return NanoVG.RENDERER.TEXT.measureTextHeight(font, text, fontSize, lineHeight, weight);
     }
 
     @Override
-    public Vector2f measureText(String text, float fontSize, float lineHeight) {
-        return NanoVG.RENDERER.TEXT.measureText(text, fontSize, lineHeight);
+    public Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight) {
+        return NanoVG.RENDERER.TEXT.measureText(font, text, fontSize, lineHeight, weight);
     }
 
     @Override
-    public TextMetrics measureTextMetrics(IFont font, float fontSize, String text, float lineMaxWidth, float lineHeight, boolean wrap) {
+    public TextMetrics measureTextMetrics(IFont font, float fontSize, String text, float lineMaxWidth,
+                                          float lineHeight, float weight, boolean wrap) {
         return NanoVG.RENDERER.TEXT.calculateTextMetrics(
-                ((NanoVGFont) font).name,
-                fontSize,
-                text,
-                lineMaxWidth,
-                lineHeight,
-                wrap
+                font, fontSize, text, lineMaxWidth, lineHeight, wrap, weight
         );
     }
 
     @Override
-    public void drawAlignedText(IFont font, float fontSize, String text,
-                                float x, float y, float lineMaxWidth, float lineHeight,
-                                Color color, TextAlign align, boolean wrap) {
-
-        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, color, align, wrap);
+    public void drawAlignedText(IFont font, float fontSize, String text, float x, float y, float lineMaxWidth, float lineHeight, float weight, Color color, TextAlign align, boolean wrap) {
+        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, weight, color, align, wrap);
     }
 
     @Override
-    public void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
-                                float x, float y, float lineMaxWidth, float lineHeight,
-                                Color color, TextAlign align, boolean wrap) {
-        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, color, align, wrap);
+    public void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics, float x, float y, float lineMaxWidth, float lineHeight, float weight, Color color, TextAlign align, boolean wrap) {
+        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, weight, color, align, wrap);
     }
 
     @Override

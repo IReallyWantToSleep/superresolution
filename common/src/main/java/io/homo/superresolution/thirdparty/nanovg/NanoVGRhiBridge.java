@@ -591,8 +591,8 @@ public final class NanoVGRhiBridge {
             int fillOffset = paths.getInt(pathBase);
             int fillCount = paths.getInt(pathBase + 4);
             if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
-                ByteBuffer fanTriangles = buildTriangleFan(verts, fillOffset, fillCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.Triangle, fanTriangles, uniforms, uniformBaseOffset, uniformOffset,
+                ByteBuffer fanVerts = buildRange(verts, fillOffset, fillCount);
+                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleFan, fanVerts, uniforms, uniformBaseOffset, uniformOffset,
                         fragSize, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_FILL_WRITE, 0);
             }
@@ -660,8 +660,8 @@ public final class NanoVGRhiBridge {
             int strokeCount = paths.getInt(pathBase + 12);
 
             if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
-                ByteBuffer fanTriangles = buildTriangleFan(verts, fillOffset, fillCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.Triangle, fanTriangles, uniforms, uniformBaseOffset, uniformOffset,
+                ByteBuffer fanVerts = buildRange(verts, fillOffset, fillCount);
+                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleFan, fanVerts, uniforms, uniformBaseOffset, uniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
             }
@@ -1434,7 +1434,7 @@ public final class NanoVGRhiBridge {
         out.flip();
         return out;
     }
-
+/*
     private static ByteBuffer buildTriangleFan(ByteBuffer verts, int firstVertex, int vertexCount) {
         int triangleCount = vertexCount - 2;
         ByteBuffer out = BufferUtils.createByteBuffer(triangleCount * 3 * VERTEX_STRIDE_BYTES).order(ByteOrder.nativeOrder());
@@ -1445,7 +1445,7 @@ public final class NanoVGRhiBridge {
         }
         out.flip();
         return out;
-    }
+    }*/
 
     private static void putVertex(ByteBuffer dst, ByteBuffer src, int vertexIndex) {
         int base = vertexIndex * VERTEX_STRIDE_BYTES;

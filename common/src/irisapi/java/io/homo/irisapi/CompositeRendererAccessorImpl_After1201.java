@@ -44,7 +44,6 @@ public class CompositeRendererAccessorImpl_After1201 implements ICompositeRender
 
     @Override
     public boolean isSameInstance(ICompositeRendererAccessor instance) {
-        if (!(instance instanceof NewCompositeRenderer)) return false;
         if (!(instance instanceof CompositeRendererAccessorImpl_After1201)) return false;
         if (((CompositeRendererAccessorImpl_After1201)instance).compositeRenderer.equals(this.compositeRenderer))return true;
         return false;

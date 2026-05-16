@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.gui.widgets.label;
 
 import io.homo.superresolution.core.gui.core.WidgetStyle;
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.utils.Color;
 
 public class MaterialLabelStyle extends WidgetStyle<MaterialLabelStyle> {
@@ -27,6 +28,16 @@ public class MaterialLabelStyle extends WidgetStyle<MaterialLabelStyle> {
     private float lineHeight = 15f;
     private boolean sizeToContent = false;
     private boolean wrap = false;
+    private float weight = RenderContext.DEFAULT_FONT_WEIGHT;
+
+    public float weight() {
+        return weight;
+    }
+
+    public MaterialLabelStyle weight(float weight) {
+        this.weight = weight;
+        return this;
+    }
 
     public boolean wrap() {
         return wrap;

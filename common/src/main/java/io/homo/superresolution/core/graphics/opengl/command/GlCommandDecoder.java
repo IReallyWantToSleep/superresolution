@@ -98,9 +98,9 @@ public class GlCommandDecoder implements ICommandDecoder {
             if (bit != 0) {
                 int finalBit = bit;
                 putGlCommand(commandBuffer, () -> {
-                    GlDebug.pushGroup(0x7180002, "Restore External Resource Barrier");
+                    pushGroup(0x7180002, "Restore External Resource Barrier");
                     glMemoryBarrier(finalBit);
-                    GlDebug.popGroup();
+                    popGroup();
                 });
             }
         }
@@ -643,10 +643,10 @@ public class GlCommandDecoder implements ICommandDecoder {
         glCommandBuffer._beginRenderPass(glRenderPass);
 
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170001, "Render Pass");
-            GlDebug.pushGroup(0x7170002, "Begin Render Pass");
+            pushGroup(0x7170001, "Render Pass");
+            pushGroup(0x7170002, "Begin Render Pass");
             glRenderPass.bind();
-            GlDebug.popGroup();
+            popGroup();
         });
         glRenderPass.begin(glCommandBuffer);
     }
@@ -660,15 +660,15 @@ public class GlCommandDecoder implements ICommandDecoder {
 
         GlRenderPass glRenderPass = glCommandBuffer.getActiveRenderPass();
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170005, "End Render Pass");
+            pushGroup(0x7170005, "End Render Pass");
         });
         glRenderPass.end(glCommandBuffer);
         putGlCommand(commandBuffer, () -> {
             glBindVertexArray(0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glCommandBuffer.executionStateCache().invalidateAll();
-            GlDebug.popGroup(); // End Render Pass
-            GlDebug.popGroup(); // Render Pass
+            popGroup(); // End Render Pass
+            popGroup(); // Render Pass
         });
 
         glCommandBuffer._endRenderPass();
@@ -696,7 +696,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         glPipeline.applyDynamicStates(commandBuffer);
 
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7170003, "Bind Render Pipeline");
+            pushGroup(0x7170003, "Bind Render Pipeline");
             GlCommandBuffer.ExecutionStateCache stateCache = glCommandBuffer.executionStateCache();
             int programHandle = (int) glPipeline.shader().handle();
             if (!stateCache.matchesProgram(programHandle)) {
@@ -707,7 +707,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                 glPipeline.setupRenderStates(stateCache);
             }
             descriptorSet.applyFromSnapshot(descriptorSnapshot, stateCache);
-            GlDebug.popGroup();
+            popGroup();
         });
         glCommandBuffer.bindGraphicsPipeline(glPipeline);
     }
@@ -730,7 +730,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         PipelineDescriptorSet.DescriptorSnapshot descriptorSnapshot = descriptorSet.createSnapshot();
 
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7160000, "Bind Compute Pipeline");
+            pushGroup(0x7160000, "Bind Compute Pipeline");
             GlCommandBuffer.ExecutionStateCache stateCache = glCommandBuffer.executionStateCache();
             int programHandle = (int) glPipeline.shader().handle();
             if (!stateCache.matchesProgram(programHandle)) {
@@ -738,7 +738,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                 stateCache.recordProgram(programHandle);
             }
             descriptorSet.applyFromSnapshot(descriptorSnapshot, stateCache);
-            GlDebug.popGroup();
+            popGroup();
         });
         glCommandBuffer.bindComputePipeline(glPipeline);
     }
@@ -771,14 +771,14 @@ public class GlCommandDecoder implements ICommandDecoder {
         }
 
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7180004, "Draw");
+            pushGroup(0x7180004, "Draw");
 
             GlCommandBuffer.ExecutionStateCache stateCache = glCommandBuffer.executionStateCache();
             if (vertexBuffer instanceof GlVertexBuffer glVertexBuffer) {
                 boolean needToBindVao = !stateCache.matchesVao(glVertexBuffer.getVao());
                 boolean needToBindArrayBuffer = !stateCache.matchesArrayBuffer(glVertexBuffer);
                 if (needToBindArrayBuffer || needToBindVao) {
-                    GlDebug.pushGroup(0x7170004, "Setup Vertex Buffer");
+                    pushGroup(0x7170004, "Setup Vertex Buffer");
                 }
                 if (needToBindVao) {
                     glVertexBuffer.getVao().bind();
@@ -789,17 +789,18 @@ public class GlCommandDecoder implements ICommandDecoder {
                     stateCache.recordArrayBuffer(glVertexBuffer);
                 }
                 if (needToBindArrayBuffer || needToBindVao) {
-                    GlDebug.popGroup();
+                    popGroup();
                 }
             }
             PrimitiveType primitiveType = pipeline.primitiveType();
             glDrawArrays(switch (primitiveType) {
+                case TriangleFan -> GL_TRIANGLE_FAN;
                 case Lines -> GL_LINES;
                 case Triangle -> GL_TRIANGLES;
                 case TriangleStrip -> GL_TRIANGLE_STRIP;
                 case Points -> GL_POINTS;
             }, firstVertex, vertexCount);
-            GlDebug.popGroup();
+            popGroup();
 
         });
     }
@@ -827,14 +828,14 @@ public class GlCommandDecoder implements ICommandDecoder {
 
         putGlCommand(commandBuffer, () -> {
             if (preBarrierMask != 0) {
-                GlDebug.pushGroup(0x7180003, "Barrier");
+                pushGroup(0x7180003, "Barrier");
                 glMemoryBarrier(preBarrierMask);
-                GlDebug.popGroup();
+                popGroup();
             }
 
-            GlDebug.pushGroup(0x7160001, "Compute");
+            pushGroup(0x7160001, "Compute");
             glDispatchCompute(groupCountX, groupCountY, groupCountZ);
-            GlDebug.popGroup();
+            popGroup();
         });
 
         updateStateAfterDispatch(computePipeline);
@@ -849,9 +850,9 @@ public class GlCommandDecoder implements ICommandDecoder {
         }
         int finalMask = mask;
         putGlCommand(commandBuffer, () -> {
-            GlDebug.pushGroup(0x7180001, "Memory Barrier");
+            pushGroup(0x7180001, "Memory Barrier");
             glMemoryBarrier(finalMask);
-            GlDebug.popGroup();
+            popGroup();
         });
     }
 

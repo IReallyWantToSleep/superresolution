@@ -21,6 +21,7 @@ package io.homo.superresolution.core.graphics.impl.vertex;
 public enum PrimitiveType {
     Triangle,
     TriangleStrip,
+    TriangleFan,
     Lines,
     Points
 }

@@ -133,7 +133,7 @@ public class GlGraphicsPipeline extends GraphicsPipeline {
         }
 
         if (state.depthTestEnable() && (stateCache == null || !stateCache.matchesDepthCompareOp(state.depthCompareOp()))) {
-            glDepthFunc(toGLCompareOp(state.depthCompareOp()));
+            glDepthFunc(state.depthCompareOp().gl());
         }
 
         if (stateCache == null || !stateCache.matchesDepthWriteEnable(state.depthWriteEnable())) {
@@ -148,45 +148,38 @@ public class GlGraphicsPipeline extends GraphicsPipeline {
             }
         }
 
+        //TODO:NVG因为缓存逻辑存在问题出现某些情况下绘制出错，这里暂时先跳过检查
         if (state.stencilTestEnable()) {
-            if (stateCache == null || !stateCache.matchesStencilWriteMask(true, state.stencilWriteMask())) {
-                glStencilMaskSeparate(GL_FRONT, state.stencilWriteMask());
-            }
-            if (stateCache == null || !stateCache.matchesStencilWriteMask(false, state.stencilWriteMask())) {
-                glStencilMaskSeparate(GL_BACK, state.stencilWriteMask());
-            }
-            if (stateCache == null || !stateCache.matchesStencilFunc(true, state.stencilCompareOpFront(), state.stencilReference(), state.stencilCompareMask())) {
-                glStencilFuncSeparate(
-                        GL_FRONT,
-                        toGLCompareOp(state.stencilCompareOpFront()),
-                        state.stencilReference(),
-                        state.stencilCompareMask()
-                );
-            }
-            if (stateCache == null || !stateCache.matchesStencilFunc(false, state.stencilCompareOpBack(), state.stencilReference(), state.stencilCompareMask())) {
-                glStencilFuncSeparate(
-                        GL_BACK,
-                        toGLCompareOp(state.stencilCompareOpBack()),
-                        state.stencilReference(),
-                        state.stencilCompareMask()
-                );
-            }
-            if (stateCache == null || !stateCache.matchesStencilOp(true, state.stencilFailOpFront(), state.stencilDepthFailOpFront(), state.stencilPassOpFront())) {
-                glStencilOpSeparate(
-                        GL_FRONT,
-                        toGLStencilOp(state.stencilFailOpFront()),
-                        toGLStencilOp(state.stencilDepthFailOpFront()),
-                        toGLStencilOp(state.stencilPassOpFront())
-                );
-            }
-            if (stateCache == null || !stateCache.matchesStencilOp(false, state.stencilFailOpBack(), state.stencilDepthFailOpBack(), state.stencilPassOpBack())) {
-                glStencilOpSeparate(
-                        GL_BACK,
-                        toGLStencilOp(state.stencilFailOpBack()),
-                        toGLStencilOp(state.stencilDepthFailOpBack()),
-                        toGLStencilOp(state.stencilPassOpBack())
-                );
-            }
+            glStencilMaskSeparate(GL_FRONT, state.stencilWriteMask());
+
+            glStencilMaskSeparate(GL_BACK, state.stencilWriteMask());
+
+            glStencilFuncSeparate(
+                    GL_FRONT,
+                    state.stencilCompareOpFront().gl(),
+                    state.stencilReference(),
+                    state.stencilCompareMask()
+            );
+            glStencilFuncSeparate(
+                    GL_BACK,
+                    state.stencilCompareOpBack().gl(),
+                    state.stencilReference(),
+                    state.stencilCompareMask()
+            );
+
+            glStencilOpSeparate(
+                    GL_FRONT,
+                    toGLStencilOp(state.stencilFailOpFront()),
+                    toGLStencilOp(state.stencilDepthFailOpFront()),
+                    toGLStencilOp(state.stencilPassOpFront())
+            );
+
+            glStencilOpSeparate(
+                    GL_BACK,
+                    toGLStencilOp(state.stencilFailOpBack()),
+                    toGLStencilOp(state.stencilDepthFailOpBack()),
+                    toGLStencilOp(state.stencilPassOpBack())
+            );
         }
 
         if (stateCache != null) {
@@ -244,19 +237,6 @@ public class GlGraphicsPipeline extends GraphicsPipeline {
         if (stateCache != null) {
             stateCache.recordColorBlendState(state);
         }
-    }
-
-    private int toGLCompareOp(CompareOp op) {
-        return switch (op) {
-            case Never -> GL_NEVER;
-            case Less -> GL_LESS;
-            case Equal -> GL_EQUAL;
-            case LessEqual -> GL_LEQUAL;
-            case Greater -> GL_GREATER;
-            case NotEqual -> GL_NOTEQUAL;
-            case GreaterEqual -> GL_GEQUAL;
-            case Always -> GL_ALWAYS;
-        };
     }
 
     private int toGLBlendFactor(BlendFactor factor) {

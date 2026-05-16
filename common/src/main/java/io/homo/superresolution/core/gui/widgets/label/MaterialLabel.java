@@ -39,6 +39,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
     private float cachedTextSize;
     private float cachedLineHeight;
     private boolean cachedWrap;
+    private float cachedWeight;
     private String cachedText;
     private Rectangle cachedBounds;
     private TextMetrics cachedTextMetrics;
@@ -84,6 +85,11 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
         return this;
     }
 
+    public MaterialLabel weight(float weight) {
+        style().weight(weight);
+        return this;
+    }
+
     @Override
     protected void init() {
     }
@@ -96,6 +102,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                 style().fontSize() == cachedTextSize &&
                 style().lineHeight() == cachedLineHeight &&
                 style().wrap() == cachedWrap &&
+                style().weight() == cachedWeight &&
                 getBounds().equals(cachedBounds)
         ) {
             if (style().sizeToContent()) {
@@ -107,6 +114,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
             cachedTextSize = style().fontSize();
             cachedLineHeight = style().lineHeight();
             cachedWrap = style().wrap();
+            cachedWeight = style().weight();
             cachedBounds = getBounds();
             float maxWidth = cachedBounds.width > 0 ? cachedBounds.width : Float.MAX_VALUE;
 
@@ -116,7 +124,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                     text,
                     maxWidth,
                     style().lineHeight(),
-                    style().wrap()
+                    style().weight(), style().wrap()
             );
             if (style().sizeToContent()) {
                 setElementWidth(cachedTextMetrics.maxLineWidth);
@@ -155,6 +163,7 @@ public class MaterialLabel extends MaterialWidget<MaterialLabel> {
                     bounds.y,
                     maxWidth,
                     style().lineHeight(),
+                    style().weight(),
                     textColor,
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP),
                     style().wrap()

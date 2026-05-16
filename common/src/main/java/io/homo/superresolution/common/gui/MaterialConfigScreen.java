@@ -380,8 +380,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .addItem(Text.translatable("superresolution.screen.config.section.appearance").getString(), MaterialSymbols.iconPalette(), "appearance")
                 .addItem(Text.translatable("superresolution.screen.config.section.debug").getString(), MaterialSymbols.iconBugReport(), "debug")
                 .addItem(Text.translatable("superresolution.screen.config.section.experimental").getString(), MaterialSymbols.iconScience(), "experimental")
+                .addDivider()
                 .addSectionHeader(Text.translatable("superresolution.screen.config.section.profiling").getString())
                 .addItem(Text.translatable("superresolution.screen.config.section.performance").getString(), MaterialSymbols.iconSpeed(), "performance")
+                .addDivider()
                 .addSectionHeader(Text.translatable("superresolution.screen.config.section.information").getString())
                 .addItem(Text.translatable("superresolution.screen.config.section.environment").getString(), MaterialSymbols.iconInfo(), "info_environment")
                 .addItem(Text.translatable("superresolution.screen.config.section.about").getString(), MaterialSymbols.iconInfo(), "info_about")
@@ -1371,7 +1373,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("qwertyuiop", Text.translatable("superresolution.screen.config.info.about.contributor.qwertyuiop.desc").getString(), "https://github.com/moyongxin", "/assets/super_resolution/textures/gui/contributors/qwertyuiop.png"),
                 new ContributorInfo("猫猫狐AR", Text.translatable("superresolution.screen.config.info.about.contributor.ar.desc").getString(), "https://github.com/Argon4W", "/assets/super_resolution/textures/gui/contributors/ar.png"),
                 new ContributorInfo("辰蒙", Text.translatable("superresolution.screen.config.info.about.contributor.chenmeng.desc").getString(), "https://github.com/slmpc", "/assets/super_resolution/textures/gui/contributors/chenmeng.png"),
-                new ContributorInfo("Tahnass", Text.translatable("superresolution.screen.config.info.about.contributor.tahnass.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/tahnass.png"),
+                new ContributorInfo("Tahnass", Text.translatable("superresolution.screen.config.info.about.contributor.tahnass.desc").getString(), "https://github.com/Tahnass", "/assets/super_resolution/textures/gui/contributors/tahnass.png"),
                 new ContributorInfo("StarsShine11904", Text.translatable("superresolution.screen.config.info.about.contributor.starsshine11904.desc").getString(), "https://github.com/StarsShine11904", "/assets/super_resolution/textures/gui/contributors/StarsShine11904.png")
 
         ));
@@ -1486,6 +1488,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .text("Super Resolution")
                 .fontSize(20)
                 .lineHeight(20)
+                .weight(700)
                 .color(MaterialScheme::onSurface);
         nameLabel.style().sizeToContent(true);
         brandColumn.addChild(nameLabel);
@@ -1494,6 +1497,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .text(safeGetModVersion())
                 .fontSize(8)
                 .lineHeight(8)
+                .weight(400)
                 .color(MaterialScheme::onSurfaceVariant);
         versionLabel.style().sizeToContent(true);
         brandColumn.addChild(versionLabel);
@@ -1502,6 +1506,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .text("Development Environment")
                     .fontSize(8)
                     .lineHeight(8)
+                    .weight(400)
                     .color(MaterialScheme::onSurfaceVariant);
             devEnvLabel.style().sizeToContent(true);
             brandColumn.addChild(devEnvLabel);
@@ -1762,7 +1767,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         @Override
         public void layouting(RenderContext ctx) {
-            float textWidth = ctx.measureTextWidth(text, fontSize, fontSize + 1f);
+            float textWidth = ctx.measureTextWidth(text, fontSize, fontSize + 1f, 700);
             setElementSize((horizontalPadding * 2f) + textWidth, minHeight);
         }
 
@@ -1792,6 +1797,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     bounds.getCenterY(),
                     Math.max(0f, bounds.width - (horizontalPadding * 2f)),
                     bounds.height,
+                    700,
                     scheme().onSurface(),
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                     false

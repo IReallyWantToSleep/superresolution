@@ -25,6 +25,7 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGRenderContext;
@@ -112,7 +113,10 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
                 ctx.setDpiScale(scaleManager.dpiScale());
                 Vector2f screenSize = MinecraftWindow.getWindowSize();
                 ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
-
+                NanoVG.getContext().rawContext.fontSetVariationAxis(((NanoVGFont)ctx.font()).id,"wght",500);
+                NanoVG.getContext().rawContext.save();
+                NanoVG.getContext().rawContext.fontSetVariationAxis(((NanoVGFont)ctx.font()).id,"wght",500);
+                NanoVG.getContext().rawContext.restore();
                 draw(ctx, new UIInputState(
                         new Vector2f(mouseX, mouseY),
                         PerformanceTracker.getLastResultCPU("Frame") / 1_000_000f

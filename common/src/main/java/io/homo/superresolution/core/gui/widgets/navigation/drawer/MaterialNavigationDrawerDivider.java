@@ -23,6 +23,7 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 
 public class MaterialNavigationDrawerDivider extends MaterialWidget<MaterialNavigationDrawerDivider> {
     private static final float HEIGHT = 1f;
@@ -33,6 +34,7 @@ public class MaterialNavigationDrawerDivider extends MaterialWidget<MaterialNavi
         getLayoutNode().setDebugName("NavigationDrawerDivider");
         layout().setHeight(HEIGHT);
         layout().setWidthPercent(100);
+        layout().setMargin(YogaEdge.VERTICAL,4);
     }
 
     public static MaterialNavigationDrawerDivider create() {

@@ -833,7 +833,7 @@ void fonsResetFallbackFont(FONScontext *stash, int base) {
     for (i = 0; i < FONS_HASH_LUT_SIZE; i++)
         baseFont->lut[i] = -1;
 }
-
+// fontstash.h
 int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, float value) {
     FONSfont *f;
     int i;
@@ -852,6 +852,9 @@ int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, floa
     // Find or add axis entry
     for (i = 0; i < f->nvarAxes; i++) {
         if (strcmp(f->varAxisTags[i], axisTag) == 0) {
+            if (f->varAxisValues[i] == value) {
+                return 1; 
+            }
             f->varAxisValues[i] = value;
             goto apply_and_rehash;
         }
@@ -887,9 +890,10 @@ apply_and_rehash:
         free(coords);
     }
 
-    // Recompute variation hash and clear glyph cache
+    // Recompute variation hash
     f->variationHash = fons__computeVariationHash(f);
-    fons__clearFontGlyphs(f);
+    
+
     return 1;
 #else
     FONS_NOTUSED(axisTag);

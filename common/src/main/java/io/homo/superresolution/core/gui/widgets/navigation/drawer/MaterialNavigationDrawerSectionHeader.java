@@ -71,6 +71,7 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
                     bounds.getCenterY(),
                     bounds.width - PADDING_LEFT,
                     bounds.height,
+                    800,
                     scheme().onSurfaceVariant(),
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                     false
@@ -92,7 +93,7 @@ public class MaterialNavigationDrawerSectionHeader extends MaterialWidget<Materi
         float width = PADDING_LEFT;
         String title = titleSupplier.get();
         if (title != null && !title.isEmpty()) {
-            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE);
+            width += ctx.measureTextWidth(title, FONT_SIZE, FONT_SIZE, 800);
         }
         width += PADDING_LEFT;
         return width;

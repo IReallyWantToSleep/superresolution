@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.utils;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
@@ -86,21 +87,12 @@ public class ImageLoader {
                         .type(TextureType.Texture2D)
                         .build()
         );
-        GL20.glPixelStorei(GL20.GL_UNPACK_ROW_LENGTH, 0);
-        GL20.glPixelStorei(GL20.GL_UNPACK_SKIP_PIXELS, 0);
-        GL20.glPixelStorei(GL20.GL_UNPACK_SKIP_ROWS, 0);
-        Gl.DSA.textureSubImage2D(
-                (int) texture.handle(),
-                0,
-                0,
-                0,
-                width,
-                height,
-                GL20.GL_RGBA,
-                GL20.GL_UNSIGNED_BYTE,
-                MemoryUtil.memAddress(textureData)
-        );
-        GL20.glFinish();
+        ICommandBuffer commandBuffer = device.createCommandBuffer();
+        commandBuffer.begin();
+        commandBuffer.writeToTexture(texture, textureData, 0, 0, width, height, 0);
+        commandBuffer.end();
+        commandBuffer.submit(device);
+        commandBuffer.waitForFence();
         MemoryUtil.memFree(textureData);
         return texture;
     }

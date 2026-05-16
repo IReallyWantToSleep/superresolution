@@ -162,6 +162,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
         return switch (type) {
             case Triangle -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             case TriangleStrip -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+            case TriangleFan -> VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
             case Lines -> VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
             case Points -> VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
         };

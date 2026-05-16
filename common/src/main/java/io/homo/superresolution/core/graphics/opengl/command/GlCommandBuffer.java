@@ -20,10 +20,7 @@ package io.homo.superresolution.core.graphics.opengl.command;
 
 import io.homo.superresolution.core.graphics.impl.command.*;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
-import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendAttachment;
-import io.homo.superresolution.core.graphics.impl.pipeline.state.ColorBlendState;
-import io.homo.superresolution.core.graphics.impl.pipeline.state.DepthStencilState;
-import io.homo.superresolution.core.graphics.impl.pipeline.state.RasterizationState;
+import io.homo.superresolution.core.graphics.impl.pipeline.state.*;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
@@ -558,11 +555,11 @@ public class GlCommandBuffer implements ICommandBuffer {
         }
 
         private record RasterizationSnapshot(
-                Object polygonMode,
+                PolygonMode polygonMode,
 
-                Object cullMode,
+                CullMode cullMode,
 
-                Object frontFace,
+                FrontFace frontFace,
 
                 boolean depthClampEnable,
 
@@ -592,25 +589,25 @@ public class GlCommandBuffer implements ICommandBuffer {
 
                 boolean depthWriteEnable,
 
-                Object depthCompareOp,
+                CompareOp depthCompareOp,
 
                 boolean stencilTestEnable,
 
-                Object stencilCompareOpFront,
+                CompareOp stencilCompareOpFront,
 
-                Object stencilCompareOpBack,
+                CompareOp stencilCompareOpBack,
 
-                Object stencilFailOpFront,
+                StencilOp stencilFailOpFront,
 
-                Object stencilPassOpFront,
+                StencilOp stencilPassOpFront,
 
-                Object stencilDepthFailOpFront,
+                StencilOp stencilDepthFailOpFront,
 
-                Object stencilFailOpBack,
+                StencilOp stencilFailOpBack,
 
-                Object stencilPassOpBack,
+                StencilOp stencilPassOpBack,
 
-                Object stencilDepthFailOpBack,
+                StencilOp stencilDepthFailOpBack,
 
                 int stencilCompareMask,
 
@@ -660,17 +657,17 @@ public class GlCommandBuffer implements ICommandBuffer {
         private record ColorBlendAttachmentSnapshot(
                 boolean blendEnable,
 
-                Object srcColorBlendFactor,
+                BlendFactor srcColorBlendFactor,
 
-                Object dstColorBlendFactor,
+                BlendFactor dstColorBlendFactor,
 
-                Object colorBlendOp,
+                BlendOp colorBlendOp,
 
-                Object srcAlphaBlendFactor,
+                BlendFactor srcAlphaBlendFactor,
 
-                Object dstAlphaBlendFactor,
+                BlendFactor dstAlphaBlendFactor,
 
-                Object alphaBlendOp,
+                BlendOp alphaBlendOp,
 
                 int colorWriteMask
         ) {
