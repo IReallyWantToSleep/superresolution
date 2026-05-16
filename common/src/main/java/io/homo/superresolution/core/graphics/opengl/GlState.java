@@ -58,14 +58,11 @@ public class GlState implements AutoCloseable {
     public static final long STATE_DISPATCH_INDIRECT_BUFFER = 1L << 31;
     public static final long STATE_DRAW_INDIRECT_BUFFER = 1L << 32;
     public static final long STATE_SHADER_STORAGE_BUFFER = 1L << 33;
+    public static final long STATE_DEPTH_MASK = 1L << 34;
 
     public static final long STATE_ALL = ~0L;
     public static final long STATE_VERTEX_OPERATIONS = STATE_VERTEX_ATTRIB_ARRAY | STATE_VERTEX_BINDING_DIVISOR;
-    public static final long STATE_BUFFER_OPERATIONS = STATE_COPY_READ_BUFFER | STATE_COPY_WRITE_BUFFER |
-            STATE_PIXEL_PACK_BUFFER | STATE_PIXEL_UNPACK_BUFFER |
-            STATE_TRANSFORM_FEEDBACK_BUFFER | STATE_ATOMIC_COUNTER_BUFFER |
-            STATE_DISPATCH_INDIRECT_BUFFER | STATE_DRAW_INDIRECT_BUFFER |
-            STATE_SHADER_STORAGE_BUFFER;
+    public static final long STATE_BUFFER_OPERATIONS = STATE_COPY_READ_BUFFER | STATE_COPY_WRITE_BUFFER | STATE_PIXEL_PACK_BUFFER | STATE_PIXEL_UNPACK_BUFFER | STATE_TRANSFORM_FEEDBACK_BUFFER | STATE_ATOMIC_COUNTER_BUFFER | STATE_DISPATCH_INDIRECT_BUFFER | STATE_DRAW_INDIRECT_BUFFER | STATE_SHADER_STORAGE_BUFFER;
     private static final long DEFAULT_MASK = STATE_ALL;
 
     private static final int MAX_TEXTURES = 16;
@@ -114,6 +111,7 @@ public class GlState implements AutoCloseable {
     public int dispatchIndirectBuffer;
     public int drawIndirectBuffer;
     public int shaderStorageBuffer;
+    public boolean depthMask;
 
     public GlState() {
         this(DEFAULT_MASK);
@@ -259,6 +257,9 @@ public class GlState implements AutoCloseable {
         if ((stateMask & STATE_SHADER_STORAGE_BUFFER) != 0) {
             this.shaderStorageBuffer = glGetInteger(GL_SHADER_STORAGE_BUFFER_BINDING);
         }
+        if ((stateMask & STATE_DEPTH_MASK) != 0) {
+            this.depthMask = glGetInteger(GL_DEPTH_WRITEMASK) != 0;
+        }
     }
 
     public void restore() {
@@ -311,10 +312,7 @@ public class GlState implements AutoCloseable {
             glViewport(this.view[0], this.view[1], this.view[2], this.view[3]);
         }
         if ((stateMask & STATE_BLEND_FUNC) != 0) {
-            glBlendFuncSeparate(
-                    this.blendSrcRGB, this.blendDstRGB,
-                    this.blendSrcAlpha, this.blendDstAlpha
-            );
+            glBlendFuncSeparate(this.blendSrcRGB, this.blendDstRGB, this.blendSrcAlpha, this.blendDstAlpha);
         }
 
 
@@ -339,12 +337,7 @@ public class GlState implements AutoCloseable {
 
 
         if ((stateMask & STATE_COLOR_MASK) != 0 && this.colorMask != null) {
-            glColorMask(
-                    this.colorMask[0],
-                    this.colorMask[1],
-                    this.colorMask[2],
-                    this.colorMask[3]
-            );
+            glColorMask(this.colorMask[0], this.colorMask[1], this.colorMask[2], this.colorMask[3]);
         }
         if ((stateMask & STATE_STENCIL_FUNC) != 0) {
             glStencilFunc(this.stencilFunc, this.stencilRef, this.stencilValueMask);
@@ -393,6 +386,9 @@ public class GlState implements AutoCloseable {
         }
         if ((stateMask & STATE_SHADER_STORAGE_BUFFER) != 0) {
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, this.shaderStorageBuffer);
+        }
+        if ((stateMask & STATE_DEPTH_MASK) != 0) {
+            glDepthMask(this.depthMask);
         }
         GlDebug.popGroup();
     }

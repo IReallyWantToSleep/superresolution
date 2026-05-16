@@ -54,14 +54,13 @@ public class NanoVGContextWrapper {
     public NanoVGContextWrapper(int nvgFlags) {
         rawContext = new io.homo.superresolution.thirdparty.nanovg.NanoVGContext(nvgFlags);
         rastPtr = 0;
-        frameBuffer = (GlFrameBuffer) RenderSystems.current().device().createFramebuffer(
+        frameBuffer = RenderSystems.current().device().createFramebuffer(
                 FramebufferDescription.create()
                         .colorFormat(TextureFormat.R11G11B10F)
                         .depthFormat(TextureFormat.DEPTH24_STENCIL8)
-                        .size((int) MinecraftWindow.getWindowWidth(), (int) MinecraftWindow.getWindowHeight())
+                        .size(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight())
                         .build()
         );
-        frameBuffer.setClearColorRGBA(0, 0, 0, 1);
     }
 
     public float globalScale() {

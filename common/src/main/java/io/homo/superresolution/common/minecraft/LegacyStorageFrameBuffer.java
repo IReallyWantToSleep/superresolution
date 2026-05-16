@@ -247,7 +247,7 @@ public class LegacyStorageFrameBuffer extends RenderTarget implements IFrameBuff
 
         @Override
         public TextureUsages getTextureUsages() {
-            return TextureUsages.create().sampler().storage().copy();
+            return TextureUsages.create().sampler().storage().transferDestination().copy();
         }
 
         @Override
