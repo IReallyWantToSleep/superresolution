@@ -168,7 +168,11 @@ public abstract class PostChainMixin {
     private boolean super_resolution$onBlackList() {
         if (super_resolution$blackList == null) {
             super_resolution$blackList = new ArrayList<>();
-
+            super_resolution$blackList.add("minecraft:shaders/post/fancymenu_gui_blur.json");
+            super_resolution$blackList.add("minecraft:shaders/post/fancymenu_gui_smooth_circle.json");
+            super_resolution$blackList.add("minecraft:shaders/post/fancymenu_gui_smooth_image_circle.json");
+            super_resolution$blackList.add("minecraft:shaders/post/fancymenu_gui_smooth_image_rect.json");
+            super_resolution$blackList.add("minecraft:shaders/post/fancymenu_gui_smooth_rect.json");
             super_resolution$blackList.add("minecraft:shaders/post/modern_gaussian_blur.json");
             super_resolution$blackList.add("minecraft:shaders/post/blur.json");
             super_resolution$blackList.add("colorblindness:shaders/post/achromatomaly.json");

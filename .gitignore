@@ -168,3 +168,4 @@ __pycache__
 /.claude/
 /common/src/main/resources/lib/
 .gradle*
+/AGENTS.md
