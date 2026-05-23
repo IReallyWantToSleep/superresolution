@@ -145,8 +145,7 @@ public class DataSetGenerator {
         try {
             Files.createDirectories(outputPath.getParent());
         } catch (IOException e) {
-            SuperResolution.LOGGER.error("Failed to create parent directories for: " + path);
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("创建父目录失败: {}", path, e);
             return;
         }
 
@@ -171,8 +170,7 @@ public class DataSetGenerator {
             pixelData.get(arr);
             fos.write(arr);
         } catch (IOException e) {
-            SuperResolution.LOGGER.error("Failed to write texture data to file: " + path);
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("写入纹理数据到文件失败: {}", path, e);
         } finally {
             MemoryUtil.memFree(pixelData);
         }
@@ -357,8 +355,7 @@ public class DataSetGenerator {
             glReadPixels(0, 0, texture.getWidth(), texture.getHeight(), pixelFormat, pixelType, buffer);
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("Failed to read pixels from texture");
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("从纹理读取像素失败", e);
             return false;
         } finally {
             temp.destroy();

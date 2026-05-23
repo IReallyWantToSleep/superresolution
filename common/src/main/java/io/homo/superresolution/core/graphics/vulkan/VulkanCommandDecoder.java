@@ -340,8 +340,10 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void writeToTexture(ICommandBuffer commandBuffer,ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
-        //TODO: 完成纹理数据上传
+    public void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+        if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
+            throw new IllegalArgumentException("writeToTexture: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        }
         if (!(texture instanceof VulkanTexture vkTexture)) {
             throw new IllegalArgumentException("writeToTexture: texture类型错误: " + texture.getClass().getName());
         }
@@ -351,6 +353,10 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         if (x < 0 || y < 0 || width <= 0 || height <= 0) {
             throw new IllegalArgumentException("writeToTexture: 无效的纹理区域参数");
         }
+
+        VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+
+        transitionTexture(cmd, texture, ResourceAccessType.TRANSFER_DST);
 
         VulkanBuffer stagingBuffer = new VulkanBuffer(
                 vulkanDevice,
@@ -374,20 +380,17 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .imageOffset(VkOffset3D.calloc(stack).set(x, y, 0))
                     .imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
-            VulkanCommandBuffer vcb = (VulkanCommandBuffer) vulkanDevice.defaultCommandPool().createCommandBuffer();
-            vcb.begin();
             vkCmdCopyBufferToImage(
-                    vcb.getNativeCommandBuffer(),
+                    cmd,
                     stagingBuffer.handle(),
                     vkTexture.handle(),
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     copyRegion
             );
-            //insertTransferWriteBarrier(vcb.getNativeCommandBuffer(), vkTexture, mipLevel);
-            vcb.end();
-            vulkanDevice.submitCommandBuffer(vcb);
-            vcb.addTransientResource(stagingBuffer);
         }
+
+        stateTracker.setState(texture, new ResourceState(ResourceAccessType.TRANSFER_DST));
+        vcb.addTransientResource(stagingBuffer);
     }
 
     @Override

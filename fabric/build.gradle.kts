@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom") version "1.16.1"
+    id("net.fabricmc.fabric-loom-remap") version "1.16.1"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -112,8 +112,10 @@ dependencies {
         implementation("io.github.douira:glsl-transformer:3.0.0-pre3")
     }
 
-    implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
-    include("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
+    implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { include(it) }
+    implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { include(it) }
+    implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { include(it) }
+    implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { include(it) }
 
     val nightToml = implementation("com.electronwill.night-config:toml:3.8.0")
     if (nightToml != null) include(nightToml)

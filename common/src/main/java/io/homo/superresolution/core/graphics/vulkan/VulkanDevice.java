@@ -44,6 +44,7 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
@@ -57,21 +58,25 @@ import static org.lwjgl.vulkan.VK10.vkQueueSubmit;
 
 public class VulkanDevice implements IDevice {
     private static final Logger LOGGER = LoggerFactory.getLogger(VulkanDevice.class);
+    private final VkInstance instance;
     private final VkPhysicalDevice physicalDevice;
     private final VkDevice device;
     private final VulkanQueue mainQueue;
     private final VulkanCommandPool defaultCommandPool;
     private final VulkanCommandDecoder commandDecoder;
     private final ValidatedCommandDecoder validatedCommandDecoder;
+    private final VulkanMemoryAllocator memoryAllocator;
 
 
-    public VulkanDevice(VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
+    public VulkanDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
+        this.instance = instance;
         this.physicalDevice = physicalDevice;
         this.device = device;
         this.mainQueue = new VulkanQueue(this, graphicsQueueFamilyIndex);
         this.defaultCommandPool= new VulkanCommandPool(this, EnumSet.of(CommandPoolFlags.Reset));
         this.commandDecoder = new VulkanCommandDecoder(this);
         this.validatedCommandDecoder = new ValidatedCommandDecoder(commandDecoder);
+        this.memoryAllocator = new VulkanMemoryAllocator(this);
         defaultCommandPool.init();
     }
 
@@ -277,7 +282,14 @@ public class VulkanDevice implements IDevice {
         if (defaultCommandPool != null) {
             defaultCommandPool.destroy();
         }
+        if (memoryAllocator != null) {
+            memoryAllocator.destroy();
+        }
         LOGGER.debug("VulkanDevice 资源已清理");
+    }
+
+    public VkInstance getVkInstance() {
+        return instance;
     }
 
     public VkPhysicalDevice getPhysicalDevice() {
@@ -290,6 +302,10 @@ public class VulkanDevice implements IDevice {
 
     public VulkanQueue getMainQueue() {
         return mainQueue;
+    }
+
+    public VulkanMemoryAllocator getMemoryAllocator() {
+        return memoryAllocator;
     }
 
     private void reapCompletedTransientResources() {

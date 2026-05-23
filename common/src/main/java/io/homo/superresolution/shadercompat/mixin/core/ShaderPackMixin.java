@@ -72,7 +72,7 @@ public class ShaderPackMixin implements IrisSRCompatShaderPack {
                 return;
             }
         } catch (Throwable throwable) {
-            throwable.printStackTrace();
+            SuperResolution.LOGGER.trace("从光影包 {} 加载 superresolution.json 失败", root, throwable);
             SuperResolution.LOGGER.warn("加载 {} 光影包中的 superresolution.json 时发生错误", root);
         }
         superresolution$config = null;

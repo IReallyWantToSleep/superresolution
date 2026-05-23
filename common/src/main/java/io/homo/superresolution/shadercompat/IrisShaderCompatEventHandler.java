@@ -94,8 +94,7 @@ public class IrisShaderCompatEventHandler {
                 }
             }
         } catch (Throwable throwable) {
-            SuperResolution.LOGGER.error("执行超分时发生错误");
-            throwable.printStackTrace();
+            SuperResolution.LOGGER.trace("执行超分时发生错误", throwable);
         }
     }
 
@@ -143,8 +142,7 @@ public class IrisShaderCompatEventHandler {
                 }
             }
         } catch (Throwable throwable) {
-            SuperResolution.LOGGER.error("执行超分时发生错误");
-            throwable.printStackTrace();
+            SuperResolution.LOGGER.trace("执行超分时发生错误", throwable);
         }
         setupUniforms();
     }

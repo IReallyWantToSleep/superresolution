@@ -113,7 +113,7 @@ public class NativeLibManager {
                 if (lib.required) {
                     requiredFailures.add(lib.fileName);
                     LOGGER.error("必要依赖库 {} 提取失败: {}", lib.fileName, e.getMessage());
-                    e.printStackTrace();
+                    LOGGER.trace("原生库提取错误详情", e);
                 } else {
                     optionalFailures.add(lib.fileName);
                     LOGGER.warn("可选依赖库 {} 提取失败，已跳过: {}", lib.fileName, e.getMessage());

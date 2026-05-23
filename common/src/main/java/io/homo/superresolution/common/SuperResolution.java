@@ -247,7 +247,7 @@ public final class SuperResolution implements Destroyable {
                 return true;
             } catch (Exception e) {
                 SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
-                e.printStackTrace();
+                LOGGER.trace("初始化算法失败详情", e);
                 if (currentAlgorithm != null) {
                     try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
                 }

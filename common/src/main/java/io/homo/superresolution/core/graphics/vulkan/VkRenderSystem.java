@@ -303,6 +303,7 @@ public class VkRenderSystem implements IRenderSystem {
             VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),
                     "Failed to create logical device");
             return new VulkanDevice(
+                    instance,
                     physicalDevice,
                     new VkDevice(pDevice.get(0), physicalDevice, createInfo),
                     graphicsFamilyIndex

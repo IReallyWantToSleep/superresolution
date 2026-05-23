@@ -52,7 +52,7 @@ public class MaterialUI {
                             event.getClass(),
                             listeners[index]
                     );
-                    throwable.printStackTrace();
+                    SuperResolution.LOGGER.trace("事件处理错误", throwable);
                 })
                 .build();
     }

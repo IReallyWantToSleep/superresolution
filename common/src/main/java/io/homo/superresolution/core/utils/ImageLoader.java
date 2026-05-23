@@ -49,7 +49,7 @@ public class ImageLoader {
             imageFileData = MemoryUtil.memAlloc(data.length);
             imageFileData.put(data);
         } catch (IOException e) {
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("加载图像失败", e);
             return null;
         }
         imageFileData.rewind();

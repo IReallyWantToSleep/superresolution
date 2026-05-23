@@ -20,6 +20,7 @@ package io.homo.superresolution.api.registry;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.SuperResolution;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -94,7 +95,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         try {
             return this.clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("算法创建失败", e);
             throw new RuntimeException(e);
         }
     }

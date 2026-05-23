@@ -80,6 +80,10 @@ neoForge {
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:1.87.5"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:1.87.5"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-windows"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-linux"))
+
             }
         }
         create("client") {
@@ -104,11 +108,10 @@ dependencies {
     val imguiLwjgl = implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
     if (imguiLwjgl != null) "libraries"(imguiLwjgl)
 
-    val lwjglVulkan = implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
-    if (lwjglVulkan != null) {
-        jarJar(lwjglVulkan)
-        "libraries"(lwjglVulkan)
-    }
+    implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
+    implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
+    implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { jarJar(it);libraries(it) }
+    implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { jarJar(it);libraries(it) }
 
     if (versionConfig.common.architecturyApiVersion != null) {
         implementation("dev.architectury:architectury-neoforge:${versionConfig.common.architecturyApiVersion}")

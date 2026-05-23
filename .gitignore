@@ -169,3 +169,4 @@ __pycache__
 /common/src/main/resources/lib/
 .gradle*
 /AGENTS.md
+/.codemoss/

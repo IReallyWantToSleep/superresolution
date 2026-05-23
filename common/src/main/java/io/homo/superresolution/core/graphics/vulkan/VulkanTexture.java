@@ -32,6 +32,7 @@ import static org.lwjgl.vulkan.VK11.*;
 
 public class VulkanTexture implements ITexture, VulkanLayoutTracked {
     private final VulkanDevice device;
+    private final VulkanMemoryAllocator allocator;
     private final TextureDescription description;
     private final boolean isExternal;
     private final long memoryHandle;
@@ -39,6 +40,7 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
     private long exportedHandle = -1;
     private long image;
     private long imageMemory;
+    private long vmaAllocation = VK_NULL_HANDLE;
     private long imageView;
     private int width;
     private int height;
@@ -55,6 +57,7 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
 
     public VulkanTexture(VulkanDevice device, TextureDescription description, boolean isExternal, long memoryHandle, boolean exportable) {
         this.device = device;
+        this.allocator = device.getMemoryAllocator();
         this.description = description;
         this.width = description.getWidth();
         this.height = description.getHeight();
@@ -154,65 +157,29 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
     }
 
     private void allocateMemory(MemoryStack stack) {
-        VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
-        vkGetImageMemoryRequirements(device.getVkDevice(), image, memRequirements);
-        this.memorySize = memRequirements.size();
-
-        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
-                .allocationSize(memorySize)
-                .memoryTypeIndex(findMemoryType(
-                        memRequirements.memoryTypeBits(),
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-        VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
-                .image(image);
-        allocInfo.pNext(dedicatedAllocInfo.address());
         if (exportable) {
+            VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
+                    .image(image);
             dedicatedAllocInfo.pNext(VulkanInterop.IMPL.createVkExportMemoryAllocateInfo(stack).address());
+            imageMemory = allocator.allocateImageMemory(
+                    image,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                    dedicatedAllocInfo.address());
+            this.memorySize = allocator.getImageMemoryRequirements(image);
+        } else {
+            vmaAllocation = allocator.allocateImageMemoryVma(image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            imageMemory = allocator.getDeviceMemoryFromAllocation(vmaAllocation);
+            this.memorySize = allocator.getImageMemoryRequirements(image);
         }
-
-        LongBuffer pMemory = stack.mallocLong(1);
-        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
-                "Failed to allocate image memory");
-        imageMemory = pMemory.get(0);
-
-        vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0);
     }
 
     private void importMemoryFromHandle(MemoryStack stack) {
-        VkMemoryRequirements memRequirements = VkMemoryRequirements.calloc(stack);
-        vkGetImageMemoryRequirements(device.getVkDevice(), image, memRequirements);
-
-        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
-                .pNext(VulkanInterop.IMPL.createVkImportMemoryInfo(stack, memoryHandle).address())
-                .allocationSize(memRequirements.size())
-                .memoryTypeIndex(findMemoryType(
-                        memRequirements.memoryTypeBits(),
-                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-
-        LongBuffer pMemory = stack.mallocLong(1);
-        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
-                "Failed to import external memory");
-        imageMemory = pMemory.get(0);
-        VK_CHECK(vkBindImageMemory(device.getVkDevice(), image, imageMemory, 0),
-                "Failed to bind imported memory to image");
-    }
-
-    private int findMemoryType(int typeFilter, int properties) {
-        try (MemoryStack stack = stackPush()) {
-            VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
-            vkGetPhysicalDeviceMemoryProperties(device.getPhysicalDevice(), memProperties);
-
-            for (int i = 0; i < memProperties.memoryTypeCount(); i++) {
-                if ((typeFilter & (1 << i)) != 0 &&
-                        (memProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
-                    return i;
-                }
-            }
-        }
-        throw new VulkanException("Failed to find suitable memory type");
+        this.memorySize = allocator.getImageMemoryRequirements(image);
+        imageMemory = allocator.allocateImageMemory(
+                image,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                VulkanInterop.IMPL.createVkImportMemoryInfo(stack, memoryHandle).address());
     }
 
     private void createImageView(MemoryStack stack) {
@@ -300,15 +267,14 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
             imageView = VK_NULL_HANDLE;
         }
 
-        if (image != VK_NULL_HANDLE) {
-            vkDestroyImage(device.getVkDevice(), image, null);
-            image = VK_NULL_HANDLE;
+        if (vmaAllocation != VK_NULL_HANDLE) {
+            allocator.freeImageVma(image, vmaAllocation);
+            vmaAllocation = VK_NULL_HANDLE;
+        } else if (imageMemory != VK_NULL_HANDLE) {
+            allocator.freeImage(image, imageMemory);
         }
-
-        if (imageMemory != VK_NULL_HANDLE) {
-            vkFreeMemory(device.getVkDevice(), imageMemory, null);
-            imageMemory = VK_NULL_HANDLE;
-        }
+        image = VK_NULL_HANDLE;
+        imageMemory = VK_NULL_HANDLE;
     }
 
     public long getExportedMemoryHandle() {

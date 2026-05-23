@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.api.registry;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.utils.DirectoryEnsurer;
 
 import java.io.*;
@@ -205,7 +206,7 @@ public class ExtraResource {
                     errorListener.onError(ErrorCode.NetworkError);
                 }
                 deletePartialFile(targetFile);
-                e.printStackTrace();
+                SuperResolution.LOGGER.trace("HTTP 下载失败 (IO 异常)", e);
                 return false;
             }
             if (isCancelled(errorListener)) {
@@ -215,7 +216,7 @@ public class ExtraResource {
             finishListener.onFinish(targetFile);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("HTTP 下载失败", e);
             if (Thread.currentThread().isInterrupted()) {
                 errorListener.onError(ErrorCode.Cancelled);
             } else {
@@ -271,7 +272,7 @@ public class ExtraResource {
             }
         } catch (FileNotFoundException ex) {
             errorListener.onError(ErrorCode.PermissionDenied);
-            ex.printStackTrace();
+            SuperResolution.LOGGER.trace("本地资源文件未找到", ex);
             return false;
         } catch (Exception ex) {
             if (Thread.currentThread().isInterrupted()) {
@@ -279,7 +280,7 @@ public class ExtraResource {
             } else {
                 errorListener.onError(ErrorCode.UnknownError);
             }
-            ex.printStackTrace();
+            SuperResolution.LOGGER.trace("本地资源复制失败", ex);
             return false;
         }
     }

@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static io.homo.superresolution.common.SuperResolution.LOGGER;
+
 public class AsyncTimer {
     private final ScheduledExecutorService scheduler;
 
@@ -34,7 +36,7 @@ public class AsyncTimer {
             try {
                 task.run();
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.trace("异步任务执行失败", e);
             }
         }, delay, unit);
         return this;
@@ -45,7 +47,7 @@ public class AsyncTimer {
             try {
                 task.run();
             } catch (Exception e) {
-                e.printStackTrace();
+                LOGGER.trace("异步任务执行失败", e);
             }
         }, initialDelay, period, unit);
         return this;

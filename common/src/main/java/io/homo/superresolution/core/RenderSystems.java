@@ -79,7 +79,7 @@ public class RenderSystems {
         } catch (Exception | Error e) {
             if (!e.getMessage().contains("Vulkan has already been created")) {
                 VkRenderSystem.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
-                e.printStackTrace();
+                VkRenderSystem.LOGGER.trace("Vulkan 初始化错误详情", e);
                 return;
             }
         }
@@ -110,11 +110,9 @@ public class RenderSystems {
             vulkan.initRenderSystem();
             return;
         } catch (VulkanException vkException) {
-            VkRenderSystem.LOGGER.error("Vulkan初始化失败，已禁用Vulkan，错误 {}", vkException.getMessage());
-            vkException.printStackTrace();
+            VkRenderSystem.LOGGER.trace("Vulkan初始化失败，已禁用Vulkan", vkException);
         } catch (Throwable e) {
-            VkRenderSystem.LOGGER.error("Vulkan初始化失败，发生未知错误，已禁用Vulkan，错误 {}", e.getMessage());
-            e.printStackTrace();
+            VkRenderSystem.LOGGER.trace("Vulkan初始化失败，发生未知错误，已禁用Vulkan", e);
         }
         vulkan = null;
     }

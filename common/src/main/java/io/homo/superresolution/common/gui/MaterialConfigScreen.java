@@ -1587,6 +1587,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         MaterialLabel nameLabel = MaterialLabel.create()
                 .text(contributor.name())
                 .fontSize(14)
+                .weight(700)
                 .color(MaterialScheme::onSurface);
         info.addChild(nameLabel);
 
@@ -1627,6 +1628,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         MaterialLabel nameLabel = MaterialLabel.create()
                 .text(library.name())
                 .fontSize(14)
+                .weight(700)
                 .color(MaterialScheme::onSurface);
         info.addChild(nameLabel);
 
@@ -1909,7 +1911,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 inputStream
                         );
                     } catch (Throwable ignored) {
-                        ignored.printStackTrace();
+                        SuperResolution.LOGGER.trace("加载配置界面图像失败", ignored);
                         loaded = true;
                         return;
                     }

@@ -26,24 +26,22 @@ import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
-import org.lwjgl.vulkan.VkMemoryAllocateInfo;
-import org.lwjgl.vulkan.VkMemoryRequirements;
-import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
+
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
-import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanBuffer implements IBuffer {
     private final VulkanDevice device;
+    private final VulkanMemoryAllocator allocator;
     private final long size;
     private final BufferUsages usages;
     private final boolean hostVisible;
     private long buffer = VK_NULL_HANDLE;
-    private long memory = VK_NULL_HANDLE;
+    private long vmaAllocation;
     private ByteBuffer mappedBuffer;
     private boolean mapped;
     private boolean mappedWrite;
@@ -53,14 +51,13 @@ public class VulkanBuffer implements IBuffer {
 
     public VulkanBuffer(VulkanDevice device, BufferDescription description) {
         this.device = device;
+        this.allocator = device.getMemoryAllocator();
         this.size = description.size();
         this.usages = description.usage();
         this.hostVisible = usages.has(BufferUsage.TransferSrc);
 
-        try (MemoryStack stack = stackPush()) {
-            createBuffer(stack);
-            allocateMemory(stack);
-        }
+        createBuffer();
+        allocateMemory();
     }
 
     private static int translateUsage(BufferUsage usage) {
@@ -81,54 +78,27 @@ public class VulkanBuffer implements IBuffer {
         return flags;
     }
 
-    private void createBuffer(MemoryStack stack) {
-        VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
-                .size(size)
-                .usage(translateUsage(usages))
-                .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+    private void createBuffer() {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
+                    .size(size)
+                    .usage(translateUsage(usages))
+                    .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
-        LongBuffer pBuffer = stack.mallocLong(1);
-        VK_CHECK(vkCreateBuffer(device.getVkDevice(), bufferInfo, null, pBuffer),
-                "Failed to create buffer");
-        buffer = pBuffer.get(0);
+            LongBuffer pBuffer = stack.mallocLong(1);
+            VK_CHECK(vkCreateBuffer(device.getVkDevice(), bufferInfo, null, pBuffer),
+                    "Failed to create buffer");
+            buffer = pBuffer.get(0);
+        }
     }
 
-    private void allocateMemory(MemoryStack stack) {
-        VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
-        vkGetBufferMemoryRequirements(device.getVkDevice(), buffer, memReqs);
-
+    private void allocateMemory() {
         int memoryProperties = hostVisible
                 ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
                 : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
-                .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
-                .allocationSize(memReqs.size())
-                .memoryTypeIndex(findMemoryType(memReqs.memoryTypeBits(), memoryProperties));
-
-        LongBuffer pMemory = stack.mallocLong(1);
-        VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
-                "Failed to allocate buffer memory");
-        memory = pMemory.get(0);
-
-        VK_CHECK(vkBindBufferMemory(device.getVkDevice(), buffer, memory, 0),
-                "Failed to bind buffer memory");
-    }
-
-    private int findMemoryType(int typeFilter, int properties) {
-        try (MemoryStack stack = stackPush()) {
-            VkPhysicalDeviceMemoryProperties memProperties = VkPhysicalDeviceMemoryProperties.calloc(stack);
-            vkGetPhysicalDeviceMemoryProperties(device.getPhysicalDevice(), memProperties);
-
-            for (int i = 0; i < memProperties.memoryTypeCount(); i++) {
-                if ((typeFilter & (1 << i)) != 0 &&
-                        (memProperties.memoryTypes(i).propertyFlags() & properties) == properties) {
-                    return i;
-                }
-            }
-        }
-        throw new VulkanException("Failed to find suitable memory type for buffer");
+        vmaAllocation = allocator.allocateBufferMemory(buffer, memoryProperties);
     }
 
     @Override
@@ -153,13 +123,8 @@ public class VulkanBuffer implements IBuffer {
         mappedOffsetInBytes = offsetInBytes;
         mappedLengthInBytes = lengthInBytes;
         if (hostVisible) {
-            try (MemoryStack stack = stackPush()) {
-                var ppData = stack.mallocPointer(1);
-                VK_CHECK(vkMapMemory(device.getVkDevice(), memory, offsetInBytes, lengthInBytes, 0, ppData),
-                        "Failed to map buffer memory");
-                mappedBuffer = MemoryUtil.memByteBuffer(ppData.get(0), lengthInBytes);
-                mappedDirect = true;
-            }
+            mappedBuffer = allocator.mapMemory(vmaAllocation, offsetInBytes, lengthInBytes);
+            mappedDirect = true;
         } else {
             if (!write) {
                 mapped = false;
@@ -179,7 +144,7 @@ public class VulkanBuffer implements IBuffer {
 
         try {
             if (mappedDirect) {
-                vkUnmapMemory(device.getVkDevice(), memory);
+                allocator.unmapMemory(vmaAllocation);
             } else if (mappedWrite) {
                 ByteBuffer src = mappedBuffer.duplicate();
                 src.position(0);
@@ -203,12 +168,12 @@ public class VulkanBuffer implements IBuffer {
         ByteBuffer src = data.duplicate();
         int lengthInBytes = src.remaining();
         validateRange(offsetInBytes, lengthInBytes);
-        try (MemoryStack stack = stackPush()) {
-            var ppData = stack.mallocPointer(1);
-            VK_CHECK(vkMapMemory(device.getVkDevice(), memory, offsetInBytes, lengthInBytes, 0, ppData),
-                    "Failed to map buffer memory");
-            MemoryUtil.memCopy(MemoryUtil.memAddress(src), ppData.get(0), lengthInBytes);
-            vkUnmapMemory(device.getVkDevice(), memory);
+
+        ByteBuffer mapped = allocator.mapMemory(vmaAllocation, offsetInBytes, lengthInBytes);
+        try {
+            MemoryUtil.memCopy(MemoryUtil.memAddress(src), MemoryUtil.memAddress(mapped), lengthInBytes);
+        } finally {
+            allocator.unmapMemory(vmaAllocation);
         }
     }
 
@@ -239,13 +204,8 @@ public class VulkanBuffer implements IBuffer {
         if (mapped) {
             unmap();
         }
-        if (buffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(device.getVkDevice(), buffer, null);
-            buffer = VK_NULL_HANDLE;
-        }
-        if (memory != VK_NULL_HANDLE) {
-            vkFreeMemory(device.getVkDevice(), memory, null);
-            memory = VK_NULL_HANDLE;
-        }
+        allocator.freeBuffer(buffer, vmaAllocation);
+        buffer = VK_NULL_HANDLE;
+        vmaAllocation = 0;
     }
 }

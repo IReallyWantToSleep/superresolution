@@ -36,6 +36,7 @@ import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.utils.DirectoryEnsurer;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import org.joml.Vector2f;
@@ -218,7 +219,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             this.selectedPath = sourcePath;
             this.state = DownloadState.SELECTED;
         } catch (Exception e) {
-            e.printStackTrace();
+            SuperResolution.LOGGER.trace("选择资源文件失败", e);
             this.state = DownloadState.ERROR;
             this.errorCode = ExtraResource.ErrorCode.PermissionDenied;
         }
