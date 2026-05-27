@@ -113,9 +113,11 @@ dependencies {
     }
 
     implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { include(it) }
-    implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { include(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { include(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { include(it) }
+    if (versionConfig.common.hasLwjglVma) {
+        implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { include(it) }
+        implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { include(it) }
+        implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { include(it) }
+    }
 
     val nightToml = implementation("com.electronwill.night-config:toml:3.8.0")
     if (nightToml != null) include(nightToml)

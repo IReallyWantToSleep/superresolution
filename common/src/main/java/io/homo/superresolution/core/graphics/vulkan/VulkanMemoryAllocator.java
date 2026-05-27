@@ -20,7 +20,9 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+#if HAS_LWJGL_VMA == 1
 import org.lwjgl.util.vma.*;
+#endif
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -28,20 +30,28 @@ import java.nio.LongBuffer;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.MemoryUtil.memByteBuffer;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+#if HAS_LWJGL_VMA == 1
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+#endif
 
 public class VulkanMemoryAllocator {
 
     private final VulkanDevice device;
+#if HAS_LWJGL_VMA == 1
     private long vmaAllocator;
+#endif
 
     public VulkanMemoryAllocator(VulkanDevice device) {
         this.device = device;
+#if HAS_LWJGL_VMA == 1
         initVma();
+#endif
     }
 
+#if HAS_LWJGL_VMA == 1
     private void initVma() {
         try (MemoryStack stack = stackPush()) {
             VmaAllocatorCreateInfo createInfo = VmaAllocatorCreateInfo.calloc(stack);
@@ -66,7 +76,10 @@ public class VulkanMemoryAllocator {
             vmaAllocator = pAllocator.get(0);
         }
     }
+#endif
+
     public long allocateBufferMemory(long buffer, int requiredMemoryProperties) {
+#if HAS_LWJGL_VMA == 1
         try (MemoryStack stack = stackPush()) {
             VmaAllocationCreateInfo allocCI = buildBufferAllocCreateInfo(stack, requiredMemoryProperties);
 
@@ -80,22 +93,52 @@ public class VulkanMemoryAllocator {
 
             return vmaAlloc;
         }
+#else
+        try (MemoryStack stack = stackPush()) {
+            VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
+            vkGetBufferMemoryRequirements(device.getVkDevice(), buffer, memReqs);
+
+            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
+                    .allocationSize(memReqs.size())
+                    .memoryTypeIndex(findMemoryType(memReqs.memoryTypeBits(), requiredMemoryProperties));
+
+            LongBuffer pMemory = stack.mallocLong(1);
+            VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
+                    "Failed to allocate buffer memory");
+            long memory = pMemory.get(0);
+
+            VK_CHECK(vkBindBufferMemory(device.getVkDevice(), buffer, memory, 0),
+                    "Failed to bind buffer memory");
+
+            return memory;
+        }
+#endif
     }
 
-    public void freeBuffer(long buffer, long vmaAllocation) {
-        if (vmaAllocation != NULL && vmaAllocator != NULL) {
-            Vma.vmaDestroyBuffer(vmaAllocator, buffer, vmaAllocation);
-        } else {
-            if (buffer != VK_NULL_HANDLE) {
-                vkDestroyBuffer(device.getVkDevice(), buffer, null);
+    public void freeBuffer(long buffer, long allocation) {
+#if HAS_LWJGL_VMA == 1
+        if (allocation != VK_NULL_HANDLE && vmaAllocator != VK_NULL_HANDLE) {
+            Vma.vmaDestroyBuffer(vmaAllocator, buffer, allocation);
+            return;
+        }
+#endif
+        if (buffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(device.getVkDevice(), buffer, null);
+        }
+        if (allocation != VK_NULL_HANDLE) {
+#if HAS_LWJGL_VMA == 1
+            if (vmaAllocator != VK_NULL_HANDLE) {
+                Vma.vmaFreeMemory(vmaAllocator, allocation);
             }
-            if (vmaAllocation != NULL) {
-                Vma.vmaFreeMemory(vmaAllocator, vmaAllocation);
-            }
+#else
+            vkFreeMemory(device.getVkDevice(), allocation, null);
+#endif
         }
     }
 
     public long allocateImageMemoryVma(long image, int requiredMemoryProperties) {
+#if HAS_LWJGL_VMA == 1
         try (MemoryStack stack = stackPush()) {
             VmaAllocationCreateInfo allocCI = VmaAllocationCreateInfo.calloc(stack);
             allocCI.usage(Vma.VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
@@ -112,26 +155,46 @@ public class VulkanMemoryAllocator {
 
             return vmaAlloc;
         }
+#else
+        try (MemoryStack stack = stackPush()) {
+            VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
+                    .image(image);
+            return allocateImageMemory(image, requiredMemoryProperties, dedicatedAllocInfo.address());
+        }
+#endif
     }
 
-    public long getDeviceMemoryFromAllocation(long vmaAllocation) {
+    public long getDeviceMemoryFromAllocation(long allocation) {
+#if HAS_LWJGL_VMA == 1
         try (MemoryStack stack = stackPush()) {
             VmaAllocationInfo allocInfo = VmaAllocationInfo.calloc(stack);
-            Vma.vmaGetAllocationInfo(vmaAllocator, vmaAllocation, allocInfo);
+            Vma.vmaGetAllocationInfo(vmaAllocator, allocation, allocInfo);
             return allocInfo.deviceMemory();
         }
+#else
+        return allocation;
+#endif
     }
 
-    public void freeImageVma(long image, long vmaAllocation) {
-        if (vmaAllocation != NULL && vmaAllocator != NULL) {
-            Vma.vmaDestroyImage(vmaAllocator, image, vmaAllocation);
-        } else {
-            if (image != VK_NULL_HANDLE) {
-                vkDestroyImage(device.getVkDevice(), image, null);
+    public void freeImageVma(long image, long allocation) {
+#if HAS_LWJGL_VMA == 1
+        if (allocation != VK_NULL_HANDLE && vmaAllocator != VK_NULL_HANDLE) {
+            Vma.vmaDestroyImage(vmaAllocator, image, allocation);
+            return;
+        }
+#endif
+        if (image != VK_NULL_HANDLE) {
+            vkDestroyImage(device.getVkDevice(), image, null);
+        }
+        if (allocation != VK_NULL_HANDLE) {
+#if HAS_LWJGL_VMA == 1
+            if (vmaAllocator != VK_NULL_HANDLE) {
+                Vma.vmaFreeMemory(vmaAllocator, allocation);
             }
-            if (vmaAllocation != NULL) {
-                Vma.vmaFreeMemory(vmaAllocator, vmaAllocation);
-            }
+#else
+            vkFreeMemory(device.getVkDevice(), allocation, null);
+#endif
         }
     }
 
@@ -178,18 +241,28 @@ public class VulkanMemoryAllocator {
         }
     }
 
-    public ByteBuffer mapMemory(long vmaAllocation, long offset, long size) {
+    public ByteBuffer mapMemory(long allocation, long offset, long size) {
         try (MemoryStack stack = stackPush()) {
             PointerBuffer ppData = stack.mallocPointer(1);
-            VK_CHECK(Vma.vmaMapMemory(vmaAllocator, vmaAllocation, ppData),
+#if HAS_LWJGL_VMA == 1
+            VK_CHECK(Vma.vmaMapMemory(vmaAllocator, allocation, ppData),
                     "VMA failed to map memory");
             long ptr = ppData.get(0);
             return memByteBuffer(ptr + offset, (int) size);
+#else
+            VK_CHECK(vkMapMemory(device.getVkDevice(), allocation, offset, size, 0, ppData),
+                    "Failed to map memory");
+            return memByteBuffer(ppData.get(0), (int) size);
+#endif
         }
     }
 
-    public void unmapMemory(long vmaAllocation) {
-        Vma.vmaUnmapMemory(vmaAllocator, vmaAllocation);
+    public void unmapMemory(long allocation) {
+#if HAS_LWJGL_VMA == 1
+        Vma.vmaUnmapMemory(vmaAllocator, allocation);
+#else
+        vkUnmapMemory(device.getVkDevice(), allocation);
+#endif
     }
 
     public int findMemoryType(int typeFilter, int requiredProperties) {
@@ -208,12 +281,15 @@ public class VulkanMemoryAllocator {
     }
 
     public void destroy() {
-        if (vmaAllocator != NULL) {
+#if HAS_LWJGL_VMA == 1
+        if (vmaAllocator != VK_NULL_HANDLE) {
             Vma.vmaDestroyAllocator(vmaAllocator);
-            vmaAllocator = NULL;
+            vmaAllocator = VK_NULL_HANDLE;
         }
+#endif
     }
 
+#if HAS_LWJGL_VMA == 1
     private static VmaAllocationCreateInfo buildBufferAllocCreateInfo(MemoryStack stack, int requiredFlags) {
         VmaAllocationCreateInfo ci = VmaAllocationCreateInfo.calloc(stack);
 
@@ -231,4 +307,5 @@ public class VulkanMemoryAllocator {
 
         return ci;
     }
+#endif
 }

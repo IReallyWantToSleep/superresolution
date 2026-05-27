@@ -80,9 +80,11 @@ neoForge {
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:1.87.5"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:1.87.5"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}"))
-                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
-                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-windows"))
-                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-linux"))
+                if (versionConfig.common.hasLwjglVma) {
+                    additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
+                    additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-windows"))
+                    additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-linux"))
+                }
 
             }
         }
@@ -109,9 +111,11 @@ dependencies {
     if (imguiLwjgl != null) "libraries"(imguiLwjgl)
 
     implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
-    implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { jarJar(it);libraries(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { jarJar(it);libraries(it) }
+    if (versionConfig.common.hasLwjglVma) {
+        implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
+        implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { jarJar(it);libraries(it) }
+        implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { jarJar(it);libraries(it) }
+    }
 
     if (versionConfig.common.architecturyApiVersion != null) {
         implementation("dev.architectury:architectury-neoforge:${versionConfig.common.architecturyApiVersion}")

@@ -113,6 +113,7 @@ fun writeDefines() {
     val gradleExtra = gradle.extensions.extraProperties
     if ((gradleExtra.properties["isDev"] as? Boolean) == true) sb.append("IS_DEV=1\n")else sb.append("IS_DEV=0\n")
     if ((gradleExtra.properties["isVulkan"] as? Boolean) == true) sb.append("IS_VULKAN=1\n")else sb.append("IS_VULKAN=0\n")
+    if (versionConfigVar.common.hasLwjglVma) sb.append("HAS_LWJGL_VMA=1\n")else sb.append("HAS_LWJGL_VMA=0\n")
     if ((gradleExtra.properties["isEnableAutoDownload"] as? Boolean) == true) sb.append("ENABLE_AUTO_DOWNLOAD=1\n") else sb.append("ENABLE_AUTO_DOWNLOAD=0\n")
     if ((gradleExtra.properties["isUseDebugLib"] as? Boolean) == true) sb.append("USE_DEBUG_LIB=1\n") else sb.append("USE_DEBUG_LIB=0\n")
 
