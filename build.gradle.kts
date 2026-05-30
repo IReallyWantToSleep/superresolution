@@ -99,28 +99,6 @@ allprojects {
                 }
             }
         }
-
-        afterEvaluate {
-            if (System.getProperty("os.name").lowercase().contains("windows")) {
-                return@afterEvaluate
-            }
-            val javaWrapper = rootProject.file("script/java_tool_wrapper.sh")
-            if (!javaWrapper.exists()) {
-                return@afterEvaluate
-            }
-            tasks.matching { it.javaClass.name.contains("CreateMinecraftArtifacts") }.configureEach {
-                if (hasProperty("javaExecutable")) {
-                    withGroovyBuilder {
-                        setProperty("javaExecutable", javaWrapper.absolutePath)
-                    }
-                }
-                if (hasProperty("toolsJavaExecutable")) {
-                    withGroovyBuilder {
-                        setProperty("toolsJavaExecutable", javaWrapper.absolutePath)
-                    }
-                }
-            }
-        }
     }
 }
 

@@ -97,7 +97,9 @@ dependencies {
     compileOnly("io.github.spair:imgui-java-binding:1.87.5")
     compileOnly("io.github.spair:imgui-java-lwjgl3:1.87.5")
     compileOnly("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
-    compileOnly("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")
+    if (versionConfig.common.hasLwjglVma) {
+        compileOnly("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")
+    }
 
     compileOnly("com.electronwill.night-config:toml:3.6.0")
     compileOnly("com.electronwill.night-config:core:3.6.0")
