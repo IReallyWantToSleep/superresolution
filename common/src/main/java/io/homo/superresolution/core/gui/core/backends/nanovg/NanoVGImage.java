@@ -26,7 +26,7 @@ public class NanoVGImage implements IImage {
     @Override
     public void destroy() {
         if (nvgId != -1) {
-            NanoVG.context.rawContext.deleteImage(nvgId);
+            NanoVGBackend.context.rawContext.deleteImage(nvgId);
         }
     }
 }

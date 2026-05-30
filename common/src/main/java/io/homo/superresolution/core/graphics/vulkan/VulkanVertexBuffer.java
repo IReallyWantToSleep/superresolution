@@ -21,8 +21,10 @@ package io.homo.superresolution.core.graphics.vulkan;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
 
 import java.nio.ByteBuffer;
@@ -49,28 +51,26 @@ public class VulkanVertexBuffer implements IVertexBuffer {
         this.dynamic = description.isDynamic();
         this.vertexFormat = description.getVertexFormat();
 
-        createBuffer();
-        allocateMemory();
+        createBufferVma();
     }
 
-    private void createBuffer() {
+    private void createBufferVma() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
                     .size(sizeInBytes)
-                    .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+                    .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                     .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
-            LongBuffer pBuffer = stack.mallocLong(1);
-            VK_CHECK(vkCreateBuffer(device.getVkDevice(), bufferInfo, null, pBuffer),
-                    "Failed to create vertex buffer");
-            buffer = pBuffer.get(0);
-        }
-    }
+            VmaAllocationCreateInfo allocCI = VulkanMemoryAllocator.buildAllocCreateInfo(
+                    stack,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            );
 
-    private void allocateMemory() {
-        int memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        vmaAllocation = allocator.allocateBufferMemory(buffer, memoryProperties);
+            PointerBuffer pAllocation = stack.mallocPointer(1);
+            buffer = allocator.createBufferVma(bufferInfo, allocCI, pAllocation);
+            vmaAllocation = pAllocation.get(0);
+        }
     }
 
     @Override

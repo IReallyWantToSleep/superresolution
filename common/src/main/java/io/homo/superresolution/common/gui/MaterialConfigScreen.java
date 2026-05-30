@@ -1164,14 +1164,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 Pair.of("Main Render", Text.translatable("superresolution.screen.config.section.performance.chart.main_render")),
                 Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
                 Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),
+                Pair.of("GUI", Text.translatable("superresolution.screen.config.section.performance.chart.gui")),
         };
 
         for (Pair<String, Text> operation : operations) {
-            //TitlePill sectionLabel = createSectionPill(operation.right().getString());
-            //sectionLabel.layout().setMargin(YogaEdge.TOP, 12);
-            //sectionLabel.layout().setMargin(YogaEdge.BOTTOM, 6);
-            //container.addChild(sectionLabel);
-
             MaterialChart cpuChart = MaterialChart.create()
                     .title(operation.right().getString())
                     .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Curve, 128))
@@ -1911,7 +1907,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 inputStream
                         );
                     } catch (Throwable ignored) {
-                        SuperResolution.LOGGER.trace("加载配置界面图像失败", ignored);
+                        SuperResolution.LOGGER.error("加载配置界面图像失败", ignored);
                         loaded = true;
                         return;
                     }

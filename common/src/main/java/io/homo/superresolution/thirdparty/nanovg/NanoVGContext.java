@@ -21,7 +21,10 @@ package io.homo.superresolution.thirdparty.nanovg;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class NanoVGContext {
+public class NanoVGContext implements AutoCloseable {
+    public static final int NVG_ANTIALIAS = 1;
+    public static final int NVG_STENCIL_STROKES = 2;
+
     private static final int DEFAULT_FLAGS = 0;
     private static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.RHI_DIRECT;
     private long nativeHandle;
@@ -558,5 +561,10 @@ public class NanoVGContext {
             nDeleteContext(nativeHandle);
             nativeHandle = 0;
         }
+    }
+
+    @Override
+    public void close() {
+        delete();
     }
 }

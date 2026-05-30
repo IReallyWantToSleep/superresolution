@@ -19,4 +19,6 @@
 package io.homo.superresolution.core.gui.core.backends.interfaces;
 
 public interface IFont {
+    String name();
+    int nativeId();
 }

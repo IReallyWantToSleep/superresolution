@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
-public class NanoVGRendererBase {
-    protected final NanoVGContextWrapper nvg = NanoVG.getContext();
-    protected final io.homo.superresolution.thirdparty.nanovg.NanoVGContext contextPtr = NanoVG.getContext().rawContext;
+public abstract class NanoVGRendererBase {
+    protected final NanoVGContextWrapper nvg = NanoVGBackend.getContext();
+    protected final io.homo.superresolution.thirdparty.nanovg.NanoVGContext contextPtr = NanoVGBackend.getContext().rawContext;
 }

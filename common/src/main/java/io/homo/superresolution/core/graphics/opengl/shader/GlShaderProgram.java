@@ -321,7 +321,7 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         } catch (ShaderCompileException e) {
             throw e;
         } catch (Exception e) {
-            LOGGER.trace("着色器程序 '%s' 编译过程中发生未预期的错误".formatted(description.shaderName()), e);
+            LOGGER.error("着色器程序 '%s' 编译过程中发生未预期的错误".formatted(description.shaderName()), e);
             throw new ShaderCompileException("着色器程序编译失败: " + e.getMessage());
         } finally {
             shaders.forEach(GlShader::destroy);

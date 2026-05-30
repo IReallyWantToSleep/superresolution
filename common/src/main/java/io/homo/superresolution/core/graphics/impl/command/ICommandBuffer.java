@@ -95,6 +95,10 @@ public interface ICommandBuffer {
         writeToBuffer(dst, dstOffset, size, data.asByteBuffer());
     }
 
+    default void writeToBuffer(IVertexBuffer dst, long dstOffset, ByteBuffer data) {
+        decoder().writeToBuffer(this, dst, dstOffset, data);
+    }
+
     default void setViewport(float x, float y, float width, float height) {
         decoder().setViewport(this, x, y, width, height);
     }

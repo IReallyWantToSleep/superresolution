@@ -50,8 +50,10 @@ public class VulkanMemoryAllocator {
                     device.getVkInstance(),
                     device.getVkDevice()
             );
-            createInfo.flags(Vma.VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT
-                    | Vma.VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT);
+            createInfo.flags(
+                    //Vma.VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT
+                   // | Vma.VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT
+            );
             createInfo.physicalDevice(device.getPhysicalDevice());
             createInfo.device(device.getVkDevice());
             createInfo.instance(device.getVkInstance());
@@ -68,7 +70,7 @@ public class VulkanMemoryAllocator {
     }
     public long allocateBufferMemory(long buffer, int requiredMemoryProperties) {
         try (MemoryStack stack = stackPush()) {
-            VmaAllocationCreateInfo allocCI = buildBufferAllocCreateInfo(stack, requiredMemoryProperties);
+            VmaAllocationCreateInfo allocCI = buildAllocCreateInfo(stack, requiredMemoryProperties);
 
             PointerBuffer pAllocation = stack.mallocPointer(1);
             int result = Vma.vmaAllocateMemoryForBuffer(vmaAllocator, buffer, allocCI, pAllocation, null);
@@ -92,6 +94,24 @@ public class VulkanMemoryAllocator {
             if (vmaAllocation != NULL) {
                 Vma.vmaFreeMemory(vmaAllocator, vmaAllocation);
             }
+        }
+    }
+
+    public long createBufferVma(VkBufferCreateInfo bufferCreateInfo, VmaAllocationCreateInfo allocCreateInfo, PointerBuffer pAllocation) {
+        try (MemoryStack stack = stackPush()) {
+            LongBuffer pBuffer = stack.mallocLong(1);
+            int result = Vma.vmaCreateBuffer(vmaAllocator, bufferCreateInfo, allocCreateInfo, pBuffer, pAllocation, null);
+            VK_CHECK(result, "VMA failed to create buffer");
+            return pBuffer.get(0);
+        }
+    }
+
+    public long createImageVma(VkImageCreateInfo imageCreateInfo, VmaAllocationCreateInfo allocCreateInfo, PointerBuffer pAllocation) {
+        try (MemoryStack stack = stackPush()) {
+            LongBuffer pImage = stack.mallocLong(1);
+            int result = Vma.vmaCreateImage(vmaAllocator, imageCreateInfo, allocCreateInfo, pImage, pAllocation, null);
+            VK_CHECK(result, "VMA failed to create image");
+            return pImage.get(0);
         }
     }
 
@@ -214,7 +234,7 @@ public class VulkanMemoryAllocator {
         }
     }
 
-    private static VmaAllocationCreateInfo buildBufferAllocCreateInfo(MemoryStack stack, int requiredFlags) {
+    static VmaAllocationCreateInfo buildAllocCreateInfo(MemoryStack stack, int requiredFlags) {
         VmaAllocationCreateInfo ci = VmaAllocationCreateInfo.calloc(stack);
 
         boolean hostVisible = (requiredFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;

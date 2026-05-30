@@ -30,19 +30,20 @@ import io.homo.superresolution.core.graphics.impl.vertex.VertexFormat;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
+import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.vulkan.KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanGraphicsPipeline extends GraphicsPipeline {
     private final VulkanDevice device;
     private long pipelineLayout = VK_NULL_HANDLE;
     private long pipeline = VK_NULL_HANDLE;
-    private long associatedRenderPass = VK_NULL_HANDLE;
 
     public VulkanGraphicsPipeline(VulkanDevice device,
                                   IShaderProgram shader,
@@ -72,7 +73,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
         }
 
         createPipelineLayout(vkDescSet);
-        ensurePipelineCreated(vkRenderPass.getRenderPass());
+        ensurePipelineCreated();
     }
 
     private static int toVkFormat(VertexAttributeFormat format) {
@@ -194,19 +195,14 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
         }
     }
 
-    public void ensurePipelineCreated(long renderPassHandle) {
-        if (pipeline != VK_NULL_HANDLE && associatedRenderPass == renderPassHandle) {
+    public void ensurePipelineCreated() {
+        if (pipeline != VK_NULL_HANDLE) {
             return;
         }
-        if (pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(device.getVkDevice(), pipeline, null);
-            pipeline = VK_NULL_HANDLE;
-        }
-        createPipeline(renderPassHandle);
-        associatedRenderPass = renderPassHandle;
+        createPipeline();
     }
 
-    private void createPipeline(long renderPassHandle) {
+    private void createPipeline() { 
         VulkanShaderProgram vkShader = (VulkanShaderProgram) shader();
 
         try (MemoryStack stack = stackPush()) {
@@ -253,10 +249,18 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                     .primitiveRestartEnable(false);
 
             // Viewport/scissor (dynamic)
+            VkViewport.Buffer pViewports = VkViewport.calloc(1, stack)
+                    .x(0.0f).y(0.0f).width(1.0f).height(1.0f).minDepth(0.0f).maxDepth(1.0f);
+            VkRect2D.Buffer pScissors = VkRect2D.calloc(1, stack);
+            pScissors.offset().set(0, 0);
+            pScissors.extent().set(1, 1);
+
             VkPipelineViewportStateCreateInfo viewportState = VkPipelineViewportStateCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
                     .viewportCount(1)
-                    .scissorCount(1);
+                    .pViewports(pViewports)
+                    .scissorCount(1)
+                    .pScissors(pScissors);
 
             // Rasterization
             RasterizationState rast = rasterization();
@@ -355,9 +359,33 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                     .sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO)
                     .pDynamicStates(dynamicStatesBuffer);
 
+            // Build VkPipelineRenderingCreateInfo for dynamic rendering
+            VulkanFramebuffer vkFb = (VulkanFramebuffer) renderPass().frameBuffer();
+            int colorAttachmentCount = vkFb.getColorAttachmentTexture() != null ? 1 : 0;
+            boolean hasDepth = vkFb.getDepthAttachmentTexture() != null;
+
+            IntBuffer pColorFormats = null;
+            if (colorAttachmentCount > 0) {
+                pColorFormats = stack.mallocInt(1);
+                pColorFormats.put(0, vkFb.getColorAttachmentTexture().getTextureFormat().vk());
+            }
+            int depthFormat = hasDepth ? vkFb.getDepthAttachmentTexture().getTextureFormat().vk() : VK_FORMAT_UNDEFINED;
+            int stencilFormat = VK_FORMAT_UNDEFINED;
+            if (hasDepth && vkFb.getDepthAttachmentTexture().getTextureFormat().isStencil()) {
+                stencilFormat = depthFormat;
+            }
+
+            VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR)
+                    .colorAttachmentCount(colorAttachmentCount)
+                    .pColorAttachmentFormats(pColorFormats)
+                    .depthAttachmentFormat(depthFormat)
+                    .stencilAttachmentFormat(stencilFormat);
+
             // Create pipeline
             VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO)
+                    .pNext(renderingInfo.address())
                     .pStages(stages)
                     .pVertexInputState(vertexInput)
                     .pInputAssemblyState(inputAssembly)
@@ -367,9 +395,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
                     .pDepthStencilState(depthStencilInfo)
                     .pColorBlendState(colorBlending)
                     .pDynamicState(dynamicState)
-                    .layout(pipelineLayout)
-                    .renderPass(renderPassHandle)
-                    .subpass(0);
+                    .layout(pipelineLayout);
 
             LongBuffer pPipeline = stack.mallocLong(1);
             VK_CHECK(vkCreateGraphicsPipelines(device.getVkDevice(), VK_NULL_HANDLE, pipelineInfo, null, pPipeline),

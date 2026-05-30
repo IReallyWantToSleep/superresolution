@@ -108,16 +108,12 @@ public class Transform {
     }
 
     public Transform rotateDegrees(float degrees) {
-        float cos = (float) Math.cos(Math.toDegrees(degrees));
-        float sin = (float) Math.sin(Math.toDegrees(degrees));
-        float[] r = new float[]{cos, sin, -sin, cos, 0, 0};
-        mat = multiply(mat, r);
-        return this;
+        return rotate((float) Math.toRadians(degrees));
     }
 
     public Transform rotateDegreesAt(float degrees, float cx, float cy) {
         translate(cx, cy);
-        rotate((float) Math.toDegrees(degrees));
+        rotate((float) Math.toRadians(degrees));
         translate(-cx, -cy);
         return this;
     }

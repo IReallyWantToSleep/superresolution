@@ -35,6 +35,16 @@ public class NanoVGFont implements IFont {
         this.path = path;
     }
 
+    @Override
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public int nativeId() {
+        return id;
+    }
+
     public void load() {
         if (id != -1) {
             return;
@@ -51,7 +61,7 @@ public class NanoVGFont implements IFont {
             ByteBuffer fontBuffer = MemoryUtil.memAlloc(bytes.length);
             fontBuffer.put(bytes);
             fontBuffer.flip();
-            id = NanoVG.context.rawContext.createFontMem(name, fontBuffer, 0);
+            id = NanoVGBackend.context.rawContext.createFontMem(name, fontBuffer, 0);
 
             if (id == -1) {
                 MemoryUtil.memFree(fontBuffer);

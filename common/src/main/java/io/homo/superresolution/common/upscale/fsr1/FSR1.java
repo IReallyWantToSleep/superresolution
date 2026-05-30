@@ -35,6 +35,7 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceA
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.*;
 import io.homo.superresolution.core.graphics.opengl.shader.GlShaderProgram;
+import io.homo.superresolution.core.graphics.opengl.texture.*;
 import io.homo.superresolution.core.graphics.vulkan.*;
 import org.joml.Vector3i;
 

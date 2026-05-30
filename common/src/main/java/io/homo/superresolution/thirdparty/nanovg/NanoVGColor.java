@@ -21,7 +21,7 @@ package io.homo.superresolution.thirdparty.nanovg;
 public class NanoVGColor implements AutoCloseable {
     private final long nativeHandle;
 
-    protected NanoVGColor(long nativeHandle) {
+    public NanoVGColor(long nativeHandle) {
         this.nativeHandle = nativeHandle;
     }
 
@@ -37,20 +37,19 @@ public class NanoVGColor implements AutoCloseable {
 
     public native float nGetNanoVGColorA(long nativeHandle);
 
-    public float r() {
+    public float red() {
         return nGetNanoVGColorR(nativeHandle);
     }
 
-    public float g() {
+    public float green() {
         return nGetNanoVGColorG(nativeHandle);
     }
 
-
-    public float b() {
+    public float blue() {
         return nGetNanoVGColorB(nativeHandle);
     }
 
-    public float a() {
+    public float alpha() {
         return nGetNanoVGColorA(nativeHandle);
     }
 

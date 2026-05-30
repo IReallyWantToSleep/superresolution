@@ -51,10 +51,10 @@ public class Color {
         }
         if (object instanceof NanoVGColor) {
             return Color.rgba(
-                    ((NanoVGColor) object).r(),
-                    ((NanoVGColor) object).g(),
-                    ((NanoVGColor) object).b(),
-                    ((NanoVGColor) object).a()
+                    ((NanoVGColor) object).red(),
+                    ((NanoVGColor) object).green(),
+                    ((NanoVGColor) object).blue(),
+                    ((NanoVGColor) object).alpha()
             );
         }
         return new Color(ColorUtil.toArray(object));

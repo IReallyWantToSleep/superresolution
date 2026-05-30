@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.gui;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGBackend;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.IEventBus;
 
@@ -32,7 +32,7 @@ public class MaterialUI {
     }
 
     public static void init() {
-        NanoVG.init();
+        NanoVGBackend.init();
         MaterialSymbols.init();
         EVENT_BUS.start();
     }
@@ -52,7 +52,7 @@ public class MaterialUI {
                             event.getClass(),
                             listeners[index]
                     );
-                    SuperResolution.LOGGER.trace("事件处理错误", throwable);
+                    SuperResolution.LOGGER.error("事件处理错误", throwable);
                 })
                 .build();
     }

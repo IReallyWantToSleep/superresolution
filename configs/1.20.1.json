@@ -6,7 +6,7 @@
         "platforms": [
             "forge"
         ],
-        "lwjgl_version": "3.3.3",
+        "lwjgl_version": "3.3.4",
         "forge": {
             "minecraft_version_range": "[1.20.1,)"
         },

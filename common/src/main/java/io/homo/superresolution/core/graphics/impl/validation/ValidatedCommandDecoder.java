@@ -355,8 +355,8 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
     public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
         requireNonNull(commandBuffer, "setViewport", "commandBuffer");
         requireRecording(commandBuffer, "setViewport");
-        if (width <= 0 || height <= 0) {
-            throw new IllegalArgumentException("setViewport: width and height must be positive");
+        if (width <= 0 || height == 0) {
+            throw new IllegalArgumentException("setViewport: width must be positive, height must be non-zero");
         }
         rawCommandDecoder.setViewport(commandBuffer, x, y, width, height);
     }

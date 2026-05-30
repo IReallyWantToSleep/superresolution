@@ -33,6 +33,7 @@ public class PerformanceTracker {
         addOperation("Level Render");
         addOperation("Main Render");
         addOperation("Upscale");
+        addOperation("GUI");
     }
 
     public static void addOperation(String operationName) {

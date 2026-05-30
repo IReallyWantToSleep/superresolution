@@ -267,7 +267,7 @@ public class NanoVGRenderContext implements RenderContext {
         NanoVGColor nvgOuterColor = nvg.rawContext.colorRGBA(
                 outerColor.red(), outerColor.green(), outerColor.blue(), outerColor.alpha()
         );
-        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.rawContext.boxGradient(
+        NanoVGBackendPaint paint = new NanoVGBackendPaint(nvg.rawContext.boxGradient(
                 x, y, width, height, radius, feather, nvgInnerColor, nvgOuterColor
         ));
         nvgInnerColor.close();
@@ -335,14 +335,14 @@ public class NanoVGRenderContext implements RenderContext {
 
     @Override
     public void paint(IPaint paint) {
-        if (paint instanceof NanoVGPaintWrapper) {
-            nvg.rawContext.fillPaint(((NanoVGPaintWrapper) paint).get());
+        if (paint instanceof NanoVGBackendPaint) {
+            nvg.rawContext.fillPaint(((NanoVGBackendPaint) paint).get());
         }
     }
 
     @Override
     public IPaint linearGradient(float startX, float startY, float endX, float endY, Color from, Color to) {
-        return new NanoVGPaintWrapper(nvg.linearGradient(startX, startY, endX, endY, from, to));
+        return new NanoVGBackendPaint(nvg.linearGradient(startX, startY, endX, endY, from, to));
     }
 
     @Override
@@ -353,7 +353,7 @@ public class NanoVGRenderContext implements RenderContext {
         NanoVGColor nvgEndColor = nvg.rawContext.colorRGBA(
                 endColor.red(), endColor.green(), endColor.blue(), endColor.alpha()
         );
-        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.rawContext.radialGradient(centerX, centerY, 0, radius, nvgBeginColor, nvgEndColor));
+        NanoVGBackendPaint paint = new NanoVGBackendPaint(nvg.rawContext.radialGradient(centerX, centerY, 0, radius, nvgBeginColor, nvgEndColor));
         nvgBeginColor.close();
         nvgEndColor.close();
         return paint;
@@ -368,7 +368,7 @@ public class NanoVGRenderContext implements RenderContext {
         NanoVGColor nvgEndColor = nvg.rawContext.colorRGBA(
                 endColor.red(), endColor.green(), endColor.blue(), endColor.alpha()
         );
-        NanoVGPaintWrapper paint = new NanoVGPaintWrapper(nvg.rawContext.radialGradient(centerX, centerY, innerRadius, outerRadius, nvgBeginColor, nvgEndColor));
+        NanoVGBackendPaint paint = new NanoVGBackendPaint(nvg.rawContext.radialGradient(centerX, centerY, innerRadius, outerRadius, nvgBeginColor, nvgEndColor));
         nvgBeginColor.close();
         nvgEndColor.close();
         return paint;
@@ -377,7 +377,7 @@ public class NanoVGRenderContext implements RenderContext {
     @Override
     public IPaint imagePattern(float ox, float oy, float ex, float ey, float width, float height,
                                float angle, float alpha, IImage image) {
-        return new NanoVGPaintWrapper(nvg.imagePattern(ox, oy, ex, ey, width, height, angle, alpha, ((NanoVGImage) image).nvgId));
+        return new NanoVGBackendPaint(nvg.imagePattern(ox, oy, ex, ey, width, height, angle, alpha, ((NanoVGImage) image).nvgId));
     }
 
     @Override
@@ -387,35 +387,35 @@ public class NanoVGRenderContext implements RenderContext {
 
     @Override
     public float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        return NanoVG.RENDERER.TEXT.measureTextWidth(font, text, fontSize, lineHeight, weight);
+        return NanoVGBackend.RENDERER.TEXT.measureTextWidth(font, text, fontSize, lineHeight, weight);
     }
 
     @Override
     public float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        return NanoVG.RENDERER.TEXT.measureTextHeight(font, text, fontSize, lineHeight, weight);
+        return NanoVGBackend.RENDERER.TEXT.measureTextHeight(font, text, fontSize, lineHeight, weight);
     }
 
     @Override
     public Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        return NanoVG.RENDERER.TEXT.measureText(font, text, fontSize, lineHeight, weight);
+        return NanoVGBackend.RENDERER.TEXT.measureText(font, text, fontSize, lineHeight, weight);
     }
 
     @Override
     public TextMetrics measureTextMetrics(IFont font, float fontSize, String text, float lineMaxWidth,
                                           float lineHeight, float weight, boolean wrap) {
-        return NanoVG.RENDERER.TEXT.calculateTextMetrics(
+        return NanoVGBackend.RENDERER.TEXT.calculateTextMetrics(
                 font, fontSize, text, lineMaxWidth, lineHeight, wrap, weight
         );
     }
 
     @Override
     public void drawAlignedText(IFont font, float fontSize, String text, float x, float y, float lineMaxWidth, float lineHeight, float weight, Color color, TextAlign align, boolean wrap) {
-        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, weight, color, align, wrap);
+        NanoVGBackend.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, weight, color, align, wrap);
     }
 
     @Override
     public void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics, float x, float y, float lineMaxWidth, float lineHeight, float weight, Color color, TextAlign align, boolean wrap) {
-        NanoVG.RENDERER.TEXT.drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, weight, color, align, wrap);
+        NanoVGBackend.RENDERER.TEXT.drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, weight, color, align, wrap);
     }
 
     @Override
@@ -529,18 +529,12 @@ public class NanoVGRenderContext implements RenderContext {
         return image;
     }
 
-    public void delectImage(IImage image) {
+    public void deleteImage(IImage image) {
         if (image instanceof NanoVGImage) {
             image.destroy();
         } else {
             throw new IllegalArgumentException("Image must be instance of NanoVGImage");
         }
-    }
-
-    public void applyGuiScale() {
-        transformStack.setIdentity();
-        transformStack.scale(guiScale, guiScale);
-        applyTransform();
     }
 
     private void applyCurrentState() {

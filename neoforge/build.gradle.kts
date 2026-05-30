@@ -51,6 +51,34 @@ repositories {
     }
 }
 
+// Forge JiJ has a bug where native libs in separate nested jars aren't found at runtime.
+// Merge VMA native .dll/.so files directly into the VMA Java jar so they live in a single embedded jar.
+val mergeVmaNatives by tasks.registering(Jar::class) {
+    archiveFileName.set("lwjgl-vma-${versionConfig.common.lwjglVersion}-merged.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("mergedVma"))
+
+    val vmaVersion = versionConfig.common.lwjglVersion
+    val vmaMain = configurations.detachedConfiguration(
+        dependencies.create("org.lwjgl:lwjgl-vma:$vmaVersion")
+    )
+    vmaMain.isTransitive = false
+    from(vmaMain.map { zipTree(it) })
+
+    listOf("natives-windows", "natives-linux").forEach { classifier ->
+        val nativeCfg = configurations.detachedConfiguration(
+            dependencies.create("org.lwjgl:lwjgl-vma:$vmaVersion:$classifier")
+        )
+        nativeCfg.isTransitive = false
+        from(nativeCfg.map { zipTree(it) })
+    }
+
+    manifest {
+        attributes("Automatic-Module-Name" to "org.lwjgl.vma")
+    }
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 val libraries = configurations.create("libraries")
 
 val sourceSets = extensions.getByType(SourceSetContainer::class.java)
@@ -109,9 +137,9 @@ dependencies {
     if (imguiLwjgl != null) "libraries"(imguiLwjgl)
 
     implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
-    implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { jarJar(it);libraries(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { jarJar(it);libraries(it) }
+    implementation(files(mergeVmaNatives.get().archiveFile))
+    add("jarJar", files(mergeVmaNatives.get().archiveFile))
+    add("libraries", files(mergeVmaNatives.get().archiveFile))
 
     if (versionConfig.common.architecturyApiVersion != null) {
         implementation("dev.architectury:architectury-neoforge:${versionConfig.common.architecturyApiVersion}")

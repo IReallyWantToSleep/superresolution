@@ -20,10 +20,10 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 
-public class NanoVGPaintWrapper implements IPaint {
+public class NanoVGBackendPaint implements IPaint {
     private final io.homo.superresolution.thirdparty.nanovg.NanoVGPaint paint;
 
-    public NanoVGPaintWrapper(io.homo.superresolution.thirdparty.nanovg.NanoVGPaint paint) {
+    public NanoVGBackendPaint(io.homo.superresolution.thirdparty.nanovg.NanoVGPaint paint) {
         this.paint = paint;
     }
 

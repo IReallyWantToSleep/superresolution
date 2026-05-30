@@ -32,7 +32,7 @@ public class NanoVGPaint implements AutoCloseable {
     public native void nDelete(long nativeHandle);
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         nDelete(nativeHandle);
     }
 }

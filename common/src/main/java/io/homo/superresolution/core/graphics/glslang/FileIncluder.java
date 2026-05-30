@@ -88,7 +88,7 @@ public class FileIncluder {
                     SuperResolution.LOGGER.error("加载着色器头文件 (Dev): {}", includePath);
                 }
             } catch (Throwable e) {
-                SuperResolution.LOGGER.trace("开发环境着色器头文件热加载失败", e);
+                SuperResolution.LOGGER.error("开发环境着色器头文件热加载失败", e);
             }
         }
 

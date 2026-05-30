@@ -20,7 +20,10 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.vma.Vma;
+import org.lwjgl.util.vma.VmaAllocationCreateInfo;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
@@ -66,14 +69,16 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         this.exportable = exportable;
 
         try (MemoryStack stack = stackPush()) {
-            createImage(stack);
+            if (!isExternal && !exportable) {
+                createImageVma(stack);
+            } else {
+                createImage(stack);
+            }
             if (isExternal) {
                 importMemoryFromHandle(stack);
-            } else {
+            } else if (exportable) {
                 allocateMemory(stack);
-                if (exportable) {
-                    exportMemoryHandle(stack);
-                }
+                exportMemoryHandle(stack);
             }
             createImageView(stack);
         }
@@ -127,6 +132,32 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         LongBuffer pImage = stack.mallocLong(1);
         VK_CHECK(vkCreateImage(device.getVkDevice(), imageInfo, null, pImage), "Failed to create image");
         image = pImage.get(0);
+    }
+
+    private void createImageVma(MemoryStack stack) {
+        VkImageCreateInfo imageInfo = VkImageCreateInfo.calloc(stack);
+        imageInfo.sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+        imageInfo.imageType(VK_IMAGE_TYPE_2D);
+        imageInfo.extent().width(width);
+        imageInfo.extent().height(height);
+        imageInfo.extent().depth(1);
+        imageInfo.mipLevels(description.getMipmapSettings().getLevels());
+        imageInfo.arrayLayers(1);
+        imageInfo.format(description.getFormat().vk());
+        imageInfo.tiling(VK_IMAGE_TILING_OPTIMAL);
+        imageInfo.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+        imageInfo.usage(translateUsages(Set.copyOf(description.getUsages().getUsages())));
+        imageInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        imageInfo.samples(VK_SAMPLE_COUNT_1_BIT);
+
+        VmaAllocationCreateInfo allocCI = VmaAllocationCreateInfo.calloc(stack);
+        allocCI.usage(Vma.VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
+        PointerBuffer pAllocation = stack.mallocPointer(1);
+        image = allocator.createImageVma(imageInfo, allocCI, pAllocation);
+        vmaAllocation = pAllocation.get(0);
+        imageMemory = allocator.getDeviceMemoryFromAllocation(vmaAllocation);
+        this.memorySize = allocator.getImageMemoryRequirements(image);
     }
 
     private int translateUsages(Set<TextureUsage> usages) {

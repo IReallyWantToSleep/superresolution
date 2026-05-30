@@ -23,11 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class NanoVGFontLoader {
-    public static final String MEDIUM_VARIATION = "medium";
-    public static final String BLACK_VARIATION = "black";
-    public static final String BOLD_VARIATION = "bold";
-    public static final String LIGHT_VARIATION = "light";
-    public static final String THIN_VARIATION = "thin";
     public static final String REGULAR_VARIATION = "regular";
     public static Map<String, NanoVGFont> FONT_MAP = new HashMap<>();
 

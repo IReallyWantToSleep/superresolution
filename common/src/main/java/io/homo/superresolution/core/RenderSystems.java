@@ -41,6 +41,7 @@ import static org.lwjgl.vulkan.KHRGetMemoryRequirements2.VK_KHR_GET_MEMORY_REQUI
 import static org.lwjgl.vulkan.KHRPushDescriptor.VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRShaderFloat16Int8.VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 
 public class RenderSystems {
     private static VkRenderSystem vulkan;
@@ -79,7 +80,7 @@ public class RenderSystems {
         } catch (Exception | Error e) {
             if (!e.getMessage().contains("Vulkan has already been created")) {
                 VkRenderSystem.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
-                VkRenderSystem.LOGGER.trace("Vulkan 初始化错误详情", e);
+                VkRenderSystem.LOGGER.error("Vulkan 初始化错误详情", e);
                 return;
             }
         }
@@ -97,7 +98,8 @@ public class RenderSystems {
                 .addDeviceExtension("VK_EXT_descriptor_indexing")
                 .addDeviceExtension("VK_NVX_binary_import")
                 .addDeviceExtension("VK_NVX_image_view_handle")
-                .addDeviceExtension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+                .addDeviceExtension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME)
+                .addDeviceExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                     .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
@@ -110,9 +112,9 @@ public class RenderSystems {
             vulkan.initRenderSystem();
             return;
         } catch (VulkanException vkException) {
-            VkRenderSystem.LOGGER.trace("Vulkan初始化失败，已禁用Vulkan", vkException);
+            VkRenderSystem.LOGGER.error("Vulkan初始化失败，已禁用Vulkan", vkException);
         } catch (Throwable e) {
-            VkRenderSystem.LOGGER.trace("Vulkan初始化失败，发生未知错误，已禁用Vulkan", e);
+            VkRenderSystem.LOGGER.error("Vulkan初始化失败，发生未知错误，已禁用Vulkan", e);
         }
         vulkan = null;
     }

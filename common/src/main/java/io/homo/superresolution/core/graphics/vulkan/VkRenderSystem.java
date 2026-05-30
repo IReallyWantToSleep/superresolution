@@ -34,6 +34,9 @@ import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memUTF8;
 import static org.lwjgl.vulkan.EXTMutableDescriptorType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT;
+import static org.lwjgl.vulkan.KHRDynamicRendering.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+import static org.lwjgl.vulkan.KHRDynamicRenderingLocalRead.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR;
+
 import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -236,9 +239,19 @@ public class VkRenderSystem implements IRenderSystem {
                             .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR)
                             .pNext(mutableDescriptorTypeFeaturesEXT.address());
 
+            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures =
+                    VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR)
+                            .pNext(shaderIntegerDotProductFeaturesKHR.address());
+
+            VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures =
+                    VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR)
+                            .pNext(dynamicRenderingFeatures.address());
+
             VkPhysicalDeviceVulkan12Features features12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
-                    .pNext(shaderIntegerDotProductFeaturesKHR.address());
+                    .pNext(dynamicRenderingLocalReadFeatures.address());
 
             VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
@@ -254,6 +267,8 @@ public class VkRenderSystem implements IRenderSystem {
             boolean deviceSupportsShaderStorageImageWriteWithoutFormat = features2.features().shaderStorageImageWriteWithoutFormat();
             boolean deviceSupportsBufferDeviceAddress = features12.bufferDeviceAddress();
             boolean deviceSupportsDescriptorIndexing = features12.descriptorIndexing();
+            boolean deviceSupportsDynamicRendering = dynamicRenderingFeatures.dynamicRendering();
+            boolean deviceSupportsDynamicRenderingLocalRead = dynamicRenderingLocalReadFeatures.dynamicRenderingLocalRead();
             LOGGER.info("Vulkan 设备特性支持状态:");
             LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
             LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
@@ -263,6 +278,8 @@ public class VkRenderSystem implements IRenderSystem {
             LOGGER.info("  shaderIntegerDotProduct: {}", deviceSupportsShaderIntegerDotProduct);
             LOGGER.info("  bufferDeviceAddress: {}", deviceSupportsBufferDeviceAddress);
             LOGGER.info("  descriptorIndexing: {}", deviceSupportsDescriptorIndexing);
+            LOGGER.info("  dynamicRendering: {}", deviceSupportsDynamicRendering);
+            LOGGER.info("  dynamicRenderingLocalRead: {}",deviceSupportsDynamicRenderingLocalRead);
 
             VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures =
                     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT.calloc(stack)
@@ -275,9 +292,20 @@ public class VkRenderSystem implements IRenderSystem {
                             .pNext(deviceMutableFeatures.address())
                             .shaderIntegerDotProduct(deviceSupportsShaderIntegerDotProduct);
 
+            VkPhysicalDeviceDynamicRenderingFeaturesKHR deviceDynamicRenderingFeatures =
+                    VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR)
+                            .pNext(deviceShaderIntFeatures.address())
+                            .dynamicRendering(deviceSupportsDynamicRendering);
+            VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR deviceDynamicRenderingLocalReadFeatures =
+                    VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR.calloc(stack)
+                            .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR)
+                            .dynamicRenderingLocalRead(deviceSupportsDynamicRenderingLocalRead)
+                            .pNext(deviceDynamicRenderingFeatures.address());
+
             VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
-                    .pNext(deviceShaderIntFeatures.address())
+                    .pNext(deviceDynamicRenderingLocalReadFeatures.address())
                     .shaderFloat16(deviceSupportsShaderFloat16)
                     .shaderInt8(deviceSupportsShaderInt8)
                     .bufferDeviceAddress(deviceSupportsBufferDeviceAddress)

@@ -20,8 +20,6 @@ package io.homo.superresolution.core.gui.test;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVG;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGPaintWrapper;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.utils.Color;

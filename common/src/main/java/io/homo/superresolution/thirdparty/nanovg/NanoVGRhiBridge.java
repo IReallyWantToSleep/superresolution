@@ -37,8 +37,19 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
+#if (IS_VULKAN == 1)
+import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBufferRing;
+import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.core.graphics.vulkan.VulkanFramebuffer;
+import io.homo.superresolution.core.graphics.vulkan.VulkanGraphicsPipeline;
+import io.homo.superresolution.core.graphics.vulkan.VulkanRenderPass;
+import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+#endif
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
@@ -95,13 +106,25 @@ public final class NanoVGRhiBridge {
     private static final int NVG_BF_DST_COLOR = 0x0306;
     private static final int NVG_BF_ONE_MINUS_DST_COLOR = 0x0307;
     private static final int NVG_BF_SRC_ALPHA_SATURATE = 0x0308;
+    #if (IS_VULKAN == 1)
+    private static final int VK_COMMAND_BUFFER_RING_SIZE = 5;
+    private static VulkanCommandBufferRing vkCommandBufferRing;
+    private static VulkanFramebuffer vkTargetFramebuffer;
+    private static VkGlInteropSemaphore vkGlFinishSemaphore;
+    private static VkGlInteropSemaphore vkVkFinishSemaphore;
+    private static boolean vkResourcesInitialized = false;
+    #endif
     private static IFrameBuffer targetFramebuffer;
     private static ITexture dummyTexture;
     private static IShaderProgram shader;
     private static IBuffer frameUniformBuffer;
     private static IBuffer fragUniformBuffer;
     private static IVertexBuffer dynamicVertexBuffer;
-    private static IDevice device = RenderSystems.current().device();
+    #if (IS_VULKAN == 1)
+    private static IDevice device = RenderSystems.vulkan().device();
+    #else
+    private static IDevice device = RenderSystems.opengl().device();
+    #endif
     private static int dynamicVertexCapacity;
     private static int frameVertexWriteOffset;
     private static int fragUniformWriteOffset;
@@ -143,6 +166,39 @@ public final class NanoVGRhiBridge {
         explicitBatchActive = false;
         closeActiveBatch(true);
     }
+
+    #if (IS_VULKAN == 1)
+    public static void setVulkanTarget(VulkanFramebuffer vkFb, VkGlInteropSemaphore glFinishSem, VkGlInteropSemaphore vkFinishSem) {
+        if (vkTargetFramebuffer != vkFb) {
+            closeActiveBatch(true);
+            vkTargetFramebuffer = vkFb;
+            vkGlFinishSemaphore = glFinishSem;
+            vkVkFinishSemaphore = vkFinishSem;
+            targetFramebuffer = vkFb;
+            GRAPHICS_PIPELINE_CACHE.values().forEach(GraphicsPipeline::destroy);
+            GRAPHICS_PIPELINE_CACHE.clear();
+            PASS_CACHE.values().forEach(RenderPass::destroy);
+            PASS_CACHE.clear();
+        }
+    }
+
+    public static void createVkResources() {
+        if (vkResourcesInitialized) return;
+        vkCommandBufferRing = new VulkanCommandBufferRing(VK_COMMAND_BUFFER_RING_SIZE);
+        vkResourcesInitialized = true;
+    }
+
+    public static void destroyVkResources() {
+        vkResourcesInitialized = false;
+        if (vkCommandBufferRing != null) {
+            vkCommandBufferRing.destroy();
+            vkCommandBufferRing = null;
+        }
+        vkTargetFramebuffer = null;
+        vkGlFinishSemaphore = null;
+        vkVkFinishSemaphore = null;
+    }
+    #endif
 
     public static boolean nCreateTexture(int imageId, int type, int width, int height, int imageFlags, ByteBuffer data, int dataSize) {
         TextureFormat format;
@@ -201,13 +257,56 @@ public final class NanoVGRhiBridge {
                 ? TextureWrapMode.Repeat
                 : TextureWrapMode.ClampToEdge;
 
-        ITexture external = new ExternalTextureRef(externalTextureHandle, width, height, format, filterMode, wrapMode);
-        ITexture previous = TEXTURES.put(imageId, external);
+        ITexture texture;
+        #if (IS_VULKAN == 1)
+        if (device instanceof VulkanDevice) {
+            texture = createVulkanTextureFromGL(externalTextureHandle, width, height, format, filterMode, wrapMode);
+        } else {
+        #endif
+            texture = new ExternalTextureRef(externalTextureHandle, width, height, format, filterMode, wrapMode);
+        #if (IS_VULKAN == 1)
+        }
+        #endif
+
+        ITexture previous = TEXTURES.put(imageId, texture);
         if (previous != null) {
             previous.destroy();
         }
         return true;
     }
+
+#if (IS_VULKAN == 1)
+    private static ITexture createVulkanTextureFromGL(int glHandle, int width, int height,
+                                                       TextureFormat format, TextureFilterMode filterMode,
+                                                       TextureWrapMode wrapMode) {
+        ByteBuffer pixelData = MemoryUtil.memAlloc(width * height * 4);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, glHandle);
+        GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, pixelData);
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+
+        TextureDescription desc = TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .format(format)
+                .size(width, height)
+                .usages(TextureUsages.create().sampler().transferDestination())
+                .filterMode(filterMode)
+                .wrapMode(wrapMode)
+                .mipmapSettings(TextureMipmapSettings.disabled())
+                .label("NanoVgExtTex_" + glHandle)
+                .build();
+        ITexture vkTexture = device.createTexture(desc);
+
+        ICommandBuffer cmd = device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
+        cmd.begin();
+        cmd.writeToTexture(vkTexture, pixelData, 0, 0, width, height);
+        cmd.end();
+        cmd.submit(device);
+        cmd.waitForFence();
+
+        MemoryUtil.memFree(pixelData);
+        return vkTexture;
+    }
+#endif
 
     public static boolean nUpdateTexture(int imageId, int x, int y, int width, int height, ByteBuffer data, int dataSize) {
         ITexture texture = TEXTURES.get(imageId);
@@ -254,8 +353,6 @@ public final class NanoVGRhiBridge {
         if (ncalls <= 0 || nverts <= 0 || verts == null || calls == null || uniforms == null || fragSize <= 0) {
             return;
         }
-
-        IDevice device = RenderSystems.current().device();
 
         if (targetFramebuffer == null) {
             return;
@@ -485,6 +582,9 @@ public final class NanoVGRhiBridge {
             shader.destroy();
             shader = null;
         }
+        #if (IS_VULKAN == 1)
+        destroyVkResources();
+        #endif
     }
 
     private static ByteBuffer duplicateForUpload(ByteBuffer src, int size) {
@@ -822,7 +922,15 @@ public final class NanoVGRhiBridge {
             return;
         }
         int firstVertex = frameVertexWriteOffset / VERTEX_STRIDE_BYTES;
-        dynamicVertexBuffer.updateData(vertexData, frameVertexWriteOffset);
+        #if (IS_VULKAN == 1)
+        if (vkTargetFramebuffer != null && device instanceof VulkanDevice) {
+            commandBuffer.writeToBuffer(dynamicVertexBuffer, frameVertexWriteOffset, vertexData);
+        } else {
+        #endif
+        commandBuffer.writeToBuffer(dynamicVertexBuffer, frameVertexWriteOffset, vertexData);
+        #if (IS_VULKAN == 1)
+        }
+        #endif
         frameVertexWriteOffset += vertexBytes;
 
         if (!isUniformRangeValid(uniformOffset, fragSize, 1, uniforms.limit())) {
@@ -858,12 +966,21 @@ public final class NanoVGRhiBridge {
                 .samplerTexture("tex", 2, texture)
                 .update();
 
-        if (batchState.markViewportPrepared(pipeline)) {
-            pipeline.setViewport(0.0f, 0.0f, viewportWidth, viewportHeight);
-        }
-
         int vertexCount = vertexBytes / VERTEX_STRIDE_BYTES;
+        batchState.endIfNeeded(commandBuffer);
         batchState.beginIfNeeded(commandBuffer);
+        if (batchState.markViewportPrepared(pipeline)) {
+            #if (IS_VULKAN == 1)
+            if (vkTargetFramebuffer != null && device instanceof VulkanDevice) {
+                pipeline.setViewport(0.0f, 0.0f, viewportWidth, viewportHeight);
+                pipeline.setScissor(0, 0, (int) viewportWidth, (int) viewportHeight);
+            } else {
+            #endif
+                pipeline.setViewport(0.0f, 0.0f, viewportWidth, viewportHeight);
+            #if (IS_VULKAN == 1)
+            }
+            #endif
+        }
         commandBuffer.bindPipeline(pipeline);
         commandBuffer.draw(dynamicVertexBuffer, vertexCount, firstVertex);
     }
@@ -924,9 +1041,20 @@ public final class NanoVGRhiBridge {
             return;
         }
 
+        #if (IS_VULKAN == 1)
+        if (vkTargetFramebuffer != null && device instanceof VulkanDevice) {
+            VulkanCommandBuffer vkCb = vkCommandBufferRing.acquire((VulkanDevice) device);
+            activeCommandBuffer = vkCb;
+            vkCb.begin();
+            activeFlushBatchState = new FlushBatchState(getOrCreateSharedPass(device));
+        } else {
+        #endif
         activeCommandBuffer = device.defaultCommandPool().createCommandBuffer();
         activeCommandBuffer.begin();
         activeFlushBatchState = new FlushBatchState(getOrCreateSharedPass(device));
+        #if (IS_VULKAN == 1)
+        }
+        #endif
         activeBatchDevice = device;
         activeBatchFramebuffer = targetFramebuffer;
         activeBatchViewWidth = viewWidth;
@@ -974,7 +1102,26 @@ public final class NanoVGRhiBridge {
         activeFlushBatchState.endIfNeeded(activeCommandBuffer);
         activeCommandBuffer.end();
         if (submit) {
+            #if (IS_VULKAN == 1)
+            if (vkTargetFramebuffer != null && activeBatchDevice instanceof VulkanDevice && activeCommandBuffer instanceof VulkanCommandBuffer) {
+                VulkanDevice vkDev = (VulkanDevice) activeBatchDevice;
+                VulkanCommandBuffer vkCb = (VulkanCommandBuffer) activeCommandBuffer;
+                long[] waitSemaphores = (vkGlFinishSemaphore != null)
+                        ? new long[]{vkGlFinishSemaphore.getVkSemaphoreHandle()}
+                        : null;
+                int[] waitStages = (vkGlFinishSemaphore != null)
+                        ? new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT}
+                        : null;
+                long[] signalSemaphores = (vkVkFinishSemaphore != null)
+                        ? new long[]{vkVkFinishSemaphore.getVkSemaphoreHandle()}
+                        : null;
+                vkDev.submitCommandBuffer(vkCb, waitSemaphores, waitStages, signalSemaphores);
+            } else {
+                activeBatchDevice.submitCommandBuffer(activeCommandBuffer);
+            }
+            #else
             activeBatchDevice.submitCommandBuffer(activeCommandBuffer);
+            #endif
         } else {
             activeCommandBuffer.destroy();
         }
@@ -1347,7 +1494,7 @@ public final class NanoVGRhiBridge {
                         d.depthTestEnable(false).depthWriteEnable(false);
                         configureStencilState(d, stencilMode);
                     })
-                    .dynamicStates(DynamicStateFlags.Viewport)
+                    .dynamicStates(DynamicStateFlags.ViewportScissor)
                     .colorBlend(cb -> cb.addAttachment(attachment))
                     .vertexFormat(getVertexFormat())
                     .build(device);

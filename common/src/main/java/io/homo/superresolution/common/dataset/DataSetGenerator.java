@@ -355,7 +355,7 @@ public class DataSetGenerator {
             glReadPixels(0, 0, texture.getWidth(), texture.getHeight(), pixelFormat, pixelType, buffer);
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.trace("从纹理读取像素失败", e);
+            SuperResolution.LOGGER.error("从纹理读取像素失败", e);
             return false;
         } finally {
             temp.destroy();

@@ -347,6 +347,6 @@ public interface RenderContext {
 
     IImage createImage(ITexture texture);
 
-    void delectImage(IImage image);
+    void deleteImage(IImage image);
 
 }

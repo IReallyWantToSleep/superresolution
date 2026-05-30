@@ -206,7 +206,7 @@ public class ExtraResource {
                     errorListener.onError(ErrorCode.NetworkError);
                 }
                 deletePartialFile(targetFile);
-                SuperResolution.LOGGER.trace("HTTP 下载失败 (IO 异常)", e);
+                SuperResolution.LOGGER.error("HTTP 下载失败 (IO 异常)", e);
                 return false;
             }
             if (isCancelled(errorListener)) {
@@ -216,7 +216,7 @@ public class ExtraResource {
             finishListener.onFinish(targetFile);
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.trace("HTTP 下载失败", e);
+            SuperResolution.LOGGER.error("HTTP 下载失败", e);
             if (Thread.currentThread().isInterrupted()) {
                 errorListener.onError(ErrorCode.Cancelled);
             } else {
@@ -272,7 +272,7 @@ public class ExtraResource {
             }
         } catch (FileNotFoundException ex) {
             errorListener.onError(ErrorCode.PermissionDenied);
-            SuperResolution.LOGGER.trace("本地资源文件未找到", ex);
+            SuperResolution.LOGGER.error("本地资源文件未找到", ex);
             return false;
         } catch (Exception ex) {
             if (Thread.currentThread().isInterrupted()) {
@@ -280,7 +280,7 @@ public class ExtraResource {
             } else {
                 errorListener.onError(ErrorCode.UnknownError);
             }
-            SuperResolution.LOGGER.trace("本地资源复制失败", ex);
+            SuperResolution.LOGGER.error("本地资源复制失败", ex);
             return false;
         }
     }

@@ -29,6 +29,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
@@ -39,7 +40,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
     private final VulkanDevice device;
     private long descriptorSetLayout = VK_NULL_HANDLE;
-    private long defaultSampler = VK_NULL_HANDLE;
+    private final Map<Integer, Long> samplerCache = new HashMap<>();
 
     public VulkanPipelineDescriptorSet(VulkanDevice device, IShaderProgram shader) {
         super(shader);
@@ -118,7 +119,7 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                         long imageView = resolveImageView(texture);
                         long sampler = binding.sampler() != null
                                 ? binding.sampler().handle()
-                                : getOrCreateDefaultSampler();
+                                : getOrCreateSamplerForTexture(texture);
 
                         VkDescriptorImageInfo.Buffer imageInfo = VkDescriptorImageInfo.calloc(1, stack)
                                 .imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -185,27 +186,33 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
         throw new IllegalArgumentException("Cannot resolve storage image view from: " + textureOrView.getClass());
     }
 
-    private long getOrCreateDefaultSampler() {
-        if (defaultSampler == VK_NULL_HANDLE) {
-            try (MemoryStack stack = stackPush()) {
-                VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
-                        .sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
-                        .magFilter(VK_FILTER_NEAREST)
-                        .minFilter(VK_FILTER_NEAREST)
-                        .mipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
-                        .addressModeU(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                        .addressModeV(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                        .addressModeW(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-                        .minLod(0.0f)
-                        .maxLod(0.0f);
-
-                LongBuffer pSampler = stack.mallocLong(1);
-                VK_CHECK(vkCreateSampler(device.getVkDevice(), samplerInfo, null, pSampler),
-                        "Failed to create default sampler");
-                defaultSampler = pSampler.get(0);
-            }
+    private long getOrCreateSamplerForTexture(ITexture texture) {
+        int filterMode = texture.getTextureFilterMode().vk();
+        int wrapMode = texture.getTextureWrapMode().vk();
+        int key = (filterMode << 16) | wrapMode;
+        Long sampler = samplerCache.get(key);
+        if (sampler != null) {
+            return sampler;
         }
-        return defaultSampler;
+        try (MemoryStack stack = stackPush()) {
+            VkSamplerCreateInfo samplerInfo = VkSamplerCreateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO)
+                    .magFilter(filterMode)
+                    .minFilter(filterMode)
+                    .mipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+                    .addressModeU(wrapMode)
+                    .addressModeV(wrapMode)
+                    .addressModeW(wrapMode)
+                    .minLod(0.0f)
+                    .maxLod(0.0f);
+
+            LongBuffer pSampler = stack.mallocLong(1);
+            VK_CHECK(vkCreateSampler(device.getVkDevice(), samplerInfo, null, pSampler),
+                    "Failed to create sampler for texture");
+            long handle = pSampler.get(0);
+            samplerCache.put(key, handle);
+            return handle;
+        }
     }
 
     public long getDescriptorSetLayout() {
@@ -213,10 +220,10 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
     }
 
     public void destroy() {
-        if (defaultSampler != VK_NULL_HANDLE) {
-            vkDestroySampler(device.getVkDevice(), defaultSampler, null);
-            defaultSampler = VK_NULL_HANDLE;
+        for (long sampler : samplerCache.values()) {
+            vkDestroySampler(device.getVkDevice(), sampler, null);
         }
+        samplerCache.clear();
         if (descriptorSetLayout != VK_NULL_HANDLE) {
             vkDestroyDescriptorSetLayout(device.getVkDevice(), descriptorSetLayout, null);
             descriptorSetLayout = VK_NULL_HANDLE;

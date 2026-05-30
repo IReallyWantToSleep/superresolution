@@ -19,8 +19,11 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGContext;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 
-public class NanoVG {
+public class NanoVGBackend {
     public static final boolean USE_RHI = true;
 
     public static NanoVGRenderers RENDERER;
@@ -31,9 +34,14 @@ public class NanoVG {
     }
 
     public static void init() {
-        context = new NanoVGContextWrapper(1 | 2);
+        context = new NanoVGContextWrapper(NanoVGContext.NVG_ANTIALIAS | NanoVGContext.NVG_STENCIL_STROKES);
         RENDERER = new NanoVGRenderers();
         NanoVGFontLoader.initAndLoad();
+        #if (IS_VULKAN == 1)
+        if (RenderSystems.isSupportVulkan()) {
+            NanoVGRhiBridge.createVkResources();
+        }
+        #endif
     }
 
     public static float getScreenWidth() {

@@ -60,6 +60,10 @@ public interface ICommandDecoder {
         writeToBuffer(commandBuffer, dst, dstOffset, size, data.asByteBuffer());
     }
 
+    default void writeToBuffer(ICommandBuffer commandBuffer, IVertexBuffer dst, long dstOffset, ByteBuffer data) {
+        dst.updateData(data, (int) dstOffset);
+    }
+
     void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel);
 
     default void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height) {

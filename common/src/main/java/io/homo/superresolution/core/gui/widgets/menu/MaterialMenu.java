@@ -39,7 +39,7 @@ import java.util.function.Consumer;
 public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     private static final long EXPAND_ANIMATION_DURATION = 300;
     private final Animator.FloatAnimator expandAnimator = Animator.ofFloat(1f, 1f)
-            .duration(250)
+            .duration(150)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
     private MaterialMenuSelectionMode selectionMode = MaterialMenuSelectionMode.None;
     private boolean expanded = true;

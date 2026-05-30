@@ -23,8 +23,12 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferUsage;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.vma.VmaAllocationCreateInfo;
+import org.lwjgl.vulkan.KHRDynamicRendering;
+import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
 
 
@@ -56,8 +60,7 @@ public class VulkanBuffer implements IBuffer {
         this.usages = description.usage();
         this.hostVisible = usages.has(BufferUsage.TransferSrc);
 
-        createBuffer();
-        allocateMemory();
+        createBufferVma();
     }
 
     private static int translateUsage(BufferUsage usage) {
@@ -78,7 +81,7 @@ public class VulkanBuffer implements IBuffer {
         return flags;
     }
 
-    private void createBuffer() {
+    private void createBufferVma() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO)
@@ -86,19 +89,16 @@ public class VulkanBuffer implements IBuffer {
                     .usage(translateUsage(usages))
                     .sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
-            LongBuffer pBuffer = stack.mallocLong(1);
-            VK_CHECK(vkCreateBuffer(device.getVkDevice(), bufferInfo, null, pBuffer),
-                    "Failed to create buffer");
-            buffer = pBuffer.get(0);
+            int memoryProperties = hostVisible
+                    ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+                    : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            VmaAllocationCreateInfo allocCI = VulkanMemoryAllocator.buildAllocCreateInfo(stack, memoryProperties);
+
+            PointerBuffer pAllocation = stack.mallocPointer(1);
+            buffer = allocator.createBufferVma(bufferInfo, allocCI, pAllocation);
+            vmaAllocation = pAllocation.get(0);
         }
-    }
-
-    private void allocateMemory() {
-        int memoryProperties = hostVisible
-                ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-                : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        vmaAllocation = allocator.allocateBufferMemory(buffer, memoryProperties);
     }
 
     @Override
