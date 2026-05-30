@@ -11,7 +11,6 @@ class CommonConfig(config: Map<*, *>) {
         ?: emptyList()
 
     val lwjglVersion: String = config["lwjgl_version"]?.toString().orEmpty()
-    val hasLwjglVma: Boolean = compareVersionParts(lwjglVersion, "3.3.4") >= 0
     val architecturyApiVersion: String? = config["architectury_api_version"]?.toString()
     val clothConfigVersion: String? = config["cloth_config_version"]?.toString()
     val modArtifactMinecraftVer: String = config["mod_artifact_minecraft_ver"]?.toString().orEmpty()
@@ -41,25 +40,5 @@ class CommonConfig(config: Map<*, *>) {
         if (neoforge != null && enableNeoForge) {
             neoforgeVersionRange = neoforge["minecraft_version_range"]?.toString()
         }
-    }
-
-    private fun compareVersionParts(left: String, right: String): Int {
-        val leftParts = left.splitToSequence(Regex("[^0-9]+"))
-            .filter { it.isNotEmpty() }
-            .map { it.toIntOrNull() ?: 0 }
-            .toList()
-        val rightParts = right.splitToSequence(Regex("[^0-9]+"))
-            .filter { it.isNotEmpty() }
-            .map { it.toIntOrNull() ?: 0 }
-            .toList()
-        val max = maxOf(leftParts.size, rightParts.size)
-        for (i in 0 until max) {
-            val l = leftParts.getOrElse(i) { 0 }
-            val r = rightParts.getOrElse(i) { 0 }
-            if (l != r) {
-                return l.compareTo(r)
-            }
-        }
-        return 0
     }
 }
