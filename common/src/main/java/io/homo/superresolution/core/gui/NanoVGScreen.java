@@ -101,7 +101,11 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
         Runnable renderAction = () -> {
             GL41.glBindSampler(0, 0);
             boolean useRhi = NanoVGBackend.USE_RHI;
+            #if (IS_VULKAN == 1)
             boolean useVulkan = useRhi && RenderSystems.isSupportVulkan();
+            #else
+            boolean useVulkan = false;
+            #endif
             if (useVulkan) {
                 NanoVGRhiBridge.beginBatch(RenderSystems.vulkan().device());
             } else if (useRhi) {

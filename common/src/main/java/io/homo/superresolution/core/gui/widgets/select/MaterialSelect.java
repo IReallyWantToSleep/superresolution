@@ -21,6 +21,8 @@ package io.homo.superresolution.core.gui.widgets.select;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.animator.Animator;
+import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
@@ -53,6 +55,14 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private boolean autoWidth = true;
     private boolean widthDirty = true;
     private MenuPosition menuPosition = MenuPosition.AUTO_START;
+
+    private static final float DIRECTIONAL_ANIMATION_SCALE = 0.96f;
+    private static final float DIRECTIONAL_ANIMATION_OFFSET = 6.0f;
+    private static final long DIRECTIONAL_ANIMATION_DURATION = 200;
+
+    private final Animator.FloatAnimator directionalAnimator = Animator.ofFloat(0f, 0f)
+            .duration(DIRECTIONAL_ANIMATION_DURATION)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     public MaterialSelect() {
         this.style = new MaterialSelectStyle();
@@ -182,7 +192,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         renderSelf(ctx, inputState);
         field.render(ctx, inputState);
 
-        if (menu.isExpanded() || menu.isVisible()) {
+        directionalAnimator.update();
+        if (menu.isExpanded() || menu.isVisible() || directionalAnimator.isRunning()) {
             Rectangle selfBounds = getRawBounds();
             MaterialSelectSize size = style().size();
 
@@ -279,6 +290,46 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             final float finalMenuX = menuX;
             final float finalMenuY = menuY;
             final float menuWidth = width;
+            final MenuSide finalSide = side;
+
+            float directionalProgress = directionalAnimator.get();
+            float scale = DIRECTIONAL_ANIMATION_SCALE + (1f - DIRECTIONAL_ANIMATION_SCALE) * directionalProgress;
+            float invProgress = 1f - directionalProgress;
+
+            float pivotX, pivotY, offsetX, offsetY;
+            switch (finalSide) {
+                case BOTTOM:
+                    pivotX = finalMenuX + menuWidth / 2f;
+                    pivotY = finalMenuY;
+                    offsetX = 0;
+                    offsetY = -DIRECTIONAL_ANIMATION_OFFSET * invProgress;
+                    break;
+                case TOP:
+                    pivotX = finalMenuX + menuWidth / 2f;
+                    pivotY = finalMenuY + menuHeight;
+                    offsetX = 0;
+                    offsetY = DIRECTIONAL_ANIMATION_OFFSET * invProgress;
+                    break;
+                case LEFT:
+                    pivotX = finalMenuX + menuWidth;
+                    pivotY = finalMenuY + menuHeight / 2f;
+                    offsetX = DIRECTIONAL_ANIMATION_OFFSET * invProgress;
+                    offsetY = 0;
+                    break;
+                case RIGHT:
+                default:
+                    pivotX = finalMenuX;
+                    pivotY = finalMenuY + menuHeight / 2f;
+                    offsetX = -DIRECTIONAL_ANIMATION_OFFSET * invProgress;
+                    offsetY = 0;
+                    break;
+            }
+
+            final float fScale = scale;
+            final float fPivotX = pivotX;
+            final float fPivotY = pivotY;
+            final float fOffsetX = offsetX;
+            final float fOffsetY = offsetY;
 
             ctx.deferToLayer(RenderLayer.Floating, 1000, (deferredCtx) -> {
                 menu.layout().setWidth(menuWidth);
@@ -290,7 +341,12 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
                 menu.getLayoutNode().calculateLayout(menuWidth, Float.MAX_VALUE);
 
                 deferredCtx.resetScissor();
+                deferredCtx.save();
+                deferredCtx.translate(fPivotX + fOffsetX, fPivotY + fOffsetY);
+                deferredCtx.scale(fScale, fScale);
+                deferredCtx.translate(-fPivotX, -fPivotY);
                 menu.render(deferredCtx, inputState);
+                deferredCtx.restore();
             });
         }
         ctx.endGroup();
@@ -474,11 +530,13 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         }
         menu.expand();
         field.setMenuOpen(true);
+        directionalAnimator.fromTo(directionalAnimator.get(), 1f).start();
     }
 
     private void closeMenu() {
         menu.collapse();
         field.setMenuOpen(false);
+        directionalAnimator.fromTo(directionalAnimator.get(), 0f).start();
     }
 
     public boolean isMenuOpen() {
