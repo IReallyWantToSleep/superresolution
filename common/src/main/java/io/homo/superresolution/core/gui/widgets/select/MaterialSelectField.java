@@ -54,17 +54,16 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
     private Supplier<String> supportingTextSupplier = () -> "";
     private Supplier<MaterialSymbol> leadingIconSupplier = () -> null;
     private Supplier<MaterialSymbol> trailingIconSupplier = () -> MaterialSymbols.iconArrowDropDown();
-    private boolean focused = false;
     private boolean menuOpen = false;
     private float width = 280;
-
-    public MaterialSelectField() {
-        this.style = new MaterialSelectStyle();
+    private final MaterialSelect<?> select;
+    public MaterialSelectField(MaterialSelect<?> select) {
+        this.select = select;
         updateSize();
     }
 
-    public static MaterialSelectField create() {
-        return new MaterialSelectField();
+    public static MaterialSelectField create(MaterialSelect<?> select) {
+        return new MaterialSelectField(select);
     }
 
     @Override
@@ -79,13 +78,13 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
 
     @Override
     public MaterialSelectStyle style() {
-        return (MaterialSelectStyle) super.style();
+        return select.style();
     }
 
     @Override
     public MaterialSelectField setFocused(boolean focused) {
-        if (focused != this.focused) {
-            this.focused = focused;
+        if (focused != isFocused()) {
+            super.setFocused(focused);
             focusAnimator.fromTo(focusAnimator.get(), focused ? 1f : 0f).start();
             updateLabelState();
         }
@@ -340,7 +339,7 @@ public class MaterialSelectField extends MaterialWidget<MaterialSelectField> {
     private void updateLabelState() {
         String value = valueSupplier.get();
         boolean hasValue = value != null && !value.isEmpty();
-        boolean shouldFloat = focused || hasValue;
+        boolean shouldFloat = isFocused() || hasValue;
         labelAnimator.fromTo(labelAnimator.get(), shouldFloat ? 1f : 0f).start();
     }
 

@@ -69,7 +69,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
 
-        field = new MaterialSelectField();
+        field = new MaterialSelectField(this);
         field.onClick(e -> toggleMenu());
         addChild(field);
 
@@ -102,6 +102,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         }
         updateSize();
         super.layouting(ctx);
+        menu.layouting(ctx);
     }
 
     @Override
@@ -530,10 +531,13 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         }
         menu.expand();
         field.setMenuOpen(true);
+        if (getFrame() != null) {
+            getFrame().requestFocus(this);
+        }
         directionalAnimator.fromTo(directionalAnimator.get(), 1f).start();
     }
 
-    private void closeMenu() {
+    void closeMenu() {
         menu.collapse();
         field.setMenuOpen(false);
         directionalAnimator.fromTo(directionalAnimator.get(), 0f).start();
@@ -559,6 +563,20 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         super.clearHover();
         field.clearHover();
         menu.clearHover();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public MaterialSelect<T> setFocused(boolean focused) {
+        if (focused == isFocused()) {
+            return this;
+        }
+        super.setFocused(focused);
+        field.setFocused(focused);
+        if (!focused && menu.isExpanded()) {
+            closeMenu();
+        }
+        return this;
     }
 
     @Override

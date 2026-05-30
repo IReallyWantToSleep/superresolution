@@ -24,6 +24,7 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
+import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
 import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
@@ -51,6 +52,7 @@ public abstract class AbstractWidget<
     protected boolean hovered = false;
     protected boolean pressed = false;
     protected boolean focused = false;
+    protected Frame frame;
     protected IEventBus eventBus;
     protected WidgetStyle<?> style;
     protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
@@ -228,7 +230,24 @@ public abstract class AbstractWidget<
         }
 
         this.focused = focused;
+        eventBus.post(new WidgetEvent.FocusEvent(null, focused));
         return (T) this;
+    }
+
+    public Frame getFrame() {
+        return frame;
+    }
+
+    public void setFrame(Frame frame) {
+        this.frame = frame;
+    }
+
+    @Override
+    public void setParent(ILayoutContainer parent) {
+        super.setParent(parent);
+        if (parent instanceof AbstractWidget<?> parentWidget && parentWidget.frame != null) {
+            this.frame = parentWidget.frame;
+        }
     }
 
     public boolean isPressed() {

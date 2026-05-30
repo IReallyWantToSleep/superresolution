@@ -420,11 +420,24 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
 
     public MaterialMenu addItem(MaterialMenuItem item) {
         if (getChildren().isEmpty()) {
-            addChild(new MaterialMenuGroup());
+            addChild(new MaterialMenuGroup(this));
         }
         AbstractLayoutElement lastChild = (AbstractLayoutElement) getChildren().get(getChildren().size() - 1);
         if (lastChild instanceof MaterialMenuGroup group) {
             group.addItem(item);
+        }
+        return this;
+    }
+
+    public MaterialMenu itemStyle(Consumer<MaterialMenuItemStyle> style) {
+        for (ILayoutElement child : getChildren()) {
+            if (child instanceof MaterialMenuGroup group) {
+                for (ILayoutElement groupChild : group.getChildren()) {
+                    if (groupChild instanceof MaterialMenuItem item) {
+                        style.accept(item.style());
+                    }
+                }
+            }
         }
         return this;
     }

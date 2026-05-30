@@ -30,4 +30,11 @@ public record MaterialMenuItemSize(
         float fontSize
 ) {
     public static final MaterialMenuItemSize Standard = new MaterialMenuItemSize(48, 12, 20, 8, 14);
+    public static final MaterialMenuItemSize Compact = new MaterialMenuItemSize(
+            36f,
+            12f,
+            18f,
+            8f,
+            12f
+    );
 }

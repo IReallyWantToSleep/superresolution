@@ -26,7 +26,7 @@ public class NanoVGContext implements AutoCloseable {
     public static final int NVG_STENCIL_STROKES = 2;
 
     private static final int DEFAULT_FLAGS = 0;
-    private static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.RHI_DIRECT;
+    public static final NanoVGBackendMode DEFAULT_BACKEND_MODE = NanoVGBackendMode.GL_LEGACY;
     private long nativeHandle;
 
     public NanoVGContext(int flags) {

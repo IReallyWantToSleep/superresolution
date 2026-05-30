@@ -20,11 +20,12 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGBackendMode;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGContext;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 
 public class NanoVGBackend {
-    public static final boolean USE_RHI = true;
+    public static final boolean USE_RHI = NanoVGContext.DEFAULT_BACKEND_MODE == NanoVGBackendMode.RHI_DIRECT;
 
     public static NanoVGRenderers RENDERER;
     public static NanoVGContextWrapper context;

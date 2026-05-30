@@ -21,6 +21,7 @@ package io.homo.superresolution.core.gui.widgets.menu;
 import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.WidgetStyle;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
@@ -32,16 +33,18 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutte
 
 public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup> {
 
+    private final MaterialMenu menu;
     private float expandProgress = 1f;
 
-    public MaterialMenuGroup() {
-        this.style = new MaterialMenuStyle();
+    public MaterialMenuGroup(MaterialMenu menu) {
+        this.menu = menu;
+        this.style = null;
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
         updateSize();
     }
 
-    public static MaterialMenuGroup create() {
-        return new MaterialMenuGroup();
+    public static MaterialMenuGroup create(MaterialMenu menu) {
+        return new MaterialMenuGroup(menu);
     }
 
     public void updateSize() {
@@ -52,7 +55,7 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
 
     @Override
     public MaterialMenuStyle style() {
-        return (MaterialMenuStyle) super.style();
+        return this.menu.style();
     }
 
     @Override

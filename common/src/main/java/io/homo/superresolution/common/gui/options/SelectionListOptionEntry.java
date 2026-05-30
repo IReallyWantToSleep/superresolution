@@ -25,7 +25,10 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItemSize;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSize;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
+import io.homo.superresolution.core.gui.widgets.select.MaterialSelectSize;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import org.jetbrains.annotations.Nullable;
@@ -134,6 +137,8 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         materialSelect = MaterialSelect.<T>create()
                 .minWidth(SELECT_MIN_WIDTH)
                 .displayFormatter(nameProvider);
+        materialSelect.style().size(MaterialSelectSize.Standard);
+        materialSelect.getMenu().style().size(MaterialMenuSize.Standard);
         materialSelect.getMenu().style().colors(MaterialMenuColors.STANDARD);
         if (headerText != null && !headerText.isEmpty()) {
             materialSelect.label(headerText);
@@ -191,6 +196,7 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         refreshDynamicValues();
         boolean enabled = updateRequirements();
         materialSelect.setDisabled(!enabled);
+        materialSelect.getMenu().itemStyle(s -> s.size(MaterialMenuItemSize.Standard));
         for (T itemValue : values) {
             MaterialMenuItem menuItem = materialSelect.getMenu().getItemByValue(itemValue);
             if (menuItem == null) {

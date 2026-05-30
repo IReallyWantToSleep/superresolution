@@ -28,6 +28,7 @@ import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 
@@ -205,12 +206,19 @@ public class View {
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseMove(x, y)) {
             return;
         }
+        boolean hoveredWidget = findTopHoveredWidget() != null;
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
             float frameX = node.getLayoutX();
             float frameY = node.getLayoutY();
 
             entry.frame.dispatchMouseMove(x - frameX, y - frameY);
+
+        }
+        if (hoveredWidget){
+            MouseCursor.HAND.use();
+        }else {
+            MouseCursor.ARROW.use();
         }
     }
 

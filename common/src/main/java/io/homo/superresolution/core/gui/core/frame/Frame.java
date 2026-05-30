@@ -26,6 +26,7 @@ import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.utils.Color;
+import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import org.joml.Vector2f;
@@ -39,6 +40,7 @@ public class Frame implements IFrame {
     private static final float DEBUG_STROKE_WIDTH = 1.0f;
     private final List<RenderEntry> renderList = new ArrayList<>();
     private AbstractWidget<?> root;
+    private AbstractWidget<?> focusedWidget;
     private float viewportWidth;
     private float viewportHeight;
     private float positionX = 0;
@@ -125,7 +127,32 @@ public class Frame implements IFrame {
     @Override
     public void setRoot(AbstractWidget<?> root) {
         this.root = root;
+        propagateFrame(root);
         markLayoutDirty();
+    }
+
+    private void propagateFrame(AbstractWidget<?> widget) {
+        widget.setFrame(this);
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    propagateFrame(childWidget);
+                }
+            }
+        }
+    }
+
+    public void requestFocus(AbstractWidget<?> widget) {
+        if (focusedWidget == widget) {
+            return;
+        }
+        if (focusedWidget != null) {
+            focusedWidget.setFocused(false);
+        }
+        focusedWidget = widget;
+        if (focusedWidget != null) {
+            focusedWidget.setFocused(true);
+        }
     }
 
     @Override
@@ -203,6 +230,12 @@ public class Frame implements IFrame {
         Vector2f mousePos = new Vector2f(x, y);
 
         AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+        if (topInteractive == null){
+            focusedWidget.setFocused(false);
+            focusedWidget = null;
+        }else if ( topInteractive != focusedWidget) {
+            requestFocus(topInteractive);
+        }
 
         if (topInteractive != null) {
             Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
