@@ -284,9 +284,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
                     menuX = alignHorizontal(fieldX, fieldWidth, width, align);
                     break;
             }
-
-            menuX = clamp(menuX, viewportPadding, viewportWidth - width - viewportPadding);
-            menuY = clamp(menuY, viewportPadding, viewportHeight - menuHeight - viewportPadding);
+            //menuX = clamp(menuX, viewportPadding, viewportWidth - width - viewportPadding);
+            //menuY = clamp(menuY, viewportPadding, viewportHeight - menuHeight - viewportPadding);
 
             final float finalMenuX = menuX;
             final float finalMenuY = menuY;

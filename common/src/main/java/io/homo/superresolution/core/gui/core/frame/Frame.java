@@ -231,8 +231,10 @@ public class Frame implements IFrame {
 
         AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
         if (topInteractive == null){
-            focusedWidget.setFocused(false);
-            focusedWidget = null;
+            if (focusedWidget != null) {
+                focusedWidget.setFocused(false);
+                focusedWidget = null;
+            }
         }else if ( topInteractive != focusedWidget) {
             requestFocus(topInteractive);
         }

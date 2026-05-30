@@ -8,7 +8,7 @@
             "fabric",
             "neoforge"
         ],
-        "lwjgl_version": "3.3.3",
+        "lwjgl_version": "3.3.4",
         "architectury_api_version": "19.0.1",
         "neoforge": {
             "minecraft_version_range": "[1.21.11,)"
