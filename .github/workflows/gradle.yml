@@ -235,4 +235,7 @@ jobs:
         run: pip install boto3 pycryptodome requests
 
       - name: Upload JARs via script
-        run: python script/action_uploader.py --repo_dir ${{ github.workspace }} --target_dir ./build_jars --nightly --api-endpoint ${{ secrets.SR_API_URL }} --api-token ${{ secrets.SR_API_TOKEN }}
+        env:
+          SR_API_ENDPOINT: ${{ secrets.SR_API_URL }}
+          SR_API_TOKEN: ${{ secrets.SR_API_TOKEN }}
+        run: python script/action_uploader.py --repo_dir ${{ github.workspace }} --target_dir ./build_jars --nightly

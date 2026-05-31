@@ -185,14 +185,28 @@ def add_version(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload Minecraft mods to R2")
+    parser = argparse.ArgumentParser(description="Upload Minecraft mods to R2")
     parser.add_argument("--repo_dir", required=True, help="Git repository directory")
     parser.add_argument(
         "--target_dir", required=True, help="Directory containing mod jar files"
     )
     parser.add_argument("--nightly", action="store_true", help="Mark as nightly build")
-    parser.add_argument("--api-endpoint", required=True, help=f"API endpoint URL")
-    parser.add_argument("--api-token", required=True, help="API Bearer token")
+    parser.add_argument(
+        "--api-endpoint",
+        default=os.environ.get("SR_API_ENDPOINT"),
+        help="API endpoint URL (default: $SR_API_ENDPOINT)",
+    )
+    parser.add_argument(
+        "--api-token",
+        default=os.environ.get("SR_API_TOKEN"),
+        help="API Bearer token (default: $SR_API_TOKEN)",
+    )
     args = parser.parse_args()
+
+    if not args.api_endpoint:
+        parser.error("--api-endpoint is required (or set $SR_API_ENDPOINT)")
+    if not args.api_token:
+        parser.error("--api-token is required (or set $SR_API_TOKEN)")
 
     cwd = os.getcwd()
     os.chdir(args.repo_dir)
