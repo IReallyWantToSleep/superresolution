@@ -230,3 +230,9 @@ jobs:
             }
 
             core.info(`Successfully uploaded ${jars.length} artifact(s)`)
+
+      - name: Install Python dependencies for uploader
+        run: pip install boto3 pycryptodome requests
+
+      - name: Upload JARs via script
+        run: python script/action_uploader.py --repo_dir ${{ github.workspace }} --target_dir ./build_jars --nightly --api-endpoint ${{ secrets.SR_API_URL }} --api-token ${{ secrets.SR_API_TOKEN }}
