@@ -210,6 +210,7 @@
     "superresolution.screen.config.section.performance.chart.main_render": "メインレンダラー",
     "superresolution.screen.config.section.performance.chart.upscale": "アップスケール",
     "superresolution.screen.config.section.performance.chart.world_render": "ワールドレンダラー",
+    "superresolution.screen.config.section.performance.chart.gui": "GUI",
     "superresolution.screen.config.section.profiling": "プロファイラー",
     "superresolution.screen.config.special.dlss.renderpreset.name": "NVIDIA DLSS レンダープリセット",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "NVIDIA DLSS のレンダープリセット（モデル）を選択します",

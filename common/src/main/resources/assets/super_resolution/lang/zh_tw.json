@@ -209,6 +209,7 @@
     "superresolution.screen.config.section.performance.chart.main_render": "主渲染器",
     "superresolution.screen.config.section.performance.chart.upscale": "升頻",
     "superresolution.screen.config.section.performance.chart.world_render": "世界渲染器",
+    "superresolution.screen.config.section.performance.chart.gui": "介面",
     "superresolution.screen.config.section.profiling": "效能分析器",
     "superresolution.screen.config.special.dlss.renderpreset.name": "DLSS 模型",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "選擇 DLSS 渲染預設（模型）。",

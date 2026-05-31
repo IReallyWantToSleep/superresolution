@@ -210,6 +210,7 @@
     "superresolution.screen.config.section.performance.chart.main_render": "Main Renderer",
     "superresolution.screen.config.section.performance.chart.upscale": "Upscale",
     "superresolution.screen.config.section.performance.chart.world_render": "World Renderer",
+    "superresolution.screen.config.section.performance.chart.gui": "GUI",
     "superresolution.screen.config.section.profiling": "Profiler",
     "superresolution.screen.config.special.dlss.renderpreset.name": "NVIDIA DLSS Model",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "Select NVIDIA DLSS render preset (model)",

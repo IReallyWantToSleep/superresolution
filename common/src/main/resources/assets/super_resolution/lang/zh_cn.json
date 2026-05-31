@@ -210,6 +210,7 @@
     "superresolution.screen.config.section.performance.chart.main_render": "主渲染器",
     "superresolution.screen.config.section.performance.chart.upscale": "升采样",
     "superresolution.screen.config.section.performance.chart.world_render": "World Renderer",
+    "superresolution.screen.config.section.performance.chart.gui": "界面",
     "superresolution.screen.config.section.profiling": "性能分析器",
     "superresolution.screen.config.special.dlss.renderpreset.name": "NVIDIA DLSS 模型",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "选择 NVIDIA DLSS 的渲染预设（模型）",
