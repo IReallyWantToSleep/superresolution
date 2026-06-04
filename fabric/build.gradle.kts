@@ -187,6 +187,9 @@ loom {
             vmArg("--enable-preview")
             vmArg("--enable-native-access=ALL-UNNAMED")
             vmArg("-Dmixin.debug.export=true")
+            //shut up again
+            vmArg("-Dsodium.checks.issue2561=false")
+
             ideConfigGenerated(true)
             runDir("../runs/fabric")
         }

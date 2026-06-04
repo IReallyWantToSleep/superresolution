@@ -100,6 +100,8 @@ neoForge {
     runs {
         configureEach {
             jvmArguments.add("-XX:+CreateMinidumpOnCrash")
+            //shut up!
+            jvmArguments.add("-Dsodium.checks.issue2561=false")
             systemProperty("neoforge.enabledGameTestNamespaces", rootProject.property("mod_id").toString())
             ideName = "NeoForge ${name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${project.path})"
 

@@ -112,6 +112,14 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
+        if (Platform.currentPlatform.isInstallIris()) {
+            try {
+                Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+
+            }
+        }
     }
 
     public static void onClientStopping() {
