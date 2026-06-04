@@ -85,8 +85,12 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
                 childWidget.layouting(ctx);
             }
         }
-        this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
-        //TODO:如果只计算一次布局，那么Label会莫名其妙错位一次，解决方法没找到，这就当临时的解决方法
+        if (layoutWrapper == null) {
+            layoutWrapper = new YogaNode();
+            layoutWrapper.setDebugName("DialogLayoutWrapper");
+            layoutWrapper.addChildAt(getLayoutNode(), 0);
+            this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
+        }
         this.prepareLayout(ctx, ctx.viewportWidth(), ctx.viewportHeight());
     }
 
@@ -303,6 +307,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
             stLabel.style().wrap(true);
             stLabel.layout().setWidthPercent(100);
             stLabel.layout().setMargin(YogaEdge.BOTTOM, s.sectionSpacing());
+
             addChild(stLabel);
         }
 
@@ -339,39 +344,36 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
         }
     }
 
-    private void prepareLayout(RenderContext ctx, float viewportWidth, float viewportHeight) {
-        if (layoutWrapper == null) {
-            layoutWrapper = new YogaNode();
-            layoutWrapper.setDebugName("DialogLayoutWrapper");
-            layoutWrapper.addChildAt(getLayoutNode(), 0);
+    public void calculateLayout(float viewportWidth, float viewportHeight) {
+        if (layoutWrapper != null) {
+            layoutWrapper.calculateLayout(viewportWidth, viewportHeight);
         }
+    }
 
-        MaterialDialogStyle s = style();
-        float dialogWidth = Math.max(s.minWidth(), Math.min(s.maxWidth(), viewportWidth * 0.8f));
-
-        layoutWrapper.setWidth(viewportWidth);
-        layoutWrapper.setHeight(viewportHeight);
-        getLayoutNode().setWidth(dialogWidth);
-        layoutWidgetsRecursive(this, ctx);
+    private void prepareLayout(RenderContext ctx, float viewportWidth, float viewportHeight) {
+        // first calculate layout for measure dialog width
         layoutWrapper.calculateLayout(viewportWidth, viewportHeight);
-
+        float dialogWidth = Math.min(Math.max(style().minWidth(),getLayoutNode().getLayoutWidth()),style().maxWidth());
         float dialogHeight = getLayoutNode().getLayoutHeight();
-
+        layoutWrapper.setWidth(viewportWidth);
         dialogX = (viewportWidth - dialogWidth) / 2;
         dialogY = (viewportHeight - dialogHeight) / 2;
         getLayoutNode().setPositionType(YogaPositionType.ABSOLUTE);
         getLayoutNode().setPosition(YogaEdge.LEFT, dialogX);
         getLayoutNode().setPosition(YogaEdge.TOP, dialogY);
+        getLayoutNode().setWidth(dialogWidth);
 
+        //than re-calculate layout for final layout
+        //maybe have better method,but i dont want think for this
         layoutWrapper.calculateLayout(viewportWidth, viewportHeight);
     }
 
     public float getDialogX() {
-        return dialogX;
+        return getLayoutNode().getLayoutX();
     }
 
     public float getDialogY() {
-        return dialogY;
+        return getLayoutNode().getLayoutY();
     }
 
     private void layoutWidgetsRecursive(AbstractWidget<?> widget, RenderContext ctx) {

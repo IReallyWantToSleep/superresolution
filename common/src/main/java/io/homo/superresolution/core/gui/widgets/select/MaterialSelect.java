@@ -221,24 +221,37 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
             MenuSide side = menuPosition.side();
             MenuAlign align = menuPosition.align();
-
             if (menuPosition.isAuto()) {
-                if (spaceBelow >= naturalMenuHeight) {
+                boolean horizontalFits = switch (align) {
+                    case START -> (viewportWidth - fieldX - viewportPadding) >= width;
+                    case END -> (fieldX + fieldWidth - viewportPadding) >= width;
+                    case CENTER -> (fieldX + fieldWidth / 2f - viewportPadding) >= width / 2f &&
+                            (viewportWidth - (fieldX + fieldWidth / 2f) - viewportPadding) >= width / 2f;
+                };
+
+                boolean verticalFits = switch (align) {
+                    case START -> (viewportHeight - fieldY - viewportPadding) >= naturalMenuHeight;
+                    case END -> (fieldY + fieldHeight - viewportPadding) >= naturalMenuHeight;
+                    case CENTER -> (fieldY + fieldHeight / 2f - viewportPadding) >= naturalMenuHeight / 2f &&
+                            (viewportHeight - (fieldY + fieldHeight / 2f) - viewportPadding) >= naturalMenuHeight / 2f;
+                };
+
+                boolean fitsBottom = (spaceBelow >= naturalMenuHeight) && horizontalFits;
+                boolean fitsTop = (spaceAbove >= naturalMenuHeight) && horizontalFits;
+                boolean fitsLeft = (spaceLeft >= width) && verticalFits;
+                boolean fitsRight = (spaceRight >= width) && verticalFits;
+
+                if (fitsBottom) {
                     side = MenuSide.BOTTOM;
-                } else if (spaceLeft >= width) {
-                    side = MenuSide.LEFT;
-                } else if (spaceRight >= width) {
-                    side = MenuSide.RIGHT;
-                } else if (spaceAbove >= naturalMenuHeight) {
+                } else if (fitsTop) {
                     side = MenuSide.TOP;
+                } else if (fitsLeft) {
+                    side = MenuSide.LEFT;
+                } else if (fitsRight) {
+                    side = MenuSide.RIGHT;
                 } else {
-                    float maxSpace = Math.max(Math.max(spaceBelow, spaceAbove), Math.max(spaceLeft, spaceRight));
-                    if (maxSpace == spaceBelow) {
+                    if (spaceBelow >= spaceAbove) {
                         side = MenuSide.BOTTOM;
-                    } else if (maxSpace == spaceLeft) {
-                        side = MenuSide.LEFT;
-                    } else if (maxSpace == spaceRight) {
-                        side = MenuSide.RIGHT;
                     } else {
                         side = MenuSide.TOP;
                     }
@@ -299,27 +312,43 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             float pivotX, pivotY, offsetX, offsetY;
             switch (finalSide) {
                 case BOTTOM:
-                    pivotX = finalMenuX + menuWidth / 2f;
+                    pivotX = switch (align) {
+                        case START -> finalMenuX;
+                        case CENTER -> finalMenuX + menuWidth / 2f;
+                        case END -> finalMenuX + menuWidth;
+                    };
                     pivotY = finalMenuY;
                     offsetX = 0;
                     offsetY = -DIRECTIONAL_ANIMATION_OFFSET * invProgress;
                     break;
                 case TOP:
-                    pivotX = finalMenuX + menuWidth / 2f;
+                    pivotX = switch (align) {
+                        case START -> finalMenuX;
+                        case CENTER -> finalMenuX + menuWidth / 2f;
+                        case END -> finalMenuX + menuWidth;
+                    };
                     pivotY = finalMenuY + menuHeight;
                     offsetX = 0;
                     offsetY = DIRECTIONAL_ANIMATION_OFFSET * invProgress;
                     break;
                 case LEFT:
                     pivotX = finalMenuX + menuWidth;
-                    pivotY = finalMenuY + menuHeight / 2f;
+                    pivotY = switch (align) {
+                        case START -> finalMenuY;
+                        case CENTER -> finalMenuY + menuHeight / 2f;
+                        case END -> finalMenuY + menuHeight;
+                    };
                     offsetX = DIRECTIONAL_ANIMATION_OFFSET * invProgress;
                     offsetY = 0;
                     break;
                 case RIGHT:
                 default:
                     pivotX = finalMenuX;
-                    pivotY = finalMenuY + menuHeight / 2f;
+                    pivotY = switch (align) {
+                        case START -> finalMenuY;
+                        case CENTER -> finalMenuY + menuHeight / 2f;
+                        case END -> finalMenuY + menuHeight;
+                    };
                     offsetX = -DIRECTIONAL_ANIMATION_OFFSET * invProgress;
                     offsetY = 0;
                     break;

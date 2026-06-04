@@ -123,38 +123,42 @@ public class View {
     }
 
     public void calculateLayout() {
-        if (!layoutDirty) {
-            return;
+        if (layoutDirty) {
+            rootNode.setWidth(viewportWidth);
+            rootNode.setHeight(viewportHeight);
+            rootNode.calculateLayout(viewportWidth, viewportHeight);
+            /*CaptureTree.calculateLayoutWithCapture(
+                    rootNode,
+                    viewportWidth,
+                    viewportHeight,
+                    rootNode.getStyle().getDirection(),
+                    Path.of("test.view.json")
+            );*/
+            for (FrameEntry entry : frames) {
+                YogaNode node = entry.layoutNode;
+                float x = node.getLayoutX();
+                float y = node.getLayoutY();
+                float width = node.getLayoutWidth();
+                float height = node.getLayoutHeight();
+
+                entry.frame.setViewport(width, height);
+                entry.frame.setPosition(x, y);
+            }
+
+            layoutDirty = false;
         }
 
-        rootNode.setWidth(viewportWidth);
-        rootNode.setHeight(viewportHeight);
-        rootNode.calculateLayout(viewportWidth, viewportHeight);
-        /*CaptureTree.calculateLayoutWithCapture(
-                rootNode,
-                viewportWidth,
-                viewportHeight,
-                rootNode.getStyle().getDirection(),
-                Path.of("test.view.json")
-        );*/
-        for (FrameEntry entry : frames) {
-            YogaNode node = entry.layoutNode;
-            float x = node.getLayoutX();
-            float y = node.getLayoutY();
-            float width = node.getLayoutWidth();
-            float height = node.getLayoutHeight();
-
-            entry.frame.setViewport(width, height);
-            entry.frame.setPosition(x, y);
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
+            activeDialog.calculateLayout(viewportWidth, viewportHeight);
         }
-
-        layoutDirty = false;
     }
 
     public void render(RenderContext ctx, UIInputState inputState) {
-        if (layoutDirty) {
-            calculateLayout();
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
+            activeDialog.layouting(ctx);
         }
+
+        calculateLayout();
 
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
@@ -171,9 +175,7 @@ public class View {
         }
 
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
-            activeDialog.layouting(ctx);
             activeDialog.render(ctx, inputState);
-            //renderDebugLayoutBounds(ctx, activeDialog);
         }
 
         String tooltip = collectTooltip();
@@ -203,10 +205,15 @@ public class View {
     }
 
     public void dispatchMouseMove(float x, float y) {
+        AbstractWidget<?> hoveredWidget = findTopHoveredWidget();
+        if (hoveredWidget != null && hoveredWidget != activeDialog){
+            MouseCursor.HAND.use();
+        }else {
+            MouseCursor.ARROW.use();
+        }
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseMove(x, y)) {
             return;
         }
-        boolean hoveredWidget = findTopHoveredWidget() != null;
         for (FrameEntry entry : frames) {
             YogaNode node = entry.layoutNode;
             float frameX = node.getLayoutX();
@@ -214,11 +221,6 @@ public class View {
 
             entry.frame.dispatchMouseMove(x - frameX, y - frameY);
 
-        }
-        if (hoveredWidget){
-            MouseCursor.HAND.use();
-        }else {
-            MouseCursor.ARROW.use();
         }
     }
 
@@ -352,9 +354,7 @@ public class View {
     private AbstractWidget<?> findTopHoveredWidget() {
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
             AbstractWidget<?> dialogHovered = findTopHoveredWidgetInTree(activeDialog);
-            if (dialogHovered != null) {
-                return dialogHovered;
-            }
+            return dialogHovered;
         }
 
         for (int i = frames.size() - 1; i >= 0; i--) {

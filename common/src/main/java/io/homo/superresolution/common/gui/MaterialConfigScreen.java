@@ -76,6 +76,7 @@ import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.ImageLoader;
+import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -160,6 +161,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         if (minecraft != null) {
             minecraft.setScreen(parentScreen);
         }
+        MouseCursor.ARROW.use();
     }
 
     @Override
@@ -803,8 +805,62 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return Math.abs(left - right) < 0.005f;
     }
 
-    private void openLostResourceDialog(List<ExtraResource> resources) {
+    private Pair<MaterialResourcesList, MaterialDialog> createLocalResourceSelector(List<ExtraResource> resources) {
+        MaterialResourcesList resourcesList = MaterialResourcesList.createFileChoose(
+                new ExtraResources(resources),
+                SuperResolutionConstants.NATIVE_LIBRARIES_DIR
+        );
+        resourcesList.layout().setWidthPercent(100);
+
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconInfo())
+                .headline(Text.translatable("superresolution.screen.config.dialog.local_resource.title").getString())
+                .content(resourcesList)
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.local_resource.description").getString());
+
+        dialog.style().minWidth(400f);
+        dialog.style().maxWidth(700f);
+        dialog.scrimDismiss(false);
+
         #if ENABLE_AUTO_DOWNLOAD == 1
+        dialog.addAction(
+                Text.translatable("superresolution.screen.config.dialog.download.action.auto_download").getString(),
+                MaterialButtonVariant.Filled,
+                d -> {
+                    d.dismiss();
+                    d.onDismiss(foo -> {
+                        Pair<MaterialResourcesList, MaterialDialog> selector = createOnlineResourceSelector(resources);
+                        selector.left().startDownload();
+                        getView().showDialog(selector.right());
+                    });
+                }
+        );
+        #endif
+
+        if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
+            dialog.addAction(
+                    Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_dlss_windows").getString(),
+                    MaterialButtonVariant.Outlined,
+                    d -> openExternalLink("https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll")
+            );
+
+            dialog.addAction(
+                    Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_xess_windows").getString(),
+                    MaterialButtonVariant.Outlined,
+                    d -> openExternalLink("https://raw.githubusercontent.com/intel/xess/refs/heads/main/bin/libxess.dll")
+            );
+        }
+
+        dialog.addAction(
+                Text.translatable("superresolution.screen.config.dialog.local_resource.action.done").getString(),
+                MaterialButtonVariant.Text,
+                MaterialDialog::dismiss
+        );
+
+        return Pair.of(resourcesList, dialog);
+    }
+
+    private Pair<MaterialResourcesList, MaterialDialog> createOnlineResourceSelector(List<ExtraResource> resources) {
         MaterialResourcesList downloadList = MaterialResourcesList.createDownload(
                 new ExtraResources(resources),
                 SuperResolutionConstants.NATIVE_LIBRARIES_DIR
@@ -815,60 +871,59 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .icon(MaterialSymbols.iconInfo())
                 .headline(Text.translatable("superresolution.screen.config.dialog.download.title").getString())
                 .supportingText(Text.translatable("superresolution.screen.config.dialog.download.description").getString())
-                .content(downloadList)
-                .addAction(Text.translatable("superresolution.screen.config.dialog.download.action.cancel").getString(), MaterialButtonVariant.Text, d -> {
-                    downloadList.cancelDownload();
-                })
-                .addAction(Text.translatable("superresolution.screen.config.dialog.download.action.retry").getString(), MaterialButtonVariant.Text, d -> {
-                    downloadList.retryDownload();
-                })
-                .addAction(Text.translatable("superresolution.screen.config.dialog.download.action.exit").getString(), MaterialButtonVariant.Text, d -> {
+                .content(downloadList);
+
+        downloadDialog.style().minWidth(400f);
+        downloadDialog.style().maxWidth(700f);
+        downloadDialog.scrimDismiss(false);
+
+        downloadDialog.addAction(
+                Text.translatable("superresolution.screen.config.dialog.download.action.manual_select").getString(),
+                MaterialButtonVariant.Filled,
+                d -> {
+                    d.dismiss();
+                    d.onDismiss(foo -> {
+                        downloadList.cancelDownload();
+                        Pair<MaterialResourcesList, MaterialDialog> selector = createLocalResourceSelector(resources);
+                        getView().showDialog(selector.right());
+                    });
+                }
+        );
+
+        downloadDialog.addAction(
+                Text.translatable("superresolution.screen.config.dialog.download.action.cancel").getString(),
+                MaterialButtonVariant.Tonal,
+                d -> downloadList.cancelDownload()
+        );
+
+        downloadDialog.addAction(
+                Text.translatable("superresolution.screen.config.dialog.download.action.retry").getString(),
+                MaterialButtonVariant.Tonal,
+                d -> downloadList.retryDownload()
+        );
+
+        downloadDialog.addAction(
+                Text.translatable("superresolution.screen.config.dialog.download.action.exit").getString(),
+                MaterialButtonVariant.Text,
+                d -> {
                     downloadList.cancelDownload();
                     d.dismiss();
-                })
-                .onDismiss(d -> {
-                    downloadList.cancelDownload();
-                });
-        downloadDialog.style().minWidth(400f);
-        downloadDialog.style().maxWidth(600f);
-        getView().showDialog(downloadDialog);
-        downloadList.startDownload();
-        #else
-        MaterialResourcesList resourcesList = MaterialResourcesList.createFileChoose(
-                new ExtraResources(resources),
-                SuperResolutionConstants.NATIVE_LIBRARIES_DIR
+                }
         );
-        resourcesList.layout().setWidthPercent(100);
-        MaterialDialog dialog = MaterialDialog.create()
-                .icon(MaterialSymbols.iconInfo())
-                .headline(Text.translatable("superresolution.screen.config.dialog.local_resource.title").getString())
-                .content(resourcesList)
-                .supportingText(Text.translatable("superresolution.screen.config.dialog.local_resource.description").getString());
-        dialog.style().minWidth(400f);
-        dialog.style().maxWidth(600f);
-        dialog.scrimDismiss(false);
-        if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
-            dialog.addAction(
-                    Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_dlss_windows").getString(),
-                    MaterialButtonVariant.Outlined,
-                    d->{
-                openExternalLink("https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll");
-            });
-        }
-        if (Platform.currentPlatform.getOS().type.equals(OperatingSystemType.WINDOWS)) {
-            dialog.addAction(
-                    Text.translatable("superresolution.screen.config.dialog.local_resource.action.download_xess_windows").getString(),
-                    MaterialButtonVariant.Outlined,
-                    d->{
-                        openExternalLink("https://raw.githubusercontent.com/intel/xess/refs/heads/main/bin/libxess.dll");
-                    });
-        }
-        dialog.addAction(Text.translatable("superresolution.screen.config.dialog.local_resource.action.done").getString(), MaterialButtonVariant.Text, d -> {
-            d.dismiss();
-        });
 
+        downloadDialog.onDismiss(d -> downloadList.cancelDownload());
 
-        getView().showDialog(dialog);
+        return Pair.of(downloadList, downloadDialog);
+    }
+
+    private void openLostResourceDialog(List<ExtraResource> resources) {
+        #if ENABLE_AUTO_DOWNLOAD == 1
+        Pair<MaterialResourcesList,MaterialDialog> selector = createOnlineResourceSelector(resources);
+        getView().showDialog(selector.right());
+        selector.left().startDownload();
+        #else
+        Pair<MaterialResourcesList,MaterialDialog> selector = createLocalResourceSelector(resources);
+        getView().showDialog(selector.right());
         #endif
     }
 
