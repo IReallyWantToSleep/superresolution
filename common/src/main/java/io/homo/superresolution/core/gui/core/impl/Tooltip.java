@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,28 @@
 
 package io.homo.superresolution.core.gui.core.impl;
 
-import java.util.Optional;
-import java.util.function.Supplier;
+public class Tooltip {
+    private String context;
 
-public interface TooltipHolder<SELF> {
-    SELF setTooltipSupplier(Supplier<Optional<Tooltip>> supplier);
+    public static Tooltip withContext(String context){
+        return (new Tooltip()).context(context);
+    }
 
-    Optional<Tooltip> getTooltip();
+    public static Tooltip empty(){
+        return new Tooltip();
+    }
 
-    SELF setTooltip(Tooltip tooltip);
+
+    public boolean isEmpty(){
+        return context == null || context.isEmpty();
+    }
+
+    public Tooltip context(String context) {
+        this.context = context;
+        return this;
+    }
+
+    public String context(){
+        return context;
+    }
 }

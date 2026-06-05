@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.core;
 
+import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.core.animator.Animator;
@@ -27,7 +28,10 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import org.joml.Vector2f;
+
+import java.util.Optional;
 
 public class TooltipRenderer {
 
@@ -36,6 +40,7 @@ public class TooltipRenderer {
 
     private final Animator.FloatAnimator alphaAnimator = Animator.ofFloat(0f, 0f);
     private final Animator.FloatAnimator widthAnimator = Animator.ofFloat(0f, 0f);
+    private final Animator.FloatAnimator heightAnimator = Animator.ofFloat(0f, 0f);
 
     private final Vector2f anchor = new Vector2f();
 
@@ -47,11 +52,12 @@ public class TooltipRenderer {
     private float fontSize = 13f;
     private float maxWidth = DEFAULT_MAX_WIDTH;
 
-    private String lastTooltip = "";
+    private Tooltip lastTooltip = Tooltip.empty();
 
     public TooltipRenderer() {
         alphaAnimator.set(0f);
         widthAnimator.set(0f);
+        heightAnimator.set(0f);
     }
 
     public void setTooltipPosition(TooltipPosition tooltipPos) {
@@ -70,44 +76,44 @@ public class TooltipRenderer {
         this.maxWidth = maxWidth;
     }
 
-    public void render(RenderContext ctx, UIInputState inputState, String tooltip) {
-        if (tooltip == null || tooltip.isEmpty()) {
+    public void render(RenderContext ctx, UIInputState inputState, Tooltip tooltip) {
+        Animator.updateAll(alphaAnimator, widthAnimator,heightAnimator);
+        if (tooltip.isEmpty()) {
             hideTooltip();
-            Animator.updateAll(alphaAnimator, widthAnimator);
-            return;
         }
 
         Vector2f mousePos = inputState.mousePosition();
         anchor.set(mousePos);
 
-        if (!tooltip.equals(lastTooltip)) {
+        if (!tooltip.isEmpty()){
             lastTooltip = tooltip;
-            showTooltip();
-        } else if (!show) {
-            showTooltip();
+            if (!show) {
+                showTooltip();
+            }
         }
 
-        Animator.updateAll(alphaAnimator, widthAnimator);
-
         float currentAlpha = alphaAnimator.get() == null ? 0f : alphaAnimator.get();
-        float currentWidth = widthAnimator.get() == null ? 0f : widthAnimator.get();
-
-        if (currentAlpha <= 0.01f && currentWidth <= 0f) {
+        if (currentAlpha <= 0.001f) {
+            isHiding = false;
+            lastTooltip = Tooltip.empty();
             return;
         }
 
         MaterialScheme scheme = MaterialUI.Scheme;
         IFont font = ctx.font();
-
         float viewportWidth = ctx.viewportWidth();
         float viewportHeight = ctx.viewportHeight();
+        float logicalMaxWidth = maxWidth;
 
-        float logicalMaxWidth = maxWidth > 0 ? maxWidth : viewportWidth * 0.7f;
+        Tooltip targetTooltip = tooltip;
+        if (tooltip.isEmpty() && lastTooltip != null){
+            targetTooltip = lastTooltip;
+        }
 
         TextMetrics metrics = ctx.measureTextMetrics(
                 font,
                 fontSize,
-                tooltip,
+                targetTooltip.context(),
                 logicalMaxWidth - PADDING * 2,
                 fontSize + 2,
                 true
@@ -118,7 +124,20 @@ public class TooltipRenderer {
 
         float width = textWidth + PADDING * 2;
         float height = textHeight + PADDING * 2;
-
+        if (!tooltip.isEmpty()) {
+            widthAnimator
+                    .fromTo(widthAnimator.get() == null ? 0f : widthAnimator.get(), width)
+                    .duration(250)
+                    .timeInterpolator(TimeInterpolator.easeOutQuint())
+                    .start();
+            heightAnimator
+                    .fromTo(heightAnimator.get() == null ? 0f : heightAnimator.get(), height)
+                    .duration(250)
+                    .timeInterpolator(TimeInterpolator.easeOutQuint())
+                    .start();
+        }
+        width = widthAnimator.get();
+        height = heightAnimator.get();
         Vector2f basePos = calculatePosition(
                 anchor.x,
                 anchor.y,
@@ -132,11 +151,20 @@ public class TooltipRenderer {
         float baseX = Math.max(8, Math.min(basePos.x, viewportWidth - width - 8));
         float baseY = Math.max(8, Math.min(basePos.y, viewportHeight - height - 8));
 
-        float animatedWidth = Math.max(width * currentWidth, 20f);
+        float animatedWidth = Math.max(width, 20f);
 
         ctx.save();
-        ctx.pushAlpha(Math.min(currentAlpha * 1.2f, 1.0f));
+        ctx.pushAlpha(Math.min(currentAlpha, 1.0f));
 
+        MaterialElevation.draw(
+                ctx,
+                2,
+                baseX,
+                baseY,
+                animatedWidth,
+                height,
+                radius
+        );
         ctx.roundedRect(
                 baseX,
                 baseY,
@@ -183,53 +211,37 @@ public class TooltipRenderer {
         }
         this.show = true;
         this.isHiding = false;
-        updateAnimatorTarget();
+        alphaAnimator
+                .fromTo(alphaAnimator.get() == null ? 0f : alphaAnimator.get(), 1f)
+                .duration(150)
+                .timeInterpolator(TimeInterpolator.linear())
+                .start();
     }
 
     private void hideTooltip() {
-        if (!this.show && !isHiding) {
+        if (!this.show) {
             return;
         }
         this.show = false;
         this.isHiding = true;
-        updateAnimatorTarget();
+        alphaAnimator
+                .fromTo(alphaAnimator.get() == null ? 1f : alphaAnimator.get(), 0f)
+                .duration(150)
+                .timeInterpolator(TimeInterpolator.linear())
+                .start();
     }
 
     private void updateAnimatorTarget() {
-        if (show) {
-            widthAnimator
-                    .fromTo(widthAnimator.get() == null ? 0f : widthAnimator.get(), 1f)
-                    .duration(250)
-                    .timeInterpolator(TimeInterpolator.easeOutQuint())
-                    .start();
-            alphaAnimator
-                    .fromTo(alphaAnimator.get() == null ? 0f : alphaAnimator.get(), 1f)
-                    .duration(250)
-                    .timeInterpolator(TimeInterpolator.easeOutCubic())
-                    .start();
-        } else if (isHiding) {
-            alphaAnimator
-                    .fromTo(alphaAnimator.get() == null ? 1f : alphaAnimator.get(), 0f)
-                    .duration(200)
-                    .timeInterpolator(TimeInterpolator.easeInQuad())
-                    .onLifecycle(new Animator.AnimatorLifecycleListener() {
-                        @Override
-                        public void onEnd() {
-                            if (!show) {
-                                widthAnimator.set(0f);
-                            }
-                        }
-                    })
-                    .start();
-        }
+
     }
 
     public void reset() {
         alphaAnimator.set(0f);
         widthAnimator.set(0f);
+        heightAnimator.set(0f);
         isHiding = false;
         show = false;
-        lastTooltip = "";
+        lastTooltip = Tooltip.empty();
     }
 
     private Vector2f calculatePosition(float targetX, float targetY,

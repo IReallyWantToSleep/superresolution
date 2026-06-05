@@ -21,6 +21,7 @@ package io.homo.superresolution.common.gui.options;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -51,6 +53,7 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
     protected Function<T, String> nameProvider;
     protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
     protected @Nullable Supplier<List<T>> valuesSupplier = null;
+    protected @Nullable Function<T, Optional<Tooltip>> menuItemTooltipSupplier = null;
     protected String headerText = "";
 
     public SelectionListOptionEntry(
@@ -78,6 +81,11 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
 
     public SelectionListOptionEntry<T> setValuesSupplier(@Nullable Supplier<List<T>> valuesSupplier) {
         this.valuesSupplier = valuesSupplier;
+        return this;
+    }
+
+    public SelectionListOptionEntry<T> setMenuItemTooltip(@Nullable Function<T, Optional<Tooltip>> tooltipSupplier) {
+        this.menuItemTooltipSupplier = tooltipSupplier;
         return this;
     }
 
@@ -145,7 +153,10 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         }
 
         for (T itemValue : values) {
-            materialSelect.addOption(itemValue, nameProvider.apply(itemValue));
+            Supplier<Optional<Tooltip>> tooltip = menuItemTooltipSupplier != null
+                    ? () -> menuItemTooltipSupplier.apply(itemValue)
+                    : null;
+            materialSelect.addOption(itemValue, nameProvider.apply(itemValue), tooltip);
         }
         materialSelect.setValue(value());
 
@@ -174,6 +185,7 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         });
 
         selectorContainer.addChild(materialSelect);
+        materialSelect.setTooltipSupplier(this::resolveTooltip);
 
         container.addControl(selectorContainer);
     }

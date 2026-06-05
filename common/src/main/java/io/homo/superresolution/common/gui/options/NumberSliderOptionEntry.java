@@ -105,6 +105,7 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
 
         sliderContainer.addChild(valueLabel);
         sliderContainer.addChild(slider);
+        slider.setTooltipSupplier(this::resolveTooltip);
 
         container.addControl(sliderContainer);
     }

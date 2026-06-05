@@ -60,6 +60,7 @@ public class EnumSelectorBuilder<T extends Enum<T>> extends AbstractOptionBuilde
                 (Function<T, String>) enumNameProvider
         );
         entry.setTooltipSupplier(v -> tooltipSupplier.apply(v));
+        entry.setDescriptionsSupplier(v -> descriptionsSupplier.apply(v));
         if (errorSupplier != null) {
             entry.setErrorSupplier(v -> errorSupplier.apply(v));
         }

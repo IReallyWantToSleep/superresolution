@@ -211,7 +211,7 @@ public class Frame implements IFrame {
 
         Vector2f mousePos = new Vector2f(x, y);
 
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos,false);
 
         Set<AbstractWidget<?>> ancestorChain = new HashSet<>();
         if (topInteractive != null) {
@@ -229,7 +229,7 @@ public class Frame implements IFrame {
 
         Vector2f mousePos = new Vector2f(x, y);
 
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos,false);
         if (topInteractive == null){
             if (focusedWidget != null) {
                 focusedWidget.setFocused(false);
@@ -273,7 +273,7 @@ public class Frame implements IFrame {
 
         Vector2f mousePos = new Vector2f(x, y);
 
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos);
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos,false);
 
         if (topInteractive != null) {
             Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
@@ -310,17 +310,22 @@ public class Frame implements IFrame {
     }
 
     @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos,boolean findDisabled) {
         if (root == null || !root.isVisible()) {
             return null;
         }
 
-        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos);
+        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos,findDisabled);
         if (floatingWidget != null) {
             return floatingWidget;
         }
 
-        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE);
+        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE,findDisabled);
+    }
+
+    @Override
+    public Vector2f screenToContent(float screenX, float screenY) {
+        return new Vector2f(screenX, screenY);
     }
 
     @Override
@@ -357,10 +362,6 @@ public class Frame implements IFrame {
 
         if (shouldReceiveEvent) {
             widget.mouseMove(localPos.x, localPos.y);
-
-            if (widget.managesChildEvents()) {
-                return;
-            }
         } else {
             if (widget.isHovered()) {
                 widget.clearHover();
@@ -476,7 +477,7 @@ public class Frame implements IFrame {
         }
     }
 
-    private AbstractWidget<?> findFloatingWidgetRecursive(AbstractWidget<?> widget, Vector2f pos) {
+    private AbstractWidget<?> findFloatingWidgetRecursive(AbstractWidget<?> widget, Vector2f pos,boolean findDisabled) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return null;
         }
@@ -491,7 +492,7 @@ public class Frame implements IFrame {
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    AbstractWidget<?> found = findFloatingWidgetRecursive(childWidget, pos);
+                    AbstractWidget<?> found = findFloatingWidgetRecursive(childWidget, pos,findDisabled);
                     if (found != null) {
                         return found;
                     }
@@ -506,9 +507,10 @@ public class Frame implements IFrame {
             AbstractWidget<?> widget,
             Vector2f absPos,
             AbstractWidget<?> currentBest,
-            int currentBestZIndex) {
+            int currentBestZIndex,
+            boolean findDisabled) {
 
-        if (!widget.isVisible() || widget.isDisabled()) {
+        if (!widget.isVisible() || (widget.isDisabled() && !findDisabled)) {
             return currentBest;
         }
 
@@ -519,40 +521,29 @@ public class Frame implements IFrame {
         boolean hit = widget.hitTest(absPos);
 
         if (hit) {
-            if (widget.managesChildEvents()) {
-                AbstractWidget<?> found = widget.findInteractiveWidgetAt(absPos);
-                if (found != null) {
-                    int foundZIndex = found.getZIndex();
-                    if (foundZIndex >= currentBestZIndex) {
-                        currentBest = found;
-                        currentBestZIndex = foundZIndex;
-                    }
-                }
-            } else {
-                if (widget instanceof ILayoutContainer container) {
-                    List<ILayoutElement> children = container.getChildren();
-                    for (int i = children.size() - 1; i >= 0; i--) {
-                        ILayoutElement child = children.get(i);
-                        if (child instanceof AbstractWidget<?> childWidget) {
-                            AbstractWidget<?> found = findInteractiveWidgetAtRecursive(
-                                    childWidget, absPos, currentBest, currentBestZIndex);
-                            if (found != null && found != currentBest) {
-                                int foundZIndex = found.getZIndex();
-                                if (foundZIndex >= currentBestZIndex) {
-                                    currentBest = found;
-                                    currentBestZIndex = foundZIndex;
-                                }
+            if (widget instanceof ILayoutContainer container) {
+                List<ILayoutElement> children = container.getChildren();
+                for (int i = children.size() - 1; i >= 0; i--) {
+                    ILayoutElement child = children.get(i);
+                    if (child instanceof AbstractWidget<?> childWidget) {
+                        AbstractWidget<?> found = findInteractiveWidgetAtRecursive(
+                                childWidget, absPos, currentBest, currentBestZIndex,findDisabled);
+                        if (found != null && found != currentBest) {
+                            int foundZIndex = found.getZIndex();
+                            if (foundZIndex >= currentBestZIndex) {
+                                currentBest = found;
+                                currentBestZIndex = foundZIndex;
                             }
                         }
                     }
                 }
+            }
 
-                if (widget.checkInteractive()) {
-                    int widgetZIndex = widget.getZIndex();
-                    if (widgetZIndex >= currentBestZIndex) {
-                        currentBest = widget;
-                        currentBestZIndex = widgetZIndex;
-                    }
+            if (widget.checkInteractive()) {
+                int widgetZIndex = widget.getZIndex();
+                if (widgetZIndex >= currentBestZIndex) {
+                    currentBest = widget;
+                    currentBestZIndex = widgetZIndex;
                 }
             }
         }

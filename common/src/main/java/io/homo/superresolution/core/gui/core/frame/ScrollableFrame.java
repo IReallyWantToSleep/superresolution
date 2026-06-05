@@ -263,8 +263,8 @@ public class ScrollableFrame extends Frame {
     }
 
     @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos) {
-        return super.findInteractiveWidgetAt(pos);
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos,boolean findDisabled) {
+        return super.findInteractiveWidgetAt(pos,findDisabled);
     }
 
     private void updateScrollBounds() {
@@ -289,7 +289,8 @@ public class ScrollableFrame extends Frame {
         }
     }
 
-    private Vector2f screenToContent(float screenX, float screenY) {
+    @Override
+    public Vector2f screenToContent(float screenX, float screenY) {
         return new Vector2f(
                 screenX - contentPaddingLeft + currentScroll.x,
                 screenY - contentPaddingTop + currentScroll.y

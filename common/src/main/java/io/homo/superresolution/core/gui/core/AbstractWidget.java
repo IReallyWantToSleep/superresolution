@@ -26,6 +26,7 @@ import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Renderable;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.core.impl.TooltipHolder;
 import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
@@ -55,7 +56,7 @@ public abstract class AbstractWidget<
     protected Frame frame;
     protected IEventBus eventBus;
     protected WidgetStyle<?> style;
-    protected Supplier<Optional<String>> tooltipSupplier = Optional::empty;
+    protected Supplier<Optional<Tooltip>> tooltipSupplier = Optional::empty;
 
     public AbstractWidget() {
         this.eventBus = MaterialUI.createEventBus(
@@ -359,10 +360,6 @@ public abstract class AbstractWidget<
         return false;
     }
 
-    public boolean managesChildEvents() {
-        return false;
-    }
-
     public boolean isFloatingWidget() {
         return false;
     }
@@ -396,29 +393,25 @@ public abstract class AbstractWidget<
 
     @SuppressWarnings("unchecked")
     @Override
-    public T setTooltipSupplier(Supplier<Optional<String>> supplier) {
+    public T setTooltipSupplier(Supplier<Optional<Tooltip>> supplier) {
         tooltipSupplier = supplier;
         return (T) this;
     }
 
     @Override
-    public Optional<String> getTooltip() {
+    public Optional<Tooltip> getTooltip() {
         return tooltipSupplier.get();
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public T setTooltip(String tooltip) {
+    public T setTooltip(Tooltip tooltip) {
         this.tooltipSupplier = () -> Optional.ofNullable(tooltip);
         return (T) this;
     }
 
-    /**
-     * 从当前 widget 开始，逐级向父级收集 tooltip 文本。
-     * 内层（当前）在前，外层在后。
-     */
     public List<String> collectTooltipChain() {
-        List<String> tooltips = new ArrayList<>();
+        /*List<String> tooltips = new ArrayList<>();
         AbstractWidget<?> current = this;
         while (current != null) {
             Optional<String> tooltip = current.getTooltip();
@@ -429,7 +422,8 @@ public abstract class AbstractWidget<
             }
             current = parentWidget;
         }
-        return tooltips;
+        return tooltips;*/
+        return null;
     }
 
     public void destroy() {

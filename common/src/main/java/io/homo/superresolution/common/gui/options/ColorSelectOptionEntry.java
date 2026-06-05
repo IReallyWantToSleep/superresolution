@@ -208,7 +208,7 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
         colorPanelWidget.layout().setMargin(YogaEdge.RIGHT, 12);
         contentContainer.addChild(colorPanelWidget);
         contentContainer.addChild(sliderContainer);
-
+        contentContainer.setTooltipSupplier(this::resolveTooltip);
         this.container.addChild(contentContainer);
     }
 

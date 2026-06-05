@@ -267,6 +267,7 @@ public abstract class Animator<T extends Animator<T, V>, V> {
     }
 
     protected void onAnimationEnd() {
+        lifecycleListeners.clear();
     }
 
     protected void onAnimationPause() {

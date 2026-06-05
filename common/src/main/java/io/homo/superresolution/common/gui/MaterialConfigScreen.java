@@ -60,6 +60,7 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.gui.widgets.SpacerWidget;
@@ -626,6 +627,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         ))}))
                 )
                 .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
+                .setTooltipSupplier((t)->{
+                    if (!isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())){
+                        return Optional.of(Tooltip.withContext("当前算法不支持自定义"));
+                    }else {
+                        return Optional.of(Tooltip.empty());
+                    }
+                })
                 .setSaveConsumer((value) -> {
                     float targetRatio = Float.parseFloat(String.format("%.2f", value.doubleValue()));
                     SuperResolutionConfig.setUpscaleRatio(targetRatio);

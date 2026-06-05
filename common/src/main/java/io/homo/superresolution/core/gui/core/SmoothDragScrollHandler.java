@@ -32,7 +32,7 @@ public class SmoothDragScrollHandler implements IScrollHandler {
     private Vector2f maxOffset = new Vector2f(Float.POSITIVE_INFINITY);
     private boolean enableBounds = false;
     private boolean dragging = false;
-    private float smoothTime = 50f;
+    private float smoothTime = 100f;
     private float scrollStep = 40f;
 
     public SmoothDragScrollHandler(OnOffsetChangedListener listener) {
@@ -83,7 +83,7 @@ public class SmoothDragScrollHandler implements IScrollHandler {
 
     @Override
     public void update(float deltaTime) {
-        float factor = 1.0f - (float) Math.exp(-deltaTime / smoothTime);
+        float factor = (float) Math.sin((Math.PI * deltaTime) / (smoothTime*2));
         offset.lerp(targetOffset, factor);
         notifyOffset();
     }

@@ -20,6 +20,7 @@ package io.homo.superresolution.common.gui.options;
 
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -34,7 +35,8 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     protected @Nullable OptionRequirement enableRequirement = null;
     protected @Nullable OptionRequirement displayRequirement = null;
     protected Function<VT, Boolean> saveConsumer = null;
-    protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
+    protected Function<VT, Optional<Tooltip>> tooltipSupplier = (list) -> Optional.of(Tooltip.empty());
+    protected Function<VT, Optional<Text[]>> descriptionsSupplier = (v) -> Optional.empty();
     protected VT value;
     protected Text name;
     protected OptionCategory category;
@@ -63,6 +65,7 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         option.setRequiresRestartGame(requireRestartGame);
         option.setSaveConsumer(saveConsumer);
         option.setTooltipSupplier(tooltipSupplier);
+        option.setDescriptionsSupplier(descriptionsSupplier);
 
         category.addEntry(option);
         return option;
@@ -116,14 +119,13 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         return (SELF) this;
     }
 
-    @Deprecated
-    public SELF setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
+    public SELF setTooltipSupplier(Function<VT, Optional<Tooltip>> tooltipSupplier) {
         this.tooltipSupplier = tooltipSupplier;
         return (SELF) this;
     }
 
     public SELF setDescription(Text description) {
-        this.tooltipSupplier = (v) -> Optional.of(new Text[]{description});
+        this.descriptionsSupplier = (v) -> Optional.of(new Text[]{description});
         return (SELF) this;
     }
 
@@ -132,12 +134,12 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
     }
 
     public SELF setDescriptions(Text... descriptions) {
-        this.tooltipSupplier = (v) -> Optional.of(descriptions);
+        this.descriptionsSupplier = (v) -> Optional.of(descriptions);
         return (SELF) this;
     }
 
     public SELF setDescriptionsSupplier(Function<VT, Optional<Text[]>> supplier) {
-        this.tooltipSupplier = supplier;
+        this.descriptionsSupplier = supplier;
         return (SELF) this;
     }
 }

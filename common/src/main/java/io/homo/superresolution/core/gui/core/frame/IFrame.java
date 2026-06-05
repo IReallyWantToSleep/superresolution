@@ -57,7 +57,9 @@ public interface IFrame {
 
     void dispatchCharTyped(char codePoint, int modifiers);
 
-    AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos);
+    AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos,boolean findDisabled);
+
+    Vector2f screenToContent(float screenX, float screenY);
 
     void markLayoutDirty();
 

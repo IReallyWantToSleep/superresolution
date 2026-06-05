@@ -73,11 +73,6 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         return true;
     }
 
-    @Override
-    public boolean managesChildEvents() {
-        return true;
-    }
-
     public float computeContentWidth(RenderContext ctx) {
         float max = 0;
         for (ILayoutElement child : getChildren()) {
@@ -97,74 +92,6 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
     public void layouting(RenderContext ctx) {
         updateSize();
         super.layouting(ctx);
-    }
-
-    @Override
-    public void mousePress(float x, float y, int button) {
-        super.mousePress(x, y, button);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                        widget.mousePress(x, y, button);
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
-    public void mouseRelease(float x, float y, int button) {
-        super.mouseRelease(x, y, button);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                        widget.mouseRelease(x, y, button);
-                    }
-                }
-            }
-        }
-    }
-
-    @Override
-    public void mouseMove(float x, float y) {
-        super.mouseMove(x, y);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    //if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                    widget.mouseMove(x, y);
-                    // }
-                }
-            }
-        }
-    }
-
-    @Override
-    public void mouseScroll(float x, float y, double scrollX) {
-        super.mouseScroll(x, y, scrollX);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : getChildren()) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    if (widget.hitTest(new org.joml.Vector2f(x, y))) {
-                        widget.mouseScroll(x, y, scrollX);
-                    }
-                }
-            }
-        }
     }
 
     @Override

@@ -32,6 +32,7 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
@@ -267,8 +268,6 @@ public class MaterialMenuItem extends MaterialWidget<MaterialMenuItem> {
         ctx.popAlpha();
         ctx.restore();
         ctx.restore();
-
-        this.setTooltip(text);
     }
 
     @Override

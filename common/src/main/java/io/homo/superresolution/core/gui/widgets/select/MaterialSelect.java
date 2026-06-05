@@ -27,6 +27,7 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.event.events.WidgetEvent;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenu;
@@ -36,12 +37,15 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>> {
     private final MaterialSelectField field;
@@ -54,6 +58,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private float minWidth = 160;
     private boolean autoWidth = true;
     private boolean widthDirty = true;
+    private boolean suppressNextToggle = false;
     private MenuPosition menuPosition = MenuPosition.AUTO_START;
 
     private static final float DIRECTIONAL_ANIMATION_SCALE = 0.96f;
@@ -80,6 +85,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         menu.layout().setHeightAuto();
         menu.setParent(this);
 
+        this.children.add(menu);
+
         updateSize();
     }
 
@@ -97,90 +104,13 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
     @Override
     public void layouting(RenderContext ctx) {
+        suppressNextToggle = false;
         if (autoWidth && widthDirty) {
             recalculateWidth(ctx);
         }
         updateSize();
         super.layouting(ctx);
         menu.layouting(ctx);
-    }
-
-    @Override
-    public void mousePress(float x, float y, int button) {
-        if (isDisabled()) {
-            return;
-        }
-        Vector2f absPos = new Vector2f(x, y);
-
-        if (menu.isExpanded() || menu.isVisible()) {
-            if (menu.hitTest(absPos)) {
-                menu.mousePress(x, y, button);
-                return;
-            }
-            if (field.hitTest(absPos)) {
-                field.mousePress(x, y, button);
-                return;
-            }
-            closeMenu();
-            return;
-        }
-
-        if (field.hitTest(absPos)) {
-            field.mousePress(x, y, button);
-        }
-    }
-
-    @Override
-    public void mouseRelease(float x, float y, int button) {
-        if (isDisabled()) {
-            return;
-        }
-        Vector2f absPos = new Vector2f(x, y);
-
-        if (menu.isExpanded() || menu.isVisible()) {
-            menu.mouseRelease(x, y, button);
-        }
-
-        if (field.hitTest(absPos)) {
-            field.mouseRelease(x, y, button);
-        }
-    }
-
-    @Override
-    public void mouseMove(float x, float y) {
-        if (isDisabled()) {
-            return;
-        }
-        Vector2f absPos = new Vector2f(x, y);
-
-        boolean inArea = hitTest(absPos);
-        if (inArea != isHovered()) {
-            setHovered(inArea);
-        }
-
-        if (menu.isExpanded() || menu.isVisible()) {
-            menu.mouseMove(x, y);
-        }
-
-        if (field.hitTest(absPos)) {
-            field.mouseMove(x, y);
-        }
-    }
-
-    @Override
-    public void mouseScroll(float x, float y, double scrollX) {
-        if (isDisabled()) {
-            return;
-        }
-        Vector2f absPos = new Vector2f(x, y);
-
-        if (menu.isExpanded() || menu.isVisible()) {
-            menu.mouseScroll(x, y, scrollX);
-        }
-
-        if (field.hitTest(absPos)) {
-            field.mouseScroll(x, y, scrollX);
-        }
     }
 
     @Override
@@ -383,13 +313,12 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
     @Override
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
-        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
-            return this;
-        }
         if (field.hitTest(absPos)) {
-            return this;
+            return field;
         }
-
+        if (menu.isExpanded() && menu.isVisible() && menu.hitTest(absPos)) {
+            return menu.findInteractiveWidgetAt(absPos);
+        }
         return null;
     }
 
@@ -456,11 +385,19 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     public MaterialSelect<T> addOption(T value, String displayText) {
-        return addOption(value, displayText, null);
+        return addOption(value, displayText, null, null);
     }
 
     public MaterialSelect<T> addOption(T value, String displayText, MaterialSymbol icon) {
-        SelectOption<T> option = new SelectOption<>(value, displayText, icon);
+        return addOption(value, displayText, icon, null);
+    }
+
+    public MaterialSelect<T> addOption(T value, String displayText, @Nullable Supplier<Optional<Tooltip>> tooltipSupplier) {
+        return addOption(value, displayText, null, tooltipSupplier);
+    }
+
+    public MaterialSelect<T> addOption(T value, String displayText, MaterialSymbol icon, @Nullable Supplier<Optional<Tooltip>> tooltipSupplier) {
+        SelectOption<T> option = new SelectOption<>(value, displayText, icon, tooltipSupplier);
         options.add(option);
 
         MaterialMenuItem item = MaterialMenuItem.create()
@@ -470,6 +407,10 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
         if (icon != null) {
             item.icon(icon);
+        }
+
+        if (tooltipSupplier != null) {
+            item.setTooltipSupplier(tooltipSupplier);
         }
 
         item.onSelectionChanged(selected -> {
@@ -546,6 +487,10 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         if (isDisabled()) {
             return;
         }
+        if (suppressNextToggle) {
+            suppressNextToggle = false;
+            return;
+        }
         if (menu.isExpanded()) {
             closeMenu();
         } else {
@@ -603,17 +548,13 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         field.setFocused(focused);
         if (!focused && menu.isExpanded()) {
             closeMenu();
+            suppressNextToggle = true;
         }
         return this;
     }
 
     @Override
     public boolean managesChildRendering() {
-        return true;
-    }
-
-    @Override
-    public boolean managesChildEvents() {
         return true;
     }
 
@@ -756,6 +697,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
                                    String displayText,
 
-                                   MaterialSymbol icon) {
+                                   MaterialSymbol icon,
+
+                                   @Nullable Supplier<Optional<Tooltip>> tooltipSupplier) {
     }
 }

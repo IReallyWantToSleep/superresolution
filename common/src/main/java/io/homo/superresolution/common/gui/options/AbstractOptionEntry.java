@@ -23,6 +23,7 @@ import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.impl.ValueHolder;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.GuiEventListener;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +41,8 @@ public abstract class AbstractOptionEntry<VT, SELF> implements ValueHolder<VT>, 
     protected @Nullable OptionRequirement displayRequirement = null;
     protected Function<VT, Boolean> saveConsumer = null;
     protected Runnable saveRunnable = null;
-    protected Function<VT, Optional<Text[]>> tooltipSupplier = (list) -> Optional.empty();
+    protected Function<VT, Optional<Tooltip>> tooltipSupplier = (list) -> Optional.of(Tooltip.empty());
+    protected Function<VT, Optional<Text[]>> descriptionsSupplier = (v) -> Optional.empty();
     protected VT value;
     protected OptionContainerWidget container;
 
@@ -110,13 +112,26 @@ public abstract class AbstractOptionEntry<VT, SELF> implements ValueHolder<VT>, 
     }
 
 
-    public Function<VT, Optional<Text[]>> getTooltipSupplier() {
+    public Function<VT, Optional<Tooltip>> getTooltipSupplier() {
         return tooltipSupplier;
     }
 
-    public SELF setTooltipSupplier(Function<VT, Optional<Text[]>> tooltipSupplier) {
+    public SELF setTooltipSupplier(Function<VT, Optional<Tooltip>> tooltipSupplier) {
         this.tooltipSupplier = tooltipSupplier;
         return (SELF) this;
+    }
+
+    public SELF setDescriptionsSupplier(Function<VT, Optional<Text[]>> descriptionsSupplier) {
+        this.descriptionsSupplier = descriptionsSupplier;
+        return (SELF) this;
+    }
+
+    public Function<VT, Optional<Text[]>> getDescriptionsSupplier() {
+        return descriptionsSupplier;
+    }
+
+    protected Optional<Tooltip> resolveTooltip() {
+        return this.tooltipSupplier.apply(value());
     }
 
     public boolean isRequiresRestartGame() {

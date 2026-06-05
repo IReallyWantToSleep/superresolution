@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -91,10 +92,10 @@ public class OptionContainerWidget extends MaterialContainerWidget<OptionContain
     }
 
     private String getDescriptionText() {
-        if (entry.getTooltipSupplier() != null) {
-            var tooltipOpt = ((AbstractOptionEntry<Object, Object>) entry).getTooltipSupplier().apply(entry.value());
-            if (tooltipOpt.isPresent()) {
-                var texts = tooltipOpt.get();
+        if (entry.getDescriptionsSupplier() != null) {
+            var descriptionsOpt = ((AbstractOptionEntry<Object, Object>) entry).getDescriptionsSupplier().apply(entry.value());
+            if (descriptionsOpt.isPresent()) {
+                Text[] texts = descriptionsOpt.get();
                 if (texts.length > 0) {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < texts.length; i++) {

@@ -18,12 +18,15 @@
 
 package io.homo.superresolution.core.gui.core.view;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.TooltipRenderer;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
@@ -31,9 +34,11 @@ import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
+import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class View {
     private final List<FrameEntry> frames = new ArrayList<>();
@@ -178,8 +183,11 @@ public class View {
             activeDialog.render(ctx, inputState);
         }
 
-        String tooltip = collectTooltip();
-        renderTooltip(ctx, inputState, tooltip);
+        Optional<Tooltip> tooltip = collectTooltip(inputState.mousePosition());
+
+        ctx.deferToLayer(RenderLayer.Tooltip,114514,(cute)->{
+            renderTooltip(cute, inputState, tooltip);
+        });
     }
 
     public void showDialog(MaterialDialog dialog) {
@@ -330,6 +338,31 @@ public class View {
 
     }
 
+    private AbstractWidget<?> findTopHoveredWidgetInTreeAllowDisabledWidget(AbstractWidget<?> widget,Vector2f mousePosition) {
+        if (widget == null || !widget.isVisible()) {
+            return null;
+        }
+
+        if (!widget.hitTest(mousePosition)) {
+            return null;
+        }
+
+        if (widget instanceof ILayoutContainer container) {
+            List<ILayoutElement> children = container.getChildren();
+            for (int i = children.size() - 1; i >= 0; i--) {
+                ILayoutElement child = children.get(i);
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    AbstractWidget<?> found = findTopHoveredWidgetInTreeAllowDisabledWidget(childWidget,mousePosition);
+                    if (found != null && found.checkInteractive()) {
+                        return found;
+                    }
+                }
+            }
+        }
+
+        return widget.checkInteractive() ? widget : null;
+    }
+
     private AbstractWidget<?> findTopHoveredWidgetInTree(AbstractWidget<?> widget) {
         if (widget == null || !widget.isVisible() || widget.isDisabled()) {
             return null;
@@ -371,21 +404,34 @@ public class View {
         return null;
     }
 
-    private String collectTooltip() {
-        AbstractWidget<?> hovered = findTopHoveredWidget();
-        if (hovered == null) {
-            return null;
+    private Optional<Tooltip> collectTooltip(Vector2f mousePosition) {
+        if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
+            AbstractWidget<?> dialogHovered = findTopHoveredWidgetInTreeAllowDisabledWidget(activeDialog,mousePosition);
+            return dialogHovered.getTooltip();
         }
-        for (String tooltip : hovered.collectTooltipChain()) {
-            if (tooltip != null && !tooltip.isEmpty()) {
-                return tooltip;
+
+        for (int i = frames.size() - 1; i >= 0; i--) {
+            FrameEntry entry = frames.get(i);
+            AbstractWidget<?> root = entry.frame.getRoot();
+            if (root == null || !root.isVisible()) {
+                continue;
+            }
+            Vector2f frameLocal = new Vector2f(
+                    mousePosition.x - entry.layoutNode.getLayoutX(),
+                    mousePosition.y - entry.layoutNode.getLayoutY() - entry.renderOffsetY
+            );
+            Vector2f contentPos = entry.frame.screenToContent(frameLocal.x, frameLocal.y);
+            AbstractWidget<?> hovered = findTopHoveredWidgetInTreeAllowDisabledWidget(root, contentPos);
+            if (hovered != null) {
+                SuperResolution.LOGGER.info(hovered.toString());
+                return hovered.getTooltip();
             }
         }
-        return null;
+        return Optional.empty();
     }
 
-    private void renderTooltip(RenderContext ctx, UIInputState inputState, String tooltip) {
-        tooltipRenderer.render(ctx, inputState, tooltip);
+    private void renderTooltip(RenderContext ctx, UIInputState inputState, Optional<Tooltip> tooltip) {
+        tooltipRenderer.render(ctx, inputState, tooltip.orElse(Tooltip.empty()));
     }
 
     private void renderDebugLayoutBounds(RenderContext ctx, AbstractWidget<?> widget) {
