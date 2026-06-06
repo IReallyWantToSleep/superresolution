@@ -349,6 +349,12 @@ public class NewCompositeRenderer {
                 continue;
             }
 
+            // =========== BeforeRenderA (mixin: onBeforeRenderA - Common) ===========
+            if (passType == IrisCompositePassType.Common) {
+                // 对应 mixin: onBeforeRenderA，在 renderQuad 之前
+                superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+            }
+
             if (!renderPass.mipmappedBuffers.isEmpty()) {
                 RenderSystem.activeTexture(GL15C.GL_TEXTURE0);
                 for (int index : renderPass.mipmappedBuffers) {
@@ -362,12 +368,6 @@ public class NewCompositeRenderer {
             int beginHeight = (int) (renderPass.viewHeight * renderPass.viewportScale.viewportY());
             RenderSystem.viewport(beginWidth, beginHeight, (int) scaledWidth, (int) scaledHeight);
 
-            // =========== BeforeRenderA (mixin: onBeforeRenderA - Common) ===========
-            if (passType == IrisCompositePassType.Common) {
-                // 对应 mixin: onBeforeRenderA，在 renderQuad 之前
-                superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
-            }
-
             renderPass.framebuffer.bind();
             renderPass.program.use();
             if (renderPass.blendModeOverride != null) {
@@ -379,13 +379,14 @@ public class NewCompositeRenderer {
             this.customUniforms.push(renderPass.program);
             FullScreenQuadRenderer.INSTANCE.renderQuad();
 
+            BlendModeOverride.restore();
+
             // =========== AfterRenderA (mixin: onAfterRenderA - 非 ComputeOnly) ===========
             if (passType != IrisCompositePassType.ComputeOnly) {
                 // 对应 mixin: onAfterRenderA
                 superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
             }
 
-            BlendModeOverride.restore();
             GLDebug.popGroup();
 
             // =========== PassEndA (mixin: onPassEndA - 非 ComputeOnly) ===========

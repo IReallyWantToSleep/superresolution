@@ -95,9 +95,10 @@ public class CompositeRendererMixin {
         }
     }
 
+    //保证先post事件再setupMipmap
     @Inject(method = "renderAll", at = @At(
             value = "INVOKE",
-            target = "Lnet/irisshaders/iris/pathways/FullScreenQuadRenderer;renderQuad()V",
+            target = "Lcom/google/common/collect/ImmutableSet;isEmpty()Z",
             ordinal = 0
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onBeforeRenderA(
@@ -130,7 +131,7 @@ public class CompositeRendererMixin {
 
     @Inject(method = "renderAll", at = @At(
             value = "INVOKE",
-            target = "Lnet/irisshaders/iris/pathways/FullScreenQuadRenderer;renderQuad()V",
+            target = "Lnet/irisshaders/iris/gl/blending/BlendModeOverride;restore()V",
             shift = At.Shift.AFTER
     ), locals = LocalCapture.CAPTURE_FAILEXCEPTION, remap = false)
     private void onAfterRenderA(

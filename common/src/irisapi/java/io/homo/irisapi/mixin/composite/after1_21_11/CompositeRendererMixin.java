@@ -74,6 +74,7 @@ public class CompositeRendererMixin {
         superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassStart);
     }
 
+    //TODO:保证先post事件再setupMipmap
     //===========BeforeRender============//
     @Inject(method = "renderAll", at = @At(
             value = "INVOKE",
