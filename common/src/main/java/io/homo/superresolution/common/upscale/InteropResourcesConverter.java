@@ -37,6 +37,10 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 
+import io.homo.superresolution.core.utils.FileReadHelper;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -194,6 +198,16 @@ public class InteropResourcesConverter {
             ITexture inputDepth, ITexture outputDepth,
             ITexture inputMotionVectors, ITexture outputMotionVectors,
             ITexture inputExposure, ITexture outputExposure) {
+        processInputTextures(inputColor, outputColor, inputDepth, outputDepth,
+                inputMotionVectors, outputMotionVectors, inputExposure, outputExposure, null);
+    }
+
+    public static void processInputTextures(
+            ITexture inputColor, ITexture outputColor,
+            ITexture inputDepth, ITexture outputDepth,
+            ITexture inputMotionVectors, ITexture outputMotionVectors,
+            ITexture inputExposure, ITexture outputExposure,
+            @Nullable String motionVectorPreprocessingFunction) {
         if (!isInit) {
             init();
         }
@@ -201,6 +215,7 @@ public class InteropResourcesConverter {
         boolean hasDepth = inputDepth != null && outputDepth != null;
         boolean hasMV = inputMotionVectors != null && outputMotionVectors != null;
         boolean hasExposure = inputExposure != null && outputExposure != null;
+        boolean hasMVPreprocessing = hasMV && motionVectorPreprocessingFunction != null;
 
         String colorFormatQualifier = toComputeShaderFormatQualifier(outputColor.getTextureFormat());
         if (colorFormatQualifier == null) {
@@ -210,12 +225,25 @@ public class InteropResourcesConverter {
         String key = "processInput_" + outputColor.getTextureFormat().name()
                 + (hasDepth ? "_D" : "")
                 + (hasMV ? "_MV" : "")
-                + (hasExposure ? "_E" : "");
+                + (hasExposure ? "_E" : "")
+                + (hasMVPreprocessing ? "_MVP" : "")
+                + (motionVectorPreprocessingFunction == null ? "" : motionVectorPreprocessingFunction.hashCode());
 
         ComputePipeline pipeline = processInputPipelineCache.get(key);
         if (pipeline == null) {
+            ShaderSource computeSource;
+            if (hasMVPreprocessing) {
+                ArrayList<String> sourceLines = FileReadHelper.readText("/shader/interop/process_input_textures.comp.glsl");
+                String originalSource = String.join("\n", sourceLines);
+                String modifiedSource = originalSource.replace("void main()",
+                        motionVectorPreprocessingFunction + "\nvoid main()");
+                computeSource = new ShaderSource(ShaderType.Compute, modifiedSource, false);
+            } else {
+                computeSource = new ShaderSource(ShaderType.Compute, "/shader/interop/process_input_textures.comp.glsl", true);
+            }
+
             ShaderDescription.Builder builder = ShaderDescription.create()
-                    .compute(new ShaderSource(ShaderType.Compute, "/shader/interop/process_input_textures.comp.glsl", true))
+                    .compute(computeSource)
                     .name("interop_" + key)
                     .uniformSamplerTexture("inputColor", 0)
                     .uniformStorageTexture("outputColor", 1);
@@ -230,6 +258,9 @@ public class InteropResourcesConverter {
                 builder.uniformSamplerTexture("inputMotionVectors", 4)
                         .uniformStorageTexture("outputMotionVectors", 5);
                 builder.addDefine("HAS_MOTION_VECTOR", "1");
+            }
+            if (hasMVPreprocessing) {
+                builder.addDefine("MOTION_VECTOR_PREPROCESSING_FUNCTION_INJECTED", "1");
             }
             if (hasExposure) {
                 builder.uniformSamplerTexture("inputExposure", 6)

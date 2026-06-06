@@ -22,24 +22,31 @@ package io.homo.superresolution.shadercompat;
 import io.homo.irisapi.ICompositeRendererAccessor;
 import io.homo.irisapi.IrisAPI;
 import io.homo.irisapi.NamedCompositePass;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
+import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
@@ -127,7 +134,8 @@ public class IrisShaderCompatUpscaleDispatcher {
 
     public static DispatchResource getDispatchResource(ICompositeRendererAccessor compositeRenderer,
                                                        float preExposure,
-                                                       ITexture resolvedExposureTexture) {
+                                                       ITexture resolvedExposureTexture,
+                                                       Vector2f adaptedJitter) {
         return new DispatchResource(
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight(),
@@ -143,7 +151,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 MinecraftUtils.getCameraNear(),
                 MinecraftUtils.getCameraFar(),
-                getJitterOffset(),
+                adaptedJitter,
                 getJitterSequenceLength(),
                 param.currentModelViewMatrix,
                 param.currentProjectionMatrix,
@@ -237,6 +245,10 @@ public class IrisShaderCompatUpscaleDispatcher {
         PerformanceTracker.push("Upscale");
 
         SRShaderCompatData.UpscaleConfig currentConfig = IrisShaderCompatUtils.getCurrentConfig().get().upscale;
+        SRShaderCompatData shaderCompatData = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
+        SRCompatProcessor processor = shaderCompatData != null ? shaderCompatData.getProcessor() : null;
+        AbstractAlgorithm algorithm = SuperResolution.getCurrentAlgorithm();
+        AlgorithmDescription<?> description = SuperResolution.algorithmDescription;
         boolean needUpdate = false;
 
         if (!compositeRenderer.isSameInstance(cachedCompositeRenderer)) {
@@ -308,7 +320,38 @@ public class IrisShaderCompatUpscaleDispatcher {
             GlDebug.popGroup();
         }
 
+        if (processor != null) {
+            ICommandBuffer cb = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+            cb.begin();
+            if (processor.needsPreProcessColor(shaderCompatData, algorithm, description)) {
+                ITexture input = colorTexture.getSourceTexture();
+                ITexture output = colorTexture.getInternalTexture();
+                processor.preProcessColor(input, output, cb, shaderCompatData, algorithm, description);
+            }
+            if (processor.needsPreProcessDepth(shaderCompatData, algorithm, description) && depthTexture != null) {
+                ITexture input = depthTexture.getSourceTexture();
+                ITexture output = depthTexture.getSourceTexture();
+                processor.preProcessDepth(input, output, cb, shaderCompatData, algorithm, description);
+            }
+            if (processor.needsPreProcessMotionVectors(shaderCompatData, algorithm, description) && motionVectorsTexture != null) {
+                ITexture input = motionVectorsTexture.getSourceTexture();
+                ITexture output = motionVectorsTexture.getSourceTexture();
+                processor.preProcessMotionVectors(input, output, cb, shaderCompatData, algorithm, description);
+            }
+            if (processor.needsPreProcessExposure(shaderCompatData, algorithm, description) && exposureTexture != null) {
+                ITexture input = exposureTexture.getSourceTexture();
+                ITexture output = exposureTexture.getSourceTexture();
+                processor.preProcessExposure(input, output, cb, shaderCompatData, algorithm, description);
+            }
+            cb.end();
+            RenderSystems.current().device().submitCommandBuffer(cb);
+
+        }
+
         float preExposure = resolvePreExposure(currentConfig.preExposure);
+        if (processor != null && processor.needsAdaptPreExposure(shaderCompatData, algorithm, description)) {
+            preExposure = processor.adaptPreExposureForAlgorithm(preExposure, algorithm, shaderCompatData, description);
+        }
 
         ITexture rawExposureTexture = (
                 exposureConfig != null &&
@@ -330,10 +373,15 @@ public class IrisShaderCompatUpscaleDispatcher {
         GlDebug.pushGroup(64108436, "SR Upscale");
         AlgorithmManager.update();
         // MotionVectorsGenerator 已被弃用
+        Vector2f rawJitter = getJitterOffset();
+        Vector2f adaptedJitter = (processor != null && processor.needsAdaptJitter(shaderCompatData, algorithm, description))
+                ? processor.adaptJitterForAlgorithm(rawJitter, algorithm, shaderCompatData, description)
+                : rawJitter;
         DispatchResource dispatchResource = getDispatchResource(
                 compositeRenderer,
                 preExposure,
-                rawExposureTexture
+                rawExposureTexture,
+                adaptedJitter
         );
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(

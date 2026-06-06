@@ -18,21 +18,33 @@
 
 package io.homo.superresolution.shadercompat.mixin.core;
 
+import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.gl.shader.StandardMacros;
+import net.irisshaders.iris.helpers.StringPair;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+
+import java.nio.file.Path;
 
 @Mixin(value = Iris.class,remap = false)
 public class IrisMixin {
+    private static ImmutableList<StringPair> superresolution$cachedDefines;
 
     @Inject(method = "loadShaderpack",at= @At(value = "INVOKE", target = "Lnet/irisshaders/iris/Iris;loadExternalShaderpack(Ljava/lang/String;)Z"))
     private static void gugugagaMixin(CallbackInfo ci) {
+        ShaderCompatHandler.setCachedShaderPackPath(null);
+        ShaderCompatHandler.setShaderCompatData(null);
         ShaderCompatHandler.setLoadingShader(true);
     }
 
@@ -47,5 +59,47 @@ public class IrisMixin {
 
         SuperResolution.recreateAlgorithm();
         SuperResolutionConfig.resolutionChangeCallback.run();
+    }
+
+    @Inject(
+            method = "loadExternalShaderpack",
+            at= @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V"
+            ),
+            locals = LocalCapture.CAPTURE_FAILSOFT
+    )
+    private static void gugugagaMixin0(
+            String name,
+            CallbackInfoReturnable<Boolean> cir,
+            Path shaderPackRoot,
+            Path shaderPackConfigTxt,
+            Path shaderPackPath
+    ) {
+        superresolution$cachedDefines = StandardMacros.createStandardEnvironmentDefines();
+        ShaderCompatHandler.setCachedShaderPackPath(shaderPackPath);
+        ShaderCompatHandler.loadConfig(
+                shaderPackPath,
+                superresolution$cachedDefines
+        );
+    }
+
+    @ModifyArg(
+            method = "loadExternalShaderpack",
+            at= @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;Z)V"
+            ),
+            index = 2
+    )
+    private static ImmutableList<StringPair> genshinimpact(ImmutableList<StringPair> environmentDefines){
+        /*
+        mixin patched code:
+        ImmutableList var10004 = StandardMacros.createStandardEnvironmentDefines();
+        handler$bgg000$super_resolution$gugugagaMixin0(name, (CallbackInfoReturnable)null, shaderPackRoot, shaderPackConfigTxt, shaderPackPath);
+        currentPack = new ShaderPack(shaderPackPath, changedConfigs, var10004, isZip);
+        we need modify it`s argument
+        * */
+        return ImmutableList.copyOf(superresolution$cachedDefines);
     }
 }

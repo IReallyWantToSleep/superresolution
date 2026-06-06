@@ -23,6 +23,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -329,11 +330,23 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
 
+        String motionVectorPreprocessingFunction = null;
+        if (IrisShaderCompatUtils.shouldApplySuperResolutionChanges()) {
+            var config = IrisShaderCompatUtils.getCurrentConfig();
+            if (config.isPresent()) {
+                var customs = config.get().upscale.customs;
+                if (customs != null) {
+                    motionVectorPreprocessingFunction = customs.motionVectorPreprocessingFunction;
+                }
+            }
+        }
+
         InteropResourcesConverter.processInputTextures(
                 dispatchResource.resources().colorTexture(), inFlight.inputColorGlTexture,
                 dispatchResource.resources().depthTexture(), inFlight.inputDepthGlTexture,
                 dispatchResource.resources().motionVectorsTexture(), inFlight.inputMotionVectorsGlTexture,
-                dispatchResource.resources().exposureTexture(), inFlight.inputExposureGlTexture
+                dispatchResource.resources().exposureTexture(), inFlight.inputExposureGlTexture,
+                motionVectorPreprocessingFunction
         );
     }
 

@@ -35,14 +35,24 @@ public class ShaderCompatTextureInfo {
     private final Supplier<ITexture> sourceTextureSupplier;
     private final TextureRegion region;
     private final boolean isOutput;
-    private GlTexture2D internalTexture;
     private final String name;
+    private GlTexture2D internalTexture;
 
     public ShaderCompatTextureInfo(Supplier<ITexture> sourceTextureSupplier, TextureRegion region, boolean isOutput, String name) {
         this.sourceTextureSupplier = sourceTextureSupplier;
         this.region = region;
         this.isOutput = isOutput;
         this.name = name;
+    }
+
+    public static int resolveRegionValue(int value, boolean isWidth) {
+        if (value == -1) return isWidth ?
+                RenderHandlerManager.getRenderWidth() :
+                RenderHandlerManager.getRenderHeight();
+        if (value == -2) return isWidth ?
+                RenderHandlerManager.getScreenWidth() :
+                RenderHandlerManager.getScreenHeight();
+        return value;
     }
 
     public ITexture getSourceTexture() {
@@ -98,14 +108,11 @@ public class ShaderCompatTextureInfo {
         );
     }
 
-    public static int resolveRegionValue(int value, boolean isWidth) {
-        if (value == -1) return isWidth ?
-                RenderHandlerManager.getRenderWidth() :
-                RenderHandlerManager.getRenderHeight();
-        if (value == -2) return isWidth ?
-                RenderHandlerManager.getScreenWidth() :
-                RenderHandlerManager.getScreenHeight();
-        return value;
+    public void replaceInternalTexture(ITexture newTexture) {
+        if (internalTexture != null) {
+            internalTexture.destroy();
+        }
+        this.internalTexture = (GlTexture2D) newTexture;
     }
 
     public void copyTextureRegion(

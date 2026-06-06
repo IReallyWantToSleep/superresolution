@@ -323,9 +323,10 @@ public class VkRenderSystem implements IRenderSystem {
                     .ppEnabledExtensionNames(asPointerBuffer(stack, enableDeviceExts))
                     .pEnabledFeatures(null);
 
-            if (ENABLE_VALIDATION) {
-                createInfo.ppEnabledLayerNames(VulkanValidationLayers.getValidationLayersPointerBuffer(stack));
-            }
+            //https://docs.vulkan.org/refpages/latest/refpages/source/VkDeviceCreateInfo.html#:~:text=//%20ppEnabledLayerNames%20is%20legacy%20and%20not%20used
+            //if (ENABLE_VALIDATION) {
+            //    createInfo.ppEnabledLayerNames(VulkanValidationLayers.getValidationLayersPointerBuffer(stack));
+            //}
 
             PointerBuffer pDevice = stack.mallocPointer(1);
             VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),

@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.common.minecraft.handler.shadercompat;
 
+import com.google.common.collect.ImmutableList;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
@@ -28,38 +30,54 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuff
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import net.irisshaders.iris.helpers.StringPair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
 public class ShaderCompatHandler implements IMinecraftRenderHandler {
-    private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
-
     private static boolean isLoadingShader;
-
     private static volatile boolean irisReloadReflectionInitialized;
     private static Method irisReloadMethod;
-
     private static volatile boolean irisApiReflectionInitialized;
     private static Method irisApiGetInstanceMethod;
     private static Method irisApiIsShaderPackInUseMethod;
-
     private static volatile boolean shaderCompatUtilsReflectionInitialized;
     private static Method shouldApplySuperResolutionChangesMethod;
     private static Method getCurrentShaderPackConfigMethod;
     private static Method getCurrentConfigMethod;
-
     private static volatile boolean shaderCompatDispatcherReflectionInitialized;
     private static Field shaderCompatColorTextureField;
     private static Field shaderCompatDepthTextureField;
     private static Throwable shaderCompatDispatcherReflectionError;
+    private static SRShaderCompatData shaderCompatData;
+    private static Path cachedShaderPackPath;
+    private final Map<MinecraftRenderTargetType, IBindableFrameBuffer> renderTargets = new HashMap<>();
+
+    public static SRShaderCompatData getShaderCompatData() {
+        return shaderCompatData;
+    }
+
+    public static void setShaderCompatData(SRShaderCompatData shaderCompatData) {
+        ShaderCompatHandler.shaderCompatData = shaderCompatData;
+    }
+
+    public static Path getCachedShaderPackPath() {
+        return cachedShaderPackPath;
+    }
+
+    public static void setCachedShaderPackPath(Path path) {
+        cachedShaderPackPath = path;
+    }
 
     public static boolean isLoadingShader() {
         return isLoadingShader;
@@ -205,6 +223,47 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         }
     }
 
+
+
+    public static void loadConfig(
+            Path root,
+            ImmutableList<?> environmentDefines
+    ){
+        try {
+            Path srConfigPath = null;
+            for (int ver = SRCompatConfigParser.LATEST_CONFIG_VERSION; ver >= 1; ver--) {
+                Path candidate = root.resolve("superresolution.v" + ver + ".json");
+                if (Files.exists(candidate)) {
+                    srConfigPath = candidate;
+                    SuperResolution.LOGGER.info("加载光影接口配置文件: superresolution.v{}.json", ver);
+                    break;
+                }
+            }
+            if (srConfigPath == null) {
+                Path candidate = root.resolve("superresolution.json");
+                if (Files.exists(candidate)) {
+                    srConfigPath = candidate;
+                    SuperResolution.LOGGER.info("加载光影接口配置文件: superresolution.json");
+                }
+            }
+            if (srConfigPath != null) {
+
+                JsonMacroPreprocessor preprocessor = new JsonMacroPreprocessor();
+                for (Object stringPair : environmentDefines) {
+                    preprocessor.addMacro(((StringPair) stringPair).key(), ((StringPair) stringPair).value());
+                }
+                SRCompatBuiltinMacros.addMacros(preprocessor);
+                shaderCompatData = SRCompatConfigParser.load(srConfigPath, preprocessor);
+                SuperResolution.LOGGER.info("光影包 {} 支持超分辨率功能", root);
+                return;
+            }
+        } catch (Throwable throwable) {
+            SuperResolution.LOGGER.trace("从光影包 {} 加载SR配置失败", root, throwable);
+            SuperResolution.LOGGER.warn("加载 {} 光影包中的SR配置时发生错误", root);
+        }
+        shaderCompatData = null;
+    }
+
     public void updateRenderTarget() {
         renderTargets.clear();
         for (MinecraftRenderTargetType minecraftRenderTargetType : MinecraftRenderTargetType.values()) {
@@ -248,18 +307,15 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         }
     }
 
-
     public IBindableFrameBuffer getRenderTarget(MinecraftRenderTargetType type) {
         return renderTargets.get(type);
     }
-
 
     @Override
     public void onRenderWorldBegin(CallType type) {
         updateRenderTarget();
         updateRenderTargetSize();
     }
-
 
     @Override
     public void onRenderWorldEnd(CallType type) {
@@ -315,11 +371,6 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
 
     }
 
-    @Override
-    public void destroy() {
-
-    }
-
     @Nullable
     public ITexture getColorTexture() {
         initShaderCompatDispatcherReflection();
@@ -354,5 +405,10 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void destroy() {
+
     }
 }

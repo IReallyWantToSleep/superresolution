@@ -42,7 +42,7 @@ public class GlOnlyNameTexture implements ITexture {
 
     @Override
     public TextureUsages getTextureUsages() {
-        return TextureUsages.create().sampler().storage();
+        return TextureUsages.create().sampler().storage().attachmentColor().attachmentDepth().transferDestination().transferSource().copy();
     }
 
     @Override

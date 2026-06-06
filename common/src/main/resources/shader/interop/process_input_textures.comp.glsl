@@ -38,6 +38,9 @@ void main() {
         #ifdef HAS_MOTION_VECTOR
         vec2 mv = texelFetch(inputMotionVectors, ivec2(texelCoord.x, flippedY), 0).rg;
         mv.y = -mv.y;
+        #ifdef MOTION_VECTOR_PREPROCESSING_FUNCTION_INJECTED
+        mv = motionVectorPreprocessing(mv);
+        #endif
         imageStore(outputMotionVectors, texelCoord, vec4(mv, 0.0, 0.0));
         #endif
     }

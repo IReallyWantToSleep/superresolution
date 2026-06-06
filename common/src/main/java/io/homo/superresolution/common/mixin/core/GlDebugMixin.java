@@ -49,6 +49,7 @@ public class GlDebugMixin {
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
+import org.lwjgl.opengl.KHRDebug;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
@@ -60,14 +61,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GlDebugMixin {
     private static Logger LOGGER = LoggerFactory.getLogger("OpenGLDebug");
 
-    @Inject(method = "printDebugLog", at = @At("TAIL"))
+    @Inject(method = "printDebugLog", at = @At("HEAD"),cancellable = true)
     private void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        if (!GlDebug.isEnabled() || SuperResolution.renderThread == null || severity == 33387 || type == 0x8251) return;
+        if (!GlDebug.isEnabled() || SuperResolution.renderThread == null || type == KHRDebug.GL_DEBUG_TYPE_OTHER || severity == KHRDebug.GL_DEBUG_SEVERITY_NOTIFICATION) return;
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
         for (StackTraceElement element : elements) {
             LOGGER.error("    {}", element.toString());
         }
+        ci.cancel();
     }
 }
 #endif

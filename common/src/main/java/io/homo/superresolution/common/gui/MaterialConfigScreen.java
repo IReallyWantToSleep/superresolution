@@ -1469,7 +1469,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new LibraryInfo("Lightweight Java Game Library 3(LWJGL3)", "https://github.com/LWJGL/lwjgl3"),
                 new LibraryInfo("Glslang", "https://github.com/KhronosGroup/glslang"),
                 new LibraryInfo("Intel XeSS SDK", "https://github.com/intel/xess"),
-                new LibraryInfo("NVIDIA RTX DLSS SDK", "https://github.com/NVIDIA/DLSS")
+                new LibraryInfo("NVIDIA RTX DLSS SDK", "https://github.com/NVIDIA/DLSS"),
+                new LibraryInfo("JCPP", "https://github.com/shevek/jcpp")
+
         ));
         Collections.shuffle(libraries);
         for (LibraryInfo library : libraries) {

@@ -92,6 +92,7 @@ fun DependencyHandler.modCompileOnlyCompat(notation: Any) =
 
 
 dependencies {
+    compileOnly("org.anarres:jcpp:1.4.14")
     compileOnly("org.spongepowered:mixin:0.8.7")
     compileOnly("io.github.spair:imgui-java-app:1.87.5")
     compileOnly("io.github.spair:imgui-java-binding:1.87.5")

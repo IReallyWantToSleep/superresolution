@@ -22,16 +22,16 @@ import io.homo.irisapi.IrisAPI;
 import io.homo.irisapi.IrisCompositePassRenderingEvent;
 import io.homo.irisapi.MacroRegistrationEvent;
 import io.homo.irisapi.UniformRegistrationEvent;
+import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
-import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.UniformRegistrar;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
 import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.RenderTargetsAccessor;
 import net.irisshaders.iris.Iris;
@@ -39,8 +39,6 @@ import net.irisshaders.iris.gl.uniform.UniformHolder;
 import net.irisshaders.iris.gl.uniform.UniformUpdateFrequency;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
-
-import java.util.*;
 
 public class IrisShaderCompatEventHandler {
     public static void registerEventListeners() {
@@ -77,7 +75,6 @@ public class IrisShaderCompatEventHandler {
         }
 
         try {
-            //检查renderTargets是不是null以及是否被销毁，否则1.21.5+会报Tried to use destroyed RenderTargets
             if (((CompositeRendererAccessor) event.getCompositeRenderer()).getRenderTargets() != null) {
                 if (
                         !(
@@ -125,7 +122,6 @@ public class IrisShaderCompatEventHandler {
         }
 
         try {
-            //检查renderTargets是不是null以及是否被销毁，否则1.21.5+会报Tried to use destroyed RenderTargets
             if ((event.getCompositeRenderer()).getRenderTargets() != null) {
                 if (
                         !(
@@ -155,172 +151,49 @@ public class IrisShaderCompatEventHandler {
         if (SuperResolutionConfig.isForceDisableShaderCompat()) {
             return;
         }
-
         RenderHandlerManager.frameCount = 0;
 
-        event.registerMacro("SR_INSTALLED", "1");
-
-        Map<AlgorithmDescription<?>, Integer> idMap = new HashMap<>();
-        List<AlgorithmDescription<?>> algorithms = new ArrayList<>(AlgorithmRegistry.getAlgorithmMap().values());
-
-        AlgorithmRegistry.getAlgorithmMap().values().forEach((desc) -> {
-            int id = algorithms.indexOf(desc) + 0x546F0;
-            idMap.put(desc, id);
-            event.registerMacro("SR_ALGO_" + desc.codeName.toUpperCase(), Integer.toString(id));
-        });
-
-        Arrays.stream(DLSSRenderPreset.values()).toList().forEach((preset) -> {
-            event.registerMacro(
-                    "SR_ALGO_DLSS_RENDERPRESET_" + preset.toString(), Integer.toString(preset.getCode()));
-        });
-
-
-        if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            AlgorithmDescription<?> selectedAlgorithm = SuperResolution.algorithmDescription != null
-                ? SuperResolution.algorithmDescription
-                : SuperResolutionConfig.getUpscaleAlgorithm();
-            event.registerMacro("SR_ENABLE", "1");
-            event.registerMacro("SR_DISABLE", "0");
-            event.registerMacro("SR_ALGO_SUPPORTS_JITTER",
-                AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
-            event.registerMacro("SR_USING_ALGO", Integer.toString(
-                    idMap.get(SuperResolutionConfig.getUpscaleAlgorithm())));
-            event.registerMacro("SR_SHOULD_APPLY_SCALE", "1");
-            event.registerMacro("SR_SHOULD_APPLY_JITTER", "1");
-            event.registerMacro("SR_SCALED_WIDTH",
-                    Integer.toString(SuperResolutionAPI.getRenderWidth()));
-            event.registerMacro("SR_SCALED_HEIGHT",
-                    Integer.toString(SuperResolutionAPI.getRenderHeight()));
-
-            event.registerMacro("SR_SCREEN_WIDTH",
-                    Integer.toString(SuperResolutionAPI.getScreenWidth()));
-            event.registerMacro("SR_SCREEN_HEIGHT",
-                    Integer.toString(SuperResolutionAPI.getScreenHeight()));
-            event.registerMacro("SR_UPSCALE_RATIO",
-                    Float.toString(SuperResolutionConfig.getUpscaleRatio()));
-            event.registerMacro("SR_UPSCALE_RATIO_HALF",
-                    Float.toString(SuperResolutionConfig.getUpscaleRatio()*0.5F));
-            event.registerMacro("SR_RENDER_SCALE_FACTOR",
-                    Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
-            event.registerMacro("SR_RENDER_SCALE_FACTOR_HALF",
-                    Float.toString(SuperResolutionConfig.getRenderScaleFactor()*0.5F));
-            event.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
-                    Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
-            event.registerMacro("SR_ALGO_DLSS_RENDERPRESET",
-                    SuperResolutionConfig.getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSS) ?
-                            Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :
-                            "0"
-                    );
-        } else {
-            event.registerMacro("SR_ENABLE", "0");
-            event.registerMacro("SR_DISABLE", "1");
-            event.registerMacro("SR_ALGO_SUPPORTS_JITTER", "0");
-            event.registerMacro("SR_USING_ALGO", "0");
-            event.registerMacro("SR_SHOULD_APPLY_SCALE", "0");
-            event.registerMacro("SR_SHOULD_APPLY_JITTER", "0");
-            event.registerMacro("SR_SCALED_WIDTH",
-                    Integer.toString(SuperResolutionAPI.getScreenWidth()));
-            event.registerMacro("SR_SCALED_HEIGHT",
-                    Integer.toString(SuperResolutionAPI.getScreenHeight()));
-            event.registerMacro("SR_SCREEN_WIDTH",
-                    Integer.toString(SuperResolutionAPI.getScreenWidth()));
-            event.registerMacro("SR_SCREEN_HEIGHT",
-                    Integer.toString(SuperResolutionAPI.getScreenHeight()));
-            event.registerMacro("SR_UPSCALE_RATIO",
-                    Float.toString(1.0f));
-            event.registerMacro("SR_RENDER_SCALE_FACTOR",
-                    Float.toString(1.0f));
-            event.registerMacro("SR_JITTER_SEQUENCE_LENGTH", "0");
-        }
+        SRShaderCompatData config = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
+        if (config == null) return;
+        AbstractAlgorithm algorithm = SuperResolutionAPI.getCurrentAlgorithm();
+        AlgorithmDescription<?> description = SuperResolution.algorithmDescription;
+        SRCompatProcessor processor = config.getProcessor();
+        processor.registerMacros(event::registerMacro, algorithm, description);
     }
 
     private static void onUniformRegistration(UniformRegistrationEvent event) {
         if (SuperResolutionConfig.isForceDisableShaderCompat()) {
             return;
         }
-        if (IrisShaderCompatUtils.getCurrentShaderPackConfig().isEmpty())return;
+        SRShaderCompatData config = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
+        if (config == null) return;
 
-        UniformHolder uniforms = event.getUniforms();
+        AbstractAlgorithm algorithm = SuperResolutionAPI.getCurrentAlgorithm();
+        AlgorithmDescription<?> description = SuperResolution.algorithmDescription;
+        config.getProcessor().registerUniforms(adaptUniforms(event.getUniforms()), config, algorithm, description);
+    }
 
-        uniforms.uniform1f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRRenderScale",
-                () -> SuperResolutionConfig.isEnableUpscaleOriginal() ? SuperResolutionConfig.getRenderScaleFactor() : 1);
+    private static UniformRegistrar adaptUniforms(UniformHolder holder) {
+        return new UniformRegistrar() {
+            @Override
+            public void uniform1f(String name, java.util.function.Supplier<Float> value) {
+                holder.uniform1f(UniformUpdateFrequency.PER_FRAME, name, value::get);
+            }
 
-        uniforms.uniform1f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRRatio",
-                () -> SuperResolutionConfig.isEnableUpscaleOriginal() ? SuperResolutionConfig.getUpscaleRatio() : 1);
+            @Override
+            public void uniform2f(String name, java.util.function.Supplier<Vector2f> value) {
+                holder.uniform2f(UniformUpdateFrequency.PER_FRAME, name, value);
+            }
 
-        // 注：这代码改之前因为没讲到对数那一章，误把ln当log2
-        // ln(inputWidth/upscaledWidth) / ln(2) = log2(inputWidth/upscaledWidth)
-        // 欸嘿嘿嘿嘿换底公式真好玩
-        uniforms.uniform1f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRRenderScaleLog2",
-                () -> SuperResolutionConfig.isEnableUpscaleOriginal()
-                        ? (Math.log(((double) SuperResolutionAPI.getRenderWidth() /
-                        SuperResolutionAPI.getScreenWidth())) / Math.log(2))
-                        : 0);
-        uniforms.uniform1i(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRFrameCount",
-                RenderHandlerManager::getFrameCount);
+            @Override
+            public void uniform1i(String name, java.util.function.Supplier<Integer> value) {
+                holder.uniform1i(UniformUpdateFrequency.PER_FRAME, name, value::get);
+            }
 
-        uniforms.uniform2f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRScaledViewportSize",
-                () -> new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()));
-
-        uniforms.uniform2f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SROriginalViewportSize",
-                () -> new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()));
-
-        uniforms.uniform2i(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRScaledViewportSizeI",
-                () -> new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()));
-
-        uniforms.uniform2i(
-                UniformUpdateFrequency.PER_FRAME,
-                "SROriginalViewportSizeI",
-                () -> new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()));
-        if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
-            return;
-        }
-        if (IrisShaderCompatUtils.getCurrentConfig().get().jitter.source == SRShaderCompatData.JitterConfig.JitterSource.SHADERPACK) {
-            return;
-        }
-
-        uniforms.uniform2f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRJitterOffset",
-                () -> {
-                    if (SuperResolutionAPI.getCurrentAlgorithm() == null || !SuperResolution.getCurrentAlgorithm().isSupportJitter()) {
-                        return new Vector2f(0);
-                    }
-                    Vector2f jitter = IrisShaderCompatUpscaleDispatcher.getJitterOffset();
-                    return new Vector2f(
-                            jitter
-                    );
-                });
-        uniforms.uniform2f(
-                UniformUpdateFrequency.PER_FRAME,
-                "SRPreviousJitterOffset",
-                () -> {
-                    if (
-                            SuperResolutionAPI.getCurrentAlgorithm() == null || //得有算法
-                                    !SuperResolution.getCurrentAlgorithm().isSupportJitter() || //算法得支持抖动
-                                    IrisShaderCompatUtils.getCurrentConfig().isEmpty() || //得有配置
-                                    IrisShaderCompatUtils.getCurrentConfig().get().jitter.source != SRShaderCompatData.JitterConfig.JitterSource.MOD //配置的抖动源得是MOD
-                    ) {
-                        return new Vector2f(0);
-                    }
-                    //我懒，所以只对MOD源的抖动提供上一个帧的偏移，反正SHADERPACK源的抖动它自己管，MOD源的抖动才需要我们提供上一个帧的偏移
-                    return new Vector2f(
-                            AlgorithmManager.getPreviousJitterOffset()
-                    );
-                });
+            @Override
+            public void uniform2i(String name, java.util.function.Supplier<Vector2i> value) {
+                holder.uniform2i(UniformUpdateFrequency.PER_FRAME, name, value);
+            }
+        };
     }
 }

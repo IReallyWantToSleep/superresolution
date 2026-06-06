@@ -423,7 +423,6 @@ public class View {
             Vector2f contentPos = entry.frame.screenToContent(frameLocal.x, frameLocal.y);
             AbstractWidget<?> hovered = findTopHoveredWidgetInTreeAllowDisabledWidget(root, contentPos);
             if (hovered != null) {
-                SuperResolution.LOGGER.info(hovered.toString());
                 return hovered.getTooltip();
             }
         }

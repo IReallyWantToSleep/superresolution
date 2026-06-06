@@ -28,14 +28,21 @@ import java.util.List;
 import java.util.Map;
 
 public class SRShaderCompatData {
+    public final int version;
     private final Map<String, WorldProfile> worldProfiles;
     private final WorldProfile defaultProfile;
-    public final int version;
+    private final SRCompatProcessor processor;
 
-    public SRShaderCompatData(int version, Map<String, WorldProfile> worldProfiles, WorldProfile defaultProfile) {
+    public SRShaderCompatData(int version, Map<String, WorldProfile> worldProfiles,
+                              WorldProfile defaultProfile, SRCompatProcessor processor) {
         this.version = version;
         this.worldProfiles = worldProfiles != null ? worldProfiles : Collections.emptyMap();
         this.defaultProfile = defaultProfile;
+        this.processor = processor;
+    }
+
+    public SRCompatProcessor getProcessor() {
+        return processor;
     }
 
     public @Nullable WorldProfile getProfileForWorld(String worldName) {
@@ -68,12 +75,22 @@ public class SRShaderCompatData {
         public final boolean isHdrInput;
         public final boolean isAutoExposure;
         public final boolean isMotionJittered;
+        public final @Nullable CustomsConfig customs;
 
 
         public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
                              Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures,
                              @Nullable SourceConfig preExposure,
                              boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered) {
+            this(enabled, trigger, internalFormat, inputTextures, outputTextures,
+                    preExposure, isHdrInput, isAutoExposure, isMotionJittered, null);
+        }
+
+        public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
+                             Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures,
+                             @Nullable SourceConfig preExposure,
+                             boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered,
+                             @Nullable CustomsConfig customs) {
             this.enabled = enabled;
             this.trigger = trigger;
             this.internalFormat = internalFormat;
@@ -83,21 +100,29 @@ public class SRShaderCompatData {
             this.isHdrInput = isHdrInput;
             this.isAutoExposure = isAutoExposure;
             this.isMotionJittered = isMotionJittered;
+            this.customs = customs;
+        }
+    }
+
+    public static class CustomsConfig {
+        public final @Nullable String motionVectorPreprocessingFunction;
+
+        public CustomsConfig(@Nullable String motionVectorPreprocessingFunction) {
+            this.motionVectorPreprocessingFunction = motionVectorPreprocessingFunction;
         }
     }
 
     public static class PipelineTrigger {
-        public enum Order {
-            BEFORE,
-            AFTER
-        }
-
         public final Order order;
         public final String passName;
-
         public PipelineTrigger(Order order, String passName) {
             this.order = order;
             this.passName = passName;
+        }
+
+        public enum Order {
+            BEFORE,
+            AFTER
         }
     }
 
@@ -105,11 +130,6 @@ public class SRShaderCompatData {
         public final boolean enabled;
         public final JitterSource source;
         public final JitterSourceConfig sourceConfig;
-
-        public enum JitterSource {
-            MOD,
-            SHADERPACK
-        }
 
         public JitterConfig(boolean enabled) {
             this(enabled, JitterSource.MOD, null);
@@ -119,6 +139,11 @@ public class SRShaderCompatData {
             this.enabled = enabled;
             this.source = source;
             this.sourceConfig = sourceConfig;
+        }
+
+        public enum JitterSource {
+            MOD,
+            SHADERPACK
         }
     }
 
@@ -192,6 +217,14 @@ public class SRShaderCompatData {
     }
 
     public static class SourceConfig {
+        public final SourceType source; // const/variable/uniform
+        public final ValueType type; // float,int,uint,vector2f,vector3f,vector4f
+        public final Object value; // for const: the actual value; for variable/uniform: the name
+        public SourceConfig(String source, String type, Object value) {
+            this.source = SourceType.fromString(source);
+            this.type = ValueType.fromString(type);
+            this.value = value;
+        }
         public enum SourceType {
             CONST,
             VARIABLE,
@@ -205,6 +238,7 @@ public class SRShaderCompatData {
                 throw new IllegalArgumentException("Invalid SourceType: " + value);
             }
         }
+
         public enum ValueType {
             FLOAT,
             INT,
@@ -220,15 +254,6 @@ public class SRShaderCompatData {
                 }
                 throw new IllegalArgumentException("Invalid ValueType: " + value);
             }
-        }
-        public final SourceType source; // const/variable/uniform
-        public final ValueType type; // float,int,uint,vector2f,vector3f,vector4f
-        public final Object value; // for const: the actual value; for variable/uniform: the name
-
-        public SourceConfig(String source, String type, Object value) {
-            this.source = SourceType.fromString(source);
-            this.type = ValueType.fromString(type);
-            this.value = value;
         }
     }
 

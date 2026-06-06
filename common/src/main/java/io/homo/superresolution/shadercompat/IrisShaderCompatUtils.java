@@ -20,6 +20,7 @@ package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.shadercompat.mixin.core.ShaderPackAccessor;
 import net.irisshaders.iris.Iris;
@@ -47,19 +48,18 @@ public class IrisShaderCompatUtils {
     public static Optional<SRShaderCompatData.WorldProfile> getCurrentConfig() {
         return Optional.ofNullable(
                 getProfileForWorld(
-                        getCurrentShaderPack().map(
-                                pack -> ((IrisSRCompatShaderPack) pack)
-                                        .superresolution$getSuperResolutionComaptConfig()
-                        ).orElseThrow(),
+                        getCurrentShaderPackConfig().orElseThrow(),
                         Iris.getCurrentDimension()
                 )
         );
     }
 
     public static Optional<SRShaderCompatData> getCurrentShaderPackConfig() {
-        return getCurrentShaderPack().map(
+        return Optional.ofNullable(
+                getCurrentShaderPack().map(
                 pack -> ((IrisSRCompatShaderPack) pack)
                         .superresolution$getSuperResolutionComaptConfig()
+            ).orElseGet(ShaderCompatHandler::getShaderCompatData)
         );
     }
 
@@ -81,7 +81,7 @@ public class IrisShaderCompatUtils {
                         IrisApi.getInstance().isShaderPackInUse() &&
                         getCurrentShaderPack().isPresent() &&
                         ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution() &&
-                        ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$getSuperResolutionComaptConfig() != null &&
+                        (((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$getSuperResolutionComaptConfig() != null || ShaderCompatHandler.getShaderCompatData() != null) &&
                         getCurrentConfig().isPresent() &&
                         getCurrentConfig().get().enabled) {
             return getCurrentConfig().get().upscale.internalFormat;

@@ -129,6 +129,8 @@ neoForge {
 }
 
 dependencies {
+    implementation("org.anarres:jcpp:1.4.14")
+
     val imguiApp = implementation("io.github.spair:imgui-java-app:1.87.5")
     if (imguiApp != null) "libraries"(imguiApp)
 

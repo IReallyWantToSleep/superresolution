@@ -128,6 +128,7 @@ dependencies {
     compileOnly("org.spongepowered:mixin:0.8.5")
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
     compileOnly("org.jetbrains:annotations:25.0.0")
+    implementation("org.anarres:jcpp:1.4.14")
     implementation("io.github.spair:imgui-java-app:1.87.5")
     implementation("io.github.spair:imgui-java-binding:1.87.5")
     implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
