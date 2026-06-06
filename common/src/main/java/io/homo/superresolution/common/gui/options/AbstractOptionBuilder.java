@@ -66,7 +66,7 @@ public abstract class AbstractOptionBuilder<VT, OT extends AbstractOptionEntry<V
         option.setSaveConsumer(saveConsumer);
         option.setTooltipSupplier(tooltipSupplier);
         option.setDescriptionsSupplier(descriptionsSupplier);
-
+        option.init();
         category.addEntry(option);
         return option;
     }

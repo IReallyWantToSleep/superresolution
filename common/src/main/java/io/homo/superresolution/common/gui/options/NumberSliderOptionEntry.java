@@ -53,7 +53,6 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
         super(name, value);
         this.max = max;
         this.min = min;
-        init();
     }
 
     @Override

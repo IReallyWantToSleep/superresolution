@@ -27,7 +27,6 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
 
     public BooleanSwitchOptionEntry(Text name, Boolean value) {
         super(name, value);
-        init();
     }
 
     @Override

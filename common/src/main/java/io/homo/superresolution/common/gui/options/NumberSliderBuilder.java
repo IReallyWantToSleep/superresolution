@@ -76,13 +76,14 @@ public class NumberSliderBuilder extends AbstractOptionBuilder<Number, NumberSli
                 min
         );
         entry.step = step;
+        entry.valueFormater = valueFormater;
+        entry.valueChangeListener = this.valueChangeListener;
+        finishBuild(entry);
         if (step != null && step.doubleValue() != 0) {
             entry.slider.style().steps(false);
             entry.slider.setStep(step);
         }
-        entry.valueFormater = valueFormater;
-        entry.valueChangeListener = this.valueChangeListener;
-        return finishBuild(entry);
+        return entry;
     }
 
     public Number getStep() {

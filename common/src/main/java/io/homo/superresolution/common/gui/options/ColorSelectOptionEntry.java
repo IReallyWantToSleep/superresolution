@@ -57,7 +57,6 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
             Color value
     ) {
         super(name, value);
-        init();
     }
 
     @Override

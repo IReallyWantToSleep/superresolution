@@ -71,7 +71,6 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         this.index.compareAndSet(-1, 0);
         this.originalValue = value;
         this.nameProvider = nameProvider;
-        init();
     }
 
     public SelectionListOptionEntry<T> setItemEnableRequirement(@Nullable Function<T, OptionRequirement> itemEnableRequirement) {

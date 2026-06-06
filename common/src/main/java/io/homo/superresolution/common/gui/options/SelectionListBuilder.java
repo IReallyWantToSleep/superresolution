@@ -21,9 +21,11 @@ package io.homo.superresolution.common.gui.options;
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -32,10 +34,20 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
     protected Function<T, String> nameProvider;
     protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
     protected @Nullable Supplier<List<T>> valuesSupplier = null;
+    protected @Nullable Function<T, Optional<Tooltip>> menuItemTooltipSupplier = null;
 
     public SelectionListBuilder(Text name, T value, T[] valuesArray) {
         super(name, value);
         this.values = ImmutableList.copyOf(valuesArray);
+    }
+
+    public @Nullable Function<T, Optional<Tooltip>> getMenuItemTooltipSupplier() {
+        return menuItemTooltipSupplier;
+    }
+
+    public SelectionListBuilder<T> setMenuItemTooltipSupplier(@Nullable Function<T, Optional<Tooltip>> menuItemTooltipSupplier) {
+        this.menuItemTooltipSupplier = menuItemTooltipSupplier;
+        return this;
     }
 
     public @Nullable Function<T, OptionRequirement> getItemEnableRequirement() {
@@ -57,6 +69,7 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
         );
         entry.setItemEnableRequirement(itemEnableRequirement);
         entry.setValuesSupplier(valuesSupplier);
+        entry.setMenuItemTooltip(menuItemTooltipSupplier);
         return finishBuild(entry);
     }
 

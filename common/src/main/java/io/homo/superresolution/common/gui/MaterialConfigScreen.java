@@ -577,6 +577,53 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             }
                     );
                 })
+                .setMenuItemTooltipSupplier((algo)->{
+                    AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) algo;
+                    var result = algorithmDescription.getRequirement().check();
+                    if (result.support()){
+                        return Optional.of(Tooltip.empty());
+                    } else {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("不支持此算法，原因：");
+                        if (!result.glVersionMet()){
+                            sb.append("\n");
+                            sb.append("· 当前OpenGL版本不受支持");
+                        }
+                        if (!result.glExtensionsPresent()){
+                            sb.append("\n");
+                            sb.append("· 缺失必要的OpenGL扩展");
+                        }
+                        if (!result.osSupported()){
+                            sb.append("\n");
+                            sb.append("· 当前系统不受支持");
+                        }
+                        if (!result.vulkanAvailable()){
+                            sb.append("\n");
+                            sb.append("· 当前无法使用Vulkan");
+                            if (SuperResolutionConfig.isSkipInitVulkan()){
+                                sb.append("  请关闭 高级 > 跳过Vulkan初始化 选项");
+                            }
+
+                        }
+                        if (!result.vulkanVersionMet()){
+                            sb.append("\n");
+                            sb.append("· 当前Vulkan版本不受支持");
+                        }
+                        if (!result.vulkanDeviceExtensionsMet()){
+                            sb.append("\n");
+                            sb.append("· 缺失必要的Vulkan扩展");
+                        }
+                        if (!result.environmentValid()){
+                            sb.append("\n");
+                            sb.append("· 仅开发环境可用");
+                        }
+                        if (!result.additionalConditionsMet()){
+                            sb.append("\n");
+                            sb.append("· 其它原因");
+                        }
+                        return Optional.of(Tooltip.withContext(sb.toString()));
+                    }
+                })
                 .build();
 
         List<QualityPresetOption> initialPresetOptions = getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm());
