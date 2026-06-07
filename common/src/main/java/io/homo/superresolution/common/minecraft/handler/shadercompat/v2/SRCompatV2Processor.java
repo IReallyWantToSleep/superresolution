@@ -312,7 +312,8 @@ public class SRCompatV2Processor implements SRCompatProcessor {
                                 || IrisShaderCompatUtils.getCurrentConfig().get().jitter.source != SRShaderCompatData.JitterConfig.JitterSource.MOD) {
                             return new Vector2f(0);
                         }
-                        return new Vector2f(AlgorithmManager.getPreviousJitterOffset());
+                        Vector2f rawJitter = AlgorithmManager.getPreviousJitterOffset();
+                        return adaptJitterForShaderpack(rawJitter, algorithm, config, description);
                     });
         }
         // endregion

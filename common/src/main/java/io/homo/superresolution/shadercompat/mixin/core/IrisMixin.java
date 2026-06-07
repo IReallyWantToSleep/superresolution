@@ -61,6 +61,7 @@ public class IrisMixin {
         SuperResolutionConfig.resolutionChangeCallback.run();
     }
 
+    #if MC_VER > MC_1_20_1
     @Inject(
             method = "loadExternalShaderpack",
             at= @At(
@@ -69,6 +70,16 @@ public class IrisMixin {
             ),
             locals = LocalCapture.CAPTURE_FAILSOFT
     )
+    #else
+    @Inject(
+            method = "loadExternalShaderpack",
+            at= @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;)V"
+            ),
+            locals = LocalCapture.CAPTURE_FAILSOFT
+    )
+    #endif
     private static void gugugagaMixin0(
             String name,
             CallbackInfoReturnable<Boolean> cir,
@@ -83,7 +94,7 @@ public class IrisMixin {
                 superresolution$cachedDefines
         );
     }
-
+    #if MC_VER > MC_1_20_1
     @ModifyArg(
             method = "loadExternalShaderpack",
             at= @At(
@@ -92,6 +103,16 @@ public class IrisMixin {
             ),
             index = 2
     )
+    #else
+    @ModifyArg(
+            method = "loadExternalShaderpack",
+            at= @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/shaderpack/ShaderPack;<init>(Ljava/nio/file/Path;Ljava/util/Map;Lcom/google/common/collect/ImmutableList;)V"
+            ),
+            index = 2
+    )
+    #endif
     private static ImmutableList<StringPair> genshinimpact(ImmutableList<StringPair> environmentDefines){
         /*
         mixin patched code:
