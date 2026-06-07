@@ -319,24 +319,25 @@ public class DataSetGenerator {
 
     private static int getGLPixelFormat(TextureFormat format) {
         return switch (format) {
-            case RGBA8, RGBA16F, RGBA16,RGBA32F -> GL_RGBA;
-            case RGB8, R11G11B10F, RGB16F -> GL_RGB;
+            case RGBA8, RGBA16, RGBA16F, RGBA32F, RGBA16_SNORM -> GL_RGBA;
+            case RGB8, RGB16F, R11G11B10F -> GL_RGB;
             case RG8, RG16F, RG32F -> GL_RG;
-            case RGBA16_SNORM -> GL_RGBA;
-            case R8, R16F, R32F, R32UI, R16_SNORM, DEPTH32F, DEPTH24_STENCIL8, DEPTH24, DEPTH32, DEPTH_COMPONENT,
-                 DEPTH32F_STENCIL8 -> GL_RED;
+            case R8, R16F, R32F, R32UI, R16_SNORM -> GL_RED;
+            case DEPTH32F, DEPTH24, DEPTH32, DEPTH_COMPONENT -> GL_DEPTH_COMPONENT;
+            case DEPTH24_STENCIL8, DEPTH32F_STENCIL8 -> GL_DEPTH_STENCIL;
         };
     }
 
     private static int getGLPixelType(TextureFormat format) {
         return switch (format) {
-            case RGBA16F, RG16F, R16F, R16_SNORM, RGB16F -> GL_HALF_FLOAT;
-            case RGBA16_SNORM -> GL_UNSIGNED_SHORT;
-            case RGBA8, RGB8, RG8, R8, DEPTH24, DEPTH32, DEPTH_COMPONENT, RGBA16 -> GL_UNSIGNED_BYTE;
-            case R32F, RG32F, DEPTH32F, DEPTH32F_STENCIL8,RGBA32F -> GL_FLOAT;
-            case R32UI -> GL_UNSIGNED_INT;
+            case RGBA16F, RG16F, R16F, RGB16F -> GL_HALF_FLOAT;
+            case RGBA16 -> GL_UNSIGNED_SHORT;
+            case RGBA16_SNORM, R16_SNORM -> GL_SHORT;
+            case RGBA8, RGB8, RG8, R8, DEPTH_COMPONENT -> GL_UNSIGNED_BYTE;
+            case DEPTH24, DEPTH32, R32UI -> GL_UNSIGNED_INT;
+            case R32F, RG32F, DEPTH32F, RGBA32F -> GL_FLOAT;
+            case DEPTH32F_STENCIL8 -> GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
             case DEPTH24_STENCIL8 -> GL_UNSIGNED_INT_24_8;
-
             case R11G11B10F -> GL_UNSIGNED_INT_10F_11F_11F_REV;
         };
     }
