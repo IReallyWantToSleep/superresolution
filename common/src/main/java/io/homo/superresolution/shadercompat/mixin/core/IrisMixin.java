@@ -41,7 +41,7 @@ import java.nio.file.Path;
 public class IrisMixin {
     private static ImmutableList<StringPair> superresolution$cachedDefines;
 
-    @Inject(method = "loadShaderpack",at= @At(value = "INVOKE", target = "Lnet/irisshaders/iris/Iris;loadExternalShaderpack(Ljava/lang/String;)Z"))
+    @Inject(method = "loadShaderpack",at= @At(value = "HEAD"))
     private static void gugugagaMixin(CallbackInfo ci) {
         ShaderCompatHandler.setCachedShaderPackPath(null);
         ShaderCompatHandler.setShaderCompatData(null);

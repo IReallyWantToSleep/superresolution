@@ -36,7 +36,7 @@ import java.util.Optional;
 public class TooltipRenderer {
 
     private static final float DEFAULT_MAX_WIDTH = 420f;
-    private static final float PADDING = 8f;
+    private static final float PADDING = 10f;
 
     private final Animator.FloatAnimator alphaAnimator = Animator.ofFloat(0f, 0f);
     private final Animator.FloatAnimator widthAnimator = Animator.ofFloat(0f, 0f);

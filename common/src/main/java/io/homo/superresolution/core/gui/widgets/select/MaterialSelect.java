@@ -59,7 +59,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private boolean autoWidth = true;
     private boolean widthDirty = true;
     private boolean suppressNextToggle = false;
-    private MenuPosition menuPosition = MenuPosition.AUTO_START;
+    private MenuPosition menuPosition = MenuPosition.AUTO_CENTER;
     private float cachedMenuX;
     private float cachedMenuY;
     private float cachedMenuHeight;
@@ -635,7 +635,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     public enum MenuPosition {
-        AUTO(null, MenuAlign.START),
+        AUTO(null, MenuAlign.CENTER),
         AUTO_START(null, MenuAlign.START),
         AUTO_CENTER(null, MenuAlign.CENTER),
         AUTO_END(null, MenuAlign.END),

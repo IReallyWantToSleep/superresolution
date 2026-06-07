@@ -505,6 +505,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         final boolean[] syncingQualityPreset = {false};
 
         OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.general"));
+        builder.hintOption(Text.literal("tip114514"))
+                .setIcon(MaterialSymbols.iconWarning())
+                .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
+                .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
+                .setDisplayRequirement(OptionRequirement.isTrue(()->SuperResolutionConfig.isEnableUpscaleOriginal() && !ShaderCompatHandler.irisHasShaderPack() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
+                .build();
+        builder.hintOption(Text.literal("shader_compat_warning"))
+                .setIcon(MaterialSymbols.iconWarning())
+                .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
+                .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
+                .setDisplayRequirement(OptionRequirement.isTrue(()->ShaderCompatHandler.getShaderCompatData() == null &&
+                        SuperResolutionConfig.isEnableUpscaleOriginal() &&
+                        ShaderCompatHandler.irisHasShaderPack()))
+                .build();
+
         builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
                         SuperResolutionConfig.isEnableUpscaleOriginal())
@@ -583,52 +598,52 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     sb.append(algorithmDescription.getDisplayName());
                     if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
                         sb.append("\n");
-                        sb.append("该算法为实验性功能，尚不稳定，可能会导致崩溃或错误");
+                        sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_warning").getString());
                         if (!result.support()) sb.append("\n");
                     } else if(isExperimentalAlgorithm(algorithmDescription) && !SuperResolutionConfig.isEnableExperimentalFeatures()){
                         sb.append("\n");
-                        sb.append("该算法为实验性功能，尚不稳定，可能会导致崩溃或错误\n如需使用请打开 实验性 > 启用实验性功能 选项");
+                        sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint").getString());
                         if (!result.support()) sb.append("\n");
                     }
                     if (!result.support()){
                         sb.append("\n");
-                        sb.append("不支持此算法，原因：");
+                        sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.unsupported_reason_header").getString());
                         if (!result.glVersionMet()){
                             sb.append("\n");
-                            sb.append("· 当前OpenGL版本不受支持");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_version").getString());
                         }
                         if (!result.glExtensionsPresent()){
                             sb.append("\n");
-                            sb.append("· 缺失必要的OpenGL扩展");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_extension").getString());
                         }
                         if (!result.osSupported()){
                             sb.append("\n");
-                            sb.append("· 当前系统不受支持");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.os_unsupported").getString());
                         }
                         if (!result.vulkanAvailable()){
                             sb.append("\n");
-                            sb.append("· 当前无法使用Vulkan");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_unavailable").getString());
                             if (SuperResolutionConfig.isSkipInitVulkan()){
-                                sb.append("，请关闭 高级 > 跳过Vulkan初始化 选项");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_skip_init_hint").getString());
                             }else {
-                                sb.append("，如您已经关闭 跳过Vulkan初始化 选项，请尝试重启游戏");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_restart_hint").getString());
                             }
                         }
                         if (!result.vulkanVersionMet()){
                             sb.append("\n");
-                            sb.append("· 当前Vulkan版本不受支持");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_version").getString());
                         }
                         if (!result.vulkanDeviceExtensionsMet()){
                             sb.append("\n");
-                            sb.append("· 缺失必要的Vulkan扩展");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_extension").getString());
                         }
                         if (!result.environmentValid()){
                             sb.append("\n");
-                            sb.append("· 仅开发环境可用");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.dev_env_only").getString());
                         }
                         if (!result.additionalConditionsMet()){
                             sb.append("\n");
-                            sb.append("· 其它原因");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.other").getString());
                         }
                     }
                     return Optional.of(Tooltip.withContext(sb.toString()));
@@ -685,7 +700,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
                 .setTooltipSupplier((t)->{
                     if (!isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())){
-                        return Optional.of(Tooltip.withContext("当前算法不支持自定义"));
+                        return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported").getString()));
                     }else {
                         return Optional.of(Tooltip.empty());
                     }

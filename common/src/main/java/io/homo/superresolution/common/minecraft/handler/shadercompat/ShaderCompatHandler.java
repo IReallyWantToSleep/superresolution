@@ -50,6 +50,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     private static Method irisReloadMethod;
     private static volatile boolean irisApiReflectionInitialized;
     private static Method irisApiGetInstanceMethod;
+    private static Method irisGetCurrentPackMethod;
     private static Method irisApiIsShaderPackInUseMethod;
     private static volatile boolean shaderCompatUtilsReflectionInitialized;
     private static Method shouldApplySuperResolutionChangesMethod;
@@ -98,6 +99,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
             try {
                 Class<?> irisApiClazz = Class.forName("net.irisshaders.iris.Iris");
                 irisReloadMethod = irisApiClazz.getMethod("reload");
+                irisGetCurrentPackMethod = irisApiClazz.getMethod("getCurrentPack");
             } catch (Throwable ignored) {
             }
             irisReloadReflectionInitialized = true;
@@ -169,6 +171,19 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
             irisReloadMethod.invoke(null);
         } catch (Throwable ignored) {
         }
+    }
+
+    public static boolean irisHasShaderPack() {
+        initIrisReloadReflection();
+        if (irisGetCurrentPackMethod == null) {
+            return false;
+        }
+        try {
+            Optional<?> shaderPack = (Optional<?>) irisGetCurrentPackMethod.invoke(null);
+            return shaderPack.isPresent();
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     public static boolean irisApiIsShaderPackInUse() {

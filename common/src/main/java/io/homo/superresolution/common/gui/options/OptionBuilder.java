@@ -87,6 +87,10 @@ public class OptionBuilder {
         return new ColorSelectBuilder(name, value).setCategory(category);
     }
 
+    public HintBuilder hintOption(Text name) {
+        return new HintBuilder(name).setCategory(category);
+    }
+
     public OptionBuilder addEntry(AbstractOptionEntry<?, ?> entry) {
         entries.add(entry);
         return this;
