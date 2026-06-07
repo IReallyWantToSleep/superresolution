@@ -20,13 +20,15 @@ package io.homo.superresolution.core.gui.core.frame;
 
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.utils.Color;
-import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
 import org.joml.Vector2f;
@@ -37,7 +39,7 @@ public class Frame implements IFrame {
     private static final Color DEBUG_LAYOUT_COLOR = Color.rgb(0, 120, 255);
     private static final Color DEBUG_RENDER_COLOR = Color.rgb(255, 50, 50);
     private static final Color DEBUG_HITTEST_COLOR = Color.rgb(255, 220, 0);
-    private static final float DEBUG_STROKE_WIDTH = 1.0f;
+    private static final float DEBUG_STROKE_WIDTH = 2.0f;
     private final List<RenderEntry> renderList = new ArrayList<>();
     private AbstractWidget<?> root;
     private AbstractWidget<?> focusedWidget;
@@ -131,30 +133,6 @@ public class Frame implements IFrame {
         markLayoutDirty();
     }
 
-    private void propagateFrame(AbstractWidget<?> widget) {
-        widget.setFrame(this);
-        if (widget instanceof ILayoutContainer container) {
-            for (ILayoutElement child : container.getChildren()) {
-                if (child instanceof AbstractWidget<?> childWidget) {
-                    propagateFrame(childWidget);
-                }
-            }
-        }
-    }
-
-    public void requestFocus(AbstractWidget<?> widget) {
-        if (focusedWidget == widget) {
-            return;
-        }
-        if (focusedWidget != null) {
-            focusedWidget.setFocused(false);
-        }
-        focusedWidget = widget;
-        if (focusedWidget != null) {
-            focusedWidget.setFocused(true);
-        }
-    }
-
     @Override
     public void setViewport(float width, float height) {
         if (this.viewportWidth != width || this.viewportHeight != height) {
@@ -201,6 +179,42 @@ public class Frame implements IFrame {
         for (RenderEntry entry : renderList.stream().filter((entry) -> !isOutsideViewport(entry.widget(), entry.accumulatedTransform())).toList()) {
             renderWidget(ctx, inputState, entry);
         }
+        /*
+        ctx.deferToLayer(RenderLayer.Overlay, 1000000000, (deferredCtx) -> {
+            drawDebugBounds(deferredCtx);
+            AbstractWidget<?> topInteractive = root.hitWidget(inputState.mousePosition(), (s) -> false);
+            if (topInteractive != null) {
+                Rectangle rectangle = topInteractive.getBounds();
+                deferredCtx.rect(
+                        rectangle.x,
+                        rectangle.y,
+                        rectangle.width,
+                        rectangle.height,
+                        Color.rgb(255, 0, 0),
+                        false
+                );
+                deferredCtx.save();
+                deferredCtx.resetTransform();
+                String className = topInteractive.getClass().getSimpleName();
+                String debugName = topInteractive.getLayoutNode() != null ? topInteractive.getLayoutNode().getDebugName() : "?";
+                deferredCtx.drawAlignedText(
+                        deferredCtx.font(),
+                        15,
+                        className + "\n" +
+                                "Layout Node: " + debugName + "\n" +
+                                "Bounds: " + "x=%s,y=%s,w=%s,h=%s".formatted(rectangle.x, rectangle.y, rectangle.width, rectangle.height),
+                        0,
+                        ctx.viewportHeight() - 100,
+                        100000,
+                        16,
+                        Color.rgb(255, 255, 255),
+                        TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_BOTTOM),
+                        true
+                );
+                deferredCtx.restore();
+            }
+        });
+        */
     }
 
     @Override
@@ -211,7 +225,8 @@ public class Frame implements IFrame {
 
         Vector2f mousePos = new Vector2f(x, y);
 
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos,false);
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos, false);
+
 
         Set<AbstractWidget<?>> ancestorChain = new HashSet<>();
         if (topInteractive != null) {
@@ -229,13 +244,13 @@ public class Frame implements IFrame {
 
         Vector2f mousePos = new Vector2f(x, y);
 
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos,false);
-        if (topInteractive == null){
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos, false);
+        if (topInteractive == null) {
             if (focusedWidget != null) {
                 focusedWidget.setFocused(false);
                 focusedWidget = null;
             }
-        }else if ( topInteractive != focusedWidget) {
+        } else if (topInteractive != focusedWidget) {
             requestFocus(topInteractive);
         }
 
@@ -273,7 +288,7 @@ public class Frame implements IFrame {
 
         Vector2f mousePos = new Vector2f(x, y);
 
-        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos,false);
+        AbstractWidget<?> topInteractive = findInteractiveWidgetAt(mousePos, false);
 
         if (topInteractive != null) {
             Transform accumulatedTransform = calculateAccumulatedTransform(topInteractive);
@@ -309,18 +324,20 @@ public class Frame implements IFrame {
         dispatchCharTypedRecursive(root, codePoint, modifiers);
     }
 
+    @Deprecated
     @Override
-    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos,boolean findDisabled) {
+    public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos, boolean findDisabled) {
         if (root == null || !root.isVisible()) {
             return null;
         }
 
-        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos,findDisabled);
+        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos, findDisabled);
         if (floatingWidget != null) {
             return floatingWidget;
         }
 
-        return findInteractiveWidgetAtRecursive(root, pos, null, Integer.MIN_VALUE,findDisabled);
+        AbstractWidget<?> result = findInteractiveWidgetAtRecursive(root, pos, null, new int[]{Integer.MIN_VALUE}, findDisabled, 0);
+        return result;
     }
 
     @Override
@@ -336,6 +353,30 @@ public class Frame implements IFrame {
     @Override
     public boolean isLayoutDirty() {
         return layoutDirty;
+    }
+
+    private void propagateFrame(AbstractWidget<?> widget) {
+        widget.setFrame(this);
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    propagateFrame(childWidget);
+                }
+            }
+        }
+    }
+
+    public void requestFocus(AbstractWidget<?> widget) {
+        if (focusedWidget == widget) {
+            return;
+        }
+        if (focusedWidget != null) {
+            focusedWidget.setFocused(false);
+        }
+        focusedWidget = widget;
+        if (focusedWidget != null) {
+            focusedWidget.setFocused(true);
+        }
     }
 
     private void collectAncestorChain(AbstractWidget<?> widget, Set<AbstractWidget<?>> chain) {
@@ -477,7 +518,8 @@ public class Frame implements IFrame {
         }
     }
 
-    private AbstractWidget<?> findFloatingWidgetRecursive(AbstractWidget<?> widget, Vector2f pos,boolean findDisabled) {
+    @Deprecated
+    private AbstractWidget<?> findFloatingWidgetRecursive(AbstractWidget<?> widget, Vector2f pos, boolean findDisabled) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return null;
         }
@@ -492,7 +534,7 @@ public class Frame implements IFrame {
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    AbstractWidget<?> found = findFloatingWidgetRecursive(childWidget, pos,findDisabled);
+                    AbstractWidget<?> found = findFloatingWidgetRecursive(childWidget, pos, findDisabled);
                     if (found != null) {
                         return found;
                     }
@@ -503,47 +545,45 @@ public class Frame implements IFrame {
         return null;
     }
 
+    @Deprecated
     private AbstractWidget<?> findInteractiveWidgetAtRecursive(
             AbstractWidget<?> widget,
             Vector2f absPos,
             AbstractWidget<?> currentBest,
-            int currentBestZIndex,
-            boolean findDisabled) {
+            int[] currentBestEffectiveZ,
+            boolean findDisabled,
+            int ancestorZIndex) {
+
+        String name = widget.getClass().getSimpleName();
+        int ownZ = widget.getZIndex();
 
         if (!widget.isVisible() || (widget.isDisabled() && !findDisabled)) {
             return currentBest;
         }
 
-        Transform accumulatedTransform = widget.getFullTransform();
-
-        Vector2f localPos = accumulatedTransform.inverseTransformPoint(absPos);
-
         boolean hit = widget.hitTest(absPos);
 
         if (hit) {
-            if (widget instanceof ILayoutContainer container) {
-                List<ILayoutElement> children = container.getChildren();
-                for (int i = children.size() - 1; i >= 0; i--) {
-                    ILayoutElement child = children.get(i);
-                    if (child instanceof AbstractWidget<?> childWidget) {
-                        AbstractWidget<?> found = findInteractiveWidgetAtRecursive(
-                                childWidget, absPos, currentBest, currentBestZIndex,findDisabled);
-                        if (found != null && found != currentBest) {
-                            int foundZIndex = found.getZIndex();
-                            if (foundZIndex >= currentBestZIndex) {
-                                currentBest = found;
-                                currentBestZIndex = foundZIndex;
-                            }
-                        }
-                    }
+            if (widget.checkInteractive()) {
+                int effectiveZ = ownZ + ancestorZIndex;
+                if (effectiveZ >= currentBestEffectiveZ[0]) {
+                    currentBest = widget;
+                    currentBestEffectiveZ[0] = effectiveZ;
                 }
             }
+        }
 
-            if (widget.checkInteractive()) {
-                int widgetZIndex = widget.getZIndex();
-                if (widgetZIndex >= currentBestZIndex) {
-                    currentBest = widget;
-                    currentBestZIndex = widgetZIndex;
+        if (widget instanceof ILayoutContainer container) {
+            int childAncestorZ = ancestorZIndex + ownZ;
+            List<ILayoutElement> children = container.getChildren();
+            for (int i = children.size() - 1; i >= 0; i--) {
+                ILayoutElement child = children.get(i);
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    AbstractWidget<?> found = findInteractiveWidgetAtRecursive(
+                            childWidget, absPos, currentBest, currentBestEffectiveZ, findDisabled, childAncestorZ);
+                    if (found != null && found != currentBest) {
+                        currentBest = found;
+                    }
                 }
             }
         }
@@ -576,7 +616,98 @@ public class Frame implements IFrame {
         }
     }
 
+    public void traverseWidgetTree(AbstractWidget<?> widget, String prefix, boolean isLast, StringBuilder sb) {
+        if (widget == null) {
+            sb.append(prefix).append(isLast ? "└── " : "├── ").append("(null)\n");
+            return;
+        }
+
+        String className = widget.getClass().getSimpleName();
+        String debugName = widget.getLayoutNode() != null ? widget.getLayoutNode().getDebugName() : "?";
+        boolean visible = widget.isVisible();
+        boolean disabled = widget.isDisabled();
+        Vector2f pos = widget.getAbsolutePosition();
+        Rectangle bounds = widget.getBounds();
+
+        sb.append(prefix)
+                .append(isLast ? "└── " : "├── ")
+                .append(className);
+        if (debugName != null && !debugName.isEmpty()) {
+            sb.append(" [").append(debugName).append("]");
+        }
+        sb.append(" visible=").append(visible);
+        sb.append(" disabled=").append(disabled);
+        if (bounds != null) {
+            sb.append(" bounds=(").append(bounds.x).append(", ").append(bounds.y).append(", ").append(bounds.width).append("x").append(bounds.height).append(")");
+        }
+        sb.append("\n");
+
+        if (widget instanceof ILayoutContainer container) {
+            List<ILayoutElement> children = container.getChildren();
+            if (children != null) {
+                String childPrefix = prefix + (isLast ? "    " : "│   ");
+                for (int i = 0; i < children.size(); i++) {
+                    ILayoutElement child = children.get(i);
+                    boolean childIsLast = (i == children.size() - 1);
+                    if (child instanceof AbstractWidget<?> childWidget) {
+                        traverseWidgetTree(childWidget, childPrefix, childIsLast, sb);
+                    } else {
+                        sb.append(childPrefix)
+                                .append(childIsLast ? "└── " : "├── ")
+                                .append(child != null ? child.getClass().getSimpleName() : "null")
+                                .append(" (non-widget)\n");
+                    }
+                }
+            }
+        }
+    }
+
     public void updateHitTestDebug(Vector2f mousePos) {
+    }
+
+    public void drawDebugBounds(RenderContext ctx) {
+        if (root == null) {
+            return;
+        }
+        ctx.save();
+        drawDebugBoundsRecursive(root, ctx);
+        ctx.restore();
+    }
+
+    private void drawDebugBoundsRecursive(AbstractWidget<?> widget, RenderContext ctx) {
+        if (widget == null || !widget.isVisible()) {
+            return;
+        }
+
+        Rectangle bounds = widget.getBounds();
+        if (bounds != null && bounds.width > 0 && bounds.height > 0) {
+            Color borderColor;
+            Color fillColor;
+            if (widget.isDisabled()) {
+                borderColor = Color.rgb(128, 128, 128);
+                fillColor = borderColor.alpha(20);
+            } else if (widget.checkInteractive()) {
+                borderColor = DEBUG_HITTEST_COLOR;
+                fillColor = borderColor.alpha(30);
+            } else {
+                borderColor = DEBUG_LAYOUT_COLOR;
+                fillColor = borderColor.alpha(15);
+            }
+
+            ctx.strokeWidth(DEBUG_STROKE_WIDTH);
+            ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height, borderColor, false);
+            if (widget.isHovered()) {
+                ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height, fillColor, true);
+            }
+        }
+
+        if (widget instanceof ILayoutContainer container) {
+            for (ILayoutElement child : container.getChildren()) {
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    drawDebugBoundsRecursive(childWidget, ctx);
+                }
+            }
+        }
     }
 
     public record RenderEntry(AbstractWidget<?> widget,

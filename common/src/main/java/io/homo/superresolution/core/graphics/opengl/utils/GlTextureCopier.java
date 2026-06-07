@@ -60,23 +60,6 @@ public class GlTextureCopier {
         return cachedFrameBuffer;
     }
 
-    private static String toComputeShaderFormatQualifier(TextureFormat format) {
-        return switch (format) {
-            case RGBA8 -> "rgba8";
-            case RGBA16F -> "rgba16f";
-            case RGBA16 -> "rgba16";
-            case RG16F -> "rg16f";
-            case RG32F -> "rg32f";
-            case RG8 -> "rg8";
-            case R16F -> "r16f";
-            case R8 -> "r8";
-            case R32F -> "r32f";
-            case R32UI -> "r32ui";
-            case R16_SNORM -> "r16_snorm";
-            case R11G11B10F -> "r11f_g11f_b10f";
-            default -> null;
-        };
-    }
 
     private static GlComputePipeline getOrCreateComputeProgram(CopyOperation copyOperation) {
         String key = mappingKey(copyOperation.getMappings());
@@ -92,7 +75,7 @@ public class GlTextureCopier {
             builder.addDefine("COPY_SRC_CHANNEL" + i, String.valueOf(map.src.ordinal()));
             builder.addDefine("COPY_DST_CHANNEL" + i, String.valueOf(map.dst.ordinal()));
         }
-        builder.addDefine("COPY_DST_FORMAT", toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()));
+        builder.addDefine("COPY_DST_FORMAT", copyOperation.getDstTexture().getTextureFormat().getGlslFormatQualifier());
 
         builder.uniformSamplerTexture("tex", 0);
         builder.uniformStorageTexture("outImage", ShaderResourceAccess.Write, 0);
@@ -158,7 +141,7 @@ public class GlTextureCopier {
         if (sampler == null) {
             sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
         }
-        if (toComputeShaderFormatQualifier(copyOperation.getDstTexture().getTextureFormat()) != null) {
+        if (copyOperation.getDstTexture().getTextureFormat().getGlslFormatQualifier() != null) {
             GlComputePipeline pipeline = getOrCreateComputeProgram(copyOperation);
             //用线性采样，防止出现锯齿
             GL43.glBindSampler(0, (int) sampler.handle());

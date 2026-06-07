@@ -31,10 +31,10 @@ public record MaterialMenuSize(
 ) {
     public static final MaterialMenuSize Standard = new MaterialMenuSize(16, 8, 208, 280, 2);
     public static final MaterialMenuSize Compact = new MaterialMenuSize(
-            8f,    // 采用 MD3 Shape Tokens 中的 Medium/Small 级别圆角
-            4f,    // 底部圆角按比例减半，保持视觉的一致性
-            160f,  // 缩减最小宽度，允许更精致的小型下拉菜单
-            240f,  // 缩减最大宽度，防止长文本过度拉伸菜单
-            1f     // 微调垂直内边距，使菜单项排列更紧凑
+            8f,
+            4f,
+            160f,
+            240f,
+            1f
     );
 }

@@ -22,7 +22,6 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.TooltipRenderer;
 import io.homo.superresolution.core.gui.core.UIInputState;
-import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.frame.Frame;
@@ -175,24 +174,15 @@ public class View {
             ctx.translate(x, y + entry.renderOffsetY);
             ctx.pushAlpha(entry.renderAlpha);
 
-            entry.frame.render(ctx, inputState);
             Vector2f frameLocal = new Vector2f(
                     inputState.mousePosition().x - entry.layoutNode.getLayoutX(),
                     inputState.mousePosition().y - entry.layoutNode.getLayoutY() - entry.renderOffsetY
             );
             Vector2f contentPos = entry.frame.screenToContent(frameLocal.x, frameLocal.y);
-            AbstractWidget<?> hovered = findTopHoveredWidgetInTreeAllowDisabledWidget(entry.frame.getRoot(), contentPos);
-            if (hovered != null) {
-                //Rectangle rectangle = hovered.getRawBounds();
-                //ctx.rect(
-                //        rectangle.x,
-                //        rectangle.y,
-                //        rectangle.width,
-                //        rectangle.height,
-                //        Color.rgb(255,0,0),
-                //        false
-                //);
-            }
+            entry.frame.render(ctx, new UIInputState(
+                    contentPos,
+                    inputState.frameTime()
+            ));
             ctx.popAlpha();
             ctx.restore();
         }
@@ -203,7 +193,7 @@ public class View {
 
         Optional<Tooltip> tooltip = collectTooltip(inputState.mousePosition());
 
-        ctx.deferToLayer(RenderLayer.Tooltip,114514,(cute)->{
+        ctx.deferToLayer(RenderLayer.Tooltip, 114514, (cute) -> {
             renderTooltip(cute, inputState, tooltip);
         });
     }
@@ -232,9 +222,9 @@ public class View {
 
     public void dispatchMouseMove(float x, float y) {
         AbstractWidget<?> hoveredWidget = findTopHoveredWidget();
-        if (hoveredWidget != null && hoveredWidget != activeDialog){
+        if (hoveredWidget != null && hoveredWidget != activeDialog) {
             MouseCursor.HAND.use();
-        }else {
+        } else {
             MouseCursor.ARROW.use();
         }
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseMove(x, y)) {
@@ -356,11 +346,10 @@ public class View {
 
     }
 
-    private AbstractWidget<?> findTopHoveredWidgetInTreeAllowDisabledWidget(AbstractWidget<?> widget,Vector2f mousePosition) {
+    private AbstractWidget<?> findTopHoveredWidgetInTreeAllowDisabledWidget(AbstractWidget<?> widget, Vector2f mousePosition) {
         if (widget == null || !widget.isVisible()) {
             return null;
         }
-
 
 
         if (widget instanceof ILayoutContainer container) {
@@ -368,7 +357,7 @@ public class View {
             for (int i = children.size() - 1; i >= 0; i--) {
                 ILayoutElement child = children.get(i);
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    AbstractWidget<?> found = findTopHoveredWidgetInTreeAllowDisabledWidget(childWidget,mousePosition);
+                    AbstractWidget<?> found = findTopHoveredWidgetInTreeAllowDisabledWidget(childWidget, mousePosition);
                     if (found != null && found.checkInteractive()) {
                         if (!found.hitTest(mousePosition)) {
                             return null;
@@ -425,10 +414,10 @@ public class View {
 
     private Optional<Tooltip> collectTooltip(Vector2f mousePosition) {
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
-            AbstractWidget<?> dialogHovered = findTopHoveredWidgetInTreeAllowDisabledWidget(activeDialog,mousePosition);
+            AbstractWidget<?> dialogHovered = findTopHoveredWidgetInTreeAllowDisabledWidget(activeDialog, mousePosition);
             if (dialogHovered != null) {
                 return dialogHovered.getTooltip();
-            }else {
+            } else {
                 return Optional.empty();
             }
         }
@@ -444,7 +433,7 @@ public class View {
                     mousePosition.y - entry.layoutNode.getLayoutY() - entry.renderOffsetY
             );
             Vector2f contentPos = entry.frame.screenToContent(frameLocal.x, frameLocal.y);
-            AbstractWidget<?> hovered = findTopHoveredWidgetInTreeAllowDisabledWidget(root, contentPos);
+            AbstractWidget<?> hovered = root.hitWidget(contentPos, (w) -> false);
             if (hovered != null) {
                 SuperResolution.LOGGER.info(hovered.toString());
                 return hovered.getTooltip();

@@ -283,6 +283,26 @@ public enum TextureFormat {
         return vkFormat;
     }
 
+    public String getGlslFormatQualifier() {
+        return switch (this) {
+            case RGBA8 -> "rgba8";
+            case RGBA16F -> "rgba16f";
+            case RGBA32F -> "rgba32f";
+            case RGBA16 -> "rgba16";
+            case RG16F -> "rg16f";
+            case RG32F -> "rg32f";
+            case RG8 -> "rg8";
+            case R16F -> "r16f";
+            case R8 -> "r8";
+            case R32F -> "r32f";
+            case R32UI -> "r32ui";
+            case R16_SNORM -> "r16_snorm";
+            case R11G11B10F -> "r11f_g11f_b10f";
+            case RGBA16_SNORM -> "rgba16_snorm";
+            default -> null;
+        };
+    }
+
     public enum TextureComponent {
         R,
         G,

@@ -72,9 +72,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
             }
         }
 
-        float finalWidth = Math.max(size.minWidth(), Math.min(maxItemWidth, size.maxWidth()));
-
-        layout().setWidth(finalWidth);
         layout().setGap(YogaGutter.ALL, size.verticalPadding());
 
         layout().setHeightAuto();
@@ -99,6 +96,11 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     @Override
     protected boolean isInteractive() {
         return expanded || expandAnimator.isRunning();
+    }
+
+    @Override
+    public boolean isVisible() {
+        return super.isVisible() && isExpanded();
     }
 
     @Override
@@ -173,26 +175,6 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
     public MaterialMenu onExpandChanged(Consumer<Boolean> onExpandChanged) {
         this.onExpandChanged = onExpandChanged;
         return this;
-    }
-
-    @Override
-    public Transform getFullTransform() {
-        Transform selfTransform = style().transform();
-
-        if (getParent() instanceof AbstractLayoutElement parentElement) {
-            Transform parentFullTransform = parentElement.getFullTransform();
-
-            if (parentFullTransform.isIdentity()) {
-                return selfTransform;
-            }
-            if (selfTransform.isIdentity()) {
-                return parentFullTransform;
-            }
-            float[] combined = Transform.multiply(parentFullTransform.getMatrix(), selfTransform.getMatrix());
-            return new Transform(combined);
-        }
-
-        return selfTransform;
     }
 
     @Override

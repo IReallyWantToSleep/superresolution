@@ -577,13 +577,7 @@ public class SuperResolutionConfig {
     }
 
     public static String getInternalTextureFormatGlslFormatQualifier() {
-        return switch (getInternalTextureFormat()) {
-            case RGBA8 -> "rgba8";
-            case RGBA16F -> "rgba16f";
-            case RGBA16 -> "rgba16";
-            case R11G11B10F -> "r11f_g11f_b10f";
-            default -> "r11f_g11f_b10f";
-        };
+        return getInternalTextureFormat().getGlslFormatQualifier();
     }
 
     public static TextureFormat getInternalTextureFormat() {

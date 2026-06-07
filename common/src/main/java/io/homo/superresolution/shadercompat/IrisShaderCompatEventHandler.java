@@ -41,6 +41,7 @@ import org.joml.Vector2f;
 import org.joml.Vector2i;
 
 public class IrisShaderCompatEventHandler {
+    public static boolean failedToDispatchUpscale = false;
     public static void registerEventListeners() {
         IrisAPI.EVENT_BUS.addListener(IrisShaderCompatEventHandler::onMacroRegistration);
         IrisAPI.EVENT_BUS.addListener(IrisShaderCompatEventHandler::onUniformRegistration);
@@ -138,7 +139,11 @@ public class IrisShaderCompatEventHandler {
                 }
             }
         } catch (Throwable throwable) {
-            SuperResolution.LOGGER.error("执行超分时发生错误", throwable);
+            if (!failedToDispatchUpscale){
+                SuperResolution.LOGGER.error("执行超分时发生错误", throwable);
+                SuperResolution.LOGGER.error("下次错误将不会再打印，直到重载光影");
+            }
+            failedToDispatchUpscale = true;
         }
         setupUniforms();
     }

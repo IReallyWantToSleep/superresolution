@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.core;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public abstract class AbstractWidget<
@@ -369,6 +371,42 @@ public abstract class AbstractWidget<
             return null;
         }
         return isInteractive() ? this : null;
+    }
+
+    public AbstractWidget<?> hitWidget(Vector2f pos, Predicate<AbstractWidget<?>> skipValidator) {
+        AbstractWidget<?>[] best = {null};
+        int[] bestEffectiveZ = {Integer.MIN_VALUE};
+        hitWidget(pos, skipValidator, 0, best, bestEffectiveZ);
+        return best[0];
+    }
+
+    private void hitWidget(Vector2f pos, Predicate<AbstractWidget<?>> skipValidator,
+                           int ancestorZIndex, AbstractWidget<?>[] best, int[] bestEffectiveZ) {
+        int ownZ = getZIndex();
+        if (!isVisible() || skipValidator.test(this)) {
+            return;
+        }
+
+        boolean hit = hitTest(pos);
+
+        if (hit && checkInteractive()) {
+            int effectiveZ = ownZ + ancestorZIndex;
+            if (effectiveZ >= bestEffectiveZ[0]) {
+                best[0] = this;
+                bestEffectiveZ[0] = effectiveZ;
+            }
+        }
+
+        if (this instanceof ILayoutContainer container) {
+            int childAncestorZ = ancestorZIndex + ownZ;
+            List<ILayoutElement> children = container.getChildren();
+            for (int i = children.size() - 1; i >= 0; i--) {
+                ILayoutElement child = children.get(i);
+                if (child instanceof AbstractWidget<?> childWidget) {
+                    childWidget.hitWidget(pos, skipValidator, childAncestorZ, best, bestEffectiveZ);
+                }
+            }
+        }
     }
 
     public boolean isDisabled() {

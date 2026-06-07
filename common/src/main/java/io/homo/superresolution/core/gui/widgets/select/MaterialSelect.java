@@ -60,6 +60,11 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private boolean widthDirty = true;
     private boolean suppressNextToggle = false;
     private MenuPosition menuPosition = MenuPosition.AUTO_START;
+    private float cachedMenuX;
+    private float cachedMenuY;
+    private float cachedMenuHeight;
+    private MenuSide cachedMenuSide;
+    private MenuAlign cachedMenuAlign;
 
     private static final float DIRECTIONAL_ANIMATION_SCALE = 0.96f;
     private static final float DIRECTIONAL_ANIMATION_OFFSET = 6.0f;
@@ -83,9 +88,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
                 .setExpanded(false);
         menu.layout().setWidth(width);
         menu.layout().setHeightAuto();
-        menu.setParent(this);
-
-        this.children.add(menu);
+        addChild(menu);
 
         updateSize();
     }
@@ -111,6 +114,118 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         updateSize();
         super.layouting(ctx);
         menu.layouting(ctx);
+        menu.style().zIndex(10000000);
+        menu.layout().setMinWidth(StyleSizeLength.undefined());
+        menu.layout().setMaxWidth(StyleSizeLength.undefined());
+        menu.layout().setWidth(width);
+        menu.layout().setHeightAuto();
+        if (menu.isExpanded() || menu.isVisible() || directionalAnimator.isRunning()) {
+            computeMenuPlacement(ctx);
+        }
+    }
+
+    private void computeMenuPlacement(RenderContext ctx) {
+        float naturalMenuHeight = menu.getMenuHeight();
+        float viewportHeight = ctx.viewportHeight();
+        float viewportWidth = ctx.viewportWidth();
+        float viewportPadding = 8f;
+        Rectangle fieldBounds = this.getBounds();
+        float fieldX = fieldBounds.x;
+        float fieldY = fieldBounds.y;
+        float fieldWidth = fieldBounds.width;
+        float fieldHeight = fieldBounds.height;
+        float spaceBelow = viewportHeight - (fieldY + fieldHeight) - viewportPadding;
+        float spaceAbove = fieldY - viewportPadding;
+        float spaceRight = viewportWidth - (fieldX + fieldWidth) - viewportPadding;
+        float spaceLeft = fieldX - viewportPadding;
+
+        MenuSide side = menuPosition.side();
+        MenuAlign align = menuPosition.align();
+        if (menuPosition.isAuto()) {
+            boolean horizontalFits = switch (align) {
+                case START -> (viewportWidth - fieldX - viewportPadding) >= width;
+                case END -> (fieldX + fieldWidth - viewportPadding) >= width;
+                case CENTER -> (fieldX + fieldWidth / 2f - viewportPadding) >= width / 2f &&
+                        (viewportWidth - (fieldX + fieldWidth / 2f) - viewportPadding) >= width / 2f;
+            };
+
+            boolean verticalFits = switch (align) {
+                case START -> (viewportHeight - fieldY - viewportPadding) >= naturalMenuHeight;
+                case END -> (fieldY + fieldHeight - viewportPadding) >= naturalMenuHeight;
+                case CENTER -> (fieldY + fieldHeight / 2f - viewportPadding) >= naturalMenuHeight / 2f &&
+                        (viewportHeight - (fieldY + fieldHeight / 2f) - viewportPadding) >= naturalMenuHeight / 2f;
+            };
+
+            boolean fitsBottom = (spaceBelow >= naturalMenuHeight) && horizontalFits;
+            boolean fitsTop = (spaceAbove >= naturalMenuHeight) && horizontalFits;
+            boolean fitsLeft = (spaceLeft >= width) && verticalFits;
+            boolean fitsRight = (spaceRight >= width) && verticalFits;
+
+            if (fitsBottom) {
+                side = MenuSide.BOTTOM;
+            } else if (fitsTop) {
+                side = MenuSide.TOP;
+            } else if (fitsLeft) {
+                side = MenuSide.LEFT;
+            } else if (fitsRight) {
+                side = MenuSide.RIGHT;
+            } else {
+                if (spaceBelow >= spaceAbove) {
+                    side = MenuSide.BOTTOM;
+                } else {
+                    side = MenuSide.TOP;
+                }
+            }
+        }
+
+        float availableHeight;
+        switch (side) {
+            case TOP:
+                availableHeight = Math.min(spaceAbove, naturalMenuHeight);
+                break;
+            case BOTTOM:
+                availableHeight = Math.min(spaceBelow, naturalMenuHeight);
+                break;
+            case LEFT:
+            case RIGHT:
+            default:
+                availableHeight = Math.min(naturalMenuHeight, viewportHeight - viewportPadding * 2);
+                break;
+        }
+
+        float menuHeight = availableHeight;
+        float menuX;
+        float menuY;
+
+        switch (side) {
+            case TOP:
+                menuY = fieldY - menuHeight - 4;
+                menuX = alignHorizontal(fieldX, fieldWidth, width, align);
+                break;
+            case LEFT:
+                menuX = fieldX - width - 4;
+                menuY = alignVertical(fieldY, fieldHeight, menuHeight, align);
+                break;
+            case RIGHT:
+                menuX = fieldX + fieldWidth + 4;
+                menuY = alignVertical(fieldY, fieldHeight, menuHeight, align);
+                break;
+            case BOTTOM:
+            default:
+                menuY = fieldY + fieldHeight + 4;
+                menuX = alignHorizontal(fieldX, fieldWidth, width, align);
+                break;
+        }
+
+        this.cachedMenuX = menuX;
+        this.cachedMenuY = menuY;
+        this.cachedMenuHeight = menuHeight;
+        this.cachedMenuSide = side;
+        this.cachedMenuAlign = align;
+
+        menu.layout().setPositionType(YogaPositionType.ABSOLUTE);
+        menu.layout().setPosition(YogaEdge.LEFT, menuX);
+        menu.layout().setPosition(YogaEdge.TOP, menuY);
     }
 
     @Override
@@ -125,115 +240,12 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
         directionalAnimator.update();
         if (menu.isExpanded() || menu.isVisible() || directionalAnimator.isRunning()) {
-            Rectangle selfBounds = getRawBounds();
-            MaterialSelectSize size = style().size();
-
-            menu.layout().setWidth(width);
-            menu.layout().setHeightAuto();
-            menu.layout().setMaxHeight(StyleSizeLength.undefined());
-            menu.getLayoutNode().calculateLayout(width, Float.MAX_VALUE);
-            float naturalMenuHeight = menu.getMenuHeight();
-
-            float viewportHeight = ctx.viewportHeight();
-            float viewportWidth = ctx.viewportWidth();
-            float viewportPadding = 8f;
-
-            Rectangle fieldBounds = this.getBounds();
-            float fieldX = fieldBounds.x;
-            float fieldY = fieldBounds.y;
-            float fieldWidth = fieldBounds.width;
-            float fieldHeight = fieldBounds.height;
-
-            float spaceBelow = viewportHeight - (fieldY + fieldHeight) - viewportPadding;
-            float spaceAbove = fieldY - viewportPadding;
-            float spaceRight = viewportWidth - (fieldX + fieldWidth) - viewportPadding;
-            float spaceLeft = fieldX - viewportPadding;
-
-            MenuSide side = menuPosition.side();
-            MenuAlign align = menuPosition.align();
-            if (menuPosition.isAuto()) {
-                boolean horizontalFits = switch (align) {
-                    case START -> (viewportWidth - fieldX - viewportPadding) >= width;
-                    case END -> (fieldX + fieldWidth - viewportPadding) >= width;
-                    case CENTER -> (fieldX + fieldWidth / 2f - viewportPadding) >= width / 2f &&
-                            (viewportWidth - (fieldX + fieldWidth / 2f) - viewportPadding) >= width / 2f;
-                };
-
-                boolean verticalFits = switch (align) {
-                    case START -> (viewportHeight - fieldY - viewportPadding) >= naturalMenuHeight;
-                    case END -> (fieldY + fieldHeight - viewportPadding) >= naturalMenuHeight;
-                    case CENTER -> (fieldY + fieldHeight / 2f - viewportPadding) >= naturalMenuHeight / 2f &&
-                            (viewportHeight - (fieldY + fieldHeight / 2f) - viewportPadding) >= naturalMenuHeight / 2f;
-                };
-
-                boolean fitsBottom = (spaceBelow >= naturalMenuHeight) && horizontalFits;
-                boolean fitsTop = (spaceAbove >= naturalMenuHeight) && horizontalFits;
-                boolean fitsLeft = (spaceLeft >= width) && verticalFits;
-                boolean fitsRight = (spaceRight >= width) && verticalFits;
-
-                if (fitsBottom) {
-                    side = MenuSide.BOTTOM;
-                } else if (fitsTop) {
-                    side = MenuSide.TOP;
-                } else if (fitsLeft) {
-                    side = MenuSide.LEFT;
-                } else if (fitsRight) {
-                    side = MenuSide.RIGHT;
-                } else {
-                    if (spaceBelow >= spaceAbove) {
-                        side = MenuSide.BOTTOM;
-                    } else {
-                        side = MenuSide.TOP;
-                    }
-                }
-            }
-
-            float availableHeight;
-            switch (side) {
-                case TOP:
-                    availableHeight = Math.min(spaceAbove, naturalMenuHeight);
-                    break;
-                case BOTTOM:
-                    availableHeight = Math.min(spaceBelow, naturalMenuHeight);
-                    break;
-                case LEFT:
-                case RIGHT:
-                default:
-                    availableHeight = Math.min(naturalMenuHeight, viewportHeight - viewportPadding * 2);
-                    break;
-            }
-
-            float menuHeight = availableHeight;
-
-            float menuX;
-            float menuY;
-
-            switch (side) {
-                case TOP:
-                    menuY = fieldY - menuHeight - 4;
-                    menuX = alignHorizontal(fieldX, fieldWidth, width, align);
-                    break;
-                case LEFT:
-                    menuX = fieldX - width - 4;
-                    menuY = alignVertical(fieldY, fieldHeight, menuHeight, align);
-                    break;
-                case RIGHT:
-                    menuX = fieldX + fieldWidth + 4;
-                    menuY = alignVertical(fieldY, fieldHeight, menuHeight, align);
-                    break;
-                case BOTTOM:
-                default:
-                    menuY = fieldY + fieldHeight + 4;
-                    menuX = alignHorizontal(fieldX, fieldWidth, width, align);
-                    break;
-            }
-            //menuX = clamp(menuX, viewportPadding, viewportWidth - width - viewportPadding);
-            //menuY = clamp(menuY, viewportPadding, viewportHeight - menuHeight - viewportPadding);
-
-            final float finalMenuX = menuX;
-            final float finalMenuY = menuY;
-            final float menuWidth = width;
-            final MenuSide finalSide = side;
+            final float finalMenuX = cachedMenuX;
+            final float finalMenuY = cachedMenuY;
+            final float menuWidth = menu.getBounds().width;
+            final float menuHeight = cachedMenuHeight;
+            final MenuSide finalSide = cachedMenuSide;
+            final MenuAlign align = cachedMenuAlign;
 
             float directionalProgress = directionalAnimator.get();
             float scale = DIRECTIONAL_ANIMATION_SCALE + (1f - DIRECTIONAL_ANIMATION_SCALE) * directionalProgress;
@@ -290,15 +302,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             final float fOffsetX = offsetX;
             final float fOffsetY = offsetY;
 
+
             ctx.deferToLayer(RenderLayer.Floating, 1000, (deferredCtx) -> {
-                menu.layout().setWidth(menuWidth);
-                menu.layout().setMaxHeight(Float.MAX_VALUE);
-
-                menu.layout().setPositionType(YogaPositionType.ABSOLUTE);
-                menu.layout().setPosition(YogaEdge.LEFT, finalMenuX);
-                menu.layout().setPosition(YogaEdge.TOP, finalMenuY);
-                menu.getLayoutNode().calculateLayout(menuWidth, Float.MAX_VALUE);
-
                 deferredCtx.resetScissor();
                 deferredCtx.save();
                 deferredCtx.translate(fPivotX + fOffsetX, fPivotY + fOffsetY);
@@ -560,7 +565,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
     @Override
     public boolean isFloatingWidget() {
-        return menu.isExpanded() || menu.isVisible();
+        return false;
     }
 
     @SuppressWarnings("unchecked")

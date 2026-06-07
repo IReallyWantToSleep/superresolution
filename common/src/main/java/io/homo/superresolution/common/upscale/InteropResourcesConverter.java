@@ -58,27 +58,8 @@ public class InteropResourcesConverter {
 
     private static boolean isInit = false;
 
-    private static String toComputeShaderFormatQualifier(TextureFormat format) {
-        return switch (format) {
-            case RGBA8 -> "rgba8";
-            case RGBA16F -> "rgba16f";
-            case RGBA16 -> "rgba16";
-            case RGB8, RGB16F -> null;
-            case RG16F -> "rg16f";
-            case RG32F -> "rg32f";
-            case RG8 -> "rg8";
-            case R16F -> "r16f";
-            case R8 -> "r8";
-            case R32F -> "r32f";
-            case R32UI -> "r32ui";
-            case R16_SNORM -> "r16_snorm";
-            case R11G11B10F -> "r11f_g11f_b10f";
-            default -> null;
-        };
-    }
-
     private static ComputePipeline getOrCreateFlipYPipeline(TextureFormat format) {
-        String formatQualifier = toComputeShaderFormatQualifier(format);
+        String formatQualifier = format.getGlslFormatQualifier();
         if (formatQualifier == null) {
             throw new IllegalArgumentException("Unsupported texture format for flipY: " + format);
         }
@@ -217,7 +198,7 @@ public class InteropResourcesConverter {
         boolean hasExposure = inputExposure != null && outputExposure != null;
         boolean hasMVPreprocessing = hasMV && motionVectorPreprocessingFunction != null;
 
-        String colorFormatQualifier = toComputeShaderFormatQualifier(outputColor.getTextureFormat());
+        String colorFormatQualifier = outputColor.getTextureFormat().getGlslFormatQualifier();
         if (colorFormatQualifier == null) {
             throw new IllegalArgumentException("Unsupported color format for processInputTextures: " + outputColor.getTextureFormat());
         }

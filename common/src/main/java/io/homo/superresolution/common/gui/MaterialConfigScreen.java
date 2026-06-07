@@ -601,7 +601,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             sb.append("\n");
                             sb.append("· 当前无法使用Vulkan");
                             if (SuperResolutionConfig.isSkipInitVulkan()){
-                                sb.append("  请关闭 高级 > 跳过Vulkan初始化 选项");
+                                sb.append("，请关闭 高级 > 跳过Vulkan初始化 选项");
                             }
 
                         }
