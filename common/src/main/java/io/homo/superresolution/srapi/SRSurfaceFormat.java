@@ -57,7 +57,8 @@ public enum SRSurfaceFormat {
     R8_TYPELESS(35),
     R8G8_TYPELESS(36),
     R32_TYPELESS(37),
-    D32_SFLOAT(38);
+    D32_SFLOAT(38),
+    R16G16B16A16_SNORM(39);
 
     public final int value;
 

@@ -231,6 +231,8 @@ SR_API GLenum srTextureFormatToGlFormat(SRTextureFormat fmt) {
             return GL_RGBA32F;
         case SR_TEXTURE_FORMAT_R16G16B16A16_FLOAT:
             return GL_RGBA16F;
+        case SR_TEXTURE_FORMAT_R16G16B16A16_SNORM:
+            return GL_RGBA16_SNORM;
         case SR_TEXTURE_FORMAT_R32G32_FLOAT:
             return GL_RG32F;
         case SR_TEXTURE_FORMAT_R32_UINT:
@@ -332,6 +334,8 @@ SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt) {
             return VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
         case (SR_TEXTURE_FORMAT_D32_SFLOAT):
             return VK_FORMAT_D32_SFLOAT;
+        case (SR_TEXTURE_FORMAT_R16G16B16A16_SNORM):
+            return VK_FORMAT_R16G16B16A16_SNORM;
         default:
             return VK_FORMAT_UNDEFINED;
     }

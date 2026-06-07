@@ -82,6 +82,8 @@ extern "C" {
         SR_TEXTURE_FORMAT_R32_TYPELESS,
         //Depths
         SR_TEXTURE_FORMAT_D32_SFLOAT,
+        // 16 bit per channel, 4 channel signed normalized format
+        SR_TEXTURE_FORMAT_R16G16B16A16_SNORM,
     } SRTextureFormat;
 
     typedef struct SRTextureResourceDescription {

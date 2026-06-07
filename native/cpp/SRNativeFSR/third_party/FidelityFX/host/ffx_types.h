@@ -282,6 +282,7 @@ typedef enum FfxSurfaceFormat {
     FFX_SURFACE_FORMAT_R32G32B32A32_UINT,           ///< 32 bit per channel, 4 channel uint format
     FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT,          ///< 32 bit per channel, 4 channel float format
     FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT,          ///< 16 bit per channel, 4 channel float format
+    FFX_SURFACE_FORMAT_R16G16B16A16_SNORM,          ///< 16 bit per channel, 4 channel signed normalized format
     FFX_SURFACE_FORMAT_R32G32B32_FLOAT,             ///< 32 bit per channel, 3 channel float format
     FFX_SURFACE_FORMAT_R32G32_FLOAT,                ///< 32 bit per channel, 2 channel float format
     FFX_SURFACE_FORMAT_R8_UINT,                     ///< 8 bit per channel, 1 channel float format

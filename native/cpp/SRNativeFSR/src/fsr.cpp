@@ -36,6 +36,8 @@ FfxSurfaceFormat srTextureFormatToFfxSurfaceFormat(SRTextureFormat format) {
             return FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT;
         case (SR_TEXTURE_FORMAT_R16G16B16A16_FLOAT):
             return FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
+        case (SR_TEXTURE_FORMAT_R16G16B16A16_SNORM):
+            return FFX_SURFACE_FORMAT_R16G16B16A16_SNORM;
         case (SR_TEXTURE_FORMAT_R32G32B32_FLOAT):
             return FFX_SURFACE_FORMAT_R32G32B32_FLOAT;
         case (SR_TEXTURE_FORMAT_R32G32_FLOAT):
