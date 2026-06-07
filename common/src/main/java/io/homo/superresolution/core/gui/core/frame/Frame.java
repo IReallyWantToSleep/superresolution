@@ -34,6 +34,7 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPosit
 import org.joml.Vector2f;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class Frame implements IFrame {
     private static final Color DEBUG_LAYOUT_COLOR = Color.rgb(0, 120, 255);
@@ -324,20 +325,16 @@ public class Frame implements IFrame {
         dispatchCharTypedRecursive(root, codePoint, modifiers);
     }
 
-    @Deprecated
     @Override
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f pos, boolean findDisabled) {
         if (root == null || !root.isVisible()) {
             return null;
         }
 
-        AbstractWidget<?> floatingWidget = findFloatingWidgetRecursive(root, pos, findDisabled);
-        if (floatingWidget != null) {
-            return floatingWidget;
-        }
-
-        AbstractWidget<?> result = findInteractiveWidgetAtRecursive(root, pos, null, new int[]{Integer.MIN_VALUE}, findDisabled, 0);
-        return result;
+        Predicate<AbstractWidget<?>> skipValidator = findDisabled
+                ? w -> false
+                : w -> w.isDisabled();
+        return root.hitWidget(pos, skipValidator);
     }
 
     @Override
@@ -516,79 +513,6 @@ public class Frame implements IFrame {
                 }
             }
         }
-    }
-
-    @Deprecated
-    private AbstractWidget<?> findFloatingWidgetRecursive(AbstractWidget<?> widget, Vector2f pos, boolean findDisabled) {
-        if (!widget.isVisible() || widget.isDisabled()) {
-            return null;
-        }
-
-        if (widget.isFloatingWidget() && widget.hitTest(pos)) {
-            AbstractWidget<?> found = widget.findInteractiveWidgetAt(pos);
-            if (found != null) {
-                return found;
-            }
-        }
-
-        if (widget instanceof ILayoutContainer container) {
-            for (ILayoutElement child : container.getChildren()) {
-                if (child instanceof AbstractWidget<?> childWidget) {
-                    AbstractWidget<?> found = findFloatingWidgetRecursive(childWidget, pos, findDisabled);
-                    if (found != null) {
-                        return found;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    @Deprecated
-    private AbstractWidget<?> findInteractiveWidgetAtRecursive(
-            AbstractWidget<?> widget,
-            Vector2f absPos,
-            AbstractWidget<?> currentBest,
-            int[] currentBestEffectiveZ,
-            boolean findDisabled,
-            int ancestorZIndex) {
-
-        String name = widget.getClass().getSimpleName();
-        int ownZ = widget.getZIndex();
-
-        if (!widget.isVisible() || (widget.isDisabled() && !findDisabled)) {
-            return currentBest;
-        }
-
-        boolean hit = widget.hitTest(absPos);
-
-        if (hit) {
-            if (widget.checkInteractive()) {
-                int effectiveZ = ownZ + ancestorZIndex;
-                if (effectiveZ >= currentBestEffectiveZ[0]) {
-                    currentBest = widget;
-                    currentBestEffectiveZ[0] = effectiveZ;
-                }
-            }
-        }
-
-        if (widget instanceof ILayoutContainer container) {
-            int childAncestorZ = ancestorZIndex + ownZ;
-            List<ILayoutElement> children = container.getChildren();
-            for (int i = children.size() - 1; i >= 0; i--) {
-                ILayoutElement child = children.get(i);
-                if (child instanceof AbstractWidget<?> childWidget) {
-                    AbstractWidget<?> found = findInteractiveWidgetAtRecursive(
-                            childWidget, absPos, currentBest, currentBestEffectiveZ, findDisabled, childAncestorZ);
-                    if (found != null && found != currentBest) {
-                        currentBest = found;
-                    }
-                }
-            }
-        }
-
-        return currentBest;
     }
 
     private Transform calculateAccumulatedTransform(AbstractWidget<?> widget) {

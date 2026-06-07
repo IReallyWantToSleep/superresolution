@@ -563,11 +563,6 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         return true;
     }
 
-    @Override
-    public boolean isFloatingWidget() {
-        return false;
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     public MaterialSelect<T> setDisabled(boolean disabled) {

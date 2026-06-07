@@ -486,6 +486,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         getView().showDialog(dialog);
     }
 
+    private boolean isExperimentalAlgorithm(AlgorithmDescription<?> algorithmDescription){
+        return algorithmDescription.equals(AlgorithmDescriptions.DLSS) ||
+                algorithmDescription.equals(AlgorithmDescriptions.XESS) ||
+                algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
+    }
+
     private Frame createGeneralFrame() {
         ScrollableFrame frame = createStandardScrollableFrame();
         ContainerWidget container = createStandardContainer();
@@ -564,26 +570,28 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     return OptionRequirement.all(
                             () -> AlgorithmRegistry.isAlgorithmSupported(algorithmDescription),
                             () -> {
-                                if (algorithmDescription.equals(AlgorithmDescriptions.DLSS) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
-                                    return false;
-                                }
-                                if (algorithmDescription.equals(AlgorithmDescriptions.XESS) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
-                                    return false;
-                                }
-                                if (algorithmDescription.equals(AlgorithmDescriptions.ANIME4K) && !SuperResolutionConfig.isEnableExperimentalFeatures()) {
-                                    return false;
-                                }
+                                if (isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalFeatures();
                                 return true;
+
                             }
                     );
                 })
                 .setMenuItemTooltipSupplier((algo)->{
                     AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) algo;
                     var result = algorithmDescription.getRequirement().check();
-                    if (result.support()){
-                        return Optional.of(Tooltip.empty());
-                    } else {
-                        StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(algorithmDescription.getDisplayName());
+                    if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
+                        sb.append("\n");
+                        sb.append("该算法为实验性功能，尚不稳定，可能会导致崩溃或错误");
+                        if (!result.support()) sb.append("\n");
+                    } else if(isExperimentalAlgorithm(algorithmDescription) && !SuperResolutionConfig.isEnableExperimentalFeatures()){
+                        sb.append("\n");
+                        sb.append("该算法为实验性功能，尚不稳定，可能会导致崩溃或错误\n如需使用请打开 实验性 > 启用实验性功能 选项");
+                        if (!result.support()) sb.append("\n");
+                    }
+                    if (!result.support()){
+                        sb.append("\n");
                         sb.append("不支持此算法，原因：");
                         if (!result.glVersionMet()){
                             sb.append("\n");
@@ -602,8 +610,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             sb.append("· 当前无法使用Vulkan");
                             if (SuperResolutionConfig.isSkipInitVulkan()){
                                 sb.append("，请关闭 高级 > 跳过Vulkan初始化 选项");
+                            }else {
+                                sb.append("，如您已经关闭 跳过Vulkan初始化 选项，请尝试重启游戏");
                             }
-
                         }
                         if (!result.vulkanVersionMet()){
                             sb.append("\n");
@@ -621,8 +630,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             sb.append("\n");
                             sb.append("· 其它原因");
                         }
-                        return Optional.of(Tooltip.withContext(sb.toString()));
                     }
+                    return Optional.of(Tooltip.withContext(sb.toString()));
                 })
                 .build();
 

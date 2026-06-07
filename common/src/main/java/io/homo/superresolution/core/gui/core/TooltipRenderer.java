@@ -96,6 +96,8 @@ public class TooltipRenderer {
         if (currentAlpha <= 0.001f) {
             isHiding = false;
             lastTooltip = Tooltip.empty();
+            widthAnimator.set(0f);
+            heightAnimator.set(0f);
             return;
         }
 

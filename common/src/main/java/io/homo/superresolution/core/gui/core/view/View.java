@@ -346,31 +346,6 @@ public class View {
 
     }
 
-    private AbstractWidget<?> findTopHoveredWidgetInTreeAllowDisabledWidget(AbstractWidget<?> widget, Vector2f mousePosition) {
-        if (widget == null || !widget.isVisible()) {
-            return null;
-        }
-
-
-        if (widget instanceof ILayoutContainer container) {
-            List<ILayoutElement> children = container.getChildren();
-            for (int i = children.size() - 1; i >= 0; i--) {
-                ILayoutElement child = children.get(i);
-                if (child instanceof AbstractWidget<?> childWidget) {
-                    AbstractWidget<?> found = findTopHoveredWidgetInTreeAllowDisabledWidget(childWidget, mousePosition);
-                    if (found != null && found.checkInteractive()) {
-                        if (!found.hitTest(mousePosition)) {
-                            return null;
-                        }
-                        return found;
-                    }
-                }
-            }
-        }
-
-        return widget.checkInteractive() ? widget : null;
-    }
-
     private AbstractWidget<?> findTopHoveredWidgetInTree(AbstractWidget<?> widget) {
         if (widget == null || !widget.isVisible() || widget.isDisabled()) {
             return null;
@@ -414,7 +389,7 @@ public class View {
 
     private Optional<Tooltip> collectTooltip(Vector2f mousePosition) {
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing())) {
-            AbstractWidget<?> dialogHovered = findTopHoveredWidgetInTreeAllowDisabledWidget(activeDialog, mousePosition);
+            AbstractWidget<?> dialogHovered = activeDialog.hitWidget(mousePosition, (w) -> false);
             if (dialogHovered != null) {
                 return dialogHovered.getTooltip();
             } else {
@@ -435,7 +410,6 @@ public class View {
             Vector2f contentPos = entry.frame.screenToContent(frameLocal.x, frameLocal.y);
             AbstractWidget<?> hovered = root.hitWidget(contentPos, (w) -> false);
             if (hovered != null) {
-                SuperResolution.LOGGER.info(hovered.toString());
                 return hovered.getTooltip();
             }
         }

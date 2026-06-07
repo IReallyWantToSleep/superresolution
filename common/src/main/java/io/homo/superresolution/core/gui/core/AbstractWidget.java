@@ -362,10 +362,6 @@ public abstract class AbstractWidget<
         return false;
     }
 
-    public boolean isFloatingWidget() {
-        return false;
-    }
-
     public AbstractWidget<?> findInteractiveWidgetAt(Vector2f absPos) {
         if (!hitTest(absPos)) {
             return null;
