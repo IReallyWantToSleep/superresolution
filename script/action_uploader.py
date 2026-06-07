@@ -183,6 +183,24 @@ def add_version(
     return data["data"]["r2_object_name"]
 
 
+def cleanup_versions(endpoint: str, token: str, keep_latest: int = 5):
+    response = requests.post(
+        f"{endpoint}/versions/cleanup",
+        json={"keep_latest": keep_latest},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    response.raise_for_status()
+    data = response.json()
+    if not data.get("error", {}).get("ok", True):
+        raise Exception(f"API error: {data['error'].get('messages', 'unknown')}")
+    result = data.get("data", {})
+    print(
+        f"Cleanup: {result.get('deleted_commits', 0)} commits, "
+        f"{result.get('deleted_versions', 0)} versions, "
+        f"{result.get('deleted_r2_objects', 0)} R2 objects deleted"
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload Minecraft mods to R2")
     parser = argparse.ArgumentParser(description="Upload Minecraft mods to R2")
@@ -264,3 +282,6 @@ if __name__ == "__main__":
         print(f"  Done.")
 
     print(f"All {total} file(s) uploaded.")
+
+    print("Cleaning up old versions...")
+    cleanup_versions(args.api_endpoint, args.api_token)
