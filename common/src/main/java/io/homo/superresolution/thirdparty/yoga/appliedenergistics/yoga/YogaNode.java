@@ -1267,6 +1267,9 @@ public class YogaNode implements YogaProps {
     }
 
     public float getAbsolutePositionX() {
+        if (getPositionType() == YogaPositionType.ABSOLUTE){
+            return getLayoutX();
+        }
         if (owner != null) {
             return owner.getAbsolutePositionX() + getLayoutX();
         }
@@ -1274,6 +1277,9 @@ public class YogaNode implements YogaProps {
     }
 
     public float getAbsolutePositionY() {
+        if (getPositionType() == YogaPositionType.ABSOLUTE){
+            return getLayoutY();
+        }
         if (owner != null) {
             return owner.getAbsolutePositionY() + getLayoutY();
         }
