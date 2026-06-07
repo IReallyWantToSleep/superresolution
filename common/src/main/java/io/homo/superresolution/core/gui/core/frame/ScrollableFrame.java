@@ -297,7 +297,8 @@ public class ScrollableFrame extends Frame {
         );
     }
 
-    private Vector2f contentToScreen(float contentX, float contentY) {
+    @Override
+    public Vector2f contentToScreen(float contentX, float contentY) {
         return new Vector2f(
                 contentX + contentPaddingLeft - currentScroll.x,
                 contentY + contentPaddingTop - currentScroll.y

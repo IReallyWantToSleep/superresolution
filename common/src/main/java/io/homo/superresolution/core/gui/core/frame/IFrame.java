@@ -61,6 +61,8 @@ public interface IFrame {
 
     Vector2f screenToContent(float screenX, float screenY);
 
+    Vector2f contentToScreen(float contentX, float contentY);
+
     void markLayoutDirty();
 
     boolean isLayoutDirty();

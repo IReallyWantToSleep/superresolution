@@ -134,26 +134,35 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         float fieldY = fieldBounds.y;
         float fieldWidth = fieldBounds.width;
         float fieldHeight = fieldBounds.height;
-        float spaceBelow = viewportHeight - (fieldY + fieldHeight) - viewportPadding;
-        float spaceAbove = fieldY - viewportPadding;
-        float spaceRight = viewportWidth - (fieldX + fieldWidth) - viewportPadding;
-        float spaceLeft = fieldX - viewportPadding;
+
+        float screenFieldX = fieldX;
+        float screenFieldY = fieldY;
+        if (getFrame() != null) {
+            Vector2f screenFieldPos = getFrame().contentToScreen(fieldX, fieldY);
+            screenFieldX = screenFieldPos.x;
+            screenFieldY = screenFieldPos.y;
+        }
+
+        float spaceBelow = viewportHeight - (screenFieldY + fieldHeight) - viewportPadding;
+        float spaceAbove = screenFieldY - viewportPadding;
+        float spaceRight = viewportWidth - (screenFieldX + fieldWidth) - viewportPadding;
+        float spaceLeft = screenFieldX - viewportPadding;
 
         MenuSide side = menuPosition.side();
         MenuAlign align = menuPosition.align();
         if (menuPosition.isAuto()) {
             boolean horizontalFits = switch (align) {
-                case START -> (viewportWidth - fieldX - viewportPadding) >= width;
-                case END -> (fieldX + fieldWidth - viewportPadding) >= width;
-                case CENTER -> (fieldX + fieldWidth / 2f - viewportPadding) >= width / 2f &&
-                        (viewportWidth - (fieldX + fieldWidth / 2f) - viewportPadding) >= width / 2f;
+                case START -> (viewportWidth - screenFieldX - viewportPadding) >= width;
+                case END -> (screenFieldX + fieldWidth - viewportPadding) >= width;
+                case CENTER -> (screenFieldX + fieldWidth / 2f - viewportPadding) >= width / 2f &&
+                        (viewportWidth - (screenFieldX + fieldWidth / 2f) - viewportPadding) >= width / 2f;
             };
 
             boolean verticalFits = switch (align) {
-                case START -> (viewportHeight - fieldY - viewportPadding) >= naturalMenuHeight;
-                case END -> (fieldY + fieldHeight - viewportPadding) >= naturalMenuHeight;
-                case CENTER -> (fieldY + fieldHeight / 2f - viewportPadding) >= naturalMenuHeight / 2f &&
-                        (viewportHeight - (fieldY + fieldHeight / 2f) - viewportPadding) >= naturalMenuHeight / 2f;
+                case START -> (viewportHeight - screenFieldY - viewportPadding) >= naturalMenuHeight;
+                case END -> (screenFieldY + fieldHeight - viewportPadding) >= naturalMenuHeight;
+                case CENTER -> (screenFieldY + fieldHeight / 2f - viewportPadding) >= naturalMenuHeight / 2f &&
+                        (viewportHeight - (screenFieldY + fieldHeight / 2f) - viewportPadding) >= naturalMenuHeight / 2f;
             };
 
             boolean fitsBottom = (spaceBelow >= naturalMenuHeight) && horizontalFits;

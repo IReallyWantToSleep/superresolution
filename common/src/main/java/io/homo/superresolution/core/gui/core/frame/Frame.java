@@ -343,6 +343,11 @@ public class Frame implements IFrame {
     }
 
     @Override
+    public Vector2f contentToScreen(float contentX, float contentY) {
+        return new Vector2f(contentX, contentY);
+    }
+
+    @Override
     public void markLayoutDirty() {
         layoutDirty = true;
     }
