@@ -39,6 +39,9 @@ public class SuperResolutionEventSubscriberForge {
     }
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        SuperResolution.onClientSetup();
+        //oculus load shaderpack too early,we need register event at IMixinConfigPlugin.load
+        //fuck you oculus
+        /*
+        */
     }
 }

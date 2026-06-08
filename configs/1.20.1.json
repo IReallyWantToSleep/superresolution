@@ -68,11 +68,13 @@
             "modrinth": [
                 {
                     "name": "xaeros-world-map",
-                    "version": "1.39.2_Forge_1.20"
+                    "version": "1.39.2_Forge_1.20",
+                    "compileOnly": true
                 },
                 {
                     "name": "xaeros-minimap",
-                    "version": "25.1.0_Forge_1.20"
+                    "version": "25.1.0_Forge_1.20",
+                    "compileOnly": true
                 },
                 {
                     "name": "embeddium",
@@ -80,11 +82,13 @@
                 },
                 {
                     "name": "timeless-and-classics-zero",
-                    "version": "1.1.4-hotfix"
+                    "version": "1.1.4-hotfix",
+                    "compileOnly": true
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.4-b-1.20.1"
+                    "version": "2.3.4-b-1.20.1",
+                    "compileOnly": true
                 },
                 {
                     "name": "sodium-options-api",

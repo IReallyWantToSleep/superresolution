@@ -1505,8 +1505,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("辰蒙", Text.translatable("superresolution.screen.config.info.about.contributor.chenmeng.desc").getString(), "https://github.com/slmpc", "/assets/super_resolution/textures/gui/contributors/chenmeng.png"),
                 new ContributorInfo("Tahnass", Text.translatable("superresolution.screen.config.info.about.contributor.tahnass.desc").getString(), "https://github.com/Tahnass", "/assets/super_resolution/textures/gui/contributors/tahnass.png"),
                 new ContributorInfo("StarsShine11904", Text.translatable("superresolution.screen.config.info.about.contributor.starsshine11904.desc").getString(), "https://github.com/StarsShine11904", "/assets/super_resolution/textures/gui/contributors/StarsShine11904.png"),
-                new ContributorInfo("暇じゃない暇人", Text.translatable("superresolution.screen.config.info.about.contributor.nohimazin.desc").getString(), "https://github.com/nohimazin", "/assets/super_resolution/textures/gui/contributors/nohimazin.png")
-
+                new ContributorInfo("暇じゃない暇人", Text.translatable("superresolution.screen.config.info.about.contributor.nohimazin.desc").getString(), "https://github.com/nohimazin", "/assets/super_resolution/textures/gui/contributors/nohimazin.png"),
+                new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png")
         ));
         Collections.shuffle(contributors);
         for (ContributorInfo contributor : contributors) {

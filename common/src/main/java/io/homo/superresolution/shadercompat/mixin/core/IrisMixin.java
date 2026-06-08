@@ -93,6 +93,7 @@ public class IrisMixin {
                 shaderPackPath,
                 superresolution$cachedDefines
         );
+        superresolution$cachedDefines = StandardMacros.createStandardEnvironmentDefines();
     }
     #if MC_VER > MC_1_20_1
     @ModifyArg(

@@ -49,6 +49,7 @@ public final class SuperResolutionNeoForge {
             container.getEventBus().addListener(SuperResolutionNeoForge::onClientSetup);
             container.getEventBus().addListener(SuperResolutionNeoForge::registerBindings);
         }
+        SuperResolution.onClientSetup();
     }
 
     @SubscribeEvent
@@ -63,6 +64,6 @@ public final class SuperResolutionNeoForge {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        SuperResolution.onClientSetup();
+
     }
 }

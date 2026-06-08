@@ -46,5 +46,7 @@ public final class SuperResolutionForge {
             SodiumOptionScreen.register();
         }
         SuperResolution.registerEvents();
+
+        SuperResolution.onClientSetup();
     }
 }
