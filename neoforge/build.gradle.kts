@@ -100,6 +100,7 @@ neoForge {
     runs {
         configureEach {
             jvmArguments.add("-XX:+CreateMinidumpOnCrash")
+            jvmArguments.add("-Dmixin.debug.export=true")
             //shut up!
             jvmArguments.add("-Dsodium.checks.issue2561=false")
             systemProperty("neoforge.enabledGameTestNamespaces", rootProject.property("mod_id").toString())

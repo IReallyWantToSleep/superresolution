@@ -5,6 +5,10 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
 
+plugins {
+    `java-library`
+}
+
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
 @Suppress("UNCHECKED_CAST")
@@ -16,6 +20,7 @@ if (isNewVersion) {
 } else {
     apply(plugin = "net.neoforged.moddev.legacyforge")
 }
+
 
 if (isNewVersion) {
     extensions.configure<Any>("neoForge") {

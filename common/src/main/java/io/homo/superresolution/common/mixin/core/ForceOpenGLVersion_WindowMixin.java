@@ -18,26 +18,20 @@
 
 package io.homo.superresolution.common.mixin.core;
 
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.GpuBackend;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static org.lwjgl.glfw.GLFW.*;
 #if MC_VER > MC_1_21_11
 @Mixin(value = com.mojang.blaze3d.opengl.GlBackend.class)
 #else
-@Mixin(value = Window.class)
+@Mixin(value = com.mojang.blaze3d.platform.Window.class)
 #endif
 public class ForceOpenGLVersion_WindowMixin {
     #if MC_VER > MC_1_21_11
-    @Inject(method = "setWindowHints", at = @At(value = "TAIL"))
-    private void forceOpenGLVersion(CallbackInfo ci) {
+    @org.spongepowered.asm.mixin.injection.Inject(method = "setWindowHints", at = @At(value = "TAIL"))
+    private void forceOpenGLVersion(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         //#if !IS_VULKAN
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
@@ -45,7 +39,7 @@ public class ForceOpenGLVersion_WindowMixin {
     }
 
     #else
-    @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 4), remap = false)
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 4), remap = false)
     private void forceOpenGLVersion(int hint, int value) {
         //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
         //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);

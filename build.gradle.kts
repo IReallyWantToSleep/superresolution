@@ -33,7 +33,7 @@ import java.io.InputStreamReader
 plugins {
     id("net.neoforged.moddev") version "2.0.141" apply false
     //id("com.gradleup.shadow") version "9.4.2" apply false
-    id("systems.manifold.manifold-gradle-plugin") version "0.0.2-alpha"
+    //id("systems.manifold.manifold-gradle-plugin") version "0.0.2-alpha"
     id("multiversion")
     id("multiversion-neoform")
 }
@@ -70,11 +70,10 @@ allprojects {
     }
 
     if (project.name != "native") {
-        apply(plugin = "systems.manifold.manifold-gradle-plugin")
-
-        extensions.findByName("manifold")?.withGroovyBuilder {
-            setProperty("manifoldVersion", rootProject.property("manifold_version"))
-        }
+        //apply(plugin = "systems.manifold.manifold-gradle-plugin")
+        //extensions.findByName("manifold")?.withGroovyBuilder {
+        //    setProperty("manifoldVersion", rootProject.property("manifold_version"))
+        //}
 
         tasks.withType(JavaCompile::class.java).configureEach {
             options.release.set((rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.javaVersion)
@@ -85,7 +84,6 @@ allprojects {
         }
 
         dependencies {
-            annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.property("manifold_version")}")
             configurations.configureEach {
                 resolutionStrategy {
                     force("org.lwjgl:lwjgl:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
@@ -120,6 +118,12 @@ allprojects {
                         setProperty("toolsJavaExecutable", javaWrapper.absolutePath)
                     }
                 }
+            }
+        }
+
+        afterEvaluate {
+            dependencies {
+                annotationProcessor("systems.manifold:manifold-preprocessor:${rootProject.property("manifold_version")}")
             }
         }
     }
@@ -173,6 +177,7 @@ if (srConfigsDir.exists()) {
             setTasks(listOf("clean", "build"))
             startParameter.projectProperties["minecraft_version_config"] = versionName
             startParameter.excludedTaskNames.add(":native:build")
+            startParameter.isContinueOnFailure = true
             startParameter.consoleOutput = ConsoleOutput.Plain
         }
 

@@ -433,7 +433,15 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         float cornerSize = style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
                 : style().size().squareCornerSize();
         if (pressAnimator.isRunning() && Math.abs(pressAnimator.targetValue() - style().size().pressedCornerSize()) < 0.01f) {
-            pendingRelease = true;
+            pressAnimator.onLifecycle(new Animator.AnimatorLifecycleListener() {
+                @Override
+                public void onEnd() {
+                    pressAnimator.timeInterpolator(TimeInterpolator.easeOutCubic());
+                    pressAnimator.fromTo(pressAnimator.get(), cornerSize);
+                    pressAnimator.duration(PRESS_ANIMATION_DURATION);
+                    pressAnimator.start();
+                }
+            });
         } else {
             pressAnimator.timeInterpolator(TimeInterpolator.easeOutCubic());
             pressAnimator.fromTo(pressAnimator.get(), cornerSize);
