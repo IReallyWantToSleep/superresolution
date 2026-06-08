@@ -288,15 +288,10 @@ tasks.named("buildAllVersions") {
 
 tasks.register("uploadToModrinth") {
     doLast {
-        val changelogFile = rootProject.file("CHANGELOG.md")
-        if (!changelogFile.exists()) {
-            throw GradleException("CHANGELOG.md not found!")
-        }
-
-        val (currentVersion, latestChangelog) = parseChangelog(changelogFile)
+        val (currentVersion, latestChangelog) = findLatestChangelog()
 
         println("\n=== 最新版本更新日志 ($currentVersion) ===\n")
-        latestChangelog.forEach { println(it) }
+        println(latestChangelog)
         println("\n========================")
 
         var confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().lowercase()
@@ -325,7 +320,7 @@ tasks.register("uploadToModrinth") {
                 var notSucceed = true
                 while (notSucceed) {
                     try {
-                        ModrinthUploader.uploadFile(file, latestChangelog.joinToString("\n"))
+                        ModrinthUploader.uploadFile(file, latestChangelog)
                         notSucceed = false
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -340,44 +335,74 @@ tasks.register("uploadToModrinth") {
     }
 }
 
-fun parseChangelog(file: File): Pair<String?, MutableList<String>> {
-    val versionPattern = Regex("^#\\s+(\\d+\\.\\d+\\.\\d+(-[a-zA-Z]+(\\.[\\d]+)?)*)\\s*$")
-    var currentVersion: String? = null
-    val changelog = mutableListOf<String>()
-    var versionEnded = false
-    var previousEmpty = false
+val preReleasePriority = listOf("alpha", "beta", "pre")
 
-    file.forEachLine { line ->
-        if (versionEnded) return@forEachLine
-
-        val matcher = versionPattern.matchEntire(line)
-        if (matcher != null) {
-            if (currentVersion == null) {
-                currentVersion = matcher.groupValues[1]
-                changelog += line
-            } else {
-                versionEnded = true
-                return@forEachLine
-            }
-        } else if (currentVersion != null) {
-            if (line.trim().isEmpty()) {
-                if (previousEmpty) {
-                    versionEnded = true
-                    return@forEachLine
-                }
-                previousEmpty = true
-            } else {
-                previousEmpty = false
-            }
-            changelog += line
+fun compareSemver(a: String, b: String): Int {
+    fun parseCore(v: String): Triple<Int, Int, Int> {
+        val parts = v.substringBefore('-').split('.').map { it.toInt() }
+        return Triple(parts[0], parts[1], parts[2])
+    }
+    fun parsePreRelease(v: String): List<String> {
+        val idx = v.indexOf('-')
+        if (idx == -1) return emptyList()
+        return v.substring(idx + 1).split('.')
+    }
+    fun compareIdentifier(x: String, y: String): Int {
+        val xIsNum = x.all { it.isDigit() }
+        val yIsNum = y.all { it.isDigit() }
+        if (xIsNum && yIsNum) return x.toInt().compareTo(y.toInt())
+        val xIdx = preReleasePriority.indexOf(x)
+        val yIdx = preReleasePriority.indexOf(y)
+        return when {
+            xIdx >= 0 && yIdx >= 0 -> xIdx - yIdx
+            xIdx >= 0 -> -1
+            yIdx >= 0 -> 1
+            else -> x.compareTo(y)
         }
     }
 
-    while (changelog.isNotEmpty() && changelog.last().trim().isEmpty()) {
-        changelog.removeLast()
+    val (aMajor, aMinor, aPatch) = parseCore(a)
+    val (bMajor, bMinor, bPatch) = parseCore(b)
+    if (aMajor != bMajor) return aMajor - bMajor
+    if (aMinor != bMinor) return aMinor - bMinor
+    if (aPatch != bPatch) return aPatch - bPatch
+
+    val aPre = parsePreRelease(a)
+    val bPre = parsePreRelease(b)
+    if (aPre.isEmpty() && bPre.isNotEmpty()) return 1
+    if (aPre.isNotEmpty() && bPre.isEmpty()) return -1
+    if (aPre.isEmpty() && bPre.isEmpty()) return 0
+
+    val minLen = minOf(aPre.size, bPre.size)
+    for (i in 0 until minLen) {
+        val cmp = compareIdentifier(aPre[i], bPre[i])
+        if (cmp != 0) return cmp
+    }
+    return aPre.size - bPre.size
+}
+
+fun findLatestChangelog(): Pair<String?, String> {
+    val changelogsDir = rootProject.file("changelogs")
+    if (!changelogsDir.exists() || !changelogsDir.isDirectory) {
+        throw GradleException("changelogs/ 目录不存在")
     }
 
-    return currentVersion to changelog
+    val pattern = Regex("^(\\d+\\.\\d+\\.\\d+(-[a-zA-Z]+(\\.[\\d]+)?)*)\\.md$")
+
+    val versions = changelogsDir.listFiles()
+        ?.mapNotNull { file ->
+            val match = pattern.matchEntire(file.name)
+            if (match != null) match.groupValues[1] to file else null
+        }
+        ?.sortedWith { (v1, _), (v2, _) -> -compareSemver(v1, v2) }
+        ?: throw GradleException("changelogs/ 中没有找到有效的 changelog 文件")
+
+    if (versions.isEmpty()) {
+        throw GradleException("changelogs/ 中没有找到有效的 changelog 文件")
+    }
+
+    val (latestVersion, latestFile) = versions.first()
+    return latestVersion to latestFile.readText().trimEnd()
 }
 
 fun getConsoleInput(prompt: String): String {

@@ -190,13 +190,17 @@ jobs:
         run: ./gradlew buildAllVersions
         continue-on-error: true
 
+      - name: Find latest changelog
+        id: changelog
+        run: echo "LATEST_CHANGELOG=$(python3 .github/scripts/find_latest_changelog.py changelogs)" >> $GITHUB_OUTPUT
+
       - name: Upload Artifacts
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ github.event.inputs.name }}
           tag_name: ${{ github.event.inputs.tag_name }}
           token: ${{ secrets.TOKEN }}
-          body_path: ./CHANGELOG.md
+          body_path: ./changelogs/${{ steps.changelog.outputs.LATEST_CHANGELOG }}
           files: |
             ./build_jars/**
-            ./CHANGELOG.md
+            ./changelogs/${{ steps.changelog.outputs.LATEST_CHANGELOG }}
