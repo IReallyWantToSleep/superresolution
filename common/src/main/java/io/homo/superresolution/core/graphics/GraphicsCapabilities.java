@@ -111,6 +111,7 @@ public class GraphicsCapabilities {
             }
         }
         LOGGER.info("最高OpenGL版本 {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
+        GLFW.glfwDefaultWindowHints();
     }
 
     public static Pair<Integer, Integer> getHighestOpenGLVersion() {

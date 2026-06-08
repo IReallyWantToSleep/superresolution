@@ -19,33 +19,31 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.GpuBackend;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static org.lwjgl.glfw.GLFW.*;
-
+#if MC_VER > MC_1_21_11
+@Mixin(value = com.mojang.blaze3d.opengl.GlBackend.class)
+#else
 @Mixin(value = Window.class)
+#endif
 public class ForceOpenGLVersion_WindowMixin {
     #if MC_VER > MC_1_21_11
-    @Redirect(method = "createGlfwWindow", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuBackend;setWindowHints()V"), remap = false)
-    private static void forceOpenGLVersion(com.mojang.blaze3d.systems.GpuBackend instance) {
-        instance.setWindowHints();
+    @Inject(method = "setWindowHints", at = @At(value = "TAIL"))
+    private void forceOpenGLVersion(CallbackInfo ci) {
         //#if !IS_VULKAN
-        glfwDefaultWindowHints();
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
         //#endif
     }
 
-    @Inject(method = "createGlfwWindow", at = @At(value = "TAIL"), remap = false)
-    private static void showWindow(int width, int height, String title, long monitor, com.mojang.blaze3d.systems.GpuBackend backend, CallbackInfoReturnable<Long> cir) {
-        //TODO:**SR**似乎会导致游戏窗口不会自己出现（？），暂时先这样解决
-        if (cir.getReturnValueJ() > 0)glfwShowWindow(cir.getReturnValueJ());
-    }
     #else
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 4), remap = false)
     private void forceOpenGLVersion(int hint, int value) {
