@@ -241,6 +241,11 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
         return descriptorLayoutKey;
     }
 
+    @Override
+    public IShaderProgram getShader() {
+        return shader;
+    }
+
     public void destroy() {
         for (long sampler : samplerCache.values()) {
             if (sampler != VK_NULL_HANDLE) {

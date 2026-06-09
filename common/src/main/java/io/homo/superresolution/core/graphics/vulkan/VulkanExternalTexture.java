@@ -40,7 +40,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
     private final int aspectMask;
     private final int mipLevels;
 
-    private int currentLayout;
+    private VulkanResourceState currentState;
     private boolean destroyed = false;
 
     public VulkanExternalTexture(
@@ -63,7 +63,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         this.width = width;
         this.height = height;
         this.mipLevels = mipLevels;
-        this.currentLayout = initialLayout;
+        this.currentState = new VulkanResourceState(initialLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, io.homo.superresolution.core.graphics.impl.command.ResourceAccessType.UNDEFINED);
         this.aspectMask = resolveAspectMask(format);
         updateDebugLabels();
     }
@@ -89,7 +89,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         this.width = width;
         this.height = height;
         this.mipLevels = mipLevels;
-        this.currentLayout = initialLayout;
+        this.currentState = new VulkanResourceState(initialLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, io.homo.superresolution.core.graphics.impl.command.ResourceAccessType.UNDEFINED);
         this.aspectMask = resolveAspectMask(format);
         updateDebugLabels();
     }
@@ -153,11 +153,26 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
     }
 
     public int getCurrentLayout() {
-        return currentLayout;
+        return currentState.layout();
     }
 
     public void setCurrentLayout(int layout) {
-        this.currentLayout = layout;
+        this.currentState = new VulkanResourceState(
+                layout,
+                currentState.accessMask(),
+                currentState.stageMask(),
+                currentState.accessType()
+        );
+    }
+
+    @Override
+    public VulkanResourceState getCurrentResourceState() {
+        return currentState;
+    }
+
+    @Override
+    public void setCurrentResourceState(VulkanResourceState state) {
+        this.currentState = state != null ? state : VulkanResourceState.UNDEFINED;
     }
 
     public int getMipLevels() {
@@ -176,7 +191,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
             int srcAccessMask,
             int dstAccessMask
     ) {
-        if (currentLayout == newLayout) {
+        if (currentState.layout() == newLayout) {
             return;
         }
         try (MemoryStack stack = stackPush()) {
@@ -184,7 +199,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
                     .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
                     .srcAccessMask(srcAccessMask)
                     .dstAccessMask(dstAccessMask)
-                    .oldLayout(currentLayout)
+                    .oldLayout(currentState.layout())
                     .newLayout(newLayout)
                     .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
@@ -205,7 +220,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
                     barrier
             );
         }
-        currentLayout = newLayout;
+        currentState = new VulkanResourceState(newLayout, dstAccessMask, dstStageMask, currentState.accessType());
     }
 
     @Override

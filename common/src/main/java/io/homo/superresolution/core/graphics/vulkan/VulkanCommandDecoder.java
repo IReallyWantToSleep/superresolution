@@ -29,6 +29,7 @@ import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
@@ -42,8 +43,6 @@ import static org.lwjgl.vulkan.KHRDynamicRendering.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanCommandDecoder implements ICommandDecoder {
-    private static final int BROAD_STAGE_MASK = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-    private static final int BROAD_ACCESS_MASK = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
     private VulkanDevice vulkanDevice;
 
     public VulkanCommandDecoder(VulkanDevice vulkanDevice) {
@@ -95,6 +94,18 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         };
     }
 
+    private static int vkStageFor(ResourceAccessType access, int bindPoint) {
+        return switch (access) {
+            case SAMPLED_READ, STORAGE_READ, STORAGE_WRITE, STORAGE_READ_WRITE -> {
+                if (bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE) {
+                    yield VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+                }
+                yield VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            }
+            default -> vkStageFor(access);
+        };
+    }
+
     private static int vkAccessFor(ResourceAccessType access) {
         return switch (access) {
             case UNDEFINED -> 0;
@@ -142,6 +153,44 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         return flags;
     }
 
+    private static int vkPostTransferStageFor(BufferUsages usages) {
+        int flags = 0;
+        for (BufferUsage usage : usages.getUsages()) {
+            if (usage != BufferUsage.TransferDst && usage != BufferUsage.TransferSrc) {
+                flags |= vkStageFor(usage);
+            }
+        }
+        return flags;
+    }
+
+    private static int vkPostTransferAccessFor(BufferUsages usages) {
+        int flags = 0;
+        for (BufferUsage usage : usages.getUsages()) {
+            if (usage != BufferUsage.TransferDst && usage != BufferUsage.TransferSrc) {
+                flags |= vkAccessFor(usage);
+            }
+        }
+        return flags;
+    }
+
+    private static VulkanResourceState vkStateFor(ResourceAccessType access) {
+        return new VulkanResourceState(
+                vkLayoutFor(access),
+                vkAccessFor(access),
+                vkStageFor(access),
+                access
+        );
+    }
+
+    private static VulkanResourceState vkStateFor(ResourceAccessType access, int bindPoint) {
+        return new VulkanResourceState(
+                vkLayoutFor(access),
+                vkAccessFor(access),
+                vkStageFor(access, bindPoint),
+                access
+        );
+    }
+
     @Override
     public ResourceStateTracker getStateTracker() {
         return new ResourceStateTracker();
@@ -153,7 +202,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             throw new IllegalArgumentException(
                     "declareExternalResource: 仅允许外部导入纹理 (VulkanExternalTexture)");
         }
-        ext.setCurrentLayout(vkLayoutFor(currentState));
+        ext.setCurrentResourceState(vkStateFor(currentState));
     }
 
     @Override
@@ -164,31 +213,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
         VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
-        int newLayout = vkLayoutFor(targetState);
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
-                    .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                    .srcAccessMask(BROAD_ACCESS_MASK)
-                    .dstAccessMask(BROAD_ACCESS_MASK)
-                    .oldLayout(ext.getCurrentLayout())
-                    .newLayout(newLayout)
-                    .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .image(ext.handle())
-                    .subresourceRange(VkImageSubresourceRange.calloc(stack)
-                            .aspectMask(ext.getAspectMask())
-                            .baseMipLevel(0)
-                            .levelCount(ext.getMipLevels())
-                            .baseArrayLayer(0)
-                            .layerCount(1));
-            withLabel(cmd, "Restore External Resource Barrier", () -> vkCmdPipelineBarrier(
-                    cmd,
-                    BROAD_STAGE_MASK,
-                    BROAD_STAGE_MASK,
-                    0, null, null, barrier
-            ));
-        }
-        ext.setCurrentLayout(newLayout);
+        transitionTexture(cmd, ext, vkStateFor(targetState), "Restore External Resource Barrier");
     }
 
     @Override
@@ -203,6 +228,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             long imageHandle = vulkanTexture.handle();
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+            transitionTexture(commandBufferHandle, texture, ResourceAccessType.TRANSFER_DST);
             VkImageSubresourceRange range = VkImageSubresourceRange.calloc(stack);
             range.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
             range.baseMipLevel(0);
@@ -216,6 +242,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     clearColor,
                     range
             ));
+            markTextureState(texture, ResourceAccessType.TRANSFER_DST);
         }
     }
 
@@ -229,6 +256,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             long imageHandle = vulkanTexture.handle();
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+            transitionTexture(commandBufferHandle, texture, ResourceAccessType.TRANSFER_DST);
             VkImageSubresourceRange range = VkImageSubresourceRange.calloc(stack);
             range.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
             range.baseMipLevel(0);
@@ -243,6 +271,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     clearDepth,
                     range
             ));
+            markTextureState(texture, ResourceAccessType.TRANSFER_DST);
         }
     }
 
@@ -256,6 +285,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             long imageHandle = vulkanTexture.handle();
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+            transitionTexture(commandBufferHandle, texture, ResourceAccessType.TRANSFER_DST);
             VkImageSubresourceRange range = VkImageSubresourceRange.calloc(stack);
             range.aspectMask(VK_IMAGE_ASPECT_STENCIL_BIT);
             range.baseMipLevel(0);
@@ -270,6 +300,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     clearStencil,
                     range
             ));
+            markTextureState(texture, ResourceAccessType.TRANSFER_DST);
         }
     }
 
@@ -278,6 +309,10 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VulkanTexture srcTexture = (VulkanTexture) src;
             VulkanTexture dstTexture = (VulkanTexture) dst;
+            VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
+            VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
+            transitionTexture(commandBufferHandle, src, ResourceAccessType.TRANSFER_SRC);
+            transitionTexture(commandBufferHandle, dst, ResourceAccessType.TRANSFER_DST);
 
             VkImageCopy.Buffer copyRegion = VkImageCopy.calloc(1, stack);
             copyRegion.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -291,9 +326,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             copyRegion.dstSubresource().layerCount(1);
             copyRegion.dstOffset().set(dstX0, dstY0, 0);
 
-            VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
-            VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
-
             withLabel(commandBufferHandle, "Copy Texture", () -> vkCmdCopyImage(
                     commandBufferHandle,
                     srcTexture.handle(),
@@ -302,6 +334,8 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     copyRegion
             ));
+            markTextureState(src, ResourceAccessType.TRANSFER_SRC);
+            markTextureState(dst, ResourceAccessType.TRANSFER_DST);
         }
     }
 
@@ -355,7 +389,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         );
         stagingBuffer.writeHostVisible(src, 0);
         copyBuffer(commandBuffer, stagingBuffer, vkBuffer, 0, dstOffset, size);
-        insertTransferWriteBarrier(vcb.getNativeCommandBuffer(), vkBuffer, dstOffset, size);
+        insertTransferWriteBarrier(vcb.getNativeCommandBuffer(), vkBuffer, dstOffset, size, vkPostTransferStageFor(vkBuffer.getUsages()), vkPostTransferAccessFor(vkBuffer.getUsages()));
         vcb.addTransientResource(stagingBuffer);
     }
 
@@ -720,6 +754,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
         VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
+        prepareDescriptorResources(cmd, vkDescriptorSet, VK_PIPELINE_BIND_POINT_COMPUTE);
 
         long pipelineHandle = vkComputePipeline.getPipeline();
         withLabel(cmd, "Bind Compute Pipeline", () -> {
@@ -808,12 +843,15 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         return vulkanDevice;
     }
 
-    void insertTransferWriteBarrier(VkCommandBuffer commandBuffer, VulkanBuffer buffer, long offset, long size) {
+    void insertTransferWriteBarrier(VkCommandBuffer commandBuffer, VulkanBuffer buffer, long offset, long size, int dstStageMask, int dstAccessMask) {
+        if (dstStageMask == 0 || dstAccessMask == 0) {
+            return;
+        }
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferMemoryBarrier.Buffer barrier = VkBufferMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER)
-                    .srcAccessMask(BROAD_ACCESS_MASK)
-                    .dstAccessMask(BROAD_ACCESS_MASK)
+                    .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                    .dstAccessMask(dstAccessMask)
                     .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .buffer(buffer.handle())
@@ -821,8 +859,8 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .size(size);
             withLabel(commandBuffer, "Transfer Write Barrier", () -> vkCmdPipelineBarrier(
                     commandBuffer,
-                    BROAD_STAGE_MASK,
-                    BROAD_STAGE_MASK,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    dstStageMask,
                     0,
                     null,
                     barrier,
@@ -832,13 +870,17 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     }
 
     private void transitionTexture(VkCommandBuffer cmd, ITexture texture, ResourceAccessType target) {
+        transitionTexture(cmd, texture, vkStateFor(target), "Texture Layout Transition");
+    }
+
+    private void transitionTexture(VkCommandBuffer cmd, ITexture texture, VulkanResourceState target, String label) {
         if (!(texture instanceof VulkanLayoutTracked vlt)) {
             return;
         }
 
-        int newLayout = vkLayoutFor(target);
-        int oldLayout = vlt.getCurrentLayout();
-        if (oldLayout == newLayout) {
+        VulkanResourceState current = vlt.getCurrentResourceState();
+        if (!requiresBarrier(current, target)) {
+            vlt.setCurrentResourceState(target);
             return;
         }
 
@@ -848,10 +890,10 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                    .srcAccessMask(BROAD_ACCESS_MASK)
-                    .dstAccessMask(BROAD_ACCESS_MASK)
-                    .oldLayout(oldLayout)
-                    .newLayout(newLayout)
+                    .srcAccessMask(current.accessMask())
+                    .dstAccessMask(target.accessMask())
+                    .oldLayout(current.layout())
+                    .newLayout(target.layout())
                     .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .image(imageHandle)
@@ -861,14 +903,64 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                             .levelCount(VK_REMAINING_MIP_LEVELS)
                             .baseArrayLayer(0)
                             .layerCount(1));
-            withLabel(cmd, "Texture Layout Transition", () -> vkCmdPipelineBarrier(
+            withLabel(cmd, label, () -> vkCmdPipelineBarrier(
                     cmd,
-                    BROAD_STAGE_MASK,
-                    BROAD_STAGE_MASK,
+                    current.stageMask(),
+                    target.stageMask(),
                     0, null, null, barrier
             ));
         }
-        vlt.setCurrentLayout(newLayout);
+        vlt.setCurrentResourceState(target);
+    }
+
+    private boolean requiresBarrier(VulkanResourceState current, VulkanResourceState target) {
+        if (current == null) {
+            return true;
+        }
+        if (current.layout() != target.layout()) {
+            return true;
+        }
+        if (current.accessType() == target.accessType() && current.stageMask() == target.stageMask() && current.accessMask() == target.accessMask()) {
+            return false;
+        }
+        return current.accessType().includesWrite() || target.accessType().includesWrite();
+    }
+
+    private void markTextureState(ITexture texture, ResourceAccessType target) {
+        if (texture instanceof VulkanLayoutTracked vlt) {
+            vlt.setCurrentResourceState(vkStateFor(target));
+        }
+    }
+
+    private void prepareDescriptorResources(VkCommandBuffer cmd, VulkanPipelineDescriptorSet descriptorSet, int bindPoint) {
+        for (Map.Entry<String, PipelineDescriptorSet.ResourceBinding> entry : descriptorSet.getBindings().entrySet()) {
+            PipelineDescriptorSet.ResourceBinding binding = entry.getValue();
+            ITexture texture = resolveTrackingTarget(binding);
+            if (texture == null) {
+                continue;
+            }
+            ResourceAccessType accessType = switch (binding.type()) {
+                case SAMPLER_TEXTURE -> ResourceAccessType.SAMPLED_READ;
+                case STORAGE_IMAGE -> storageAccessFor(descriptorSet, entry.getKey());
+                default -> null;
+            };
+            if (accessType != null) {
+                transitionTexture(cmd, texture, vkStateFor(accessType, bindPoint), "Prepare Descriptor Resource");
+            }
+        }
+    }
+
+    private ResourceAccessType storageAccessFor(VulkanPipelineDescriptorSet descriptorSet, String resourceName) {
+        ShaderResourceDescription desc = descriptorSet.getShader()
+                .getDescription()
+                .resourcesLayout()
+                .getResource(resourceName);
+        ShaderResourceAccess access = desc != null ? desc.access() : ShaderResourceAccess.Both;
+        return switch (access) {
+            case Read -> ResourceAccessType.STORAGE_READ;
+            case Write -> ResourceAccessType.STORAGE_WRITE;
+            case Both -> ResourceAccessType.STORAGE_READ_WRITE;
+        };
     }
 
     private ITexture resolveTrackingTarget(PipelineDescriptorSet.ResourceBinding binding) {

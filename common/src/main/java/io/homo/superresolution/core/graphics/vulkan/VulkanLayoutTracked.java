@@ -22,4 +22,8 @@ interface VulkanLayoutTracked {
     int getCurrentLayout();
 
     void setCurrentLayout(int layout);
+
+    VulkanResourceState getCurrentResourceState();
+
+    void setCurrentResourceState(VulkanResourceState state);
 }

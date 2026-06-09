@@ -48,7 +48,7 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
     private int width;
     private int height;
     private long memorySize;
-    private int currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    private VulkanResourceState currentState = VulkanResourceState.UNDEFINED;
 
     public VulkanTexture(VulkanDevice device, TextureDescription description) {
         this(device, description, false, -1, false);
@@ -369,13 +369,13 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
             int dstStageMask,
             int dependencyFlags
     ) {
-        if (currentLayout == newLayout) {
+        if (currentState.layout() == newLayout) {
             return;
         }
         try (MemoryStack stack = stackPush()) {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                    .oldLayout(currentLayout)
+                    .oldLayout(currentState.layout())
                     .newLayout(newLayout)
                     .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
@@ -397,15 +397,30 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
                     barrier
             );
         }
-        currentLayout = newLayout;
+        currentState = new VulkanResourceState(newLayout, 0, dstStageMask, currentState.accessType());
     }
 
     public int getCurrentLayout() {
-        return currentLayout;
+        return currentState.layout();
     }
 
     public void setCurrentLayout(int layout) {
-        this.currentLayout = layout;
+        this.currentState = new VulkanResourceState(
+                layout,
+                currentState.accessMask(),
+                currentState.stageMask(),
+                currentState.accessType()
+        );
+    }
+
+    @Override
+    public VulkanResourceState getCurrentResourceState() {
+        return currentState;
+    }
+
+    @Override
+    public void setCurrentResourceState(VulkanResourceState state) {
+        this.currentState = state != null ? state : VulkanResourceState.UNDEFINED;
     }
 
     @Override
