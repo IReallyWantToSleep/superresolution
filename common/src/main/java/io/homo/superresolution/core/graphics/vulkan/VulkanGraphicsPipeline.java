@@ -412,6 +412,10 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
         return pipelineLayout;
     }
 
+    public VulkanPipelineDescriptorSet.DescriptorLayoutKey getDescriptorLayoutKey() {
+        return ((VulkanPipelineDescriptorSet) descriptorSet()).getDescriptorLayoutKey();
+    }
+
     @Override
     public void destroy() {
         if (pipeline != VK_NULL_HANDLE) {

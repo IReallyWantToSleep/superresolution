@@ -26,7 +26,9 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK10.*;
@@ -44,6 +46,13 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private VulkanGraphicsPipeline boundGraphicsPipeline;
     private VulkanComputePipeline boundComputePipeline;
     private boolean renderPassActive;
+    private long boundGraphicsPipelineHandle = VK_NULL_HANDLE;
+    private long boundComputePipelineHandle = VK_NULL_HANDLE;
+    private final Map<DescriptorSetKey, DescriptorSetState> pushedDescriptorSets = new HashMap<>();
+    private long pipelineBindCount;
+    private long pushDescriptorCount;
+    private long pushDescriptorSkippedCount;
+    private long layoutCompatibleReuseCount;
 
     public VulkanCommandBuffer(VulkanDevice vulkanDevice, VulkanCommandPool ownerPool, CommandBufferBehavior behavior) {
         this.vulkanDevice = vulkanDevice;
@@ -72,6 +81,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
             VK_CHECK(vkBeginCommandBuffer(nativeCommandBuffer, beginInfo));
         }
         clearRenderPassState();
+        clearBindingState();
         state = CommandBufferState.Recording;
     }
 
@@ -100,6 +110,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         ensureNotInFlight();
         VK_CHECK(vkResetCommandBuffer(nativeCommandBuffer, 0));
         clearRenderPassState();
+        clearBindingState();
         state = CommandBufferState.Executable;
     }
 
@@ -118,6 +129,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         ownerPool.onCommandBufferDestroyed(this);
         nativeCommandBuffer = null;
         clearRenderPassState();
+        clearBindingState();
         state = CommandBufferState.Destroyed;
     }
 
@@ -248,6 +260,87 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         this.boundComputePipeline = pipeline;
     }
 
+    boolean isNativePipelineBound(int bindPoint, long pipelineHandle) {
+        return switch (bindPoint) {
+            case VK_PIPELINE_BIND_POINT_GRAPHICS -> boundGraphicsPipelineHandle == pipelineHandle;
+            case VK_PIPELINE_BIND_POINT_COMPUTE -> boundComputePipelineHandle == pipelineHandle;
+            default -> false;
+        };
+    }
+
+    void recordNativePipelineBind(int bindPoint, long pipelineHandle) {
+        switch (bindPoint) {
+            case VK_PIPELINE_BIND_POINT_GRAPHICS -> boundGraphicsPipelineHandle = pipelineHandle;
+            case VK_PIPELINE_BIND_POINT_COMPUTE -> boundComputePipelineHandle = pipelineHandle;
+            default -> {
+            }
+        }
+        pipelineBindCount++;
+    }
+
+    List<VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey> collectDescriptorUpdates(
+            int bindPoint,
+            int setIndex,
+            VulkanPipelineDescriptorSet.DescriptorLayoutKey layoutKey,
+            List<VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey> requestedBindings
+    ) {
+        DescriptorSetKey key = new DescriptorSetKey(bindPoint, setIndex);
+        DescriptorSetState current = pushedDescriptorSets.get(key);
+        if (current == null || !current.layoutKey().equals(layoutKey)) {
+            return requestedBindings;
+        }
+
+        List<VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey> updates = new ArrayList<>();
+        for (VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey requested : requestedBindings) {
+            VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey previous =
+                    current.bindings().get(requested.binding());
+            if (!requested.equals(previous)) {
+                updates.add(requested);
+            } else {
+                layoutCompatibleReuseCount++;
+            }
+        }
+
+        if (updates.isEmpty()) {
+            pushDescriptorSkippedCount++;
+        }
+        return updates;
+    }
+
+    void recordDescriptorPush(
+            int bindPoint,
+            int setIndex,
+            VulkanPipelineDescriptorSet.DescriptorLayoutKey layoutKey,
+            List<VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey> pushedBindings
+    ) {
+        DescriptorSetKey key = new DescriptorSetKey(bindPoint, setIndex);
+        DescriptorSetState state = pushedDescriptorSets.get(key);
+        if (state == null || !state.layoutKey().equals(layoutKey)) {
+            state = new DescriptorSetState(layoutKey);
+            pushedDescriptorSets.put(key, state);
+        }
+        for (VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey binding : pushedBindings) {
+            state.bindings().put(binding.binding(), binding);
+        }
+        pushDescriptorCount++;
+    }
+
+    public long getPipelineBindCount() {
+        return pipelineBindCount;
+    }
+
+    public long getPushDescriptorCount() {
+        return pushDescriptorCount;
+    }
+
+    public long getPushDescriptorSkippedCount() {
+        return pushDescriptorSkippedCount;
+    }
+
+    public long getLayoutCompatibleReuseCount() {
+        return layoutCompatibleReuseCount;
+    }
+
     VulkanGraphicsPipeline getBoundGraphicsPipeline() {
         return boundGraphicsPipeline;
     }
@@ -296,6 +389,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         renderPassActive = false;
     }
 
+    private void clearBindingState() {
+        boundGraphicsPipelineHandle = VK_NULL_HANDLE;
+        boundComputePipelineHandle = VK_NULL_HANDLE;
+        pushedDescriptorSets.clear();
+    }
+
     private void destroyTransientResources() {
         if (transientResources.isEmpty()) {
             return;
@@ -304,5 +403,25 @@ public class VulkanCommandBuffer implements ICommandBuffer {
             destroyable.destroy();
         }
         transientResources.clear();
+    }
+
+    private record DescriptorSetKey(int bindPoint, int setIndex) {
+    }
+
+    private static final class DescriptorSetState {
+        private final VulkanPipelineDescriptorSet.DescriptorLayoutKey layoutKey;
+        private final Map<Integer, VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey> bindings = new HashMap<>();
+
+        private DescriptorSetState(VulkanPipelineDescriptorSet.DescriptorLayoutKey layoutKey) {
+            this.layoutKey = layoutKey;
+        }
+
+        private VulkanPipelineDescriptorSet.DescriptorLayoutKey layoutKey() {
+            return layoutKey;
+        }
+
+        private Map<Integer, VulkanPipelineDescriptorSet.DescriptorBindingSnapshotKey> bindings() {
+            return bindings;
+        }
     }
 }

@@ -667,8 +667,12 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         vkGraphicsPipeline.ensurePipelineCreated();
 
         VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipeline());
-        vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipelineLayout());
+        long pipelineHandle = vkGraphicsPipeline.getPipeline();
+        if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle)) {
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
+            vcb.recordNativePipelineBind(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
+        }
+        vkDescriptorSet.pushDescriptorsIfNeeded(vcb, cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipelineLayout());
         pipeline.applyDynamicStates(commandBuffer);
         vcb.bindGraphicsPipeline(vkGraphicsPipeline);
     }
@@ -691,8 +695,12 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
         VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipeline());
-        vkDescriptorSet.pushDescriptors(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
+        long pipelineHandle = vkComputePipeline.getPipeline();
+        if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle)) {
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle);
+            vcb.recordNativePipelineBind(VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle);
+        }
+        vkDescriptorSet.pushDescriptorsIfNeeded(vcb, cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
         vcb.bindComputePipeline(vkComputePipeline);
     }
 

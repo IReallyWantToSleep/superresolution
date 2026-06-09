@@ -1003,6 +1003,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         #else
         Pair<MaterialResourcesList,MaterialDialog> selector = createLocalResourceSelector(resources);
         getView().showDialog(selector.right());
+
         #endif
     }
 
