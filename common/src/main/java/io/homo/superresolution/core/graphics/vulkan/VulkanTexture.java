@@ -293,19 +293,24 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
 
     @Override
     public void destroy() {
-        if (imageView != VK_NULL_HANDLE) {
-            vkDestroyImageView(device.getVkDevice(), imageView, null);
-            imageView = VK_NULL_HANDLE;
+        long imageViewToDestroy = imageView;
+        long imageToDestroy = image;
+        long allocationToDestroy = vmaAllocation;
+        long imageMemoryToDestroy = imageMemory;
+        imageView = VK_NULL_HANDLE;
+        image = VK_NULL_HANDLE;
+        vmaAllocation = VK_NULL_HANDLE;
+        imageMemory = VK_NULL_HANDLE;
+
+        if (imageViewToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroyImageView(device.getVkDevice(), imageViewToDestroy, null));
         }
 
-        if (vmaAllocation != VK_NULL_HANDLE) {
-            allocator.freeImageVma(image, vmaAllocation);
-            vmaAllocation = VK_NULL_HANDLE;
-        } else if (imageMemory != VK_NULL_HANDLE) {
-            allocator.freeImage(image, imageMemory);
+        if (allocationToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> allocator.freeImageVma(imageToDestroy, allocationToDestroy));
+        } else if (imageMemoryToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> allocator.freeImage(imageToDestroy, imageMemoryToDestroy));
         }
-        image = VK_NULL_HANDLE;
-        imageMemory = VK_NULL_HANDLE;
     }
 
     public long getExportedMemoryHandle() {

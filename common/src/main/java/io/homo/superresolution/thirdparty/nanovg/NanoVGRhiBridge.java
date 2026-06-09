@@ -56,7 +56,9 @@ import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -109,6 +111,12 @@ public final class NanoVGRhiBridge {
     #if (IS_VULKAN == 1)
     private static final int VK_COMMAND_BUFFER_RING_SIZE = 5;
     private static VulkanCommandBufferRing vkCommandBufferRing;
+    private static IBuffer[] vkFrameUniformBuffers;
+    private static IBuffer[] vkFragUniformBuffers;
+    private static IVertexBuffer[] vkDynamicVertexBuffers;
+    private static ByteBuffer[] vkStagedFragUniforms;
+    private static int[] vkDynamicVertexCapacities;
+    private static int activeVkRingIndex = -1;
     private static VulkanFramebuffer vkTargetFramebuffer;
     private static VkGlInteropSemaphore vkGlFinishSemaphore;
     private static VkGlInteropSemaphore vkVkFinishSemaphore;
@@ -185,11 +193,17 @@ public final class NanoVGRhiBridge {
     public static void createVkResources() {
         if (vkResourcesInitialized) return;
         vkCommandBufferRing = new VulkanCommandBufferRing(VK_COMMAND_BUFFER_RING_SIZE);
+        vkFrameUniformBuffers = new IBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+        vkFragUniformBuffers = new IBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+        vkDynamicVertexBuffers = new IVertexBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+        vkStagedFragUniforms = new ByteBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+        vkDynamicVertexCapacities = new int[VK_COMMAND_BUFFER_RING_SIZE];
         vkResourcesInitialized = true;
     }
 
     public static void destroyVkResources() {
         vkResourcesInitialized = false;
+        destroyVkDynamicResources();
         if (vkCommandBufferRing != null) {
             vkCommandBufferRing.destroy();
             vkCommandBufferRing = null;
@@ -387,28 +401,16 @@ public final class NanoVGRhiBridge {
             return;
         }
 
-        int requiredVertexBytes = estimateRequiredVertexBytes(
-                pathsData,
-                maxPathCount,
-                callsData,
-                ncalls,
-                callStride,
-                maxVertCount,
-                uniformsData.limit(),
-                fragSize
-        );
+        int requiredVertexBytes = maxVertCount * VERTEX_STRIDE_BYTES;
         if (requiredVertexBytes <= 0) {
             return;
         }
 
         ByteBuffer packedUniforms = packFragUniforms(uniformsData, maxUniformBytes, fragUniformSourceStride, fragUniformBindingStride);
         int packedUniformBytes = packedUniforms.remaining();
+        int requiredUniformBytes = requiredFragUniformAppendBytes(packedUniformBytes);
 
-        ensureActiveBatch(device, viewWidth, viewHeight, requiredVertexBytes, packedUniformBytes);
-        int uniformBaseOffset = appendFragUniforms(packedUniforms);
-
-        ICommandBuffer commandBuffer = activeCommandBuffer;
-        FlushBatchState batchState = activeFlushBatchState;
+        List<DrawCommand> drawCommands = new ArrayList<>(ncalls * 2);
         for (int i = 0; i < ncalls; i++) {
             int callBase = i * callStride;
             if (callBase < 0 || callBase + CALL_STRIDE_BYTES_LEGACY > callsData.limit()) {
@@ -456,13 +458,9 @@ public final class NanoVGRhiBridge {
 
             switch (type) {
                 case GLNVG_FILL -> drawFill(
-                        device,
-                        commandBuffer,
-                        batchState,
-                        vertsData,
+                        drawCommands,
                         pathsData,
                         uniformsData,
-                        uniformBaseOffset,
                         fragSize,
                         image,
                         pathOffset,
@@ -478,13 +476,9 @@ public final class NanoVGRhiBridge {
                         blendSrcAlpha,
                         blendDstAlpha);
                 case GLNVG_CONVEXFILL -> drawConvexFill(
-                        device,
-                        commandBuffer,
-                        batchState,
-                        vertsData,
+                        drawCommands,
                         pathsData,
                         uniformsData,
-                        uniformBaseOffset,
                         fragSize,
                         image,
                         pathOffset,
@@ -497,13 +491,9 @@ public final class NanoVGRhiBridge {
                         blendSrcAlpha,
                         blendDstAlpha);
                 case GLNVG_STROKE -> drawStroke(
-                        device,
-                        commandBuffer,
-                        batchState,
-                        vertsData,
+                        drawCommands,
                         pathsData,
                         uniformsData,
-                        uniformBaseOffset,
                         fragSize,
                         image,
                         pathOffset,
@@ -517,12 +507,8 @@ public final class NanoVGRhiBridge {
                         blendSrcAlpha,
                         blendDstAlpha);
                 case GLNVG_TRIANGLES -> drawTrianglesRange(
-                        device,
-                        commandBuffer,
-                        batchState,
-                        vertsData,
+                        drawCommands,
                         uniformsData,
-                        uniformBaseOffset,
                         fragSize,
                         image,
                         triangleOffset,
@@ -536,6 +522,26 @@ public final class NanoVGRhiBridge {
                 default -> {
                 }
             }
+        }
+        if (drawCommands.isEmpty()) {
+            return;
+        }
+
+        ensureActiveBatch(device, viewWidth, viewHeight, requiredVertexBytes, requiredUniformBytes);
+        int vertexBaseOffset = appendVertexData(vertsData, requiredVertexBytes);
+        if (vertexBaseOffset < 0) {
+            return;
+        }
+        int vertexBase = vertexBaseOffset / VERTEX_STRIDE_BYTES;
+        int uniformBaseOffset = appendFragUniforms(packedUniforms);
+        if (uniformBaseOffset < 0) {
+            return;
+        }
+
+        ICommandBuffer commandBuffer = activeCommandBuffer;
+        FlushBatchState batchState = activeFlushBatchState;
+        for (DrawCommand drawCommand : drawCommands) {
+            executeDrawCommand(device, commandBuffer, batchState, drawCommand, vertexBase, uniformBaseOffset);
         }
         if (!explicitBatchActive) {
             closeActiveBatch(true);
@@ -556,6 +562,9 @@ public final class NanoVGRhiBridge {
         PASS_CACHE.values().forEach(RenderPass::destroy);
         PASS_CACHE.clear();
 
+        #if (IS_VULKAN == 1)
+        destroyVkDynamicResources();
+        #endif
         if (dynamicVertexBuffer != null) {
             dynamicVertexBuffer.destroy();
             dynamicVertexBuffer = null;
@@ -615,6 +624,13 @@ public final class NanoVGRhiBridge {
             shader.compile();
         }
 
+        #if (IS_VULKAN == 1)
+        if (device instanceof VulkanDevice) {
+            ensureDummyTexture(device);
+            return;
+        }
+        #endif
+
         if (frameUniformBuffer == null) {
             frameUniformBuffer = device.createBuffer(
                     BufferDescription.create()
@@ -633,37 +649,83 @@ public final class NanoVGRhiBridge {
             );
         }
 
-        if (dummyTexture == null) {
-            TextureDescription description = TextureDescription.create()
-                    .type(TextureType.Texture2D)
-                    .format(TextureFormat.RGBA8)
-                    .size(1, 1)
-                    .usages(TextureUsages.create().sampler().transferDestination())
-                    .filterMode(TextureFilterMode.Linear)
-                    .wrapMode(TextureWrapMode.ClampToEdge)
-                    .mipmapSettings(TextureMipmapSettings.disabled())
-                    .label("NanoVgDummy")
-                    .build();
-            dummyTexture = device.createTexture(description);
-            ByteBuffer white = MemoryUtil.memAlloc(4);
-            white.put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).flip();
-            ICommandBuffer commandBuffer = device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
-            commandBuffer.begin();
-            commandBuffer.writeToTexture(dummyTexture, white, 0, 0, 1, 1);
-            commandBuffer.end();
-            commandBuffer.submit(device);
-            commandBuffer.waitForFence();
-            MemoryUtil.memFree(white);
+        ensureDummyTexture(device);
+    }
+
+    #if (IS_VULKAN == 1)
+    private static void destroyVkDynamicResources() {
+        destroyBuffers(vkFrameUniformBuffers);
+        destroyBuffers(vkFragUniformBuffers);
+        destroyVertexBuffers(vkDynamicVertexBuffers);
+        vkFrameUniformBuffers = null;
+        vkFragUniformBuffers = null;
+        vkDynamicVertexBuffers = null;
+        vkStagedFragUniforms = null;
+        vkDynamicVertexCapacities = null;
+        if (activeVkRingIndex >= 0) {
+            dynamicVertexBuffer = null;
+            dynamicVertexCapacity = 0;
+            frameUniformBuffer = null;
+            fragUniformBuffer = null;
+            stagedFragUniforms = null;
+        }
+        activeVkRingIndex = -1;
+    }
+
+    private static void destroyBuffers(IBuffer[] buffers) {
+        if (buffers == null) {
+            return;
+        }
+        for (int i = 0; i < buffers.length; i++) {
+            if (buffers[i] != null) {
+                buffers[i].destroy();
+                buffers[i] = null;
+            }
         }
     }
 
-    private static void drawFill(IDevice device,
-                                 ICommandBuffer commandBuffer,
-                                 FlushBatchState batchState,
-                                 ByteBuffer verts,
+    private static void destroyVertexBuffers(IVertexBuffer[] buffers) {
+        if (buffers == null) {
+            return;
+        }
+        for (int i = 0; i < buffers.length; i++) {
+            if (buffers[i] != null) {
+                buffers[i].destroy();
+                buffers[i] = null;
+            }
+        }
+    }
+    #endif
+
+    private static void ensureDummyTexture(IDevice device) {
+        if (dummyTexture != null) {
+            return;
+        }
+        TextureDescription description = TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .format(TextureFormat.RGBA8)
+                .size(1, 1)
+                .usages(TextureUsages.create().sampler().transferDestination())
+                .filterMode(TextureFilterMode.Linear)
+                .wrapMode(TextureWrapMode.ClampToEdge)
+                .mipmapSettings(TextureMipmapSettings.disabled())
+                .label("NanoVgDummy")
+                .build();
+        dummyTexture = device.createTexture(description);
+        ByteBuffer white = MemoryUtil.memAlloc(4);
+        white.put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).flip();
+        ICommandBuffer commandBuffer = device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.OneTimeSubmit);
+        commandBuffer.begin();
+        commandBuffer.writeToTexture(dummyTexture, white, 0, 0, 1, 1);
+        commandBuffer.end();
+        commandBuffer.submit(device);
+        commandBuffer.waitForFence();
+        MemoryUtil.memFree(white);
+    }
+
+    private static void drawFill(List<DrawCommand> drawCommands,
                                  ByteBuffer paths,
                                  ByteBuffer uniforms,
-                                 int uniformBaseOffset,
                                  int fragSize,
                                  int image,
                                  int pathOffset,
@@ -691,8 +753,7 @@ public final class NanoVGRhiBridge {
             int fillOffset = paths.getInt(pathBase);
             int fillCount = paths.getInt(pathBase + 4);
             if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
-                ByteBuffer fanVerts = buildRange(verts, fillOffset, fillCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleFan, fanVerts, uniforms, uniformBaseOffset, uniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleFan, fillOffset, fillCount, uniforms, uniformOffset,
                         fragSize, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_FILL_WRITE, 0);
             }
@@ -710,8 +771,7 @@ public final class NanoVGRhiBridge {
                 int strokeOffset = paths.getInt(pathBase + 8);
                 int strokeCount = paths.getInt(pathBase + 12);
                 if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
-                    ByteBuffer strip = buildRange(verts, strokeOffset, strokeCount);
-                    uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, strip, uniforms, uniformBaseOffset, paintUniformOffset,
+                    emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, paintUniformOffset,
                             fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                             STENCIL_MODE_FILL_AA, ColorComponentFlags.ALL);
                 }
@@ -719,21 +779,16 @@ public final class NanoVGRhiBridge {
 
             // Pass 3: draw bounding quad where stencil is not zero and clear stencil back to zero.
             if (triangleCount > 0 && isVertexRangeValid(triangleOffset, triangleCount, maxVertCount)) {
-                ByteBuffer fillQuad = buildRange(verts, triangleOffset, triangleCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, fillQuad, uniforms, uniformBaseOffset, paintUniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, triangleOffset, triangleCount, uniforms, paintUniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_FILL_CLEAR, ColorComponentFlags.ALL);
             }
         }
     }
 
-    private static void drawConvexFill(IDevice device,
-                                       ICommandBuffer commandBuffer,
-                                       FlushBatchState batchState,
-                                       ByteBuffer verts,
+    private static void drawConvexFill(List<DrawCommand> drawCommands,
                                        ByteBuffer paths,
                                        ByteBuffer uniforms,
-                                       int uniformBaseOffset,
                                        int fragSize,
                                        int image,
                                        int pathOffset,
@@ -760,27 +815,21 @@ public final class NanoVGRhiBridge {
             int strokeCount = paths.getInt(pathBase + 12);
 
             if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
-                ByteBuffer fanVerts = buildRange(verts, fillOffset, fillCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleFan, fanVerts, uniforms, uniformBaseOffset, uniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleFan, fillOffset, fillCount, uniforms, uniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
             }
             if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
-                ByteBuffer strip = buildRange(verts, strokeOffset, strokeCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, strip, uniforms, uniformBaseOffset, uniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
             }
         }
     }
 
-    private static void drawStroke(IDevice device,
-                                   ICommandBuffer commandBuffer,
-                                   FlushBatchState batchState,
-                                   ByteBuffer verts,
+    private static void drawStroke(List<DrawCommand> drawCommands,
                                    ByteBuffer paths,
                                    ByteBuffer uniforms,
-                                   int uniformBaseOffset,
                                    int fragSize,
                                    int image,
                                    int pathOffset,
@@ -811,8 +860,7 @@ public final class NanoVGRhiBridge {
                 if (strokeCount <= 0 || !isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
                     continue;
                 }
-                ByteBuffer strip = buildRange(verts, strokeOffset, strokeCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, strip, uniforms, uniformBaseOffset, baseUniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, baseUniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_STROKE_BASE, ColorComponentFlags.ALL);
             }
@@ -828,8 +876,7 @@ public final class NanoVGRhiBridge {
                 if (strokeCount <= 0 || !isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
                     continue;
                 }
-                ByteBuffer strip = buildRange(verts, strokeOffset, strokeCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, strip, uniforms, uniformBaseOffset, uniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_STROKE_AA, ColorComponentFlags.ALL);
             }
@@ -845,8 +892,7 @@ public final class NanoVGRhiBridge {
                 if (strokeCount <= 0 || !isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
                     continue;
                 }
-                ByteBuffer strip = buildRange(verts, strokeOffset, strokeCount);
-                uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, strip, uniforms, uniformBaseOffset, uniformOffset,
+                emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
                         fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_STROKE_CLEAR, 0);
             }
@@ -864,19 +910,14 @@ public final class NanoVGRhiBridge {
             if (strokeCount <= 0 || !isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
                 continue;
             }
-            ByteBuffer strip = buildRange(verts, strokeOffset, strokeCount);
-            uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.TriangleStrip, strip, uniforms, uniformBaseOffset, uniformOffset,
+            emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
                     fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                     STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
         }
     }
 
-    private static void drawTrianglesRange(IDevice device,
-                                           ICommandBuffer commandBuffer,
-                                           FlushBatchState batchState,
-                                           ByteBuffer verts,
+    private static void drawTrianglesRange(List<DrawCommand> drawCommands,
                                            ByteBuffer uniforms,
-                                           int uniformBaseOffset,
                                            int fragSize,
                                            int image,
                                            int triangleOffset,
@@ -890,48 +931,28 @@ public final class NanoVGRhiBridge {
         if (triangleCount <= 0 || !isVertexRangeValid(triangleOffset, triangleCount, maxVertCount)) {
             return;
         }
-        ByteBuffer tri = buildRange(verts, triangleOffset, triangleCount);
-        uploadAndDraw(device, commandBuffer, batchState, PrimitiveType.Triangle, tri, uniforms, uniformBaseOffset, uniformOffset,
+        emitDrawCommand(drawCommands, PrimitiveType.Triangle, triangleOffset, triangleCount, uniforms, uniformOffset,
                 fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                 STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
     }
 
-    private static void uploadAndDraw(IDevice device,
-                                      ICommandBuffer commandBuffer,
-                                      FlushBatchState batchState,
-                                      PrimitiveType primitive,
-                                      ByteBuffer vertices,
-                                      ByteBuffer uniforms,
-                                      int uniformBaseOffset,
-                                      int uniformOffset,
-                                      int fragSize,
-                                      int image,
-                                      int blendSrcRgb,
-                                      int blendDstRgb,
-                                      int blendSrcAlpha,
-                                      int blendDstAlpha,
-                                      int stencilMode,
-                                      int colorWriteMask) {
-        if (vertices == null || vertices.remaining() <= 0) {
+    private static void emitDrawCommand(List<DrawCommand> drawCommands,
+                                        PrimitiveType primitive,
+                                        int firstVertex,
+                                        int vertexCount,
+                                        ByteBuffer uniforms,
+                                        int uniformOffset,
+                                        int fragSize,
+                                        int image,
+                                        int blendSrcRgb,
+                                        int blendDstRgb,
+                                        int blendSrcAlpha,
+                                        int blendDstAlpha,
+                                        int stencilMode,
+                                        int colorWriteMask) {
+        if (vertexCount <= 0) {
             return;
         }
-
-        ByteBuffer vertexData = vertices.duplicate().order(ByteOrder.nativeOrder());
-        int vertexBytes = vertexData.remaining();
-        if (frameVertexWriteOffset < 0 || frameVertexWriteOffset + vertexBytes > dynamicVertexCapacity) {
-            return;
-        }
-        int firstVertex = frameVertexWriteOffset / VERTEX_STRIDE_BYTES;
-        #if (IS_VULKAN == 1)
-        if (vkTargetFramebuffer != null && device instanceof VulkanDevice) {
-            commandBuffer.writeToBuffer(dynamicVertexBuffer, frameVertexWriteOffset, vertexData);
-        } else {
-        #endif
-        commandBuffer.writeToBuffer(dynamicVertexBuffer, frameVertexWriteOffset, vertexData);
-        #if (IS_VULKAN == 1)
-        }
-        #endif
-        frameVertexWriteOffset += vertexBytes;
 
         if (!isUniformRangeValid(uniformOffset, fragSize, 1, uniforms.limit())) {
             return;
@@ -940,7 +961,30 @@ public final class NanoVGRhiBridge {
         if (translatedUniformOffset < 0) {
             return;
         }
-        long boundUniformOffsetLong = uniformBaseOffset + (long) translatedUniformOffset;
+
+        drawCommands.add(new DrawCommand(
+                primitive,
+                firstVertex,
+                vertexCount,
+                translatedUniformOffset,
+                fragSize,
+                image,
+                blendSrcRgb,
+                blendDstRgb,
+                blendSrcAlpha,
+                blendDstAlpha,
+                stencilMode,
+                colorWriteMask
+        ));
+    }
+
+    private static void executeDrawCommand(IDevice device,
+                                           ICommandBuffer commandBuffer,
+                                           FlushBatchState batchState,
+                                           DrawCommand drawCommand,
+                                           int vertexBase,
+                                           int uniformBaseOffset) {
+        long boundUniformOffsetLong = uniformBaseOffset + (long) drawCommand.uniformOffset;
         if (boundUniformOffsetLong > Integer.MAX_VALUE) {
             return;
         }
@@ -949,25 +993,23 @@ public final class NanoVGRhiBridge {
         GraphicsPipeline pipeline = getOrCreatePipeline(
                 device,
                 batchState.renderPass,
-                primitive,
-                blendSrcRgb,
-                blendDstRgb,
-                blendSrcAlpha,
-                blendDstAlpha,
-                stencilMode,
-                colorWriteMask
+                drawCommand.primitive,
+                drawCommand.blendSrcRgb,
+                drawCommand.blendDstRgb,
+                drawCommand.blendSrcAlpha,
+                drawCommand.blendDstAlpha,
+                drawCommand.stencilMode,
+                drawCommand.colorWriteMask
         );
 
-        ITexture texture = TEXTURES.getOrDefault(image, dummyTexture);
+        ITexture texture = TEXTURES.getOrDefault(drawCommand.image, dummyTexture);
 
         pipeline.descriptorSet()
                 .uniformBuffer("frame", 0, frameUniformBuffer)
-                .uniformBufferRange("frag", 1, fragUniformBuffer, boundUniformOffset, fragSize)
+                .uniformBufferRange("frag", 1, fragUniformBuffer, boundUniformOffset, drawCommand.uniformRange)
                 .samplerTexture("tex", 2, texture)
                 .update();
 
-        int vertexCount = vertexBytes / VERTEX_STRIDE_BYTES;
-        batchState.endIfNeeded(commandBuffer);
         batchState.beginIfNeeded(commandBuffer);
         if (batchState.markViewportPrepared(pipeline)) {
             #if (IS_VULKAN == 1)
@@ -982,7 +1024,7 @@ public final class NanoVGRhiBridge {
             #endif
         }
         commandBuffer.bindPipeline(pipeline);
-        commandBuffer.draw(dynamicVertexBuffer, vertexCount, firstVertex);
+        commandBuffer.draw(dynamicVertexBuffer, drawCommand.vertexCount, vertexBase + drawCommand.firstVertex);
     }
 
     private static void ensureVertexCapacity(IDevice device, int requiredBytes) {
@@ -1027,28 +1069,39 @@ public final class NanoVGRhiBridge {
 
         int totalVertexBytes = frameVertexWriteOffset + requiredVertexBytes;
         int totalUniformBytes = fragUniformWriteOffset + requiredUniformBytes;
-        if (activeCommandBuffer != null
-                && (totalVertexBytes > dynamicVertexCapacity || totalUniformBytes > fragUniformBuffer.getSize())) {
+        if (activeCommandBuffer != null && !activeBatchHasCapacity(totalVertexBytes, totalUniformBytes)) {
             closeActiveBatch(true);
             totalVertexBytes = requiredVertexBytes;
             totalUniformBytes = requiredUniformBytes;
         }
 
-        ensureVertexCapacity(device, totalVertexBytes);
-        ensureFragUniformCapacity(device, totalUniformBytes);
-
         if (activeCommandBuffer != null) {
+            #if (IS_VULKAN == 1)
+            if (activeVkRingIndex >= 0) {
+                ensureVkVertexCapacity(device, activeVkRingIndex, totalVertexBytes);
+                ensureVkFragUniformCapacity(device, activeVkRingIndex, totalUniformBytes);
+                bindVkRingResources(device, activeVkRingIndex, totalVertexBytes, totalUniformBytes);
+                activeFlushBatchState.endIfNeeded(activeCommandBuffer);
+                return;
+            }
+            #endif
+            ensureVertexCapacity(device, totalVertexBytes);
+            ensureFragUniformCapacity(device, totalUniformBytes);
+            activeFlushBatchState.endIfNeeded(activeCommandBuffer);
             return;
         }
 
         #if (IS_VULKAN == 1)
         if (vkTargetFramebuffer != null && device instanceof VulkanDevice) {
             VulkanCommandBuffer vkCb = vkCommandBufferRing.acquire((VulkanDevice) device);
+            bindVkRingResources(device, vkCommandBufferRing.acquiredIndex(), totalVertexBytes, totalUniformBytes);
             activeCommandBuffer = vkCb;
             vkCb.begin();
             activeFlushBatchState = new FlushBatchState(getOrCreateSharedPass(device));
         } else {
         #endif
+        ensureVertexCapacity(device, totalVertexBytes);
+        ensureFragUniformCapacity(device, totalUniformBytes);
         activeCommandBuffer = device.defaultCommandPool().createCommandBuffer();
         activeCommandBuffer.begin();
         activeFlushBatchState = new FlushBatchState(getOrCreateSharedPass(device));
@@ -1063,9 +1116,95 @@ public final class NanoVGRhiBridge {
         activeBatchFragUniformBindingStride = fragUniformBindingStride;
         frameVertexWriteOffset = 0;
         fragUniformWriteOffset = 0;
-        stagedFragUniforms = BufferUtils.createByteBuffer(Math.toIntExact(fragUniformBuffer.getSize())).order(ByteOrder.nativeOrder());
+        #if (IS_VULKAN == 1)
+        if (activeVkRingIndex < 0) {
+        #endif
+            stagedFragUniforms = BufferUtils.createByteBuffer(Math.toIntExact(fragUniformBuffer.getSize())).order(ByteOrder.nativeOrder());
+        #if (IS_VULKAN == 1)
+        }
+        #endif
         uploadFrameUniform();
     }
+
+    private static boolean activeBatchHasCapacity(int totalVertexBytes, int totalUniformBytes) {
+        if (dynamicVertexBuffer == null || dynamicVertexCapacity < totalVertexBytes) {
+            return false;
+        }
+        return fragUniformBuffer != null && fragUniformBuffer.getSize() >= totalUniformBytes;
+    }
+
+    #if (IS_VULKAN == 1)
+    private static void bindVkRingResources(IDevice device, int ringIndex, int requiredVertexBytes, int requiredUniformBytes) {
+        if (ringIndex < 0) {
+            throw new IllegalStateException("Vulkan NanoVG command buffer ring index is invalid");
+        }
+        ensureVkDynamicResourceArrays();
+        activeVkRingIndex = ringIndex;
+        ensureVkVertexCapacity(device, ringIndex, requiredVertexBytes);
+        ensureVkFragUniformCapacity(device, ringIndex, requiredUniformBytes);
+        ensureVkFrameUniformBuffer(device, ringIndex);
+        dynamicVertexBuffer = vkDynamicVertexBuffers[ringIndex];
+        dynamicVertexCapacity = vkDynamicVertexCapacities[ringIndex];
+        frameUniformBuffer = vkFrameUniformBuffers[ringIndex];
+        fragUniformBuffer = vkFragUniformBuffers[ringIndex];
+        stagedFragUniforms = vkStagedFragUniforms[ringIndex];
+    }
+
+    private static void ensureVkDynamicResourceArrays() {
+        if (vkFrameUniformBuffers == null || vkFrameUniformBuffers.length != VK_COMMAND_BUFFER_RING_SIZE) {
+            vkFrameUniformBuffers = new IBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+            vkFragUniformBuffers = new IBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+            vkDynamicVertexBuffers = new IVertexBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+            vkStagedFragUniforms = new ByteBuffer[VK_COMMAND_BUFFER_RING_SIZE];
+            vkDynamicVertexCapacities = new int[VK_COMMAND_BUFFER_RING_SIZE];
+        }
+    }
+
+    private static void ensureVkFrameUniformBuffer(IDevice device, int ringIndex) {
+        if (vkFrameUniformBuffers[ringIndex] != null) {
+            return;
+        }
+        vkFrameUniformBuffers[ringIndex] = device.createBuffer(
+                BufferDescription.create()
+                        .size(16)
+                        .usages(BufferUsages.create().ubo().transferDst())
+                        .build()
+        );
+    }
+
+    private static void ensureVkVertexCapacity(IDevice device, int ringIndex, int requiredBytes) {
+        if (vkDynamicVertexBuffers[ringIndex] != null && vkDynamicVertexCapacities[ringIndex] >= requiredBytes) {
+            return;
+        }
+        if (vkDynamicVertexBuffers[ringIndex] != null) {
+            vkDynamicVertexBuffers[ringIndex].destroy();
+        }
+        int capacity = Math.max(requiredBytes, 8192);
+        vkDynamicVertexBuffers[ringIndex] = device.createVertexBuffer(
+                VertexBufferDescription.create(capacity, true, getVertexFormat())
+        );
+        vkDynamicVertexCapacities[ringIndex] = capacity;
+    }
+
+    private static void ensureVkFragUniformCapacity(IDevice device, int ringIndex, int requiredBytes) {
+        if (requiredBytes <= 0) {
+            return;
+        }
+        if (vkFragUniformBuffers[ringIndex] != null && vkFragUniformBuffers[ringIndex].getSize() >= requiredBytes) {
+            return;
+        }
+        if (vkFragUniformBuffers[ringIndex] != null) {
+            vkFragUniformBuffers[ringIndex].destroy();
+        }
+        vkFragUniformBuffers[ringIndex] = device.createBuffer(
+                BufferDescription.create()
+                        .size(Math.max(requiredBytes, 1024))
+                        .usages(BufferUsages.create().ubo().transferDst())
+                        .build()
+        );
+        vkStagedFragUniforms[ringIndex] = BufferUtils.createByteBuffer(Math.toIntExact(vkFragUniformBuffers[ringIndex].getSize())).order(ByteOrder.nativeOrder());
+    }
+    #endif
 
     private static boolean isActiveBatchCompatible(IDevice device, float viewWidth, float viewHeight) {
         return activeBatchDevice == device
@@ -1076,6 +1215,15 @@ public final class NanoVGRhiBridge {
                 && activeBatchFragUniformBindingStride == fragUniformBindingStride;
     }
 
+    private static int requiredFragUniformAppendBytes(int bytesToAppend) {
+        if (bytesToAppend <= 0) {
+            return 0;
+        }
+        int alignedBaseOffset = alignTo(fragUniformWriteOffset, fragUniformBindingStride);
+        long requiredBytes = (long) alignedBaseOffset - fragUniformWriteOffset + bytesToAppend;
+        return requiredBytes >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) requiredBytes;
+    }
+
     private static int appendFragUniforms(ByteBuffer uniforms) {
         if (uniforms == null || uniforms.remaining() <= 0) {
             return fragUniformWriteOffset;
@@ -1084,13 +1232,36 @@ public final class NanoVGRhiBridge {
             return fragUniformWriteOffset;
         }
 
-        int baseOffset = fragUniformWriteOffset;
         ByteBuffer src = uniforms.duplicate().order(ByteOrder.nativeOrder());
         int bytesToAppend = src.remaining();
+        int baseOffset = alignTo(fragUniformWriteOffset, fragUniformBindingStride);
+        if (baseOffset < 0 || baseOffset + bytesToAppend > stagedFragUniforms.capacity()) {
+            return -1;
+        }
         stagedFragUniforms.position(baseOffset);
         stagedFragUniforms.put(src);
-        fragUniformWriteOffset += bytesToAppend;
-        uploadFragUniforms(stagedFragUniforms, fragUniformWriteOffset);
+        fragUniformWriteOffset = baseOffset + bytesToAppend;
+        uploadFragUniforms(stagedFragUniforms, baseOffset, bytesToAppend);
+        return baseOffset;
+    }
+
+    private static int appendVertexData(ByteBuffer vertices, int size) {
+        if (vertices == null || size <= 0) {
+            return frameVertexWriteOffset;
+        }
+        if (activeCommandBuffer == null || activeBatchDevice == null) {
+            throw new IllegalStateException("No active command buffer for vertex upload");
+        }
+        if (frameVertexWriteOffset < 0 || frameVertexWriteOffset + size > dynamicVertexCapacity) {
+            return -1;
+        }
+
+        int baseOffset = frameVertexWriteOffset;
+        ByteBuffer src = vertices.duplicate().order(ByteOrder.nativeOrder());
+        src.position(0);
+        src.limit(size);
+        activeCommandBuffer.writeToBuffer(dynamicVertexBuffer, baseOffset, src);
+        frameVertexWriteOffset += size;
         return baseOffset;
     }
 
@@ -1139,6 +1310,9 @@ public final class NanoVGRhiBridge {
         fragUniformSourceStride = 0;
         fragUniformBindingStride = 0;
         stagedFragUniforms = null;
+        #if (IS_VULKAN == 1)
+        activeVkRingIndex = -1;
+        #endif
     }
 
     private static void uploadFrameUniform() {
@@ -1154,21 +1328,24 @@ public final class NanoVGRhiBridge {
         activeCommandBuffer.writeToBuffer(frameUniformBuffer, 0, frame);
     }
 
-    private static void uploadFragUniforms(ByteBuffer uniforms, int size) {
+    private static void uploadFragUniforms(ByteBuffer uniforms, int offset, int size) {
         if (uniforms == null || size <= 0) {
             return;
         }
         if (activeCommandBuffer == null || activeBatchDevice == null) {
             throw new IllegalStateException("No active command buffer for frag uniform upload");
         }
+        if (offset < 0 || offset + size > uniforms.capacity()) {
+            return;
+        }
         ByteBuffer src = uniforms.duplicate().order(ByteOrder.nativeOrder());
-        src.position(0);
-        src.limit(size);
+        src.position(offset);
+        src.limit(offset + size);
 
         ByteBuffer frag = BufferUtils.createByteBuffer(size).order(ByteOrder.nativeOrder());
         frag.put(src);
         frag.flip();
-        activeCommandBuffer.writeToBuffer(fragUniformBuffer, 0, frag);
+        activeCommandBuffer.writeToBuffer(fragUniformBuffer, offset, frag);
     }
 
     private static ByteBuffer packFragUniforms(ByteBuffer uniforms, int uniformBytes, int sourceStride, int targetStride) {
@@ -1269,133 +1446,6 @@ public final class NanoVGRhiBridge {
             return CALL_STRIDE_BYTES;
         }
         return CALL_STRIDE_BYTES_LEGACY;
-    }
-
-    private static int estimateRequiredVertexBytes(ByteBuffer pathsData,
-                                                   int maxPathCount,
-                                                   ByteBuffer callsData,
-                                                   int ncalls,
-                                                   int callStride,
-                                                   int maxVertCount,
-                                                   int uniformLimit,
-                                                   int fragSize) {
-        long totalBytes = 0L;
-
-        for (int i = 0; i < ncalls; i++) {
-            int callBase = i * callStride;
-            if (callBase < 0 || callBase + CALL_STRIDE_BYTES_LEGACY > callsData.limit()) {
-                continue;
-            }
-
-            int type = callsData.getInt(callBase);
-            int pathOffset = callsData.getInt(callBase + 8);
-            int pathCount = callsData.getInt(callBase + 12);
-            int triangleOffset = callsData.getInt(callBase + 16);
-            int triangleCount = callsData.getInt(callBase + 20);
-            int uniformOffset = callsData.getInt(callBase + 24);
-
-            int uniformCount;
-            if (callStride >= CALL_STRIDE_BYTES && callBase + CALL_STRIDE_BYTES <= callsData.limit()) {
-                uniformCount = callsData.getInt(callBase + 28);
-            } else {
-                uniformCount = inferLegacyUniformCount(type);
-            }
-
-            if (!isCallRangeValid(pathOffset, pathCount, maxPathCount)) {
-                continue;
-            }
-            if (!isVertexRangeValid(triangleOffset, triangleCount, maxVertCount)) {
-                continue;
-            }
-            if (!isUniformRangeValid(uniformOffset, fragSize, uniformCount, uniformLimit)) {
-                continue;
-            }
-
-            totalBytes += estimateCallVertexBytes(
-                    type,
-                    pathsData,
-                    pathOffset,
-                    pathCount,
-                    triangleOffset,
-                    triangleCount,
-                    uniformCount,
-                    maxVertCount,
-                    maxPathCount
-            );
-        }
-
-        if (totalBytes <= 0L) {
-            return 0;
-        }
-        return totalBytes >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) totalBytes;
-    }
-
-    private static long estimateCallVertexBytes(int type,
-                                                ByteBuffer pathsData,
-                                                int pathOffset,
-                                                int pathCount,
-                                                int triangleOffset,
-                                                int triangleCount,
-                                                int uniformCount,
-                                                int maxVertCount,
-                                                int maxPathCount) {
-        long totalBytes = 0L;
-
-        if (type == GLNVG_TRIANGLES) {
-            return isVertexRangeValid(triangleOffset, triangleCount, maxVertCount)
-                    ? (long) triangleCount * VERTEX_STRIDE_BYTES
-                    : 0L;
-        }
-
-        if (pathsData == null) {
-            return 0L;
-        }
-
-        for (int i = 0; i < pathCount; i++) {
-            int pathIndex = pathOffset + i;
-            if (pathIndex < 0 || pathIndex >= maxPathCount) {
-                continue;
-            }
-
-            int pathBase = pathIndex * PATH_STRIDE_BYTES;
-            int fillOffset = pathsData.getInt(pathBase);
-            int fillCount = pathsData.getInt(pathBase + 4);
-            int strokeOffset = pathsData.getInt(pathBase + 8);
-            int strokeCount = pathsData.getInt(pathBase + 12);
-
-            switch (type) {
-                case GLNVG_FILL -> {
-                    if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
-                        totalBytes += (long) (fillCount - 2) * 3L * VERTEX_STRIDE_BYTES;
-                    }
-                    if (uniformCount >= 2) {
-                        if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
-                            totalBytes += (long) strokeCount * VERTEX_STRIDE_BYTES;
-                        }
-                        if (triangleCount > 0 && isVertexRangeValid(triangleOffset, triangleCount, maxVertCount)) {
-                            totalBytes += (long) triangleCount * VERTEX_STRIDE_BYTES;
-                        }
-                    }
-                }
-                case GLNVG_CONVEXFILL -> {
-                    if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
-                        totalBytes += (long) (fillCount - 2) * 3L * VERTEX_STRIDE_BYTES;
-                    }
-                    if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
-                        totalBytes += (long) strokeCount * VERTEX_STRIDE_BYTES;
-                    }
-                }
-                case GLNVG_STROKE -> {
-                    if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
-                        totalBytes += (long) strokeCount * VERTEX_STRIDE_BYTES * (uniformCount >= 2 ? 3L : 1L);
-                    }
-                }
-                default -> {
-                }
-            }
-        }
-
-        return totalBytes;
     }
 
     private static int inferLegacyUniformCount(int type) {
@@ -1573,40 +1623,52 @@ public final class NanoVGRhiBridge {
         };
     }
 
-    private static ByteBuffer buildRange(ByteBuffer verts, int firstVertex, int vertexCount) {
-        ByteBuffer out = BufferUtils.createByteBuffer(vertexCount * VERTEX_STRIDE_BYTES).order(ByteOrder.nativeOrder());
-        for (int i = 0; i < vertexCount; i++) {
-            putVertex(out, verts, firstVertex + i);
-        }
-        out.flip();
-        return out;
-    }
-/*
-    private static ByteBuffer buildTriangleFan(ByteBuffer verts, int firstVertex, int vertexCount) {
-        int triangleCount = vertexCount - 2;
-        ByteBuffer out = BufferUtils.createByteBuffer(triangleCount * 3 * VERTEX_STRIDE_BYTES).order(ByteOrder.nativeOrder());
-        for (int i = 0; i < triangleCount; i++) {
-            putVertex(out, verts, firstVertex);
-            putVertex(out, verts, firstVertex + i + 1);
-            putVertex(out, verts, firstVertex + i + 2);
-        }
-        out.flip();
-        return out;
-    }*/
-
-    private static void putVertex(ByteBuffer dst, ByteBuffer src, int vertexIndex) {
-        int base = vertexIndex * VERTEX_STRIDE_BYTES;
-        dst.putFloat(src.getFloat(base));
-        dst.putFloat(src.getFloat(base + 4));
-        dst.putFloat(src.getFloat(base + 8));
-        dst.putFloat(src.getFloat(base + 12));
-    }
-
     private static VertexFormat getVertexFormat() {
         return VertexFormat.builder()
                 .addAttribute(0, "vertex", VertexAttributeFormat.FLOAT2)
                 .addAttribute(1, "tcoord", VertexAttributeFormat.FLOAT2)
                 .build();
+    }
+
+    private static final class DrawCommand {
+        private final PrimitiveType primitive;
+        private final int firstVertex;
+        private final int vertexCount;
+        private final int uniformOffset;
+        private final int uniformRange;
+        private final int image;
+        private final int blendSrcRgb;
+        private final int blendDstRgb;
+        private final int blendSrcAlpha;
+        private final int blendDstAlpha;
+        private final int stencilMode;
+        private final int colorWriteMask;
+
+        private DrawCommand(PrimitiveType primitive,
+                            int firstVertex,
+                            int vertexCount,
+                            int uniformOffset,
+                            int uniformRange,
+                            int image,
+                            int blendSrcRgb,
+                            int blendDstRgb,
+                            int blendSrcAlpha,
+                            int blendDstAlpha,
+                            int stencilMode,
+                            int colorWriteMask) {
+            this.primitive = primitive;
+            this.firstVertex = firstVertex;
+            this.vertexCount = vertexCount;
+            this.uniformOffset = uniformOffset;
+            this.uniformRange = uniformRange;
+            this.image = image;
+            this.blendSrcRgb = blendSrcRgb;
+            this.blendDstRgb = blendDstRgb;
+            this.blendSrcAlpha = blendSrcAlpha;
+            this.blendDstAlpha = blendDstAlpha;
+            this.stencilMode = stencilMode;
+            this.colorWriteMask = colorWriteMask;
+        }
     }
 
     private static final class FlushBatchState {

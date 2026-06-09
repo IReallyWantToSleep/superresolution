@@ -104,13 +104,15 @@ public class VulkanComputePipeline extends ComputePipeline {
 
     @Override
     public void destroy() {
-        if (pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(device.getVkDevice(), pipeline, null);
-            pipeline = VK_NULL_HANDLE;
+        long pipelineToDestroy = pipeline;
+        long pipelineLayoutToDestroy = pipelineLayout;
+        pipeline = VK_NULL_HANDLE;
+        pipelineLayout = VK_NULL_HANDLE;
+        if (pipelineToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroyPipeline(device.getVkDevice(), pipelineToDestroy, null));
         }
-        if (pipelineLayout != VK_NULL_HANDLE) {
-            vkDestroyPipelineLayout(device.getVkDevice(), pipelineLayout, null);
-            pipelineLayout = VK_NULL_HANDLE;
+        if (pipelineLayoutToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroyPipelineLayout(device.getVkDevice(), pipelineLayoutToDestroy, null));
         }
     }
 }

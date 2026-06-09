@@ -204,8 +204,13 @@ public class VulkanBuffer implements IBuffer {
         if (mapped) {
             unmap();
         }
-        allocator.freeBuffer(buffer, vmaAllocation);
+        long bufferToDestroy = buffer;
+        long allocationToDestroy = vmaAllocation;
         buffer = VK_NULL_HANDLE;
         vmaAllocation = 0;
+        if (bufferToDestroy == VK_NULL_HANDLE || allocationToDestroy == 0) {
+            return;
+        }
+        device.queueForDestroy(() -> allocator.freeBuffer(bufferToDestroy, allocationToDestroy));
     }
 }

@@ -25,6 +25,7 @@ public class VulkanCommandBufferRing {
     private final VulkanCommandBuffer[] commandBuffers;
     private boolean initialized;
     private int cursor = 0;
+    private int acquiredIndex = -1;
 
     public VulkanCommandBufferRing(int bufferCount) {
         if (bufferCount <= 0) {
@@ -45,8 +46,17 @@ public class VulkanCommandBufferRing {
 
         VulkanCommandBuffer commandBuffer = commandBuffers[cursor];
         commandBuffer.waitForFence();
+        acquiredIndex = cursor;
         cursor = (cursor + 1) % bufferCount;
         return commandBuffer;
+    }
+
+    public int acquiredIndex() {
+        return acquiredIndex;
+    }
+
+    public int bufferCount() {
+        return bufferCount;
     }
 
     public void destroy() {
@@ -55,13 +65,12 @@ public class VulkanCommandBufferRing {
             if (commandBuffer == null) {
                 continue;
             }
-            try {
-                commandBuffer.destroy();
-            } catch (IllegalStateException ignored) {
-            }
+            commandBuffer.waitForFence();
+            commandBuffer.destroy();
             commandBuffers[i] = null;
         }
         cursor = 0;
+        acquiredIndex = -1;
         initialized = false;
     }
 }

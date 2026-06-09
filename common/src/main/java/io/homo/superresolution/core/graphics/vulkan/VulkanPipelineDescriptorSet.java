@@ -233,12 +233,15 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
 
     public void destroy() {
         for (long sampler : samplerCache.values()) {
-            vkDestroySampler(device.getVkDevice(), sampler, null);
+            if (sampler != VK_NULL_HANDLE) {
+                device.queueForDestroy(() -> vkDestroySampler(device.getVkDevice(), sampler, null));
+            }
         }
         samplerCache.clear();
-        if (descriptorSetLayout != VK_NULL_HANDLE) {
-            vkDestroyDescriptorSetLayout(device.getVkDevice(), descriptorSetLayout, null);
-            descriptorSetLayout = VK_NULL_HANDLE;
+        long descriptorSetLayoutToDestroy = descriptorSetLayout;
+        descriptorSetLayout = VK_NULL_HANDLE;
+        if (descriptorSetLayoutToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroyDescriptorSetLayout(device.getVkDevice(), descriptorSetLayoutToDestroy, null));
         }
     }
 

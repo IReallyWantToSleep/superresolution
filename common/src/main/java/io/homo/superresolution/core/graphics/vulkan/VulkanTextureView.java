@@ -140,9 +140,10 @@ public class VulkanTextureView implements ITextureView {
 
     @Override
     public void destroy() {
-        if (imageView != VK_NULL_HANDLE) {
-            vkDestroyImageView(device.getVkDevice(), imageView, null);
-            imageView = VK_NULL_HANDLE;
+        long imageViewToDestroy = imageView;
+        imageView = VK_NULL_HANDLE;
+        if (imageViewToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroyImageView(device.getVkDevice(), imageViewToDestroy, null));
         }
     }
 

@@ -21,6 +21,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.logging.configuration.ConsoleOutput
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.GradleBuild
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withGroovyBuilder
@@ -76,6 +77,9 @@ allprojects {
         //}
 
         tasks.withType(JavaCompile::class.java).configureEach {
+            inputs.file(rootProject.layout.projectDirectory.file("build.properties"))
+                .withPropertyName("manifoldDefines")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
             options.release.set((rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.javaVersion)
             options.compilerArgs.add("-Xplugin:Manifold")
             options.encoding = "UTF-8"

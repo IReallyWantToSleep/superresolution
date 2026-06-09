@@ -358,6 +358,9 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     void addTransientResource(Destroyable destroyable) {
+        if (destroyable == null) {
+            return;
+        }
         transientResources.add(destroyable);
     }
 
@@ -399,10 +402,11 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         if (transientResources.isEmpty()) {
             return;
         }
-        for (Destroyable destroyable : transientResources) {
+        List<Destroyable> resourcesToDestroy = new ArrayList<>(transientResources);
+        transientResources.clear();
+        for (Destroyable destroyable : resourcesToDestroy) {
             destroyable.destroy();
         }
-        transientResources.clear();
     }
 
     private record DescriptorSetKey(int bindPoint, int setIndex) {

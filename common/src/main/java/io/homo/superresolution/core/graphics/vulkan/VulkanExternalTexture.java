@@ -265,8 +265,9 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         if (destroyed) {
             return;
         }
-        if (ownsView && imageView != VK_NULL_HANDLE) {
-            vkDestroyImageView(device.getVkDevice(), imageView, null);
+        long imageViewToDestroy = imageView;
+        if (ownsView && imageViewToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroyImageView(device.getVkDevice(), imageViewToDestroy, null));
         }
         destroyed = true;
     }

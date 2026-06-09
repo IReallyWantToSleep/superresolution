@@ -76,9 +76,10 @@ public class VulkanSampler implements ISampler {
 
     @Override
     public void destroy() {
-        if (sampler != VK_NULL_HANDLE) {
-            vkDestroySampler(device.getVkDevice(), sampler, null);
-            sampler = VK_NULL_HANDLE;
+        long samplerToDestroy = sampler;
+        sampler = VK_NULL_HANDLE;
+        if (samplerToDestroy != VK_NULL_HANDLE) {
+            device.queueForDestroy(() -> vkDestroySampler(device.getVkDevice(), samplerToDestroy, null));
         }
     }
 

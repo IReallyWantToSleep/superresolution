@@ -75,8 +75,9 @@ public class VulkanShaderProgram implements IShaderProgram {
     @Override
     public void destroy() {
         for (Map.Entry<ShaderType, Long> entry : shaderModules.entrySet()) {
-            if (entry.getValue() != VK_NULL_HANDLE) {
-                vkDestroyShaderModule(device.getVkDevice(), entry.getValue(), null);
+            long module = entry.getValue();
+            if (module != VK_NULL_HANDLE) {
+                device.queueForDestroy(() -> vkDestroyShaderModule(device.getVkDevice(), module, null));
             }
         }
         shaderModules.clear();

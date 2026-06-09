@@ -50,7 +50,9 @@ import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -66,6 +68,8 @@ public class VulkanDevice implements IDevice {
     private final VulkanCommandDecoder commandDecoder;
     private final ValidatedCommandDecoder validatedCommandDecoder;
     private final VulkanMemoryAllocator memoryAllocator;
+    private final List<DeferredDestroy> deferredDestroys = new ArrayList<>();
+    private boolean drainingDeferredDestroys;
 
 
     public VulkanDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
@@ -279,6 +283,9 @@ public class VulkanDevice implements IDevice {
     }
 
     public void destroy() {
+        waitForAllCommandBuffers();
+        reapCompletedTransientResources();
+        flushDeferredDestroys();
         if (defaultCommandPool != null) {
             defaultCommandPool.destroy();
         }
@@ -308,9 +315,74 @@ public class VulkanDevice implements IDevice {
         return memoryAllocator;
     }
 
+    void queueForDestroy(Runnable destroyAction) {
+        if (destroyAction == null) {
+            return;
+        }
+        List<VulkanCommandBuffer> blockers = new ArrayList<>();
+        for (VulkanCommandBuffer buffer : new ArrayList<>(defaultCommandPool.getAllocatedBuffers())) {
+            if (buffer.isInFlight()) {
+                blockers.add(buffer);
+            }
+        }
+        if (blockers.isEmpty() && !drainingDeferredDestroys) {
+            destroyAction.run();
+            return;
+        }
+        deferredDestroys.add(new DeferredDestroy(destroyAction, blockers));
+    }
+
     private void reapCompletedTransientResources() {
-        for (VulkanCommandBuffer buffer : defaultCommandPool.getAllocatedBuffers()) {
+        for (VulkanCommandBuffer buffer : new ArrayList<>(defaultCommandPool.getAllocatedBuffers())) {
             buffer.destroyTransientResourcesIfComplete();
+        }
+        drainingDeferredDestroys = true;
+        try {
+            boolean destroyedAny;
+            do {
+                destroyedAny = false;
+                List<DeferredDestroy> snapshot = new ArrayList<>(deferredDestroys);
+                for (DeferredDestroy deferredDestroy : snapshot) {
+                    if (deferredDestroy.isReady() && deferredDestroys.remove(deferredDestroy)) {
+                        deferredDestroy.destroyAction().run();
+                        destroyedAny = true;
+                    }
+                }
+            } while (destroyedAny);
+        } finally {
+            drainingDeferredDestroys = false;
+        }
+    }
+
+    private void waitForAllCommandBuffers() {
+        for (VulkanCommandBuffer buffer : new ArrayList<>(defaultCommandPool.getAllocatedBuffers())) {
+            buffer.waitForFence();
+        }
+    }
+
+    private void flushDeferredDestroys() {
+        drainingDeferredDestroys = true;
+        try {
+            while (!deferredDestroys.isEmpty()) {
+                DeferredDestroy deferredDestroy = deferredDestroys.remove(0);
+                for (VulkanCommandBuffer blocker : deferredDestroy.blockers()) {
+                    blocker.waitForFence();
+                }
+                deferredDestroy.destroyAction().run();
+            }
+        } finally {
+            drainingDeferredDestroys = false;
+        }
+    }
+
+    private record DeferredDestroy(Runnable destroyAction, List<VulkanCommandBuffer> blockers) {
+        private boolean isReady() {
+            for (VulkanCommandBuffer blocker : blockers) {
+                if (!blocker.isFenceSignaled()) {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }
