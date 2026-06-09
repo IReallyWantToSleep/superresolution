@@ -45,6 +45,7 @@ public class VulkanFencePool {
             VK_CHECK(vkCreateFence(commandPool.getDevice().getVkDevice(), createInfo, null, pFence), "Failed to create fence");
             long fence = pFence.get(0);
             allocatedFences.add(fence);
+            commandPool.getDevice().setDebugName(VK_OBJECT_TYPE_FENCE, fence, "Fence:" + allocatedFences.size());
             return fence;
         }
     }

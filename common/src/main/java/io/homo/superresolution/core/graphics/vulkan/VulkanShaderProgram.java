@@ -99,6 +99,7 @@ public class VulkanShaderProgram implements IShaderProgram {
                 if (cached != null) {
                     spirvBuffer = cached.binary();
                     long module = createShaderModule(spirvBuffer);
+                    updateDebugLabel(module, type);
                     cached.close();
                     return module;
                 }
@@ -140,6 +141,7 @@ public class VulkanShaderProgram implements IShaderProgram {
             }
 
             long module = createShaderModule(spirvBuffer);
+            updateDebugLabel(module, type);
 
             ShaderCompiler.saveVulkanProgramBinary(this);
 
@@ -149,6 +151,14 @@ public class VulkanShaderProgram implements IShaderProgram {
                 SuperResolutionNative.freeDirectBuffer(spirvBuffer);
             }
         }
+    }
+
+    private void updateDebugLabel(long module, ShaderType type) {
+        device.setDebugName(
+                VK_OBJECT_TYPE_SHADER_MODULE,
+                module,
+                description.shaderName() + " " + type + " ShaderModule"
+        );
     }
 
     private long createShaderModule(ByteBuffer spirvCode) {

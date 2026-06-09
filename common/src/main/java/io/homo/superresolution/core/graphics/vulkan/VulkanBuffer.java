@@ -98,6 +98,7 @@ public class VulkanBuffer implements IBuffer {
             PointerBuffer pAllocation = stack.mallocPointer(1);
             buffer = allocator.createBufferVma(bufferInfo, allocCI, pAllocation);
             vmaAllocation = pAllocation.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_BUFFER, buffer, "VulkanBuffer size=" + size + " usages=" + usages);
         }
     }
 

@@ -59,6 +59,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         this.ownerPool = ownerPool;
         this.behavior = behavior;
         nativeCommandBuffer = ownerPool.createNativeCommandBuffer();
+        vulkanDevice.setDebugName(VK_OBJECT_TYPE_COMMAND_BUFFER, nativeCommandBuffer.address(), "CommandBuffer:" + behavior);
     }
 
     public VkCommandBuffer getNativeCommandBuffer() {
@@ -80,6 +81,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
                     .flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             VK_CHECK(vkBeginCommandBuffer(nativeCommandBuffer, beginInfo));
         }
+        vulkanDevice.beginDebugLabel(nativeCommandBuffer, "Command Buffer");
         clearRenderPassState();
         clearBindingState();
         state = CommandBufferState.Recording;
@@ -94,6 +96,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         if (renderPassActive) {
             throw new IllegalStateException("Command buffer still has an active render pass; call endRenderPass first");
         }
+        vulkanDevice.endDebugLabel(nativeCommandBuffer);
         VK_CHECK(vkEndCommandBuffer(nativeCommandBuffer));
         state = CommandBufferState.Executable;
     }

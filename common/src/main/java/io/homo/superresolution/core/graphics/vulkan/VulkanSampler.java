@@ -61,6 +61,14 @@ public class VulkanSampler implements ISampler {
             LongBuffer pSampler = stack.mallocLong(1);
             VK_CHECK(vkCreateSampler(device.getVkDevice(), samplerInfo, null, pSampler), "Failed to create sampler");
             sampler = pSampler.get(0);
+            device.setDebugName(
+                    VK_OBJECT_TYPE_SAMPLER,
+                    sampler,
+                    "VulkanSampler min=" + description.getMinFilter() +
+                            " mag=" + description.getMagFilter() +
+                            " wrap=" + description.getWrapMode() +
+                            " mip=" + description.getMipmapMode()
+            );
         }
     }
 

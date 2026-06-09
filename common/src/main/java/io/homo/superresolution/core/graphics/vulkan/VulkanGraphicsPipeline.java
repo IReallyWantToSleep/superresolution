@@ -192,6 +192,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             VK_CHECK(vkCreatePipelineLayout(device.getVkDevice(), layoutInfo, null, pLayout),
                     "Failed to create graphics pipeline layout");
             pipelineLayout = pLayout.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipelineLayout, "GraphicsPipelineLayout:" + shader().getDescription().shaderName());
         }
     }
 
@@ -401,6 +402,7 @@ public class VulkanGraphicsPipeline extends GraphicsPipeline {
             VK_CHECK(vkCreateGraphicsPipelines(device.getVkDevice(), VK_NULL_HANDLE, pipelineInfo, null, pPipeline),
                     "Failed to create graphics pipeline");
             pipeline = pPipeline.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_PIPELINE, pipeline, "GraphicsPipeline:" + shader().getDescription().shaderName());
         }
     }
 

@@ -50,6 +50,7 @@ public class VulkanFramebuffer implements IFrameBuffer {
                             .size(width, height)
                             .usages(TextureUsages.create()
                                     .storage().sampler().attachmentColor())
+                            .label(getLabel() + " ColorAttachment")
                             .build()
             );
         } else {
@@ -66,11 +67,19 @@ public class VulkanFramebuffer implements IFrameBuffer {
                             .size(width, height)
                             .usages(TextureUsages.create()
                                     .storage().sampler().attachmentDepth())
+                            .label(getLabel() + " DepthAttachment")
                             .build()
             );
         } else {
             this.depthAttachment = null;
         }
+    }
+
+    public String getLabel() {
+        if (label != null && !label.isBlank()) {
+            return label;
+        }
+        return "VulkanFramebuffer " + width + "x" + height;
     }
 
     public long resolveColorImageView() {

@@ -46,6 +46,7 @@ import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
+import io.homo.superresolution.core.graphics.vulkan.VulkanDebug;
 import io.homo.superresolution.core.gui.MaterialTheme;
 import io.homo.superresolution.core.gui.SchemeVariant;
 import io.homo.superresolution.core.utils.Color;
@@ -546,6 +547,7 @@ public class SuperResolutionConfig {
     public static void setEnableDebug(boolean value) {
         ENABLE_DEBUG.set(value);
         GlDebug.setEnabled(value);
+        VulkanDebug.setEnabled(value);
     }
 
     public static boolean isForceDisableShaderCompat() {

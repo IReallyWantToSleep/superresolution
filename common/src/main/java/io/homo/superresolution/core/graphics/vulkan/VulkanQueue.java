@@ -23,6 +23,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkQueue;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
+import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_QUEUE;
 import static org.lwjgl.vulkan.VK10.vkGetDeviceQueue;
 import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
@@ -46,6 +47,7 @@ public class VulkanQueue {
             PointerBuffer pQueue = stack.mallocPointer(1);
             vkGetDeviceQueue(device.getVkDevice(), queueFamilyIndex, 0, pQueue);
             queue = new VkQueue(pQueue.get(0), device.getVkDevice());
+            device.setDebugName(VK_OBJECT_TYPE_QUEUE, queue.address(), "Main Queue family=" + queueFamilyIndex);
         }
     }
 

@@ -89,6 +89,7 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
             VK_CHECK(vkCreateDescriptorSetLayout(device.getVkDevice(), layoutInfo, null, pLayout),
                     "Failed to create descriptor set layout");
             descriptorSetLayout = pLayout.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, descriptorSetLayout, "DescriptorSetLayout:" + shader.getDescription().shaderName());
         }
     }
 
@@ -219,8 +220,17 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                     "Failed to create sampler for texture");
             long handle = pSampler.get(0);
             samplerCache.put(key, handle);
+            device.setDebugName(VK_OBJECT_TYPE_SAMPLER, handle, descriptorSamplerDebugLabel(texture, filterMode, wrapMode));
             return handle;
         }
+    }
+
+    private String descriptorSamplerDebugLabel(ITexture texture, int filterMode, int wrapMode) {
+        String textureLabel = texture.getTextureDescription().getLabel();
+        if (textureLabel != null && !textureLabel.isBlank()) {
+            return "DescriptorSampler:" + textureLabel;
+        }
+        return "DescriptorSampler filter=" + filterMode + " wrap=" + wrapMode;
     }
 
     public long getDescriptorSetLayout() {

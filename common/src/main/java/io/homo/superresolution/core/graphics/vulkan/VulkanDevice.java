@@ -43,6 +43,7 @@ import io.homo.superresolution.core.graphics.impl.validation.ValidatedCommandDec
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkPhysicalDevice;
@@ -305,6 +306,22 @@ public class VulkanDevice implements IDevice {
 
     public VkDevice getVkDevice() {
         return device;
+    }
+
+    public void setDebugName(int objectType, long handle, String label) {
+        VulkanDebug.setObjectName(device, objectType, handle, label);
+    }
+
+    public void beginDebugLabel(VkCommandBuffer commandBuffer, String label) {
+        VulkanDebug.beginLabel(commandBuffer, label);
+    }
+
+    public void endDebugLabel(VkCommandBuffer commandBuffer) {
+        VulkanDebug.endLabel(commandBuffer);
+    }
+
+    public void insertDebugLabel(VkCommandBuffer commandBuffer, String label) {
+        VulkanDebug.insertLabel(commandBuffer, label);
     }
 
     public VulkanQueue getMainQueue() {

@@ -70,6 +70,7 @@ public class VulkanVertexBuffer implements IVertexBuffer {
             PointerBuffer pAllocation = stack.mallocPointer(1);
             buffer = allocator.createBufferVma(bufferInfo, allocCI, pAllocation);
             vmaAllocation = pAllocation.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_BUFFER, buffer, "VulkanVertexBuffer size=" + sizeInBytes + " dynamic=" + dynamic + " format=" + vertexFormat);
         }
     }
 

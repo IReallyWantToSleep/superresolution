@@ -81,6 +81,24 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
                 exportMemoryHandle(stack);
             }
             createImageView(stack);
+            updateDebugLabels();
+        }
+    }
+
+    private String debugBaseLabel() {
+        String label = description.getLabel();
+        if (label != null && !label.isBlank()) {
+            return label;
+        }
+        return "VulkanTexture " + description.getFormat() + " " + width + "x" + height;
+    }
+
+    private void updateDebugLabels() {
+        String baseLabel = debugBaseLabel();
+        device.setDebugName(VK_OBJECT_TYPE_IMAGE, image, baseLabel + " Image");
+        device.setDebugName(VK_OBJECT_TYPE_IMAGE_VIEW, imageView, baseLabel + " ImageView");
+        if ((isExternal || exportable) && imageMemory != VK_NULL_HANDLE) {
+            device.setDebugName(VK_OBJECT_TYPE_DEVICE_MEMORY, imageMemory, baseLabel + " Memory");
         }
     }
 
@@ -340,6 +358,7 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
                 allocateMemory(stack);
             }
             createImageView(stack);
+            updateDebugLabels();
         }
     }
 

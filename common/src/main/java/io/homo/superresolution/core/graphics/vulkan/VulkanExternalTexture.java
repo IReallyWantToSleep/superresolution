@@ -65,6 +65,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         this.mipLevels = mipLevels;
         this.currentLayout = initialLayout;
         this.aspectMask = resolveAspectMask(format);
+        updateDebugLabels();
     }
 
     private VulkanExternalTexture(
@@ -90,6 +91,16 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         this.mipLevels = mipLevels;
         this.currentLayout = initialLayout;
         this.aspectMask = resolveAspectMask(format);
+        updateDebugLabels();
+    }
+
+    private void updateDebugLabels() {
+        device.setDebugName(VK_OBJECT_TYPE_IMAGE, image, "VulkanExternalTexture Image");
+        device.setDebugName(
+                VK_OBJECT_TYPE_IMAGE_VIEW,
+                imageView,
+                ownsView ? "VulkanExternalTexture Auto ImageView" : "VulkanExternalTexture External ImageView"
+        );
     }
 
 

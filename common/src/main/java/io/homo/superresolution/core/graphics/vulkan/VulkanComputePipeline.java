@@ -67,6 +67,7 @@ public class VulkanComputePipeline extends ComputePipeline {
             VK_CHECK(vkCreatePipelineLayout(device.getVkDevice(), layoutInfo, null, pLayout),
                     "Failed to create compute pipeline layout");
             pipelineLayout = pLayout.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipelineLayout, "ComputePipelineLayout:" + shader().getDescription().shaderName());
         }
     }
 
@@ -87,6 +88,7 @@ public class VulkanComputePipeline extends ComputePipeline {
             VK_CHECK(vkCreateComputePipelines(device.getVkDevice(), VK_NULL_HANDLE, pipelineInfo, null, pPipeline),
                     "Failed to create compute pipeline");
             pipeline = pPipeline.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_PIPELINE, pipeline, "ComputePipeline:" + shader.getDescription().shaderName());
         }
     }
 

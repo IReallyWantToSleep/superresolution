@@ -51,6 +51,7 @@ public class VkGlInteropSemaphore {
                     null,
                     pVkSemaphore
             ));
+            vulkanDevice.setDebugName(VK_OBJECT_TYPE_SEMAPHORE, pVkSemaphore[0], "VkGlInteropSemaphore");
             long pExpSemaphore = VulkanInterop.IMPL.vkGetSemaphoreHandleKHR(
                     stack,
                     vulkanDevice.getVkDevice(),

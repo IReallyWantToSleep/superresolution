@@ -50,6 +50,27 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         this.vulkanDevice = vulkanDevice;
     }
 
+    private void beginLabel(VkCommandBuffer commandBuffer, String label) {
+        vulkanDevice.beginDebugLabel(commandBuffer, label);
+    }
+
+    private void endLabel(VkCommandBuffer commandBuffer) {
+        vulkanDevice.endDebugLabel(commandBuffer);
+    }
+
+    private void insertLabel(VkCommandBuffer commandBuffer, String label) {
+        vulkanDevice.insertDebugLabel(commandBuffer, label);
+    }
+
+    private void withLabel(VkCommandBuffer commandBuffer, String label, Runnable action) {
+        beginLabel(commandBuffer, label);
+        try {
+            action.run();
+        } finally {
+            endLabel(commandBuffer);
+        }
+    }
+
     private static int vkLayoutFor(ResourceAccessType access) {
         return switch (access) {
             case UNDEFINED -> VK_IMAGE_LAYOUT_UNDEFINED;
@@ -160,12 +181,12 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                             .levelCount(ext.getMipLevels())
                             .baseArrayLayer(0)
                             .layerCount(1));
-            vkCmdPipelineBarrier(
+            withLabel(cmd, "Restore External Resource Barrier", () -> vkCmdPipelineBarrier(
                     cmd,
                     BROAD_STAGE_MASK,
                     BROAD_STAGE_MASK,
                     0, null, null, barrier
-            );
+            ));
         }
         ext.setCurrentLayout(newLayout);
     }
@@ -188,13 +209,13 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             range.levelCount(1);
             range.baseArrayLayer(0);
             range.layerCount(1);
-            vkCmdClearColorImage(
+            withLabel(commandBufferHandle, "Clear Texture", () -> vkCmdClearColorImage(
                     commandBufferHandle,
                     imageHandle,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     clearColor,
                     range
-            );
+            ));
         }
     }
 
@@ -215,13 +236,13 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             range.baseArrayLayer(0);
             range.layerCount(1);
 
-            vkCmdClearDepthStencilImage(
+            withLabel(commandBufferHandle, "Clear Texture Depth", () -> vkCmdClearDepthStencilImage(
                     commandBufferHandle,
                     imageHandle,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     clearDepth,
                     range
-            );
+            ));
         }
     }
 
@@ -242,13 +263,13 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             range.baseArrayLayer(0);
             range.layerCount(1);
 
-            vkCmdClearDepthStencilImage(
+            withLabel(commandBufferHandle, "Clear Texture Stencil", () -> vkCmdClearDepthStencilImage(
                     commandBufferHandle,
                     imageHandle,
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     clearStencil,
                     range
-            );
+            ));
         }
     }
 
@@ -273,14 +294,14 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
 
-            vkCmdCopyImage(
+            withLabel(commandBufferHandle, "Copy Texture", () -> vkCmdCopyImage(
                     commandBufferHandle,
                     srcTexture.handle(),
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     dstTexture.handle(),
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     copyRegion
-            );
+            ));
         }
     }
 
@@ -293,7 +314,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .srcOffset(srcOffset)
                     .dstOffset(dstOffset)
                     .size(size);
-            vkCmdCopyBuffer(cmd, src.handle(), dst.handle(), copyRegion);
+            withLabel(cmd, "Copy Buffer", () -> vkCmdCopyBuffer(cmd, src.handle(), dst.handle(), copyRegion));
         }
     }
 
@@ -377,7 +398,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .srcOffset(0)
                     .dstOffset(dstOffset)
                     .size(size);
-            vkCmdCopyBuffer(cmd, stagingBuffer.handle(), vkVertexBuffer.handle(), copyRegion);
+            withLabel(cmd, "Write To Vertex Buffer", () -> vkCmdCopyBuffer(cmd, stagingBuffer.handle(), vkVertexBuffer.handle(), copyRegion));
         }
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -390,7 +411,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .buffer(vkVertexBuffer.handle())
                     .offset(dstOffset)
                     .size(size);
-            vkCmdPipelineBarrier(
+            withLabel(cmd, "Vertex Buffer Upload Barrier", () -> vkCmdPipelineBarrier(
                     cmd,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,
                     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
@@ -398,7 +419,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     null,
                     barrier,
                     null
-            );
+            ));
         }
 
         vcb.addTransientResource(stagingBuffer);
@@ -445,13 +466,13 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .imageOffset(VkOffset3D.calloc(stack).set(x, y, 0))
                     .imageExtent(VkExtent3D.calloc(stack).set(width, height, 1));
 
-            vkCmdCopyBufferToImage(
+            withLabel(cmd, "Write To Texture", () -> vkCmdCopyBufferToImage(
                     cmd,
                     stagingBuffer.handle(),
                     vkTexture.handle(),
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     copyRegion
-            );
+            ));
         }
 
         vcb.addTransientResource(stagingBuffer);
@@ -473,6 +494,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
 
+            insertLabel(commandBufferHandle, "Set Viewport");
             vkCmdSetViewport(
                     commandBufferHandle,
                     0,
@@ -491,6 +513,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
 
+            insertLabel(commandBufferHandle, "Set Scissor");
             vkCmdSetScissor(
                     commandBufferHandle,
                     0,
@@ -505,6 +528,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
         VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
 
+        insertLabel(commandBufferHandle, "Set Line Width");
         vkCmdSetLineWidth(
                 commandBufferHandle,
                 width
@@ -517,6 +541,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
 
         float[] blendConstants = new float[]{r, g, b, a};
+        insertLabel(commandBufferHandle, "Set Blend Constants");
         vkCmdSetBlendConstants(
                 commandBufferHandle,
                 blendConstants
@@ -624,7 +649,8 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                 renderingInfo.pStencilAttachment(stencilAttachmentInfo);
             }
 
-            vkCmdBeginRenderingKHR(cmd, renderingInfo);
+            beginLabel(cmd, "Render Pass:" + vkFramebuffer.getLabel());
+            withLabel(cmd, "Begin Render Pass", () -> vkCmdBeginRenderingKHR(cmd, renderingInfo));
         }
 
         vcb._beginRenderPass(vkRenderPass);
@@ -640,10 +666,8 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
-        VulkanRenderPass activePass = vcb.getActiveRenderPass();
-        VulkanFramebuffer vkFramebuffer = (VulkanFramebuffer) activePass.frameBuffer();
-
-        vkCmdEndRenderingKHR(cmd);
+        withLabel(cmd, "End Render Pass", () -> vkCmdEndRenderingKHR(cmd));
+        endLabel(cmd);
 
         vcb._endRenderPass();
     }
@@ -668,13 +692,15 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
         VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
         long pipelineHandle = vkGraphicsPipeline.getPipeline();
-        if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle)) {
-            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
-            vcb.recordNativePipelineBind(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
-        }
-        vkDescriptorSet.pushDescriptorsIfNeeded(vcb, cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipelineLayout());
-        pipeline.applyDynamicStates(commandBuffer);
-        vcb.bindGraphicsPipeline(vkGraphicsPipeline);
+        withLabel(cmd, "Bind Render Pipeline", () -> {
+            if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle)) {
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
+                vcb.recordNativePipelineBind(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle);
+            }
+            vkDescriptorSet.pushDescriptorsIfNeeded(vcb, cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGraphicsPipeline.getPipelineLayout());
+            pipeline.applyDynamicStates(commandBuffer);
+            vcb.bindGraphicsPipeline(vkGraphicsPipeline);
+        });
     }
 
     @Override
@@ -696,12 +722,14 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
 
         long pipelineHandle = vkComputePipeline.getPipeline();
-        if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle)) {
-            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle);
-            vcb.recordNativePipelineBind(VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle);
-        }
-        vkDescriptorSet.pushDescriptorsIfNeeded(vcb, cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
-        vcb.bindComputePipeline(vkComputePipeline);
+        withLabel(cmd, "Bind Compute Pipeline", () -> {
+            if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle)) {
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle);
+                vcb.recordNativePipelineBind(VK_PIPELINE_BIND_POINT_COMPUTE, pipelineHandle);
+            }
+            vkDescriptorSet.pushDescriptorsIfNeeded(vcb, cmd, VK_PIPELINE_BIND_POINT_COMPUTE, vkComputePipeline.getPipelineLayout());
+            vcb.bindComputePipeline(vkComputePipeline);
+        });
     }
 
     @Override
@@ -728,13 +756,15 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             throw new IllegalArgumentException("draw: firstVertex不能为负数");
         }
 
-        if (vertexBuffer != null) {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                vkCmdBindVertexBuffers(cmd, 0, stack.longs(vertexBuffer.handle()), stack.longs(0));
+        withLabel(cmd, "Draw", () -> {
+            if (vertexBuffer != null) {
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    withLabel(cmd, "Setup Vertex Buffer", () -> vkCmdBindVertexBuffers(cmd, 0, stack.longs(vertexBuffer.handle()), stack.longs(0)));
+                }
             }
-        }
 
-        vkCmdDraw(cmd, vertexCount, 1, firstVertex, 0);
+            vkCmdDraw(cmd, vertexCount, 1, firstVertex, 0);
+        });
     }
 
     @Override
@@ -749,7 +779,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
 
-        vkCmdDispatch(cmd, groupCountX, groupCountY, groupCountZ);
+        withLabel(cmd, "Compute", () -> vkCmdDispatch(cmd, groupCountX, groupCountY, groupCountZ));
     }
 
     @Override
@@ -761,7 +791,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .sType(VK_STRUCTURE_TYPE_MEMORY_BARRIER)
                     .srcAccessMask(VK_ACCESS_SHADER_WRITE_BIT)
                     .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
-            vkCmdPipelineBarrier(
+            withLabel(cmd, "Memory Barrier", () -> vkCmdPipelineBarrier(
                     cmd,
                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -769,7 +799,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     memBarrier,
                     null,
                     null
-            );
+            ));
         }
     }
 
@@ -789,7 +819,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     .buffer(buffer.handle())
                     .offset(offset)
                     .size(size);
-            vkCmdPipelineBarrier(
+            withLabel(commandBuffer, "Transfer Write Barrier", () -> vkCmdPipelineBarrier(
                     commandBuffer,
                     BROAD_STAGE_MASK,
                     BROAD_STAGE_MASK,
@@ -797,7 +827,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                     null,
                     barrier,
                     null
-            );
+            ));
         }
     }
 
@@ -831,12 +861,12 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                             .levelCount(VK_REMAINING_MIP_LEVELS)
                             .baseArrayLayer(0)
                             .layerCount(1));
-            vkCmdPipelineBarrier(
+            withLabel(cmd, "Texture Layout Transition", () -> vkCmdPipelineBarrier(
                     cmd,
                     BROAD_STAGE_MASK,
                     BROAD_STAGE_MASK,
                     0, null, null, barrier
-            );
+            ));
         }
         vlt.setCurrentLayout(newLayout);
     }

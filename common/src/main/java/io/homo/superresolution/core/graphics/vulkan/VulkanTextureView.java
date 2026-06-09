@@ -66,7 +66,16 @@ public class VulkanTextureView implements ITextureView {
             LongBuffer pImageView = stack.mallocLong(1);
             VK_CHECK(vkCreateImageView(device.getVkDevice(), viewInfo, null, pImageView), "Failed to create image view");
             imageView = pImageView.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_IMAGE_VIEW, imageView, debugLabel());
         }
+    }
+
+    private String debugLabel() {
+        String parentLabel = parent.getTextureDescription().getLabel();
+        if (parentLabel == null || parentLabel.isBlank()) {
+            parentLabel = "VulkanTextureView";
+        }
+        return parentLabel + " View mip=" + viewDescription.getBaseMipLevel() + "+" + viewDescription.getMipLevelCount();
     }
 
     private int getAspectMask() {

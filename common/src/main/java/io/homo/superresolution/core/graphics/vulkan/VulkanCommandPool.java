@@ -90,6 +90,7 @@ public class VulkanCommandPool implements ICommandPool {
             LongBuffer pCommandPool = stack.mallocLong(1);
             VulkanUtils.VK_CHECK(vkCreateCommandPool(device.getVkDevice(), poolInfo, null, pCommandPool), "Failed to create command pool");
             commandPool = pCommandPool.get(0);
+            device.setDebugName(VK_OBJECT_TYPE_COMMAND_POOL, commandPool, "CommandPool flags=" + flags + " family=" + graphicsQueueFamilyIndex);
         }
     }
 
