@@ -28,27 +28,37 @@
             "modrinth": [
                 {
                     "name": "reeses-sodium-options",
-                    "version": "mc1.21.4-1.8.3+fabric"
+                    "version": "mc1.21.4-1.8.3+fabric",
+                    "compileOnly": true
                 },
                 {
                     "name": "xaeros-world-map",
-                    "version": "1.39.2_Fabric_1.21"
+                    "version": "1.39.2_Fabric_1.21",
+                    "compileOnly": true
                 },
                 {
                     "name": "xaeros-minimap",
-                    "version": "25.1.0_Fabric_1.21"
+                    "version": "25.1.0_Fabric_1.21",
+                    "compileOnly": true
                 },
                 {
                     "name": "iris",
-                    "version": "1.8.8+1.21.1-fabric"
+                    "version": "1.8.8+1.21.1-fabric",
+                    "compileOnly": true
                 },
                 {
                     "name": "sodium",
-                    "version": "mc1.21.1-0.6.13-fabric"
+                    "version": "mc1.21.1-0.8.12-alpha.4-fabric",
+                    "use_jarjar": true
+                },
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.1-0.8.12-alpha.4-fabric"
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.4-b-1.21.1"
+                    "version": "2.3.4-b-1.21.1",
+                    "compileOnly": true
                 },
                 {
                     "name": "spark",
@@ -69,7 +79,8 @@
                 },
                 {
                     "name": "immediatelyfast",
-                    "version": "1.6.7+1.21.1-fabric"
+                    "version": "1.6.7+1.21.1-fabric",
+                    "compileOnly": true
                 }
             ],
             "local": [
@@ -83,15 +94,18 @@
             "modrinth": [
                 {
                     "name": "reeses-sodium-options",
-                    "version": "mc1.21.4-1.8.3+neoforge"
+                    "version": "mc1.21.4-1.8.3+neoforge",
+                    "compileOnly": true
                 },
                 {
                     "name": "xaeros-world-map",
-                    "version": "1.39.2_NeoForge_1.21"
+                    "version": "1.39.2_NeoForge_1.21",
+                    "compileOnly": true
                 },
                 {
                     "name": "xaeros-minimap",
-                    "version": "25.1.0_NeoForge_1.21"
+                    "version": "25.1.0_NeoForge_1.21",
+                    "compileOnly": true
                 },
                 {
                     "name": "spark",
@@ -99,23 +113,32 @@
                 },
                 {
                     "name": "sodium",
-                    "version": "mc1.21.1-0.6.13-neoforge"
+                    "version": "mc1.21.1-0.8.12-alpha.4-neoforge"
+                },
+                {
+                    "name": "sodium",
+                    "version": "mc1.21.1-0.8.12-alpha.4-neoforge",
+                    "use_jarjar": true
                 },
                 {
                     "name": "acceleratedrendering",
-                    "version": "1.0.8-1.21.1-alpha"
+                    "version": "1.0.8-1.21.1-alpha",
+                    "compileOnly": true
                 },
                 {
                     "name": "distanthorizons",
-                    "version": "2.3.4-b-1.21.1"
+                    "version": "2.3.4-b-1.21.1",
+                    "compileOnly": true
                 },
                 {
                     "name": "iris",
-                    "version": "1.8.8+1.21.1-neoforge"
+                    "version": "1.8.8+1.21.1-neoforge",
+                    "compileOnly": true
                 },
                 {
                     "name": "sodium-options-api",
-                    "version": "neoforge-1.21.1-1.0.10"
+                    "version": "neoforge-1.21.1-1.0.10",
+                    "compileOnly": true
                 },
                 {
                     "name": "simple-clouds",

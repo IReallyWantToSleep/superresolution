@@ -19,13 +19,13 @@
 package io.homo.superresolution.fabric.compat.sodium;
 
 import com.google.common.collect.ImmutableList;
-#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_6
+#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_6 && MC_VER != MC_1_21_1
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
-#elif MC_VER < MC_1_21_8
+#elif MC_VER < MC_1_21_8 && MC_VER != MC_1_21_1
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
@@ -42,7 +42,7 @@ import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 #endif
 public class SodiumOptionScreen {
     public static void register() {
-        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_20_5 && MC_VER != MC_1_20_6 && MC_VER != MC_1_21_5 && MC_VER < MC_1_21_6
+        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_20_5 && MC_VER != MC_1_20_6 && MC_VER != MC_1_21_5 && MC_VER < MC_1_21_6 && MC_VER != MC_1_21_1
         OptionGUIConstruction.EVENT.register((pages) -> pages.add(
                         new OptionPage(
                                 Component.translatable("superresolution.screen.config.name"), ImmutableList.of(

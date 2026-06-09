@@ -18,11 +18,11 @@
 
 package io.homo.superresolution.fabric.mixin.compat.sodium;
 
-#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_8
+#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_8 && MC_VER != MC_1_21_1
 
 import io.homo.superresolution.api.platform.Platform;
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
-#elif MC_VER < MC_1_21_8
+#elif MC_VER < MC_1_21_8 && MC_VER != MC_1_21_1
 import io.homo.superresolution.api.platform.Platform;
 import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 #endif
@@ -30,13 +30,13 @@ import me.jellysquid.mods.sodium.client.gui.SodiumOptionsGUI;
 
 import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
-#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_10
+#if MC_VER > MC_1_20_6 && MC_VER < MC_1_21_10 && MC_VER != MC_1_21_1
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionImpl;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionPage;
 import net.caffeinemc.mods.sodium.client.gui.options.control.SliderControl;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
-#elif MC_VER < MC_1_21_9
+#elif MC_VER < MC_1_21_9 && MC_VER != MC_1_21_1
 import me.jellysquid.mods.sodium.client.gui.options.OptionGroup;
 import me.jellysquid.mods.sodium.client.gui.options.OptionImpl;
 import me.jellysquid.mods.sodium.client.gui.options.OptionPage;
@@ -59,7 +59,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-#if MC_VER < MC_1_21_8
+#if MC_VER < MC_1_21_8 && MC_VER != MC_1_21_1
 @Mixin(SodiumOptionsGUI.class)
 public class SodiumOptionsGUIMixin extends Screen {
     @Shadow(remap = false)

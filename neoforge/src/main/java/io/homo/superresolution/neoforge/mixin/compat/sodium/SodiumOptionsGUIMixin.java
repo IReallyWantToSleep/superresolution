@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_9 && MC_VER != MC_1_21_1
 import net.caffeinemc.mods.sodium.client.gui.SodiumOptionsGUI;
 import net.caffeinemc.mods.sodium.client.gui.options.storage.MinecraftOptionsStorage;
 import net.caffeinemc.mods.sodium.client.gui.options.OptionGroup;
@@ -44,7 +44,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_9 && MC_VER != MC_1_21_1
 @Mixin(SodiumOptionsGUI.class)
 public class SodiumOptionsGUIMixin extends Screen {
     @Shadow(remap = false)

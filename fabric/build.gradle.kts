@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom") version "1.16.3"
+    id("net.fabricmc.fabric-loom-remap") version "1.16.3"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -65,6 +65,10 @@ repositories {
             includeGroup("net.caffeinemc")
         }
     }
+
+    maven {
+        url = uri("https://maven.su5ed.dev/releases")
+    }
 }
 
 dependencies {
@@ -122,7 +126,7 @@ dependencies {
 
     for (lib in versionConfig.fabric.dependencies.modrinth) {
         var depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
-        if (lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) {
+        if (lib.name == "sodium" && (MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10") /*|| MinecraftVersion.of(versionConfig.common.minecraftVersion) == MinecraftVersion.of("1.21.1")*/)) {
             depName = "net.caffeinemc:sodium-fabric:${lib.version}"
             if (lib.compileOnly) {
                 modCompileOnlyCompat(depName)

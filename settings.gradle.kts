@@ -18,6 +18,7 @@
 
 import groovy.json.JsonSlurper
 import org.gradle.api.GradleException
+import org.gradle.kotlin.dsl.maven
 import java.io.File
 
 pluginManagement {
@@ -31,6 +32,7 @@ pluginManagement {
         maven(url = "https://maven.shedaniel.me/")
         maven(url = "https://libraries.minecraft.net")
         maven(url = "https://maven.parchmentmc.org/")
+        maven(url = "https://maven.su5ed.dev/releases")
     }
 }
 

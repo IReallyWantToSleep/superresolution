@@ -68,6 +68,7 @@ allprojects {
         maven(url = "https://maven.fabricmc.net/")
         maven(url = "https://maven.parchmentmc.org/")
         maven(url = "https://maven.blamejared.com")
+        maven(url = "https://maven.su5ed.dev/releases")
     }
 
     if (project.name != "native") {

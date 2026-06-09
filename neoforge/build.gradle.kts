@@ -153,7 +153,7 @@ dependencies {
 
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
         var depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
-        if (lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) {
+        if (lib.name == "sodium" && (MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10") /*|| MinecraftVersion.of(versionConfig.common.minecraftVersion) == MinecraftVersion.of("1.21.1")*/) ) {
             depName = "net.caffeinemc:sodium-neoforge-mod:${lib.version}"
             if (lib.compileOnly) {
                 compileOnly(depName)
