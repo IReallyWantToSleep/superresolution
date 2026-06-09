@@ -73,6 +73,14 @@ public class VkRenderSystem implements IRenderSystem {
         return sb.toString();
     }
 
+    private static String uuidListToHex(List<byte[]> uuids) {
+        List<String> uuidStrings = new ArrayList<>(uuids.size());
+        for (byte[] uuid : uuids) {
+            uuidStrings.add(bytesToHex(uuid));
+        }
+        return String.join(", ", uuidStrings);
+    }
+
     public VkInstance getVulkanInstance() {
         return instance;
     }
@@ -177,9 +185,9 @@ public class VkRenderSystem implements IRenderSystem {
             VK_CHECK(vkEnumeratePhysicalDevices(instance, deviceCount, devices));
             List<GraphicsDevice> graphicsDevices = new ArrayList<>();
             GraphicsDevice openglDevice = GraphicsDevice.createFromOpenGL();
-            LOGGER.info("OpenGL 设备: {} (Device UUID: {}, Driver UUID: {})",
+            LOGGER.info("OpenGL 设备: {} (Device UUIDs: {}, Driver UUID: {})",
                     openglDevice.deviceName(),
-                    bytesToHex(openglDevice.deviceUUID()),
+                    uuidListToHex(openglDevice.deviceUUIDs()),
                     bytesToHex(openglDevice.driverUUID())
             );
             for (int i = 0; i < deviceCount.get(0); i++) {
@@ -189,20 +197,20 @@ public class VkRenderSystem implements IRenderSystem {
             LOGGER.info("检测到 {} 个 Vulkan 物理设备:", graphicsDevices.size());
             for (int i = 0; i < deviceCount.get(0); i++) {
                 GraphicsDevice device = graphicsDevices.get(i);
-                LOGGER.info("[{}] {} (Device UUID: {}, Driver UUID: {})",
+                LOGGER.info("[{}] {} (Device UUIDs: {}, Driver UUID: {})",
                         i,
                         device.deviceName(),
-                        bytesToHex(device.deviceUUID()),
+                        uuidListToHex(device.deviceUUIDs()),
                         bytesToHex(device.driverUUID())
                 );
             }
 
             for (int i = 0; i < deviceCount.get(0); i++) {
-                if (graphicsDevices.get(i).equals(openglDevice)) {
+                if (graphicsDevices.get(i).isCompatibleWith(openglDevice)) {
                     return new VkPhysicalDevice(devices.get(i), instance);
                 }
             }
-            LOGGER.error("未找到与当前 OpenGL 设备匹配的 Vulkan 物理设备，默认选择第一个设备");
+            LOGGER.error("未找到与当前 OpenGL 设备和驱动 UUID 均匹配的 Vulkan 物理设备，默认选择第一个设备");
             return new VkPhysicalDevice(devices.get(0), instance);
         }
     }

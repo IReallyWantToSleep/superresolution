@@ -20,19 +20,28 @@ package io.homo.superresolution.core.graphics;
 
 import org.lwjgl.opengl.EXTMemoryObject;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
+import io.homo.superresolution.common.SuperResolution;
+
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 
 public class GraphicsDevice {
-    public static int UUID_SIZE = 16;
+    public static final int UUID_SIZE = EXTMemoryObject.GL_UUID_SIZE_EXT;
 
-    private final byte[] deviceUUID;
+    private final List<byte[]> deviceUUIDs;
     private final byte[] driverUUID;
     private final String deviceName;
 
@@ -41,31 +50,52 @@ public class GraphicsDevice {
             byte[] driverUUID,
             String deviceName
     ) {
-        this.deviceUUID = deviceUUID;
-        this.driverUUID = driverUUID;
+        this(Collections.singletonList(deviceUUID), driverUUID, deviceName);
+    }
+
+    public GraphicsDevice(
+            List<byte[]> deviceUUIDs,
+            byte[] driverUUID,
+            String deviceName
+    ) {
+        this.deviceUUIDs = copyDeviceUUIDs(deviceUUIDs);
+        this.driverUUID = Arrays.copyOf(driverUUID, UUID_SIZE);
         this.deviceName = deviceName;
     }
 
     public static GraphicsDevice createFromOpenGL() {
         if (GL.getCapabilities().GL_EXT_memory_object) {
-            byte[] deviceUUID = new byte[UUID_SIZE];
+            List<byte[]> deviceUUIDs = new ArrayList<>();
             byte[] driverUUID = new byte[UUID_SIZE];
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                ByteBuffer deviceUUIDBuf = stack.calloc(UUID_SIZE);
+                IntBuffer numDevicesBuf;
+                numDevicesBuf = MemoryUtil.memAllocInt(1);
+                SuperResolution.LOGGER.info("Memory address of numDevicesBuf: {}", MemoryUtil.memAddress(numDevicesBuf));
+                GL11.glGetIntegerv(EXTMemoryObject.GL_NUM_DEVICE_UUIDS_EXT, numDevicesBuf);
+                numDevicesBuf = stack.callocInt(1);
+                SuperResolution.LOGGER.info("Memory address of numDevicesBuf: {}", MemoryUtil.memAddress(numDevicesBuf));
+                GL11.glGetIntegerv(EXTMemoryObject.GL_NUM_DEVICE_UUIDS_EXT, numDevicesBuf);
+                int deviceUUIDCount = numDevicesBuf.get(0);
                 ByteBuffer driverUUIDBuf = stack.calloc(UUID_SIZE);
 
-                EXTMemoryObject.glGetUnsignedBytevEXT(
-                        EXTMemoryObject.GL_DEVICE_UUID_EXT,
-                        deviceUUIDBuf
-                );
+                for (int i = 0; i < deviceUUIDCount; i++) {
+                    byte[] deviceUUID = new byte[UUID_SIZE];
+                    ByteBuffer deviceUUIDBuf = stack.calloc(UUID_SIZE);
+                    EXTMemoryObject.glGetUnsignedBytei_vEXT(
+                            EXTMemoryObject.GL_DEVICE_UUID_EXT,
+                            i,
+                            deviceUUIDBuf
+                    );
+                    deviceUUIDBuf.get(deviceUUID);
+                    deviceUUIDs.add(deviceUUID);
+                }
                 EXTMemoryObject.glGetUnsignedBytevEXT(
                         EXTMemoryObject.GL_DRIVER_UUID_EXT,
                         driverUUIDBuf
                 );
-                deviceUUIDBuf.get(deviceUUID);
                 driverUUIDBuf.get(driverUUID);
             }
-            return new GraphicsDevice(deviceUUID, driverUUID, GL20.glGetString(GL20.GL_RENDERER));
+            return new GraphicsDevice(deviceUUIDs, driverUUID, GL20.glGetString(GL20.GL_RENDERER));
         }
         throw new UnsupportedOperationException("GL_EXT_memory_object is not supported");
     }
@@ -90,6 +120,28 @@ public class GraphicsDevice {
         return new GraphicsDevice(deviceUUID, driverUUID, deviceName);
     }
 
+    private static List<byte[]> copyDeviceUUIDs(List<byte[]> deviceUUIDs) {
+        List<byte[]> copiedUUIDs = new ArrayList<>(deviceUUIDs.size());
+        for (byte[] deviceUUID : deviceUUIDs) {
+            copiedUUIDs.add(Arrays.copyOf(deviceUUID, UUID_SIZE));
+        }
+        return Collections.unmodifiableList(copiedUUIDs);
+    }
+
+    public boolean isCompatibleWith(GraphicsDevice that) {
+        if (!Arrays.equals(this.driverUUID, that.driverUUID)) {
+            return false;
+        }
+        for (byte[] thisDeviceUUID : this.deviceUUIDs) {
+            for (byte[] thatDeviceUUID : that.deviceUUIDs) {
+                if (Arrays.equals(thisDeviceUUID, thatDeviceUUID)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -99,8 +151,15 @@ public class GraphicsDevice {
             return false;
         }
         GraphicsDevice that = (GraphicsDevice) obj;
-        for (int i = 0; i < UUID_SIZE; i++) {
-            if (this.deviceUUID[i] != that.deviceUUID[i]) {
+        return deviceUUIDsEqual(that.deviceUUIDs) && Arrays.equals(this.driverUUID, that.driverUUID);
+    }
+
+    private boolean deviceUUIDsEqual(List<byte[]> thatDeviceUUIDs) {
+        if (this.deviceUUIDs.size() != thatDeviceUUIDs.size()) {
+            return false;
+        }
+        for (int i = 0; i < this.deviceUUIDs.size(); i++) {
+            if (!Arrays.equals(this.deviceUUIDs.get(i), thatDeviceUUIDs.get(i))) {
                 return false;
             }
         }
@@ -108,11 +167,15 @@ public class GraphicsDevice {
     }
 
     public byte[] deviceUUID() {
-        return deviceUUID;
+        return Arrays.copyOf(deviceUUIDs.get(0), UUID_SIZE);
+    }
+
+    public List<byte[]> deviceUUIDs() {
+        return copyDeviceUUIDs(deviceUUIDs);
     }
 
     public byte[] driverUUID() {
-        return driverUUID;
+        return Arrays.copyOf(driverUUID, UUID_SIZE);
     }
 
     public String deviceName() {
