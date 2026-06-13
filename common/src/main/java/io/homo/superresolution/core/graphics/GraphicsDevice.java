@@ -69,11 +69,7 @@ public class GraphicsDevice {
             byte[] driverUUID = new byte[UUID_SIZE];
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 IntBuffer numDevicesBuf;
-                numDevicesBuf = MemoryUtil.memAllocInt(1);
-                SuperResolution.LOGGER.info("Memory address of numDevicesBuf: {}", MemoryUtil.memAddress(numDevicesBuf));
-                GL11.glGetIntegerv(EXTMemoryObject.GL_NUM_DEVICE_UUIDS_EXT, numDevicesBuf);
                 numDevicesBuf = stack.callocInt(1);
-                SuperResolution.LOGGER.info("Memory address of numDevicesBuf: {}", MemoryUtil.memAddress(numDevicesBuf));
                 GL11.glGetIntegerv(EXTMemoryObject.GL_NUM_DEVICE_UUIDS_EXT, numDevicesBuf);
                 int deviceUUIDCount = numDevicesBuf.get(0);
                 ByteBuffer driverUUIDBuf = stack.calloc(UUID_SIZE);
