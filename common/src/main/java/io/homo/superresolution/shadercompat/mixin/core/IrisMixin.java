@@ -59,6 +59,7 @@ public class IrisMixin {
 
         SuperResolution.recreateAlgorithm();
         SuperResolutionConfig.resolutionChangeCallback.run();
+        ShaderCompatHandler.setLoadingShader(false);
     }
 
     #if MC_VER > MC_1_20_1
