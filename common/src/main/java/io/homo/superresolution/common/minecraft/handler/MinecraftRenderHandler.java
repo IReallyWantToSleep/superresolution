@@ -484,7 +484,10 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         RenderHandlerManager.setClientRenderTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
         colorTexture.destroy();
         depthTexture.destroy();
+        emptyMotionVectorTexture.destroy();
         renderTarget.destroy();
+        renderTargets.clear();
+        initialized = false;
     }
 
     public ITexture getColorTexture() {

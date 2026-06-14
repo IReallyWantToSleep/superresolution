@@ -376,6 +376,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         updateDebugLabel(getDebugLabel());
 
         if (minecraftRenderTarget != null) {
+            minecraftRenderTarget.destroyBuffers();
             minecraftRenderTarget = null;
             minecraftRenderTarget = FrameBufferRenderTargetAdapter.ofRenderTarget(this);
         }

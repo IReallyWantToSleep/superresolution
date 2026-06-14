@@ -73,6 +73,25 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         return this.depthTextureView;
     }
 
+    private void closeColorTextureView() {
+        if (this.colorTextureView != null) {
+            this.colorTextureView.close();
+            this.colorTextureView = null;
+        }
+    }
+
+    private void closeDepthTextureView() {
+        if (this.depthTextureView != null) {
+            this.depthTextureView.close();
+            this.depthTextureView = null;
+        }
+    }
+
+    private void closeTextureViews() {
+        closeColorTextureView();
+        closeDepthTextureView();
+    }
+
     #endif
     private void updateState() {
         this.width = frameBuffer.getWidth();
@@ -87,6 +106,9 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         long colorTexHandle = colorTex.handle();
 
         if (colorTextureAdapter == null || cachedColorTextureHandle != colorTexHandle || cachedFrameBufferHandle != currentFbHandle) {
+            #if MC_VER >= MC_1_21_6
+            closeColorTextureView();
+            #endif
             colorTextureAdapter = (GpuTextureAdapter) GpuTextureAdapter.ofTexture(colorTex);
             colorTextureAdapter.bindFramebuffer(frameBuffer);
             cachedColorTextureHandle = colorTexHandle;
@@ -104,6 +126,9 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
         if (depthTex != null) {
             long depthTexHandle = depthTex.handle();
             if (depthTextureAdapter == null || cachedDepthTextureHandle != depthTexHandle || cachedFrameBufferHandle != currentFbHandle) {
+                #if MC_VER >= MC_1_21_6
+                closeDepthTextureView();
+                #endif
                 depthTextureAdapter = (GpuTextureAdapter) GpuTextureAdapter.ofTexture(depthTex);
                 depthTextureAdapter.bindFramebuffer(frameBuffer);
                 cachedDepthTextureHandle = depthTexHandle;
@@ -113,6 +138,9 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
             }
             this.depthTexture = depthTextureAdapter;
         } else {
+            #if MC_VER >= MC_1_21_6
+            closeDepthTextureView();
+            #endif
             depthTextureAdapter = null;
             cachedDepthTextureHandle = -1;
             this.depthTexture = null;
@@ -127,7 +155,16 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
     }
 
     public void destroyBuffers() {
-        updateState();
+        #if MC_VER >= MC_1_21_6
+        closeTextureViews();
+        #endif
+        colorTextureAdapter = null;
+        depthTextureAdapter = null;
+        cachedColorTextureHandle = -1;
+        cachedDepthTextureHandle = -1;
+        cachedFrameBufferHandle = -1;
+        this.colorTexture = null;
+        this.depthTexture = null;
     }
 
     public void copyDepthFrom(@NotNull RenderTarget renderTarget) {
@@ -189,6 +226,9 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
 
     public FrameBufferRenderTargetAdapter bindFrameBuffer(IFrameBuffer frameBuffer) {
         if (this.frameBuffer != frameBuffer) {
+            #if MC_VER >= MC_1_21_6
+            closeTextureViews();
+            #endif
             this.frameBuffer = frameBuffer;
             this.cachedFrameBufferHandle = -1;
         }

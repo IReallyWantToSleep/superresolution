@@ -37,6 +37,7 @@ public class ShaderCompatTextureInfo {
     private final boolean isOutput;
     private final String name;
     private GlTexture2D internalTexture;
+    private GlTexture2D processedTexture;
 
     public ShaderCompatTextureInfo(Supplier<ITexture> sourceTextureSupplier, TextureRegion region, boolean isOutput, String name) {
         this.sourceTextureSupplier = sourceTextureSupplier;
@@ -63,12 +64,48 @@ public class ShaderCompatTextureInfo {
         return internalTexture;
     }
 
+    public ITexture getPreProcessInputTexture() {
+        if (canUseSourceTextureDirectly()) {
+            return getSourceTexture();
+        }
+        return getInternalTexture();
+    }
+
+    public ITexture getPreProcessOutputTexture() {
+        ensureProcessedTexture();
+        return processedTexture;
+    }
+
+    public boolean canUseSourceTextureDirectly() {
+        ITexture sourceTexture = sourceTextureSupplier.get();
+        if (sourceTexture == null) {
+            return false;
+        }
+        int[] resolvedRegion = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
+        return resolvedRegion[0] == 0 &&
+                resolvedRegion[1] == 0 &&
+                resolvedRegion[2] == sourceTexture.getWidth() &&
+                resolvedRegion[3] == sourceTexture.getHeight();
+    }
+
+    public ITexture getAlgorithmTexture(boolean forceInternalTexture) {
+        if (forceInternalTexture && processedTexture != null) {
+            return processedTexture;
+        }
+        if (!forceInternalTexture && canUseSourceTextureDirectly()) {
+            return getSourceTexture();
+        }
+        return getInternalTexture();
+    }
+
     public void updateTexture() {
         ITexture sourceTexture = sourceTextureSupplier.get();
         if (sourceTexture == null) return;
 
         int width = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2];
         int height = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[3];
+        int sourceX = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[0];
+        int sourceY = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[1];
 
         if (internalTexture == null) {
             createInternalTexture(width, height);
@@ -76,17 +113,18 @@ public class ShaderCompatTextureInfo {
                 internalTexture.getHeight() != height ||
                 internalTexture.getTextureFormat() != sourceTexture.getTextureFormat()) {
             internalTexture.destroy();
+            destroyProcessedTexture();
             createInternalTexture(width, height);
         }
 
         if (isOutput) {
             copyTextureRegion(
                     internalTexture, 0, 0, width, height,
-                    sourceTexture, region.getX(), region.getY()
+                    sourceTexture, sourceX, sourceY
             );
-        } else {
+        } else if (!canUseSourceTextureDirectly()) {
             copyTextureRegion(
-                    sourceTexture, region.getX(), region.getY(), width, height,
+                    sourceTexture, sourceX, sourceY, width, height,
                     internalTexture, 0, 0
             );
         }
@@ -95,15 +133,37 @@ public class ShaderCompatTextureInfo {
     public void createInternalTexture(int width, int height) {
         ITexture sourceTexture = sourceTextureSupplier.get();
         if (sourceTexture == null) return;
-        internalTexture = GlTexture2D.create(
+        internalTexture = createTexture(width, height, "SRIrisCompatInternalTexture-%s".formatted(this.name));
+    }
+
+    private void ensureProcessedTexture() {
+        ITexture sourceTexture = sourceTextureSupplier.get();
+        if (sourceTexture == null) return;
+        int[] resolvedRegion = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
+        int width = resolvedRegion[2];
+        int height = resolvedRegion[3];
+        if (processedTexture == null) {
+            processedTexture = createTexture(width, height, "SRIrisCompatProcessedTexture-%s".formatted(this.name));
+        } else if (processedTexture.getWidth() != width ||
+                processedTexture.getHeight() != height ||
+                processedTexture.getTextureFormat() != sourceTexture.getTextureFormat()) {
+            processedTexture.destroy();
+            processedTexture = createTexture(width, height, "SRIrisCompatProcessedTexture-%s".formatted(this.name));
+        }
+    }
+
+    private GlTexture2D createTexture(int width, int height, String label) {
+        ITexture sourceTexture = sourceTextureSupplier.get();
+        if (sourceTexture == null) return null;
+        return GlTexture2D.create(
                 TextureDescription.create()
                         .width(width)
                         .height(height)
                         .type(TextureType.Texture2D)
                         .mipmapsDisabled()
-                        .usages(TextureUsages.create().sampler())
+                        .usages(TextureUsages.create().sampler().storage().transferSource().transferDestination())
                         .format(sourceTexture.getTextureFormat())
-                        .label("SRIrisCompatInternalTexture-%s".formatted(this.name))
+                        .label(label)
                         .build()
         );
     }
@@ -112,7 +172,23 @@ public class ShaderCompatTextureInfo {
         if (internalTexture != null) {
             internalTexture.destroy();
         }
+        destroyProcessedTexture();
         this.internalTexture = (GlTexture2D) newTexture;
+    }
+
+    public void destroy() {
+        if (internalTexture != null) {
+            internalTexture.destroy();
+            internalTexture = null;
+        }
+        destroyProcessedTexture();
+    }
+
+    private void destroyProcessedTexture() {
+        if (processedTexture != null) {
+            processedTexture.destroy();
+            processedTexture = null;
+        }
     }
 
     public void copyTextureRegion(
