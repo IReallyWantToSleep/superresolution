@@ -22,6 +22,54 @@ static std::unordered_set<std::string> g_loadedLibraries;
 static std::vector<SRUpscaleProvider> g_srLoadedUpscaleProviders;
 static std::mutex g_providerMutex;
 
+static SRReturnCode srCopyExtraParams(SRContextExtraParams *dst, const SRContextExtraParams *src) {
+    if (!dst) {
+        return SR_RETURN_CODE_NULL_POINTER;
+    }
+    memset(dst, 0, sizeof(SRContextExtraParams));
+    if (!src) {
+        return SR_RETURN_CODE_OK;
+    }
+    if (src->extraParamCount > SR_API_CONTEXT_MAX_PARAMS) {
+        return SR_RETURN_CODE_INVALID_ARGUMENT;
+    }
+
+    for (uint32_t i = 0; i < src->extraParamCount; ++i) {
+        const SRContextExtraParam *srcParam = &src->extraParams[i];
+        if (!srcParam->exist) {
+            continue;
+        }
+        if (!srcParam->name) {
+            srDestroyExtraParams(dst);
+            return SR_RETURN_CODE_INVALID_ARGUMENT;
+        }
+
+        SRContextExtraParam *dstParam = &dst->extraParams[dst->extraParamCount];
+        dstParam->name = strdup(srcParam->name);
+        if (!dstParam->name) {
+            srDestroyExtraParams(dst);
+            return SR_RETURN_CODE_ERROR;
+        }
+
+        dstParam->valueType = srcParam->valueType;
+        dstParam->value = srcParam->value;
+        if (srcParam->valueType == SR_PARAM_VALUE_TYPE_STRING && srcParam->value.stringValue) {
+            dstParam->value.stringValue = strdup(srcParam->value.stringValue);
+            if (!dstParam->value.stringValue) {
+                free((void *) dstParam->name);
+                memset(dstParam, 0, sizeof(SRContextExtraParam));
+                srDestroyExtraParams(dst);
+                return SR_RETURN_CODE_ERROR;
+            }
+        }
+
+        dstParam->exist = true;
+        dst->extraParamCount++;
+    }
+
+    return SR_RETURN_CODE_OK;
+}
+
 SR_API SRReturnCode srGetUpscaleProvider(
     SRUpscaleProvider *outProvider,
     uint64_t providerId) {
@@ -66,6 +114,17 @@ SR_API SRReturnCode srCreateUpscaleContext(
     // memset(outContext, 0, sizeof(SRUpscaleContext));
     outContext->callbacks = provider->callbacks;
     SRReturnCode code = provider->callbacks.pCreate(outContext, desc);
+    if (code == SR_RETURN_CODE_OK) {
+        SRContextExtraParams copiedParams = {};
+        SRReturnCode copyCode = srCopyExtraParams(&copiedParams, &outContext->desc.extraParams);
+        if (copyCode != SR_RETURN_CODE_OK) {
+            if (outContext->callbacks.pDestroy) {
+                outContext->callbacks.pDestroy(outContext);
+            }
+            return copyCode;
+        }
+        outContext->desc.extraParams = copiedParams;
+    }
     return code;
 }
 
@@ -83,6 +142,7 @@ SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context) {
         return (SRReturnCode) SR_RETURN_CODE_NULL_POINTER;
     }
     SRReturnCode code = context->callbacks.pDestroy(context);
+    srDestroyExtraParams(&context->desc.extraParams);
     return code;
 }
 

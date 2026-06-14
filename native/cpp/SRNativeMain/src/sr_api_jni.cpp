@@ -459,6 +459,19 @@ extern "C" {
         return code;
     }
 
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyUpscaleProvider(
+        JNIEnv *env,
+        jclass,
+        jlong providerPtr) {
+        g_envForCallback = env;
+        auto *provider = reinterpret_cast<SRUpscaleProvider *>(providerPtr);
+        if (!provider) {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+        delete provider;
+        return SR_RETURN_CODE_OK;
+    }
+
     JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrLoadUpscaleProvidersFromLibrary(
         JNIEnv *env,
         jclass,

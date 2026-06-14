@@ -59,68 +59,76 @@ public class DLSS extends SRApiAlgorithm {
                     "srGetDLSSUpscaleProvidersCount");
             providerLoaded = true;
         }
-        SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
-                SuperResolutionNativeAPI.srGetUpscaleProvider(
-                        provider,
-                        0x8000005)
-        );
+        try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
+            SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
+                    SuperResolutionNativeAPI.srGetUpscaleProvider(
+                            provider,
+                            0x8000005)
+            );
 
-        this.context = new SRUpscaleContext(0);
-        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-        VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
-        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
-        if (desc.isAutoExposure()){
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-            );
-        }
-        if (desc.isHdrInput()) {
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_HDR
-            );
-        }
-        if (desc.isMotionJittered()){
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-            );
-        }
-        SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
-                new SRVulkanDeviceInfo(
-                        RenderSystems.vulkan().getVulkanInstance(),
-                        vulkanDevice.getPhysicalDevice(),
-                        vulkanDevice.getVkDevice(),
-                        commandBuffer.getNativeCommandBuffer(),
-                        vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
-                        VkReflectionHelper.getVkGetInstanceProcAddr()),
-                new Vector2i(RenderHandlerManager.getScreenWidth(),
-                        RenderHandlerManager.getScreenHeight()),
-                new Vector2i(RenderHandlerManager.getRenderWidth(),
-                        RenderHandlerManager.getRenderHeight()),
-                flags
-        );
-        upscaleContextDesc.extraParams.setString("NGX_FEATURE_DLL_PATH",
-                SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
-        );
-        upscaleContextDesc.extraParams.setInt32(
-                "DLSS_RENDER_PRESET",
-                SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
-        );
+            this.context = new SRUpscaleContext(0);
+            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+            VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
+            EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
+            if (desc.isAutoExposure()){
+                flags.add(
+                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+                );
+            }
+            if (desc.isHdrInput()) {
+                flags.add(
+                        SRUpscaleContextCreateFlags.ENABLE_HDR
+                );
+            }
+            if (desc.isMotionJittered()){
+                flags.add(
+                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
+                );
+            }
+            try (
+                    SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
+                            new SRVulkanDeviceInfo(
+                                    RenderSystems.vulkan().getVulkanInstance(),
+                                    vulkanDevice.getPhysicalDevice(),
+                                    vulkanDevice.getVkDevice(),
+                                    commandBuffer.getNativeCommandBuffer(),
+                                    vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
+                                    VkReflectionHelper.getVkGetInstanceProcAddr()),
+                            new Vector2i(RenderHandlerManager.getScreenWidth(),
+                                    RenderHandlerManager.getScreenHeight()),
+                            new Vector2i(RenderHandlerManager.getRenderWidth(),
+                                    RenderHandlerManager.getRenderHeight()),
+                            flags
+                    )
+            ) {
+                upscaleContextDesc.getExtraParams().setString("NGX_FEATURE_DLL_PATH",
+                        SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
+                );
+                upscaleContextDesc.getExtraParams().setInt32(
+                        "DLSS_RENDER_PRESET",
+                        SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
+                );
 
-        commandBuffer.begin();
-        SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
-        if (createUpscaleContextCode != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
-            throw new RuntimeException("Failed to create upscale context");
+                commandBuffer.begin();
+                SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
+                SRReturnCode initUpscaleContextCode = createUpscaleContextCode == SRReturnCode.OK
+                        ? SuperResolutionNativeAPI.srInitUpscaleContext(context)
+                        : createUpscaleContextCode;
+                commandBuffer.end();
+                if (createUpscaleContextCode != SRReturnCode.OK) {
+                    SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
+                    throw new RuntimeException("Failed to create upscale context");
+                }
+                if (initUpscaleContextCode != SRReturnCode.OK) {
+                    SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
+                    throw new RuntimeException("Failed to initialize upscale context");
+                }
+                vulkanDevice.submitCommandBuffer(commandBuffer);
+                commandBuffer.waitForFence();
+            } finally {
+                commandBuffer.destroy();
+            }
         }
-        SRReturnCode initUpscaleContextCode = SuperResolutionNativeAPI.srInitUpscaleContext(context);
-        if (initUpscaleContextCode != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
-            throw new RuntimeException("Failed to initialize upscale context");
-        }
-        commandBuffer.end();
-        vulkanDevice.submitCommandBuffer(commandBuffer);
-        commandBuffer.waitForFence();
     }
 
     @Override
@@ -141,7 +149,7 @@ public class DLSS extends SRApiAlgorithm {
             InFlightFrameResourcesSet inFlightFrameResourcesSet
 
     ) {
-        SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
+        try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
         desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
         desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
@@ -165,6 +173,7 @@ public class DLSS extends SRApiAlgorithm {
         SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
         if (code != SRReturnCode.OK) {
             SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
+        }
         }
     }
 

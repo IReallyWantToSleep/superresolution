@@ -35,9 +35,11 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
@@ -77,10 +79,12 @@ public class IrisShaderCompatUpscaleDispatcher {
     private static SRShaderCompatData.InputTexture lastDepthConfig;
     private static SRShaderCompatData.InputTexture lastMotionConfig;
     private static SRShaderCompatData.InputTexture lastExposureConfig;
+    private static SRShaderCompatData.OutputTexture lastOutputConfig;
 
 
     private static ICompositeRendererAccessor cachedCompositeRenderer;
     private static NamedCompositePass cachedNamedCompositePass;
+    private static final Map<String, ITexture> cachedOutputTargetTextures = new HashMap<>();
 
     private static float resolvePreExposure(SRShaderCompatData.SourceConfig config) {
         if (config == null) {
@@ -236,11 +240,15 @@ public class IrisShaderCompatUpscaleDispatcher {
         lastDepthConfig = null;
         lastMotionConfig = null;
         lastExposureConfig = null;
+        lastOutputConfig = null;
 
         cachedCompositeRenderer = null;
         cachedNamedCompositePass = null;
+        cachedOutputTargetTextures.clear();
         IrisShaderCompatEventHandler.failedToDispatchUpscale = false;
         RenderHandlerManager.frameCount = 0;
+        InteropResourcesConverter.destroy();
+        SRCompatV2Processor.destroyPipelineCache();
     }
 
     public static void dispatchUpscale(ICompositeRendererAccessor compositeRenderer, NamedCompositePass pass) {
@@ -264,13 +272,15 @@ public class IrisShaderCompatUpscaleDispatcher {
         boolean needsPreProcessMotionVectors = processor != null && processor.needsPreProcessMotionVectors(shaderCompatData, algorithm, description);
         boolean needsPreProcessExposure = processor != null && processor.needsPreProcessExposure(shaderCompatData, algorithm, description);
 
-        if (!compositeRenderer.isSameInstance(cachedCompositeRenderer)) {
+        if (compositeRenderer != cachedCompositeRenderer && !compositeRenderer.isSameInstance(cachedCompositeRenderer)) {
             cachedCompositeRenderer = compositeRenderer;
+            cachedOutputTargetTextures.clear();
             needUpdate = true;
         }
 
         if (!pass.equals(cachedNamedCompositePass)) {
             cachedNamedCompositePass = pass;
+            cachedOutputTargetTextures.clear();
             needUpdate = true;
         }
 
@@ -290,6 +300,10 @@ public class IrisShaderCompatUpscaleDispatcher {
             motionConfig = currentConfig.inputTextures.get("motion_vectors");
             exposureConfig = currentConfig.inputTextures.get("exposure");
             outputConfig = currentConfig.outputTextures.get("upscaled_color");
+            if (!configEquals(outputConfig, lastOutputConfig)) {
+                cachedOutputTargetTextures.clear();
+                lastOutputConfig = outputConfig;
+            }
 
             if ((colorTexture == null || !configEquals(colorConfig, lastColorConfig) || needUpdate) && colorConfig != null && colorConfig.enabled) {
                 if (colorTexture != null) {
@@ -335,29 +349,34 @@ public class IrisShaderCompatUpscaleDispatcher {
 
         if (processor != null) {
             ICommandBuffer cb = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
-            cb.begin();
-            if (needsPreProcessColor) {
-                ITexture input = colorTexture.getPreProcessInputTexture();
-                ITexture output = colorTexture.getPreProcessOutputTexture();
-                processor.preProcessColor(input, output, cb, shaderCompatData, algorithm, description);
+            try {
+                cb.begin();
+                if (needsPreProcessColor) {
+                    ITexture input = colorTexture.getPreProcessInputTexture();
+                    ITexture output = colorTexture.getPreProcessOutputTexture();
+                    processor.preProcessColor(input, output, cb, shaderCompatData, algorithm, description);
+                }
+                if (needsPreProcessDepth && depthTexture != null) {
+                    ITexture input = depthTexture.getPreProcessInputTexture();
+                    ITexture output = depthTexture.getPreProcessOutputTexture();
+                    processor.preProcessDepth(input, output, cb, shaderCompatData, algorithm, description);
+                }
+                if (needsPreProcessMotionVectors && motionVectorsTexture != null) {
+                    ITexture input = motionVectorsTexture.getPreProcessInputTexture();
+                    ITexture output = motionVectorsTexture.getPreProcessOutputTexture();
+                    processor.preProcessMotionVectors(input, output, cb, shaderCompatData, algorithm, description);
+                }
+                if (needsPreProcessExposure && exposureTexture != null) {
+                    ITexture input = exposureTexture.getPreProcessInputTexture();
+                    ITexture output = exposureTexture.getPreProcessOutputTexture();
+                    processor.preProcessExposure(input, output, cb, shaderCompatData, algorithm, description);
+                }
+                cb.end();
+                RenderSystems.current().device().submitCommandBuffer(cb);
+                cb.waitForFence();
+            } finally {
+                cb.destroy();
             }
-            if (needsPreProcessDepth && depthTexture != null) {
-                ITexture input = depthTexture.getPreProcessInputTexture();
-                ITexture output = depthTexture.getPreProcessOutputTexture();
-                processor.preProcessDepth(input, output, cb, shaderCompatData, algorithm, description);
-            }
-            if (needsPreProcessMotionVectors && motionVectorsTexture != null) {
-                ITexture input = motionVectorsTexture.getPreProcessInputTexture();
-                ITexture output = motionVectorsTexture.getPreProcessOutputTexture();
-                processor.preProcessMotionVectors(input, output, cb, shaderCompatData, algorithm, description);
-            }
-            if (needsPreProcessExposure && exposureTexture != null) {
-                ITexture input = exposureTexture.getPreProcessInputTexture();
-                ITexture output = exposureTexture.getPreProcessOutputTexture();
-                processor.preProcessExposure(input, output, cb, shaderCompatData, algorithm, description);
-            }
-            cb.end();
-            RenderSystems.current().device().submitCommandBuffer(cb);
 
         }
 
@@ -426,12 +445,13 @@ public class IrisShaderCompatUpscaleDispatcher {
         IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
         if (currentConfig.outputTextures.get("upscaled_color").enabled) {
             for (String targetName : currentConfig.outputTextures.get("upscaled_color").targetNames) {
-                ITexture targetTexture = IrisTextureResolver.getIrisTexture(
-                        compositeRenderer,
-                        targetName,
-                        pass,
-                        false
-                );
+                ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
+                        name -> IrisTextureResolver.getIrisTexture(
+                                compositeRenderer,
+                                name,
+                                pass,
+                                false
+                        ));
                 ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
                 if (targetTexture != null && sourceTexture != null) {
                     if (

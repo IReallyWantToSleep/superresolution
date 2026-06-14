@@ -66,60 +66,63 @@ public class FfxFSR extends SRApiAlgorithm {
             providerLoaded = true;
         }
 
-        SRUpscaleProvider provider = new SRUpscaleProvider(0);
-        int providerId = switch (SuperResolutionConfig.SPECIAL.FSR.VERSION.get()) {
-            case V2 -> 0x8000002;
-            case V3 -> 0x8000003;
-        };
-        SRReturnCode providerCode = SuperResolutionNativeAPI.srGetUpscaleProvider(provider, providerId);
-        SuperResolution.LOGGER.info("FSR provider (0x{}) acquisition: {}", Integer.toHexString(providerId), providerCode);
+        try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
+            int providerId = switch (SuperResolutionConfig.SPECIAL.FSR.VERSION.get()) {
+                case V2 -> 0x8000002;
+                case V3 -> 0x8000003;
+            };
+            SRReturnCode providerCode = SuperResolutionNativeAPI.srGetUpscaleProvider(provider, providerId);
+            SuperResolution.LOGGER.info("FSR provider (0x{}) acquisition: {}", Integer.toHexString(providerId), providerCode);
 
-        this.context = new SRUpscaleContext(0);
-        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-        EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
-        flags.add(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
-        if (desc.isAutoExposure()) {
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-            );
+            this.context = new SRUpscaleContext(0);
+            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+            EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
+            flags.add(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
+            if (desc.isAutoExposure()) {
+                flags.add(
+                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+                );
+            }
+            if (desc.isHdrInput()) {
+                flags.add(
+                        SRUpscaleContextCreateFlags.ENABLE_HDR
+                );
+            }
+            if (desc.isMotionJittered()) {
+                flags.add(
+                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
+                );
+            }
+            try (
+                    SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
+                            new SRVulkanDeviceInfo(
+                                    RenderSystems.vulkan().getVulkanInstance(),
+                                    vulkanDevice.getPhysicalDevice(),
+                                    vulkanDevice.getVkDevice(),
+                                    null,
+                                    vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
+                                    VkReflectionHelper.getVkGetInstanceProcAddr()
+                            ),
+                            new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
+                            new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
+                            flags
+                    )
+            ) {
+                SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
+                if (createUpscaleContextCode != SRReturnCode.OK) {
+                    SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
+                    context = null;
+                    throw new RuntimeException("Failed to create upscale context");
+                }
+                SRReturnCode initUpscaleContextCode = SuperResolutionNativeAPI.srInitUpscaleContext(context);
+                if (initUpscaleContextCode != SRReturnCode.OK) {
+                    SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
+                    context = null;
+                    throw new RuntimeException("Failed to initialize upscale context");
+                }
+            }
         }
-        if (desc.isHdrInput()) {
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_HDR
-            );
-        }
-        if (desc.isMotionJittered()) {
-            flags.add(
-                    SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-            );
-        }
-        SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
-                new SRVulkanDeviceInfo(
-                        RenderSystems.vulkan().getVulkanInstance(),
-                        vulkanDevice.getPhysicalDevice(),
-                        vulkanDevice.getVkDevice(),
-                        null,
-                        vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
-                        VkReflectionHelper.getVkGetInstanceProcAddr()
-                ),
-                new Vector2i(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
-                new Vector2i(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
-                flags
-        );
-
-        SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
-        if (createUpscaleContextCode != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
-            context = null;
-            throw new RuntimeException("Failed to create upscale context");
-        }
-        SRReturnCode initUpscaleContextCode = SuperResolutionNativeAPI.srInitUpscaleContext(context);
-        if (initUpscaleContextCode != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
-            context = null;
-            throw new RuntimeException("Failed to initialize upscale context");
-        }
-        vulkanDevice.getMainQueue().waitIdle();
+        RenderSystems.vulkan().device().getMainQueue().waitIdle();
     }
 
     @Override
@@ -140,7 +143,7 @@ public class FfxFSR extends SRApiAlgorithm {
             VulkanCommandBuffer commandBuffer,
             InFlightFrameResourcesSet inFlightFrameResourcesSet
     ) {
-        SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc();
+        try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
         desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
         desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
         desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
@@ -177,6 +180,7 @@ public class FfxFSR extends SRApiAlgorithm {
         SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
         if (code != SRReturnCode.OK) {
             SuperResolution.LOGGER.error("FSR dispatch failed with code: {}", code);
+        }
         }
     }
 

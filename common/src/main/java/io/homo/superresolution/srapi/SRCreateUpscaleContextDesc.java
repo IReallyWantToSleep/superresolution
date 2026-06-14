@@ -25,7 +25,7 @@ import java.util.EnumSet;
 /**
  * 创建Upscale上下文的描述符
  */
-public class SRCreateUpscaleContextDesc {
+public class SRCreateUpscaleContextDesc implements AutoCloseable {
     /**
      * 渲染API类型
      */
@@ -46,6 +46,7 @@ public class SRCreateUpscaleContextDesc {
      * 额外参数
      */
     public SRContextExtraParams extraParams;
+    private boolean ownsExtraParams;
     /**
      * 标志位
      */
@@ -77,7 +78,6 @@ public class SRCreateUpscaleContextDesc {
         desc.upscaledSize = upscaledSize;
         desc.renderSize = renderSize;
         desc.flags = flags;
-        desc.extraParams = new SRContextExtraParams();
         return desc;
     }
 
@@ -95,7 +95,6 @@ public class SRCreateUpscaleContextDesc {
         desc.upscaledSize = upscaledSize;
         desc.renderSize = renderSize;
         desc.flags = flags;
-        desc.extraParams = new SRContextExtraParams();
         return desc;
     }
 
@@ -136,11 +135,19 @@ public class SRCreateUpscaleContextDesc {
     }
 
     public SRContextExtraParams getExtraParams() {
+        if (extraParams == null) {
+            extraParams = new SRContextExtraParams();
+            ownsExtraParams = true;
+        }
         return extraParams;
     }
 
     public void setExtraParams(SRContextExtraParams extraParams) {
+        if (this.extraParams != null && ownsExtraParams && this.extraParams != extraParams) {
+            this.extraParams.destroy();
+        }
         this.extraParams = extraParams;
+        this.ownsExtraParams = false;
     }
 
     public EnumSet<SRUpscaleContextCreateFlags> getFlags() {
@@ -149,5 +156,14 @@ public class SRCreateUpscaleContextDesc {
 
     public void setFlags(EnumSet<SRUpscaleContextCreateFlags> flags) {
         this.flags = flags;
+    }
+
+    @Override
+    public void close() {
+        if (extraParams != null && ownsExtraParams) {
+            extraParams.destroy();
+        }
+        extraParams = null;
+        ownsExtraParams = false;
     }
 }

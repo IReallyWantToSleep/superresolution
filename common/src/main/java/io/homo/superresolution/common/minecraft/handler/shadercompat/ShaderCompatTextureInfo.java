@@ -38,6 +38,7 @@ public class ShaderCompatTextureInfo {
     private final String name;
     private GlTexture2D internalTexture;
     private GlTexture2D processedTexture;
+    private ITexture cachedSourceTexture;
 
     public ShaderCompatTextureInfo(Supplier<ITexture> sourceTextureSupplier, TextureRegion region, boolean isOutput, String name) {
         this.sourceTextureSupplier = sourceTextureSupplier;
@@ -57,7 +58,10 @@ public class ShaderCompatTextureInfo {
     }
 
     public ITexture getSourceTexture() {
-        return sourceTextureSupplier.get();
+        if (cachedSourceTexture == null) {
+            cachedSourceTexture = sourceTextureSupplier.get();
+        }
+        return cachedSourceTexture;
     }
 
     public ITexture getInternalTexture() {
@@ -77,7 +81,7 @@ public class ShaderCompatTextureInfo {
     }
 
     public boolean canUseSourceTextureDirectly() {
-        ITexture sourceTexture = sourceTextureSupplier.get();
+        ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) {
             return false;
         }
@@ -99,7 +103,7 @@ public class ShaderCompatTextureInfo {
     }
 
     public void updateTexture() {
-        ITexture sourceTexture = sourceTextureSupplier.get();
+        ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return;
 
         int width = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2];
@@ -131,13 +135,13 @@ public class ShaderCompatTextureInfo {
     }
 
     public void createInternalTexture(int width, int height) {
-        ITexture sourceTexture = sourceTextureSupplier.get();
+        ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return;
         internalTexture = createTexture(width, height, "SRIrisCompatInternalTexture-%s".formatted(this.name));
     }
 
     private void ensureProcessedTexture() {
-        ITexture sourceTexture = sourceTextureSupplier.get();
+        ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return;
         int[] resolvedRegion = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
         int width = resolvedRegion[2];
@@ -153,7 +157,7 @@ public class ShaderCompatTextureInfo {
     }
 
     private GlTexture2D createTexture(int width, int height, String label) {
-        ITexture sourceTexture = sourceTextureSupplier.get();
+        ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return null;
         return GlTexture2D.create(
                 TextureDescription.create()
@@ -182,6 +186,7 @@ public class ShaderCompatTextureInfo {
             internalTexture = null;
         }
         destroyProcessedTexture();
+        cachedSourceTexture = null;
     }
 
     private void destroyProcessedTexture() {

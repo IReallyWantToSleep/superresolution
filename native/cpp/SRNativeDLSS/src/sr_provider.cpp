@@ -7,6 +7,7 @@ static void ensureInitialized() {
     if (!g_initialized) {
         g_providers[0].providerId = SR_MODULES_DLSS_ID;
         g_providers[0].callbacks = srGetDLSSUpscaleCallbacks();
+        g_initialized = true;
     }
 }
 

@@ -50,6 +50,15 @@ import java.util.*;
 public class SRCompatV2Processor implements SRCompatProcessor {
     private static final Map<String, ComputePipeline> mvPreprocessPipelineCache = new HashMap<>();
 
+    public static void destroyPipelineCache() {
+        for (ComputePipeline pipeline : mvPreprocessPipelineCache.values()) {
+            IShaderProgram shader = pipeline.shader();
+            pipeline.destroy();
+            shader.destroy();
+        }
+        mvPreprocessPipelineCache.clear();
+    }
+
     @Override
     public int version() {
         return 2;

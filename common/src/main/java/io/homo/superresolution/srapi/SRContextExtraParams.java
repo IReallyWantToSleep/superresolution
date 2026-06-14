@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.srapi;
 
-public class SRContextExtraParams {
+public class SRContextExtraParams implements AutoCloseable {
     private long nativePtr;
 
     public SRContextExtraParams() {
@@ -155,6 +155,11 @@ public class SRContextExtraParams {
             SuperResolutionNativeAPI.srDestroyParams(nativePtr);
             nativePtr = 0;
         }
+    }
+
+    @Override
+    public void close() {
+        destroy();
     }
 
     public boolean isValid() {

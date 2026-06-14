@@ -97,6 +97,14 @@ JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_N
 
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative
+ * Method:    NsrDestroyUpscaleProvider
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyUpscaleProvider
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     io_homo_superresolution_core_SuperResolutionNative
  * Method:    NsrLoadUpscaleProvidersFromLibrary
  * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
  */

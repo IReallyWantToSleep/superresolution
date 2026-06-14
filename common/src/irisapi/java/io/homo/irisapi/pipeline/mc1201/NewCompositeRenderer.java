@@ -594,10 +594,8 @@ public class NewCompositeRenderer {
 
         @Override
         public boolean isSameInstance(ICompositeRendererAccessor instance) {
-            if (!(instance instanceof NewCompositeRenderer)) return false;
-            if (!(instance instanceof CompositeRendererAccessorImpl)) return false;
-            if (((CompositeRendererAccessorImpl)instance).renderer.equals(this.renderer))return true;
-            return false;
+            if (!(instance instanceof CompositeRendererAccessorImpl other)) return false;
+            return other.renderer == this.renderer;
         }
 
         @Override

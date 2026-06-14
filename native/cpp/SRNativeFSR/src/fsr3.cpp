@@ -19,7 +19,7 @@ extern "C" {
 
     SR_API SRReturnCode srFfxFsr3InitUpscaleContext(SRUpscaleContext *context) {
         const SRCreateUpscaleContextDesc *desc = &context->desc;
-        SRFsr3PrivateData *privateData = (SRFsr3PrivateData *) context->userContext;
+        auto *privateData = static_cast<SRFsr3PrivateData *>(context->userContext);
 
         FfxFsr3ContextDescription fsrContexDesc = {};
         fsrContexDesc.flags = FFX_FSR3_ENABLE_UPSCALING_ONLY;

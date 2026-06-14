@@ -308,8 +308,11 @@ extern "C" {
             privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, L"DLSS requires motion vectors input.");
             return (SRReturnCode) SR_RETURN_CODE_INVALID_ARGUMENT;
         }
-        NVSDK_NGX_Parameter *params = nullptr;
-        NVSDK_NGX_VULKAN_AllocateParameters(&params);
+        NVSDK_NGX_Parameter *params = privateData->ngxParams;
+        if (!params) {
+            privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, L"DLSS NGX params is null in srDLSSDispatchUpscale.");
+            return (SRReturnCode) SR_RETURN_CODE_UNEXPECTED_ERROR;
+        }
         NVSDK_NGX_Resource_VK colorInput{
             .Resource = {
                 .ImageViewInfo = {
@@ -427,7 +430,6 @@ extern "C" {
         auto result = NGX_VULKAN_EVALUATE_DLSS_EXT(
             (VkCommandBuffer) desc->commandList.apiCommandBuffer.vulkan.commandBuffer, privateData->dlssHandle, params,
             &dlssEval);
-        NVSDK_NGX_VULKAN_DestroyParameters(params);
         if (!NVSDK_NGX_SUCCEED(result)) {
             std::wstring msg = L"NVSDK_NGX_VULKAN_EVALUATE_DLSS_EXT failed. Code:";
             msg += GetNGXResultAsString(result);
@@ -439,6 +441,8 @@ extern "C" {
 
     SR_API SRReturnCode srDLSSShutdown() {
         NVSDK_NGX_VULKAN_Shutdown1(nullptr);
+        g_ngxInitialized = false;
+        g_ngxLoggingCallback = nullptr;
         return SR_RETURN_CODE_OK;
     }
 

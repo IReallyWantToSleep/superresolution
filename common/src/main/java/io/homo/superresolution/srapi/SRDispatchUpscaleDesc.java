@@ -22,7 +22,7 @@ package io.homo.superresolution.srapi;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 
-public class SRDispatchUpscaleDesc {
+public class SRDispatchUpscaleDesc implements AutoCloseable {
     SRDispatchCommandBufferInfo commandList;
 
     SRTextureResource color;
@@ -51,11 +51,11 @@ public class SRDispatchUpscaleDesc {
     boolean reset;
 
     SRContextExtraParams extraParams;
+    private boolean ownsExtraParams;
 
     int flags;
 
     public SRDispatchUpscaleDesc() {
-        this.extraParams = new SRContextExtraParams();
     }
 
     public SRDispatchCommandBufferInfo getCommandBuffer() {
@@ -248,12 +248,29 @@ public class SRDispatchUpscaleDesc {
     }
 
     public SRContextExtraParams getExtraParams() {
+        if (extraParams == null) {
+            extraParams = new SRContextExtraParams();
+            ownsExtraParams = true;
+        }
         return extraParams;
     }
 
     public SRDispatchUpscaleDesc setExtraParams(SRContextExtraParams extraParams) {
+        if (this.extraParams != null && ownsExtraParams && this.extraParams != extraParams) {
+            this.extraParams.destroy();
+        }
         this.extraParams = extraParams;
+        this.ownsExtraParams = false;
         return this;
+    }
+
+    @Override
+    public void close() {
+        if (extraParams != null && ownsExtraParams) {
+            extraParams.destroy();
+        }
+        extraParams = null;
+        ownsExtraParams = false;
     }
 
     public int getFlags() {

@@ -143,6 +143,17 @@ public class SuperResolutionNativeAPI {
         return SRReturnCode.fromValue(SuperResolutionNative.NsrGetUpscaleProvider(provider, providerId));
     }
 
+    public static SRReturnCode srDestroyUpscaleProvider(SRUpscaleProvider provider) {
+        if (provider == null || provider.nativePtr == 0) {
+            return SRReturnCode.NULL_POINTER;
+        }
+        SRReturnCode code = SRReturnCode.fromValue(SuperResolutionNative.NsrDestroyUpscaleProvider(provider.nativePtr));
+        if (code == SRReturnCode.OK) {
+            provider.nativePtr = 0;
+        }
+        return code;
+    }
+
     public static SRReturnCode srLoadUpscaleProvidersFromLibrary(
             String libPath,
             String getProvidersFuncName,

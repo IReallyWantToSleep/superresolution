@@ -48,12 +48,9 @@ if(SR_FSR_BUILD_SDK)
     # SDK 产生的 CMake target（FFX_PLATFORM_NAME = x64）
     set(FFX_SDK_TARGETS
         ffx_backend_vk_x64
-        ffx_fsr1_x64
         ffx_fsr2_x64
         ffx_fsr3upscaler_x64
         ffx_fsr3_x64
-        ffx_frameinterpolation_x64
-        ffx_opticalflow_x64
     )
 
     # clang-cl 交叉编译时，SDK 自身的 /W4 /WX 会把 clang 独有的诊断
@@ -174,8 +171,6 @@ target_link_libraries(SR_FSR_LIB
     ${FFX_LINK_BACKEND}
     ${FFX_LINK_FSR2}
     ${FFX_LINK_FSR3UP}
-    ${FFX_LINK_FRAMEINTERPOLATION}
-    ${FFX_LINK_OPTICALFLOW}
     ${FFX_LINK_FSR3}
     ${Vulkan_LIBRARIES}
 )

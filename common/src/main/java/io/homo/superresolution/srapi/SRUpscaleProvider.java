@@ -18,11 +18,22 @@
 
 package io.homo.superresolution.srapi;
 
-public class SRUpscaleProvider {
+public class SRUpscaleProvider implements AutoCloseable {
     public long nativePtr;
 
     public SRUpscaleProvider(long nativePtr) {
         this.nativePtr = nativePtr;
 
+    }
+
+    public void destroy() {
+        if (nativePtr != 0) {
+            SuperResolutionNativeAPI.srDestroyUpscaleProvider(this);
+        }
+    }
+
+    @Override
+    public void close() {
+        destroy();
     }
 }

@@ -114,6 +114,8 @@ public class SuperResolutionNative {
             long providerId
     );
 
+    public static native int NsrDestroyUpscaleProvider(long provider);
+
     public static native int NsrLoadUpscaleProvidersFromLibrary(
             String libPath,
             String getProvidersFuncName,
