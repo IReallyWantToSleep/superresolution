@@ -26,6 +26,7 @@ import org.lwjgl.system.MemoryStack;
 
 import static org.lwjgl.opengl.EXTMemoryObject.*;
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TRUE;
 import static org.lwjgl.opengl.GL11.glBindTexture;
 
 public class GlImportableTexture2D extends GlTexture2D {
@@ -65,6 +66,12 @@ public class GlImportableTexture2D extends GlTexture2D {
             int[] memoryObjects = new int[1];
             glCreateMemoryObjectsEXT(memoryObjects);
             glMemoryObject = memoryObjects[0];
+
+            // The backing Vulkan allocation is dedicated (VkMemoryDedicatedAllocateInfo). Mark the GL
+            // memory object dedicated BEFORE importing so GL sizes/maps the texture to fit the dedicated
+            // allocation exactly, instead of a generic huge-page-rounded block that overruns it
+            // (NVRM "vaHi <= pMemBlock->end" / dmaAllocMapping_GM107).
+            glMemoryObjectParameterivEXT(glMemoryObject, GL_DEDICATED_MEMORY_OBJECT_EXT, new int[]{GL_TRUE});
 
             VulkanInterop.IMPL.glImportMemoryEXT(glMemoryObject, size, handle);
 

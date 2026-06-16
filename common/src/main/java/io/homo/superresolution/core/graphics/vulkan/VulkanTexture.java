@@ -205,35 +205,27 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         return flags;
     }
 
-    private static final long EXPORT_MEMORY_ALIGNMENT = 2L * 1024 * 1024; // GPU huge-page granularity
-
     private void allocateMemory(MemoryStack stack) {
         if (exportable) {
-            // This memory is exported (opaque FD / Win32 handle) and re-imported by the OpenGL driver,
-            // which maps the block-linear texture in the GL context at GPU huge-page (2 MiB) granularity.
-            // A *dedicated* allocation is pinned to exactly VkMemoryRequirements::size
-            // (VUID-VkMemoryAllocateInfo-pNext-00639) -- only 64 KiB-aligned here -- so the GL re-map
-            // overruns the block end: NVRM "vaHi <= pMemBlock->end" / dmaAllocMapping_GM107.
-            // Allocate NON-dedicated, padded up to a huge-page boundary, and import that same padded
-            // size into GL (this.memorySize) so the imported block always covers the rounded mapping.
-            long required = allocator.getImageMemoryRequirements(image);
-            long alignment = Math.max(allocator.getImageMemoryAlignment(image), EXPORT_MEMORY_ALIGNMENT);
-            long paddedSize = alignUp(required, alignment);
+            // Dedicated export allocation. The OpenGL importer is marked dedicated to match
+            // (GL_DEDICATED_MEMORY_OBJECT_EXT in GlImportableTexture2D), so GL lays the texture out to
+            // fit this allocation exactly. Without that marker GL treats the import as a generic block
+            // and maps it at huge-page granularity, overrunning the dedicated allocation ->
+            // NVRM "vaHi <= pMemBlock->end" / dmaAllocMapping_GM107.
+            VkMemoryDedicatedAllocateInfo dedicatedAllocInfo = VkMemoryDedicatedAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO)
+                    .image(image);
+            dedicatedAllocInfo.pNext(VulkanInterop.IMPL.createVkExportMemoryAllocateInfo(stack).address());
             imageMemory = allocator.allocateImageMemory(
                     image,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                    VulkanInterop.IMPL.createVkExportMemoryAllocateInfo(stack).address(),
-                    paddedSize);
-            this.memorySize = paddedSize;
+                    dedicatedAllocInfo.address());
+            this.memorySize = allocator.getImageMemoryRequirements(image);
         } else {
             vmaAllocation = allocator.allocateImageMemoryVma(image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
             imageMemory = allocator.getDeviceMemoryFromAllocation(vmaAllocation);
             this.memorySize = allocator.getImageMemoryRequirements(image);
         }
-    }
-
-    private static long alignUp(long value, long alignment) {
-        return ((value + alignment - 1) / alignment) * alignment;
     }
 
     private void importMemoryFromHandle(MemoryStack stack) {
