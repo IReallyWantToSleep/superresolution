@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+import com.sun.jna.Pointer;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import org.lwjgl.PointerBuffer;
@@ -210,6 +211,10 @@ public class VulkanInterop {
                     EXTMemoryObjectWin32.GL_HANDLE_TYPE_OPAQUE_WIN32_EXT,
                     handle
             );
+            // glImportMemoryWin32HandleEXT does NOT take ownership of the NT handle (unlike the
+            // Linux opaque-FD path, where GL owns and closes the fd), so close it here to avoid
+            // leaking one handle per exported texture (recreated on every resize).
+            WinKernel32.INSTANCE.CloseHandle(new Pointer(handle));
         }
     }
 }

@@ -181,6 +181,46 @@ public class VulkanMemoryAllocator {
         }
     }
 
+    /**
+     * Like {@link #allocateImageMemory(long, int, long)} but with an explicit allocation size, so the
+     * caller can over-allocate (e.g. pad an exported allocation up to a page boundary). Must NOT be used
+     * with a dedicated allocation in {@code pNext} (VUID-VkMemoryAllocateInfo-pNext-00639 requires
+     * allocationSize == VkMemoryRequirements::size for those).
+     */
+    public long allocateImageMemory(long image, int requiredMemoryProperties, long pNext, long allocationSize) {
+        try (MemoryStack stack = stackPush()) {
+            VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
+            vkGetImageMemoryRequirements(device.getVkDevice(), image, memReqs);
+
+            VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO)
+                    .allocationSize(allocationSize)
+                    .memoryTypeIndex(findMemoryType(memReqs.memoryTypeBits(), requiredMemoryProperties));
+
+            if (pNext != 0) {
+                allocInfo.pNext(pNext);
+            }
+
+            LongBuffer pMemory = stack.mallocLong(1);
+            VK_CHECK(vkAllocateMemory(device.getVkDevice(), allocInfo, null, pMemory),
+                    "Failed to allocate image memory");
+            long memory = pMemory.get(0);
+
+            VK_CHECK(vkBindImageMemory(device.getVkDevice(), image, memory, 0),
+                    "Failed to bind image memory");
+
+            return memory;
+        }
+    }
+
+    public long getImageMemoryAlignment(long image) {
+        try (MemoryStack stack = stackPush()) {
+            VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
+            vkGetImageMemoryRequirements(device.getVkDevice(), image, memReqs);
+            return memReqs.alignment();
+        }
+    }
+
     public long getImageMemoryRequirements(long image) {
         try (MemoryStack stack = stackPush()) {
             VkMemoryRequirements memReqs = VkMemoryRequirements.calloc(stack);
