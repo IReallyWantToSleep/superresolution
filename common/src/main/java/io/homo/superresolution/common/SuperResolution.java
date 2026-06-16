@@ -266,8 +266,29 @@ public final class SuperResolution implements Destroyable {
         return false;
     }
 
+    // Signature of the last successful (re)create, used to skip redundant Iris pipeline reloads.
+    private static InitializationDescription lastAppliedDesc;
+    private static AlgorithmDescription<?> lastAppliedAlgorithm;
+
     public static boolean recreateAlgorithm() {
         return recreateAlgorithm(getInitializationDescription());
+    }
+
+    /**
+     * Recreate the algorithm only if the effective configuration actually changed. Iris fires its reload
+     * hooks on every pipeline reload -- including no-op "overworld => overworld" dimension changes -- and
+     * an unconditional rebuild tears down and recreates the DLSS/NGX context + interop resources each
+     * time (a recreate-storm that stalls world loading, badly in HighPerformance mode). Config changes
+     * use the unguarded recreateAlgorithm(), so they always apply even when the description is unchanged.
+     */
+    public static boolean recreateAlgorithmIfChanged() {
+        InitializationDescription desc = getInitializationDescription();
+        if (currentAlgorithm != null
+                && algorithmDescription == lastAppliedAlgorithm
+                && desc.equals(lastAppliedDesc)) {
+            return true;
+        }
+        return recreateAlgorithm(desc);
     }
 
     public static boolean recreateAlgorithm(InitializationDescription desc) {
@@ -286,6 +307,8 @@ public final class SuperResolution implements Destroyable {
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.initialize(desc);
+                lastAppliedDesc = desc;
+                lastAppliedAlgorithm = algorithmDescription;
                 return true;
             } catch (Exception e) {
                 LOGGER.error("初始化算法 {} 时失败：", algorithmDescription.getDisplayName(), e);
@@ -293,6 +316,8 @@ public final class SuperResolution implements Destroyable {
                     try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
                 }
                 currentAlgorithm = null;
+                lastAppliedDesc = null;
+                lastAppliedAlgorithm = null;
             }
         }
         return false;

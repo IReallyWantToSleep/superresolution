@@ -57,4 +57,18 @@ public class InitializationDescription {
         isAutoExposure = autoExposure;
         return this;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof InitializationDescription that)) return false;
+        return isHdrInput == that.isHdrInput
+                && isAutoExposure == that.isAutoExposure
+                && isMotionJittered == that.isMotionJittered;
+    }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(isHdrInput, isAutoExposure, isMotionJittered);
+    }
 }

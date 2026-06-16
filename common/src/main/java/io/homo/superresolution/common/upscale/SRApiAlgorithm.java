@@ -63,6 +63,13 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     //所以我们需要自己维护一个frameCount
     protected int frameCount = 0;
 
+    // Resolution the resources/context were last built at, to skip redundant resize() rebuilds
+    // (Iris/forceResize call resize() on every pipeline reload even when nothing changed).
+    private int builtRenderWidth = -1;
+    private int builtRenderHeight = -1;
+    private int builtScreenWidth = -1;
+    private int builtScreenHeight = -1;
+
     protected abstract void recreateSRApiContext(InitializationDescription desc);
 
     protected abstract void destroySRApiContext();
@@ -80,6 +87,10 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             inFlightFrames[i].index = i;
             inFlightFrames[i].initialize();
         }
+        builtRenderWidth = RenderHandlerManager.getRenderWidth();
+        builtRenderHeight = RenderHandlerManager.getRenderHeight();
+        builtScreenWidth = RenderHandlerManager.getScreenWidth();
+        builtScreenHeight = RenderHandlerManager.getScreenHeight();
     }
 
     protected void destroyResources() {
@@ -302,6 +313,17 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     @Override
     public void resize(int width, int height) {
+        // Skip the expensive teardown+rebuild (DLSS/NGX context + interop resources) when the
+        // resolution is unchanged. Iris/forceResize fire resize() on every pipeline reload during world
+        // load even at constant resolution; rebuilding each time is a multi-second recreate-storm, worst
+        // in HighPerformance mode (its waitIdle() also blocks on the async pipeline).
+        if (context != null
+                && RenderHandlerManager.getRenderWidth() == builtRenderWidth
+                && RenderHandlerManager.getRenderHeight() == builtRenderHeight
+                && RenderHandlerManager.getScreenWidth() == builtScreenWidth
+                && RenderHandlerManager.getScreenHeight() == builtScreenHeight) {
+            return;
+        }
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
         commandBufferRing.destroy();
 

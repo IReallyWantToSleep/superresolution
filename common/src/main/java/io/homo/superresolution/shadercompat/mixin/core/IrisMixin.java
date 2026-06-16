@@ -57,7 +57,7 @@ public class IrisMixin {
     private static void reloadMixin(CallbackInfo ci) {
         RenderHandlerManager.updateHandler();
 
-        SuperResolution.recreateAlgorithm();
+        SuperResolution.recreateAlgorithmIfChanged();
         SuperResolutionConfig.resolutionChangeCallback.run();
         ShaderCompatHandler.setLoadingShader(false);
     }

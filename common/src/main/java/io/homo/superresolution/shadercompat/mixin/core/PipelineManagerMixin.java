@@ -33,6 +33,6 @@ public class PipelineManagerMixin {
     @Inject(method = "preparePipeline",at = @At(value = "INVOKE", target = "Lnet/irisshaders/iris/shaderpack/materialmap/WorldRenderingSettings;clearReloadRequired()V"))
     private void reset(NamespacedId currentDimension, CallbackInfoReturnable<WorldRenderingPipeline> cir){
         IrisShaderCompatUpscaleDispatcher.reset();
-        SuperResolution.recreateAlgorithm();
+        SuperResolution.recreateAlgorithmIfChanged();
     }
 }
