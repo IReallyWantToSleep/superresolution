@@ -174,19 +174,17 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             int currentFrameIndex = frameCount;
             {
                 InFlightFrameResourcesSet inFlight;
-                VkGlInteropSemaphore upscaleFinishSemaphore;
                 VkGlInteropSemaphore glFinishSemaphore;
                 // =============== 处理第N帧还未完成的GL渲染结果 ================
                 inFlight = inFlightFrames[currentFrameIndex % MAX_IN_FLIGHT_FRAME];
-                upscaleFinishSemaphore = inFlight.upscaleVkFinish;
                 glFinishSemaphore = inFlight.glFinish;
                 inFlight.frameData = FrameData.from(dispatchResource);
-                // 这里理论上不需要等待，因为上一帧已经wait过了，但是为了防止edge-case（比如某帧的Cmdbuf特别慢，导致第N+1帧来了，第N-1帧的Cmdbuf还没执行完，第N-1帧的GL渲染结果还没准备好），还是等一下比较保险
-                upscaleFinishSemaphore.waitOpenGL(
-                        new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                        new int[]{},
-                        new int[]{GL_LAYOUT_GENERAL_EXT});
-                // 保险x2
+                // Do NOT wait on upscaleVkFinish here. This slot's upscale output is consumed -- with
+                // its own waitOpenGL -- in the third stage below, so an extra GL wait on the same binary
+                // semaphore makes it two waits per one signal each cycle, and on the first cycle a wait
+                // before any signal. On Linux the opaque-FD semaphore wait blocks the GL queue hard and
+                // deadlocks (Windows happens to tolerate the illegal wait). Reuse safety for this slot's
+                // inputs comes from the fence wait below plus the command-buffer ring.
                 if (inFlight.commandBuffer != null) {
                     inFlight.commandBuffer.waitForFence();
                 }
@@ -264,22 +262,29 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 upscaleFinishSemaphore = inFlight.upscaleVkFinish;
                 glFinishSemaphore = inFlight.glFinish;
 
-                // 等待第N-2帧的Cmdbuf完成（如果有的话）（防止edge-case）
+                // Only consume this slot's upscale output if its upscale was actually submitted since the
+                // last resource (re)creation. A non-null commandBuffer means upscaleVkFinish has been
+                // signaled at least once. resize() rebuilds the slots (fresh, UNSIGNALED semaphores) but
+                // does NOT reset frameCount, so for the first frames after a resize this stage's index is
+                // still > 2 while the slot was never upscaled; waiting on its never-signaled binary
+                // semaphore blocks the GL queue and deadlocks (the HighPerformance freeze during world
+                // load, where resize() fires repeatedly). A later recreateAlgorithm (new instance,
+                // frameCount = 0) re-primes and briefly unblocks it -- hence the freeze/render/freeze cycle.
                 if (inFlight.commandBuffer != null) {
                     inFlight.commandBuffer.waitForFence();
+
+                    //GL Queue等待第N-2帧的Upscale结果
+                    upscaleFinishSemaphore.waitOpenGL(
+                            new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
+                            new int[]{},
+                            new int[]{GL_LAYOUT_GENERAL_EXT}
+                    );
+
+                    //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
+                    InteropResourcesConverter.flipY(
+                            inFlight.outputColorGlTexture,
+                            inFlight.flippedOutputGlTexture);
                 }
-
-                //GL Queue等待第N-2帧的Upscale结果 （防止edge-case）x2
-                upscaleFinishSemaphore.waitOpenGL(
-                        new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                        new int[]{},
-                        new int[]{GL_LAYOUT_GENERAL_EXT}
-                );
-
-                //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
-                InteropResourcesConverter.flipY(
-                        inFlight.outputColorGlTexture,
-                        inFlight.flippedOutputGlTexture);
                 // =================================================================
             }
         }
