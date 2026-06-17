@@ -27,6 +27,7 @@ import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.utils.LargeStackExecutor;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
@@ -59,6 +60,10 @@ public class DLSS extends SRApiAlgorithm {
                     "srGetDLSSUpscaleProvidersCount");
             providerLoaded = true;
         }
+        // NGX's NVSDK_NGX_VULKAN_Init reserves a ~1MB buffer on the stack; run the whole native
+        // init on a large-stack thread so it can't overflow HotSpot's 1MB default render-thread
+        // stack (which manifested as a bare SIGSEGV inside libnvidia-ngx with no hs_err).
+        LargeStackExecutor.run("SR-DLSS-Init", () -> {
         try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
             SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
                     SuperResolutionNativeAPI.srGetUpscaleProvider(
@@ -129,6 +134,7 @@ public class DLSS extends SRApiAlgorithm {
                 commandBuffer.destroy();
             }
         }
+        });
     }
 
     @Override
