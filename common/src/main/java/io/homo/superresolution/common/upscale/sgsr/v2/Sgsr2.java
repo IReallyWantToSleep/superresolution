@@ -29,14 +29,17 @@ import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassCompute;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr2PassFragment;
 import io.homo.superresolution.common.upscale.sgsr.v2.variants.Sgsr3PassCompute;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.buffer.*;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
+import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
+import io.homo.superresolution.core.graphics.impl.buffer.Std140StructBuilder;
+import io.homo.superresolution.core.graphics.impl.buffer.StructuredData;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.impl.Destroyable;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -46,15 +49,9 @@ import java.util.function.Consumer;
 public class Sgsr2 extends AbstractAlgorithm {
     private AbstractSgsrVariant variantInstance;
     private SgsrVariant currentVariant;
-
-    public StructuredData paramsData() {
-        return paramsData;
-    }
-
     private StructuredData paramsData;
     private GlBuffer paramsUbo;
     private IFrameBuffer output;
-
     private int sameFrameNum = 0;
 
     private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
@@ -67,17 +64,21 @@ public class Sgsr2 extends AbstractAlgorithm {
         return diff < threshold;
     }
 
+    public StructuredData paramsData() {
+        return paramsData;
+    }
+
     @Override
     public void initialize(InitializationDescription desc) {
         this.initDesc = desc;
         ITexture outputTex = RenderSystems.current().device().createTexture(TextureDescription.create()
-                        .type(TextureType.Texture2D)
-                        .width(RenderHandlerManager.getScreenWidth())
-                        .height(RenderHandlerManager.getScreenHeight())
-                        .usages(TextureUsages.create().sampler().storage().sampler())
-                        .format(SuperResolutionConfig.getInternalTextureFormat())
-                        .label("Sgsr2Output")
-                        .build());
+                .type(TextureType.Texture2D)
+                .width(RenderHandlerManager.getScreenWidth())
+                .height(RenderHandlerManager.getScreenHeight())
+                .usages(TextureUsages.create().sampler().storage().sampler())
+                .format(SuperResolutionConfig.getInternalTextureFormat())
+                .label("Sgsr2Output")
+                .build());
         this.output = RenderSystems.current().device().createFramebuffer(
                 FramebufferDescription.create()
                         .colorAttachment(outputTex)
@@ -163,7 +164,7 @@ public class Sgsr2 extends AbstractAlgorithm {
         paramsData.setVec2("displaySize", dispatchResource.screenSize());
         paramsData.setVec2("renderSizeRcp", new Vector2f().set(1).div(dispatchResource.renderSize()));
         paramsData.setVec2("displaySizeRcp", new Vector2f().set(1).div(dispatchResource.screenSize()));
-        paramsData.setVec2("jitterOffset",dispatchResource.jitterOffset());
+        paramsData.setVec2("jitterOffset", dispatchResource.jitterOffset());
         /*
         glm::mat4 inv_view       = glm::inverse(current_view);
         glm::mat4 inv_proj       = glm::inverse(current_proj);

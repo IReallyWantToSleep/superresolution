@@ -25,7 +25,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.command.MemoryBarrierType;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
@@ -36,8 +36,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector3i;
 
@@ -46,31 +44,26 @@ import java.util.*;
 public class Anime4K extends AbstractAlgorithm {
     private static final String SHADER_DIR = "/shader/anime4k/";
     private static final String MODEL_PATH = SHADER_DIR + "model.json";
-
-    private IFrameBuffer outputFrameBuffer;
-    private ITexture outputColorTexture;
-
-    private ISampler samplerNearest;
-    private ISampler samplerLinear;
-
-    private Anime4KModel model;
-
     private final Map<String, ITexture> intermediateTextures = new LinkedHashMap<>();
-
     private final List<IShaderProgram> shaders = new ArrayList<>();
     private final List<ComputePipeline> pipelines = new ArrayList<>();
-
-    private record PassBinding(
-            ComputePipeline pipeline,
-            List<SamplerBinding> samplers,
-            ImageBinding image,
-            String outputTextureName
-    ) {}
-
-    private record SamplerBinding(String name, String source, String filter) {}
-    private record ImageBinding(String name, String source) {}
-
     private final List<PassBinding> passBindings = new ArrayList<>();
+    private IFrameBuffer outputFrameBuffer;
+    private ITexture outputColorTexture;
+    private ISampler samplerNearest;
+    private ISampler samplerLinear;
+    private Anime4KModel model;
+
+    private static TextureFormat parseFormat(String formatStr) {
+        return switch (formatStr.toLowerCase(Locale.ROOT)) {
+            case "rgba32f" -> TextureFormat.RGBA32F;
+            case "rgba16f" -> TextureFormat.RGBA16F;
+            case "rgba8" -> TextureFormat.RGBA8;
+            case "r32f" -> TextureFormat.R32F;
+            case "rg16f" -> TextureFormat.RG16F;
+            default -> TextureFormat.RGBA32F;
+        };
+    }
 
     @Override
     public void initialize(InitializationDescription desc) {
@@ -159,24 +152,6 @@ public class Anime4K extends AbstractAlgorithm {
         }
     }
 
-    private ITexture resolveTexture(String name) {
-        if ("inputColor".equals(name)) {
-            return null;
-        }
-        return intermediateTextures.get(name);
-    }
-
-    private static TextureFormat parseFormat(String formatStr) {
-        return switch (formatStr.toLowerCase(Locale.ROOT)) {
-            case "rgba32f" -> TextureFormat.RGBA32F;
-            case "rgba16f" -> TextureFormat.RGBA16F;
-            case "rgba8" -> TextureFormat.RGBA8;
-            case "r32f" -> TextureFormat.R32F;
-            case "rg16f" -> TextureFormat.RG16F;
-            default -> TextureFormat.RGBA32F;
-        };
-    }
-
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
         super.dispatch(dispatchResource);
@@ -209,32 +184,6 @@ public class Anime4K extends AbstractAlgorithm {
         RenderSystems.current().device().submitCommandBuffer(commandBuffer);
 
         return true;
-    }
-
-    private ITexture resolveTextureForDispatch(String source) {
-        if ("inputColor".equals(source)) {
-            return getResources() != null ? getResources().colorTexture() : null;
-        }
-        return resolveTexture(source);
-    }
-
-    private Vector3i computeWorkGroup(String outputTextureName) {
-        ITexture outTex = resolveTexture(outputTextureName);
-        int outW, outH;
-        if (outTex != null) {
-            outW = outTex.getWidth();
-            outH = outTex.getHeight();
-        } else {
-            outW = RenderHandlerManager.getScreenWidth();
-            outH = RenderHandlerManager.getScreenHeight();
-        }
-        int wgX = model.workgroupSize[0];
-        int wgY = model.workgroupSize[1];
-        return new Vector3i(
-                (outW + wgX - 1) / wgX,
-                (outH + wgY - 1) / wgY,
-                1
-        );
     }
 
     @Override
@@ -301,5 +250,61 @@ public class Anime4K extends AbstractAlgorithm {
     @Override
     public boolean isCustomUpscaleRatio() {
         return false;
+    }
+
+    private ITexture resolveTexture(String name) {
+        if ("inputColor".equals(name)) {
+            return null;
+        }
+        return intermediateTextures.get(name);
+    }
+
+    private ITexture resolveTextureForDispatch(String source) {
+        if ("inputColor".equals(source)) {
+            return getResources() != null ? getResources().colorTexture() : null;
+        }
+        return resolveTexture(source);
+    }
+
+    private Vector3i computeWorkGroup(String outputTextureName) {
+        ITexture outTex = resolveTexture(outputTextureName);
+        int outW, outH;
+        if (outTex != null) {
+            outW = outTex.getWidth();
+            outH = outTex.getHeight();
+        } else {
+            outW = RenderHandlerManager.getScreenWidth();
+            outH = RenderHandlerManager.getScreenHeight();
+        }
+        int wgX = model.workgroupSize[0];
+        int wgY = model.workgroupSize[1];
+        return new Vector3i(
+                (outW + wgX - 1) / wgX,
+                (outH + wgY - 1) / wgY,
+                1
+        );
+    }
+
+    private record PassBinding(
+            ComputePipeline pipeline,
+
+            List<SamplerBinding> samplers,
+
+            ImageBinding image,
+
+            String outputTextureName
+    ) {
+    }
+
+    private record SamplerBinding(String name,
+
+                                  String source,
+
+                                  String filter) {
+    }
+
+    private record ImageBinding(String name,
+
+                                String source) {
     }
 }

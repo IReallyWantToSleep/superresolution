@@ -20,7 +20,10 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmRegisterEvent;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.api.platform.SystemArchitecture;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.registry.ExtraResource;
@@ -34,9 +37,6 @@ import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
-import io.homo.superresolution.api.platform.OperatingSystem;
-import io.homo.superresolution.api.platform.SystemArchitecture;
-import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.common.upscale.xess.XeSS;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 
@@ -126,13 +126,13 @@ public class AlgorithmDescriptions {
                             .glMinorVersion(6)
                             .requireVulkan(true),
                     Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS ?
-                    ExtraResources.builder()
+                            ExtraResources.builder()
                             .add(ExtraResource.builder("nvngx_dlss.dll")
-                                    .addRemote(
-                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
-                                            "CNB Mirror"
-                                    )
-                                    .build()
+                                 .addRemote(
+                                         "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
+                                         "CNB Mirror"
+                                 )
+                                 .build()
                             )
                             .build() : ExtraResources.builder().build()
             );

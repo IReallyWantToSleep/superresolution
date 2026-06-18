@@ -27,6 +27,7 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
@@ -43,8 +44,6 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 
 public class Sgsr1 extends AbstractAlgorithm {
@@ -123,7 +122,7 @@ public class Sgsr1 extends AbstractAlgorithm {
 
         );
         buffer.fillBuffer();
-        sgsrPipeline.descriptorSet().samplerTexture("ps0",dispatchResource.resources().colorTexture());
+        sgsrPipeline.descriptorSet().samplerTexture("ps0", dispatchResource.resources().colorTexture());
         sgsrPipeline.descriptorSet().uniformBuffer("sgsr1_data", ubo);
         sgsrPipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();

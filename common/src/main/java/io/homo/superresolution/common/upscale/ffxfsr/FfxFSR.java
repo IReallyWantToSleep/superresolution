@@ -27,9 +27,9 @@ import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.srapi.*;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
@@ -144,43 +144,43 @@ public class FfxFSR extends SRApiAlgorithm {
             InFlightFrameResourcesSet inFlightFrameResourcesSet
     ) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
-        desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
-        desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
-        desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
-        desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-        desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
-        desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
+            desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
+            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
+            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
+            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
+            desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
+            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
 
-        desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
-        desc.setMotionVectorScale(
-                new Vector2f(
-                        inFlightFrameResourcesSet.frameData.renderWidth(),
-                        inFlightFrameResourcesSet.frameData.renderHeight()
-                )
-        );
-        desc.setRenderSize(new Vector2i(
-                inFlightFrameResourcesSet.frameData.renderWidth(),
-                inFlightFrameResourcesSet.frameData.renderHeight()
-        ));
-        desc.setUpscaleSize(new Vector2i(
-                inFlightFrameResourcesSet.frameData.screenWidth(),
-                inFlightFrameResourcesSet.frameData.screenHeight()
-        ));
-        desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
-        desc.setEnableSharpening(true);
-        desc.setSharpness(SuperResolutionConfig.getSharpness());
-        desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
-        desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
-        desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
-        desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
-        desc.setViewSpaceToMetersFactor(1.0f);
-        desc.setReset(consumeHistoryReset());
-        desc.setFlags(1);
+            desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
+            desc.setMotionVectorScale(
+                    new Vector2f(
+                            inFlightFrameResourcesSet.frameData.renderWidth(),
+                            inFlightFrameResourcesSet.frameData.renderHeight()
+                    )
+            );
+            desc.setRenderSize(new Vector2i(
+                    inFlightFrameResourcesSet.frameData.renderWidth(),
+                    inFlightFrameResourcesSet.frameData.renderHeight()
+            ));
+            desc.setUpscaleSize(new Vector2i(
+                    inFlightFrameResourcesSet.frameData.screenWidth(),
+                    inFlightFrameResourcesSet.frameData.screenHeight()
+            ));
+            desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
+            desc.setEnableSharpening(true);
+            desc.setSharpness(SuperResolutionConfig.getSharpness());
+            desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
+            desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
+            desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
+            desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
+            desc.setViewSpaceToMetersFactor(1.0f);
+            desc.setReset(consumeHistoryReset());
+            desc.setFlags(1);
 
-        SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
-        if (code != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("FSR dispatch failed with code: {}", code);
-        }
+            SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
+            if (code != SRReturnCode.OK) {
+                SuperResolution.LOGGER.error("FSR dispatch failed with code: {}", code);
+            }
         }
     }
 

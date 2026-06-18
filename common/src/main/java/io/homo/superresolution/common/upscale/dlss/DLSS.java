@@ -27,10 +27,10 @@ import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.utils.LargeStackExecutor;
+import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
+import io.homo.superresolution.core.utils.LargeStackExecutor;
 import io.homo.superresolution.srapi.*;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
@@ -64,76 +64,76 @@ public class DLSS extends SRApiAlgorithm {
         // init on a large-stack thread so it can't overflow HotSpot's 1MB default render-thread
         // stack (which manifested as a bare SIGSEGV inside libnvidia-ngx with no hs_err).
         LargeStackExecutor.run("SR-DLSS-Init", () -> {
-        try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
-            SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
-                    SuperResolutionNativeAPI.srGetUpscaleProvider(
-                            provider,
-                            0x8000005)
-            );
-
-            this.context = new SRUpscaleContext(0);
-            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-            VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
-            EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
-            if (desc.isAutoExposure()){
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-                );
-            }
-            if (desc.isHdrInput()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_HDR
-                );
-            }
-            if (desc.isMotionJittered()){
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-                );
-            }
-            try (
-                    SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
-                            new SRVulkanDeviceInfo(
-                                    RenderSystems.vulkan().getVulkanInstance(),
-                                    vulkanDevice.getPhysicalDevice(),
-                                    vulkanDevice.getVkDevice(),
-                                    commandBuffer.getNativeCommandBuffer(),
-                                    vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
-                                    VkReflectionHelper.getVkGetInstanceProcAddr()),
-                            new Vector2i(RenderHandlerManager.getScreenWidth(),
-                                    RenderHandlerManager.getScreenHeight()),
-                            new Vector2i(RenderHandlerManager.getRenderWidth(),
-                                    RenderHandlerManager.getRenderHeight()),
-                            flags
-                    )
-            ) {
-                upscaleContextDesc.getExtraParams().setString("NGX_FEATURE_DLL_PATH",
-                        SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
-                );
-                upscaleContextDesc.getExtraParams().setInt32(
-                        "DLSS_RENDER_PRESET",
-                        SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
+            try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
+                SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
+                        SuperResolutionNativeAPI.srGetUpscaleProvider(
+                                provider,
+                                0x8000005)
                 );
 
-                commandBuffer.begin();
-                SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
-                SRReturnCode initUpscaleContextCode = createUpscaleContextCode == SRReturnCode.OK
-                        ? SuperResolutionNativeAPI.srInitUpscaleContext(context)
-                        : createUpscaleContextCode;
-                commandBuffer.end();
-                if (createUpscaleContextCode != SRReturnCode.OK) {
-                    SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
-                    throw new RuntimeException("Failed to create upscale context");
+                this.context = new SRUpscaleContext(0);
+                VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+                VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
+                EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
+                if (desc.isAutoExposure()) {
+                    flags.add(
+                            SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
+                    );
                 }
-                if (initUpscaleContextCode != SRReturnCode.OK) {
-                    SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
-                    throw new RuntimeException("Failed to initialize upscale context");
+                if (desc.isHdrInput()) {
+                    flags.add(
+                            SRUpscaleContextCreateFlags.ENABLE_HDR
+                    );
                 }
-                vulkanDevice.submitCommandBuffer(commandBuffer);
-                commandBuffer.waitForFence();
-            } finally {
-                commandBuffer.destroy();
+                if (desc.isMotionJittered()) {
+                    flags.add(
+                            SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
+                    );
+                }
+                try (
+                        SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
+                                new SRVulkanDeviceInfo(
+                                        RenderSystems.vulkan().getVulkanInstance(),
+                                        vulkanDevice.getPhysicalDevice(),
+                                        vulkanDevice.getVkDevice(),
+                                        commandBuffer.getNativeCommandBuffer(),
+                                        vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
+                                        VkReflectionHelper.getVkGetInstanceProcAddr()),
+                                new Vector2i(RenderHandlerManager.getScreenWidth(),
+                                        RenderHandlerManager.getScreenHeight()),
+                                new Vector2i(RenderHandlerManager.getRenderWidth(),
+                                        RenderHandlerManager.getRenderHeight()),
+                                flags
+                        )
+                ) {
+                    upscaleContextDesc.getExtraParams().setString("NGX_FEATURE_DLL_PATH",
+                            SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
+                    );
+                    upscaleContextDesc.getExtraParams().setInt32(
+                            "DLSS_RENDER_PRESET",
+                            SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
+                    );
+
+                    commandBuffer.begin();
+                    SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
+                    SRReturnCode initUpscaleContextCode = createUpscaleContextCode == SRReturnCode.OK
+                            ? SuperResolutionNativeAPI.srInitUpscaleContext(context)
+                            : createUpscaleContextCode;
+                    commandBuffer.end();
+                    if (createUpscaleContextCode != SRReturnCode.OK) {
+                        SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
+                        throw new RuntimeException("Failed to create upscale context");
+                    }
+                    if (initUpscaleContextCode != SRReturnCode.OK) {
+                        SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
+                        throw new RuntimeException("Failed to initialize upscale context");
+                    }
+                    vulkanDevice.submitCommandBuffer(commandBuffer);
+                    commandBuffer.waitForFence();
+                } finally {
+                    commandBuffer.destroy();
+                }
             }
-        }
         });
     }
 
@@ -156,30 +156,30 @@ public class DLSS extends SRApiAlgorithm {
 
     ) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
-        desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
-        desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
-        desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
-        desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-        desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
-        desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
-        desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
-        desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
-        desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
-        desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
-        desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
-        desc.setEnableSharpening(true);
-        desc.setSharpness(SuperResolutionConfig.getSharpness());
-        desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
-        desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
-        desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
-        desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
-        desc.setViewSpaceToMetersFactor(1.0f);
-        desc.setReset(consumeHistoryReset());
-        desc.setFlags(0);
-        SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
-        if (code != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
-        }
+            desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
+            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
+            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
+            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
+            desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
+            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
+            desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
+            desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
+            desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
+            desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
+            desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
+            desc.setEnableSharpening(true);
+            desc.setSharpness(SuperResolutionConfig.getSharpness());
+            desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
+            desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
+            desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
+            desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
+            desc.setViewSpaceToMetersFactor(1.0f);
+            desc.setReset(consumeHistoryReset());
+            desc.setFlags(0);
+            SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
+            if (code != SRReturnCode.OK) {
+                SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
+            }
         }
     }
 

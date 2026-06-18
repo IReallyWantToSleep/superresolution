@@ -23,7 +23,6 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -34,11 +33,8 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
-import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBufferRing;
+import io.homo.superresolution.core.graphics.vulkan.*;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 import io.homo.superresolution.srapi.SRUpscaleContext;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -336,7 +332,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        if (syncSerialMode){
+        if (syncSerialMode) {
             return inFlightFrames[0].outputFrameBuffer;
         }
         int currentFrameIndex = frameCount;
@@ -346,11 +342,11 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     @Override
     public int getOutputTextureId() {
-        if (syncSerialMode){
+        if (syncSerialMode) {
             return Math.toIntExact(inFlightFrames[0].outputColorGlTexture.handle());
         }
         int currentFrameIndex = frameCount;
-        int finishedIndex = (((currentFrameIndex-2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
+        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
         GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
         return Math.toIntExact(outputColorGlTexture.handle());
     }

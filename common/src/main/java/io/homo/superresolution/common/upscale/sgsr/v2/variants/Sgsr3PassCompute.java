@@ -95,7 +95,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         upscalePipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
-        commandBuffer.writeToBuffer(sgsr.getParams(), 0,sgsr.paramsData());
+        commandBuffer.writeToBuffer(sgsr.getParams(), 0, sgsr.paramsData());
         commandBuffer.bindPipeline(convertPipeline);
         commandBuffer.dispatch(wg.x, wg.y, wg.z);
         commandBuffer.bindPipeline(activatePipeline);
