@@ -283,11 +283,11 @@ public final class SuperResolution implements Destroyable {
      */
     public static boolean recreateAlgorithmIfChanged() {
         InitializationDescription desc = getInitializationDescription();
-        if (currentAlgorithm != null
-                && algorithmDescription == lastAppliedAlgorithm
-                && desc.equals(lastAppliedDesc)) {
-            return true;
-        }
+        //if (currentAlgorithm != null
+        //        && algorithmDescription == lastAppliedAlgorithm
+        //        && desc.equals(lastAppliedDesc)) {
+        //    return true;
+        //}
         return recreateAlgorithm(desc);
     }
 
