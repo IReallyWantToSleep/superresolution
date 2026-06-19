@@ -320,7 +320,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         float spatialEased = TimeInterpolator.easeOutQuint().interpolation(progress);
 
         float outAlphaProgress = clamp(progress / 0.35f, 0f, 1f);
-        float outAlpha = 1f - outAlphaProgress; // 线性淡出，避免突兀
+        float outAlpha = 1f - outAlphaProgress;
         float outOffsetY = -contentTransitionOffsetY * spatialEased * 0.5f;
 
         float inAlphaProgress = clamp((progress - 0.30f) / 0.70f, 0f, 1f);
@@ -1996,6 +1996,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         @Override
         protected void renderSelf(RenderContext ctx, UIInputState inputState) {
             Rectangle bounds = getBounds();
+            MaterialElevation.draw(
+                    ctx,
+                    1,
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                    16
+            );
             ctx.roundedRect(
                     bounds.x,
                     bounds.y,

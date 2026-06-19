@@ -28,9 +28,9 @@ public class MaterialElevation {
 
     private static final Color TRANSPARENT_COLOR = Color.rgba(0, 0, 0, 0);
 
-    private static final int ALPHA_UMBRA = 51;
-    private static final int ALPHA_PENUMBRA = 36;
-    private static final int ALPHA_AMBIENT = 31;
+    private static final int ALPHA_UMBRA = 34;
+    private static final int ALPHA_PENUMBRA = 22;
+    private static final int ALPHA_AMBIENT = 20;
     private static final ShadowLayer[][] LEVEL_CONFIGS = {
             // Level 0
             {},
@@ -112,7 +112,11 @@ public class MaterialElevation {
     }
 
     private static void drawSingleLayer(RenderContext ctx, float x, float y, float width, float height, float radius, Color baseColor, ShadowLayer layer) {
-        Color innerColor = applyAlpha(baseColor, layer.alphaValue);
+        Color innerColor = applyAlpha(
+                baseColor,
+                (int) ((float) layer.alphaValue / 255 * ctx.globalAlpha() * 255)
+        );
+
         float spread = layer.spread;
         float gx = x + layer.offsetX - spread;
         float gy = y + layer.offsetY - spread;
