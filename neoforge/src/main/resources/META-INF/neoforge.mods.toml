@@ -27,6 +27,8 @@ side = "BOTH"
 [[mixins]]
 config = "super_resolution.mixins.json"
 [[mixins]]
+config = "super_resolution.hack.mixins.json"
+[[mixins]]
 config = "super_resolution-neoforge.mixins.json"
 [[mixins]]
 config = "super_resolution-neoforge-compat.mixins.json"

@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.core.parts;
 
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.PostChain;
@@ -39,7 +39,7 @@ public class LevelRendererMixinCommon {
     #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
     private void onResizePostChain(PostChain instance, int w, int h) {
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) return;
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) return;
         instance.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
     }
     #endif

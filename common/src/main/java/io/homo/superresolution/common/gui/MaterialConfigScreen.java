@@ -40,10 +40,10 @@ import io.homo.superresolution.common.gui.options.*;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.SuperResolutionNative;
@@ -508,15 +508,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setIcon(MaterialSymbols.iconWarning())
                 .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
                 .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
-                .setDisplayRequirement(OptionRequirement.isTrue(()->SuperResolutionConfig.isEnableUpscaleOriginal() && !ShaderCompatHandler.irisHasShaderPack() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
+                .setDisplayRequirement(OptionRequirement.isTrue(() -> SuperResolutionConfig.isEnableUpscaleOriginal() && !SRWorkModeManager.getCurrentState().shaderPackInUse() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
                 .build();
         builder.hintOption(Text.literal("shader_compat_warning"))
                 .setIcon(MaterialSymbols.iconWarning())
                 .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
                 .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
-                .setDisplayRequirement(OptionRequirement.isTrue(()->ShaderCompatHandler.getShaderCompatData() == null &&
+                .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
                         SuperResolutionConfig.isEnableUpscaleOriginal() &&
-                        ShaderCompatHandler.irisHasShaderPack()))
+                        SRWorkModeManager.getCurrentState().shaderPackInUse()))
                 .build();
 
         builder.booleanOption(
@@ -574,8 +574,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             }
                         }
                     }
-                    if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-                        ShaderCompatHandler.irisApiReloadShader();
+                    if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                        SRWorkModeManager.reloadShaderPack();
                     }
                     return true;
                 })
@@ -674,8 +674,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     } finally {
                         syncingQualityPreset[0] = false;
                     }
-                    if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-                        ShaderCompatHandler.irisApiReloadShader();
+                    if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                        SRWorkModeManager.reloadShaderPack();
                     }
                     return true;
                 })
@@ -714,8 +714,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         );
                         qualityPresetEntryRef[0].setSelectedValue(targetPreset);
                     }
-                    if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-                        ShaderCompatHandler.irisApiReloadShader();
+                    if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                        SRWorkModeManager.reloadShaderPack();
                     }
                 })
                 .build();

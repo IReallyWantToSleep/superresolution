@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.minecraft;
 
 
-import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 #if MC_VER >= MC_1_21_6
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -56,9 +55,12 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
     FrameBufferRenderTargetAdapter(IFrameBuffer frameBuffer) {
         super(
                 frameBuffer.handle() + "-IFrameBuffer-" + frameBuffer.getTextureId(FrameBufferAttachmentType.Color),
-                frameBuffer.getDepthTextureFormat() != null,
+                frameBuffer.getDepthTextureFormat() != null
+                #if MC_VER > MC_26_1_2
+                ,
                 //TODO:写一个转换helper
-                GpuFormat.RGBA8_UNORM
+                com.mojang.blaze3d.GpuFormat.RGBA8_UNORM
+                #endif
         );
         this.frameBuffer = frameBuffer;
         updateState();

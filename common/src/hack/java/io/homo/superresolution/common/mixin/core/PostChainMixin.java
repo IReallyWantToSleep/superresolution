@@ -23,8 +23,8 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -79,7 +79,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
             return;
         }
 
@@ -108,7 +108,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
             return;
         }
 
@@ -140,7 +140,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
             return;
         }
         if (
@@ -157,7 +157,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
             ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
             return;
         }

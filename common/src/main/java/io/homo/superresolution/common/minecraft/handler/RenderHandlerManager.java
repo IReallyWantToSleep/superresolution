@@ -31,9 +31,9 @@ import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
-import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -52,6 +52,7 @@ public class RenderHandlerManager {
     private static boolean shouldApplyScale;
     private static Minecraft minecraft;
     private static IMinecraftRenderHandler handler;
+    private static String handlerProviderId;
     public static int frameCount = 0;
     private static IBindableFrameBuffer originRenderTarget;
 
@@ -73,17 +74,7 @@ public class RenderHandlerManager {
         if (handler == null) {
             return true;
         }
-        if (
-                handler instanceof MinecraftRenderHandler &&
-                        ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-            return true;
-        }
-        if (
-                handler instanceof ShaderCompatHandler &&
-                        !ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-            return true;
-        }
-        return false;
+        return !SRWorkModeManager.getCurrentProvider().id().equals(handlerProviderId);
     }
 
     public static void updateHandler() {
@@ -92,11 +83,9 @@ public class RenderHandlerManager {
                 handler.destroy();
                 handler = null;
             }
-            if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-                handler = new ShaderCompatHandler();
-            } else {
-                handler = new MinecraftRenderHandler();
-            }
+            SRWorkModeProvider provider = SRWorkModeManager.getCurrentProvider();
+            handler = provider.createRenderHandler();
+            handlerProviderId = provider.id();
             handler.initialize();
             needResize = true;
         }
@@ -223,7 +212,7 @@ public class RenderHandlerManager {
         return switch (SuperResolutionConfig.getCaptureMode()) {
             case A, B -> false;
             case C -> true;
-        } && !Platform.currentPlatform.iris().isShaderPackInUse();
+        } && !SRWorkModeManager.getCurrentState().shaderPackInUse();
     }
 
     public static void setClientRenderTarget(RenderTarget renderTarget) {

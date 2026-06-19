@@ -33,8 +33,8 @@ import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -129,14 +129,7 @@ public final class SuperResolution implements Destroyable {
 
     public static void onClientSetup() {
         SuperResolutionKeyMapping.registerKeyMapping();
-        if (Platform.currentPlatform.isInstallIris()) {
-            try {
-                Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatEventHandler").getMethod("registerEventListeners").invoke(null);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-
-            }
-        }
+        SRWorkModeManager.onClientSetup();
     }
 
     public static void onClientTickEnd() {
@@ -228,6 +221,7 @@ public final class SuperResolution implements Destroyable {
             LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());
             LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
 
+            SRWorkModeManager.bootstrapProviders();
             RenderHandlerManager.initialize();
             AlgorithmManager.init();
             isRenderingInitialized = true;
@@ -332,19 +326,7 @@ public final class SuperResolution implements Destroyable {
     }
 
     public static InitializationDescription getInitializationDescription() {
-        boolean isHdr = ShaderCompatHandler.getCurrentLevelCompatConfig()
-                .map(p -> p.upscale.isHdrInput)
-                .orElse(false);
-        boolean isAutoExposure = ShaderCompatHandler.getCurrentLevelCompatConfig()
-                .map(p -> p.upscale.isAutoExposure)
-                .orElse(true);
-        boolean isMotionJittered = ShaderCompatHandler.getCurrentLevelCompatConfig()
-                .map(p -> p.upscale.isMotionJittered)
-                .orElse(false);
-        return new InitializationDescription()
-                .setHdrInput(isHdr)
-                .setAutoExposure(isAutoExposure)
-                .setMotionJittered(isMotionJittered);
+        return SRWorkModeManager.getCurrentState().initializationDescription();
     }
 
     public void init() {

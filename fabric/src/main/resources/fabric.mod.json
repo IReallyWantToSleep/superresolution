@@ -30,6 +30,7 @@
     },
     "mixins": [
         "super_resolution.mixins.json",
+        "super_resolution.hack.mixins.json",
         "super_resolution-fabric.mixins.json",
         "super_resolution-fabric-compat.mixins.json",
         "super_resolution.shadercompat.mixins.json",

@@ -21,7 +21,7 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -42,14 +42,14 @@ public class WindowMixin {
     @Inject(at = @At("RETURN"), method = "getGuiScaledWidth", cancellable = true)
     private void getGuiScaledWidth(CallbackInfoReturnable<Integer> ci) {
         if (!SuperResolution.isPreInit) return;
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT))
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
     @Inject(at = @At("RETURN"), method = "getGuiScaledHeight", cancellable = true)
     private void getGuiScaledHeight(CallbackInfoReturnable<Integer> ci) {
         if (!SuperResolution.isPreInit) return;
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT))
             ci.setReturnValue(super_resolution$clampSize((ci.getReturnValue())));
     }
 
@@ -58,7 +58,7 @@ public class WindowMixin {
     private void getFramebufferWidth(CallbackInfoReturnable<Integer> ci) {
         if (!SuperResolution.isPreInit) return;
 
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT))
             ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValue())));
     }
 
@@ -71,7 +71,7 @@ public class WindowMixin {
     private void getFramebufferHeight(CallbackInfoReturnable<Integer> ci) {
         if (!SuperResolution.isPreInit) return;
 
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT))
             ci.setReturnValue(super_resolution$clampSize(super_resolution$scale(ci.getReturnValue())));
     }
 
@@ -87,7 +87,7 @@ public class WindowMixin {
     private void getScaleFactor(CallbackInfoReturnable<Double> ci) {
         if (!SuperResolution.isPreInit) return;
 
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT))
             ci.setReturnValue(ci.getReturnValue() * RenderHandlerManager.getCurrentScaleFactor());
     }
     #else
@@ -95,7 +95,7 @@ public class WindowMixin {
     private void getScaleFactor(CallbackInfoReturnable<Integer> ci) {
         if (!SuperResolution.isPreInit) return;
 
-        if (!ShaderCompatHandler.dontHackMinecraftRenderingPipeline())
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT))
             ci.setReturnValue((int) (ci.getReturnValue() * RenderHandlerManager.getCurrentScaleFactor()));
     }
     #endif

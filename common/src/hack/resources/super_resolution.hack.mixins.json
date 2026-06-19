@@ -1,0 +1,19 @@
+{
+    "required": true,
+    "package": "io.homo.superresolution.common.mixin",
+    "plugin": "io.homo.superresolution.common.mixin.MixinPlugin",
+    "compatibilityLevel": "JAVA_8",
+    "minVersion": "0.8",
+    "client": [
+        "core.PostChainMixin",
+        "core.WindowMixin",
+        "core.parts.LevelRendererMixinCommon"
+    ],
+    "mixins": [
+
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "refmap": "super_resolution.refmap.json"
+}

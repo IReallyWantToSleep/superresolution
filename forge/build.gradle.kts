@@ -114,6 +114,7 @@ extensions.configure<Any>("mixin") {
     withGroovyBuilder {
         "add"(sourceSets.getByName("main"), "super_resolution.refmap.json")
         "config"("super_resolution.mixins.json")
+        "config"("super_resolution.hack.mixins.json")
         "config"("super_resolution-forge.mixins.json")
         "config"("super_resolution-forge-compat.mixins.json")
         "config"("super_resolution.shadercompat.mixins.json")
@@ -197,7 +198,7 @@ tasks.named<ProcessResources>("processResources") {
 tasks.named<Jar>("jar") {
     manifest.attributes(
         mapOf(
-            "MixinConfigs" to "super_resolution.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json,super_resolution.shadercompat.mixins.json,super_resolution_irisapi.mixins.json"
+            "MixinConfigs" to "super_resolution.mixins.json,super_resolution.hack.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json,super_resolution.shadercompat.mixins.json,super_resolution_irisapi.mixins.json"
         )
     )
 }

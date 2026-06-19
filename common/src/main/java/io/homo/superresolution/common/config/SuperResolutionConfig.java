@@ -38,9 +38,9 @@ import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
@@ -56,7 +56,6 @@ import org.lwjgl.opengl.GL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 public class SuperResolutionConfig {
@@ -264,7 +263,7 @@ public class SuperResolutionConfig {
                 "Force disable shader pack compatibility mode."
         );
         FORCE_DISABLE_SHADER_COMPAT.onChange((oldValue, newValue) -> {
-            ShaderCompatHandler.irisApiReloadShader();
+            SRWorkModeManager.reloadShaderPack();
         });
         DISABLE_UPSCALE_ON_VANILLA = builder.defineBoolean(
                 "disable_upscale_on_vanilla",
@@ -411,9 +410,10 @@ public class SuperResolutionConfig {
 
     public static boolean isEnableUpscale() {
         if (SuperResolutionConfig.isDisableUpscaleOnVanilla()) {
+            SRWorkModeState state = SRWorkModeManager.getCurrentState();
             return isEnableUpscaleOriginal() && (
-                    ShaderCompatHandler.irisApiIsShaderPackInUse() ||
-                            ShaderCompatHandler.isLoadingShader()
+                    state.shaderPackInUse() ||
+                            state.shaderPackLoading()
             );
         }
         return isEnableUpscaleOriginal();
@@ -424,8 +424,8 @@ public class SuperResolutionConfig {
         ENABLE_UPSCALE.set(value);
         if (resolutionChanged) {
             resolutionChangeCallback.run();
-            if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
-                ShaderCompatHandler.irisApiReloadShader();
+            if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                SRWorkModeManager.reloadShaderPack();
             }
         }
 
@@ -585,13 +585,9 @@ public class SuperResolutionConfig {
     public static TextureFormat getInternalTextureFormat() {
         //user settings > shaderPack > default
         if (INTERNAL_TEXTURE_FORMAT.get() == InternalTextureFormat.AUTO) {
-            Optional<SRShaderCompatData.WorldProfile> currentLevelCompatConfig = ShaderCompatHandler.getCurrentLevelCompatConfig();
-            if (currentLevelCompatConfig.isPresent()) {
-                if (currentLevelCompatConfig.get().enabled) {
-                    return currentLevelCompatConfig.get().upscale.internalFormat;
-                }
-            }
-            return TextureFormat.RGBA16F;
+            SRWorkModeState state = SRWorkModeManager.getCurrentState();
+            TextureFormat format = state.internalTextureFormat();
+            return format == null ? TextureFormat.RGBA16F : format;
         }
         return INTERNAL_TEXTURE_FORMAT.get().format();
     }
@@ -617,7 +613,7 @@ public class SuperResolutionConfig {
     }
 
     public static float getMinUpscaleRatio() {
-        if (ShaderCompatHandler.dontHackMinecraftRenderingPipeline()) {
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
             return 1.0f;
         }
         if (

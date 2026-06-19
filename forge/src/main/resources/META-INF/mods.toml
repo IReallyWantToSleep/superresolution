@@ -26,6 +26,8 @@ side = "BOTH"
 [[mixins]]
 config = "super_resolution.mixins.json"
 [[mixins]]
+config = "super_resolution.hack.mixins.json"
+[[mixins]]
 config = "super_resolution-forge.mixins.json"
 [[mixins]]
 config = "super_resolution-forge-compat.mixins.json"

@@ -55,9 +55,9 @@ public class GpuTextureAdapter extends GlTexture {
                 texture.getHeight(),
                 1,
                 texture.getTextureDescription().getMipmapSettings().getLevels(),
-                (int) texture.handle(),
+                (int) texture.handle()
                 #if MC_VER > MC_26_1_2
-                (com.mojang.blaze3d.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache()
+                ,(com.mojang.blaze3d.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache()
                 #endif
         );
         #else

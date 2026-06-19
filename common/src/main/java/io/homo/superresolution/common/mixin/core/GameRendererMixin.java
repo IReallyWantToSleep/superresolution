@@ -19,17 +19,13 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
-import net.minecraft.client.Camera;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Shadow;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -65,7 +61,7 @@ public abstract class GameRendererMixin {
     ) {
         //这里必需取消深度清除，不然后面捕获不到深度
         if (
-                !Platform.currentPlatform.iris().isShaderPackInUse() //没启用光影时
+                !SRWorkModeManager.getCurrentState().shaderPackInUse() //没启用光影时
                         ||
                         !SuperResolutionConfig.isEnableUpscale()//禁用超分时
         ) {
@@ -84,7 +80,7 @@ public abstract class GameRendererMixin {
             RenderHandlerManager.onRenderWorldEnd(CallType.GAME_RENDERER);
             #if MC_VER > MC_1_21_8
             if (
-                    !(!Platform.currentPlatform.iris().isShaderPackInUse() //没启用光影时
+                    !(!SRWorkModeManager.getCurrentState().shaderPackInUse() //没启用光影时
                             ||
                             !SuperResolutionConfig.isEnableUpscale()//禁用超分时
                     )

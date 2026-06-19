@@ -23,6 +23,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -34,7 +35,6 @@ import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.vulkan.*;
-import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 import io.homo.superresolution.srapi.SRUpscaleContext;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -353,16 +353,8 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
     private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
 
-        String motionVectorPreprocessingFunction = null;
-        if (IrisShaderCompatUtils.shouldApplySuperResolutionChanges()) {
-            var config = IrisShaderCompatUtils.getCurrentConfig();
-            if (config.isPresent()) {
-                var customs = config.get().upscale.customs;
-                if (customs != null) {
-                    motionVectorPreprocessingFunction = customs.motionVectorPreprocessingFunction;
-                }
-            }
-        }
+        String motionVectorPreprocessingFunction =
+                SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
 
         InteropResourcesConverter.processInputTextures(
                 dispatchResource.resources().colorTexture(), inFlight.inputColorGlTexture,

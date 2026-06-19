@@ -169,6 +169,8 @@ val sourceSets = extensions.getByType(SourceSetContainer::class.java)
 val mainSourceSet = sourceSets.getByName("main")
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
+val hackSourceSet = sourceSets.maybeCreate("hack")
+val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
 
 tasks.register<JavaCompile>("genJNIHeader") {
     val outputDir = file("../native/cpp/SRNativeMain/include")
@@ -208,19 +210,40 @@ mainSourceSet.runtimeClasspath += irisapiSourceSet.output
 mainSourceSet.compileClasspath += sharedSourceSet.output
 mainSourceSet.runtimeClasspath += sharedSourceSet.output
 
+hackSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+hackSourceSet.compileClasspath += mainSourceSet.compileClasspath
+hackSourceSet.compileClasspath += mainSourceSet.output
+hackSourceSet.compileClasspath += sharedSourceSet.output
+hackSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
+hackSourceSet.runtimeClasspath += mainSourceSet.output
+hackSourceSet.runtimeClasspath += sharedSourceSet.output
+
+shaderCompatSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+shaderCompatSourceSet.compileClasspath += mainSourceSet.compileClasspath
+shaderCompatSourceSet.compileClasspath += mainSourceSet.output
+shaderCompatSourceSet.compileClasspath += sharedSourceSet.output
+shaderCompatSourceSet.compileClasspath += irisapiSourceSet.output
+shaderCompatSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
+shaderCompatSourceSet.runtimeClasspath += mainSourceSet.output
+shaderCompatSourceSet.runtimeClasspath += sharedSourceSet.output
+shaderCompatSourceSet.runtimeClasspath += irisapiSourceSet.output
+
 tasks.named<Jar>("jar") {
     from(irisapiSourceSet.output)
     from(sharedSourceSet.output)
+    from(hackSourceSet.output)
+    from(shaderCompatSourceSet.output)
 }
 
 artifacts {
-    add("commonJava", mainSourceSet.java.sourceDirectories.singleFile)
-    add("commonJava", irisapiSourceSet.java.sourceDirectories.singleFile)
-    add("commonJava", sharedSourceSet.java.sourceDirectories.singleFile)
-
-    add("commonResources", mainSourceSet.resources.sourceDirectories.singleFile)
-    add("commonResources", irisapiSourceSet.resources.sourceDirectories.singleFile)
-    add("commonResources", sharedSourceSet.resources.sourceDirectories.singleFile)
+    listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, hackSourceSet, shaderCompatSourceSet).forEach { sourceSet ->
+        sourceSet.java.sourceDirectories.files.forEach { dir ->
+            add("commonJava", dir)
+        }
+        sourceSet.resources.sourceDirectories.files.forEach { dir ->
+            add("commonResources", dir)
+        }
+    }
 }
 
 
