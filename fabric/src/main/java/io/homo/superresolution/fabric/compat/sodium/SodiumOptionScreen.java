@@ -43,9 +43,9 @@ import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 #endif
 public class SodiumOptionScreen {
     public static void register() {
+        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_20_5 && MC_VER != MC_1_20_6 && MC_VER != MC_1_21_5 && MC_VER < MC_1_21_6
         if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
 
-        #if MC_VER != MC_1_20_4 && MC_VER != MC_1_20_5 && MC_VER != MC_1_20_6 && MC_VER != MC_1_21_5 && MC_VER < MC_1_21_6
         OptionGUIConstruction.EVENT.register((pages) -> pages.add(
                         new OptionPage(Component.translatable("superresolution.screen.config.name"), ImmutableList.of()))
         );
