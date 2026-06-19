@@ -19,7 +19,7 @@
 package io.homo.superresolution.neoforge.compat.sodium;
 
 #if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
-
+import io.homo.superresolution.api.platform.Platform;
 import toni.sodiumoptionsapi.api.OptionGUIConstruction;
 import toni.sodiumoptionsapi.api.OptionIdentifier;
 import toni.sodiumoptionsapi.util.IOptionGroupIdAccessor;
@@ -37,25 +37,11 @@ import net.minecraft.network.chat.Component;
 
 public class SodiumOptionScreen {
     public static void register() {
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         #if MC_VER != MC_1_20_4 && MC_VER < MC_1_21_6
         OptionGUIConstruction.EVENT.register((pages) -> pages.add(
-                        new OptionPage(
-                                Component.translatable("superresolution.screen.config.name"), ImmutableList.of(
-                                OptionGroup.createBuilder()
-                                        .add(OptionImpl.createBuilder(Integer.class, new MinecraftOptionsStorage())
-                                                .setBinding((Options o, Integer b) -> {
-                                                }, (Options o) -> 1)
-                                                .setControl((option) -> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1,
-                                                        (a) -> Component.literal("")
-                                                ))
-                                                .setName(Component.literal(""))
-                                                .setTooltip(Component.literal(""))
-                                                .build()
-                                        )
-                                        .build()
-
-                        ))
-                )
+                        new OptionPage(Component.translatable("superresolution.screen.config.name"), ImmutableList.of()))
         );
         #endif
     }

@@ -80,22 +80,9 @@ public class SodiumOptionsGUIMixin extends Screen {
         if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) {
             return;
         }
-        this.page = new OptionPage(
-                Component.translatable("superresolution.screen.config.name"), ImmutableList.of(
-                OptionGroup.createBuilder()
-                        .add(OptionImpl.createBuilder(Integer.class, new MinecraftOptionsStorage())
-                                .setBinding((Options o, Integer b) -> {
-                                }, (Options o) -> 1)
-                                .setControl((option) -> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1,
-                                        (a) -> Component.literal("")
-                                ))
-                                .setName(Component.literal(""))
-                                .setTooltip(Component.literal(""))
-                                .build()
-                        )
-                        .build()
-        )
-        );
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
+        this.page = new OptionPage(Component.translatable("superresolution.screen.config.name"), ImmutableList.of());
         this.pages.add(this.page);
     }
 
@@ -106,6 +93,8 @@ public class SodiumOptionsGUIMixin extends Screen {
             cancellable = true
     )
     private void onSetPage(OptionPage page, CallbackInfo ci) {
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         if (page == this.page) {
             this.minecraft.setScreen(ConfigScreenBuilder.create().buildConfigScreen(this));
             ci.cancel();

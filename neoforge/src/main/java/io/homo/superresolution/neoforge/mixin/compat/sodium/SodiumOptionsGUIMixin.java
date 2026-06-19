@@ -59,24 +59,15 @@ public class SodiumOptionsGUIMixin extends Screen {
 
     @Inject(
             method = "<init>",
-            at = {@At("RETURN")}
+            at = {@At("RETURN")},
+            require = 0
     )
     private void onInit(Screen prevScreen, CallbackInfo ci) {
         if (Platform.currentPlatform.isModLoaded("sodiumoptionsapi")) return;
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         Component shaderPacksTranslated = Component.translatable("superresolution.screen.config.name");
-        this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of(
-                OptionGroup.createBuilder()
-                        .add(OptionImpl.createBuilder(Integer.class, new MinecraftOptionsStorage())
-                                .setBinding((Options o, Integer b) -> {
-                                }, (Options o) -> 1)
-                                .setControl((option) -> new SliderControl(option, 0, Minecraft.getInstance().getWindow().calculateScale(0, Minecraft.getInstance().isEnforceUnicode()), 1, (a) -> Component.literal("")))
-                                .setName(Component.literal(""))
-                                .setTooltip(Component.literal(""))
-                                .build()
-                        )
-                        .build()
-        )
-        );
+        this.page = new OptionPage(shaderPacksTranslated, ImmutableList.of());
         this.pages.add(this.page);
     }
 
@@ -84,9 +75,12 @@ public class SodiumOptionsGUIMixin extends Screen {
             method = "setPage",
             at = {@At("HEAD")},
             remap = false,
-            cancellable = true
+            cancellable = true,
+            require = 0
     )
     private void onSetPage(OptionPage page, CallbackInfo ci) {
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         if (page == this.page) {
             this.minecraft.setScreen(ConfigScreenBuilder.create().buildConfigScreen(this));
             ci.cancel();

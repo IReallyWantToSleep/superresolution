@@ -19,6 +19,7 @@
 package io.homo.superresolution.neoforge.mixin.compat.reesessodiumoptions;
 
 
+import io.homo.superresolution.api.platform.Platform;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -38,6 +39,8 @@ import me.flashyreese.mods.reeses_sodium_options.client.gui.frame.tab.TabFrame;
 public class TabFrameMixin {
     @Inject(method = "setTab", at = @At(value = "HEAD"), cancellable = true)
     private void onSetTab(Optional<Tab<?>> tab, CallbackInfo ci) {
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         if (tab.orElseThrow().getTitle().getString().equals(Component.translatable("superresolution.screen.config.name").getString())) {
             Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(Minecraft.getInstance().screen));
             ci.cancel();

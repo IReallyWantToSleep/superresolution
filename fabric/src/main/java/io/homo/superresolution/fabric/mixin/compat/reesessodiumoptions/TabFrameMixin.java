@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.fabric.mixin.compat.reesessodiumoptions;
 
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,6 +36,8 @@ import java.util.Optional;
 public class TabFrameMixin {
     @Inject(method = "setTab", at = @At(value = "HEAD"), cancellable = true)
     private void onSetTab(Optional<Tab<?>> tab, CallbackInfo ci) {
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         if (tab.orElseThrow().getTitle().getString().equals(Component.translatable("superresolution.screen.config.name").getString())) {
             Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(Minecraft.getInstance().screen));
             ci.cancel();

@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.neoforge.compat.sodium;
 
-#if MC_VER > MC_1_21_10
+#if MC_VER > MC_1_21_10 || 1
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;

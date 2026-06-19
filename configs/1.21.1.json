@@ -47,6 +47,11 @@
                     "version": "mc1.21.1-0.6.13-fabric"
                 },
                 {
+                    "name": "sodium.maven",
+                    "version": "0.8.12-beta.1+mc1.21.1",
+                    "compileOnly": true
+                },
+                {
                     "name": "distanthorizons",
                     "version": "2.3.4-b-1.21.1"
                 },
@@ -100,6 +105,11 @@
                 {
                     "name": "sodium",
                     "version": "mc1.21.1-0.6.13-neoforge"
+                },
+                {
+                    "name": "sodium.maven",
+                    "version": "0.8.12-beta.1+mc1.21.1",
+                    "compileOnly": true
                 },
                 {
                     "name": "acceleratedrendering",

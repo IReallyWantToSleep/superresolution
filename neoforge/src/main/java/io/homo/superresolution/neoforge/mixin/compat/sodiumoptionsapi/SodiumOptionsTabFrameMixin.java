@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.neoforge.mixin.compat.sodiumoptionsapi;
 
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,8 @@ public class SodiumOptionsTabFrameMixin {
 
     @Inject(method = "setTab", at = @At(value = "HEAD"), cancellable = true)
     private void onSetTab(Tab<?> tab, CallbackInfo ci) {
+        if (Platform.currentPlatform.getModVersionString("sodium").startsWith("0.8")) return;
+
         if (Objects.equals(this.selectedHeader, SuperResolution.MOD_ID)) {
             Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(Minecraft.getInstance().screen));
             ci.cancel();

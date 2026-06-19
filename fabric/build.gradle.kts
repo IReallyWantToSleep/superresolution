@@ -122,7 +122,7 @@ dependencies {
 
     for (lib in versionConfig.fabric.dependencies.modrinth) {
         var depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
-        if (lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) {
+        if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) || lib.name == "sodium.maven") {
             depName = "net.caffeinemc:sodium-fabric:${lib.version}"
             if (lib.compileOnly) {
                 modCompileOnlyCompat(depName)
