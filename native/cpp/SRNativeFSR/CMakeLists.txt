@@ -9,6 +9,18 @@ endif()
 find_package(Vulkan REQUIRED)
 
 # ============================================================
+# Linux/GCC 修复：FidelityFX VK 后端把 scratch 缓冲区按 4 字节(sizeof(uint32_t))
+# 切分子分配，pEffectContexts 等只有 8 字节对齐；但 GCC -O2 会把 EffectContext
+# 初始化(nextDynamicResourceView[4])做 SLP 向量化成 movdqa(要求 16 字节对齐)，
+# 在 CreateBackendContextVK 触发 #GP → SIGSEGV(si_code=SI_KERNEL, si_addr=0)。
+# 关闭自动向量化让编译器退回标量/非对齐写入，规避该 AMD SDK 越界对齐 bug。
+# 必须放在 add_subdirectory(SDK) 之前，使其作用于 SDK 编译产物。
+# ============================================================
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-fno-tree-vectorize)
+endif()
+
+# ============================================================
 # FidelityFX SDK: 从子模块源码构建 / 使用预编译库
 #
 # 重要：add_subdirectory(SDK) 必须在本模块的 add_definitions /
@@ -149,7 +161,10 @@ link_directories(
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../SRNativeMain/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+    # FFX 公共头文件统一走 SDK/include（与链接的 SDK 静态库同源），
+    # 否则 third_party 旧副本(FfxFsr2Context=512KiB) 与 SDK(Linux=1MiB) 不一致，
+    # 会让 ffxFsr2ContextCreate 的 memset 越界写入 512KiB → 堆溢出崩溃
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
