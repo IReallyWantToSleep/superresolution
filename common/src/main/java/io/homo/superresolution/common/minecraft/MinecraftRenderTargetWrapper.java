@@ -52,6 +52,9 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
     }
 
     public void clearFrameBuffer() {
+        #if MC_VER > MC_26_1_2
+        throw new UnsupportedOperationException();
+        #else
         #if MC_VER < MC_1_21_4
         this.renderTarget.clear(Minecraft.ON_OSX);
         #elif MC_VER > MC_1_21_4
@@ -64,6 +67,8 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
         #else
         this.renderTarget.clear();
         #endif
+        #endif
+
     }
 
     @Override

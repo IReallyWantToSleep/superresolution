@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -211,8 +212,8 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
                                 nvg.frameBuffer.getHeight(),
                                 0,
                                 0,
-                                Minecraft.getInstance().getMainRenderTarget().width,
-                                Minecraft.getInstance().getMainRenderTarget().height,
+                                MinecraftUtils.getMainRenderTarget().width,
+                                MinecraftUtils.getMainRenderTarget().height,
                                 GL_COLOR_BUFFER_BIT,
                                 GL_LINEAR
                         );

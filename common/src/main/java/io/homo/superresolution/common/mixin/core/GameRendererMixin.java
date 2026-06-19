@@ -24,6 +24,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.minecraft.CallType;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import net.minecraft.client.Camera;
@@ -79,7 +80,7 @@ public abstract class GameRendererMixin {
     @Inject(at = @At(value = "RETURN"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
-            RenderTarget renderTarget = Minecraft.getInstance().getMainRenderTarget();
+            RenderTarget renderTarget = MinecraftUtils.getMainRenderTarget();
             RenderHandlerManager.onRenderWorldEnd(CallType.GAME_RENDERER);
             #if MC_VER > MC_1_21_8
             if (

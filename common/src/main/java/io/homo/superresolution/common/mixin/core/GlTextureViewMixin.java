@@ -18,10 +18,12 @@
 
 package io.homo.superresolution.common.mixin.core;
 
+import io.homo.superresolution.common.SuperResolution;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 #if MC_VER > MC_1_21_8
@@ -29,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class GlTextureViewMixin {
     @Shadow
     public abstract com.mojang.blaze3d.opengl.GlTexture texture();
-
+    #if MC_VER < MC_26_2
     @Inject(method = "getFbo", at = @At("HEAD"), cancellable = true)
     public void replaceFbo(
             com.mojang.blaze3d.opengl.DirectStateAccess directStateAccess,
@@ -43,6 +45,8 @@ public abstract class GlTextureViewMixin {
             );
         }
     }
+    #endif
+
 }
 
 #else

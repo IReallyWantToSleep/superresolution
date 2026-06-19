@@ -18,7 +18,11 @@
 
 package io.homo.superresolution.common.mixin.gui;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
+#if MC_VER > MC_26_1_2
+import com.mojang.blaze3d.IndexType;
+#else
+import com.mojang.blaze3d.vertex.VertexFormat.IndexType;
+#endif
 import io.homo.superresolution.common.gui.CustomActionRenderPipeline;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,8 +38,10 @@ public class GuiRendererMixin {
             @Coerce
             Object draw,
             com.mojang.blaze3d.systems.RenderPass renderPass,
+            #if MC_VER < MC_26_2
             com.mojang.blaze3d.buffers.GpuBuffer buffer,
-            VertexFormat.IndexType indexType,
+            IndexType indexType,
+            #endif
             CallbackInfo ci
     ) {
         if (((GuiRendererDrawAccessor) draw).getPipeline() instanceof CustomActionRenderPipeline) {

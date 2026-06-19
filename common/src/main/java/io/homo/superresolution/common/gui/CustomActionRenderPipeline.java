@@ -23,6 +23,8 @@ import net.minecraft.client.renderer.ShaderDefines;
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.pipeline.*;
 import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.*;
+
 #endif
 
 #if MC_VER > MC_1_21_10
@@ -48,13 +50,44 @@ public class CustomActionRenderPipeline extends RenderPipeline {
                 Identifier.withDefaultNamespace(""),
                 ShaderDefines.EMPTY,
                 List.of(),
+                #if MC_VER < MC_26_2
                 List.of(),
+                #endif
+                #if MC_VER > MC_26_1_2
+                new ColorTargetState[]{ColorTargetState.DEFAULT},
+                #else
                 ColorTargetState.DEFAULT,
+                #endif
                 DepthStencilState.DEFAULT,
                 PolygonMode.FILL,
                 false,
+                #if MC_VER > MC_26_1_2
+                new VertexFormat[]{
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                },
+                #else
                 DefaultVertexFormat.POSITION_TEX_COLOR,
+                #endif
+                #if MC_VER > MC_26_1_2
+                PrimitiveTopology.QUADS,
+                #else
                 VertexFormat.Mode.QUADS,
+                #endif
                 0
         );
         #else

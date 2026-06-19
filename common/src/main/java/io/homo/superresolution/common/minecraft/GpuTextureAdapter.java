@@ -42,14 +42,23 @@ public class GpuTextureAdapter extends GlTexture {
                         GpuTexture.USAGE_TEXTURE_BINDING |
                         GpuTexture.USAGE_RENDER_ATTACHMENT,
                 texture.handle() + "--" + texture.getTextureFormat(),
+                #if MC_VER < MC_26_2
                 texture.getTextureFormat().isDepth() ?
                         com.mojang.blaze3d.textures.TextureFormat.DEPTH32 :
                         com.mojang.blaze3d.textures.TextureFormat.RGBA8,
+                #else
+                texture.getTextureFormat().isDepth() ?
+                        com.mojang.blaze3d.GpuFormat.D32_FLOAT :
+                        com.mojang.blaze3d.GpuFormat.RGBA8_UNORM,
+                #endif
                 texture.getWidth(),
                 texture.getHeight(),
                 1,
                 texture.getTextureDescription().getMipmapSettings().getLevels(),
-                (int) texture.handle()
+                (int) texture.handle(),
+                #if MC_VER > MC_26_1_2
+                (com.mojang.blaze3d.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache()
+                #endif
         );
         #else
         super(texture.handle() + "--" + texture.getTextureFormat(),

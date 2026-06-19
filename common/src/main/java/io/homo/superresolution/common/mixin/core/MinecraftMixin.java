@@ -46,9 +46,7 @@ public abstract class MinecraftMixin {
     @Shadow
     @Nullable
     public ClientLevel level;
-    @Shadow
-    @Nullable
-    public Screen screen;
+
     @Unique
     private int super_resolution$cacheWidth = 0;
     @Unique
@@ -56,6 +54,8 @@ public abstract class MinecraftMixin {
 
     #if MC_VER <= MC_1_20_1
     @Inject(at = @At(value = "TAIL"), method = "<init>")
+    #elif MC_VER > MC_26_1_2
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V", unsafe = true), method = "<init>")
     #else
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), method = "<init>")
     #endif
@@ -122,10 +122,18 @@ public abstract class MinecraftMixin {
         }
     }
     #endif
-
+    #if MC_VER > MC_26_1_2
+    //just like fabric`s invoke point
+    @Inject(method = "stop",at = @At(value = "TAIL"))
+    public void onDestroy(CallbackInfo ci) {
+        SuperResolution.onClientStopping();
+    }
+    #else
     //just like fabric`s invoke point
     @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;)V"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
     }
+    #endif
+
 }

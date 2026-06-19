@@ -30,6 +30,7 @@ import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
@@ -140,8 +141,8 @@ public final class SuperResolution implements Destroyable {
 
     public static void onClientTickEnd() {
         while (SuperResolutionKeyMapping.OPENGUI_KEYMAPPING.consumeClick()) {
-            minecraft.setScreen(
-                    ConfigScreenBuilder.create().buildConfigScreen(minecraft.screen)
+            MinecraftUtils.setScreen(
+                    ConfigScreenBuilder.create().buildConfigScreen(MinecraftUtils.getScreen())
             );
         }
     }

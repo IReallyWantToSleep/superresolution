@@ -21,6 +21,7 @@ package io.homo.superresolution.core.gui;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.gui.MaterialConfigScreen;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -708,9 +709,9 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .onItemSelected(item -> {
                     String key = String.valueOf(item.getValue());
                     if ("render_test".equals(key)) {
-                        Minecraft.getInstance().setScreen(new RenderTestScreen());
+                        MinecraftUtils.setScreen(new RenderTestScreen());
                     }else if ("wow".equals(key)) {
-                        Minecraft.getInstance().setScreen(new MaterialConfigScreen(this));
+                        MinecraftUtils.setScreen(new MaterialConfigScreen(this));
                     } else {
                         switchContentFrame(key);
                     }

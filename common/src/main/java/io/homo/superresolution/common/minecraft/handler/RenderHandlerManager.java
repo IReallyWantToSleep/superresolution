@@ -59,7 +59,7 @@ public class RenderHandlerManager {
     public static void initialize() {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
-        originRenderTarget = MinecraftRenderTargetWrapper.of(minecraft.getMainRenderTarget());
+        originRenderTarget = MinecraftRenderTargetWrapper.of(MinecraftUtils.getMainRenderTarget());
         updateHandler();
     }
 
@@ -230,7 +230,9 @@ public class RenderHandlerManager {
         if (renderTarget == null) {
             throw new RuntimeException();
         }
+        #if MC_VER < MC_26_2
         ((MinecraftAccessor) Minecraft.getInstance()).setRenderTarget(renderTarget);
+        #endif
     }
 
     public static float getCurrentScaleFactor() {

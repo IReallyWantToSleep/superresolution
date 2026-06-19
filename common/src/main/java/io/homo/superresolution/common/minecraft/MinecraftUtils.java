@@ -18,7 +18,11 @@
 
 package io.homo.superresolution.common.minecraft;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 
 public class MinecraftUtils {
     public static void resize(){
@@ -33,8 +37,54 @@ public class MinecraftUtils {
         #endif
     }
 
+    public static void setScreen(Screen screen){
+        #if MC_VER > MC_26_1_2
+        Minecraft.getInstance().gui.setScreen(screen);
+        #else
+        Minecraft.getInstance().setScreen(screen);
+        #endif
+    }
+
+    public static Screen getScreen(){
+        #if MC_VER > MC_26_1_2
+        return Minecraft.getInstance().gui.screen();
+        #else
+        return Minecraft.getInstance().screen;
+        #endif
+    }
+
+    public static Camera getCamera(){
+        #if MC_VER > MC_26_1_2
+        return Minecraft.getInstance().gameRenderer.mainCamera();
+        #else
+        return Minecraft.getInstance().gameRenderer.getMainCamera();
+        #endif
+    }
+
+    public static Object getFrameBufferCache(){
+        #if MC_VER > MC_26_1_2
+        try {
+            return io.homo.superresolution.common.minecraft.MinecraftRenderTargetUtil.cachedFrameBufferCacheField.get(io.homo.superresolution.common.minecraft.MinecraftRenderTargetUtil.cachedGpuDeviceBackendField.get(RenderSystem.getDevice()));
+        } catch(Throwable t){
+            return null;
+        }
+        #else
+        return Minecraft.getInstance().getMainRenderTarget();
+        #endif
+    }
+
+    public static RenderTarget getMainRenderTarget(){
+        #if MC_VER > MC_26_1_2
+        return Minecraft.getInstance().gameRenderer.mainRenderTarget();
+        #else
+        return Minecraft.getInstance().getMainRenderTarget();
+        #endif
+    }
+
     public static float getCameraFar(){
-        #if MC_VER > MC_1_21_11
+        #if MC_VER > MC_26_1_2
+        return Minecraft.getInstance().gameRenderer.gameRenderState().levelRenderState.cameraRenderState.depthFar;
+        #elif MC_VER > MC_1_21_11
         return Minecraft.getInstance().gameRenderer.getGameRenderState().levelRenderState.cameraRenderState.depthFar;
         #else
         return Minecraft.getInstance().gameRenderer.getDepthFar();

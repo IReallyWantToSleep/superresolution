@@ -44,6 +44,21 @@ public class LevelRendererMixinCommon {
     }
     #endif
 
+    #if MC_VER > MC_26_1_2
+    @Inject(at = @At(value = "HEAD"), method = "render", cancellable = true)
+    private void onRenderWorldBegin(CallbackInfo ci) {
+        if (Minecraft.getInstance().level != null) {
+            RenderHandlerManager.onRenderWorldBegin(CallType.LEVEL_RENDERER);
+        }
+    }
+
+    @Inject(at = @At(value = "RETURN"), method = "render")
+    private void onRenderWorldEnd(CallbackInfo ci) {
+        if (Minecraft.getInstance().level != null) {
+            RenderHandlerManager.onRenderWorldEnd(CallType.LEVEL_RENDERER);
+        }
+    }
+    #else
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {
@@ -57,4 +72,5 @@ public class LevelRendererMixinCommon {
             RenderHandlerManager.onRenderWorldEnd(CallType.LEVEL_RENDERER);
         }
     }
+    #endif
 }

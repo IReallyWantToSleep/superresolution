@@ -98,7 +98,7 @@ public class AlgorithmManager {
         }
         param.currentModelViewProjectionMatrix = curViewProjectionMatrix;
 
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Camera camera = MinecraftUtils.getCamera();
         #if MC_VER > MC_1_21_10
         Matrix4f viewMatrix = new Matrix4f()
                 .lookAt(

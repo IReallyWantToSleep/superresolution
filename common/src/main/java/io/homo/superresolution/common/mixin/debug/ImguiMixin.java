@@ -37,6 +37,14 @@ public class ImguiMixin {
             ImguiMain.getInstance().render();
         }
     }
+    #elif MC_VER > MC_26_1_2
+    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuSurface;blitFromTexture(Lcom/mojang/blaze3d/systems/CommandEncoder;Lcom/mojang/blaze3d/textures/GpuTextureView;)V"), method = "renderFrame")
+    private void onRender(CallbackInfo ci) {
+        if (!(Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui())) return;
+        if (ImguiMain.getInstance() != null) {
+            ImguiMain.getInstance().render();
+        }
+    }
     #elif MC_VER > MC_1_21_11
     @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;blitToScreen()V"), method = "renderFrame")
     private void onRender(CallbackInfo ci) {

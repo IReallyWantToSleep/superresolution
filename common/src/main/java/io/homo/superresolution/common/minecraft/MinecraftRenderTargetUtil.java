@@ -35,6 +35,7 @@ import com.mojang.blaze3d.opengl.DirectStateAccess;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Objects;
 
 public class MinecraftRenderTargetUtil {
@@ -42,16 +43,22 @@ public class MinecraftRenderTargetUtil {
     private static Method cachedGlDeviceDirectStateAccessMethod;
 
     #if MC_VER > MC_1_21_11
-    private static Class<?> cachedGpuDeviceClass;
-    private static Field cachedGpuDeviceBackendField;
+    public static Class<?> cachedGpuDeviceClass;
+    public static Field cachedGpuDeviceBackendField;
+    public static Field cachedFrameBufferCacheField;
 
     static {
         try {
             cachedGlDeviceClass = Class.forName("com.mojang.blaze3d.opengl.GlDevice");
             cachedGpuDeviceClass = Class.forName("com.mojang.blaze3d.systems.GpuDevice");
             cachedGpuDeviceBackendField = cachedGpuDeviceClass.getDeclaredField("backend");
+
             cachedGpuDeviceBackendField.setAccessible(true);
             cachedGlDeviceDirectStateAccessMethod = cachedGlDeviceClass.getMethod("directStateAccess");
+            #if MC_VER > MC_26_1_2
+            cachedFrameBufferCacheField = cachedGlDeviceClass.getDeclaredField("frameBufferCache");
+            cachedFrameBufferCacheField.setAccessible(true);
+            #endif
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -75,8 +82,17 @@ public class MinecraftRenderTargetUtil {
         try {
             //getDevice返回的不是GlDevice，而是一个像验证层的东西，它的backend字段才是实际GlDevice
             //RenderSystem.getDevice()->GpuDevice.backend-->GlDevice.directStateAccess()-->GlTexture.getFbo()
+            #if MC_VER > MC_26_1_2
+            return ((com.mojang.blaze3d.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache())
+                    .getFbo(
+                            (DirectStateAccess) cachedGlDeviceDirectStateAccessMethod.invoke(cachedGpuDeviceBackendField.get(RenderSystem.getDevice())),
+                            List.of(((GlTexture) Objects.requireNonNull(renderTarget.getColorTexture()))),
+                            (GlTexture)renderTarget.getDepthTexture()
+                    );
+            #else
             return ((GlTexture) Objects.requireNonNull(renderTarget.getColorTexture()))
                     .getFbo((DirectStateAccess) cachedGlDeviceDirectStateAccessMethod.invoke(cachedGpuDeviceBackendField.get(RenderSystem.getDevice())), renderTarget.getDepthTexture());
+            #endif
 
         } catch (Throwable e) {
             throw new RuntimeException(e);

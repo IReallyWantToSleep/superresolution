@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -217,8 +218,8 @@ public class NanoVGContextWrapper {
         glBlitFramebuffer(
                 0,
                 0,
-                Minecraft.getInstance().getMainRenderTarget().width,
-                Minecraft.getInstance().getMainRenderTarget().height,
+                MinecraftUtils.getMainRenderTarget().width,
+                MinecraftUtils.getMainRenderTarget().height,
                 0,
                 0,
                 frameBuffer.getWidth(),
@@ -251,8 +252,8 @@ public class NanoVGContextWrapper {
                 frameBuffer.getHeight(),
                 0,
                 0,
-                Minecraft.getInstance().getMainRenderTarget().width,
-                Minecraft.getInstance().getMainRenderTarget().height,
+                MinecraftUtils.getMainRenderTarget().width,
+                MinecraftUtils.getMainRenderTarget().height,
                 GL_COLOR_BUFFER_BIT,
                 GL_LINEAR
         );

@@ -20,13 +20,19 @@ package io.homo.superresolution.common.mixin.core.accessor;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(value = Minecraft.class)
 public interface MinecraftAccessor {
+    #if MC_VER < MC_26_2
     @Mutable
     @Accessor(value = "mainRenderTarget")
     void setRenderTarget(RenderTarget renderTarget);
+
+    #endif
+    @Accessor(value = "level")
+    ClientLevel getLevel();
 }

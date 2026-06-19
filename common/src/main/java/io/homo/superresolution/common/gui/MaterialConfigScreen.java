@@ -37,6 +37,7 @@ import io.homo.superresolution.common.gui.download.MaterialResourcesList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.*;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
@@ -159,9 +160,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     public void onClose() {
         clearContentTransitionState();
         destroyables.forEach(Destroyable::destroy);
-        if (minecraft != null) {
-            minecraft.setScreen(parentScreen);
-        }
+        MinecraftUtils.setScreen(parentScreen);
         MouseCursor.ARROW.use();
     }
 

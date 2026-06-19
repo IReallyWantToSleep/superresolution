@@ -35,7 +35,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin_Future {
-    #if MC_VER > MC_1_21_11
+    #if MC_VER > MC_26_1_2
+    @Inject(method = "render", at = @At("HEAD"))
+    private void renderLevel(
+            GraphicsResourceAllocator resourceAllocator,
+            DeltaTracker deltaTracker,
+            boolean renderOutline,
+            net.minecraft.client.renderer.state.level.CameraRenderState cameraState,
+            org.joml.Matrix4fc modelViewMatrix,
+            GpuBufferSlice terrainFog,
+            Vector4f fogColor,
+            boolean shouldRenderSky,
+            CallbackInfo ci
+    ) {
+        AlgorithmManager.setMatrixVanilla(cameraState.projectionMatrix, new Matrix4f(modelViewMatrix));
+    }
+
+    #elif MC_VER > MC_1_21_11
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void renderLevel(
             GraphicsResourceAllocator resourceAllocator,

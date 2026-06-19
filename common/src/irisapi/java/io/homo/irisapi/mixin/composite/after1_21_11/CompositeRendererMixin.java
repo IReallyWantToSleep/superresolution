@@ -34,8 +34,11 @@ import org.spongepowered.asm.mixin.Final;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.vertex.VertexFormat;
+#if MC_VER > MC_26_1_2
+import com.mojang.blaze3d.IndexType;
+#else
+import com.mojang.blaze3d.vertex.VertexFormat.IndexType;
+#endif
 import io.homo.irisapi.handlers.IrisRenderingPipelineHandler;
 #endif
 @Mixin(CompositeRenderer.class)
@@ -67,14 +70,13 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
         superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassStart);
     }
 
-    //TODO:保证先post事件再setupMipmap
     //===========BeforeRender============//
     @Inject(method = "renderAll", at = @At(
             value = "INVOKE",
@@ -86,7 +88,7 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
@@ -106,7 +108,7 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
@@ -125,7 +127,7 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
@@ -144,7 +146,7 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
@@ -164,7 +166,7 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
@@ -184,7 +186,7 @@ public class CompositeRendererMixin {
             CallbackInfo ci,
             RenderTarget main,
             GpuBuffer indices,
-            VertexFormat.IndexType type,
+            IndexType type,
             int i,
             int passesSize
     ) {
