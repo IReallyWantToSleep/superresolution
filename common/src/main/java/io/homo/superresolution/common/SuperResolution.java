@@ -18,7 +18,9 @@
 
 package io.homo.superresolution.common;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.SuperResolutionAPI;
@@ -51,8 +53,10 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public final class SuperResolution implements Destroyable {
     public static final String MOD_ID = "super_resolution";
@@ -78,7 +82,11 @@ public final class SuperResolution implements Destroyable {
     public static int cachedWidth;
     public static int cachedHeight;
     public static Thread renderThread;
-
+    #if MC_VER < MC_26_2
+    public static boolean isUsingVulkan = false;
+    #else
+    public static boolean isUsingVulkan = false;
+    #endif
     // 窗口拖拽时每帧触发 resize；算法重建昂贵，去抖到尺寸稳定后执行一次。
     private static final long RESIZE_DEBOUNCE_MS = 120L;
     private static volatile boolean pendingResize = false;
@@ -87,6 +95,46 @@ public final class SuperResolution implements Destroyable {
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
 
+    static {
+        BufferedReader reader = null;
+        boolean check = true;
+        try {
+            reader = Files.newReader(Platform.currentPlatform.getGameFolder().resolve("options.txt").toFile(), StandardCharsets.UTF_8);
+        } catch (FileNotFoundException e) {
+            isUsingVulkan = false;
+            check = false;
+        }
+
+        if (check) {
+            Map<String, String> options = new HashMap<>();
+
+            try {
+                reader.lines().forEach(line -> {
+                    try {
+                        Iterator<String> iterator = Splitter.on(':').limit(2).split(line).iterator();
+                        options.put((String) iterator.next(), (String) iterator.next());
+                    } catch (Exception var3) {
+                    }
+                });
+            } catch (Throwable var6) {
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (Throwable var5) {
+                        var6.addSuppressed(var5);
+                    }
+                }
+
+                throw var6;
+            }
+
+            if (options.get("preferredGraphicsBackend") != null) {
+                isUsingVulkan = options.get("preferredGraphicsBackend").toLowerCase(Locale.ROOT).contains("vulkan");
+            } else {
+                isUsingVulkan = false;
+            }
+        }
+    }
 
     public SuperResolution() {
         instance = this;

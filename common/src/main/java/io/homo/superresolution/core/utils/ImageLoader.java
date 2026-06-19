@@ -20,6 +20,7 @@ package io.homo.superresolution.core.utils;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
@@ -36,7 +37,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 public class ImageLoader {
-    public static ITexture load(GlDevice device, InputStream inputStream) {
+    public static ITexture load(IDevice device, InputStream inputStream) {
         ByteBuffer imageFileData;
         byte[] buffer = new byte[8192];
         int bytesRead;
@@ -78,7 +79,7 @@ public class ImageLoader {
                 MemoryUtil.memFree(imageFileData);
             }
         }
-        GlTexture2D texture = (GlTexture2D) device.createTexture(
+        ITexture texture = device.createTexture(
                 TextureDescription.create()
                         .width(width)
                         .height(height)

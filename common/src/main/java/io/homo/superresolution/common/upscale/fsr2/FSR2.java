@@ -152,12 +152,12 @@ public class FSR2 extends AbstractAlgorithm {
         dispatchDescription.cameraFovAngleVertical = cameraFovAngleVertical;
         dispatchDescription.viewSpaceToMetersFactor = 1.0f;
         dispatchDescription.deviceDepthNegativeOneToOne = false;
-        ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
         dispatchDescription.commandBuffer = commandBuffer;
         fsr2Context.dispatch(dispatchDescription);
         commandBuffer.end();
-        RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
+        RenderSystems.current().device().submitCommandBuffer(commandBuffer);
         return true;
     }
 }

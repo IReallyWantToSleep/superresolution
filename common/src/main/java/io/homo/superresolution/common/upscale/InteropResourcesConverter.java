@@ -99,7 +99,7 @@ public class InteropResourcesConverter {
         shader.compile();
         ComputePipeline computePipeline = ComputePipeline.builder()
                 .shader(shader)
-                .build(RenderSystems.opengl().device());
+                .build(RenderSystems.current().device());
 
         flipYPipelineCache.put(key, computePipeline);
         return computePipeline;
@@ -117,7 +117,7 @@ public class InteropResourcesConverter {
         flipMotionVectorYShader.compile();
         flipMotionVectorYPipeline = ComputePipeline.builder()
                 .shader(flipMotionVectorYShader)
-                .build(RenderSystems.opengl().device());
+                .build(RenderSystems.current().device());
 
         depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
@@ -312,7 +312,7 @@ public class InteropResourcesConverter {
             shader.compile();
             pipeline = ComputePipeline.builder()
                     .shader(shader)
-                    .build(RenderSystems.opengl().device());
+                    .build(RenderSystems.current().device());
             processInputPipelineCache.put(key, pipeline);
         }
 

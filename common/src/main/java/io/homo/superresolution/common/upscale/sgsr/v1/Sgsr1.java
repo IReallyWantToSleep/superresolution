@@ -106,7 +106,7 @@ public class Sgsr1 extends AbstractAlgorithm {
                 .dynamicStates(DynamicStateFlags.Viewport)
                 .colorBlend(r -> r.addAttachment(ColorBlendAttachment.alphaBlend()))
                 .vertexFormat(FullscreenQuad.getVertexFormat())
-                .build(RenderSystems.opengl().device());
+                .build(RenderSystems.current().device());
         quadVertexBuffer = FullscreenQuad.create(RenderSystems.current().device());
     }
 

@@ -2048,7 +2048,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             return;
                         }
                         rawTexture = ImageLoader.load(
-                                RenderSystems.opengl().device(),
+                                RenderSystems.current().device(),
                                 inputStream
                         );
                     } catch (Throwable ignored) {

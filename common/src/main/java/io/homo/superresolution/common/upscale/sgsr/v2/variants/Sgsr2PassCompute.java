@@ -106,7 +106,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         convertShader.compile();
         convertPipeline = (ComputePipeline) GlComputePipeline.builder()
                 .shader(convertShader)
-                .build(RenderSystems.opengl().device());
+                .build(RenderSystems.current().device());
         upscaleShader = RenderSystems.current().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl",
@@ -124,7 +124,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         upscaleShader.compile();
         upscalePipeline = (ComputePipeline) GlComputePipeline.builder()
                 .shader(upscaleShader)
-                .build(RenderSystems.opengl().device());
+                .build(RenderSystems.current().device());
         PrevLumaHistory = RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(RenderHandlerManager.getRenderWidth())
