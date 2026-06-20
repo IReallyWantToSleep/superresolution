@@ -195,7 +195,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         }
         try {
             Object irisApiInstance = irisApiGetInstanceMethod.invoke(null);
-            return (boolean) irisApiIsShaderPackInUseMethod.invoke(irisApiInstance);
+            return (boolean) irisApiIsShaderPackInUseMethod.invoke(irisApiInstance) || irisHasShaderPack();
         } catch (Throwable ignored) {
         }
         return false;

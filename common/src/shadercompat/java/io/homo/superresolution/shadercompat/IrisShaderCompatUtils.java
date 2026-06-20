@@ -68,7 +68,7 @@ public class IrisShaderCompatUtils {
     }
 
     public static boolean shouldApplySuperResolutionChanges() {
-        return !SuperResolutionConfig.isForceDisableShaderCompat() && IrisApi.getInstance().isShaderPackInUse() && getCurrentShaderPack().isPresent() &&
+        return !SuperResolutionConfig.isForceDisableShaderCompat() && (IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack()) && getCurrentShaderPack().isPresent() &&
                 ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution()
                 && getCurrentConfig().isPresent()
                 && getCurrentConfig().get().enabled

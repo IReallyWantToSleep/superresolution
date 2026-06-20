@@ -17,17 +17,8 @@
  */
 
 import groovy.json.JsonSlurper
-import org.gradle.api.GradleException
-import org.gradle.api.logging.configuration.ConsoleOutput
-import org.gradle.api.tasks.Delete
-import org.gradle.api.tasks.GradleBuild
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.withGroovyBuilder
 import utils.ModrinthUploader
 import java.io.BufferedReader
-import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 
@@ -329,11 +320,13 @@ fun compareSemver(a: String, b: String): Int {
         val parts = v.substringBefore('-').split('.').map { it.toInt() }
         return Triple(parts[0], parts[1], parts[2])
     }
+
     fun parsePreRelease(v: String): List<String> {
         val idx = v.indexOf('-')
         if (idx == -1) return emptyList()
         return v.substring(idx + 1).split('.')
     }
+
     fun compareIdentifier(x: String, y: String): Int {
         val xIsNum = x.all { it.isDigit() }
         val yIsNum = y.all { it.isDigit() }

@@ -141,10 +141,13 @@ dependencies {
     val imguiLwjgl = implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
     if (imguiLwjgl != null) "libraries"(imguiLwjgl)
 
-    implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
-    implementation(files(mergeVmaNatives.get().archiveFile))
-    add("jarJar", files(mergeVmaNatives.get().archiveFile))
-    add("libraries", files(mergeVmaNatives.get().archiveFile))
+
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("26.2")) {
+        implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
+        implementation(files(mergeVmaNatives.get().archiveFile))
+        add("jarJar", files(mergeVmaNatives.get().archiveFile))
+        add("libraries", files(mergeVmaNatives.get().archiveFile))
+    }
 
     if (versionConfig.common.architecturyApiVersion != null) {
         implementation("dev.architectury:architectury-neoforge:${versionConfig.common.architecturyApiVersion}")

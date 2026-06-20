@@ -1,6 +1,7 @@
 package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
@@ -61,14 +62,14 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
                 desc,
                 internalFormat,
                 motionVectorPreprocessingFunction,
-                ShaderCompatHandler.irisApiIsShaderPackInUse(),
+                ShaderCompatHandler.irisApiIsShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack(),
                 ShaderCompatHandler.isLoadingShader()
         );
     }
 
     @Override
     public void onClientSetup() {
-        if (listenersRegistered || !io.homo.superresolution.api.platform.Platform.currentPlatform.isInstallIris()) {
+        if (listenersRegistered || !Platform.currentPlatform.isInstallIris()) {
             return;
         }
         IrisShaderCompatEventHandler.registerEventListeners();

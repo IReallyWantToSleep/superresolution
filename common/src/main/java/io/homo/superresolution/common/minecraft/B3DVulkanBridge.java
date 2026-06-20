@@ -10,8 +10,10 @@
 
 package io.homo.superresolution.common.minecraft;
 
+#if MC_VER >= MC_26_2
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.buffers.GpuFence;
+#endif
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkPhysicalDevice;

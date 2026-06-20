@@ -17,8 +17,6 @@
  */
 
 import groovy.json.JsonSlurper
-import org.gradle.api.GradleException
-import java.io.File
 
 pluginManagement {
     repositories {

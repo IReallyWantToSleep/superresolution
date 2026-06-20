@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom") version "1.16.3"
+    id("net.fabricmc.fabric-loom-remap") version "1.16.3"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -111,11 +111,12 @@ dependencies {
     } else {
         implementation("io.github.douira:glsl-transformer:3.0.0-pre3")
     }
-
-    implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { include(it) }
-    implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { include(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { include(it) }
-    implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { include(it) }
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("26.2")) {
+        implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { include(it) }
+        implementation("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")?.let { include(it) }
+        implementation("org.lwjgl:lwjgl-vma::natives-windows")?.let { include(it) }
+        implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { include(it) }
+    }
 
     implementation("com.electronwill.night-config:toml:3.6.0")?.let { include(it) }
     implementation("com.electronwill.night-config:core:3.6.0")?.let { include(it) }

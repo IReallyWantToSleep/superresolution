@@ -18,13 +18,15 @@
 
 package io.homo.superresolution.common.minecraft;
 
-import io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import net.minecraft.client.renderer.LevelRenderer;
 
 import java.util.function.Function;
 
 public enum MinecraftRenderTargetType {
+    #if MC_VER < MC_26_2
+    ENTITY((levelRenderer -> MinecraftRenderTargetWrapper.of(((io.homo.superresolution.common.mixin.core.accessor.LevelRendererAccessor) levelRenderer).getEntityRenderTarget()))),
+    #endif
     HAND((levelRenderer) -> HandRenderTarget.getHandRenderTarget());
 
     private final Function<LevelRenderer, IBindableFrameBuffer> callback;
