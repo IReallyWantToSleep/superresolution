@@ -56,7 +56,7 @@ public class Fsr2v221DepthClipPipeline extends Fsr2Pipeline {
         if (program != null) {
             program.destroy();
         }
-        program = RenderSystems.current().device().createShaderProgram(
+        program = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v221/ffx_fsr2_depth_clip_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_depth_clip")

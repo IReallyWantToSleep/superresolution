@@ -110,7 +110,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
     @Override
     public void init(Sgsr2 sgsr) {
         this.parentSgsr = sgsr;
-        activateShader = RenderSystems.current().device().createShaderProgram(
+        activateShader = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_activate.comp.glsl",
                                 true))
@@ -129,7 +129,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                 .shader(activateShader)
                 .build(RenderSystems.opengl().device());
 
-        convertShader = RenderSystems.current().device().createShaderProgram(
+        convertShader = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_convert.comp.glsl",
                                 true))
@@ -150,7 +150,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
                 .shader(convertShader)
                 .build(RenderSystems.opengl().device());
 
-        upscaleShader = RenderSystems.current().device().createShaderProgram(
+        upscaleShader = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/3pass_cs/sgsr2_upscale.comp.glsl",
                                 true))

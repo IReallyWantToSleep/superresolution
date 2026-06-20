@@ -20,28 +20,19 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
-#if (IS_VULKAN == 1)
-import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
-import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanFramebuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-#endif
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.UIScalingCalculator;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanTarget;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGPaint;
 import net.minecraft.client.Minecraft;
@@ -63,31 +54,18 @@ public class NanoVGContextWrapper {
     private float S_strokeWidth = 1f;
     private float S_alpha = 1f;
 
-    #if (IS_VULKAN == 1)
-    private VulkanFramebuffer vkFrameBuffer;
-    private VulkanTexture vkColorTexture;
-    private VulkanTexture vkDepthTexture;
-    private GlImportableTexture2D glImportableColor;
-    private GlFrameBuffer glBlitFrameBuffer;
-    private VkGlInteropSemaphore nvgGlFinishSemaphore;
-    private VkGlInteropSemaphore nvgVkFinishSemaphore;
-    #endif
-
     public NanoVGContextWrapper(int nvgFlags) {
         rawContext = new io.homo.superresolution.thirdparty.nanovg.NanoVGContext(nvgFlags);
-        #if (IS_VULKAN == 1)
-        if (RenderSystems.isSupportVulkan()) {
-            createVkFrameBuffer();
-        } else {
-            frameBuffer = createGlFrameBuffer();
+        #if MC_VER >= MC_26_2
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            return;
         }
-        #else
-        frameBuffer = createGlFrameBuffer();
         #endif
+        frameBuffer = createGlFrameBuffer();
     }
 
     private GlFrameBuffer createGlFrameBuffer() {
-        return RenderSystems.current().device().createFramebuffer(
+        return RenderSystems.opengl().device().createFramebuffer(
                 FramebufferDescription.create()
                         .colorFormat(TextureFormat.R11G11B10F)
                         .depthFormat(TextureFormat.DEPTH24_STENCIL8)
@@ -95,89 +73,6 @@ public class NanoVGContextWrapper {
                         .build()
         );
     }
-
-    #if (IS_VULKAN == 1)
-    private void createVkFrameBuffer() {
-        VulkanDevice vkDevice = RenderSystems.vulkan().device();
-        GlDevice glDevice = RenderSystems.opengl().device();
-        vkDevice.getMainQueue().waitIdle();
-
-        int w = MinecraftWindow.getWindowWidth();
-        int h = MinecraftWindow.getWindowHeight();
-
-        vkColorTexture = vkDevice.createTextureExportable(
-                TextureDescription.create()
-                        .type(TextureType.Texture2D)
-                        .format(TextureFormat.R11G11B10F)
-                        .size(w, h)
-                        .usages(TextureUsages.create().sampler().storage().attachmentColor())
-                        .label("NanoVGColorVkTexture")
-                        .build()
-        );
-        glImportableColor = glDevice.createTextureImportable(vkColorTexture);
-
-        vkDepthTexture = vkDevice.createTextureExportable(
-                TextureDescription.create()
-                        .type(TextureType.Texture2D)
-                        .format(TextureFormat.DEPTH32F_STENCIL8)
-                        .size(w, h)
-                        .usages(TextureUsages.create().attachmentDepth())
-                        .label("NanoVGDepthVkTexture")
-                        .build()
-        );
-
-        vkFrameBuffer = (VulkanFramebuffer) vkDevice.createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(vkColorTexture)
-                        .depthAttachment(vkDepthTexture)
-                        .size(w, h)
-                        .build()
-        );
-
-        glBlitFrameBuffer = glDevice.createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(glImportableColor)
-                        .size(w, h)
-                        .build()
-        );
-
-        frameBuffer = glBlitFrameBuffer;
-
-        nvgGlFinishSemaphore = VkGlInteropSemaphore.create(vkDevice);
-        nvgVkFinishSemaphore = VkGlInteropSemaphore.create(vkDevice);
-    }
-
-    private void destroyVkFrameBuffer() {
-        RenderSystems.vulkan().finish();
-        if (nvgGlFinishSemaphore != null) { nvgGlFinishSemaphore.destroy(); nvgGlFinishSemaphore = null; }
-        if (nvgVkFinishSemaphore != null) { nvgVkFinishSemaphore.destroy(); nvgVkFinishSemaphore = null; }
-        if (glBlitFrameBuffer != null) { glBlitFrameBuffer.destroy(); glBlitFrameBuffer = null; }
-        if (vkFrameBuffer != null) { vkFrameBuffer.destroy(); vkFrameBuffer = null; }
-        if (vkDepthTexture != null) { vkDepthTexture.destroy(); vkDepthTexture = null; }
-        if (glImportableColor != null) { glImportableColor.destroy(); glImportableColor = null; }
-        if (vkColorTexture != null) { vkColorTexture.destroy(); vkColorTexture = null; }
-    }
-
-    public VulkanFramebuffer getVkFrameBuffer() {
-        return vkFrameBuffer;
-    }
-
-    public GlFrameBuffer getGlBlitFrameBuffer() {
-        return glBlitFrameBuffer;
-    }
-
-    public GlImportableTexture2D getGlImportableColor() {
-        return glImportableColor;
-    }
-
-    public VkGlInteropSemaphore getGlFinishSemaphore() {
-        return nvgGlFinishSemaphore;
-    }
-
-    public VkGlInteropSemaphore getVkFinishSemaphore() {
-        return nvgVkFinishSemaphore;
-    }
-    #endif
 
     public float globalScale() {
         return globalScale;
@@ -190,18 +85,11 @@ public class NanoVGContextWrapper {
     }
 
     public void begin(boolean copyMinecraftFbo) {
+        if (frameBuffer == null) {
+            throw new IllegalStateException("OpenGL NanoVG framebuffer is not available in b3d Vulkan mode");
+        }
         Vector2f screenSize = MinecraftWindow.getWindowSize();
         GlStates.save("nanovg-frame");
-        #if (IS_VULKAN == 1)
-        if (RenderSystems.isSupportVulkan()) {
-            if (glBlitFrameBuffer.getWidth() != ((int) screenSize.x) ||
-                    glBlitFrameBuffer.getHeight() != ((int) screenSize.y)) {
-                destroyVkFrameBuffer();
-                createVkFrameBuffer();
-            }
-            glBlitFrameBuffer.bind(FrameBufferBindPoint.All);
-        } else {
-        #endif
         if (
                 frameBuffer.getWidth() != ((int) screenSize.x) ||
                         frameBuffer.getHeight() != ((int) screenSize.y)
@@ -209,9 +97,6 @@ public class NanoVGContextWrapper {
             ((GlFrameBuffer) frameBuffer).resizeFrameBuffer((int) screenSize.x, (int) screenSize.y);
         }
         ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.All);
-        #if (IS_VULKAN == 1)
-        }
-        #endif
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
@@ -237,7 +122,25 @@ public class NanoVGContextWrapper {
         rawContext.scale(1, 1);
     }
 
+    #if MC_VER >= MC_26_2
+    public void beginB3DVulkan(B3DGuiVulkanTarget target) {
+        Vector2f screenSize = MinecraftWindow.getWindowSize();
+        globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
+        rawContext.beginFrame(
+                screenSize.x,
+                screenSize.y,
+                globalScale * 1.2f
+        );
+        rawContext.reset();
+        rawContext.scale(1, 1);
+    }
+    #endif
+
     public void end() {
+        if (frameBuffer == null) {
+            rawContext.endFrame();
+            return;
+        }
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
         rawContext.endFrame();
         glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) frameBuffer.handle());

@@ -61,7 +61,7 @@ public class Fsr2v221AccumulatePipeline extends Fsr2Pipeline {
                 "FFX_HALF",
                 (!(GraphicsCapabilities.detectGpuVendor() == GpuVendor.Nvidia) && Fsr2DeviceCapabilities.isFp16Supported()) ? "1" : "0"
         );
-        program = RenderSystems.current().device().createShaderProgram(
+        program = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v221/ffx_fsr2_accumulate_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(shaderDefines))
                         .name("fsr2_accumulate")

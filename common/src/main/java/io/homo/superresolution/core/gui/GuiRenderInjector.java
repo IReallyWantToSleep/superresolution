@@ -21,6 +21,9 @@ package io.homo.superresolution.core.gui;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.gui.CustomActionRenderPipeline;
 import io.homo.superresolution.common.mixin.gui.GuiGraphicsAccessor;
+import io.homo.superresolution.core.gui.b3d.B3DGuiFrameInput;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
+import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 #if MC_VER < MC_26_1
 import net.minecraft.client.gui.GuiGraphics;
@@ -97,4 +100,39 @@ public final class GuiRenderInjector {
         renderAction.run();
         #endif
     }
+
+    #if MC_VER >= MC_26_2
+    public static void submitB3DVulkanBlit(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics, B3DGuiFrameInput input) {
+        B3DGuiVulkanUiRenderer.ensureTarget(input.framebufferWidth(), input.framebufferHeight());
+        io.homo.superresolution.core.gui.b3d.B3DGuiVulkanTarget target = B3DGuiVulkanUiRenderer.target();
+        if (target == null) {
+            return;
+        }
+        int guiWidth = Math.max(1, Minecraft.getInstance().getWindow().getGuiScaledWidth());
+        int guiHeight = Math.max(1, Minecraft.getInstance().getWindow().getGuiScaledHeight());
+        ((GuiGraphicsAccessor) guiGraphics).getGuiRenderState().addBlitToCurrentLayer(
+                new net.minecraft.client.renderer.state.gui.BlitRenderState(
+                        net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA,
+                        net.minecraft.client.gui.render.TextureSetup.singleTexture(target.textureView(), target.sampler()),
+                        new org.joml.Matrix3x2f(),
+                        0,
+                        0,
+                        guiWidth,
+                        guiHeight,
+                        0.0f,
+                        1.0f,
+                        1.0f,
+                        0.0f,
+                        -1,
+                        null,
+                        new net.minecraft.client.gui.navigation.ScreenRectangle(
+                                0,
+                                0,
+                                guiWidth,
+                                guiHeight
+                        )
+                )
+        );
+    }
+    #endif
 }

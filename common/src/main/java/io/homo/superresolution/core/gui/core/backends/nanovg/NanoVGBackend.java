@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGBackendMode;
@@ -35,14 +36,22 @@ public class NanoVGBackend {
     }
 
     public static void init() {
+        #if MC_VER >= MC_26_2
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            if (!RenderSystems.initBorrowedB3DVulkanIfAvailable()) {
+                throw new IllegalStateException("Failed to initialize borrowed b3d Vulkan device for NanoVG");
+            }
+            NanoVGRhiBridge.setDevice(RenderSystems.vulkan().device());
+            NanoVGRhiBridge.createVkResources();
+        } else {
+            NanoVGRhiBridge.setDevice(RenderSystems.opengl().device());
+        }
+        #else
+        NanoVGRhiBridge.setDevice(RenderSystems.opengl().device());
+        #endif
         context = new NanoVGContextWrapper(NanoVGContext.NVG_ANTIALIAS | NanoVGContext.NVG_STENCIL_STROKES);
         RENDERER = new NanoVGRenderers();
         NanoVGFontLoader.initAndLoad();
-        #if (IS_VULKAN == 1)
-        if (RenderSystems.isSupportVulkan()) {
-            NanoVGRhiBridge.createVkResources();
-        }
-        #endif
     }
 
     public static float getScreenWidth() {

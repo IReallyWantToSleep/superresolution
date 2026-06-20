@@ -382,7 +382,6 @@ static jlong createContextInternal(JNIEnv *env, jint flags, jint backendMode) {
 
     if (backendMode == NANOVG_BACKEND_MODE_RHI_DIRECT) {
         GlFunctionTable glFuncTable = {};
-        loadGlFunctions(java_glfwGetProcAddress, &glFuncTable);
         NanoVGContext *ctx = new NanoVGContext(
             flags,
             NVG_BACKEND_RHI_DIRECT,

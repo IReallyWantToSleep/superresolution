@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics;
 
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
 import org.lwjgl.glfw.GLFW;
@@ -46,6 +47,10 @@ public class GraphicsCapabilities {
     }
 
     public static GpuVendor detectGpuVendor() {
+        if (isB3DVulkanUiOnly()) {
+            gpuVendor = GpuVendor.Unknown;
+            return gpuVendor;
+        }
         if (gpuVendor == null) {
             String renderer = glGetString(GL_RENDERER);
             String vendor = glGetString(GL_VENDOR);
@@ -71,6 +76,9 @@ public class GraphicsCapabilities {
     }
 
     private static int[] detectGLVersion() {
+        if (isB3DVulkanUiOnly()) {
+            return new int[]{0, 0};
+        }
         if (glVersion[0] != -1 && glVersion[1] != -1) {
             return glVersion;
         }
@@ -82,6 +90,10 @@ public class GraphicsCapabilities {
     }
 
     public static void detectSupportedVersions() {
+        if (isB3DVulkanUiOnly()) {
+            glVersions.clear();
+            return;
+        }
         glVersions.clear();
         int[][] versionMatrix = {
                 {4, 6},
@@ -122,6 +134,9 @@ public class GraphicsCapabilities {
     }
 
     private static Set<String> detectGLExtensions() {
+        if (isB3DVulkanUiOnly()) {
+            return Collections.emptySet();
+        }
         int count = glGetInteger(GL_NUM_EXTENSIONS);
         return Collections.unmodifiableSet(
                 IntStream.range(0, count)
@@ -157,6 +172,9 @@ public class GraphicsCapabilities {
     }
 
     public static String getGLVersionString() {
+        if (isB3DVulkanUiOnly()) {
+            return "unavailable";
+        }
         int[] glVersion = detectGLVersion();
         return glVersion[0] + "." + glVersion[1];
     }
@@ -203,6 +221,10 @@ public class GraphicsCapabilities {
             );
         }
         return new HashSet<>();
+    }
+
+    private static boolean isB3DVulkanUiOnly() {
+        return B3DVulkanBridge.isB3DVulkanBackend();
     }
 
 }

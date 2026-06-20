@@ -21,6 +21,7 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -51,6 +52,8 @@ public abstract class MinecraftMixin {
     private int super_resolution$cacheWidth = 0;
     @Unique
     private int super_resolution$cacheHeight = 0;
+    @Unique
+    private boolean super_resolution$b3dVulkanFrame = false;
 
     #if MC_VER <= MC_1_20_1
     @Inject(at = @At(value = "TAIL"), method = "<init>")
@@ -82,6 +85,12 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            super_resolution$b3dVulkanFrame = true;
+            PerformanceTracker.push("Frame");
+            RenderHandlerManager.onFrameBegin();
+            return;
+        }
         if (super_resolution$cacheWidth != RenderHandlerManager.getScreenWidth() || super_resolution$cacheHeight != RenderHandlerManager.getScreenHeight()) {
             super_resolution$cacheWidth = RenderHandlerManager.getScreenWidth();
             super_resolution$cacheHeight = RenderHandlerManager.getScreenHeight();
@@ -96,6 +105,13 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "RETURN"), method = "runTick")
     private void onRenderEnd(CallbackInfo ci) {
+        if (super_resolution$b3dVulkanFrame) {
+            super_resolution$b3dVulkanFrame = false;
+            RenderHandlerManager.onFrameEnd();
+            PerformanceTracker.pop("Frame");
+            SuperResolution.onClientTickEnd();
+            return;
+        }
         RenderHandlerManager.onFrameEnd();
         PerformanceTracker.pop("Frame");
         SuperResolution.onClientTickEnd();

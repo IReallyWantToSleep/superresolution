@@ -24,14 +24,12 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
-#if (IS_VULKAN == 1)
-import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
-import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
-#endif
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGBackend;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
+import io.homo.superresolution.core.gui.b3d.B3DGuiFrameInput;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanTarget;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -99,14 +97,29 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
         float mouseY = (float) transformPos(mouseY_);
         drawBefore(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
         scaleManager.update();
+        #if MC_VER >= MC_26_2
+        if (B3DGuiVulkanUiRenderer.isAvailable()) {
+            Vector2f screenSize = MinecraftWindow.getWindowSize();
+            B3DGuiFrameInput input = new B3DGuiFrameInput(
+                    this,
+                    mouseX,
+                    mouseY,
+                    partialTick,
+                    scaleManager.guiScale(),
+                    scaleManager.dpiScale(),
+                    (int) screenSize.x,
+                    (int) screenSize.y
+            );
+            B3DGuiVulkanUiRenderer.register(input);
+            GuiRenderInjector.submitB3DVulkanBlit(guiGraphics, input);
+            drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
+            return;
+        }
+        #endif
         Runnable renderAction = () -> {
             GL41.glBindSampler(0, 0);
             boolean useRhi = NanoVGBackend.USE_RHI;
-            #if (IS_VULKAN == 1)
-            boolean useVulkan = useRhi && RenderSystems.isSupportVulkan();
-            #else
             boolean useVulkan = false;
-            #endif
             if (useVulkan) {
                 NanoVGRhiBridge.beginBatch(RenderSystems.vulkan().device());
             } else if (useRhi) {
@@ -116,21 +129,9 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
             boolean frameBegun = false;
             try {
                 nvg.begin(true);
-                #if (IS_VULKAN == 1)
-                if (useVulkan) {
-                    NanoVGRhiBridge.setVulkanTarget(
-                            nvg.getVkFrameBuffer(),
-                            nvg.getGlFinishSemaphore(),
-                            nvg.getVkFinishSemaphore()
-                    );
-                } else if (useRhi) {
-                    NanoVGRhiBridge.setTargetFramebuffer(nvg.frameBuffer);
-                }
-                #else
                 if (useRhi) {
                     NanoVGRhiBridge.setTargetFramebuffer(nvg.frameBuffer);
                 }
-                #endif
 
 
                 frameBegun = true;
@@ -158,45 +159,6 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
                     }
                 } finally {
                     if (useRhi) {
-                        #if (IS_VULKAN == 1)
-                        if (useVulkan) {
-                            nvg.getGlFinishSemaphore().signalOpenGL(
-                                    new int[]{Math.toIntExact(nvg.getGlImportableColor().handle())},
-                                    new int[]{},
-                                    new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT}
-                            );
-
-                            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) nvg.frameBuffer.handle());
-                            nvg.rawContext.endFrame();
-                            NanoVGRhiBridge.endBatch();
-
-                            nvg.getVkFinishSemaphore().waitOpenGL(
-                                    new int[]{Math.toIntExact(nvg.getGlImportableColor().handle())},
-                                    new int[]{},
-                                    new int[]{GL_LAYOUT_GENERAL_EXT}
-                            );
-
-                            glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) nvg.getGlBlitFrameBuffer().handle());
-                            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
-                            glEnable(GL_BLEND);
-                            GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
-
-                            glBlitFramebuffer(
-                                    0,
-                                    0,
-                                    nvg.getGlBlitFrameBuffer().getWidth(),
-                                    nvg.getGlBlitFrameBuffer().getHeight(),
-                                    0,
-                                    0,
-                                    Minecraft.getInstance().getMainRenderTarget().width,
-                                    Minecraft.getInstance().getMainRenderTarget().height,
-                                    GL_COLOR_BUFFER_BIT,
-                                    GL_LINEAR
-                            );
-
-                            GlStates.pop("nanovg-frame").restore();
-                        } else {
-                        #endif
                         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) nvg.frameBuffer.handle());
                         nvg.rawContext.endFrame();
                         NanoVGRhiBridge.endBatch();
@@ -219,9 +181,6 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
                         );
 
                         GlStates.pop("nanovg-frame").restore();
-                        #if (IS_VULKAN == 1)
-                        }
-                        #endif
                     }
                 }
             }
@@ -230,6 +189,38 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
 
         drawAfter(guiGraphics, (int) mouseX, (int) mouseY, partialTick);
     }
+
+    #if MC_VER >= MC_26_2
+    public void preRender(B3DGuiVulkanTarget target, B3DGuiFrameInput input) {
+        scaleManager.update();
+        boolean frameBegun = false;
+        try {
+            nvg.beginB3DVulkan(target);
+            frameBegun = true;
+            nvg.resetGlobalTransform();
+            nvg.resetTransform();
+
+            nvg.globalScale(scaleManager.guiScale());
+            nvg.globalAlpha(1.0f);
+            NanoVGRenderContext ctx = new NanoVGRenderContext(nvg);
+            ctx.setGuiScale(scaleManager.guiScale());
+            ctx.setDpiScale(scaleManager.dpiScale());
+            Vector2f screenSize = MinecraftWindow.getWindowSize();
+            ctx.setViewportSize(screenSize.x / scaleManager.guiScale(), screenSize.y / scaleManager.guiScale());
+            PerformanceTracker.push("GUI");
+            draw(ctx, new UIInputState(
+                    new Vector2f(input.mouseX(), input.mouseY()),
+                    PerformanceTracker.getLastResultCPU("Frame") / 1_000_000f
+            ));
+            ctx.flush();
+            PerformanceTracker.pop("GUI");
+        } finally {
+            if (frameBegun) {
+                nvg.rawContext.endFrame();
+            }
+        }
+    }
+    #endif
 
     @Override
     protected void init() {

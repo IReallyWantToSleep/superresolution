@@ -32,6 +32,7 @@ import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -161,7 +162,7 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
-        if (Platform.currentPlatform.isInstallIris()) {
+        if (Platform.currentPlatform.isInstallIris() && !B3DVulkanBridge.isB3DVulkanBackend()) {
             try {
                 Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
             } catch (Exception e) {
@@ -216,30 +217,32 @@ public final class SuperResolution implements Destroyable {
             minecraft = Minecraft.getInstance();
         }
 
-        if (!commonRequirement.check().glVersionMet()) {
-            MessageBox.createError(
-                    Component.translatable("superresolution.common_requirement.not_support.version").getString().formatted(
-                            commonRequirement.getGlMajorVersion(),
-                            commonRequirement.getGlMinorVersion(),
-                            GraphicsCapabilities.getGLVersion()[0],
-                            GraphicsCapabilities.getGLVersion()[1]),
-                    Component.translatable("superresolution.common_requirement.not_support.msg").getString()
-            );
-            System.exit(1);
-        }
-
-        if (!commonRequirement.check().glExtensionsPresent()) {
-            StringBuilder extensionStringBuilder = new StringBuilder();
-            for (String name : commonRequirement.getMissingGlExtensions()) {
-                extensionStringBuilder.append(name).append("\n");
+        boolean uiOnlyB3DVulkan = B3DVulkanBridge.isB3DVulkanBackend();
+        if (!uiOnlyB3DVulkan) {
+            if (!commonRequirement.check().glVersionMet()) {
+                MessageBox.createError(
+                        Component.translatable("superresolution.common_requirement.not_support.version").getString().formatted(
+                                commonRequirement.getGlMajorVersion(),
+                                commonRequirement.getGlMinorVersion(),
+                                GraphicsCapabilities.getGLVersion()[0],
+                                GraphicsCapabilities.getGLVersion()[1]),
+                        Component.translatable("superresolution.common_requirement.not_support.msg").getString()
+                );
+                System.exit(1);
             }
-            MessageBox.createError(Component.translatable("superresolution.common_requirement.not_support.extension").getString()
-                            .formatted(extensionStringBuilder.toString()),
-                    Component.translatable("superresolution.common_requirement.not_support.msg").getString()
-            );
-            System.exit(1);
-        }
 
+            if (!commonRequirement.check().glExtensionsPresent()) {
+                StringBuilder extensionStringBuilder = new StringBuilder();
+                for (String name : commonRequirement.getMissingGlExtensions()) {
+                    extensionStringBuilder.append(name).append("\n");
+                }
+                MessageBox.createError(Component.translatable("superresolution.common_requirement.not_support.extension").getString()
+                                .formatted(extensionStringBuilder.toString()),
+                        Component.translatable("superresolution.common_requirement.not_support.msg").getString()
+                );
+                System.exit(1);
+            }
+        }
         INCOMPATIBLE_MODS.forEach((mod) -> {
             List<String> installedMods = new ArrayList<>();
             if (Platform.currentPlatform.isModLoaded(mod)) {
@@ -256,6 +259,22 @@ public final class SuperResolution implements Destroyable {
 
     public static void initRendering() {
         renderThread = Thread.currentThread();
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            if (minecraft == null) {
+                minecraft = Minecraft.getInstance();
+            }
+            if (!isPreInit) {
+                return;
+            }
+            if (!RenderSystems.initBorrowedB3DVulkanIfAvailable()) {
+                throw new RuntimeException("初始化失败");
+            }
+            SRWorkModeManager.bootstrapProviders();
+            RenderHandlerManager.initialize();
+            isRenderingInitialized = true;
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            return;
+        }
         try (GlState ignored = new GlState()) {
             RenderSystems.init();
 
@@ -282,6 +301,11 @@ public final class SuperResolution implements Destroyable {
     }
 
     public static boolean createAlgorithm(InitializationDescription desc) {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            currentAlgorithm = null;
+            return true;
+        }
         try (GlState ignored = new GlState()) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
@@ -335,6 +359,15 @@ public final class SuperResolution implements Destroyable {
     }
 
     public static boolean recreateAlgorithm(InitializationDescription desc) {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            if (currentAlgorithm != null) {
+                currentAlgorithm = null;
+            }
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            lastAppliedDesc = null;
+            lastAppliedAlgorithm = null;
+            return true;
+        }
         try (GlState ignored = new GlState()) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
@@ -390,7 +423,9 @@ public final class SuperResolution implements Destroyable {
         }
 
         isInit = true;
-        this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+        if (!B3DVulkanBridge.isB3DVulkanBackend()) {
+            this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+        }
     }
 
     public void resize(int width, int height) {
@@ -426,6 +461,9 @@ public final class SuperResolution implements Destroyable {
     }
 
     private void applyPendingResize() {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            return;
+        }
         int w = MinecraftWindow.getWindowWidth();
         int h = MinecraftWindow.getWindowHeight();
         w = Math.max(32,w) ;
@@ -456,8 +494,11 @@ public final class SuperResolution implements Destroyable {
         pendingResize = false;
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
+            currentAlgorithm = null;
         }
-        AlgorithmManager.destroy();
+        if (!B3DVulkanBridge.isB3DVulkanBackend()) {
+            AlgorithmManager.destroy();
+        }
         SuperResolutionNativeAPI.srShutdown();
         RenderSystems.destroy();
     }

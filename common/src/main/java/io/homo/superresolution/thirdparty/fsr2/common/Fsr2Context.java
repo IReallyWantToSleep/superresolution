@@ -109,19 +109,19 @@ public class Fsr2Context {
     }
 
     public void init() {
-        this.fsr2RcasConstantsUBO = RenderSystems.current().device().createBuffer(
+        this.fsr2RcasConstantsUBO = RenderSystems.opengl().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2RcasConstants.size())
                         .usages(BufferUsages.create().ubo().transferDst())
                         .build()
         );
-        this.fsr2SpdConstantsUBO = RenderSystems.current().device().createBuffer(
+        this.fsr2SpdConstantsUBO = RenderSystems.opengl().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2SpdConstants.size())
                         .usages(BufferUsages.create().ubo().transferDst())
                         .build()
         );
-        this.fsr2ConstantsUBO = RenderSystems.current().device().createBuffer(
+        this.fsr2ConstantsUBO = RenderSystems.opengl().device().createBuffer(
                 BufferDescription.create()
                         .size(this.fsr2Constants.size())
                         .usages(BufferUsages.create().ubo().transferDst())

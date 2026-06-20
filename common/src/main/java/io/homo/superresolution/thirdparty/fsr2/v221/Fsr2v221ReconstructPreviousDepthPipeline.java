@@ -56,7 +56,7 @@ public class Fsr2v221ReconstructPreviousDepthPipeline extends Fsr2Pipeline {
         if (program != null) {
             program.destroy();
         }
-        program = RenderSystems.current().device().createShaderProgram(
+        program = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v221/ffx_fsr2_reconstruct_previous_depth_pass.ogl.glsl", true))
                         .addDefines(getShaderDefines(new HashMap<>()))
                         .name("fsr2_reconstruct_previous_depth")

@@ -37,6 +37,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
@@ -301,6 +302,9 @@ public class SuperResolutionConfig {
     }
 
     public static AlgorithmDescription<?> getDefaultAlgorithm() {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            return AlgorithmDescriptions.NONE;
+        }
         try {
             GL.getCapabilities();
         } catch (Exception e) {

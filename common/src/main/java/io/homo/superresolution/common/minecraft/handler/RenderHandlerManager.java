@@ -28,6 +28,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.CallType;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -55,16 +56,25 @@ public class RenderHandlerManager {
     private static String handlerProviderId;
     public static int frameCount = 0;
     private static IBindableFrameBuffer originRenderTarget;
+    private static boolean uiOnlyB3DVulkan;
 
     private static boolean needResize;
     public static void initialize() {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
+        uiOnlyB3DVulkan = B3DVulkanBridge.isB3DVulkanBackend();
+        if (uiOnlyB3DVulkan) {
+            originRenderTarget = null;
+            return;
+        }
         originRenderTarget = MinecraftRenderTargetWrapper.of(MinecraftUtils.getMainRenderTarget());
         updateHandler();
     }
 
     public static void resize() {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         updateHandler();
         handler.resize();
     }
@@ -78,6 +88,9 @@ public class RenderHandlerManager {
     }
 
     public static void updateHandler() {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         if (needUpdateHandler()) {
             if (handler != null) {
                 handler.destroy();
@@ -93,6 +106,9 @@ public class RenderHandlerManager {
 
     public static void onFrameBegin() {
         frameCount++;
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         if (needResize) {
             MinecraftUtils.resize();
             SuperResolution.getCurrentAlgorithm().resize(
@@ -107,6 +123,9 @@ public class RenderHandlerManager {
     }
 
     public static void onRenderWorldBegin(CallType type) {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         updateHandler();
         GlDebug.pushGroup(74108435, "MinecraftLevelRender");
         if (SuperResolution.cachedWidth != RenderHandlerManager.getScreenWidth() || SuperResolution.cachedHeight != RenderHandlerManager.getScreenHeight()) {
@@ -140,6 +159,9 @@ public class RenderHandlerManager {
     }
 
     public static void onRenderWorldEnd(CallType type) {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         if (type == CallType.LEVEL_RENDERER) {
             isRenderingWorld = false;
         }
@@ -169,18 +191,27 @@ public class RenderHandlerManager {
     }
 
     public static void onRenderHandBegin() {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         if (checkRenderHandCallPos()) {
             handler.onRenderHandBegin();
         }
     }
 
     public static void onRenderHandEnd() {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         if (checkRenderHandCallPos()) {
             handler.onRenderHandEnd();
         }
     }
 
     public static void onProcessPostChain(PostChain postChain) {
+        if (uiOnlyB3DVulkan) {
+            return;
+        }
         updateHandler();
         handler.onProcessPostChain(postChain);
     }
@@ -270,16 +301,25 @@ public class RenderHandlerManager {
     }
 
     public static IBindableFrameBuffer getRenderTarget() {
+        if (handler == null) {
+            return originRenderTarget;
+        }
         return handler.getScaledRenderTarget();
     }
 
     @Nullable
     public static ITexture getColorTexture() {
+        if (handler == null) {
+            return null;
+        }
         return handler.getColorTexture();
     }
 
     @Nullable
     public static ITexture getDepthTexture() {
+        if (handler == null) {
+            return null;
+        }
         return handler.getDepthTexture();
     }
 

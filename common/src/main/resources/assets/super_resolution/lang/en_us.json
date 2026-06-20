@@ -300,6 +300,8 @@
     "superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported": "Custom ratio is not supported for this algorithm",
     "superresolution.screen.config.hint.performance_warning.title": "Performance Warning",
     "superresolution.screen.config.hint.performance_warning.text": "No shader pack is currently active. Vanilla Minecraft has a low graphics load, so super resolution cannot improve performance and may cause frame rate drops.",
+    "superresolution.screen.config.hint.b3d_vulkan_unavailable.title": "Super Resolution cannot work on the Vulkan backend",
+    "superresolution.screen.config.hint.b3d_vulkan_unavailable.text": "The Vulkan graphics backend is currently in use. Because Iris does not support the Vulkan backend yet, Super Resolution cannot enable upscaling or scaling in this environment; you can still open the configuration screen, but all features will be unavailable.",
     "superresolution.screen.config.hint.shader_compat_warning.title": "Shader Compatibility Warning",
     "superresolution.screen.config.hint.shader_compat_warning.text": "The current shader pack has not been adapted for the super resolution mod and will run in compatibility mode. This mode may cause: blurry visuals, ghosting artifacts, performance degradation, and reduced compatibility with other mods.",
     "superresolution.translate.PoweredByDeepSeek": "Powered by DeepSeek"

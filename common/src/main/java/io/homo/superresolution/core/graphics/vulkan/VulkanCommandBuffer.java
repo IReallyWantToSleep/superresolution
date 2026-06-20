@@ -234,6 +234,23 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         inFlight = true;
     }
 
+    public void markExternalSubmitted() {
+        ensureNotDestroyed();
+        if (state != CommandBufferState.Executable) {
+            throw new IllegalStateException("Command buffer must be executable before external submit");
+        }
+        inFlight = true;
+    }
+
+    public boolean isExternallyComplete() {
+        return inFlight;
+    }
+
+    public void markExternalComplete() {
+        inFlight = false;
+        destroyTransientResourcesIfComplete();
+    }
+
     void _beginRenderPass(VulkanRenderPass renderPass) {
         ensureNotDestroyed();
         if (state != CommandBufferState.Recording) {

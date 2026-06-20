@@ -97,7 +97,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                 .uintEntry("bSameCamera")
                 .uintEntry("reset")
                 .build();
-        paramsUbo = RenderSystems.current().device().createBuffer(BufferDescription.create()
+        paramsUbo = RenderSystems.opengl().device().createBuffer(BufferDescription.create()
                 .usages(BufferUsages.create().ubo().transferDst())
                 .size(paramsData.size())
                 .build()

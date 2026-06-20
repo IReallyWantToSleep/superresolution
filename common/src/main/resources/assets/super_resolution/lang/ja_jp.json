@@ -300,6 +300,8 @@
     "superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported": "このアルゴリズムではカスタム倍率はサポートされていません",
     "superresolution.screen.config.hint.performance_warning.title": "パフォーマンス警告",
     "superresolution.screen.config.hint.performance_warning.text": "現在シェーダーが有効になっていません。バニラのMinecraftはグラフィック負荷が低いため、超解像によるパフォーマンス向上は見込めず、フレームレートが低下する可能性があります。",
+    "superresolution.screen.config.hint.b3d_vulkan_unavailable.title": "Super Resolution は Vulkan バックエンドでは動作できません",
+    "superresolution.screen.config.hint.b3d_vulkan_unavailable.text": "現在 Vulkan グラフィックスバックエンドが使用されています。Iris はまだ Vulkan をサポートしていないため、この環境では Super Resolution のアップスケーリング/スケーリング機能を正常に有効化できません。設定画面は開けますが、すべての機能は利用できません。",
     "superresolution.screen.config.hint.shader_compat_warning.title": "シェーダー互換性警告",
     "superresolution.screen.config.hint.shader_compat_warning.text": "現在のシェーダーパックはSuper Resolution MODに対応していないため、互換モードで動作します。このモードでは、画面のぼやけ、ゴーストの発生、パフォーマンス低下、他のMODとの互換性低下などの問題が発生する可能性があります。",
     "superresolution.translate.PoweredByDeepSeek": "？"

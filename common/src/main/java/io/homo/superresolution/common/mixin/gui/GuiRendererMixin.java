@@ -24,6 +24,7 @@ import com.mojang.blaze3d.IndexType;
 import com.mojang.blaze3d.vertex.VertexFormat.IndexType;
 #endif
 import io.homo.superresolution.common.gui.CustomActionRenderPipeline;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
@@ -33,6 +34,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #if MC_VER > MC_1_21_5
 @Mixin(net.minecraft.client.gui.render.GuiRenderer.class)
 public class GuiRendererMixin {
+    #if MC_VER >= MC_26_2
+    @Inject(method = "render", at = @At("HEAD"))
+    public void superresolution$preRenderB3DVulkanUi(CallbackInfo ci) {
+        if (!B3DGuiVulkanUiRenderer.isAvailable() || !B3DGuiVulkanUiRenderer.hasPendingJobs()) {
+            return;
+        }
+        B3DGuiVulkanUiRenderer.preRenderAll();
+    }
+    #endif
+
     @Inject(method = "executeDraw", at = @At("HEAD"), cancellable = true)
     public void executeDraw(
             @Coerce

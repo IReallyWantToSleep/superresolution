@@ -70,13 +70,19 @@ public class VulkanDevice implements IDevice {
     private final ValidatedCommandDecoder validatedCommandDecoder;
     private final VulkanMemoryAllocator memoryAllocator;
     private final List<DeferredDestroy> deferredDestroys = new ArrayList<>();
+    private final boolean ownsVkDevice;
     private boolean drainingDeferredDestroys;
 
 
     public VulkanDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
+        this(instance, physicalDevice, device, graphicsQueueFamilyIndex, true);
+    }
+
+    public VulkanDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex, boolean ownsVkDevice) {
         this.instance = instance;
         this.physicalDevice = physicalDevice;
         this.device = device;
+        this.ownsVkDevice = ownsVkDevice;
         this.mainQueue = new VulkanQueue(this, graphicsQueueFamilyIndex);
         this.defaultCommandPool= new VulkanCommandPool(this, EnumSet.of(CommandPoolFlags.Reset));
         this.commandDecoder = new VulkanCommandDecoder(this);
@@ -294,6 +300,10 @@ public class VulkanDevice implements IDevice {
             memoryAllocator.destroy();
         }
         LOGGER.debug("VulkanDevice 资源已清理");
+    }
+
+    public boolean ownsVkDevice() {
+        return ownsVkDevice;
     }
 
     public VkInstance getVkInstance() {

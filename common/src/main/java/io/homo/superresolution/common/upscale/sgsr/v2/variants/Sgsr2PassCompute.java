@@ -89,7 +89,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     @Override
     public void init(Sgsr2 sgsr) {
         this.parentSgsr = sgsr;
-        convertShader = RenderSystems.current().device().createShaderProgram(
+        convertShader = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/2pass_cs/sgsr2_convert.comp.glsl",
                                 true))
@@ -107,7 +107,7 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
         convertPipeline = (ComputePipeline) GlComputePipeline.builder()
                 .shader(convertShader)
                 .build(RenderSystems.current().device());
-        upscaleShader = RenderSystems.current().device().createShaderProgram(
+        upscaleShader = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.create()
                         .compute(new ShaderSource(ShaderType.Compute, "/shader/sgsr/2pass_cs/sgsr2_upscale.comp.glsl",
                                 true))

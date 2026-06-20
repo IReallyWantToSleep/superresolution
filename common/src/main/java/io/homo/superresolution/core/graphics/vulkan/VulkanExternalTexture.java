@@ -35,10 +35,12 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
     private final boolean ownsView;
     private final TextureFormat format;
     private final TextureType type;
+    private final TextureUsages usages;
     private final int width;
     private final int height;
     private final int aspectMask;
     private final int mipLevels;
+    private final boolean fixedLayout;
 
     private VulkanResourceState currentState;
     private boolean destroyed = false;
@@ -60,9 +62,11 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         this.ownsView = false;
         this.format = format;
         this.type = type;
+        this.usages = defaultUsages(format);
         this.width = width;
         this.height = height;
         this.mipLevels = mipLevels;
+        this.fixedLayout = false;
         this.currentState = new VulkanResourceState(initialLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, io.homo.superresolution.core.graphics.impl.command.ResourceAccessType.UNDEFINED);
         this.aspectMask = resolveAspectMask(format);
         updateDebugLabels();
@@ -86,9 +90,86 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         this.ownsView = ownsView;
         this.format = format;
         this.type = type;
+        this.usages = defaultUsages(format);
         this.width = width;
         this.height = height;
         this.mipLevels = mipLevels;
+        this.fixedLayout = false;
+        this.currentState = new VulkanResourceState(initialLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, io.homo.superresolution.core.graphics.impl.command.ResourceAccessType.UNDEFINED);
+        this.aspectMask = resolveAspectMask(format);
+        updateDebugLabels();
+    }
+
+    public static VulkanExternalTexture fixedLayout(
+            VulkanDevice device,
+            long image,
+            long imageView,
+            TextureFormat format,
+            TextureType type,
+            int width,
+            int height,
+            int mipLevels,
+            int layout
+    ) {
+        return fixedLayout(device, image, imageView, format, type, width, height, mipLevels, layout, defaultUsages(format));
+    }
+
+    public static VulkanExternalTexture fixedLayout(
+            VulkanDevice device,
+            long image,
+            long imageView,
+            TextureFormat format,
+            TextureType type,
+            int width,
+            int height,
+            int mipLevels,
+            int layout,
+            TextureUsages usages
+    ) {
+        return new VulkanExternalTexture(device, image, imageView, false, format, type, width, height, mipLevels, layout, true, usages);
+    }
+
+    private VulkanExternalTexture(
+            VulkanDevice device,
+            long image,
+            long imageView,
+            boolean ownsView,
+            TextureFormat format,
+            TextureType type,
+            int width,
+            int height,
+            int mipLevels,
+            int initialLayout,
+            boolean fixedLayout
+    ) {
+        this(device, image, imageView, ownsView, format, type, width, height, mipLevels, initialLayout, fixedLayout, defaultUsages(format));
+    }
+
+    private VulkanExternalTexture(
+            VulkanDevice device,
+            long image,
+            long imageView,
+            boolean ownsView,
+            TextureFormat format,
+            TextureType type,
+            int width,
+            int height,
+            int mipLevels,
+            int initialLayout,
+            boolean fixedLayout,
+            TextureUsages usages
+    ) {
+        this.device = device;
+        this.image = image;
+        this.imageView = imageView;
+        this.ownsView = ownsView;
+        this.format = format;
+        this.type = type;
+        this.usages = usages.copy();
+        this.width = width;
+        this.height = height;
+        this.mipLevels = mipLevels;
+        this.fixedLayout = fixedLayout;
         this.currentState = new VulkanResourceState(initialLayout, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, io.homo.superresolution.core.graphics.impl.command.ResourceAccessType.UNDEFINED);
         this.aspectMask = resolveAspectMask(format);
         updateDebugLabels();
@@ -152,6 +233,16 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         return VK_IMAGE_ASPECT_COLOR_BIT;
     }
 
+    private static TextureUsages defaultUsages(TextureFormat format) {
+        TextureUsages usages = TextureUsages.create().sampler();
+        if (format.isDepth() || format.isDepthStencil()) {
+            usages.attachmentDepth();
+        } else {
+            usages.attachmentColor();
+        }
+        return usages;
+    }
+
     public int getCurrentLayout() {
         return currentState.layout();
     }
@@ -191,7 +282,37 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
             int srcAccessMask,
             int dstAccessMask
     ) {
+        if (fixedLayout) {
+            newLayout = currentState.layout();
+        }
         if (currentState.layout() == newLayout) {
+            try (MemoryStack stack = stackPush()) {
+                VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
+                        .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                        .srcAccessMask(srcAccessMask)
+                        .dstAccessMask(dstAccessMask)
+                        .oldLayout(currentState.layout())
+                        .newLayout(currentState.layout())
+                        .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .image(image)
+                        .subresourceRange(VkImageSubresourceRange.calloc(stack)
+                                .aspectMask(aspectMask)
+                                .baseMipLevel(0)
+                                .levelCount(mipLevels)
+                                .baseArrayLayer(0)
+                                .layerCount(1));
+                vkCmdPipelineBarrier(
+                        commandBuffer.getNativeCommandBuffer(),
+                        srcStageMask,
+                        dstStageMask,
+                        0,
+                        null,
+                        null,
+                        barrier
+                );
+            }
+            currentState = new VulkanResourceState(currentState.layout(), dstAccessMask, dstStageMask, currentState.accessType());
             return;
         }
         try (MemoryStack stack = stackPush()) {
@@ -239,7 +360,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
 
     @Override
     public TextureUsages getTextureUsages() {
-        return TextureUsages.create();
+        return usages.copy();
     }
 
     @Override
@@ -268,7 +389,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
                 .format(format)
                 .type(type)
                 .size(width, height)
-                .usages(TextureUsages.create())
+                .usages(usages)
                 .filterMode(TextureFilterMode.Linear)
                 .wrapMode(TextureWrapMode.ClampToEdge)
                 .mipmapSettings(TextureMipmapSettings.manual(mipLevels))

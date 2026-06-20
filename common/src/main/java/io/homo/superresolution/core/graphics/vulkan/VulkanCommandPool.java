@@ -48,7 +48,7 @@ public class VulkanCommandPool implements ICommandPool {
     }
 
     public void init() {
-        this.graphicsQueueFamilyIndex = VulkanQueueUtils.findQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT, device);
+        this.graphicsQueueFamilyIndex = device.getMainQueue().getQueueFamilyIndex();
         createCommandPool();
         createGraphicsQueue();
     }

@@ -55,8 +55,19 @@ public class VkRenderSystem implements IRenderSystem {
     protected VkInstance instance;
     protected VulkanCapabilities capabilities = new VulkanCapabilities();
     private VulkanDevice vulkanDevice;
+    private boolean borrowed;
 
     public VkRenderSystem() {
+    }
+
+    public static VkRenderSystem borrowed(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
+        VkRenderSystem renderSystem = new VkRenderSystem();
+        renderSystem.borrowed = true;
+        renderSystem.instance = instance;
+        renderSystem.capabilities.init(instance, physicalDevice);
+        renderSystem.vulkanDevice = new VulkanDevice(instance, physicalDevice, device, graphicsQueueFamilyIndex, false);
+        LOGGER.info("Vulkan borrowed 初始化完成");
+        return renderSystem;
     }
 
     private static PointerBuffer asPointerBuffer(MemoryStack stack, List<String> list) {
@@ -116,7 +127,9 @@ public class VkRenderSystem implements IRenderSystem {
     public void destroyRenderSystem() {
         if (vulkanDevice != null) {
             vulkanDevice.destroy();
-            vkDestroyDevice(vulkanDevice.getVkDevice(), null);
+            if (vulkanDevice.ownsVkDevice()) {
+                vkDestroyDevice(vulkanDevice.getVkDevice(), null);
+            }
             vulkanDevice = null;
         }
         if (validationLayers != null) {
@@ -124,7 +137,9 @@ public class VkRenderSystem implements IRenderSystem {
             validationLayers = null;
         }
         if (instance != null) {
-            vkDestroyInstance(instance, null);
+            if (!borrowed) {
+                vkDestroyInstance(instance, null);
+            }
             instance = null;
         }
         if (capabilities != null) {

@@ -623,7 +623,9 @@ public class VulkanCommandDecoder implements ICommandDecoder {
                 colorAttachmentInfo = VkRenderingAttachmentInfoKHR.calloc(1, stack)
                         .sType(VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR)
                         .imageView(colorImageView)
-                        .imageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+                        .imageLayout(colorAttachment instanceof VulkanExternalTexture
+                                ? ((VulkanExternalTexture) colorAttachment).getCurrentLayout()
+                                : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
                         .loadOp(loadOp)
                         .storeOp(VK_ATTACHMENT_STORE_OP_STORE);
 

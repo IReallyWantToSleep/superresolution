@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.workmode;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
@@ -27,6 +28,9 @@ public final class SRWorkModeManager {
             return;
         }
         bootstrapped = true;
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            return;
+        }
         for (String className : BOOTSTRAP_CLASSES) {
             try {
                 Class<?> clazz = Class.forName(className);

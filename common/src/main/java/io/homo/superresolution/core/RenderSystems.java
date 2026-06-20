@@ -20,8 +20,11 @@ package io.homo.superresolution.core;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
+import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VulkanException;
 import org.lwjgl.vulkan.KHRExternalMemoryFd;
@@ -69,6 +72,41 @@ public class RenderSystems {
 
     public static boolean isSupportOpenGL() {
         return true;
+    }
+
+    public static boolean initBorrowedB3DVulkanIfAvailable() {
+        #if MC_VER >= MC_26_2
+        if (vulkan != null) {
+            return true;
+        }
+        if (!B3DVulkanBridge.isB3DVulkanBackend()) {
+            return false;
+        }
+        try {
+            VK.create();
+        } catch (Exception | Error e) {
+            if (e.getMessage() == null || !e.getMessage().contains("Vulkan has already been created")) {
+                VkRenderSystem.LOGGER.error("Vulkan 初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
+                VkRenderSystem.LOGGER.error("Vulkan 初始化错误详情", e);
+                return false;
+            }
+        }
+        try {
+            vulkan = VkRenderSystem.borrowed(
+                    B3DVulkanBridge.vkInstance(),
+                    B3DVulkanBridge.vkPhysicalDevice(),
+                    B3DVulkanBridge.vkDevice(),
+                    B3DVulkanBridge.graphicsQueueFamilyIndex()
+            );
+            return true;
+        } catch (Throwable t) {
+            VkRenderSystem.LOGGER.error("无法从Blaze3D 创建 Vulkan device", t);
+            vulkan = null;
+            return false;
+        }
+        #else
+        return false;
+        #endif
     }
 
     private static void initVulkan() {
@@ -127,7 +165,8 @@ public class RenderSystems {
         return vulkan;
     }
 
-    public static GlRenderSystem current() {
-        return opengl;
+    public static IRenderSystem current() {
+
+        return SuperResolution.isUsingVulkan?vulkan: opengl;
     }
 }

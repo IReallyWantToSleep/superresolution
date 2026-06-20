@@ -57,7 +57,7 @@ public class Fsr2v233ComputeLuminancePyramidPipeline extends Fsr2Pipeline {
         }
         HashMap<String, String> shaderDefines = new HashMap<>();
         shaderDefines.put("FFX_HALF", "0");
-        program = RenderSystems.current().device().createShaderProgram(
+        program = RenderSystems.opengl().device().createShaderProgram(
                 ShaderDescription.compute(new ShaderSource(ShaderType.Compute, "/shader/fsr2v233/ffx_fsr2_compute_luminance_pyramid_pass.glsl", true))
                         .addDefines(getShaderDefines(shaderDefines))
                         .name("fsr2_compute_luminance_pyramid_v233")

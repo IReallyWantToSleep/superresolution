@@ -434,8 +434,12 @@ static int glnvg__deleteTexture(GLNVGcontext *gl, int id)
     {
         if (gl->textures[i].id == id)
         {
-            if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
+            if (gl->backendMode != NVG_BACKEND_RHI_DIRECT &&
+                gl->textures[i].tex != 0 &&
+                (gl->textures[i].flags & NVG_IMAGE_NODELETE) == 0)
+            {
                 gl->gl.glad_glDeleteTextures(1, &gl->textures[i].tex);
+            }
             memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
             return 1;
         }

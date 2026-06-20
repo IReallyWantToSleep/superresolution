@@ -37,6 +37,7 @@ import io.homo.superresolution.common.gui.download.MaterialResourcesList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.*;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -504,6 +505,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         final boolean[] syncingQualityPreset = {false};
 
         OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.general"));
+        builder.hintOption(Text.literal("b3d_vulkan_unavailable"))
+                .setIcon(MaterialSymbols.iconWarning())
+                .setTitle(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.title").getString())
+                .setText(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.text").getString())
+                .setDisplayRequirement(OptionRequirement.isTrue(B3DVulkanBridge::isB3DVulkanBackend))
+                .build();
         builder.hintOption(Text.literal("tip114514"))
                 .setIcon(MaterialSymbols.iconWarning())
                 .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())

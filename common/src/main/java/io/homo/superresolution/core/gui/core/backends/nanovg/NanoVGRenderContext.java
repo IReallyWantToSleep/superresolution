@@ -24,6 +24,7 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.*;
 import io.homo.superresolution.core.gui.core.backends.render.*;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -516,16 +517,28 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     public IImage createImage(ITexture texture) {
-        if (!(texture instanceof GlTexture2D)) {
-            throw new IllegalArgumentException("Texture must be instance of GlTexture2D");
-        }
         NanoVGImage image = new NanoVGImage();
+        if (texture instanceof GlTexture2D) {
+            image.nvgId = nvg.rawContext.createImageFromHandle(
+                    (int) texture.handle(),
+                    texture.getWidth(),
+                    texture.getHeight(),
+                    NVG_IMAGE_NODELETE
+            );
+            return image;
+        }
+
+        int externalHandle = NanoVGRhiBridge.prepareExternalTexture(texture);
         image.nvgId = nvg.rawContext.createImageFromHandle(
-                (int) texture.handle(),
+                externalHandle,
                 texture.getWidth(),
                 texture.getHeight(),
                 NVG_IMAGE_NODELETE
         );
+        if (image.nvgId == 0) {
+            NanoVGRhiBridge.cancelPreparedExternalTexture(externalHandle);
+            throw new IllegalStateException("Failed to register RHI texture as NanoVG image");
+        }
         return image;
     }
 

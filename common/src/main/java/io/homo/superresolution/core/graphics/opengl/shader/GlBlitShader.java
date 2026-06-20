@@ -28,7 +28,7 @@ public class GlBlitShader {
 
     public static GlShaderProgram getShader() {
         if (shaderCache == null) {
-            shaderCache = RenderSystems.current().device().createShaderProgram(
+            shaderCache = RenderSystems.opengl().device().createShaderProgram(
                     ShaderDescription.create()
                             .fragment(new ShaderSource(ShaderType.Fragment, "/shader/blit.frag.glsl", true))
                             .vertex(new ShaderSource(ShaderType.Vertex, "/shader/blit.vert.glsl", true))
