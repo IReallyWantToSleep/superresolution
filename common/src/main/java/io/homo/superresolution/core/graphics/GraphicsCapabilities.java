@@ -47,7 +47,7 @@ public class GraphicsCapabilities {
     }
 
     public static GpuVendor detectGpuVendor() {
-        if (isB3DVulkanUiOnly()) {
+        if (isB3DVulkan()) {
             gpuVendor = GpuVendor.Unknown;
             return gpuVendor;
         }
@@ -76,7 +76,7 @@ public class GraphicsCapabilities {
     }
 
     private static int[] detectGLVersion() {
-        if (isB3DVulkanUiOnly()) {
+        if (isB3DVulkan()) {
             return new int[]{0, 0};
         }
         if (glVersion[0] != -1 && glVersion[1] != -1) {
@@ -90,7 +90,7 @@ public class GraphicsCapabilities {
     }
 
     public static void detectSupportedVersions() {
-        if (isB3DVulkanUiOnly()) {
+        if (isB3DVulkan()) {
             glVersions.clear();
             return;
         }
@@ -134,7 +134,7 @@ public class GraphicsCapabilities {
     }
 
     private static Set<String> detectGLExtensions() {
-        if (isB3DVulkanUiOnly()) {
+        if (isB3DVulkan()) {
             return Collections.emptySet();
         }
         int count = glGetInteger(GL_NUM_EXTENSIONS);
@@ -172,7 +172,7 @@ public class GraphicsCapabilities {
     }
 
     public static String getGLVersionString() {
-        if (isB3DVulkanUiOnly()) {
+        if (isB3DVulkan()) {
             return "unavailable";
         }
         int[] glVersion = detectGLVersion();
@@ -223,7 +223,7 @@ public class GraphicsCapabilities {
         return new HashSet<>();
     }
 
-    private static boolean isB3DVulkanUiOnly() {
+    private static boolean isB3DVulkan() {
         return B3DVulkanBridge.isB3DVulkanBackend();
     }
 

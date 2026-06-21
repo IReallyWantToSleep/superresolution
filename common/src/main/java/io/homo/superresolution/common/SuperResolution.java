@@ -97,12 +97,12 @@ public final class SuperResolution implements Destroyable {
     private static SuperResolution instance;
 
     static {
+        #if MC_VER > MC_26_1_2
         BufferedReader reader = null;
         boolean check = true;
         try {
             reader = Files.newReader(Platform.currentPlatform.getGameFolder().resolve("options.txt").toFile(), StandardCharsets.UTF_8);
         } catch (FileNotFoundException e) {
-            isUsingVulkan = false;
             check = false;
         }
 
@@ -113,7 +113,7 @@ public final class SuperResolution implements Destroyable {
                 reader.lines().forEach(line -> {
                     try {
                         Iterator<String> iterator = Splitter.on(':').limit(2).split(line).iterator();
-                        options.put((String) iterator.next(), (String) iterator.next());
+                        options.put(iterator.next(), iterator.next());
                     } catch (Exception var3) {
                     }
                 });
@@ -135,6 +135,7 @@ public final class SuperResolution implements Destroyable {
                 isUsingVulkan = false;
             }
         }
+        #endif
     }
 
     public SuperResolution() {
