@@ -307,7 +307,7 @@ public class SRCompatV2Processor implements SRCompatProcessor {
         if (!(currentConfig.isEmpty() || currentConfig.get().jitter.source == SRShaderCompatData.JitterConfig.JitterSource.SHADERPACK)) {
             r.uniform2f("SRJitterOffset",
                     () -> {
-                        if (algorithm == null || !algorithm.isSupportJitter()) {
+                        if (description == null || !description.isSupportJitter()) {
                             return new Vector2f(0);
                         }
                         Vector2f rawJitter = IrisShaderCompatUpscaleDispatcher.getJitterOffset();
@@ -315,8 +315,8 @@ public class SRCompatV2Processor implements SRCompatProcessor {
                     });
             r.uniform2f("SRPreviousJitterOffset",
                     () -> {
-                        if (algorithm == null
-                                || !algorithm.isSupportJitter()
+                        if (description == null
+                                || !description.isSupportJitter()
                                 || IrisShaderCompatUtils.getCurrentConfig().isEmpty()
                                 || IrisShaderCompatUtils.getCurrentConfig().get().jitter.source != SRShaderCompatData.JitterConfig.JitterSource.MOD) {
                             return new Vector2f(0);

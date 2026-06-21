@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.upscale.dlss;
 
 import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -32,13 +31,11 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.utils.LargeStackExecutor;
 import io.homo.superresolution.srapi.*;
-import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.List;
 
 public class DLSS extends SRApiAlgorithm {
     private static boolean providerLoaded = false;
@@ -183,38 +180,4 @@ public class DLSS extends SRApiAlgorithm {
         }
     }
 
-    @Override
-    public boolean isSupportJitter() {
-        return true;
-    }
-
-    @Override
-    public List<QualityPreset> getQualityPresets() {
-        return List.of(
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.dlss.ultra_performance"))
-                        .setCodeName("dlss_ultra_performance")
-                        .setUpscaleRatio(3.0f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.dlss.performance"))
-                        .setCodeName("dlss_performance")
-                        .setUpscaleRatio(2.0f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.dlss.balanced"))
-                        .setCodeName("dlss_balanced")
-                        .setUpscaleRatio(1.724f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.dlss.quality"))
-                        .setCodeName("dlss_quality")
-                        .setUpscaleRatio(1.5f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.dlss.dlaa"))
-                        .setCodeName("dlss_dlaa")
-                        .setUpscaleRatio(1.0f));
-    }
-
-    @Override
-    public boolean isCustomUpscaleRatio() {
-        return false;
-    }
 }

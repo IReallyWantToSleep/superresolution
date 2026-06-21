@@ -19,9 +19,11 @@
 package io.homo.superresolution.api.registry;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.SuperResolution;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,40 +33,26 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
     public final String displayName;
     public final Requirement requirement;
     public final ExtraResources extraResources;
+    public final boolean supportJitter;
+    public final List<QualityPreset> qualityPresets;
+    public final boolean customUpscaleRatio;
     protected final Class<T> clazz;
     private final String uuid = UUID.randomUUID().toString();
 
-    public AlgorithmDescription(
-            Class<T> clazz,
-            String briefName,
-            String codeName,
-            String displayName,
-            Requirement requirement
-    ) {
-        this(
-                clazz,
-                briefName,
-                codeName,
-                displayName,
-                requirement,
-                ExtraResources.builder().build()
-        );
+    private AlgorithmDescription(Builder<T> builder) {
+        this.clazz = builder.clazz;
+        this.briefName = builder.briefName;
+        this.codeName = builder.codeName;
+        this.displayName = builder.displayName;
+        this.requirement = builder.requirement;
+        this.extraResources = builder.extraResources;
+        this.supportJitter = builder.supportJitter;
+        this.qualityPresets = List.copyOf(builder.qualityPresets);
+        this.customUpscaleRatio = builder.customUpscaleRatio;
     }
 
-    public AlgorithmDescription(
-            Class<T> clazz,
-            String briefName,
-            String codeName,
-            String displayName,
-            Requirement requirement,
-            ExtraResources extraResources
-    ) {
-        this.clazz = clazz;
-        this.briefName = briefName;
-        this.codeName = codeName;
-        this.displayName = displayName;
-        this.requirement = requirement;
-        this.extraResources = extraResources;
+    public static <T extends AbstractAlgorithm> Builder<T> builder(Class<T> clazz) {
+        return new Builder<>(clazz);
     }
 
     public ExtraResources getExtraResources() {
@@ -91,6 +79,18 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         return displayName;
     }
 
+    public boolean isSupportJitter() {
+        return supportJitter;
+    }
+
+    public List<QualityPreset> getQualityPresets() {
+        return qualityPresets;
+    }
+
+    public boolean isCustomUpscaleRatio() {
+        return customUpscaleRatio;
+    }
+
     public T createNewInstance() {
         try {
             return this.clazz.getDeclaredConstructor().newInstance();
@@ -112,5 +112,65 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         }
         AlgorithmDescription<?> that = (AlgorithmDescription<?>) o;
         return Objects.equals(uuid, that.uuid);
+    }
+
+    public static class Builder<T extends AbstractAlgorithm> {
+        private final Class<T> clazz;
+        private String briefName;
+        private String codeName;
+        private String displayName;
+        private Requirement requirement = Requirement.nothing();
+        private ExtraResources extraResources = ExtraResources.builder().build();
+        private boolean supportJitter = false;
+        private List<QualityPreset> qualityPresets = List.of();
+        private boolean customUpscaleRatio = true;
+
+        private Builder(Class<T> clazz) {
+            this.clazz = clazz;
+        }
+
+        public Builder<T> briefName(String briefName) {
+            this.briefName = briefName;
+            return this;
+        }
+
+        public Builder<T> codeName(String codeName) {
+            this.codeName = codeName;
+            return this;
+        }
+
+        public Builder<T> displayName(String displayName) {
+            this.displayName = displayName;
+            return this;
+        }
+
+        public Builder<T> requirement(Requirement requirement) {
+            this.requirement = requirement;
+            return this;
+        }
+
+        public Builder<T> extraResources(ExtraResources extraResources) {
+            this.extraResources = extraResources;
+            return this;
+        }
+
+        public Builder<T> supportJitter(boolean supportJitter) {
+            this.supportJitter = supportJitter;
+            return this;
+        }
+
+        public Builder<T> qualityPresets(List<QualityPreset> qualityPresets) {
+            this.qualityPresets = qualityPresets;
+            return this;
+        }
+
+        public Builder<T> customUpscaleRatio(boolean customUpscaleRatio) {
+            this.customUpscaleRatio = customUpscaleRatio;
+            return this;
+        }
+
+        public AlgorithmDescription<T> build() {
+            return new AlgorithmDescription<>(this);
+        }
     }
 }

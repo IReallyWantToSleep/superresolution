@@ -118,11 +118,6 @@ public class FSR2 extends AbstractAlgorithm {
         return Math.toIntExact(output.handle());
     }
 
-    @Override
-    public boolean isSupportJitter() {
-        return true;
-    }
-
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
         super.dispatch(dispatchResource);
         if (fsr2Context == null) {

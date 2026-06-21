@@ -58,10 +58,7 @@ public class AlgorithmManager {
     }
 
     public static boolean supportsJitter(AlgorithmDescription<?> type) {
-        return type == AlgorithmDescriptions.FSR2
-                || type == AlgorithmDescriptions.FSR
-                || type == AlgorithmDescriptions.XESS
-                || type == AlgorithmDescriptions.DLSS;
+        return type != null && type.isSupportJitter();
     }
 
     public static int getConfiguredJitterSequenceLength() {
@@ -145,7 +142,7 @@ public class AlgorithmManager {
     }
 
     public static Vector2f getPreviousJitterOffset() {
-        if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
+        if (supportsJitter(SuperResolution.algorithmDescription)) {
             return Fsr2Utils.ffxFsr2GetJitterOffset(
                     RenderHandlerManager.getFrameCount() - 1,
                     Fsr2Utils.ffxFsr2GetJitterPhaseCount(
@@ -158,7 +155,7 @@ public class AlgorithmManager {
     }
 
     public static Vector2f getJitterOffset() {
-        if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
+        if (supportsJitter(SuperResolution.algorithmDescription)) {
             return Fsr2Utils.ffxFsr2GetJitterOffset(
                     RenderHandlerManager.getFrameCount(),
                     Fsr2Utils.ffxFsr2GetJitterPhaseCount(
@@ -171,7 +168,7 @@ public class AlgorithmManager {
     }
 
     public static int getJitterSequenceLength() {
-        if (SuperResolutionAPI.getCurrentAlgorithm() != null && SuperResolutionAPI.getCurrentAlgorithm().isSupportJitter()) {
+        if (supportsJitter(SuperResolution.algorithmDescription)) {
             return getConfiguredJitterSequenceLength();
         }
         return 0;

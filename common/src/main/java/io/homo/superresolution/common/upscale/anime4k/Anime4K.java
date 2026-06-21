@@ -20,7 +20,6 @@ package io.homo.superresolution.common.upscale.anime4k;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
@@ -36,7 +35,6 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
-import net.minecraft.network.chat.Component;
 import org.joml.Vector3i;
 
 import java.util.*;
@@ -230,26 +228,6 @@ public class Anime4K extends AbstractAlgorithm {
     @Override
     public int getOutputTextureId() {
         return Math.toIntExact(outputColorTexture.handle());
-    }
-
-    @Override
-    public boolean isSupportJitter() {
-        return false;
-    }
-
-    @Override
-    public List<QualityPreset> getQualityPresets() {
-        return List.of(
-                new QualityPreset()
-                        .setUpscaleRatio(2.0f)
-                        .setName(Component.literal("2x"))
-                        .setCodeName("anime4k_2x")
-        );
-    }
-
-    @Override
-    public boolean isCustomUpscaleRatio() {
-        return false;
     }
 
     private ITexture resolveTexture(String name) {

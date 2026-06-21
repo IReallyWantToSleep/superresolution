@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.gui;
 
-import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
@@ -793,27 +792,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         if (algorithmDescription == null) {
             return List.of();
         }
-
-        if (SuperResolution.algorithmDescription != null
-                && SuperResolution.algorithmDescription.equals(algorithmDescription)
-                && SuperResolution.currentAlgorithm != null) {
-            return SuperResolution.currentAlgorithm.getQualityPresets();
-        }
-
-        AbstractAlgorithm algorithm = null;
-        try {
-            algorithm = algorithmDescription.createNewInstance();
-            return new ArrayList<>(algorithm.getQualityPresets());
-        } catch (Exception ignored) {
-            return List.of();
-        } finally {
-            if (algorithm != null) {
-                try {
-                    algorithm.destroy();
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        return new ArrayList<>(algorithmDescription.getQualityPresets());
     }
 
     private QualityPresetOption resolveQualityPresetOption(List<QualityPresetOption> options, float ratio) {
@@ -847,27 +826,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         if (algorithmDescription == null) {
             return true;
         }
-
-        if (SuperResolution.algorithmDescription != null
-                && SuperResolution.algorithmDescription.equals(algorithmDescription)
-                && SuperResolution.currentAlgorithm != null) {
-            return SuperResolution.currentAlgorithm.isCustomUpscaleRatio();
-        }
-
-        AbstractAlgorithm algorithm = null;
-        try {
-            algorithm = algorithmDescription.createNewInstance();
-            return algorithm.isCustomUpscaleRatio();
-        } catch (Exception ignored) {
-            return true;
-        } finally {
-            if (algorithm != null) {
-                try {
-                    algorithm.destroy();
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        return algorithmDescription.isCustomUpscaleRatio();
     }
 
     private Map<String, List<QualityPresetOption>> getQualityPresetOptionsCache() {

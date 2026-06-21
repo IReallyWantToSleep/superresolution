@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.upscale.xess;
 
 import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -31,59 +30,13 @@ import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.srapi.*;
-import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
-import java.util.List;
 
 public class XeSS extends SRApiAlgorithm {
-
-    @Override
-    public boolean isSupportJitter() {
-        return true;
-    }
-
-    @Override
-    public List<QualityPreset> getQualityPresets() {
-        return List.of(
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.ultra_performance"))
-                        .setCodeName("xess_ultra_performance")
-                        .setUpscaleRatio(3.0f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.performance"))
-                        .setCodeName("xess_performance")
-                        .setUpscaleRatio(2.3f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.balanced"))
-                        .setCodeName("xess_balanced")
-                        .setUpscaleRatio(2.0f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.quality"))
-                        .setCodeName("xess_quality")
-                        .setUpscaleRatio(1.7f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.ultra_quality"))
-                        .setCodeName("xess_ultra_quality")
-                        .setUpscaleRatio(1.5f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.ultra_quality_plus"))
-                        .setCodeName("xess_ultra_quality_plus")
-                        .setUpscaleRatio(1.3f),
-                new QualityPreset()
-                        .setName(Component.translatable("superresolution.algo.preset.xess.native_aa"))
-                        .setCodeName("xess_native_aa")
-                        .setUpscaleRatio(1.0f)
-        );
-    }
-
-    @Override
-    public boolean isCustomUpscaleRatio() {
-        return false;
-    }
 
     @Override
     protected void recreateSRApiContext(InitializationDescription desc) {

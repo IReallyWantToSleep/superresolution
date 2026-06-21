@@ -23,8 +23,6 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachm
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.impl.Destroyable;
 
-import java.util.List;
-
 public abstract class AbstractAlgorithm implements Destroyable {
     protected InputResourceSet resources;
     protected InitializationDescription initDesc = new InitializationDescription();
@@ -97,17 +95,5 @@ public abstract class AbstractAlgorithm implements Destroyable {
      */
     public int getOutputTextureId() {
         return getOutputFrameBuffer().getTextureId(FrameBufferAttachmentType.Color);
-    }
-
-    public boolean isSupportJitter() {
-        return false;
-    }
-
-    public List<QualityPreset> getQualityPresets() {
-        return List.of();
-    }
-
-    public boolean isCustomUpscaleRatio() {
-        return true;
     }
 }
