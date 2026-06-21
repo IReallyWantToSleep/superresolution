@@ -82,6 +82,7 @@ public class AlgorithmDescriptions {
                     "AMD FidelityFX Super Resolution",
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.LINUX))
                             .requiredGlExtension("GL_EXT_memory_object")
                             .requiredGlExtension("GL_EXT_semaphore")
                             .glMajorVersion(4)

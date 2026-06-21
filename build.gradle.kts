@@ -24,8 +24,6 @@ import java.io.InputStreamReader
 
 plugins {
     id("net.neoforged.moddev") version "2.0.141" apply false
-    //id("com.gradleup.shadow") version "9.4.2" apply false
-    //id("systems.manifold.manifold-gradle-plugin") version "0.0.2-alpha"
     id("multiversion")
     id("multiversion-neoform")
 }
