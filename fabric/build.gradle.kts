@@ -189,6 +189,7 @@ loom {
             //shut up again
             vmArg("-Dsodium.checks.issue2561=false")
             programArg("--graphicsBackend=vulkan")
+            programArg("--renderDebugLabels=true")
 
             ideConfigGenerated(true)
             runDir("../runs/fabric")

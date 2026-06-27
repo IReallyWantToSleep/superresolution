@@ -39,7 +39,10 @@ public class LevelRendererMixinCommon {
     #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
     private void onResizePostChain(PostChain instance, int w, int h) {
-        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) return;
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+            instance.resize(w,h);
+            return;
+        }
         instance.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
     }
     #endif

@@ -336,8 +336,8 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
 
     @Override
     public void onRenderWorldEnd(CallType type) {
-        updateRenderTarget();
-        updateRenderTargetSize();
+        //updateRenderTarget();
+        //updateRenderTargetSize();
     }
 
     @Override
@@ -352,20 +352,20 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
 
     @Override
     public void onProcessPostChain(PostChain postChain) {
-        #if MC_VER < MC_1_21_4
-        int renderWidth = RenderHandlerManager.getScreenWidth();
-        int renderHeight = RenderHandlerManager.getScreenHeight();
-        //修复PostChain中的RenderTarget大小不正确
-        for (com.mojang.blaze3d.pipeline.RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
-            if (renderTarget.width != renderWidth ||
-                    renderTarget.height != renderHeight ||
-                    ((PostChainAccessor) postChain).getScreenWidth() != renderWidth ||
-                    ((PostChainAccessor) postChain).getScreenHeight() != renderHeight) {
-                postChain.resize(renderWidth, renderHeight);
-                break;
-            }
-        }
-        #endif
+        //#if MC_VER < MC_1_21_4
+        //int renderWidth = RenderHandlerManager.getScreenWidth();
+        //int renderHeight = RenderHandlerManager.getScreenHeight();
+        ////修复PostChain中的RenderTarget大小不正确
+        //for (com.mojang.blaze3d.pipeline.RenderTarget renderTarget : ((PostChainAccessor) postChain).getFullSizedTargets()) {
+        //    if (renderTarget.width != renderWidth ||
+        //            renderTarget.height != renderHeight ||
+        //            ((PostChainAccessor) postChain).getScreenWidth() != renderWidth ||
+        //            ((PostChainAccessor) postChain).getScreenHeight() != renderHeight) {
+        //        postChain.resize(renderWidth, renderHeight);
+        //        break;
+        //    }
+        //}
+        //#endif
     }
 
     @Override
