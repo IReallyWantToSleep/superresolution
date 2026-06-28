@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.minecraft.handler;
 
+import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
@@ -50,5 +51,11 @@ public interface IMinecraftRenderHandler extends Destroyable {
 
     default ITexture getDepthTexture() {
         return getScaledRenderTarget().getTexture(FrameBufferAttachmentType.AnyDepth);
+    }
+
+    default void renderImGuiDebug(ImGuiDebugContext ctx) {
+    }
+
+    default void collectDebugTextures(ImGuiDebugContext ctx) {
     }
 }

@@ -10,6 +10,8 @@ plugins {
 
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
+val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
+val imguiVersion = if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
 
 repositories {
     maven {
@@ -107,9 +109,9 @@ neoForge {
             ideName = "NeoForge ${name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${project.path})"
 
             if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
-                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-app:1.87.5"))
-                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:1.87.5"))
-                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:1.87.5"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-app:$imguiVersion"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:$imguiVersion"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:$imguiVersion"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-windows"))
@@ -132,14 +134,17 @@ neoForge {
 dependencies {
     implementation("org.anarres:jcpp:1.4.14")
 
-    val imguiApp = implementation("io.github.spair:imgui-java-app:1.87.5")
+    val imguiApp = implementation("io.github.spair:imgui-java-app:$imguiVersion")
     if (imguiApp != null) "libraries"(imguiApp)
+    if (isDevBuild && imguiApp != null) jarJar(imguiApp)
 
-    val imguiBinding = implementation("io.github.spair:imgui-java-binding:1.87.5")
+    val imguiBinding = implementation("io.github.spair:imgui-java-binding:$imguiVersion")
     if (imguiBinding != null) "libraries"(imguiBinding)
+    if (isDevBuild && imguiBinding != null) jarJar(imguiBinding)
 
-    val imguiLwjgl = implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
+    val imguiLwjgl = implementation("io.github.spair:imgui-java-lwjgl3:$imguiVersion")
     if (imguiLwjgl != null) "libraries"(imguiLwjgl)
+    if (isDevBuild && imguiLwjgl != null) jarJar(imguiLwjgl)
 
 
     if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("26.2")) {

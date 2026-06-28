@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.minecraft.handler.shadercompat;
 
 import com.google.common.collect.ImmutableList;
+import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetType;
@@ -429,5 +430,64 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         renderTargets.clear();
         InteropResourcesConverter.destroy();
         SRCompatV2Processor.destroyPipelineCache();
+    }
+
+    @Override
+    public void renderImGuiDebug(ImGuiDebugContext ctx) {
+        ctx.property("Shader Loading", isLoadingShader());
+        ctx.property("Cached Shader Pack Path", getCachedShaderPackPath());
+        ctx.property("Shader Pack Present", irisHasShaderPack());
+        ctx.property("Shader Pack In Use", irisApiIsShaderPackInUse());
+        ctx.property("Compat Config Loaded", shaderCompatData != null);
+        if (shaderCompatData != null) {
+            ctx.property("Compat Config Version", shaderCompatData.version);
+        }
+    }
+
+    @Override
+    public void collectDebugTextures(ImGuiDebugContext ctx) {
+        ctx.addFramebufferTextures("origin_render_target", "Origin Render Target", getFullSizeRenderTarget());
+        ctx.addFramebufferTextures("scaled_render_target", "Scaled Render Target", getScaledRenderTarget());
+
+        ShaderCompatTextureInfo colorInfo = getTextureInfo("colorTexture");
+        ShaderCompatTextureInfo depthInfo = getTextureInfo("depthTexture");
+        ShaderCompatTextureInfo motionVectorsInfo = getTextureInfo("motionVectorsTexture");
+        ShaderCompatTextureInfo exposureInfo = getTextureInfo("exposureTexture");
+
+        if (colorInfo != null) {
+            addTextureInfo(ctx, "dispatcher_color", "Dispatcher Color", colorInfo);
+        }
+        if (depthInfo != null) {
+            addTextureInfo(ctx, "dispatcher_depth", "Dispatcher Depth", depthInfo);
+        }
+        if (motionVectorsInfo != null) {
+            addTextureInfo(ctx, "dispatcher_mv", "Dispatcher Motion Vectors", motionVectorsInfo);
+        }
+        if (exposureInfo != null) {
+            addTextureInfo(ctx, "dispatcher_exposure", "Dispatcher Exposure", exposureInfo);
+        }
+
+    }
+
+    private void addTextureInfo(ImGuiDebugContext ctx, String id, String label, ShaderCompatTextureInfo info) {
+        ctx.addTexture(id + ".source", label + " Source", info.getSourceTexture(), "Source Texture", true);
+        ctx.addTexture(id + ".internal", label + " Internal", info.getInternalTexture(), "Internal Texture", true);
+        ctx.addTexture(id + ".preprocess_in", label + " PreProcess Input", info.getPreProcessInputTexture(), "PreProcess Input", true);
+        ctx.addTexture(id + ".preprocess_out", label + " PreProcess Output", info.getPreProcessOutputTexture(), "PreProcess Output", true);
+    }
+
+    @Nullable
+    private ShaderCompatTextureInfo getTextureInfo(String fieldName) {
+        initShaderCompatDispatcherReflection();
+        if (shaderCompatDispatcherReflectionError != null) {
+            return null;
+        }
+        try {
+            Class<?> dispatcherClass = Class.forName("io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher");
+            Field field = dispatcherClass.getField(fieldName);
+            return (ShaderCompatTextureInfo) field.get(null);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 }

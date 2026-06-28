@@ -5,6 +5,7 @@ import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.add
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.dependencies
+import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
@@ -13,6 +14,8 @@ plugins {
 
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
+val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
+val imguiVersion = if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
 
 base {
     archivesName.set("super_resolution-forge-${versionConfig.common.modArtifactMinecraftVer}")
@@ -78,9 +81,9 @@ legacyForge {
     version = "${versionConfig.common.minecraftVersion}-${versionConfig.forge.loaderVersion}"
     runs {
         configureEach {
-            additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-app:1.87.5"))
-            additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:1.87.5"))
-            additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:1.87.5"))
+            additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-app:$imguiVersion"))
+            additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:$imguiVersion"))
+            additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:$imguiVersion"))
             additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}"))
             additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("net.neoforged:bus:8.0.5"))
             additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
@@ -130,9 +133,14 @@ dependencies {
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
     compileOnly("org.jetbrains:annotations:25.0.0")
     implementation("org.anarres:jcpp:1.4.14")
-    implementation("io.github.spair:imgui-java-app:1.87.5")
-    implementation("io.github.spair:imgui-java-binding:1.87.5")
-    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
+    val imguiAppDep = implementation("io.github.spair:imgui-java-app:$imguiVersion")
+    if (isDevBuild && imguiAppDep != null) jarJar(imguiAppDep)
+
+    val imguiBindingDep = implementation("io.github.spair:imgui-java-binding:$imguiVersion")
+    if (isDevBuild && imguiBindingDep != null) jarJar(imguiBindingDep)
+
+    val imguiLwjglDep = implementation("io.github.spair:imgui-java-lwjgl3:$imguiVersion")
+    if (isDevBuild && imguiLwjglDep != null) jarJar(imguiLwjglDep)
 
     implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it) }
     implementation(files(mergeVmaNatives.get().archiveFile))

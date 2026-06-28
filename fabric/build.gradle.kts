@@ -4,11 +4,13 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom-remap") version "1.16.3"
+    id("net.fabricmc.fabric-loom") version "1.16.3"
 }
 
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
+val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
+val imguiVersion = if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
 
 fun findFirstConfiguration(vararg names: String): String {
     return names.firstOrNull { name -> configurations.findByName(name) != null } ?: names.last()
@@ -94,9 +96,14 @@ dependencies {
     }
 
     implementation("net.lenni0451:Reflect:1.3.4")
-    implementation("io.github.spair:imgui-java-app:1.87.5")
-    implementation("io.github.spair:imgui-java-binding:1.87.5")
-    implementation("io.github.spair:imgui-java-lwjgl3:1.87.5")
+    val imguiAppDep = implementation("io.github.spair:imgui-java-app:$imguiVersion")
+    if (isDevBuild && imguiAppDep != null) include(imguiAppDep)
+
+    val imguiBindingDep = implementation("io.github.spair:imgui-java-binding:$imguiVersion")
+    if (isDevBuild && imguiBindingDep != null) include(imguiBindingDep)
+
+    val imguiLwjglDep = implementation("io.github.spair:imgui-java-lwjgl3:$imguiVersion")
+    if (isDevBuild && imguiLwjglDep != null) include(imguiLwjglDep)
     implementation("org.anarres:jcpp:1.4.14")
     implementation("org.antlr:antlr4-runtime:4.13.1")
 

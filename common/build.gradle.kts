@@ -13,6 +13,7 @@ plugins {
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
 @Suppress("UNCHECKED_CAST")
 val getCurrentNeoFormVersion = rootProject.extra["getCurrentNeoFormVersion"] as () -> String
+val imguiVersion = if (versionConfig.common.minecraftVersion >= "26.1") "1.92.0" else "1.90.0"
 
 val isNewVersion = versionConfig.common.minecraftVersion > "1.20.1"
 if (isNewVersion) {
@@ -99,9 +100,9 @@ fun DependencyHandler.modCompileOnlyCompat(notation: Any) =
 dependencies {
     compileOnly("org.anarres:jcpp:1.4.14")
     compileOnly("org.spongepowered:mixin:0.8.7")
-    compileOnly("io.github.spair:imgui-java-app:1.87.5")
-    compileOnly("io.github.spair:imgui-java-binding:1.87.5")
-    compileOnly("io.github.spair:imgui-java-lwjgl3:1.87.5")
+    compileOnly("io.github.spair:imgui-java-app:$imguiVersion")
+    compileOnly("io.github.spair:imgui-java-binding:$imguiVersion")
+    compileOnly("io.github.spair:imgui-java-lwjgl3:$imguiVersion")
     compileOnly("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
     compileOnly("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")
 

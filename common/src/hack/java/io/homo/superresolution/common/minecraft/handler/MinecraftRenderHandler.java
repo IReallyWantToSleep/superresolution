@@ -25,6 +25,7 @@ import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.CaptureMode;
+import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.*;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -496,5 +497,32 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
 
     public ITexture getDepthTexture() {
         return depthTexture;
+    }
+
+    @Override
+    public void renderImGuiDebug(ImGuiDebugContext ctx) {
+        ctx.property("Initialized", initialized);
+        ctx.property("Render Target Replacement", SuperResolutionConfig.isEnableUpscale());
+        ctx.property("Capture Mode", SuperResolutionConfig.getCaptureMode());
+        ctx.property("Render Targets Cached", renderTargets.size());
+    }
+
+    @Override
+    public void collectDebugTextures(ImGuiDebugContext ctx) {
+        ctx.addFramebufferTextures("full_size_render_target", "Full Size Render Target", getFullSizeRenderTarget());
+        ctx.addFramebufferTextures("scaled_render_target", "Scaled Render Target", getScaledRenderTarget());
+        ctx.addTexture("main_color", "Main Color Texture", colorTexture, null, true);
+        ctx.addTexture("main_depth", "Main Depth Texture", depthTexture, null, true);
+        ctx.addTexture("empty_motion_vectors", "Empty Motion Vector Texture", emptyMotionVectorTexture, null, true);
+
+        callOnRenderTargets((frameBuffer, type) ->
+                ctx.addFramebufferTextures(
+                        "minecraft_render_target_" + type.name().toLowerCase(),
+                        "Minecraft Render Target " + type.name(),
+                        frameBuffer,
+                        null,
+                        true
+                )
+        );
     }
 }
