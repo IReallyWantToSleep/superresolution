@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.mixin.core;
 
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.spongepowered.asm.mixin.Mixin;
 
 #if MC_VER > MC_1_21_11
@@ -44,7 +45,7 @@ public class ForceOpenGLVersion_WindowMixin {
             )
     )
     public int modifyGlMajorVersion(int value) {
-        return 4;
+        return GraphicsCapabilities.getHighestOpenGLVersion().left();
     }
     #if MC_VER == MC_1_21_11
     @org.spongepowered.asm.mixin.injection.ModifyConstant(
@@ -64,7 +65,7 @@ public class ForceOpenGLVersion_WindowMixin {
     )
     #endif
     public int modifyGlMinorVersion(int value) {
-        return 6;
+        return GraphicsCapabilities.getHighestOpenGLVersion().right();
     }
     #endif
 }

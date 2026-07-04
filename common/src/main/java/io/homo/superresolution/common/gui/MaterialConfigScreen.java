@@ -94,6 +94,8 @@ import java.util.function.Function;
 public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final String ABOUT_MODRINTH_URL = "https://modrinth.com/mod/superresolution";
     private static final String ABOUT_GITHUB_URL = "https://github.com/187J3X1-114514/superresolution";
+    private static final String ABOUT_WEBSITE_URL = "https://sr.187j3x1-114514.org/";
+    private static final String ABOUT_WIKI_URL = "https://sr.187j3x1-114514.org/docs";
     private static final long CONTENT_TRANSITION_FADE_OUT_DURATION_MS = 150L;
     private static final long CONTENT_TRANSITION_FADE_IN_DURATION_MS = 150L;
     private static final long CONTENT_TRANSITION_TOTAL_DURATION_MS =
@@ -1433,11 +1435,29 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.about"));
         container.addChild(createAboutBrandCard());
 
+        TitlePill authorSection = createSectionPill(
+                Text.translatable("superresolution.screen.info.text.author").getString()
+        );
+        authorSection.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(authorSection);
+
+        ContributorInfo author = new ContributorInfo(
+                "187J3X1",
+                Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.desc").getString(),
+                "https://github.com/187J3X1-114514",
+                "/assets/super_resolution/textures/gui/contributors/114514.png"
+        );
+
+        InfoCard authorCard = new InfoCard();
+        authorCard.addChild(createContributorRow(author));
+        container.addChild(authorCard);
+
         ContainerWidget contributorSectionRow = new ContainerWidget();
         contributorSectionRow.layout().setFlexDirection(YogaFlexDirection.ROW);
         contributorSectionRow.layout().setWidthPercent(100);
         contributorSectionRow.layout().setAlignItems(YogaAlign.CENTER);
         contributorSectionRow.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+        contributorSectionRow.layout().setMargin(YogaEdge.TOP, 12);
         contributorSectionRow.layout().setMargin(YogaEdge.BOTTOM, 6);
 
         TitlePill contributorSection = createSectionPill(
@@ -1456,7 +1476,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         InfoCard contributorsCard = new InfoCard();
         List<ContributorInfo> contributors = new ArrayList<>(List.of(
-                new ContributorInfo("187J3X1", Text.translatable("superresolution.screen.config.info.about.contributor.187j3x1.desc").getString(), "https://github.com/187J3X1-114514", "/assets/super_resolution/textures/gui/contributors/114514.png"),
                 new ContributorInfo("异世界美西螈", Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.desc").getString(), "https://github.com/ysjmxy", "/assets/super_resolution/textures/gui/contributors/mxy.png"),
                 new ContributorInfo("yu", Text.translatable("superresolution.screen.config.info.about.contributor.yu.desc").getString(), "https://github.com/yu234567", "/assets/super_resolution/textures/gui/contributors/yu.png"),
                 new ContributorInfo("Enaium", Text.translatable("superresolution.screen.config.info.about.contributor.enaium.desc").getString(), "https://github.com/Enaium", "/assets/super_resolution/textures/gui/contributors/Enaium.png"),
@@ -1472,6 +1491,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("Tahnass", Text.translatable("superresolution.screen.config.info.about.contributor.tahnass.desc").getString(), "https://github.com/Tahnass", "/assets/super_resolution/textures/gui/contributors/tahnass.png"),
                 new ContributorInfo("StarsShine11904", Text.translatable("superresolution.screen.config.info.about.contributor.starsshine11904.desc").getString(), "https://github.com/StarsShine11904", "/assets/super_resolution/textures/gui/contributors/StarsShine11904.png"),
                 new ContributorInfo("暇じゃない暇人", Text.translatable("superresolution.screen.config.info.about.contributor.nohimazin.desc").getString(), "https://github.com/nohimazin", "/assets/super_resolution/textures/gui/contributors/nohimazin.png"),
+                new ContributorInfo("HaringPro", Text.translatable("superresolution.screen.config.info.about.contributor.haringpro.desc").getString(), "https://github.com/HaringPro", "/assets/super_resolution/textures/gui/contributors/haringpro.png"),
                 new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png")
         ));
         Collections.shuffle(contributors);
@@ -1629,6 +1649,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .size(MaterialButtonSize.Small);
         githubButton.onClick(e -> openExternalLink(ABOUT_GITHUB_URL));
         actionColumn.addChild(githubButton);
+
+        MaterialButton websiteButton = MaterialButton.tonal(Text.translatable("superresolution.screen.info.link.official_website").getString())
+                .icon(MaterialSymbols.iconOpenInNew())
+                .size(MaterialButtonSize.Small);
+        websiteButton.onClick(e -> openExternalLink(ABOUT_WEBSITE_URL));
+        actionColumn.addChild(websiteButton);
+
+        MaterialButton wikiButton = MaterialButton.tonal(Text.translatable("superresolution.screen.info.link.wiki").getString())
+                .icon(MaterialSymbols.iconOpenInNew())
+                .size(MaterialButtonSize.Small);
+        wikiButton.onClick(e -> openExternalLink(ABOUT_WIKI_URL));
+        actionColumn.addChild(wikiButton);
 
         row.addChild(brandColumn);
         row.addChild(actionColumn);
