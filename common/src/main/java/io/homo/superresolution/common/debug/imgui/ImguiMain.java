@@ -62,7 +62,7 @@ public class ImguiMain implements Destroyable {
         ImGui.createContext();
         ImGuiIO io = ImGui.getIO();
         io.getFonts().setFreeTypeRenderer(true);
-        io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
+        //io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
         loadCustomFont(io);
         imGuiGlfw.init(MinecraftWindow.getWindowHandle(), true);
         imGuiGl3.init();
@@ -80,7 +80,7 @@ public class ImguiMain implements Destroyable {
             byte[] fontData = fontStream.readAllBytes();
             ImFontConfig fontConfig = new ImFontConfig();
             try {
-                fontConfig.setName("HarmonyOS Sans Bold");
+                fontConfig.setName("Font Bold");
                 #if MC_VER < MC_26_1_2
                 fontConfig.setFontBuilderFlags(ImGuiFreeTypeBuilderFlags.Bold);
                 #endif

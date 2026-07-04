@@ -419,9 +419,16 @@ public final class SuperResolution implements Destroyable {
         if (isInit) {
             return;
         }
+        #if IS_DEV == 1
+        if (SuperResolutionConfig.isEnableImgui()) {
+            new ImguiMain();
+        }
+        #else
         if (Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui()) {
             new ImguiMain();
         }
+        #endif
+
 
         isInit = true;
         if (!B3DVulkanBridge.isB3DVulkanBackend()) {

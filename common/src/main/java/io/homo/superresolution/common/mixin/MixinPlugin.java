@@ -47,7 +47,11 @@ public class MixinPlugin implements IMixinConfigPlugin {
         return shouldApplyMixinByName(mixinName) && (
                 switch (mixinClassify) {
                     case "core", "gui", "compat" -> true;
+                    #if IS_DEV == 1
+                    case "debug" -> true;
+                    #else
                     case "debug" -> Platform.currentPlatform.isDevelopmentEnvironment();
+                    #endif
                     default -> false;
                 }
         );
