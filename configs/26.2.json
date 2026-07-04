@@ -1,5 +1,5 @@
 {
-    "skip_build": true,
+    "skip_build": false,
     "unobfuscated": true,
     "common": {
         "java_version": 25,

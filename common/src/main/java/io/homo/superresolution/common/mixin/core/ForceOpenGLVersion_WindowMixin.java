@@ -19,10 +19,7 @@
 package io.homo.superresolution.common.mixin.core;
 
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 
-import static org.lwjgl.glfw.GLFW.*;
 #if MC_VER > MC_1_21_11
 @Mixin(value = com.mojang.blaze3d.opengl.GlBackend.class)
 #else
@@ -39,14 +36,35 @@ public class ForceOpenGLVersion_WindowMixin {
     }
 
     #else
-    @org.spongepowered.asm.mixin.injection.Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", ordinal = 4), remap = false)
-    private void forceOpenGLVersion(int hint, int value) {
-        //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
-        //glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
-
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
-        glfwWindowHint(hint, value);
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(
+            method = "<init>",
+            constant = @org.spongepowered.asm.mixin.injection.Constant(
+                    intValue = 3,
+                    ordinal = 0
+            )
+    )
+    public int modifyGlMajorVersion(int value) {
+        return 4;
+    }
+    #if MC_VER == MC_1_21_11
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(
+            method = "<init>",
+            constant = @org.spongepowered.asm.mixin.injection.Constant(
+                    intValue = 3,
+                    ordinal = 1
+            )
+    )
+    #else
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(
+            method = "<init>",
+            constant = @org.spongepowered.asm.mixin.injection.Constant(
+                    intValue = 2,
+                    ordinal = 0
+            )
+    )
+    #endif
+    public int modifyGlMinorVersion(int value) {
+        return 6;
     }
     #endif
 }

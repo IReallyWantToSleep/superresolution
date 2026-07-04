@@ -54,7 +54,7 @@ public class ImguiMixin {
         }
     }
     #else
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;blitToScreen()V"), method = "runTick")
+    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay(Lcom/mojang/blaze3d/TracyFrameCapture;)V"), method = "runTick")
     private void onRender(CallbackInfo ci) {
         if (!(Platform.currentPlatform.isDevelopmentEnvironment() && SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {

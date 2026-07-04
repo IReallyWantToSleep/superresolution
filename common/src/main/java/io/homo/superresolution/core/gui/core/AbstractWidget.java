@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui.core;
 
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -36,7 +35,6 @@ import io.homo.superresolution.core.impl.Destroyable;
 import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -442,22 +440,6 @@ public abstract class AbstractWidget<
     public T setTooltip(Tooltip tooltip) {
         this.tooltipSupplier = () -> Optional.ofNullable(tooltip);
         return (T) this;
-    }
-
-    public List<String> collectTooltipChain() {
-        /*List<String> tooltips = new ArrayList<>();
-        AbstractWidget<?> current = this;
-        while (current != null) {
-            Optional<String> tooltip = current.getTooltip();
-            tooltip.filter(t -> !t.isEmpty()).ifPresent(tooltips::add);
-
-            if (!(current.getParent() instanceof AbstractWidget<?> parentWidget)) {
-                break;
-            }
-            current = parentWidget;
-        }
-        return tooltips;*/
-        return null;
     }
 
     public void destroy() {
