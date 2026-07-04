@@ -28,11 +28,11 @@ import org.spongepowered.asm.mixin.Mixin;
 #endif
 public class ForceOpenGLVersion_WindowMixin {
     #if MC_VER > MC_1_21_11
-    @org.spongepowered.asm.mixin.injection.Inject(method = "setWindowHints", at = @At(value = "TAIL"))
+    @org.spongepowered.asm.mixin.injection.Inject(method = "setWindowHints", at = @org.spongepowered.asm.mixin.injection.At(value = "TAIL"))
     private void forceOpenGLVersion(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         //#if !IS_VULKAN
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
+        org.lwjgl.glfw.GLFW.glfwWindowHint(org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR, GraphicsCapabilities.getHighestOpenGLVersion().left());
+        org.lwjgl.glfw.GLFW.glfwWindowHint(org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR, GraphicsCapabilities.getHighestOpenGLVersion().right());
         //#endif
     }
 
