@@ -29,6 +29,7 @@ import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.LargeStackExecutor;
 import io.homo.superresolution.srapi.*;
 import org.joml.Vector2f;
@@ -38,24 +39,27 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 
 public class DLSS extends SRApiAlgorithm {
-    private static boolean providerLoaded = false;
+    private static String loadedProviderLibraryPath;
+    private boolean usingStreamlineBackend;
 
     @Override
     protected void recreateSRApiContext(InitializationDescription desc) {
-        if (NativeLibManager.LIB_SUPER_RESOLUTION_DLSS == null) {
+        NativeLibManager.NativeLib providerLibrary = selectProviderLibrary();
+        if (providerLibrary == null) {
             return;
         }
-        Path lib = NativeLibManager.LIB_SUPER_RESOLUTION_DLSS.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
+        Path lib = providerLibrary.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
             return;
         }
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
-        if (!providerLoaded) {
+        String providerLibraryPath = lib.toAbsolutePath().toString();
+        if (!providerLibraryPath.equals(loadedProviderLibraryPath)) {
             SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
-                    lib.toAbsolutePath().toString(),
-                    "srGetDLSSUpscaleProviders",
-                    "srGetDLSSUpscaleProvidersCount");
-            providerLoaded = true;
+                    providerLibraryPath,
+                    usingStreamlineBackend ? "srGetStreamlineUpscaleProviders" : "srGetDLSSUpscaleProviders",
+                    usingStreamlineBackend ? "srGetStreamlineUpscaleProvidersCount" : "srGetDLSSUpscaleProvidersCount");
+            loadedProviderLibraryPath = providerLibraryPath;
         }
         // NGX's NVSDK_NGX_VULKAN_Init reserves a ~1MB buffer on the stack; run the whole native
         // init on a large-stack thread so it can't overflow HotSpot's 1MB default render-thread
@@ -103,9 +107,16 @@ public class DLSS extends SRApiAlgorithm {
                                 flags
                         )
                 ) {
-                    upscaleContextDesc.getExtraParams().setString("NGX_FEATURE_DLL_PATH",
-                            SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString()
-                    );
+                    String nativeLibraryDir = SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString();
+                    upscaleContextDesc.getExtraParams().setString("DLSS_BACKEND", usingStreamlineBackend ? "STREAMLINE" : "NGX");
+                    if (usingStreamlineBackend) {
+                        upscaleContextDesc.getExtraParams().setString("STREAMLINE_PLUGIN_PATH", nativeLibraryDir);
+                        upscaleContextDesc.getExtraParams().setString("STREAMLINE_LOG_PATH",
+                                SuperResolutionConstants.ERROR_DIR.getPath().toAbsolutePath().toString()
+                        );
+                    } else {
+                        upscaleContextDesc.getExtraParams().setString("NGX_FEATURE_DLL_PATH", nativeLibraryDir);
+                    }
                     upscaleContextDesc.getExtraParams().setInt32(
                             "DLSS_RENDER_PRESET",
                             SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
@@ -173,11 +184,23 @@ public class DLSS extends SRApiAlgorithm {
             desc.setViewSpaceToMetersFactor(1.0f);
             desc.setReset(consumeHistoryReset());
             desc.setFlags(0);
+            if (usingStreamlineBackend) {
+                desc.getExtraParams().setUint32("STREAMLINE_FRAME_INDEX", inFlightFrameResourcesSet.frameData.frameCount());
+            }
             SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
             if (code != SRReturnCode.OK) {
                 SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
             }
         }
+    }
+
+    private NativeLibManager.NativeLib selectProviderLibrary() {
+        if (Streamline.isSupportedOnCurrentVersion() && Streamline.isSupportedPlatform() && Streamline.isNativeAvailable()) {
+            usingStreamlineBackend = true;
+            return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE;
+        }
+        usingStreamlineBackend = false;
+        return NativeLibManager.LIB_SUPER_RESOLUTION_DLSS;
     }
 
 }

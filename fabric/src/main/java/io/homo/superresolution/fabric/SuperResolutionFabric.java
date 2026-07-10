@@ -20,11 +20,15 @@ package io.homo.superresolution.fabric;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.core.streamline.Streamline;
 import net.fabricmc.api.ModInitializer;
 
 public final class SuperResolutionFabric implements ModInitializer {
     @Override
     public void onInitialize() {
+        #if MC_VER == MC_26_2
+        Streamline.prepareEarly();
+        #endif
         SuperResolutionConfig.SPEC.load();
         SuperResolution.registerEvents();
     }

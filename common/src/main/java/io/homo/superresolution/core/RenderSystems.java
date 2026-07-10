@@ -27,12 +27,14 @@ import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VulkanException;
+import io.homo.superresolution.core.streamline.Streamline;
 import org.lwjgl.vulkan.KHRExternalMemoryFd;
 import org.lwjgl.vulkan.KHRExternalSemaphoreFd;
 import org.lwjgl.vulkan.VK;
 
 import static org.lwjgl.vulkan.EXTDebugUtils.VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 import static org.lwjgl.vulkan.EXTMutableDescriptorType.VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME;
+import static org.lwjgl.vulkan.EXTPrivateData.VK_EXT_PRIVATE_DATA_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRDedicatedAllocation.VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRExternalMemory.VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRExternalMemoryCapabilities.VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME;
@@ -113,6 +115,9 @@ public class RenderSystems {
         if (SuperResolutionConfig.isSkipInitVulkan()) {
             return;
         }
+        #if MC_VER != MC_26_2
+        Streamline.prepareEarly();
+        #endif
         try {
             VK.create();
         } catch (Exception | Error e) {
@@ -137,7 +142,8 @@ public class RenderSystems {
                 .addDeviceExtension("VK_NVX_binary_import")
                 .addDeviceExtension("VK_NVX_image_view_handle")
                 .addDeviceExtension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME)
-                .addDeviceExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+                .addDeviceExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+                .addDeviceExtension(VK_EXT_PRIVATE_DATA_EXTENSION_NAME);
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                     .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);

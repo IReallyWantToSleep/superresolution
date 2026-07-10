@@ -302,8 +302,8 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
     public void destroy() {
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
         commandBufferRing.destroy();
-        destroyResources();
         destroySRApiContext();
+        destroyResources();
         context = null;
     }
 
@@ -323,11 +323,11 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
         commandBufferRing.destroy();
 
-        destroyResources();
         destroySRApiContext();
+        destroyResources();
 
-        recreateSRApiContext(this.initDesc);
         createResources();
+        recreateSRApiContext(this.initDesc);
     }
 
     @Override
@@ -525,7 +525,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             vkDevice.getMainQueue().waitIdle();
             this.inputColorVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage())
+                            .usages(TextureUsages.create().sampler().storage().transferSource())
                             .format(SuperResolutionConfig.getInternalTextureFormat())
                             .type(TextureType.Texture2D)
                             .width(RenderHandlerManager.getRenderWidth())
@@ -537,7 +537,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
             this.inputDepthVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage())
+                            .usages(TextureUsages.create().sampler().storage().transferSource())
                             .format(TextureFormat.R32F)
                             .type(TextureType.Texture2D)
                             .width(RenderHandlerManager.getRenderWidth())
@@ -549,7 +549,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
             this.inputMotionVectorsVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage())
+                            .usages(TextureUsages.create().sampler().storage().transferSource())
                             .format(TextureFormat.RG16F)
                             .type(TextureType.Texture2D)
                             .width(RenderHandlerManager.getRenderWidth())
@@ -561,7 +561,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
 
             this.inputExposureVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage())
+                            .usages(TextureUsages.create().sampler().storage().transferSource())
                             .format(TextureFormat.R16F)
                             .type(TextureType.Texture2D)
                             .width(1)

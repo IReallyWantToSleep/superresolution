@@ -49,7 +49,16 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_DLSS = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
+    public static NativeLib LIB_STREAMLINE_INTERPOSER = null;
+    public static NativeLib LIB_STREAMLINE_COMMON = null;
+    public static NativeLib LIB_STREAMLINE_DLSS = null;
+    public static NativeLib LIB_STREAMLINE_DLSS_G = null;
+    public static NativeLib LIB_STREAMLINE_NVGX_DLSS = null;
+    public static NativeLib LIB_STREAMLINE_NVGX_DLSS_G = null;
     private static boolean nativeApiAvailable;
+    private static boolean librariesExtracted;
+    private static boolean librariesLoaded;
 
     static {
         OperatingSystem operatingSystem = new OperatingSystem();
@@ -58,10 +67,24 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
             LIB_SUPER_RESOLUTION_DLSS = new NativeLib("SuperResolutionDLSS", false, false);
+            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", true, false);
+            LIB_STREAMLINE_COMMON = new NativeLib("sl.common", true, false, true);
+            LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", true, false, true);
+            LIB_STREAMLINE_DLSS = new NativeLib("sl.dlss", false, false, true);
+            LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, false, true);
+            LIB_STREAMLINE_NVGX_DLSS = new NativeLib("nvngx_dlss", false, false, true);
+            LIB_STREAMLINE_NVGX_DLSS_G = new NativeLib("nvngx_dlssg", false, false, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_DLSS);
+            libs.add(LIB_STREAMLINE_COMMON);
+            libs.add(LIB_STREAMLINE_INTERPOSER);
+            libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
+            libs.add(LIB_STREAMLINE_DLSS);
+            libs.add(LIB_STREAMLINE_DLSS_G);
+            libs.add(LIB_STREAMLINE_NVGX_DLSS);
+            libs.add(LIB_STREAMLINE_NVGX_DLSS_G);
 
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
@@ -92,7 +115,10 @@ public class NativeLibManager {
         }
     }
 
-    public static void extract(Path path) {
+    public static synchronized void extract(Path path) {
+        if (librariesExtracted) {
+            return;
+        }
         LOGGER.info("开始提取依赖库文件");
         createLibraryDir(path);
         List<String> requiredFailures = new ArrayList<>();
@@ -136,9 +162,14 @@ public class NativeLibManager {
         }
 
         LOGGER.info("依赖库文件已提取到 {}", path);
+        librariesExtracted = true;
     }
 
-    public static void load(Path path) {
+    public static synchronized void load(Path path) {
+        if (librariesLoaded) {
+            nativeApiAvailable = true;
+            return;
+        }
         createLibraryDir(path);
         for (NativeLib lib : libs) {
             if (lib.extractedPath == null) {
@@ -157,7 +188,7 @@ public class NativeLibManager {
                     LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
                     System.load(f.getAbsolutePath());
                     lib.available = true;
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     if (lib.required) {
                         LOGGER.error("必要依赖库 {} 加载失败: {}", lib.fileName, e.getMessage());
                         throw new RuntimeException("必要依赖库加载失败: " + lib.fileName, e);
@@ -168,6 +199,7 @@ public class NativeLibManager {
                 }
             }
         }
+        librariesLoaded = true;
         nativeApiAvailable = true;
     }
 

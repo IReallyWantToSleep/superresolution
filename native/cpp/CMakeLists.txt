@@ -4,6 +4,7 @@ project(SuperResolution)
 option(SR_FSR "启用以支持FSR" ON)
 option(SR_XESS "启用以支持XESS" ON)
 option(SR_DLSS "启用以支持DLSS" ON)
+option(SR_STREAMLINE "启用以支持Streamline" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -72,6 +73,7 @@ endif()
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/third_party
+    ${PROJECT_SOURCE_DIR}/third_party/jni
 )
 
 add_subdirectory("SRNativeMain")
@@ -84,4 +86,8 @@ endif()
 
 if(SR_DLSS)
     add_subdirectory("SRNativeDLSS")
+endif()
+
+if(SR_STREAMLINE AND ON_WINDOWS)
+    add_subdirectory("SRNativeStreamline")
 endif()

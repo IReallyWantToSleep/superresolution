@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.neoforge.earlywindow;
 
+import io.homo.superresolution.core.streamline.Streamline;
 import net.neoforged.fml.loading.FMLConfig;
 import net.neoforged.neoforgespi.earlywindow.GraphicsBootstrapper;
 
@@ -29,6 +30,9 @@ public class NeoGraphicsBootstrapper implements GraphicsBootstrapper {
 
     @Override
     public void bootstrap(String[] arguments) {
+        #if MC_VER == MC_26_2
+        Streamline.prepareEarly();
+        #endif
         #if MC_VER >= MC_1_21_5
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, true);
         FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, "sr-early-window");

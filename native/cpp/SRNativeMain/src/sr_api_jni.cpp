@@ -12,7 +12,7 @@
 static JNIEnv *g_envForCallback = nullptr;
 
 void sr_message_callback_bridge(SRMessageType type, const wchar_t *message) {
-    if (!g_envForCallback || !message)
+    if (!message)
         return;
 
     try {
@@ -21,7 +21,7 @@ void sr_message_callback_bridge(SRMessageType type, const wchar_t *message) {
         std::wstring_convert<std::codecvt_utf8<wchar_t> > converter;
         std::string utf8msg = converter.to_bytes(wmsg);
 
-        java_log(g_envForCallback, const_cast<char *>(utf8msg.c_str()), (int) type);
+        java_log(utf8msg.c_str(), (int) type);
     } catch (const std::exception &e) {
         // Fallback: 如果wstring转换失败，尝试逐字符转换，跳过无效字符
         std::string fallback = "[wstring conversion failed: ";
@@ -36,7 +36,7 @@ void sr_message_callback_bridge(SRMessageType type, const wchar_t *message) {
             }
             ++p;
         }
-        java_log(g_envForCallback, const_cast<char *>(fallback.c_str()), (int) type);
+        java_log(fallback.c_str(), (int) type);
     }
 }
 
@@ -115,54 +115,12 @@ SRTextureResource fromJavaSRTextureResourceVK(JNIEnv *env, jobject obj) {
 }
 
 void *java_vkGetDeviceProcAddr(void *device, const char *name) {
-    if (!g_envForCallback) {
-        std::cout << "g_envForCallback is null!!!!!!!!!!!!!!" << std::endl;
-        return nullptr;
-    };
-
-    jclass cpp_helper = g_envForCallback->FindClass(JAVA_CPPHELPER_CLASS);
-    jmethodID methodID = g_envForCallback->GetStaticMethodID(
-        cpp_helper,
-        "CPP_vkGetDeviceProcAddr",
-        "(Ljava/lang/String;)J");
-
-    if (!methodID) {
-        g_envForCallback->DeleteLocalRef(cpp_helper);
-        std::cout << "methodID is null!!!!!!!!!!!!!!" << std::endl;
-        return nullptr;
-    }
-
-    jstring jmsg = g_envForCallback->NewStringUTF(name);
-    jlong jlongValue = g_envForCallback->CallStaticLongMethod(cpp_helper, methodID, jmsg);
-    g_envForCallback->DeleteLocalRef(jmsg);
-    g_envForCallback->DeleteLocalRef(cpp_helper);
-
+    jlong jlongValue = java_call_cpp_vk_get_device_proc_address(name);
     return reinterpret_cast<void *>(jlongValue);
 }
 
 void *java_glfwGetProcAddress(void *device, const char *name) {
-    if (!g_envForCallback) {
-        std::cout << "g_envForCallback is null!!!!!!!!!!!!!!" << std::endl;
-        return nullptr;
-    };
-
-    jclass cpp_helper = g_envForCallback->FindClass(JAVA_CPPHELPER_CLASS);
-    jmethodID methodID = g_envForCallback->GetStaticMethodID(
-        cpp_helper,
-        "CPP_glfwGetProcAddress",
-        "(Ljava/lang/String;)J");
-
-    if (!methodID) {
-        g_envForCallback->DeleteLocalRef(cpp_helper);
-        std::cout << "methodID is null!!!!!!!!!!!!!!" << std::endl;
-        return nullptr;
-    }
-
-    jstring jmsg = g_envForCallback->NewStringUTF(name);
-    jlong jlongValue = g_envForCallback->CallStaticLongMethod(cpp_helper, methodID, jmsg);
-    g_envForCallback->DeleteLocalRef(jmsg);
-    g_envForCallback->DeleteLocalRef(cpp_helper);
-
+    jlong jlongValue = java_call_cpp_glfw_get_proc_address(name);
     return reinterpret_cast<void *>(jlongValue);
 }
 
@@ -186,6 +144,7 @@ extern "C" {
         jlong extraParamsPtr,
         jint flags) {
         g_envForCallback = env;
+        init_java_bridge(env);
 
         SRCreateUpscaleContextDesc desc = {};
         desc.renderApiType = static_cast<SRRenderApiType>(renderApiType);
@@ -479,6 +438,7 @@ extern "C" {
         jstring getProvidersFuncName,
         jstring getProvidersCountFuncName) {
         g_envForCallback = env;
+        init_java_bridge(env);
 
         if (libPath == nullptr || getProvidersFuncName == nullptr || getProvidersCountFuncName == nullptr) {
             throwJavaException(env, "One or more input strings are null.");

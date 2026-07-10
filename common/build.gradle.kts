@@ -177,7 +177,7 @@ tasks.register<JavaCompile>("genJNIHeader") {
     val outputDir = file("../native/cpp/SRNativeMain/include")
 
     source = fileTree("../common/src/main/java") {
-        include("**/core/SuperResolutionNative.java", "**/thirdparty/nanovg/*.java")
+        include("**/core/SuperResolutionNative.java", "**/core/streamline/StreamlineNative.java", "**/thirdparty/nanovg/*.java")
     }
 
     classpath = mainSourceSet.compileClasspath + mainSourceSet.output

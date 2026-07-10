@@ -47,6 +47,7 @@ import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
 import net.minecraft.client.Minecraft;
@@ -508,6 +509,7 @@ public final class SuperResolution implements Destroyable {
             AlgorithmManager.destroy();
         }
         SuperResolutionNativeAPI.srShutdown();
+        Streamline.shutdown();
         RenderSystems.destroy();
     }
 }
