@@ -1,4 +1,6 @@
 #include "sr/sr_api.h"
+#include <algorithm>
+#include <condition_variable>
 #include <mutex>
 #include <vector>
 #include <cstring>
@@ -15,12 +17,51 @@
 #include <locale>
 #endif
 
-#include <unordered_set>
+struct SRLoadedProviderLibrary {
+    std::string path;
+#ifdef ON_WIN64
+    HMODULE handle = nullptr;
+#elif defined(ON_LINUX64)
+    void *handle = nullptr;
+#endif
+    uint64_t id = 0;
+    bool unloading = false;
+};
 
-static std::unordered_set<std::string> g_loadedLibraries;
+struct SRLoadedProviderEntry {
+    SRUpscaleProvider provider{};
+    uint64_t libraryId = 0;
+};
 
-static std::vector<SRUpscaleProvider> g_srLoadedUpscaleProviders;
+static std::vector<SRLoadedProviderLibrary> g_loadedLibraries;
+static std::vector<SRLoadedProviderEntry> g_srLoadedUpscaleProviders;
 static std::mutex g_providerMutex;
+static std::condition_variable g_providerCondition;
+static uint64_t g_nextLibraryId = 1;
+
+static void srCloseProviderLibrary(
+#ifdef ON_WIN64
+    HMODULE handle
+#elif defined(ON_LINUX64)
+    void *handle
+#endif
+) {
+    if (!handle) {
+        return;
+    }
+#ifdef ON_WIN64
+    FreeLibrary(handle);
+#elif defined(ON_LINUX64)
+    dlclose(handle);
+#endif
+}
+
+static auto srFindLoadedLibrary(const std::string &path) {
+    return std::find_if(g_loadedLibraries.begin(), g_loadedLibraries.end(),
+                        [&path](const SRLoadedProviderLibrary &library) {
+                            return library.path == path;
+                        });
+}
 
 static SRReturnCode srCopyExtraParams(SRContextExtraParams *dst, const SRContextExtraParams *src) {
     if (!dst) {
@@ -79,9 +120,9 @@ SR_API SRReturnCode srGetUpscaleProvider(
 
     std::lock_guard<std::mutex> lock(g_providerMutex);
 
-    for (const auto &provider: g_srLoadedUpscaleProviders) {
-        if (provider.providerId == providerId) {
-            *outProvider = provider;
+    for (const SRLoadedProviderEntry &entry: g_srLoadedUpscaleProviders) {
+        if (entry.provider.providerId == providerId) {
+            *outProvider = entry.provider;
             return SR_RETURN_CODE_OK;
         }
     }
@@ -90,14 +131,20 @@ SR_API SRReturnCode srGetUpscaleProvider(
 }
 
 SR_API SRReturnCode srShutdown() {
-    std::lock_guard<std::mutex> lock(g_providerMutex);
     bool allSuccess = true;
-    for (const auto &provider: g_srLoadedUpscaleProviders) {
-        if (provider.callbacks.pShutdown) {
-            SRReturnCode code = provider.callbacks.pShutdown();
-            if (code != SR_RETURN_CODE_OK) {
-                allSuccess = false;
+    std::vector<uint64_t> providerIds;
+    {
+        std::lock_guard<std::mutex> lock(g_providerMutex);
+        for (const SRLoadedProviderEntry &entry: g_srLoadedUpscaleProviders) {
+            if (std::find(providerIds.begin(), providerIds.end(), entry.provider.providerId) == providerIds.end()) {
+                providerIds.push_back(entry.provider.providerId);
             }
+        }
+    }
+
+    for (uint64_t providerId: providerIds) {
+        if (srUnloadUpscaleProviders(providerId) != SR_RETURN_CODE_OK) {
+            allSuccess = false;
         }
     }
 
@@ -173,8 +220,13 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     const std::string &getProvidersCountFuncName,
     SRMessageCallback messageCallback) {
     {
-        std::lock_guard<std::mutex> lock(g_providerMutex);
-        if (g_loadedLibraries.find(libPath) != g_loadedLibraries.end()) {
+        std::unique_lock<std::mutex> lock(g_providerMutex);
+        auto library = srFindLoadedLibrary(libPath);
+        while (library != g_loadedLibraries.end() && library->unloading) {
+            g_providerCondition.wait(lock);
+            library = srFindLoadedLibrary(libPath);
+        }
+        if (library != g_loadedLibraries.end()) {
             if (messageCallback) {
                 messageCallback(SR_MESSAGE_TYPE_INFO, L"Library already loaded, skipping.");
             }
@@ -236,11 +288,13 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         if (messageCallback) {
             messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to resolve provider functions.");
         }
-        #ifdef ON_WIN64
-        FreeLibrary(dll);
-        #elif defined(ON_LINUX64)
-        dlclose(handle);
-        #endif
+        srCloseProviderLibrary(
+#ifdef ON_WIN64
+            dll
+#elif defined(ON_LINUX64)
+            handle
+#endif
+        );
         return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
     }
 
@@ -249,11 +303,13 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         if (messageCallback) {
             messageCallback(SR_MESSAGE_TYPE_WARNING, L"No upscale providers found.");
         }
-        #ifdef ON_WIN64
-        FreeLibrary(dll);
-        #elif defined(ON_LINUX64)
-        dlclose(handle);
-        #endif
+        srCloseProviderLibrary(
+#ifdef ON_WIN64
+            dll
+#elif defined(ON_LINUX64)
+            handle
+#endif
+        );
         return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
     }
 
@@ -262,18 +318,54 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         if (messageCallback) {
             messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to get providers.");
         }
-        #ifdef ON_WIN64
-        FreeLibrary(dll);
-        #elif defined(ON_LINUX64)
-        dlclose(handle);
-        #endif
+        srCloseProviderLibrary(
+#ifdef ON_WIN64
+            dll
+#elif defined(ON_LINUX64)
+            handle
+#endif
+        );
         return SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
 
     {
-        std::lock_guard<std::mutex> lock(g_providerMutex);
-        g_srLoadedUpscaleProviders.insert(g_srLoadedUpscaleProviders.end(), providers.begin(), providers.end());
-        g_loadedLibraries.insert(libPath);
+        std::unique_lock<std::mutex> lock(g_providerMutex);
+        auto library = srFindLoadedLibrary(libPath);
+        while (library != g_loadedLibraries.end() && library->unloading) {
+            g_providerCondition.wait(lock);
+            library = srFindLoadedLibrary(libPath);
+        }
+        if (library != g_loadedLibraries.end()) {
+            lock.unlock();
+            srCloseProviderLibrary(
+#ifdef ON_WIN64
+                dll
+#elif defined(ON_LINUX64)
+                handle
+#endif
+            );
+            if (messageCallback) {
+                messageCallback(SR_MESSAGE_TYPE_INFO, L"Library already loaded, skipping.");
+            }
+            return SR_RETURN_CODE_OK;
+        }
+
+        const uint64_t libraryId = g_nextLibraryId++;
+        g_loadedLibraries.push_back({
+            .path = libPath,
+#ifdef ON_WIN64
+            .handle = dll,
+#elif defined(ON_LINUX64)
+            .handle = handle,
+#endif
+            .id = libraryId,
+        });
+        for (const SRUpscaleProvider &provider: providers) {
+            g_srLoadedUpscaleProviders.push_back({
+                .provider = provider,
+                .libraryId = libraryId,
+            });
+        }
     }
 
     if (messageCallback) {
@@ -281,6 +373,81 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
     }
 
     return SR_RETURN_CODE_OK;
+}
+
+SR_API SRReturnCode srUnloadUpscaleProviders(uint64_t providerId) {
+    std::vector<SRUpscaleProvider> providersToShutdown;
+    std::vector<uint64_t> affectedLibraryIds;
+    {
+        std::lock_guard<std::mutex> lock(g_providerMutex);
+        for (const SRLoadedProviderEntry &entry: g_srLoadedUpscaleProviders) {
+            if (entry.provider.providerId == providerId) {
+                providersToShutdown.push_back(entry.provider);
+                if (std::find(affectedLibraryIds.begin(), affectedLibraryIds.end(), entry.libraryId) ==
+                    affectedLibraryIds.end()) {
+                    affectedLibraryIds.push_back(entry.libraryId);
+                }
+            }
+        }
+        if (providersToShutdown.empty()) {
+            return SR_RETURN_CODE_OK;
+        }
+
+        g_srLoadedUpscaleProviders.erase(
+            std::remove_if(g_srLoadedUpscaleProviders.begin(), g_srLoadedUpscaleProviders.end(),
+                           [providerId](const SRLoadedProviderEntry &entry) {
+                               return entry.provider.providerId == providerId;
+                           }),
+            g_srLoadedUpscaleProviders.end()
+        );
+        for (SRLoadedProviderLibrary &library: g_loadedLibraries) {
+            if (std::find(affectedLibraryIds.begin(), affectedLibraryIds.end(), library.id) !=
+                affectedLibraryIds.end()) {
+                library.unloading = true;
+            }
+        }
+    }
+
+    bool allSuccess = true;
+    for (const SRUpscaleProvider &provider: providersToShutdown) {
+        if (provider.callbacks.pShutdown && provider.callbacks.pShutdown() != SR_RETURN_CODE_OK) {
+            allSuccess = false;
+        }
+    }
+
+    std::vector<SRLoadedProviderLibrary> librariesToClose;
+    {
+        std::lock_guard<std::mutex> lock(g_providerMutex);
+        for (uint64_t libraryId: affectedLibraryIds) {
+            const bool hasProviders = std::any_of(
+                g_srLoadedUpscaleProviders.begin(),
+                g_srLoadedUpscaleProviders.end(),
+                [libraryId](const SRLoadedProviderEntry &entry) {
+                    return entry.libraryId == libraryId;
+                }
+            );
+            auto library = std::find_if(g_loadedLibraries.begin(), g_loadedLibraries.end(),
+                                        [libraryId](const SRLoadedProviderLibrary &candidate) {
+                                            return candidate.id == libraryId;
+                                        });
+            if (library == g_loadedLibraries.end()) {
+                continue;
+            }
+            if (hasProviders) {
+                library->unloading = false;
+                continue;
+            }
+            librariesToClose.push_back(std::move(*library));
+            g_loadedLibraries.erase(library);
+        }
+    }
+
+    for (const SRLoadedProviderLibrary &library: librariesToClose) {
+        srCloseProviderLibrary(library.handle);
+    }
+    g_providerCondition.notify_all();
+
+    return allSuccess ? SR_RETURN_CODE_OK : SR_RETURN_CODE_UNEXPECTED_ERROR;
 }
 
 SR_API GLenum srTextureFormatToGlFormat(SRTextureFormat fmt) {

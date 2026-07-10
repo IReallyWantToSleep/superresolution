@@ -33,8 +33,9 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
 )
 
-aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
-add_library(SR_STREAMLINE_LIB SHARED ${ALL_SRC})
+add_library(SR_STREAMLINE_LIB SHARED
+    ${PROJECT_SOURCE_DIR}/src/streamline.cpp
+)
 set_target_properties(SR_STREAMLINE_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionStreamline+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
 
 target_link_libraries(SR_STREAMLINE_LIB

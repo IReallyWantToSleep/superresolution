@@ -25,6 +25,14 @@ JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNa
 
 /*
  * Class:     io_homo_superresolution_core_streamline_StreamlineNative
+ * Method:    nIsSessionActive
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nIsSessionActive
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     io_homo_superresolution_core_streamline_StreamlineNative
  * Method:    nInit
  * Signature: (Ljava/lang/String;Ljava/lang/String;)I
  */

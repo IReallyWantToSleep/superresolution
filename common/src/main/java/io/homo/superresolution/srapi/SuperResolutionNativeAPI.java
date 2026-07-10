@@ -166,6 +166,14 @@ public class SuperResolutionNativeAPI {
         ));
     }
 
+    /**
+     * Shuts down and unloads every loaded provider with {@code providerId}.
+     * All contexts created from the provider must be destroyed first.
+     */
+    public static SRReturnCode srUnloadUpscaleProviders(long providerId) {
+        return SRReturnCode.fromValue(SuperResolutionNative.NsrUnloadUpscaleProviders(providerId));
+    }
+
     protected static long srCreateParams() {
         return SuperResolutionNative.NsrCreateParams();
     }

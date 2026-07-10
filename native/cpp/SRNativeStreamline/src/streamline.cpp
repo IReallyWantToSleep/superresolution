@@ -922,8 +922,14 @@ extern "C" {
         }
 
         std::lock_guard<std::mutex> lock(g_streamlineMutex);
-        if (g_streamlineInitialized || g_javaSession) {
+        if (g_streamlineInitialized) {
             return static_cast<jint>(sl::Result::eErrorInvalidState);
+        }
+        if (g_javaSession) {
+            releaseJavaSessionRefs(env, g_javaSession.get());
+            g_javaSession.reset();
+            g_pluginPath.clear();
+            g_logPath.clear();
         }
 
         auto session = std::make_unique<JavaStreamlineSession>();
@@ -1010,6 +1016,15 @@ extern "C" {
         g_pluginPath.clear();
         g_logPath.clear();
         return static_cast<jint>(result);
+    }
+
+    JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nIsSessionActive(
+        JNIEnv *,
+        jclass,
+        jlong session
+    ) {
+        std::lock_guard<std::mutex> lock(g_streamlineMutex);
+        return isActiveJavaSession(session) ? JNI_TRUE : JNI_FALSE;
     }
 
     SR_API SRReturnCode srStreamlineInit(const char *pluginPath, const char *logPath, SRMessageCallback messageCallback) {

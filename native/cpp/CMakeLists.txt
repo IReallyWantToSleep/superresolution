@@ -90,4 +90,5 @@ endif()
 
 if(SR_STREAMLINE AND ON_WINDOWS)
     add_subdirectory("SRNativeStreamline")
+    add_subdirectory("SRNativeStreamlineDLSSProvider")
 endif()

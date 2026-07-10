@@ -461,6 +461,14 @@ extern "C" {
         return srLoadUpscaleProvidersFromLibrary(LibPath, funcNameStr, countNameStr, sr_message_callback_bridge);
     }
 
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrUnloadUpscaleProviders(
+        JNIEnv *env,
+        jclass,
+        jlong providerId) {
+        g_envForCallback = env;
+        return srUnloadUpscaleProviders(static_cast<uint64_t>(providerId));
+    }
+
     JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrInitUpscaleContext(
         JNIEnv *, jclass, jlong contextPtr) {
         auto context = reinterpret_cast<SRUpscaleContext *>(contextPtr);

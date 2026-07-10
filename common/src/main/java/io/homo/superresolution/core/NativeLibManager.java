@@ -50,6 +50,7 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_DLSS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE_DLSS = null;
     public static NativeLib LIB_STREAMLINE_INTERPOSER = null;
     public static NativeLib LIB_STREAMLINE_COMMON = null;
     public static NativeLib LIB_STREAMLINE_DLSS = null;
@@ -68,6 +69,7 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
             LIB_SUPER_RESOLUTION_DLSS = new NativeLib("SuperResolutionDLSS", false, false);
             LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", true, false);
+            LIB_SUPER_RESOLUTION_STREAMLINE_DLSS = new NativeLib("SuperResolutionStreamlineDLSS", false, false);
             LIB_STREAMLINE_COMMON = new NativeLib("sl.common", true, false, true);
             LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", true, false, true);
             LIB_STREAMLINE_DLSS = new NativeLib("sl.dlss", false, false, true);
@@ -81,6 +83,7 @@ public class NativeLibManager {
             libs.add(LIB_STREAMLINE_COMMON);
             libs.add(LIB_STREAMLINE_INTERPOSER);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
+            libs.add(LIB_SUPER_RESOLUTION_STREAMLINE_DLSS);
             libs.add(LIB_STREAMLINE_DLSS);
             libs.add(LIB_STREAMLINE_DLSS_G);
             libs.add(LIB_STREAMLINE_NVGX_DLSS);

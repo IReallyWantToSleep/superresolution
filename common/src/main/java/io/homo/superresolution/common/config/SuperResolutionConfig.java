@@ -34,6 +34,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
+import io.homo.superresolution.common.config.enums.DLSSBackend;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
@@ -92,6 +93,7 @@ public class SuperResolutionConfig {
 
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
+    private static volatile DLSSBackend startupDlssBackend = DLSSBackend.STREAMLINE;
 
     static {
         ModConfigSpecBuilder builder = new ModConfigSpecBuilder();
@@ -318,6 +320,14 @@ public class SuperResolutionConfig {
 
         SuperResolution.LOGGER.info("你的硬件不支持所有算法????"); //最逆天的一集
         return AlgorithmDescriptions.NONE;
+    }
+
+    public static void captureStartupConfig() {
+        startupDlssBackend = SPECIAL.DLSS.BACKEND.get();
+    }
+
+    public static DLSSBackend getStartupDlssBackend() {
+        return startupDlssBackend;
     }
 
     public static float getRenderScaleFactor() {

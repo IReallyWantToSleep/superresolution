@@ -156,6 +156,7 @@ public final class SuperResolution implements Destroyable {
             return;
         }
         SuperResolutionConfig.SPEC.load();
+        SuperResolutionConfig.captureStartupConfig();
         gameIsStarted = true;
         SuperResolutionKeyMapping.registerKeyMapping();
         instance = new SuperResolution();

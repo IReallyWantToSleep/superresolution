@@ -113,6 +113,14 @@ JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_N
 
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative
+ * Method:    NsrUnloadUpscaleProviders
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrUnloadUpscaleProviders
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     io_homo_superresolution_core_SuperResolutionNative
  * Method:    NsrShutdown
  * Signature: ()I
  */

@@ -62,6 +62,11 @@ public final class Streamline {
         if (!isSupportedOnCurrentVersion() || !isSupportedPlatform() || !isNativeAvailable()) {
             return false;
         }
+        if (defaultSession != null && defaultSession.isClosed()) {
+            defaultSession.close();
+            defaultSession = null;
+            initAttempted = false;
+        }
         if (isInitialized()) {
             return true;
         }
@@ -84,7 +89,7 @@ public final class Streamline {
     }
 
     public static synchronized void shutdown() {
-        if (!isInitialized()) {
+        if (defaultSession == null) {
             return;
         }
         defaultSession.close();

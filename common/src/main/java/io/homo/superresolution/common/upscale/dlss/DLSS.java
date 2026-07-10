@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale.dlss;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.config.enums.DLSSBackend;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
@@ -39,6 +40,7 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 
 public class DLSS extends SRApiAlgorithm {
+    private static final long DLSS_PROVIDER_ID = 0x8000005L;
     private static String loadedProviderLibraryPath;
     private boolean usingStreamlineBackend;
 
@@ -55,10 +57,17 @@ public class DLSS extends SRApiAlgorithm {
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
         String providerLibraryPath = lib.toAbsolutePath().toString();
         if (!providerLibraryPath.equals(loadedProviderLibraryPath)) {
-            SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
+            SRReturnCode unloadCode = SuperResolutionNativeAPI.srUnloadUpscaleProviders(DLSS_PROVIDER_ID);
+            if (unloadCode != SRReturnCode.OK) {
+                throw new RuntimeException("Failed to unload the previous DLSS provider: " + unloadCode);
+            }
+            SRReturnCode loadCode = SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                     providerLibraryPath,
                     usingStreamlineBackend ? "srGetStreamlineUpscaleProviders" : "srGetDLSSUpscaleProviders",
                     usingStreamlineBackend ? "srGetStreamlineUpscaleProvidersCount" : "srGetDLSSUpscaleProvidersCount");
+            if (loadCode != SRReturnCode.OK) {
+                throw new RuntimeException("Failed to load the DLSS provider: " + loadCode);
+            }
             loadedProviderLibraryPath = providerLibraryPath;
         }
         // NGX's NVSDK_NGX_VULKAN_Init reserves a ~1MB buffer on the stack; run the whole native
@@ -69,7 +78,7 @@ public class DLSS extends SRApiAlgorithm {
                 SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
                         SuperResolutionNativeAPI.srGetUpscaleProvider(
                                 provider,
-                                0x8000005)
+                                DLSS_PROVIDER_ID)
                 );
 
                 this.context = new SRUpscaleContext(0);
@@ -195,9 +204,12 @@ public class DLSS extends SRApiAlgorithm {
     }
 
     private NativeLibManager.NativeLib selectProviderLibrary() {
-        if (Streamline.isSupportedOnCurrentVersion() && Streamline.isSupportedPlatform() && Streamline.isNativeAvailable()) {
+        if (SuperResolutionConfig.getStartupDlssBackend() == DLSSBackend.STREAMLINE
+                && Streamline.isSupportedOnCurrentVersion()
+                && Streamline.isSupportedPlatform()
+                && Streamline.isNativeAvailable()) {
             usingStreamlineBackend = true;
-            return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE;
+            return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE_DLSS;
         }
         usingStreamlineBackend = false;
         return NativeLibManager.LIB_SUPER_RESOLUTION_DLSS;

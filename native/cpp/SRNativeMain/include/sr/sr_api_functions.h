@@ -44,6 +44,9 @@ extern "C" {
         const std::string &getProvidersCountFuncName, // SRUpscaleProviderSupplierCountFunc
         SRMessageCallback messageCallback);
 
+    // All contexts created by these providers must be destroyed before unloading.
+    SR_API SRReturnCode srUnloadUpscaleProviders(uint64_t providerId);
+
     SR_API GLenum srTextureFormatToGlFormat(SRTextureFormat fmt);
 
     SR_API VkFormat srTextureFormatToVkFormat(SRTextureFormat fmt);

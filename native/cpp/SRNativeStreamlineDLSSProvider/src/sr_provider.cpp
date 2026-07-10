@@ -1,15 +1,16 @@
 #include "sr/sr_modules.h"
 #include "sr/streamline/sr_provider.h"
 
+#include <mutex>
+
 static SRUpscaleProvider g_providers[1];
-static bool g_initialized = false;
+static std::once_flag g_initializationFlag;
 
 static void ensureInitialized() {
-    if (!g_initialized) {
+    std::call_once(g_initializationFlag, []() {
         g_providers[0].providerId = SR_MODULES_DLSS_ID;
         g_providers[0].callbacks = srGetStreamlineDLSSUpscaleCallbacks();
-        g_initialized = true;
-    }
+    });
 }
 
 extern "C" {

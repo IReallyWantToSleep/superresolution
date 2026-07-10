@@ -21,6 +21,8 @@ public final class StreamlineNative {
 
     static native int nClose(long session);
 
+    static native boolean nIsSessionActive(long session);
+
     public static native int nInit(String pluginPath, String logPath);
 
     public static native int nShutdown();

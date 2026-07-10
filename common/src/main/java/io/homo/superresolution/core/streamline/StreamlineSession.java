@@ -37,7 +37,8 @@ public final class StreamlineSession implements AutoCloseable {
     }
 
     public boolean isClosed() {
-        return nativeHandle.get() == 0L;
+        long handle = nativeHandle.get();
+        return handle == 0L || !StreamlineNative.nIsSessionActive(handle);
     }
 
     public int shutdown() {
@@ -342,7 +343,7 @@ public final class StreamlineSession implements AutoCloseable {
 
     long requireHandle() {
         long handle = nativeHandle.get();
-        if (handle == 0L) {
+        if (handle == 0L || !StreamlineNative.nIsSessionActive(handle)) {
             throw new IllegalStateException("StreamlineSession is closed");
         }
         return handle;
