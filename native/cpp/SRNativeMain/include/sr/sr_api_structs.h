@@ -126,6 +126,7 @@ extern "C" {
         SRTextureResource output;
 
         SRVectorFloat2 jitterOffset;
+        // Multiplies input motion vectors into render-space pixels.
         SRVectorFloat2 motionVectorScale;
         SRVectorUint2 renderSize;
         SRVectorUint2 upscaleSize;

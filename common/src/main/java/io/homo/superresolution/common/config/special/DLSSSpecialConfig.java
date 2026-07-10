@@ -60,7 +60,7 @@ public class DLSSSpecialConfig extends SpecialConfig {
                         .setTooltip(Component.translatable("superresolution.screen.config.special.dlss.backend.tooltip"))
                         .setType(ConfigSpecType.ENUM)
                         .setClazz(DLSSBackend.class)
-                        .setDefaultValue(DLSSBackend.STREAMLINE)
+                        .setDefaultValue(DLSSBackend.NGX)
                         .setValueNameSupplier((backend) -> switch (backend) {
                             case STREAMLINE -> java.util.Optional.of(Component.translatable(
                                     "superresolution.screen.config.special.dlss.backend.streamline"

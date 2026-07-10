@@ -34,6 +34,9 @@ public class SRDispatchUpscaleDesc implements AutoCloseable {
     SRTextureResource output;
 
     Vector2f jitterOffset;
+    /**
+     * Multiplies input motion vectors into render-space pixels.
+     */
     Vector2f motionVectorScale;
     Vector2i renderSize;
     Vector2i upscaleSize;
