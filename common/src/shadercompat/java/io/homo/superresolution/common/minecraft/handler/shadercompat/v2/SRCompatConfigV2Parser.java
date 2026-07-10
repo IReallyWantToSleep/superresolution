@@ -261,7 +261,7 @@ public class SRCompatConfigV2Parser {
         return switch (formatStr.toLowerCase()) {
             case "rgba8" -> TextureFormat.RGBA8;
             case "rgba16f" -> TextureFormat.RGBA16F;
-            case "r11g11b10" -> TextureFormat.R11G11B10F;
+            case "r11g11b10f" -> TextureFormat.R11G11B10F;
             default -> null;
         };
     }
