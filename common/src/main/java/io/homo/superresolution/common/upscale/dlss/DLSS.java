@@ -180,7 +180,11 @@ public class DLSS extends SRApiAlgorithm {
             desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
             desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
             desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
-            desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
+            if (!usingStreamlineBackend) {
+                desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
+            }else {
+                desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
+            }
             desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
             desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
             desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());

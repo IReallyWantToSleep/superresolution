@@ -1258,10 +1258,9 @@ extern "C" {
         fillIdentity(constants.prevClipToClip);
         constants.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};
         // SR API follows NGX semantics: scale source motion vectors into render-space pixels.
-        // Streamline expects those vectors normalized to the [-1, 1] range instead.
         constants.mvecScale = {
-            desc->renderSize.x == 0 ? 0.0f : 2.0f * desc->motionVectorScale.x / static_cast<float>(desc->renderSize.x),
-            desc->renderSize.y == 0 ? 0.0f : 2.0f * desc->motionVectorScale.y / static_cast<float>(desc->renderSize.y),
+            desc->motionVectorScale.x / static_cast<float>(desc->renderSize.x),
+            desc->motionVectorScale.y / static_cast<float>(desc->renderSize.y),
         };
         constants.cameraNear = desc->cameraNear;
         constants.cameraFar = desc->cameraFar;
