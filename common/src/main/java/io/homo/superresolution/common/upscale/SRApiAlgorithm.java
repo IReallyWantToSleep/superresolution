@@ -127,7 +127,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             //    inFlight.commandBuffer.waitForFence();
             //}
             processInputResources(inFlight, dispatchResource);
-            glFinishSemaphore.signalOpenGL(
+            glFinishSemaphore.signalVulkan(
                     new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
                             Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
                             Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
@@ -169,7 +169,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
             // 存一下第N-1帧的Cmdbuf
             inFlight.commandBuffer = commandBuffer;
 
-            upscaleFinishSemaphore.waitOpenGL(
+            upscaleFinishSemaphore.waitVulkanSignal(
                     new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
                     new int[]{},
                     new int[]{GL_LAYOUT_GENERAL_EXT}
@@ -197,7 +197,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                 }
                 processInputResources(inFlight, dispatchResource);
 
-                glFinishSemaphore.signalOpenGL(
+                glFinishSemaphore.signalVulkan(
                         new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
                                 Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
                                 Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
@@ -281,7 +281,7 @@ public abstract class SRApiAlgorithm extends AbstractAlgorithm {
                     inFlight.commandBuffer.waitForFence();
 
                     //GL Queue等待第N-2帧的Upscale结果
-                    upscaleFinishSemaphore.waitOpenGL(
+                    upscaleFinishSemaphore.waitVulkanSignal(
                             new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
                             new int[]{},
                             new int[]{GL_LAYOUT_GENERAL_EXT}

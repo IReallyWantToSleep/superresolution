@@ -85,7 +85,7 @@ public class VkGlInteropSemaphore {
         glDeleteSemaphoresEXT((int) glSemaphoreHandle);
     }
 
-    public void signalOpenGL(int[] textures, int[] buffers, int[] dstLayouts) {
+    public void signalVulkan(int[] textures, int[] buffers, int[] dstLayouts) {
         glSignalSemaphoreEXT(
                 (int) glSemaphoreHandle,
                 buffers == null ? new int[]{} : buffers,
@@ -95,7 +95,7 @@ public class VkGlInteropSemaphore {
         GL20.glFlush();
     }
 
-    public void waitOpenGL(int[] textures, int[] buffers, int[] srcLayouts) {
+    public void waitVulkanSignal(int[] textures, int[] buffers, int[] srcLayouts) {
         glWaitSemaphoreEXT(
                 (int) glSemaphoreHandle,
                 buffers == null ? new int[]{} : buffers,
@@ -104,11 +104,11 @@ public class VkGlInteropSemaphore {
         );
     }
 
-    public void signalOpenGL() {
-        signalOpenGL(null, null, null);
+    public void signalVulkan() {
+        signalVulkan(null, null, null);
     }
 
-    public void waitOpenGL() {
-        waitOpenGL(null, null, null);
+    public void waitVulkanSignal() {
+        waitVulkanSignal(null, null, null);
     }
 }
