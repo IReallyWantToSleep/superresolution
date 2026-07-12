@@ -23,6 +23,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;
+import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -143,7 +144,7 @@ public class XeSS extends SRApiAlgorithm {
     @Override
     public void dispatchSRApiContext(
             VulkanCommandBuffer commandBuffer,
-            SRApiAlgorithm.InFlightFrameResourcesSet inFlightFrameResourcesSet
+            VulkanInteropAlgorithm.InFlightFrameResourcesSet inFlightFrameResourcesSet
 
     ) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {

@@ -1,0 +1,54 @@
+package io.homo.superresolution.core.ngx;
+
+import java.nio.FloatBuffer;
+
+public final class NgxDLSSFGOptEvalParams {
+    public int multiFrameCount = 1;
+    public int multiFrameIndex = 1;
+    public FloatBuffer cameraViewToClip;
+    public FloatBuffer clipToCameraView;
+    public FloatBuffer clipToLensClip;
+    public FloatBuffer clipToPrevClip;
+    public FloatBuffer prevClipToClip;
+    public final float[] jitterOffset = new float[2];
+    public final float[] motionVectorScale = new float[2];
+    public final float[] cameraPinholeOffset = new float[2];
+    public final float[] cameraPosition = new float[3];
+    public final float[] cameraUp = new float[3];
+    public final float[] cameraRight = new float[3];
+    public final float[] cameraForward = new float[3];
+    public float cameraNear;
+    public float cameraFar;
+    public float cameraFov;
+    public float cameraAspectRatio;
+    public boolean colorBuffersHdr;
+    public boolean depthInverted;
+    public boolean cameraMotionIncluded;
+    public boolean reset;
+    public boolean automodeOverrideReset;
+    public boolean notRenderingGameFrames;
+    public boolean orthoProjection;
+    public float motionVectorsInvalidValue;
+    public boolean motionVectorsDilated;
+    public boolean menuDetectionEnabled;
+    public final NgxCoordinates motionVectorsSubrectBase = new NgxCoordinates();
+    public final NgxDimensions motionVectorsSubrectSize = new NgxDimensions();
+    public final NgxCoordinates depthSubrectBase = new NgxCoordinates();
+    public final NgxDimensions depthSubrectSize = new NgxDimensions();
+    public final NgxCoordinates hudlessSubrectBase = new NgxCoordinates();
+    public final NgxDimensions hudlessSubrectSize = new NgxDimensions();
+    public final NgxCoordinates uiSubrectBase = new NgxCoordinates();
+    public final NgxDimensions uiSubrectSize = new NgxDimensions();
+    public final NgxCoordinates uiAlphaSubrectBase = new NgxCoordinates();
+    public final NgxDimensions uiAlphaSubrectSize = new NgxDimensions();
+    public final NgxCoordinates bidirectionalDistortionFieldSubrectBase = new NgxCoordinates();
+    public final NgxDimensions bidirectionalDistortionFieldSubrectSize = new NgxDimensions();
+    public final NgxPrecisionInfo bidirectionalDistortionFieldPrecisionInfo = new NgxPrecisionInfo();
+    public float minRelativeLinearDepthObjectSeparation = 40.0f;
+    public final NgxCoordinates backbufferSubrectBase = new NgxCoordinates();
+    public final NgxDimensions backbufferSubrectSize = new NgxDimensions();
+    public final NgxCoordinates outputInterpolatedSubrectBase = new NgxCoordinates();
+    public final NgxDimensions outputInterpolatedSubrectSize = new NgxDimensions();
+    public final NgxCoordinates outputRealSubrectBase = new NgxCoordinates();
+    public final NgxDimensions outputRealSubrectSize = new NgxDimensions();
+}

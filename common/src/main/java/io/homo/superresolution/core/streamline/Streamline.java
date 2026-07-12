@@ -139,6 +139,24 @@ public final class Streamline {
         return true;
     }
 
+    public static int getNewFrameToken(int frameIndex, StreamlineTypes.FrameToken outToken) {
+        if (!isInitialized()) {
+            return -1;
+        }
+        return defaultSession.getNewFrameToken(frameIndex, outToken);
+    }
+
+    public static int setConstants(
+            StreamlineTypes.Constants constants,
+            StreamlineTypes.FrameToken frame,
+            StreamlineTypes.Viewport viewport
+    ) {
+        if (!isInitialized()) {
+            return -1;
+        }
+        return defaultSession.setConstants(constants, frame, viewport);
+    }
+
     public static int getLastVkResult() {
         return StreamlineNative.nGetLastVkResult();
     }

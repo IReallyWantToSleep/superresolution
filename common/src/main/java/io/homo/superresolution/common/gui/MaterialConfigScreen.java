@@ -42,7 +42,7 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.common.upscale.SRApiAlgorithm;
+import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -1032,7 +1032,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
                 .setSaveConsumer((value) -> {
                     SuperResolutionConfig.setInteropSyncMode(value);
-                    if (SuperResolution.currentAlgorithm instanceof SRApiAlgorithm) {
+                    if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
                         SuperResolution.recreateAlgorithm();
                     }
                 })

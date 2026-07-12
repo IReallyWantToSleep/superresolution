@@ -31,6 +31,8 @@ import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.streamline.Streamline;
+import io.homo.superresolution.core.streamline.StreamlineResult;
+import io.homo.superresolution.core.streamline.StreamlineTypes;
 import io.homo.superresolution.core.utils.LargeStackExecutor;
 import io.homo.superresolution.srapi.*;
 import org.joml.Vector2f;
@@ -41,6 +43,8 @@ import java.util.EnumSet;
 
 public class DLSS extends SRApiAlgorithm {
     private static final long DLSS_PROVIDER_ID = 0x8000005L;
+    private static final String STREAMLINE_FRAME_TOKEN_PARAM = "STREAMLINE_FRAME_TOKEN";
+    private static final StreamlineTypes.Viewport STREAMLINE_VIEWPORT = new StreamlineTypes.Viewport(0);
     private static String loadedProviderLibraryPath;
     private boolean usingStreamlineBackend;
 
@@ -195,16 +199,69 @@ public class DLSS extends SRApiAlgorithm {
             desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
             desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
             desc.setViewSpaceToMetersFactor(1.0f);
-            desc.setReset(consumeHistoryReset());
+            boolean reset = consumeHistoryReset();
+            desc.setReset(reset);
             desc.setFlags(0);
             if (usingStreamlineBackend) {
-                desc.getExtraParams().setUint32("STREAMLINE_FRAME_INDEX", inFlightFrameResourcesSet.frameData.frameCount());
+                if (!setStreamlineConstants(inFlightFrameResourcesSet, reset, desc)) {
+                    return;
+                }
             }
             SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
             if (code != SRReturnCode.OK) {
                 SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
             }
         }
+    }
+
+    private boolean setStreamlineConstants(
+            InFlightFrameResourcesSet inFlightFrameResourcesSet,
+            boolean reset,
+            SRDispatchUpscaleDesc desc
+    ) {
+        StreamlineTypes.FrameToken frameToken = new StreamlineTypes.FrameToken();
+        int tokenResult = Streamline.getNewFrameToken(inFlightFrameResourcesSet.frameData.frameCount(), frameToken);
+        if (tokenResult != 0) {
+            logStreamlineFailure("slGetNewFrameToken", tokenResult);
+            return false;
+        }
+
+        StreamlineTypes.Constants constants = new StreamlineTypes.Constants();
+        constants.jitterOffsetX = inFlightFrameResourcesSet.frameData.jitterOffset().x;
+        constants.jitterOffsetY = inFlightFrameResourcesSet.frameData.jitterOffset().y;
+        constants.motionVectorScaleX = inFlightFrameResourcesSet.frameData.renderSize().x
+                / inFlightFrameResourcesSet.frameData.renderWidth();
+        constants.motionVectorScaleY = inFlightFrameResourcesSet.frameData.renderSize().y
+                / inFlightFrameResourcesSet.frameData.renderHeight();
+        constants.cameraNear = inFlightFrameResourcesSet.frameData.cameraNear();
+        constants.cameraFar = inFlightFrameResourcesSet.frameData.cameraFar();
+        constants.cameraFov = inFlightFrameResourcesSet.frameData.verticalFov();
+        constants.cameraAspectRatio = (float) inFlightFrameResourcesSet.frameData.renderWidth()
+                / inFlightFrameResourcesSet.frameData.renderHeight();
+        constants.depthInverted = 0;
+        constants.cameraMotionIncluded = 1;
+        constants.motionVectors3D = 0;
+        constants.reset = reset ? (byte) 1 : (byte) 0;
+        constants.motionVectorsJittered = initDesc.isMotionJittered() ? (byte) 1 : (byte) 0;
+
+        int constantsResult = Streamline.setConstants(constants, frameToken, STREAMLINE_VIEWPORT);
+        if (constantsResult != 0) {
+            logStreamlineFailure("slSetConstants", constantsResult);
+            return false;
+        }
+        SRReturnCode paramCode = desc.getExtraParams().setPointer(STREAMLINE_FRAME_TOKEN_PARAM, frameToken.nativeHandle);
+        if (paramCode != SRReturnCode.OK) {
+            SuperResolution.LOGGER.error("Failed to pass the Streamline frame token to DLSS. Return code: {}", paramCode);
+            return false;
+        }
+        return true;
+    }
+
+    private void logStreamlineFailure(String operation, int result) {
+        SuperResolution.LOGGER.error("{} failed. Streamline result: {} ({})",
+                operation,
+                StreamlineResult.nameOf(result),
+                result);
     }
 
     private NativeLibManager.NativeLib selectProviderLibrary() {

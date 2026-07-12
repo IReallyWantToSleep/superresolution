@@ -438,14 +438,6 @@ namespace {
         return extent;
     }
 
-    void fillIdentity(sl::float4x4 &matrix) {
-        std::memset(&matrix, 0, sizeof(matrix));
-        matrix[0].x = 1.0f;
-        matrix[1].y = 1.0f;
-        matrix[2].z = 1.0f;
-        matrix[3].w = 1.0f;
-    }
-
     jfieldID getField(JNIEnv *env, jobject object, const char *name, const char *signature) {
         if (!env || !object) {
             return nullptr;
@@ -1211,17 +1203,14 @@ extern "C" {
             return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
 
-        sl::FrameToken *frameToken = nullptr;
-        uint32_t frameIndex = 0;
-        const SRContextExtraParam *frameIndexParam = srFindParam(&desc->extraParams, "STREAMLINE_FRAME_INDEX");
-        if (frameIndexParam && frameIndexParam->valueType == SR_PARAM_VALUE_TYPE_UINT32) {
-            frameIndex = frameIndexParam->value.uint32Value;
+        const SRContextExtraParam *frameTokenParam = srFindParam(&desc->extraParams, "STREAMLINE_FRAME_TOKEN");
+        if (!frameTokenParam
+            || frameTokenParam->valueType != SR_PARAM_VALUE_TYPE_POINTER
+            || !frameTokenParam->value.ptrValue) {
+            sendContextMessage(privateData, SR_MESSAGE_TYPE_ERROR, L"Streamline DLSS requires a frame token from the Java integration.");
+            return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
-        sl::Result result = slGetNewFrameToken(frameToken, &frameIndex);
-        if (result != sl::Result::eOk || !frameToken) {
-            reportResult(privateData, L"slGetNewFrameToken", result);
-            return resultToReturnCode(result);
-        }
+        auto *frameToken = reinterpret_cast<sl::FrameToken *>(frameTokenParam->value.ptrValue);
 
         sl::ViewportHandle viewport(kViewportId);
         sl::Extent renderExtent = makeExtent(desc->renderSize.x, desc->renderSize.y);
@@ -1245,36 +1234,9 @@ extern "C" {
         }
 
         auto *commandBuffer = reinterpret_cast<sl::CommandBuffer *>(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
-        result = slSetTagForFrame(*frameToken, viewport, tags.data(), static_cast<uint32_t>(tags.size()), commandBuffer);
+        sl::Result result = slSetTagForFrame(*frameToken, viewport, tags.data(), static_cast<uint32_t>(tags.size()), commandBuffer);
         if (result != sl::Result::eOk) {
             reportResult(privateData, L"slSetTagForFrame", result);
-            return resultToReturnCode(result);
-        }
-
-        sl::Constants constants{};
-        fillIdentity(constants.cameraViewToClip);
-        fillIdentity(constants.clipToCameraView);
-        fillIdentity(constants.clipToPrevClip);
-        fillIdentity(constants.prevClipToClip);
-        constants.jitterOffset = {desc->jitterOffset.x, desc->jitterOffset.y};
-        // SR API follows NGX semantics: scale source motion vectors into render-space pixels.
-        constants.mvecScale = {
-            desc->motionVectorScale.x / static_cast<float>(desc->renderSize.x),
-            desc->motionVectorScale.y / static_cast<float>(desc->renderSize.y),
-        };
-        constants.cameraNear = desc->cameraNear;
-        constants.cameraFar = desc->cameraFar;
-        constants.cameraFOV = desc->cameraFovAngleVertical;
-        constants.cameraAspectRatio = desc->renderSize.y == 0 ? 1.0f : static_cast<float>(desc->renderSize.x) / static_cast<float>(desc->renderSize.y);
-        constants.depthInverted = hasFlag(context->desc.flags, SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_DEPTH_INVERTED) ? sl::Boolean::eTrue : sl::Boolean::eFalse;
-        constants.cameraMotionIncluded = sl::Boolean::eTrue;
-        constants.motionVectors3D = sl::Boolean::eFalse;
-        constants.reset = desc->reset ? sl::Boolean::eTrue : sl::Boolean::eFalse;
-        constants.motionVectorsJittered = hasFlag(context->desc.flags, SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_MOTION_VECTORS_JITTERED) ? sl::Boolean::eTrue : sl::Boolean::eFalse;
-
-        result = slSetConstants(constants, *frameToken, viewport);
-        if (result != sl::Result::eOk) {
-            reportResult(privateData, L"slSetConstants", result);
             return resultToReturnCode(result);
         }
 

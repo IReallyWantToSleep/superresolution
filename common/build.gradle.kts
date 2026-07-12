@@ -3,6 +3,8 @@ import multiversion.Dependency
 import multiversion.VersionConfig
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.tasks.Jar
 
 plugins {
@@ -167,6 +169,7 @@ configurations {
 }
 
 val sourceSets = extensions.getByType(SourceSetContainer::class.java)
+val javaToolchains = extensions.getByType(JavaToolchainService::class.java)
 val mainSourceSet = sourceSets.getByName("main")
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
@@ -177,11 +180,19 @@ tasks.register<JavaCompile>("genJNIHeader") {
     val outputDir = file("../native/cpp/SRNativeMain/include")
 
     source = fileTree("../common/src/main/java") {
-        include("**/core/SuperResolutionNative.java", "**/core/streamline/StreamlineNative.java", "**/thirdparty/nanovg/*.java")
+        include(
+            "**/core/SuperResolutionNative.java",
+            "**/core/streamline/StreamlineNative.java",
+            "**/core/ngx/NgxNative.java",
+            "**/thirdparty/nanovg/*.java"
+        )
     }
 
     classpath = mainSourceSet.compileClasspath + mainSourceSet.output
     destinationDirectory.set(file("$buildDir/jni-temp"))
+    javaCompiler.set(javaToolchains.compilerFor {
+        languageVersion.set(JavaLanguageVersion.of(versionConfig.common.javaVersion))
+    })
     options.headerOutputDirectory.set(outputDir)
     options.annotationProcessorPath = configurations.getByName("annotationProcessor")
     options.compilerArgs.addAll(listOf("-encoding", "UTF-8", "-proc:full"))

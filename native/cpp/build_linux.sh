@@ -15,9 +15,9 @@ fi
 echo "[native] building with ${JOBS} jobs (nproc=${NPROC})"
 
 rm -rf buildLinux
-cmake -G "Ninja" -S . -B buildLinux -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DSR_FSR=ON -DSR_XESS=OFF -DSR_FSROGL=OFF -DSR_DLSS=ON
+cmake -G "Ninja" -S . -B buildLinux -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DSR_FSR=ON -DSR_XESS=OFF -DSR_FSROGL=OFF -DSR_DLSS=ON -DSR_NGX=ON
 cmake --build buildLinux --config Debug -- -j${JOBS}
 
 rm -rf buildLinux
-cmake -G "Ninja" -S . -B buildLinux -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DSR_FSR=ON -DSR_XESS=OFF -DSR_FSROGL=OFF -DSR_DLSS=ON
+cmake -G "Ninja" -S . -B buildLinux -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DSR_FSR=ON -DSR_XESS=OFF -DSR_FSROGL=OFF -DSR_DLSS=ON -DSR_NGX=ON
 cmake --build buildLinux --config Release -- -j${JOBS}
