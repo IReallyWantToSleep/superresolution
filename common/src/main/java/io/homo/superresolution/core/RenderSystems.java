@@ -115,9 +115,7 @@ public class RenderSystems {
         if (SuperResolutionConfig.isSkipInitVulkan()) {
             return;
         }
-        #if MC_VER != MC_26_2
-        Streamline.prepareEarly();
-        #endif
+
         try {
             VK.create();
         } catch (Exception | Error e) {

@@ -186,7 +186,13 @@ public class VkRenderSystem implements IRenderSystem {
             }
 
             PointerBuffer instancePtr = stack.mallocPointer(1);
-            VK_CHECK(vkCreateInstance(createInfo, null, instancePtr), "Failed to create VkInstance");
+            if (Streamline.isInitialized()){
+                long instance = Streamline.createVkInstance(createInfo.address());
+                VK_CHECK(Streamline.getLastVkResult(), "Failed to create VkInstance");
+                instancePtr.put(0, instance);
+            }else {
+                VK_CHECK(vkCreateInstance(createInfo, null, instancePtr), "Failed to create VkInstance");
+            }
             instance = VkReflectionHelper.createVkInstanceSafely(instancePtr.get(0), createInfo);
         }
     }
@@ -365,11 +371,19 @@ public class VkRenderSystem implements IRenderSystem {
             //}
 
             PointerBuffer pDevice = stack.mallocPointer(1);
-            VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),
-                    "Failed to create logical device");
-            if (Streamline.isInitialized()) {
-                Streamline.setVulkanInfo(instance.address(), physicalDevice.address(), pDevice.get(0), graphicsFamilyIndex);
+            if (Streamline.isInitialized()){
+                long device = Streamline.createVkDevice(
+                        getVulkanInstance().address(),
+                        physicalDevice.address(),
+                        createInfo.address()
+                );
+                VK_CHECK(Streamline.getLastVkResult(), "Failed to create logical device");
+                pDevice.put(0, device);
+            }else {
+                VK_CHECK(vkCreateDevice(physicalDevice, createInfo, null, pDevice),
+                        "Failed to create logical device");
             }
+
             return new VulkanDevice(
                     instance,
                     physicalDevice,

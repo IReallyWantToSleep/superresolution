@@ -55,8 +55,9 @@ public class NativeLibManager {
     public static NativeLib LIB_STREAMLINE_COMMON = null;
     public static NativeLib LIB_STREAMLINE_DLSS = null;
     public static NativeLib LIB_STREAMLINE_DLSS_G = null;
-    public static NativeLib LIB_STREAMLINE_NVGX_DLSS = null;
-    public static NativeLib LIB_STREAMLINE_NVGX_DLSS_G = null;
+    public static NativeLib LIB_STREAMLINE_REFLEX = null;
+    public static NativeLib LIB_STREAMLINE_NVNGX_REFLEX = null;
+    public static NativeLib LIB_STREAMLINE_PCL = null;
     private static boolean nativeApiAvailable;
     private static boolean librariesExtracted;
     private static boolean librariesLoaded;
@@ -74,8 +75,9 @@ public class NativeLibManager {
             LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", true, false, true);
             LIB_STREAMLINE_DLSS = new NativeLib("sl.dlss", false, false, true);
             LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, false, true);
-            LIB_STREAMLINE_NVGX_DLSS = new NativeLib("nvngx_dlss", false, false, true);
-            LIB_STREAMLINE_NVGX_DLSS_G = new NativeLib("nvngx_dlssg", false, false, true);
+            LIB_STREAMLINE_REFLEX = new NativeLib("sl.reflex", false, false, true);
+            LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, false, true);
+            LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, false, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
@@ -86,8 +88,6 @@ public class NativeLibManager {
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE_DLSS);
             libs.add(LIB_STREAMLINE_DLSS);
             libs.add(LIB_STREAMLINE_DLSS_G);
-            libs.add(LIB_STREAMLINE_NVGX_DLSS);
-            libs.add(LIB_STREAMLINE_NVGX_DLSS_G);
 
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);

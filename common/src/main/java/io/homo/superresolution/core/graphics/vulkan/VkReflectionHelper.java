@@ -19,6 +19,8 @@
 package io.homo.superresolution.core.graphics.vulkan;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.core.streamline.Streamline;
+import io.homo.superresolution.core.streamline.StreamlineNative;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.Checks;
 import org.lwjgl.system.FunctionProvider;

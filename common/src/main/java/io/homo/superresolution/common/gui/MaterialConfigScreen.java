@@ -498,267 +498,276 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         ContainerWidget container = createStandardContainer();
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.general"));
 
-        @SuppressWarnings("unchecked")
-        final SelectionListOptionEntry<QualityPresetOption>[] qualityPresetEntryRef = new SelectionListOptionEntry[1];
-        final SelectionListOptionEntry[] algoSelectRef = new SelectionListOptionEntry[1];
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.category.super_resolution"),
+                builder -> {
+            @SuppressWarnings("unchecked")
+            final SelectionListOptionEntry<QualityPresetOption>[] qualityPresetEntryRef = new SelectionListOptionEntry[1];
+            final SelectionListOptionEntry[] algoSelectRef = new SelectionListOptionEntry[1];
 
-        final NumberSliderOptionEntry[] upscaleRatioEntryRef = new NumberSliderOptionEntry[1];
-        final boolean[] syncingQualityPreset = {false};
+            final NumberSliderOptionEntry[] upscaleRatioEntryRef = new NumberSliderOptionEntry[1];
+            final boolean[] syncingQualityPreset = {false};
 
-        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.general"));
-        builder.hintOption(Text.literal("b3d_vulkan_unavailable"))
-                .setIcon(MaterialSymbols.iconWarning())
-                .setTitle(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.title").getString())
-                .setText(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.text").getString())
-                .setDisplayRequirement(OptionRequirement.isTrue(B3DVulkanBridge::isB3DVulkanBackend))
-                .build();
-        builder.hintOption(Text.literal("tip114514"))
-                .setIcon(MaterialSymbols.iconWarning())
-                .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
-                .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
-                .setDisplayRequirement(OptionRequirement.isTrue(() -> SuperResolutionConfig.isEnableUpscaleOriginal() && !SRWorkModeManager.getCurrentState().shaderPackInUse() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
-                .build();
-        builder.hintOption(Text.literal("shader_compat_warning"))
-                .setIcon(MaterialSymbols.iconWarning())
-                .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
-                .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
-                .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
-                        SuperResolutionConfig.isEnableUpscaleOriginal() &&
-                        SRWorkModeManager.getCurrentState().shaderPackInUse()))
-                .build();
+            builder.hintOption(Text.literal("b3d_vulkan_unavailable"))
+                    .setIcon(MaterialSymbols.iconWarning())
+                    .setTitle(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.title").getString())
+                    .setText(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.text").getString())
+                    .setDisplayRequirement(OptionRequirement.isTrue(B3DVulkanBridge::isB3DVulkanBackend))
+                    .build();
+            builder.hintOption(Text.literal("tip114514"))
+                    .setIcon(MaterialSymbols.iconWarning())
+                    .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
+                    .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
+                    .setDisplayRequirement(OptionRequirement.isTrue(() -> SuperResolutionConfig.isEnableUpscaleOriginal() && !SRWorkModeManager.getCurrentState().shaderPackInUse() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
+                    .build();
+            builder.hintOption(Text.literal("shader_compat_warning"))
+                    .setIcon(MaterialSymbols.iconWarning())
+                    .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
+                    .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
+                    .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
+                            SuperResolutionConfig.isEnableUpscaleOriginal() &&
+                            SRWorkModeManager.getCurrentState().shaderPackInUse()))
+                    .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
-                        SuperResolutionConfig.isEnableUpscaleOriginal())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
-                .setDefaultValue(() -> true)
-                .setSaveConsumer(SuperResolutionConfig::setEnableUpscale)
-                .build();
+            builder.booleanOption(
+                            Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
+                            SuperResolutionConfig.isEnableUpscaleOriginal())
+                    .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
+                    .setDefaultValue(() -> true)
+                    .setSaveConsumer(SuperResolutionConfig::setEnableUpscale)
+                    .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.disable_upscale_on_vanilla"),
-                        SuperResolutionConfig.isDisableUpscaleOnVanilla())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setDisableUpscaleOnVanilla)
-                .build();
+            builder.booleanOption(
+                            Text.translatable("superresolution.screen.config.options.label.disable_upscale_on_vanilla"),
+                            SuperResolutionConfig.isDisableUpscaleOnVanilla())
+                    .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla"))
+                    .setDefaultValue(() -> false)
+                    .setSaveConsumer(SuperResolutionConfig::setDisableUpscaleOnVanilla)
+                    .build();
 
-        algoSelectRef[0] = builder.selectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.algo_type"),
-                        SuperResolutionConfig.getUpscaleAlgorithm(),
-                        AlgorithmRegistry.getAlgorithmMap().values().toArray())
-                .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
-                .setDefaultValue(() -> AlgorithmDescriptions.FSR1)
-                .setSaveConsumer((obj) -> {
-                    AlgorithmDescription<?> algo = (AlgorithmDescription<?>) obj;
-                    List<ExtraResource> lostResources = algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
-                    if (!lostResources.isEmpty()) {
-                        openLostResourceDialog(lostResources);
-                        return false;
-                    }
-                    if (!SuperResolutionConfig.setUpscaleAlgorithm(algo)) {
-                        openCreateAlgorithmFailedDialog(algo);
-                        algoSelectRef[0].setSelectedValue(SuperResolutionConfig.getUpscaleAlgorithm());
-                    }
-                    if (qualityPresetEntryRef[0] != null) {
-                        qualityPresetEntryRef[0].refreshDynamicValues();
-                        QualityPresetOption targetPreset = resolveQualityPresetOption(
-                                qualityPresetEntryRef[0].getValues(),
-                                SuperResolutionConfig.getUpscaleRatio()
-                        );
-                        qualityPresetEntryRef[0].setSelectedValue(targetPreset);
+            algoSelectRef[0] = builder.selectorOption(
+                            Text.translatable("superresolution.screen.config.options.label.algo_type"),
+                            SuperResolutionConfig.getUpscaleAlgorithm(),
+                            AlgorithmRegistry.getAlgorithmMap().values().toArray())
+                    .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
+                    .setDefaultValue(() -> AlgorithmDescriptions.FSR1)
+                    .setSaveConsumer((obj) -> {
+                        AlgorithmDescription<?> algo = (AlgorithmDescription<?>) obj;
+                        List<ExtraResource> lostResources = algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
+                        if (!lostResources.isEmpty()) {
+                            openLostResourceDialog(lostResources);
+                            return false;
+                        }
+                        if (!SuperResolutionConfig.setUpscaleAlgorithm(algo)) {
+                            openCreateAlgorithmFailedDialog(algo);
+                            algoSelectRef[0].setSelectedValue(SuperResolutionConfig.getUpscaleAlgorithm());
+                        }
+                        if (qualityPresetEntryRef[0] != null) {
+                            qualityPresetEntryRef[0].refreshDynamicValues();
+                            QualityPresetOption targetPreset = resolveQualityPresetOption(
+                                    qualityPresetEntryRef[0].getValues(),
+                                    SuperResolutionConfig.getUpscaleRatio()
+                            );
+                            qualityPresetEntryRef[0].setSelectedValue(targetPreset);
 
-                        if (!isAlgorithmSupportsCustomUpscaleRatio(algo)
-                                && targetPreset != null
-                                && !targetPreset.custom()) {
-                            syncingQualityPreset[0] = true;
-                            try {
-                                SuperResolutionConfig.setUpscaleRatio(targetPreset.upscaleRatio());
-                                if (upscaleRatioEntryRef[0] != null) {
-                                    upscaleRatioEntryRef[0].setCurrentValue(targetPreset.upscaleRatio());
+                            if (!isAlgorithmSupportsCustomUpscaleRatio(algo)
+                                    && targetPreset != null
+                                    && !targetPreset.custom()) {
+                                syncingQualityPreset[0] = true;
+                                try {
+                                    SuperResolutionConfig.setUpscaleRatio(targetPreset.upscaleRatio());
+                                    if (upscaleRatioEntryRef[0] != null) {
+                                        upscaleRatioEntryRef[0].setCurrentValue(targetPreset.upscaleRatio());
+                                    }
+                                } finally {
+                                    syncingQualityPreset[0] = false;
                                 }
-                            } finally {
-                                syncingQualityPreset[0] = false;
                             }
                         }
-                    }
-                    if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
-                        SRWorkModeManager.reloadShaderPack();
-                    }
-                    return true;
-                })
-                .setItemEnableRequirement((value) -> {
-                    AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) value;
-                    return OptionRequirement.all(
-                            () -> AlgorithmRegistry.isAlgorithmSupported(algorithmDescription),
-                            () -> {
-                                if (isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalFeatures();
-                                return true;
-
-                            }
-                    );
-                })
-                .setMenuItemTooltipSupplier((algo)->{
-                    AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) algo;
-                    var result = algorithmDescription.getRequirement().check();
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(algorithmDescription.getDisplayName());
-                    if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
-                        sb.append("\n");
-                        sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_warning").getString());
-                        if (!result.support()) sb.append("\n");
-                    } else if(isExperimentalAlgorithm(algorithmDescription) && !SuperResolutionConfig.isEnableExperimentalFeatures()){
-                        sb.append("\n");
-                        sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint").getString());
-                        if (!result.support()) sb.append("\n");
-                    }
-                    if (!result.support()){
-                        sb.append("\n");
-                        sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.unsupported_reason_header").getString());
-                        if (!result.glVersionMet()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_version").getString());
+                        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                            SRWorkModeManager.reloadShaderPack();
                         }
-                        if (!result.glExtensionsPresent()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_extension").getString());
-                        }
-                        if (!result.osSupported()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.os_unsupported").getString());
-                        }
-                        if (!result.vulkanAvailable()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_unavailable").getString());
-                            if (SuperResolutionConfig.isSkipInitVulkan()){
-                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_skip_init_hint").getString());
-                            }else {
-                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_restart_hint").getString());
-                            }
-                        }
-                        if (!result.vulkanVersionMet()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_version").getString());
-                        }
-                        if (!result.vulkanDeviceExtensionsMet()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_extension").getString());
-                        }
-                        if (!result.environmentValid()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.dev_env_only").getString());
-                        }
-                        if (!result.additionalConditionsMet()){
-                            sb.append("\n");
-                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.other").getString());
-                        }
-                    }
-                    return Optional.of(Tooltip.withContext(sb.toString()));
-                })
-                .build();
-
-        List<QualityPresetOption> initialPresetOptions = getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm());
-        QualityPresetOption initialPreset = resolveQualityPresetOption(
-                initialPresetOptions,
-                SuperResolutionConfig.getUpscaleRatio()
-        );
-        qualityPresetEntryRef[0] = builder.selectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.quality_preset"),
-                        initialPreset,
-                        initialPresetOptions.toArray(new QualityPresetOption[0]))
-                .setNameProvider(QualityPresetOption::displayName)
-                .setValuesSupplier(() -> getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm()))
-                .setSaveConsumer((presetOption) -> {
-                    if (presetOption == null || presetOption.custom() || syncingQualityPreset[0]) {
                         return true;
-                    }
-                    syncingQualityPreset[0] = true;
-                    try {
-                        float ratio = presetOption.upscaleRatio();
-                        SuperResolutionConfig.setUpscaleRatio(ratio);
-                        if (upscaleRatioEntryRef[0] != null) {
-                            upscaleRatioEntryRef[0].setCurrentValue(ratio);
-                        }
-                    } finally {
-                        syncingQualityPreset[0] = false;
-                    }
-                    if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
-                        SRWorkModeManager.reloadShaderPack();
-                    }
-                    return true;
-                })
-                .build();
+                    })
+                    .setItemEnableRequirement((value) -> {
+                        AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) value;
+                        return OptionRequirement.all(
+                                () -> AlgorithmRegistry.isAlgorithmSupported(algorithmDescription),
+                                () -> {
+                                    if (isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalFeatures();
+                                    return true;
 
-        upscaleRatioEntryRef[0] = builder.numberOption(
-                        Text.translatable("superresolution.screen.config.options.label.upscale_ratio"),
-                        SuperResolutionConfig.getUpscaleRatio(),
-                        3.0,
-                        SuperResolutionConfig.getMinUpscaleRatio())
-                .setStep(0.01)
-                .setValueFormater(v -> String.format("%.2f", v.doubleValue()))
-                .setDefaultValue(() -> 1.7)
-                .setDescriptionsSupplier(
-                        (value -> Optional.of(new Text[]{Text.literal(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio").getString().formatted(
-                                String.format("%.0f", RenderHandlerManager.getScreenWidth() / value.floatValue()),
-                                String.format("%.0f", RenderHandlerManager.getScreenHeight() / value.floatValue()),
-                                String.format("%.2f", ((1 / value.floatValue()) * 100)) + "%"
-                        ))}))
-                )
-                .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
-                .setTooltipSupplier((t)->{
-                    if (!isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())){
-                        return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported").getString()));
-                    }else {
-                        return Optional.of(Tooltip.empty());
-                    }
-                })
-                .setSaveConsumer((value) -> {
-                    float targetRatio = Float.parseFloat(String.format("%.2f", value.doubleValue()));
-                    SuperResolutionConfig.setUpscaleRatio(targetRatio);
-                    if (qualityPresetEntryRef[0] != null && !syncingQualityPreset[0]) {
-                        QualityPresetOption targetPreset = resolveQualityPresetOption(
-                                qualityPresetEntryRef[0].getValues(),
-                                targetRatio
+                                }
                         );
-                        qualityPresetEntryRef[0].setSelectedValue(targetPreset);
-                    }
-                    if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
-                        SRWorkModeManager.reloadShaderPack();
-                    }
-                })
-                .build();
+                    })
+                    .setMenuItemTooltipSupplier((algo)->{
+                        AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) algo;
+                        var result = algorithmDescription.getRequirement().check();
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(algorithmDescription.getDisplayName());
+                        if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_warning").getString());
+                            if (!result.support()) sb.append("\n");
+                        } else if(isExperimentalAlgorithm(algorithmDescription) && !SuperResolutionConfig.isEnableExperimentalFeatures()){
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint").getString());
+                            if (!result.support()) sb.append("\n");
+                        }
+                        if (!result.support()){
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.unsupported_reason_header").getString());
+                            if (!result.glVersionMet()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_version").getString());
+                            }
+                            if (!result.glExtensionsPresent()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_extension").getString());
+                            }
+                            if (!result.osSupported()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.os_unsupported").getString());
+                            }
+                            if (!result.vulkanAvailable()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_unavailable").getString());
+                                if (SuperResolutionConfig.isSkipInitVulkan()){
+                                    sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_skip_init_hint").getString());
+                                }else {
+                                    sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_restart_hint").getString());
+                                }
+                            }
+                            if (!result.vulkanVersionMet()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_version").getString());
+                            }
+                            if (!result.vulkanDeviceExtensionsMet()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.vulkan_extension").getString());
+                            }
+                            if (!result.environmentValid()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.dev_env_only").getString());
+                            }
+                            if (!result.additionalConditionsMet()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.other").getString());
+                            }
+                        }
+                        return Optional.of(Tooltip.withContext(sb.toString()));
+                    })
+                    .build();
 
-        builder.numberOption(
-                        Text.translatable("superresolution.screen.config.options.label.sharpness"),
-                        SuperResolutionConfig.getSharpness(),
-                        1.0,
-                        0.0)
-                .setStep(0.01)
-                .setValueFormater(v -> String.format("%.2f", v.doubleValue()))
-                .setDefaultValue(() -> 0.55)
-                .setValueFormater(v -> String.format("%.2f", v.doubleValue()))
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.sharpness"))
-                .setSaveConsumer((value) -> {
-                    SuperResolutionConfig.setSharpness(value.floatValue());
-                })
-                .build();
+            List<QualityPresetOption> initialPresetOptions = getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm());
+            QualityPresetOption initialPreset = resolveQualityPresetOption(
+                    initialPresetOptions,
+                    SuperResolutionConfig.getUpscaleRatio()
+            );
+            qualityPresetEntryRef[0] = builder.selectorOption(
+                            Text.translatable("superresolution.screen.config.options.label.quality_preset"),
+                            initialPreset,
+                            initialPresetOptions.toArray(new QualityPresetOption[0]))
+                    .setNameProvider(QualityPresetOption::displayName)
+                    .setValuesSupplier(() -> getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm()))
+                    .setSaveConsumer((presetOption) -> {
+                        if (presetOption == null || presetOption.custom() || syncingQualityPreset[0]) {
+                            return true;
+                        }
+                        syncingQualityPreset[0] = true;
+                        try {
+                            float ratio = presetOption.upscaleRatio();
+                            SuperResolutionConfig.setUpscaleRatio(ratio);
+                            if (upscaleRatioEntryRef[0] != null) {
+                                upscaleRatioEntryRef[0].setCurrentValue(ratio);
+                            }
+                        } finally {
+                            syncingQualityPreset[0] = false;
+                        }
+                        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                            SRWorkModeManager.reloadShaderPack();
+                        }
+                        return true;
+                    })
+                    .build();
 
-        builder.enumSelectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.capture_mode"),
-                        CaptureMode.class,
-                        SuperResolutionConfig.getCaptureMode())
-                .setDefaultValue(CaptureMode.A)
-                .setEnumNameProvider(mode -> mode.name())
-                .setSaveConsumer(SuperResolutionConfig::setCaptureMode)
-                .build();
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.pause_game_on_gui"),
-                        SuperResolutionConfig.isPauseGameOnGui())
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setPauseGameOnGui)
-                .build();
+            upscaleRatioEntryRef[0] = builder.numberOption(
+                            Text.translatable("superresolution.screen.config.options.label.upscale_ratio"),
+                            SuperResolutionConfig.getUpscaleRatio(),
+                            3.0,
+                            SuperResolutionConfig.getMinUpscaleRatio())
+                    .setStep(0.01)
+                    .setValueFormater(v -> String.format("%.2f", v.doubleValue()))
+                    .setDefaultValue(() -> 1.7)
+                    .setDescriptionsSupplier(
+                            (value -> Optional.of(new Text[]{Text.literal(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio").getString().formatted(
+                                    String.format("%.0f", RenderHandlerManager.getScreenWidth() / value.floatValue()),
+                                    String.format("%.0f", RenderHandlerManager.getScreenHeight() / value.floatValue()),
+                                    String.format("%.2f", ((1 / value.floatValue()) * 100)) + "%"
+                            ))}))
+                    )
+                    .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
+                    .setTooltipSupplier((t)->{
+                        if (!isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())){
+                            return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported").getString()));
+                        }else {
+                            return Optional.of(Tooltip.empty());
+                        }
+                    })
+                    .setSaveConsumer((value) -> {
+                        float targetRatio = Float.parseFloat(String.format("%.2f", value.doubleValue()));
+                        SuperResolutionConfig.setUpscaleRatio(targetRatio);
+                        if (qualityPresetEntryRef[0] != null && !syncingQualityPreset[0]) {
+                            QualityPresetOption targetPreset = resolveQualityPresetOption(
+                                    qualityPresetEntryRef[0].getValues(),
+                                    targetRatio
+                            );
+                            qualityPresetEntryRef[0].setSelectedValue(targetPreset);
+                        }
+                        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                            SRWorkModeManager.reloadShaderPack();
+                        }
+                    })
+                    .build();
 
-        addOptionGroupToContainer(container, builder);
+            builder.numberOption(
+                            Text.translatable("superresolution.screen.config.options.label.sharpness"),
+                            SuperResolutionConfig.getSharpness(),
+                            1.0,
+                            0.0)
+                    .setStep(0.01)
+                    .setValueFormater(v -> String.format("%.2f", v.doubleValue()))
+                    .setDefaultValue(() -> 0.55)
+                    .setValueFormater(v -> String.format("%.2f", v.doubleValue()))
+                    .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.sharpness"))
+                    .setSaveConsumer((value) -> {
+                        SuperResolutionConfig.setSharpness(value.floatValue());
+                    })
+                    .build();
+                }
+        );
+
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.category.other"),
+                builder -> {
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.capture_mode"),
+                                    CaptureMode.class,
+                                    SuperResolutionConfig.getCaptureMode())
+                            .setDefaultValue(CaptureMode.A)
+                            .setEnumNameProvider(mode -> mode.name())
+                            .setSaveConsumer(SuperResolutionConfig::setCaptureMode)
+                            .build();
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.pause_game_on_gui"),
+                                    SuperResolutionConfig.isPauseGameOnGui())
+                            .setDefaultValue(() -> false)
+                            .setSaveConsumer(SuperResolutionConfig::setPauseGameOnGui)
+                            .build();
+                }
+        );
         finalizeFrame(frame, container);
         return frame;
     }

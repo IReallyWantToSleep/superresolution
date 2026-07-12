@@ -62,6 +62,8 @@
     "superresolution.screen.config.button.label.info": "信息",
     "superresolution.screen.config.category.debug": "调试设置",
     "superresolution.screen.config.category.general": "通用",
+    "superresolution.screen.config.category.super_resolution": "超分辨率",
+    "superresolution.screen.config.category.other": "其它",
     "superresolution.screen.config.category.advanced": "高级",
     "superresolution.screen.config.category.appearance": "外观",
     "superresolution.screen.config.category.experimental": "实验性",

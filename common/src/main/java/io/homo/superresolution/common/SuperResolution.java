@@ -144,6 +144,10 @@ public final class SuperResolution implements Destroyable {
         if (minecraft == null) {
             minecraft = Minecraft.getInstance();
         }
+
+        #if MC_VER != MC_26_2
+        Streamline.prepareEarly();
+        #endif
     }
 
     public static void onGameLoadFinished() {

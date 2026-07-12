@@ -5,6 +5,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
+import org.lwjgl.system.Configuration;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 
 import java.nio.file.Path;
@@ -45,6 +46,9 @@ public final class Streamline {
         if (!isSupportedOnCurrentVersion() || !isSupportedPlatform()) {
             return false;
         }
+        Configuration.VULKAN_LIBRARY_NAME.set(
+                NativeLibManager.LIB_STREAMLINE_INTERPOSER.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
+        );
         NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         return initEarly(config);
