@@ -42,11 +42,14 @@ import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.core.ngx.NgxInitializer;
+import io.homo.superresolution.core.ngx.NgxVulkan;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
@@ -160,7 +163,6 @@ public final class SuperResolution implements Destroyable {
             return;
         }
         SuperResolutionConfig.SPEC.load();
-        SuperResolutionConfig.captureStartupConfig();
         gameIsStarted = true;
         SuperResolutionKeyMapping.registerKeyMapping();
         instance = new SuperResolution();
@@ -294,6 +296,11 @@ public final class SuperResolution implements Destroyable {
 
             LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());
             LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
+
+            if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.Nvidia
+                    && RenderSystems.isSupportVulkan()) {
+                NgxInitializer.initializeIfSupported();
+            }
 
             SRWorkModeManager.bootstrapProviders();
             RenderHandlerManager.initialize();
@@ -515,6 +522,7 @@ public final class SuperResolution implements Destroyable {
         }
         SuperResolutionNativeAPI.srShutdown();
         Streamline.shutdown();
+        NgxVulkan.shutdown();
         RenderSystems.destroy();
     }
 }

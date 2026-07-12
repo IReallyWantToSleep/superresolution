@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.core.streamline;
 
 import java.util.Objects;
@@ -34,6 +52,51 @@ public final class StreamlineSession implements AutoCloseable {
             throw new IllegalStateException("slInit returned success without a session handle");
         }
         return new StreamlineSession(handle[0]);
+    }
+
+    private static void requireBooleanOut(boolean[] value) {
+        if (value == null || value.length == 0) {
+            throw new IllegalArgumentException("output array must contain one element");
+        }
+    }
+
+    private static void requireViewport(StreamlineTypes.Viewport viewport) {
+        Objects.requireNonNull(viewport, "viewport");
+    }
+
+    private static void requireToken(StreamlineTypes.FrameToken token) {
+        if (token == null || token.nativeHandle == 0L) {
+            throw new IllegalArgumentException("A valid FrameToken is required");
+        }
+    }
+
+    private static void requireTags(StreamlineTypes.ResourceTag[] tags) {
+        if (tags == null || tags.length == 0) {
+            throw new IllegalArgumentException("At least one ResourceTag is required");
+        }
+        for (StreamlineTypes.ResourceTag tag : tags) {
+            StreamlineTypes.requireResourceTag(tag);
+        }
+    }
+
+    private static void validateEvaluateInput(StreamlineTypes.EvaluateInput input) {
+        if (input == null) {
+            throw new IllegalArgumentException("Evaluation input cannot be null");
+        }
+        switch (input.kind) {
+            case StreamlineTypes.EvaluateInputKind.VIEWPORT -> requireViewport(input.viewport);
+            case StreamlineTypes.EvaluateInputKind.RESOURCE_TAG ->
+                    StreamlineTypes.requireResourceTag(input.resourceTag);
+            case StreamlineTypes.EvaluateInputKind.CONSTANTS -> StreamlineTypes.requireConstants(input.constants);
+            default -> throw new IllegalArgumentException("Unknown evaluation input kind: " + input.kind);
+        }
+    }
+
+    private static void validateCameraData(StreamlineTypes.ReflexCameraData value) {
+        StreamlineTypes.requireMatrix(value.worldToViewMatrix, "worldToViewMatrix");
+        StreamlineTypes.requireMatrix(value.viewToClipMatrix, "viewToClipMatrix");
+        StreamlineTypes.requireMatrix(value.previousRenderedWorldToViewMatrix, "previousRenderedWorldToViewMatrix");
+        StreamlineTypes.requireMatrix(value.previousRenderedViewToClipMatrix, "previousRenderedViewToClipMatrix");
     }
 
     public boolean isClosed() {
@@ -347,49 +410,5 @@ public final class StreamlineSession implements AutoCloseable {
             throw new IllegalStateException("StreamlineSession is closed");
         }
         return handle;
-    }
-
-    private static void requireBooleanOut(boolean[] value) {
-        if (value == null || value.length == 0) {
-            throw new IllegalArgumentException("output array must contain one element");
-        }
-    }
-
-    private static void requireViewport(StreamlineTypes.Viewport viewport) {
-        Objects.requireNonNull(viewport, "viewport");
-    }
-
-    private static void requireToken(StreamlineTypes.FrameToken token) {
-        if (token == null || token.nativeHandle == 0L) {
-            throw new IllegalArgumentException("A valid FrameToken is required");
-        }
-    }
-
-    private static void requireTags(StreamlineTypes.ResourceTag[] tags) {
-        if (tags == null || tags.length == 0) {
-            throw new IllegalArgumentException("At least one ResourceTag is required");
-        }
-        for (StreamlineTypes.ResourceTag tag : tags) {
-            StreamlineTypes.requireResourceTag(tag);
-        }
-    }
-
-    private static void validateEvaluateInput(StreamlineTypes.EvaluateInput input) {
-        if (input == null) {
-            throw new IllegalArgumentException("Evaluation input cannot be null");
-        }
-        switch (input.kind) {
-            case StreamlineTypes.EvaluateInputKind.VIEWPORT -> requireViewport(input.viewport);
-            case StreamlineTypes.EvaluateInputKind.RESOURCE_TAG -> StreamlineTypes.requireResourceTag(input.resourceTag);
-            case StreamlineTypes.EvaluateInputKind.CONSTANTS -> StreamlineTypes.requireConstants(input.constants);
-            default -> throw new IllegalArgumentException("Unknown evaluation input kind: " + input.kind);
-        }
-    }
-
-    private static void validateCameraData(StreamlineTypes.ReflexCameraData value) {
-        StreamlineTypes.requireMatrix(value.worldToViewMatrix, "worldToViewMatrix");
-        StreamlineTypes.requireMatrix(value.viewToClipMatrix, "viewToClipMatrix");
-        StreamlineTypes.requireMatrix(value.previousRenderedWorldToViewMatrix, "previousRenderedWorldToViewMatrix");
-        StreamlineTypes.requireMatrix(value.previousRenderedViewToClipMatrix, "previousRenderedViewToClipMatrix");
     }
 }

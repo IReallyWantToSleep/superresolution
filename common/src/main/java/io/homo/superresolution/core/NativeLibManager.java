@@ -48,13 +48,10 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
-    public static NativeLib LIB_SUPER_RESOLUTION_DLSS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
-    public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE_DLSS = null;
     public static NativeLib LIB_STREAMLINE_INTERPOSER = null;
     public static NativeLib LIB_STREAMLINE_COMMON = null;
-    public static NativeLib LIB_STREAMLINE_DLSS = null;
     public static NativeLib LIB_STREAMLINE_DLSS_G = null;
     public static NativeLib LIB_STREAMLINE_REFLEX = null;
     public static NativeLib LIB_STREAMLINE_NVNGX_REFLEX = null;
@@ -69,13 +66,10 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
-            LIB_SUPER_RESOLUTION_DLSS = new NativeLib("SuperResolutionDLSS", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
             LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", true, false);
-            LIB_SUPER_RESOLUTION_STREAMLINE_DLSS = new NativeLib("SuperResolutionStreamlineDLSS", false, false);
             LIB_STREAMLINE_COMMON = new NativeLib("sl.common", true, false, true);
             LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", true, false, true);
-            LIB_STREAMLINE_DLSS = new NativeLib("sl.dlss", false, false, true);
             LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, false, true);
             LIB_STREAMLINE_REFLEX = new NativeLib("sl.reflex", false, false, true);
             LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, false, true);
@@ -83,15 +77,11 @@ public class NativeLibManager {
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
-            libs.add(LIB_SUPER_RESOLUTION_DLSS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
             libs.add(LIB_STREAMLINE_COMMON);
             libs.add(LIB_STREAMLINE_INTERPOSER);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
-            libs.add(LIB_SUPER_RESOLUTION_STREAMLINE_DLSS);
-            libs.add(LIB_STREAMLINE_DLSS);
             libs.add(LIB_STREAMLINE_DLSS_G);
-
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);
@@ -99,11 +89,9 @@ public class NativeLibManager {
         } else if (operatingSystem.type == OperatingSystemType.LINUX && operatingSystem.arch == SystemArchitecture.X86_64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
-            LIB_SUPER_RESOLUTION_DLSS = new NativeLib("SuperResolutionDLSS", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
-            libs.add(LIB_SUPER_RESOLUTION_DLSS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
 
         } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {

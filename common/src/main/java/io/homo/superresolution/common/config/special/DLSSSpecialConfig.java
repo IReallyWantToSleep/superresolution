@@ -26,7 +26,6 @@ import io.homo.superresolution.api.config.ModConfigSpecBuilder;
 import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
-import io.homo.superresolution.common.config.enums.DLSSBackend;
 import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import net.minecraft.network.chat.Component;
@@ -34,12 +33,6 @@ import net.minecraft.network.chat.Component;
 import java.util.Map;
 
 public class DLSSSpecialConfig extends SpecialConfig {
-    public EnumValue<DLSSBackend> BACKEND = specBuilder.defineEnum(
-            "special/dlss/backend",
-            DLSSBackend.class,
-            () -> DLSSBackend.STREAMLINE
-    );
-
     public EnumValue<DLSSRenderPreset> RENDER_PRESET = specBuilder.defineEnum(
             "special/dlss/render_preset",
             DLSSRenderPreset.class,
@@ -52,30 +45,6 @@ public class DLSSSpecialConfig extends SpecialConfig {
 
     @Override
     protected void buildDescriptions(Map<String, SpecialConfigDescription<?>> map) {
-        map.put(
-                "backend",
-                new SpecialConfigDescription<DLSSBackend>()
-                        .setKey("backend")
-                        .setName(Component.translatable("superresolution.screen.config.special.dlss.backend.name"))
-                        .setTooltip(Component.translatable("superresolution.screen.config.special.dlss.backend.tooltip"))
-                        .setType(ConfigSpecType.ENUM)
-                        .setClazz(DLSSBackend.class)
-                        .setDefaultValue(DLSSBackend.NGX)
-                        .setValueNameSupplier((backend) -> switch (backend) {
-                            case STREAMLINE -> java.util.Optional.of(Component.translatable(
-                                    "superresolution.screen.config.special.dlss.backend.streamline"
-                            ));
-                            case NGX -> java.util.Optional.of(Component.translatable(
-                                    "superresolution.screen.config.special.dlss.backend.ngx"
-                            ));
-                        })
-                        .setSaveConsumer((v) -> {
-                            if (getSpecialConfigs().DLSS.BACKEND.get() != v) {
-                                getSpecialConfigs().DLSS.BACKEND.set(v);
-                            }
-                        })
-                        .setValue(BACKEND.get())
-        );
         map.put(
                 "render_preset",
                 new SpecialConfigDescription<DLSSRenderPreset>()

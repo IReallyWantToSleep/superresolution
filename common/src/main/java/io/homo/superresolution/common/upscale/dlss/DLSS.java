@@ -21,259 +21,210 @@ package io.homo.superresolution.common.upscale.dlss;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.enums.DLSSBackend;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.upscale.SRApiAlgorithm;
-import io.homo.superresolution.core.NativeLibManager;
+import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.streamline.Streamline;
-import io.homo.superresolution.core.streamline.StreamlineResult;
-import io.homo.superresolution.core.streamline.StreamlineTypes;
-import io.homo.superresolution.core.utils.LargeStackExecutor;
-import io.homo.superresolution.srapi.*;
-import org.joml.Vector2f;
-import org.joml.Vector2i;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+import io.homo.superresolution.core.ngx.NgxConstants;
+import io.homo.superresolution.core.ngx.NgxDLSSCreateParams;
+import io.homo.superresolution.core.ngx.NgxFeature;
+import io.homo.superresolution.core.ngx.NgxImageSubresourceRange;
+import io.homo.superresolution.core.ngx.NgxInitializer;
+import io.homo.superresolution.core.ngx.NgxParameters;
+import io.homo.superresolution.core.ngx.NgxResourceVK;
+import io.homo.superresolution.core.ngx.NgxVKDLSSEvalParams;
+import io.homo.superresolution.core.ngx.NgxVulkan;
 
-import java.nio.file.Path;
-import java.util.EnumSet;
-
-public class DLSS extends SRApiAlgorithm {
-    private static final long DLSS_PROVIDER_ID = 0x8000005L;
-    private static final String STREAMLINE_FRAME_TOKEN_PARAM = "STREAMLINE_FRAME_TOKEN";
-    private static final StreamlineTypes.Viewport STREAMLINE_VIEWPORT = new StreamlineTypes.Viewport(0);
-    private static String loadedProviderLibraryPath;
-    private boolean usingStreamlineBackend;
+public class DLSS extends VulkanInteropAlgorithm {
+    private NgxFeature ngxDlssFeature;
+    private NgxParameters ngxParameters;
 
     @Override
-    protected void recreateSRApiContext(InitializationDescription desc) {
-        NativeLibManager.NativeLib providerLibrary = selectProviderLibrary();
-        if (providerLibrary == null) {
-            return;
-        }
-        Path lib = providerLibrary.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
-        if (!(lib.toFile().isFile() && lib.toFile().canRead())) {
-            return;
-        }
-        RenderSystems.vulkan().device().getMainQueue().waitIdle();
-        String providerLibraryPath = lib.toAbsolutePath().toString();
-        if (!providerLibraryPath.equals(loadedProviderLibraryPath)) {
-            SRReturnCode unloadCode = SuperResolutionNativeAPI.srUnloadUpscaleProviders(DLSS_PROVIDER_ID);
-            if (unloadCode != SRReturnCode.OK) {
-                throw new RuntimeException("Failed to unload the previous DLSS provider: " + unloadCode);
-            }
-            SRReturnCode loadCode = SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
-                    providerLibraryPath,
-                    usingStreamlineBackend ? "srGetStreamlineUpscaleProviders" : "srGetDLSSUpscaleProviders",
-                    usingStreamlineBackend ? "srGetStreamlineUpscaleProvidersCount" : "srGetDLSSUpscaleProvidersCount");
-            if (loadCode != SRReturnCode.OK) {
-                throw new RuntimeException("Failed to load the DLSS provider: " + loadCode);
-            }
-            loadedProviderLibraryPath = providerLibraryPath;
-        }
-        // NGX's NVSDK_NGX_VULKAN_Init reserves a ~1MB buffer on the stack; run the whole native
-        // init on a large-stack thread so it can't overflow HotSpot's 1MB default render-thread
-        // stack (which manifested as a bare SIGSEGV inside libnvidia-ngx with no hs_err).
-        LargeStackExecutor.run("SR-DLSS-Init", () -> {
-            try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
-                SuperResolution.LOGGER.info("'srGetUpscaleProvider' return code: {}",
-                        SuperResolutionNativeAPI.srGetUpscaleProvider(
-                                provider,
-                                DLSS_PROVIDER_ID)
-                );
-
-                this.context = new SRUpscaleContext(0);
-                VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-                VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
-                EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
-                if (desc.isAutoExposure()) {
-                    flags.add(
-                            SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-                    );
-                }
-                if (desc.isHdrInput()) {
-                    flags.add(
-                            SRUpscaleContextCreateFlags.ENABLE_HDR
-                    );
-                }
-                if (desc.isMotionJittered()) {
-                    flags.add(
-                            SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-                    );
-                }
-                try (
-                        SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
-                                new SRVulkanDeviceInfo(
-                                        RenderSystems.vulkan().getVulkanInstance(),
-                                        vulkanDevice.getPhysicalDevice(),
-                                        vulkanDevice.getVkDevice(),
-                                        commandBuffer.getNativeCommandBuffer(),
-                                        vulkanDevice.getVkDevice().getCapabilities().vkGetDeviceProcAddr,
-                                        VkReflectionHelper.getVkGetInstanceProcAddr()),
-                                new Vector2i(RenderHandlerManager.getScreenWidth(),
-                                        RenderHandlerManager.getScreenHeight()),
-                                new Vector2i(RenderHandlerManager.getRenderWidth(),
-                                        RenderHandlerManager.getRenderHeight()),
-                                flags
-                        )
-                ) {
-                    String nativeLibraryDir = SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath().toString();
-                    upscaleContextDesc.getExtraParams().setString("DLSS_BACKEND", usingStreamlineBackend ? "STREAMLINE" : "NGX");
-                    if (usingStreamlineBackend) {
-                        upscaleContextDesc.getExtraParams().setString("STREAMLINE_PLUGIN_PATH", nativeLibraryDir);
-                        upscaleContextDesc.getExtraParams().setString("STREAMLINE_LOG_PATH",
-                                SuperResolutionConstants.ERROR_DIR.getPath().toAbsolutePath().toString()
-                        );
-                    } else {
-                        upscaleContextDesc.getExtraParams().setString("NGX_FEATURE_DLL_PATH", nativeLibraryDir);
-                    }
-                    upscaleContextDesc.getExtraParams().setInt32(
-                            "DLSS_RENDER_PRESET",
-                            SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()
-                    );
-
-                    commandBuffer.begin();
-                    SRReturnCode createUpscaleContextCode = SuperResolutionNativeAPI.srCreateUpscaleContext(context, provider, upscaleContextDesc);
-                    SRReturnCode initUpscaleContextCode = createUpscaleContextCode == SRReturnCode.OK
-                            ? SuperResolutionNativeAPI.srInitUpscaleContext(context)
-                            : createUpscaleContextCode;
-                    commandBuffer.end();
-                    if (createUpscaleContextCode != SRReturnCode.OK) {
-                        SuperResolution.LOGGER.error("Failed to create upscale context. Return code: {}", createUpscaleContextCode);
-                        throw new RuntimeException("Failed to create upscale context");
-                    }
-                    if (initUpscaleContextCode != SRReturnCode.OK) {
-                        SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
-                        throw new RuntimeException("Failed to initialize upscale context");
-                    }
-                    vulkanDevice.submitCommandBuffer(commandBuffer);
-                    commandBuffer.waitForFence();
-                } finally {
-                    commandBuffer.destroy();
-                }
-            }
-        });
+    protected boolean isVulkanInteropReady() {
+        return ngxDlssFeature != null
+                && ngxDlssFeature.isValid()
+                && ngxParameters != null
+                && ngxParameters.isValid();
     }
 
     @Override
-    protected void destroySRApiContext() {
-        if (context != null) {
-            SRReturnCode code = context.destroy();
-            if (code != SRReturnCode.OK) {
-                SuperResolution.LOGGER.error("Failed to destroy upscale context. Return code: {}", code);
-                throw new RuntimeException("Failed to destroy upscale context");
-            }
-            context = null;
-        }
+    protected void onInteropResourcesCreated() {
+        recreateNgxContext(initDesc);
     }
 
     @Override
-    public void dispatchSRApiContext(
+    protected void onBeforeInteropResourcesDestroyed() {
+        destroyNgxContext();
+    }
+
+    @Override
+    protected void dispatchVulkanUpscale(
             VulkanCommandBuffer commandBuffer,
             InFlightFrameResourcesSet inFlightFrameResourcesSet
-
     ) {
-        try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
-            desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
-            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
-            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
-            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-            desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
-            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
-            desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
-            if (!usingStreamlineBackend) {
-                desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
-            }else {
-                desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
-            }
-            desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
-            desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
-            desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
-            desc.setEnableSharpening(true);
-            desc.setSharpness(SuperResolutionConfig.getSharpness());
-            desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
-            desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
-            desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
-            desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
-            desc.setViewSpaceToMetersFactor(1.0f);
-            boolean reset = consumeHistoryReset();
-            desc.setReset(reset);
-            desc.setFlags(0);
-            if (usingStreamlineBackend) {
-                if (!setStreamlineConstants(inFlightFrameResourcesSet, reset, desc)) {
-                    return;
-                }
-            }
-            SRReturnCode code = SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
-            if (code != SRReturnCode.OK) {
-                SuperResolution.LOGGER.error("Failed to dispatch upscale context. Return code: {}", code);
-            }
+        dispatchNgxContext(commandBuffer, inFlightFrameResourcesSet);
+    }
+
+    private void recreateNgxContext(InitializationDescription desc) {
+        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+        if (!NgxInitializer.initializeIfSupported()) {
+            throw new IllegalStateException("NGX is unavailable for the current GPU");
+        }
+
+        NgxParameters parameters = new NgxParameters();
+        int parametersResult = NgxVulkan.getCapabilityParameters(parameters);
+        requireNgxSuccess("NVSDK_NGX_VULKAN_GetCapabilityParameters", parametersResult);
+
+        NgxFeature feature = new NgxFeature();
+        VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
+        try {
+            configureNgxRenderPreset(parameters);
+
+            NgxDLSSCreateParams createParams = new NgxDLSSCreateParams();
+            createParams.feature.width = RenderHandlerManager.getRenderWidth();
+            createParams.feature.height = RenderHandlerManager.getRenderHeight();
+            createParams.feature.targetWidth = RenderHandlerManager.getScreenWidth();
+            createParams.feature.targetHeight = RenderHandlerManager.getScreenHeight();
+            createParams.featureCreateFlags = createNgxFeatureFlags(desc);
+
+            commandBuffer.begin();
+            int createResult = NgxVulkan.createDLSS(
+                    commandBuffer.getNativeCommandBuffer().address(),
+                    1,
+                    1,
+                    feature,
+                    parameters,
+                    createParams
+            );
+            commandBuffer.end();
+            requireNgxSuccess("NGX_VULKAN_CREATE_DLSS_EXT", createResult);
+
+            vulkanDevice.submitCommandBuffer(commandBuffer);
+            commandBuffer.waitForFence();
+
+            ngxParameters = parameters;
+            ngxDlssFeature = feature;
+        } catch (RuntimeException | Error e) {
+            feature.close();
+            parameters.close();
+            throw e;
+        } finally {
+            commandBuffer.destroy();
         }
     }
 
-    private boolean setStreamlineConstants(
-            InFlightFrameResourcesSet inFlightFrameResourcesSet,
-            boolean reset,
-            SRDispatchUpscaleDesc desc
+    private int createNgxFeatureFlags(InitializationDescription desc) {
+        int flags = NgxConstants.DLSS_FLAG_MV_LOW_RES;
+        if (desc.isAutoExposure()) {
+            flags |= NgxConstants.DLSS_FLAG_AUTO_EXPOSURE;
+        }
+        if (desc.isHdrInput()) {
+            flags |= NgxConstants.DLSS_FLAG_HDR;
+        }
+        if (desc.isMotionJittered()) {
+            flags |= NgxConstants.DLSS_FLAG_MV_JITTERED;
+        }
+        return flags;
+    }
+
+    private void configureNgxRenderPreset(NgxParameters parameters) {
+        int preset = SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode();
+        parameters.setInt("DLSS.Hint.Render.Preset.DLAA", preset);
+        parameters.setInt("DLSS.Hint.Render.Preset.Quality", preset);
+        parameters.setInt("DLSS.Hint.Render.Preset.Balanced", preset);
+        parameters.setInt("DLSS.Hint.Render.Preset.Performance", preset);
+        parameters.setInt("DLSS.Hint.Render.Preset.UltraPerformance", preset);
+        parameters.setInt("DLSS.Hint.Render.Preset.UltraQuality", preset);
+    }
+
+    private void destroyNgxContext() {
+        if (ngxDlssFeature != null) {
+            int result = ngxDlssFeature.release();
+            if (!NgxConstants.succeeded(result)) {
+                SuperResolution.LOGGER.error("Failed to release the DLSS NGX feature. Result: {}", result);
+            }
+            ngxDlssFeature = null;
+        }
+        if (ngxParameters != null) {
+            int result = ngxParameters.destroy();
+            if (!NgxConstants.succeeded(result)) {
+                SuperResolution.LOGGER.error("Failed to destroy the DLSS NGX parameters. Result: {}", result);
+            }
+            ngxParameters = null;
+        }
+    }
+
+    private void dispatchNgxContext(
+            VulkanCommandBuffer commandBuffer,
+            InFlightFrameResourcesSet inFlightFrameResourcesSet
     ) {
-        StreamlineTypes.FrameToken frameToken = new StreamlineTypes.FrameToken();
-        int tokenResult = Streamline.getNewFrameToken(inFlightFrameResourcesSet.frameData.frameCount(), frameToken);
-        if (tokenResult != 0) {
-            logStreamlineFailure("slGetNewFrameToken", tokenResult);
-            return false;
+        if (ngxDlssFeature == null || ngxParameters == null) {
+            return;
         }
 
-        StreamlineTypes.Constants constants = new StreamlineTypes.Constants();
-        constants.jitterOffsetX = inFlightFrameResourcesSet.frameData.jitterOffset().x;
-        constants.jitterOffsetY = inFlightFrameResourcesSet.frameData.jitterOffset().y;
-        constants.motionVectorScaleX = inFlightFrameResourcesSet.frameData.renderSize().x
-                / inFlightFrameResourcesSet.frameData.renderWidth();
-        constants.motionVectorScaleY = inFlightFrameResourcesSet.frameData.renderSize().y
-                / inFlightFrameResourcesSet.frameData.renderHeight();
-        constants.cameraNear = inFlightFrameResourcesSet.frameData.cameraNear();
-        constants.cameraFar = inFlightFrameResourcesSet.frameData.cameraFar();
-        constants.cameraFov = inFlightFrameResourcesSet.frameData.verticalFov();
-        constants.cameraAspectRatio = (float) inFlightFrameResourcesSet.frameData.renderWidth()
-                / inFlightFrameResourcesSet.frameData.renderHeight();
-        constants.depthInverted = 0;
-        constants.cameraMotionIncluded = 1;
-        constants.motionVectors3D = 0;
-        constants.reset = reset ? (byte) 1 : (byte) 0;
-        constants.motionVectorsJittered = initDesc.isMotionJittered() ? (byte) 1 : (byte) 0;
+        try (
+                NgxResourceVK color = createNgxTextureResource(inFlightFrameResourcesSet.inputColorVkTexture, true);
+                NgxResourceVK depth = createNgxTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture, false);
+                NgxResourceVK motionVectors = createNgxTextureResource(
+                        inFlightFrameResourcesSet.inputMotionVectorsVkTexture,
+                        true
+                );
+                NgxResourceVK exposure = createNgxTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture, false);
+                NgxResourceVK output = createNgxTextureResource(inFlightFrameResourcesSet.outputColorVkTexture, true)
+        ) {
+            NgxVKDLSSEvalParams evalParams = new NgxVKDLSSEvalParams();
+            evalParams.feature.inputColor = color;
+            evalParams.feature.output = output;
+            evalParams.feature.sharpness = SuperResolutionConfig.getSharpness();
+            evalParams.depth = depth;
+            evalParams.motionVectors = motionVectors;
+            evalParams.exposureTexture = exposure;
+            evalParams.jitterOffsetX = inFlightFrameResourcesSet.frameData.jitterOffset().x;
+            evalParams.jitterOffsetY = inFlightFrameResourcesSet.frameData.jitterOffset().y;
+            evalParams.renderSubrectDimensions.width = inFlightFrameResourcesSet.frameData.renderWidth();
+            evalParams.renderSubrectDimensions.height = inFlightFrameResourcesSet.frameData.renderHeight();
+            evalParams.motionVectorScaleX = inFlightFrameResourcesSet.frameData.renderSize().x;
+            evalParams.motionVectorScaleY = inFlightFrameResourcesSet.frameData.renderSize().y;
+            evalParams.reset = consumeHistoryReset() ? 1 : 0;
+            evalParams.preExposure = inFlightFrameResourcesSet.frameData.preExposure();
+            evalParams.exposureScale = 1.0f;
+            evalParams.frameTimeDeltaInMsec = inFlightFrameResourcesSet.frameData.frameTimeDelta();
 
-        int constantsResult = Streamline.setConstants(constants, frameToken, STREAMLINE_VIEWPORT);
-        if (constantsResult != 0) {
-            logStreamlineFailure("slSetConstants", constantsResult);
-            return false;
+            int evaluateResult = NgxVulkan.evaluateDLSS(
+                    commandBuffer.getNativeCommandBuffer().address(),
+                    ngxDlssFeature,
+                    ngxParameters,
+                    evalParams
+            );
+            if (!NgxConstants.succeeded(evaluateResult)) {
+                SuperResolution.LOGGER.error("NGX DLSS evaluation failed. Result: {}", evaluateResult);
+            }
         }
-        SRReturnCode paramCode = desc.getExtraParams().setPointer(STREAMLINE_FRAME_TOKEN_PARAM, frameToken.nativeHandle);
-        if (paramCode != SRReturnCode.OK) {
-            SuperResolution.LOGGER.error("Failed to pass the Streamline frame token to DLSS. Return code: {}", paramCode);
-            return false;
-        }
-        return true;
     }
 
-    private void logStreamlineFailure(String operation, int result) {
-        SuperResolution.LOGGER.error("{} failed. Streamline result: {} ({})",
-                operation,
-                StreamlineResult.nameOf(result),
-                result);
+    private NgxResourceVK createNgxTextureResource(VulkanTexture texture, boolean readWrite) {
+        NgxImageSubresourceRange subresourceRange = new NgxImageSubresourceRange();
+        subresourceRange.aspectMask = texture.getAspectMask();
+        subresourceRange.baseMipLevel = 0;
+        subresourceRange.levelCount = texture.getMipmapSettings().getLevels();
+        subresourceRange.baseArrayLayer = 0;
+        subresourceRange.layerCount = 1;
+        return NgxVulkan.createImageViewResourceVK(
+                texture.getImageView(),
+                texture.handle(),
+                subresourceRange,
+                texture.getTextureFormat().vk(),
+                texture.getWidth(),
+                texture.getHeight(),
+                readWrite
+        );
     }
 
-    private NativeLibManager.NativeLib selectProviderLibrary() {
-        if (SuperResolutionConfig.getStartupDlssBackend() == DLSSBackend.STREAMLINE
-                && Streamline.isSupportedOnCurrentVersion()
-                && Streamline.isSupportedPlatform()
-                && Streamline.isNativeAvailable()) {
-            usingStreamlineBackend = true;
-            return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE_DLSS;
+    private static void requireNgxSuccess(String operation, int result) {
+        if (!NgxConstants.succeeded(result)) {
+            throw new IllegalStateException(operation + " failed. NGX result: " + result);
         }
-        usingStreamlineBackend = false;
-        return NativeLibManager.LIB_SUPER_RESOLUTION_DLSS;
     }
-
 }

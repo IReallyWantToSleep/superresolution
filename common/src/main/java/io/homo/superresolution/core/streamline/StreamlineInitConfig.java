@@ -1,3 +1,21 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package io.homo.superresolution.core.streamline;
 
 import java.nio.file.Path;
@@ -36,24 +54,24 @@ public final class StreamlineInitConfig {
         return new Builder();
     }
 
-    public static StreamlineInitConfig defaultDlss(Path pluginPath, Path logPath) {
+    public static StreamlineInitConfig defaultConfig(Path pluginPath, Path logPath) {
         return builder()
                 .pluginPath(pluginPath)
                 .logPath(logPath)
-                .features(StreamlineFeature.DLSS)
+                .features()
                 .build();
     }
 
     public static final class Builder {
+        private final List<String> pluginPaths = new ArrayList<>();
         private boolean showConsole;
         private int logLevel = StreamlineTypes.LogLevel.DEFAULT;
         private long preferenceFlags = StreamlineTypes.PreferenceFlags.DISABLE_COMMAND_LIST_STATE_TRACKING
                 | StreamlineTypes.PreferenceFlags.ALLOW_OTA
                 | StreamlineTypes.PreferenceFlags.LOAD_DOWNLOADED_PLUGINS
                 | StreamlineTypes.PreferenceFlags.USE_FRAME_BASED_RESOURCE_TAGGING;
-        private final List<String> pluginPaths = new ArrayList<>();
         private String logPath;
-        private int[] features = {StreamlineFeature.DLSS};
+        private int[] features = {};
         private int applicationId;
         private int engine = StreamlineTypes.EngineType.CUSTOM;
         private String engineVersion = "SuperResolution";

@@ -1,9 +1,57 @@
-package io.homo.superresolution.core.streamline;
+/*
+ * Super Resolution
+ * Copyright (c) 2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
-import java.util.Arrays;
+package io.homo.superresolution.core.streamline;
 
 public final class StreamlineTypes {
     private StreamlineTypes() {
+    }
+
+    static float[] identityMatrix() {
+        return new float[]{
+                1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f
+        };
+    }
+
+    static void requireMatrix(float[] value, String name) {
+        if (value == null || value.length != 16) {
+            throw new IllegalArgumentException(name + " must contain 16 floats");
+        }
+    }
+
+    static void requireResourceTag(ResourceTag value) {
+        if (value == null || value.resource == null) {
+            throw new IllegalArgumentException("ResourceTag.resource is required");
+        }
+    }
+
+    static void requireConstants(Constants value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Constants are required");
+        }
+        requireMatrix(value.cameraViewToClip, "cameraViewToClip");
+        requireMatrix(value.clipToCameraView, "clipToCameraView");
+        requireMatrix(value.clipToLensClip, "clipToLensClip");
+        requireMatrix(value.clipToPrevClip, "clipToPrevClip");
+        requireMatrix(value.prevClipToClip, "prevClipToClip");
     }
 
     public static final class LogLevel {
@@ -513,37 +561,5 @@ public final class StreamlineTypes {
             result.crossAdapterCopyTimeUs = (int) frameReports2[base + 1];
             return result;
         }
-    }
-
-    static float[] identityMatrix() {
-        return new float[]{
-                1.0f, 0.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f, 0.0f,
-                0.0f, 0.0f, 1.0f, 0.0f,
-                0.0f, 0.0f, 0.0f, 1.0f
-        };
-    }
-
-    static void requireMatrix(float[] value, String name) {
-        if (value == null || value.length != 16) {
-            throw new IllegalArgumentException(name + " must contain 16 floats");
-        }
-    }
-
-    static void requireResourceTag(ResourceTag value) {
-        if (value == null || value.resource == null) {
-            throw new IllegalArgumentException("ResourceTag.resource is required");
-        }
-    }
-
-    static void requireConstants(Constants value) {
-        if (value == null) {
-            throw new IllegalArgumentException("Constants are required");
-        }
-        requireMatrix(value.cameraViewToClip, "cameraViewToClip");
-        requireMatrix(value.clipToCameraView, "clipToCameraView");
-        requireMatrix(value.clipToLensClip, "clipToLensClip");
-        requireMatrix(value.clipToPrevClip, "clipToPrevClip");
-        requireMatrix(value.prevClipToClip, "prevClipToClip");
     }
 }
