@@ -8,7 +8,7 @@
 
 <div align="center">
 <h1>Super Resolution</h1>
-<a href="README_EN.md">English</a> / <a href="README_JP.md">日本語</a></a>
+<a href="README_EN.md">English</a> / <a href="README_JP.md">日本語</a> / <a href="../README.md">简体中文</a>
 </div>
 
 ---
@@ -18,10 +18,16 @@ Built-in super-resolution algorithms for **Minecraft**, improving performance an
 # Supported Algorithms
 
 * FSR1
-* FSR2 (ported from C++ v2.2.1 to Java, may slightly differ from upstream)
+* FSR2
 * SGSR2
 * SGSR1
-* NIS (under development)
+* DLSS
+* XeSS
+* FSR3
+
+# Other Features
+
+* Super-resolution support inside shader packs, [documentation](https://github.com/187J3X1-114514/superresolution/wiki/Shaderpack-Interface-documentation)
 
 # Compatibility
 
@@ -29,6 +35,7 @@ Built-in super-resolution algorithms for **Minecraft**, improving performance an
 * Iris - Works fine
 * Distant Horizons - Works fine
 * Embeddium - Works fine
+* Voxy - Works fine
 * OptiFine - Not tested
 
 # Requirements
@@ -41,11 +48,9 @@ Built-in super-resolution algorithms for **Minecraft**, improving performance an
 
 ### About Android Devices
 
-Currently, running on Android is **not supported**.
+Currently, running on Android is **not supported**. Native Android libraries are provided (but cannot be loaded correctly).
 
-Native Android libraries are provided (but cannot be loaded correctly).
-In addition, compute shaders, DSA, and SpirV shader binaries often do not work correctly across various Android OpenGL
-translation layers. However, **SuperResolution can function without these features where possible**.
+In addition, compute shaders, DSA, and SpirV shader binaries often do not work correctly across various Android OpenGL translation layers. However, **SuperResolution can function without these features where possible**.
 
 ## GPU Requirements
 
@@ -75,24 +80,23 @@ Please open an [issue here](https://github.com/187J3X1-114514/superresolution/is
 
 First, build the native C++ dependencies by running the `native:buildNative` task.
 
-> **Note:** Windows requires MinGW and CMake. For other requirements, see [here](native/README.md).
-
-Then open your terminal and run:
+> **Note:** Windows requires MinGW and CMake. For other requirements, see [here](../native/README.md).
+>
+Then open your terminal and run, the generated `build_jars` will contain your mod files.
 
 ```shell
 git clone https://github.com/187J3X1-114514/superresolution
 cd superresolution
-python script/buildAll.py
+./gradlew buildAllVersions
 ```
 
-The generated `build_jars` will contain your mod files.
-
-# Planned Features
-
-* Integrated ASR 2.3
-* Vulkan and OpenGL shared texture interoperability (if successful, would enable FSR3, DLSS support)
-
 ---
+
+# License
+
+* The mod itself uses GPL-3.0
+* Native libraries use MIT
+* This software contains source code provided by NVIDIA Corporation
 
 ## Stargazer History
 
