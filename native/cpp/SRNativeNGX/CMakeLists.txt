@@ -21,7 +21,7 @@ endif()
 
 find_package(Vulkan REQUIRED)
 
-set(DLSS_SDK_DIR "${CMAKE_SOURCE_DIR}/SRNativeDLSS/third_party/DLSS")
+set(DLSS_SDK_DIR "${PROJECT_SOURCE_DIR}/third_party/DLSS")
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     link_directories("${DLSS_SDK_DIR}/lib/Windows_x86_64/x64")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")

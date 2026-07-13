@@ -251,13 +251,8 @@ target_link_libraries(SR_MYSUPERSCALER_LIB
 
 ```cmake
 # /CMakeLists.txt
-if(SR_DLSS)
-    add_subdirectory("SRNativeDLSS")
-endif()
-
-# ...
 if(SR_AAAA)
-add_subdirectory(SRNativeMySuperScaler) # 添加新模块
+    add_subdirectory("SRNativeMySuperScaler") # 添加新模块
 endif()
 # ...
 ``` 

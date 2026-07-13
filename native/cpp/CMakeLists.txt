@@ -3,7 +3,6 @@ project(SuperResolution)
 
 option(SR_FSR "启用以支持FSR" ON)
 option(SR_XESS "启用以支持XESS" ON)
-option(SR_DLSS "启用以支持DLSS" ON)
 option(SR_NGX "启用以支持NGX绑定" ON)
 option(SR_STREAMLINE "启用以支持Streamline" ON)
 
@@ -85,14 +84,10 @@ if(SR_XESS)
     add_subdirectory("SRNativeXeSS")
 endif()
 
-if(SR_DLSS)
-    add_subdirectory("SRNativeDLSS")
-endif()
 if(SR_NGX)
     add_subdirectory("SRNativeNGX")
 endif()
 
 if(SR_STREAMLINE AND ON_WINDOWS)
     add_subdirectory("SRNativeStreamline")
-    add_subdirectory("SRNativeStreamlineDLSSProvider")
 endif()

@@ -10,19 +10,18 @@ set -euo pipefail
 #   docker run --rm -v "$PWD":/src sr-cross-win ./build_windows_on_linux.sh Release
 #
 # 环境变量:
-#   SR_FSR   SR_XESS   SR_DLSS   SR_FSROGL  — 模块开关 (ON/OFF)
+#   SR_FSR   SR_XESS   SR_FSROGL  — 模块开关 (ON/OFF)
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 SR_FSR="${SR_FSR:-ON}"
 SR_XESS="${SR_XESS:-ON}"
-SR_DLSS="${SR_DLSS:-ON}"
 SR_FSROGL="${SR_FSROGL:-OFF}"
 BUILD_TYPES="${1:-Debug Release}"
 
 echo "=== SuperResolution Windows cross-build ==="
-echo "  SR_FSR=${SR_FSR}  SR_XESS=${SR_XESS}  SR_DLSS=${SR_DLSS}"
+echo "  SR_FSR=${SR_FSR}  SR_XESS=${SR_XESS}"
 echo "  Build types: ${BUILD_TYPES}"
 echo ""
 
@@ -38,7 +37,6 @@ for BUILD_TYPE in ${BUILD_TYPES}; do
         -DCMAKE_LINKER=lld-link \
         -DSR_FSR="${SR_FSR}" \
         -DSR_XESS="${SR_XESS}" \
-        -DSR_DLSS="${SR_DLSS}" \
         -DSR_FSROGL="${SR_FSROGL}" \
         -DVulkan_INCLUDE_DIR="${SCRIPT_DIR}/third_party" \
         -DVulkan_LIBRARY="/tmp/vulkan-stub/vulkan-1.lib"
