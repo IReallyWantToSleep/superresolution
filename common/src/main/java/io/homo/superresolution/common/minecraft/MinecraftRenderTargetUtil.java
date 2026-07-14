@@ -52,9 +52,9 @@ public class MinecraftRenderTargetUtil {
             cachedGlDeviceClass = Class.forName("com.mojang.blaze3d.opengl.GlDevice");
             cachedGpuDeviceClass = Class.forName("com.mojang.blaze3d.systems.GpuDevice");
             cachedGpuDeviceBackendField = cachedGpuDeviceClass.getDeclaredField("backend");
-
             cachedGpuDeviceBackendField.setAccessible(true);
             cachedGlDeviceDirectStateAccessMethod = cachedGlDeviceClass.getMethod("directStateAccess");
+            cachedGlDeviceDirectStateAccessMethod.setAccessible(true);
             #if MC_VER > MC_26_1_2
             cachedFrameBufferCacheField = cachedGlDeviceClass.getDeclaredField("frameBufferCache");
             cachedFrameBufferCacheField.setAccessible(true);
