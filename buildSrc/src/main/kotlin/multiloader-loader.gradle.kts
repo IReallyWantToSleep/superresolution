@@ -15,6 +15,23 @@ val commonResources by configurations.creating {
     isCanBeResolved = true
 }
 
+val useDebugLib = gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true
+val requiredStreamlineLibraries = listOf(
+    "NvLowLatencyVk.dll",
+    "sl.common.dll",
+    "sl.dlss_g.dll",
+    "sl.interposer.dll",
+    "sl.pcl.dll",
+    "sl.reflex.dll"
+)
+val selectedStreamlineResourceDir = rootProject.layout.projectDirectory.dir(
+    "common/src/main/resources/lib/${if (useDebugLib) "sl.dev" else "sl.rel"}"
+)
+val streamlineSyncTasks = listOf(
+    ":common:syncStreamlineDebugLibs",
+    ":common:syncStreamlineReleaseLibs"
+)
+
 dependencies {
     compileOnly(project(":common")) {
         exclude(group = "me.shedaniel.cloth", module = "*")
@@ -32,7 +49,18 @@ tasks.named<JavaCompile>("compileJava") {
 
 tasks.named<ProcessResources>("processResources") {
     dependsOn(commonResources)
+    dependsOn(streamlineSyncTasks)
     from(commonResources)
+    exclude(
+        "lib/sl.dev/**",
+        "lib/sl.rel/**",
+        "lib/sl.*.dll",
+        "lib/NvLowLatencyVk.dll"
+    )
+    from(selectedStreamlineResourceDir) {
+        include(requiredStreamlineLibraries)
+        into("lib")
+    }
 }
 
 tasks.named<Javadoc>("javadoc") {
@@ -43,5 +71,16 @@ tasks.named<Jar>("sourcesJar") {
     dependsOn(commonJava)
     from(commonJava)
     dependsOn(commonResources)
+    dependsOn(streamlineSyncTasks)
     from(commonResources)
+    exclude(
+        "lib/sl.dev/**",
+        "lib/sl.rel/**",
+        "lib/sl.*.dll",
+        "lib/NvLowLatencyVk.dll"
+    )
+    from(selectedStreamlineResourceDir) {
+        include(requiredStreamlineLibraries)
+        into("lib")
+    }
 }

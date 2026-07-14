@@ -2,6 +2,7 @@ import multiversion.BasePlatformConfig
 import multiversion.Dependency
 import multiversion.VersionConfig
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
@@ -258,11 +259,73 @@ artifacts {
     }
 }
 
+val useDebugLib = gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true
+val streamlineBinDir = rootProject.file(
+    providers.gradleProperty("streamline_bin_dir").orElse("K:/sl/bin/x64").get()
+)
+val streamlineResourceLibDir = layout.projectDirectory.dir("src/main/resources/lib")
+val requiredStreamlineLibraries = listOf(
+    "NvLowLatencyVk.dll",
+    "sl.common.dll",
+    "sl.dlss_g.dll",
+    "sl.interposer.dll",
+    "sl.pcl.dll",
+    "sl.reflex.dll"
+)
+
+fun registerStreamlineSyncTask(
+    taskName: String,
+    sourceDir: File,
+    targetDirName: String
+) = tasks.register<Sync>(taskName) {
+    group = "build"
+    description = "Copy required Streamline libraries into $targetDirName"
+
+    from(sourceDir) {
+        include(requiredStreamlineLibraries)
+    }
+    into(streamlineResourceLibDir.dir(targetDirName))
+
+    doFirst {
+        val missingLibraries = requiredStreamlineLibraries.filterNot { sourceDir.resolve(it).isFile }
+        if (missingLibraries.isNotEmpty()) {
+            throw GradleException(
+                "Streamline library source is incomplete: ${sourceDir.absolutePath}; missing: " +
+                        missingLibraries.joinToString()
+            )
+        }
+    }
+}
+
+val syncStreamlineReleaseLibs = registerStreamlineSyncTask(
+    "syncStreamlineReleaseLibs",
+    streamlineBinDir,
+    "sl.rel"
+)
+val syncStreamlineDebugLibs = registerStreamlineSyncTask(
+    "syncStreamlineDebugLibs",
+    streamlineBinDir.resolve("development"),
+    "sl.dev"
+)
 
 tasks.named<ProcessResources>("processResources") {
-    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+    dependsOn(syncStreamlineReleaseLibs, syncStreamlineDebugLibs)
+
+    if (useDebugLib) {
         exclude("**/libSuperResolution*+*+release.*")
     } else {
         exclude("**/libSuperResolution*+*+debug.*")
+    }
+
+    exclude(
+        "lib/sl.dev/**",
+        "lib/sl.rel/**",
+        "lib/sl.*.dll",
+        "lib/NvLowLatencyVk.dll"
+    )
+
+    from(streamlineResourceLibDir.dir(if (useDebugLib) "sl.dev" else "sl.rel")) {
+        include(requiredStreamlineLibraries)
+        into("lib")
     }
 }

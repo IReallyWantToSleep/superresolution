@@ -26,9 +26,6 @@ import net.fabricmc.api.ModInitializer;
 public final class SuperResolutionFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        #if MC_VER == MC_26_2
-        Streamline.prepareEarly();
-        #endif
         SuperResolutionConfig.SPEC.load();
         SuperResolution.registerEvents();
     }

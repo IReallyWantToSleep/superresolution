@@ -6,8 +6,7 @@
     "client": [
         "core.MinecraftMixin",
         "neoforge.FuckingValidation1218Mixin",
-        "neoforge.FuckingValidationMixin",
-        "neoforge.WindowMixin"
+        "neoforge.FuckingValidationMixin"
     ],
     "mixins": [
     ],

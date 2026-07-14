@@ -297,11 +297,6 @@ public final class SuperResolution implements Destroyable {
             LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());
             LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
 
-            if (GraphicsCapabilities.detectGpuVendor() == GpuVendor.Nvidia
-                    && RenderSystems.isSupportVulkan()) {
-                NgxInitializer.initializeIfSupported();
-            }
-
             SRWorkModeManager.bootstrapProviders();
             RenderHandlerManager.initialize();
             AlgorithmManager.init();

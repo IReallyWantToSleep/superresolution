@@ -192,6 +192,23 @@ dependencies {
         }
     }
 
+    for (lib in versionConfig.neoforge.dependencies.curseforge) {
+        val depName = lib.curseMavenNotation()
+        if (lib.compileOnly) {
+            if (lib.useJarJar) {
+                compileOnly(utils.JarJar.extractJars(project, depName))
+            } else {
+                compileOnly(depName)
+            }
+        } else {
+            if (lib.useJarJar) {
+                implementation(utils.JarJar.extractJars(project, depName))
+            } else {
+                implementation(depName)
+            }
+        }
+    }
+
     for (lib in versionConfig.neoforge.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {
@@ -233,7 +250,7 @@ tasks.named<ProcessResources>("processResources") {
         )
     }
 
-    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) != MinecraftVersion.of("26.2")) {
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) != MinecraftVersion.of("26.2") || true) {
         exclude("META-INF/services/net.neoforged.neoforgespi.earlywindow.*")
     }
     if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){

@@ -16,4 +16,5 @@ dependencies {
     implementation("dev.masecla:Modrinth4J:2.2.0")
     implementation(gradleApi())
     implementation(localGroovy())
+    testImplementation("junit:junit:4.13.2")
 }

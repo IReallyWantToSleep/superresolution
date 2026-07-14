@@ -160,6 +160,15 @@ dependencies {
         }
     }
 
+    for (lib in versionConfig.forge.dependencies.curseforge) {
+        val depName = lib.curseMavenNotation()
+        if (lib.compileOnly) {
+            modCompileOnly(depName)
+        } else {
+            modImplementation(depName)
+        }
+    }
+
     for (lib in versionConfig.forge.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {

@@ -155,6 +155,23 @@ dependencies {
         }
     }
 
+    for (lib in versionConfig.fabric.dependencies.curseforge) {
+        val depName = lib.curseMavenNotation()
+        if (lib.compileOnly) {
+            if (lib.useJarJar) {
+                modCompileOnlyCompat(utils.JarJar.extractJars(project, depName))
+            } else {
+                modCompileOnlyCompat(depName)
+            }
+        } else {
+            if (lib.useJarJar) {
+                modImplementationCompat(utils.JarJar.extractJars(project, depName))
+            } else {
+                modImplementationCompat(depName)
+            }
+        }
+    }
+
     for (lib in versionConfig.fabric.dependencies.local) {
         if (lib.isMod) {
             if (lib.compileOnly) {
@@ -195,7 +212,7 @@ loom {
             vmArg("-Dmixin.debug.export=true")
             //shut up again
             vmArg("-Dsodium.checks.issue2561=false")
-            programArg("--graphicsBackend=vulkan")
+            programArg("--graphicsBackend=opengl")
             programArg("--renderDebugLabels=true")
 
             ideConfigGenerated(true)

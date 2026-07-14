@@ -24,6 +24,9 @@ side = "BOTH"
 "mixin.features.render.gui.debug" = false
 "mixin.workarounds" = false
 
+[modproperties.super_resolution]
+"sodium:config_api_user" = "io.homo.superresolution.fabric.compat.sodium.SodiumConfigBuilder"
+
 [[mixins]]
 config = "super_resolution.mixins.json"
 [[mixins]]

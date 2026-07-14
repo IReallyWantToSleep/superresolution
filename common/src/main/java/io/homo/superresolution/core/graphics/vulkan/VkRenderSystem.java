@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.streamline.Streamline;
@@ -48,7 +50,10 @@ import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2
 
 public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/Vulkan");
-    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport();
+    public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport() &&(
+             Platform.currentPlatform.isDevelopmentEnvironment() ||
+                     SuperResolutionConfig.isEnableDebug()
+    );
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
 
     private final List<String> instanceExtensions = new ArrayList<>();

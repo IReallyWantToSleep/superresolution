@@ -22,6 +22,7 @@ package io.homo.superresolution.neoforge.compat.sodium;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPointForge;
 import net.caffeinemc.mods.sodium.api.config.structure.ConfigBuilder;
@@ -38,7 +39,7 @@ public class SodiumConfigBuilder implements ConfigEntryPoint {
                 .addPage(configBuilder
                         .createExternalPage()
                         .setName(Component.translatable("superresolution.config_gui"))
-                        .setScreenConsumer((screen -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
+                        .setScreenConsumer((screen -> MinecraftUtils.setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
                 );
         #else
         configBuilder.registerOwnModOptions()

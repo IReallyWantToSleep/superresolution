@@ -698,14 +698,22 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             3.0,
                             SuperResolutionConfig.getMinUpscaleRatio())
                     .setStep(0.01)
-                    .setValueFormater(v -> String.format(Locale.ENGLISH,"%.2f", v.doubleValue()))
+                    .setValueFormater(v -> String.format(Locale.ROOT,"%.2f", v.doubleValue()))
                     .setDefaultValue(() -> 1.7)
                     .setDescriptionsSupplier(
-                            (value -> Optional.of(new Text[]{Text.literal(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio").getString().formatted(
-                                    String.format(Locale.ENGLISH,"%.0f", RenderHandlerManager.getScreenWidth() / value.floatValue()),
-                                    String.format(Locale.ENGLISH,"%.0f", RenderHandlerManager.getScreenHeight() / value.floatValue()),
-                                    String.format(Locale.ENGLISH,"%.2f", ((1 / value.floatValue()) * 100)) + "%"
-                            ))}))
+                            (value -> Optional.of(
+                                    new Text[]{
+                                            Text.literal(
+                                                    String.format(
+                                                            Locale.ROOT,
+                                                            Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio").getString(),
+                                                            String.format(Locale.ROOT,"%.0f", RenderHandlerManager.getScreenWidth() / value.floatValue()),
+                                                            String.format(Locale.ROOT,"%.0f", RenderHandlerManager.getScreenHeight() / value.floatValue()),
+                                                            String.format(Locale.ROOT,"%.2f", ((1 / value.floatValue()) * 100)) + "%"
+                                                    )
+                                            )
+                                    }
+                            ))
                     )
                     .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
                     .setTooltipSupplier((t)->{

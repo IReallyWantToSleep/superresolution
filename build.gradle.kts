@@ -17,6 +17,7 @@
  */
 
 import groovy.json.JsonSlurper
+import utils.CurseForgeUploader
 import utils.ModrinthUploader
 import java.io.BufferedReader
 import java.io.IOException
@@ -308,6 +309,72 @@ tasks.register("uploadToModrinth") {
                 }
             }
         }
+    }
+}
+
+tasks.register("uploadToCurseForge") {
+    group = "publishing"
+    description = "校验并上传 build_jars 中的模组文件到 CurseForge"
+
+    doLast {
+        val dryRun = project.findProperty("curseforge.dryRun")
+            ?.toString()
+            ?.toBoolean() ?: false
+        val autoConfirm = project.findProperty("curseforge.autoConfirm")
+            ?.toString()
+            ?.toBoolean() ?: false
+        val jarsDir = project.findProperty("curseforge.jarsDir")
+            ?.toString()
+            ?.let(::file)
+            ?: file("$rootDir/build_jars")
+
+        val uploadPlan = CurseForgeUploader.createUploadPlan(
+            jarsDir,
+            file("$rootDir/configs"),
+            file("$rootDir/changelogs")
+        )
+
+        println("\n=== CurseForge 上传计划 ===")
+        println("项目 ID: ${CurseForgeUploader.defaultProjectId()}")
+        println("模组版本: ${uploadPlan.modVersion}")
+        println("更新日志: ${uploadPlan.changelogFile.absolutePath}")
+        println("文件数量: ${uploadPlan.artifacts.size}")
+        uploadPlan.artifacts.forEachIndexed { index, artifact ->
+            println(
+                "${index + 1}. ${artifact.file.name} | "
+                    + "${artifact.loaderName} | "
+                    + "${artifact.gameVersions.joinToString(", ")} | "
+                    + artifact.releaseType
+            )
+        }
+        println("==========================\n")
+
+        if (dryRun) {
+            println("dryRun=true，已完成预检，未连接 CurseForge。")
+            return@doLast
+        }
+
+        val apiToken = System.getenv("CURSEFORGE_API_TOKEN")
+        if (apiToken.isNullOrBlank()) {
+            throw GradleException("缺少环境变量 CURSEFORGE_API_TOKEN")
+        }
+
+        if (!autoConfirm) {
+            val confirm = getConsoleInput("确认上传以上文件到 CurseForge？(Y/N): ")
+                .trim()
+                .lowercase()
+            if (!confirm.startsWith("y")) {
+                println("上传已取消")
+                return@doLast
+            }
+        }
+
+        uploadPlan.artifacts.forEachIndexed { index, artifact ->
+            println("[${index + 1}/${uploadPlan.artifacts.size}] 上传 ${artifact.file.name}")
+            val fileId = CurseForgeUploader.uploadFile(artifact, apiToken)
+            println("上传成功，CurseForge 文件 ID: $fileId")
+        }
+        println("全部 ${uploadPlan.artifacts.size} 个文件上传完成。")
     }
 }
 

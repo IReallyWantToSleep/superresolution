@@ -112,10 +112,6 @@
                     "compileOnly": true
                 },
                 {
-                    "name": "acceleratedrendering",
-                    "version": "1.0.8-1.21.1-alpha"
-                },
-                {
                     "name": "distanthorizons",
                     "version": "2.3.4-b-1.21.1"
                 },
@@ -131,6 +127,13 @@
                     "name": "simple-clouds",
                     "version": "0.6.3+1.21",
                     "compileOnly": true
+                }
+            ],
+            "curseforge": [
+                {
+                    "name": "accelerated-rendering",
+                    "project_id": "1314021",
+                    "file_id": "7342942"
                 }
             ],
             "local": [

@@ -82,6 +82,9 @@ public class NativeLibManager {
             libs.add(LIB_STREAMLINE_INTERPOSER);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
             libs.add(LIB_STREAMLINE_DLSS_G);
+            libs.add(LIB_STREAMLINE_REFLEX);
+            libs.add(LIB_STREAMLINE_PCL);
+            libs.add(LIB_STREAMLINE_NVNGX_REFLEX);
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);

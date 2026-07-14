@@ -42,9 +42,14 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
     }
 
     public void onLoad(String s) {
-
+        #if MC_VER >= MC_26_2
         Platform.currentPlatform = new NeoForgePlatform();
         Platform.currentPlatform.init();
+        #else
+        Platform.currentPlatform = new NeoForgePlatform();
+        Platform.currentPlatform.init();
+        #endif
+
         #if MC_VER >= MC_1_21_5
         NeoOpenGLVersionOverride.override();
         #endif

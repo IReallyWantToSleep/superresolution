@@ -6,6 +6,11 @@ class Dependencies(libs: Map<*, *>) {
         ?.map { Dependency(it) }
         ?: emptyList()
 
+    val curseforge: List<Dependency> = (libs["curseforge"] as? List<*>)
+        ?.mapNotNull { it as? Map<*, *> }
+        ?.map { Dependency(it) }
+        ?: emptyList()
+
     val local: List<Dependency> = (libs["local"] as? List<*>)
         ?.mapNotNull { it as? Map<*, *> }
         ?.map { Dependency(it) }

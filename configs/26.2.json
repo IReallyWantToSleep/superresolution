@@ -6,7 +6,8 @@
         "minecraft_version": "26.2",
         "parchment_version": null,
         "platforms": [
-            "fabric"
+            "fabric",
+            "neoforge"
         ],
         "lwjgl_version": "3.4.1",
         "architectury_api_version": null,
@@ -29,11 +30,11 @@
             "modrinth": [
                 {
                     "name": "iris",
-                    "version": "1.11.1+26.2-fabric"
+                    "version": "1.11.2+26.2-fabric"
                 },
                 {
                     "name": "sodium",
-                    "version": "0.9.0+mc26.2"
+                    "version": "0.9.1+mc26.2"
                 },
                 {
                     "name": "spark",
@@ -58,11 +59,11 @@
                 },
                 {
                     "name": "sodium",
-                    "version": "0.9.0+mc26.2"
+                    "version": "0.9.1+mc26.2"
                 },
                 {
                     "name": "iris",
-                    "version": "1.10.9+26.1-neoforge"
+                    "version": "1.11.2+26.2-neoforge"
                 },
                 {
                     "name": "distanthorizons",
