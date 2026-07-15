@@ -40,11 +40,18 @@ public final class NgxInitializer {
     private NgxInitializer() {
     }
 
-    /**
-     * Queries DLSS support for the active Vulkan physical device before initializing NGX.
-     */
     public static boolean initializeIfSupported() {
         if (!isBindingAvailable() || !RenderSystems.isSupportVulkan()) {
+            return false;
+        }
+        try {
+            System.load(
+                    NativeLibManager.LIB_SUPER_RESOLUTION_NGX
+                            .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath())
+                            .toAbsolutePath()
+                            .toString()
+            );
+        } catch (UnsatisfiedLinkError e) {
             return false;
         }
 
@@ -55,6 +62,26 @@ public final class NgxInitializer {
 
         synchronized (INIT_LOCK) {
             long deviceHandle = vulkanDevice.getVkDevice().address();
+            supported = true;
+            try {
+                LargeStackExecutor.run(
+                        "SR-DLSS-NGX-Init",
+                        () -> initializeForDevice(vulkanDevice, createFeatureInfo())
+                );
+            } catch (RuntimeException e) {
+                supported = false;
+                NgxVulkan.shutdown();
+                SuperResolution.LOGGER.info(
+                        "Skipping NGX initialization because the current GPU could not initialize DLSS",
+                        e
+                );
+                return false;
+            }
+
+            if (!supported) {
+                return false;
+            }
+
             if (!supportChecked || supportCheckedDevice != deviceHandle) {
                 supportChecked = true;
                 supportCheckedDevice = deviceHandle;
@@ -80,25 +107,7 @@ public final class NgxInitializer {
                     return false;
                 }
             }
-
-            if (!supported) {
-                return false;
-            }
-
-            try {
-                LargeStackExecutor.run(
-                        "SR-DLSS-NGX-Init",
-                        () -> initializeForDevice(vulkanDevice, createFeatureInfo())
-                );
-                return true;
-            } catch (RuntimeException e) {
-                supported = false;
-                SuperResolution.LOGGER.info(
-                        "Skipping NGX initialization because the current GPU could not initialize DLSS",
-                        e
-                );
-                return false;
-            }
+            return true;
         }
     }
 
@@ -132,13 +141,34 @@ public final class NgxInitializer {
         };
         featureInfo.minimumLoggingLevel = NgxConstants.LOGGING_ON;
         featureInfo.loggingCallback = (message, loggingLevel, sourceFeature) ->
-                SuperResolution.LOGGER.debug(
+                SuperResolution.LOGGER.info(
                         "NGX [{}:{}] {}",
-                        sourceFeature,
-                        loggingLevel,
+                        sourceFeatureToString(sourceFeature),
+                        loggingLevelToString(loggingLevel),
                         message == null ? "" : message.stripTrailing()
                 );
         return featureInfo;
+    }
+
+    private static String sourceFeatureToString(int sourceFeature) {
+        return switch (sourceFeature) {
+            case NgxConstants.FEATURE_SUPER_SAMPLING -> "SUPER_SAMPLING";
+            case NgxConstants.FEATURE_IMAGE_SIGNAL_PROCESSING -> "IMAGE_SIGNAL_PROCESSING";
+            case NgxConstants.FEATURE_DEEP_RESOLVE -> "DEEP_RESOLVE";
+            case NgxConstants.FEATURE_FRAME_GENERATION -> "FRAME_GENERATION";
+            case NgxConstants.FEATURE_RAY_RECONSTRUCTION -> "RAY_RECONSTRUCTION";
+            default -> "UNKNOWN";
+        };
+    }
+
+    private static String loggingLevelToString(int loggingLevel) {
+        return switch (loggingLevel) {
+            case NgxConstants.LOGGING_OFF -> "OFF";
+            case NgxConstants.LOGGING_ON -> "ON";
+            case NgxConstants.LOGGING_VERBOSE -> "VERBOSE";
+            case NgxConstants.LOGGING_NUM -> "NUM";
+            default -> "UNKNOWN";
+        };
     }
 
     private static void initializeForDevice(VulkanDevice vulkanDevice, NgxFeatureCommonInfo featureInfo) {
@@ -175,8 +205,7 @@ public final class NgxInitializer {
     }
 
     private static boolean isBindingAvailable() {
-        return NativeLibManager.LIB_SUPER_RESOLUTION_NGX != null
-                && NativeLibManager.LIB_SUPER_RESOLUTION_NGX.available;
+        return NativeLibManager.LIB_SUPER_RESOLUTION_NGX != null;
     }
 
     private static void requireSuccess(String operation, int result) {

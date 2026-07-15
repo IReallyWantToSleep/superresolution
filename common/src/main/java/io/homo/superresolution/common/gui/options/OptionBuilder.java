@@ -87,6 +87,13 @@ public class OptionBuilder {
         return new ColorSelectBuilder(name, value).setCategory(category);
     }
 
+    public FileSelectorBuilder fileSelectorOption(
+            Text name,
+            String value
+    ) {
+        return new FileSelectorBuilder(name, value).setCategory(category);
+    }
+
     public HintBuilder hintOption(Text name) {
         return new HintBuilder(name).setCategory(category);
     }

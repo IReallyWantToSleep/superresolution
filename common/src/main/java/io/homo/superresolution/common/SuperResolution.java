@@ -36,6 +36,7 @@ import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.none.None;
@@ -148,6 +149,7 @@ public final class SuperResolution implements Destroyable {
             minecraft = Minecraft.getInstance();
         }
 
+        OptiScalerLoader.loadConfiguredDll();
         #if MC_VER != MC_26_2
         Streamline.prepareEarly();
         #endif

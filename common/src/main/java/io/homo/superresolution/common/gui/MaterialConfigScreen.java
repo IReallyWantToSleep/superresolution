@@ -996,65 +996,106 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         ContainerWidget container = createStandardContainer();
         addFrameTitle(container, Text.translatable("superresolution.screen.config.section.advanced"));
 
-        OptionBuilder builder = createOptionBuilder(Text.translatable("superresolution.screen.config.category.advanced"));
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.group.advanced.graphics_backend"),
+                builder -> {
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
+                                    SuperResolutionConfig.isSkipInitVulkan())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))
+                            .setDefaultValue(() -> false)
+                            .setSaveConsumer(SuperResolutionConfig::setSkipInitVulkan)
+                            .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.skip_init_vulkan"),
-                        SuperResolutionConfig.isSkipInitVulkan())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.skip_init_vulkan"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setSkipInitVulkan)
-                .build();
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.enable_compat_shader_compiler"),
+                                    SuperResolutionConfig.isEnableCompatShaderCompiler())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_compat_shader_compiler"))
+                            .setDefaultValue(() -> false)
+                            .setSaveConsumer(SuperResolutionConfig::setEnableCompatShaderCompiler)
+                            .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_compat_shader_compiler"),
-                        SuperResolutionConfig.isEnableCompatShaderCompiler())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_compat_shader_compiler"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setEnableCompatShaderCompiler)
-                .build();
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.interop_sync_mode"),
+                                    InteropSyncMode.class,
+                                    SuperResolutionConfig.getInteropSyncMode())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
+                            .setDefaultValue(InteropSyncMode.LowLatency)
+                            .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
+                            .setSaveConsumer((value) -> {
+                                SuperResolutionConfig.setInteropSyncMode(value);
+                                if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
+                                    SuperResolution.recreateAlgorithm();
+                                }
+                            })
+                            .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_detailed_profiling"),
-                        SuperResolutionConfig.isEnableDetailedProfiling())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_detailed_profiling"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
-                .build();
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.internal_texture_format"),
+                                    InternalTextureFormat.class,
+                                    SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.internal_texture_format"))
+                            .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
+                            .setEnumNameProvider(format -> format.name())
+                            .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
+                            .build();
+                }
+        );
 
-        builder.enumSelectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.internal_texture_format"),
-                        InternalTextureFormat.class,
-                        SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.internal_texture_format"))
-                .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
-                .setEnumNameProvider(format -> format.name())
-                .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
-                .build();
-        builder.enumSelectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.interop_sync_mode"),
-                        InteropSyncMode.class,
-                        SuperResolutionConfig.getInteropSyncMode())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
-                .setDefaultValue(InteropSyncMode.LowLatency)
-                .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
-                .setSaveConsumer((value) -> {
-                    SuperResolutionConfig.setInteropSyncMode(value);
-                    if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
-                        SuperResolution.recreateAlgorithm();
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.group.advanced.shader_compatibility"),
+                builder -> builder.booleanOption(
+                                Text.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
+                                SuperResolutionConfig.isForceDisableShaderCompat())
+                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
+                        .setDefaultValue(() -> false)
+                        .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
+                        .build()
+        );
+
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.group.advanced.diagnostics"),
+                builder -> builder.booleanOption(
+                                Text.translatable("superresolution.screen.config.options.label.enable_detailed_profiling"),
+                                SuperResolutionConfig.isEnableDetailedProfiling())
+                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_detailed_profiling"))
+                        .setDefaultValue(() -> false)
+                        .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
+                        .build()
+        );
+
+        if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
+            addLabeledOptionGroup(
+                    container,
+                    Text.translatable("superresolution.screen.config.group.advanced.optiscaler"),
+                    builder -> {
+                        builder.booleanOption(
+                                        Text.translatable("superresolution.screen.config.options.label.enable_optiscaler"),
+                                        SuperResolutionConfig.isEnableOptiScaler())
+                                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_optiscaler"))
+                                .setDefaultValue(() -> false)
+                                .setRequireRestartGame(true)
+                                .setSaveConsumer(SuperResolutionConfig::setEnableOptiScaler)
+                                .build();
+
+                        builder.fileSelectorOption(
+                                        Text.translatable("superresolution.screen.config.options.label.optiscaler_dll"),
+                                        SuperResolutionConfig.getOptiScalerDllPath())
+                                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.optiscaler_dll"))
+                                .setDialogTitle(Text.translatable("superresolution.screen.config.file.dialog.select_optiscaler_dll"))
+                                .setFilterPatterns("*.dll")
+                                .setFilterDescription(Text.translatable("superresolution.screen.config.file.filter.dll"))
+                                .setDefaultValue(() -> "")
+                                .setRequireRestartGame(true)
+                                .setSaveConsumer(SuperResolutionConfig::setOptiScalerDllPath)
+                                .build();
                     }
-                })
-                .build();
+            );
+        }
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
-                        SuperResolutionConfig.isForceDisableShaderCompat())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
-                .build();
-
-        addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
         return frame;
     }

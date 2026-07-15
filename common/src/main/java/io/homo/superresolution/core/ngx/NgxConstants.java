@@ -33,6 +33,7 @@ public final class NgxConstants {
     public static final int FEATURE_IMAGE_SIGNAL_PROCESSING = 9;
     public static final int FEATURE_DEEP_RESOLVE = 10;
     public static final int FEATURE_FRAME_GENERATION = 11;
+    public static final int FEATURE_RAY_RECONSTRUCTION = 13;
 
     public static final int RESOURCE_VK_IMAGE_VIEW = 0;
     public static final int RESOURCE_VK_BUFFER = 1;
@@ -43,6 +44,8 @@ public final class NgxConstants {
     public static final int LOGGING_OFF = 0;
     public static final int LOGGING_ON = 1;
     public static final int LOGGING_VERBOSE = 2;
+    public static final int LOGGING_NUM = 3;
+
 
     public static final int DLSS_FLAG_NONE = 0;
     public static final int DLSS_FLAG_HDR = 1 << 0;

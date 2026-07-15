@@ -89,6 +89,8 @@ public class SuperResolutionConfig {
 
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
+    public static final BooleanValue ENABLE_OPTISCALER;
+    public static final StringValue OPTISCALER_DLL_PATH;
 
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
@@ -216,6 +218,17 @@ public class SuperResolutionConfig {
                 "experiment/enable_experimental_features",
                 () -> false,
                 "Enable experimental features"
+        );
+
+        ENABLE_OPTISCALER = builder.defineBoolean(
+                "optiscaler/enabled",
+                () -> false,
+                "Load the selected OptiScaler DLL during early game startup."
+        );
+        OPTISCALER_DLL_PATH = builder.defineString(
+                "optiscaler/dll_path",
+                () -> "",
+                "Absolute path to the OptiScaler DLL file."
         );
 
         GENERATE_MOTION_VECTORS = builder.defineBoolean(
@@ -580,6 +593,22 @@ public class SuperResolutionConfig {
 
     public static void setEnableExperimentalFeatures(boolean value) {
         ENABLE_EXPERIMENTAL_FEATURES.set(value);
+    }
+
+    public static boolean isEnableOptiScaler() {
+        return ENABLE_OPTISCALER.get();
+    }
+
+    public static void setEnableOptiScaler(boolean value) {
+        ENABLE_OPTISCALER.set(value);
+    }
+
+    public static String getOptiScalerDllPath() {
+        return OPTISCALER_DLL_PATH.get();
+    }
+
+    public static void setOptiScalerDllPath(String value) {
+        OPTISCALER_DLL_PATH.set(value == null ? "" : value);
     }
 
     public static String getInternalTextureFormatGlslFormatQualifier() {

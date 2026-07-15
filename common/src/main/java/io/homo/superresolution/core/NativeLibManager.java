@@ -66,7 +66,7 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
-            LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
+            LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", false, false);
             LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", true, false);
             LIB_STREAMLINE_COMMON = new NativeLib("sl.common", true, false, true);
             LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", true, false, true);
