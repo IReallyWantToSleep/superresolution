@@ -27,6 +27,8 @@ import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+
 import java.util.*;
 
 public class SRCompatBuiltinMacros {
@@ -54,6 +56,14 @@ public class SRCompatBuiltinMacros {
             AlgorithmDescription<?> selectedAlgorithm = description != null
                     ? description
                     : SuperResolutionConfig.getUpscaleAlgorithm();
+            boolean frameGenOnly = false;
+            SRShaderCompatData data = ShaderCompatHandler.getShaderCompatData();
+            if (data != null) {
+                SRShaderCompatData.WorldProfile profile = data.getProfileForWorld("*");
+                if (profile != null && profile.upscale != null) {
+                    frameGenOnly = profile.upscale.onlySupportsFrameGeneration;
+                }
+            }
             preprocessor.addMacro("SR_ENABLE", "1");
             preprocessor.addMacro("SR_DISABLE", "0");
             preprocessor.addMacro("SR_ALGO_SUPPORTS_JITTER",
@@ -70,9 +80,9 @@ public class SRCompatBuiltinMacros {
             preprocessor.addMacro("SR_SCREEN_HEIGHT",
                     Integer.toString(SuperResolutionAPI.getScreenHeight()));
             preprocessor.addMacro("SR_UPSCALE_RATIO",
-                    Float.toString(SuperResolutionConfig.getUpscaleRatio()));
+                    Float.toString(frameGenOnly ? 1.0f : SuperResolutionConfig.getUpscaleRatio()));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR",
-                    Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
+                    Float.toString(frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor()));
             preprocessor.addMacro("SR_JITTER_SEQUENCE_LENGTH",
                     Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             preprocessor.addMacro("SR_ALGO_DLSS_RENDERPRESET",
@@ -101,17 +111,29 @@ public class SRCompatBuiltinMacros {
         // endregion
 
         // region V2
-        preprocessor.addMacro("SR_CONFIG_SCHEMA_VERSION", "2");
-
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            boolean frameGenOnlyV2 = false;
+            SRShaderCompatData dataV2 = ShaderCompatHandler.getShaderCompatData();
+            if (dataV2 != null) {
+                SRShaderCompatData.WorldProfile profileV2 = dataV2.getProfileForWorld("*");
+                if (profileV2 != null && profileV2.upscale != null) {
+                    frameGenOnlyV2 = profileV2.upscale.onlySupportsFrameGeneration;
+                }
+            }
+            float rsf = frameGenOnlyV2 ? 1.0f : SuperResolutionConfig.getRenderScaleFactor();
+            float ratio = frameGenOnlyV2 ? 1.0f : SuperResolutionConfig.getUpscaleRatio();
             preprocessor.addMacro("SR_UPSCALE_RATIO_HALF",
-                    Float.toString(SuperResolutionConfig.getUpscaleRatio() * 0.5F));
+                    Float.toString(ratio * 0.5F));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR_HALF",
-                    Float.toString(SuperResolutionConfig.getRenderScaleFactor() * 0.5F));
+                    Float.toString(rsf * 0.5F));
         } else {
             preprocessor.addMacro("SR_UPSCALE_RATIO_HALF", Float.toString(0.5F));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR_HALF", Float.toString(0.5F));
         }
+        // endregion
+
+        // region V3
+        preprocessor.addMacro("SR_CONFIG_SCHEMA_VERSION", Integer.toString(SRCompatConfigParser.LATEST_CONFIG_VERSION));
         // endregion
     }
 }

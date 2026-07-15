@@ -36,6 +36,7 @@ import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatPro
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatTextureInfo;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.v3.SRCompatV3Processor;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -249,6 +250,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         RenderHandlerManager.frameCount = 0;
         InteropResourcesConverter.destroy();
         SRCompatV2Processor.destroyPipelineCache();
+        SRCompatV3Processor.destroyPipelineCache();
     }
 
     public static void dispatchUpscale(ICompositeRendererAccessor compositeRenderer, NamedCompositePass pass) {
@@ -395,6 +397,12 @@ public class IrisShaderCompatUpscaleDispatcher {
         /*
         升采样阶段开始
          */
+        boolean frameGenOnly = currentConfig.onlySupportsFrameGeneration;
+        if (frameGenOnly) {
+            // 仅帧生成模式：跳过超分算法调度和结果回写，数据传递已完成
+            PerformanceTracker.pop("Upscale");
+            return;
+        }
         {
             if (RenderHandlerManager.needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {

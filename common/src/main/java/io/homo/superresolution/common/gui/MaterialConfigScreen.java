@@ -521,6 +521,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
                     .setDisplayRequirement(OptionRequirement.isTrue(() -> SuperResolutionConfig.isEnableUpscaleOriginal() && !SRWorkModeManager.getCurrentState().shaderPackInUse() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
                     .build();
+            builder.hintOption(Text.literal("frame_generation_only_warning"))
+                    .setIcon(MaterialSymbols.iconWarning())
+                    .setTitle(Text.translatable("superresolution.screen.config.hint.frame_generation_only_warning.title").getString())
+                    .setText(Text.translatable("superresolution.screen.config.hint.frame_generation_only_warning.text").getString())
+                    .setDisplayRequirement(OptionRequirement.isTrue(() ->
+                            SRWorkModeManager.getCurrentState().onlySupportsFrameGeneration()))
+                    .build();
             builder.hintOption(Text.literal("shader_compat_warning"))
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
@@ -598,7 +605,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     if (isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalFeatures();
                                     return true;
 
-                                }
+                                },
+                                () -> !SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName())
                         );
                     })
                     .setMenuItemTooltipSupplier((algo)->{
@@ -606,6 +614,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         var result = algorithmDescription.getRequirement().check();
                         StringBuilder sb = new StringBuilder();
                         sb.append(algorithmDescription.getDisplayName());
+                        if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName())) {
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack").getString());
+                        }
                         if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_warning").getString());

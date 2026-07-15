@@ -59,12 +59,20 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
             }
         }
 
+        java.util.List<String> disabledAlgorithms = java.util.Collections.emptyList();
+        if (profile.isPresent() && profile.get().enabled && profile.get().upscale != null) {
+            disabledAlgorithms = profile.get().upscale.disabledAlgorithms;
+        }
+
         return new SRWorkModeState(
                 desc,
                 internalFormat,
                 motionVectorPreprocessingFunction,
                 ShaderCompatHandler.irisApiIsShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack(),
-                ShaderCompatHandler.isLoadingShader()
+                ShaderCompatHandler.isLoadingShader(),
+                profile.isPresent() && profile.get().enabled && profile.get().upscale != null &&
+                        profile.get().upscale.onlySupportsFrameGeneration,
+                disabledAlgorithms
         );
     }
 

@@ -76,6 +76,8 @@ public class SRShaderCompatData {
         public final boolean isAutoExposure;
         public final boolean isMotionJittered;
         public final @Nullable CustomsConfig customs;
+        public final boolean onlySupportsFrameGeneration;
+        public final List<String> disabledAlgorithms;
 
 
         public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
@@ -91,6 +93,27 @@ public class SRShaderCompatData {
                              @Nullable SourceConfig preExposure,
                              boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered,
                              @Nullable CustomsConfig customs) {
+            this(enabled, trigger, internalFormat, inputTextures, outputTextures,
+                    preExposure, isHdrInput, isAutoExposure, isMotionJittered, customs, false);
+        }
+
+        public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
+                             Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures,
+                             @Nullable SourceConfig preExposure,
+                             boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered,
+                             @Nullable CustomsConfig customs,
+                             boolean onlySupportsFrameGeneration) {
+            this(enabled, trigger, internalFormat, inputTextures, outputTextures,
+                    preExposure, isHdrInput, isAutoExposure, isMotionJittered, customs, onlySupportsFrameGeneration, Collections.emptyList());
+        }
+
+        public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
+                             Map<String, InputTexture> inputTextures, Map<String, OutputTexture> outputTextures,
+                             @Nullable SourceConfig preExposure,
+                             boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered,
+                             @Nullable CustomsConfig customs,
+                             boolean onlySupportsFrameGeneration,
+                             List<String> disabledAlgorithms) {
             this.enabled = enabled;
             this.trigger = trigger;
             this.internalFormat = internalFormat;
@@ -101,6 +124,8 @@ public class SRShaderCompatData {
             this.isAutoExposure = isAutoExposure;
             this.isMotionJittered = isMotionJittered;
             this.customs = customs;
+            this.onlySupportsFrameGeneration = onlySupportsFrameGeneration;
+            this.disabledAlgorithms = disabledAlgorithms != null ? disabledAlgorithms : Collections.emptyList();
         }
     }
 

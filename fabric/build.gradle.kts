@@ -252,6 +252,12 @@ tasks.named<ProcessResources>("processResources") {
     }
 }
 
+tasks.named<JavaCompile>("compileJava") {
+    if (versionConfig.fabric.modmenuVersion == null) {
+        exclude("**/modmenu/**")
+    }
+}
+
 tasks.matching { it.name == "remapSourcesJar" }.configureEach {
     enabled = false
 }

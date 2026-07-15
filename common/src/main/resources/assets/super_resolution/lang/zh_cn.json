@@ -291,6 +291,7 @@
     "superresolution.screen.warn": "警告",
     "superresolution.screen.config.options.tooltip.algo.experimental_warning": "该算法为实验性功能，尚不稳定，可能会导致崩溃或错误",
     "superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint": "该算法为实验性功能，尚不稳定，可能会导致崩溃或错误\n如需使用请打开 实验性 > 启用实验性功能 选项",
+    "superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack": "此算法已被光影包禁用",
     "superresolution.screen.config.options.tooltip.algo.unsupported_reason_header": "不支持此算法，原因：",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_version": "· 当前OpenGL版本不受支持",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_extension": "· 缺失必要的OpenGL扩展",
@@ -309,5 +310,7 @@
     "superresolution.screen.config.hint.b3d_vulkan_unavailable.text": "检测到当前正在使用 Vulkan 图形后端。由于 Iris 暂不支持 Vulkan，Super Resolution 无法在该环境下正常启用升采样/缩放功能；你仍可打开配置界面，但所有功能将不可用。",
     "superresolution.screen.config.hint.shader_compat_warning.title": "光影兼容性警告",
     "superresolution.screen.config.hint.shader_compat_warning.text": "当前光影尚未适配超分辨率模组，将以兼容模式运行。此模式下可能出现：画面模糊、重影鬼影、性能下降、与其他模组的兼容性降低等问题",
+    "superresolution.screen.config.hint.frame_generation_only_warning.title": "仅启用帧生成模式",
+    "superresolution.screen.config.hint.frame_generation_only_warning.text": "此光影使用仅帧生成模式，超分辨率功能已禁用",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

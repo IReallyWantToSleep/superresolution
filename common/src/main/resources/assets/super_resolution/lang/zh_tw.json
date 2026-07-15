@@ -290,6 +290,7 @@
     "superresolution.screen.warn": "警告",
     "superresolution.screen.config.options.tooltip.algo.experimental_warning": "此演算法為實驗性功能，尚不穩定，可能會導致崩潰或錯誤",
     "superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint": "此演算法為實驗性功能，尚不穩定，可能會導致崩潰或錯誤\n如需使用請開啟 實驗性 > 啟用實驗性功能 選項",
+    "superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack": "此演算法已被光影包停用",
     "superresolution.screen.config.options.tooltip.algo.unsupported_reason_header": "不支援此演算法，原因：",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_version": "· 目前 OpenGL 版本不受支援",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_extension": "· 缺失必要的 OpenGL 擴充功能",

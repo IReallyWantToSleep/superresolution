@@ -26,6 +26,8 @@ import io.homo.superresolution.common.minecraft.handler.shadercompat.v1.SRCompat
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v1.SRCompatV1Processor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatConfigV2Parser;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.v3.SRCompatConfigV3Parser;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.v3.SRCompatV3Processor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +36,7 @@ import java.util.regex.Pattern;
 
 public class SRCompatConfigParser {
     private static final Gson GSON = new GsonBuilder().create();
-    public static final int LATEST_CONFIG_VERSION = 2;
+    public static final int LATEST_CONFIG_VERSION = 3;
     private static final Pattern SCHEMA_VERSION_PATTERN = Pattern.compile("\"schema_version\"\\s*:\\s*(\\d+)");
 
     public static SRShaderCompatData load(Path file) {
@@ -63,6 +65,8 @@ public class SRCompatConfigParser {
                 return SRCompatConfigV1Parser.parse(rootObj);
             } else if (version == 2) {
                 return SRCompatConfigV2Parser.parse(rootObj);
+            } else if (version == 3) {
+                return SRCompatConfigV3Parser.parse(rootObj);
             } else {
                 SuperResolution.LOGGER.error("不支持的光影接口配置版本: " + version);
                 return null;
@@ -107,6 +111,7 @@ public class SRCompatConfigParser {
     public static SRCompatProcessor createProcessor(int version) {
         if (version == 1) return new SRCompatV1Processor();
         if (version == 2) return new SRCompatV2Processor();
+        if (version == 3) return new SRCompatV3Processor();
         SuperResolution.LOGGER.error("不支持的光影接口配置版本: " + version);
         return null;
     }

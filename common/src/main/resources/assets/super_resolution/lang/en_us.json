@@ -291,6 +291,7 @@
     "superresolution.screen.warn": "Warning",
     "superresolution.screen.config.options.tooltip.algo.experimental_warning": "This algorithm is experimental, unstable, and may cause crashes or errors",
     "superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint": "This algorithm is experimental, unstable, and may cause crashes or errors\nTo use it, please enable Experimental > Enable Experimental Features",
+    "superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack": "This algorithm is disabled by the shader pack",
     "superresolution.screen.config.options.tooltip.algo.unsupported_reason_header": "This algorithm is not supported. Reasons:",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_version": "· OpenGL version not supported",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_extension": "· Missing required OpenGL extensions",
@@ -309,5 +310,7 @@
     "superresolution.screen.config.hint.b3d_vulkan_unavailable.text": "The Vulkan graphics backend is currently in use. Because Iris does not support the Vulkan backend yet, Super Resolution cannot enable upscaling or scaling in this environment; you can still open the configuration screen, but all features will be unavailable.",
     "superresolution.screen.config.hint.shader_compat_warning.title": "Shader Compatibility Warning",
     "superresolution.screen.config.hint.shader_compat_warning.text": "The current shader pack has not been adapted for the super resolution mod and will run in compatibility mode. This mode may cause: blurry visuals, ghosting artifacts, performance degradation, and reduced compatibility with other mods.",
+    "superresolution.screen.config.hint.frame_generation_only_warning.title": "Frame Generation Only Mode",
+    "superresolution.screen.config.hint.frame_generation_only_warning.text": "This shader pack uses frame-generation-only mode. Super resolution is disabled.",
     "superresolution.translate.PoweredByDeepSeek": "Powered by DeepSeek"
 }
