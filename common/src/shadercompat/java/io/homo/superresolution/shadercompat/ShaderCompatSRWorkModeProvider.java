@@ -12,6 +12,8 @@ import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {

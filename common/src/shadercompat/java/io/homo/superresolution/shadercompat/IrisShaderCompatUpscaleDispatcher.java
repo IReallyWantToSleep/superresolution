@@ -398,12 +398,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         升采样阶段开始
          */
         boolean frameGenOnly = currentConfig.onlySupportsFrameGeneration;
-        if (frameGenOnly) {
-            // 仅帧生成模式：跳过超分算法调度和结果回写，数据传递已完成
-            PerformanceTracker.pop("Upscale");
-            return;
-        }
-        {
+        if (!frameGenOnly) {
             if (RenderHandlerManager.needCaptureUpscale) {
                 if (RenderDoc.renderdoc != null) {
                     RenderDoc.renderdoc.StartFrameCapture.call(null, null);
@@ -434,8 +429,10 @@ public class IrisShaderCompatUpscaleDispatcher {
                     )
             );
         }
-        try (GlState ignored_ = new GlState()) {
-            SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+        if (!frameGenOnly) {
+            try (GlState ignored_ = new GlState()) {
+                SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+            }
         }
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(
@@ -449,9 +446,10 @@ public class IrisShaderCompatUpscaleDispatcher {
         /*
         升采样阶段结束
          */
-        GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
-        IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-        if (currentConfig.outputTextures.get("upscaled_color").enabled) {
+        if (!frameGenOnly) {
+            GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
+            IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+            if (currentConfig.outputTextures.get("upscaled_color").enabled) {
             for (String targetName : currentConfig.outputTextures.get("upscaled_color").targetNames) {
                 ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
                         name -> IrisTextureResolver.getIrisTexture(
@@ -494,14 +492,15 @@ public class IrisShaderCompatUpscaleDispatcher {
                         );
                     }
                 }
+                }
             }
-        }
-        GlDebug.popGroup();
-        {
-            if (RenderHandlerManager.needCaptureUpscale) {
-                if (RenderDoc.renderdoc != null) {
-                    RenderHandlerManager.needCaptureUpscale = false;
-                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+            GlDebug.popGroup();
+            {
+                if (RenderHandlerManager.needCaptureUpscale) {
+                    if (RenderDoc.renderdoc != null) {
+                        RenderHandlerManager.needCaptureUpscale = false;
+                        RenderDoc.renderdoc.EndFrameCapture.call(null, null);
+                    }
                 }
             }
         }
