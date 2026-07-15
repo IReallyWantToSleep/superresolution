@@ -309,5 +309,7 @@
     "superresolution.screen.config.hint.b3d_vulkan_unavailable.text": "偵測到目前正在使用 Vulkan 圖形後端。由於 Iris 暫不支援 Vulkan，Super Resolution 無法在此環境下正常啟用升頻/縮放功能；你仍可開啟設定介面，但所有功能將無法使用。",
     "superresolution.screen.config.hint.shader_compat_warning.title": "光影相容性警告",
     "superresolution.screen.config.hint.shader_compat_warning.text": "目前光影尚未適配超解析度模組，將以相容模式運行。此模式下可能出現：畫面模糊、重影鬼影、效能下降、與其他模組的相容性降低等問題",
+"superresolution.screen.config.hint.frame_generation_only_warning.title": "僅啟用幀生成模式",
+"superresolution.screen.config.hint.frame_generation_only_warning.text": "此光影使用僅幀生成模式，超解析度功能已停用",
     "superresolution.translate.PoweredByDeepSeek": "?"
 }

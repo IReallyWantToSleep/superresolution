@@ -405,7 +405,6 @@ public class IrisShaderCompatUpscaleDispatcher {
                 }
             }
         }
-        GlDebug.pushGroup(64108436, "SR Upscale");
         AlgorithmManager.update();
         // MotionVectorsGenerator 已被弃用
         Vector2f rawJitter = getJitterOffset();
@@ -421,28 +420,29 @@ public class IrisShaderCompatUpscaleDispatcher {
                 needsPreProcessDepth,
                 needsPreProcessMotionVectors
         );
-        if (SuperResolution.currentAlgorithm != null) {
-            SuperResolutionAPI.EVENT_BUS.post(
-                    new AlgorithmDispatchEvent(
-                            SuperResolution.currentAlgorithm,
-                            dispatchResource
-                    )
-            );
-        }
         if (!frameGenOnly) {
+            GlDebug.pushGroup(64108436, "SR Upscale");
+            if (SuperResolution.currentAlgorithm != null) {
+                SuperResolutionAPI.EVENT_BUS.post(
+                        new AlgorithmDispatchEvent(
+                                SuperResolution.currentAlgorithm,
+                                dispatchResource
+                        )
+                );
+            }
             try (GlState ignored_ = new GlState()) {
                 SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
             }
+            if (SuperResolution.currentAlgorithm != null) {
+                SuperResolutionAPI.EVENT_BUS.post(
+                        new AlgorithmDispatchFinishEvent(
+                                SuperResolution.currentAlgorithm,
+                                SuperResolution.currentAlgorithm.getOutputFrameBuffer()
+                        )
+                );
+            }
+            GlDebug.popGroup();
         }
-        if (SuperResolution.currentAlgorithm != null) {
-            SuperResolutionAPI.EVENT_BUS.post(
-                    new AlgorithmDispatchFinishEvent(
-                            SuperResolution.currentAlgorithm,
-                            SuperResolution.currentAlgorithm.getOutputFrameBuffer()
-                    )
-            );
-        }
-        GlDebug.popGroup();
         /*
         升采样阶段结束
          */
