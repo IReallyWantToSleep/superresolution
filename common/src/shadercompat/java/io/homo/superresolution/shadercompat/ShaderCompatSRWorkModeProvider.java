@@ -59,7 +59,7 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
             }
         }
 
-        java.util.List<String> disabledAlgorithms = java.util.Collections.emptyList();
+        List<String> disabledAlgorithms = Collections.emptyList();
         if (profile.isPresent() && profile.get().enabled && profile.get().upscale != null) {
             disabledAlgorithms = profile.get().upscale.disabledAlgorithms;
         }
