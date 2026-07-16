@@ -64,12 +64,33 @@ public final class Streamline {
         if (!isSupportedOnCurrentVersion() || !isSupportedPlatform()) {
             return false;
         }
-        Configuration.VULKAN_LIBRARY_NAME.set(
-                NativeLibManager.LIB_STREAMLINE_INTERPOSER.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
-        );
-        NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
-        NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
-        return initEarly(config);
+        //streamline will affect OpenGL's swap chain,then it makes glfwSwapBuffers take more time
+        //we need to disable streamline in pure OpenGL rendering (actually mixed vulkan)
+
+        //Anemone is using a vulkan swap chain,so we don't need to disable it
+        if (Platform.currentPlatform.isModLoaded("anemone")) {
+            Configuration.VULKAN_LIBRARY_NAME.set(
+                    NativeLibManager.LIB_STREAMLINE_INTERPOSER.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
+            );
+            NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
+            if (NativeLibManager.LIB_STREAMLINE_COMMON.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toFile().exists()) {
+                System.load(
+                        NativeLibManager.LIB_STREAMLINE_COMMON.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
+                );
+            }
+            if (NativeLibManager.LIB_STREAMLINE_INTERPOSER.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toFile().exists()) {
+                System.load(
+                        NativeLibManager.LIB_STREAMLINE_INTERPOSER.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
+                );
+            }
+            if (NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toFile().exists()) {
+                System.load(
+                        NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
+                );
+            }
+            return initEarly(config);
+        }
+        return false;
     }
 
     public static synchronized boolean initEarly() {

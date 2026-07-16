@@ -58,7 +58,7 @@ public final class StreamlineInitConfig {
         return builder()
                 .pluginPath(pluginPath)
                 .logPath(logPath)
-                .features(StreamlineFeature.PCL,StreamlineFeature.REFLEX)
+                .features(StreamlineFeature.PCL)
                 .build();
     }
 
