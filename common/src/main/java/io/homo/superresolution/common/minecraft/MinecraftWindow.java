@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.minecraft;
 
+import io.homo.superresolution.common.mixin.core.accessor.WindowAccessor;
 import net.minecraft.client.Minecraft;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
@@ -36,6 +37,16 @@ public class MinecraftWindow {
     }
 
     public static Vector2f getWindowSize() {
+        #if MC_VER >= MC_26_1_2
+        if (hasWindow()) {
+            WindowAccessor window = (WindowAccessor) (Object) Minecraft.getInstance().getWindow();
+            return new Vector2f(
+                    Math.max(window.super_resolution$getFramebufferWidth(), 1),
+                    Math.max(window.super_resolution$getFramebufferHeight(), 1)
+            );
+        }
+        return new Vector2f(1, 1);
+        #else
         int[] sizeX = new int[]{1};
         int[] sizeY = new int[]{1};
         if (hasWindow()) {
@@ -45,6 +56,7 @@ public class MinecraftWindow {
                 Math.max(sizeX[0], 1),
                 Math.max(sizeY[0], 1)
         );
+        #endif
     }
 
     public static int getWindowWidth() {
