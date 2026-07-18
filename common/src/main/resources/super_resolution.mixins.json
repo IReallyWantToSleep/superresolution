@@ -21,12 +21,29 @@
         "debug.KeyboardHandlerMixin",
         "gui.AbstractWidgetAccessor",
         "gui.GameRendererAccessor",
+        "gui.GuiGraphicsMixin",
         "gui.GuiGraphicsAccessor",
+        "gui.GuiRendererDrawAccessor",
         "gui.GuiRendererMixin",
-        "gui.GuiRendererDrawAccessor"
+        "lowlatency.v1_21_11.KeyboardHandlerReflexMixin",
+        "lowlatency.v1_21_11.MinecraftReflexMixin",
+        "lowlatency.v1_21_11.MouseHandlerReflexMixin",
+        "lowlatency.v1_21_11.RenderSystemAccessor",
+        "lowlatency.v26_1_x.KeyboardHandlerReflexMixin",
+        "lowlatency.v26_1_x.MinecraftReflexMixin",
+        "lowlatency.v26_1_x.MouseHandlerReflexMixin",
+        "presentation.v1_21_11.VulkanPresentationGameRendererCaptureMixin",
+        "presentation.v1_21_11.VulkanPresentationGlDeviceMixin",
+        "presentation.v1_21_11.VulkanPresentationMinecraftBackendMixin",
+        "presentation.v1_21_11.VulkanPresentationMinecraftCaptureMixin",
+        "presentation.v1_21_11.VulkanPresentationWindowMixin",
+        "presentation.v26_1_x.VulkanPresentationGameRendererCaptureMixin",
+        "presentation.v26_1_x.VulkanPresentationGlDeviceMixin",
+        "presentation.v26_1_x.VulkanPresentationMinecraftBackendMixin",
+        "presentation.v26_1_x.VulkanPresentationMinecraftCaptureMixin",
+        "presentation.v26_1_x.VulkanPresentationWindowCloseMixin"
     ],
     "mixins": [
-
     ],
     "injectors": {
         "defaultRequire": 1

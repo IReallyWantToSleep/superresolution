@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.streamline.Streamline;
@@ -104,12 +105,16 @@ public class VkRenderSystem implements IRenderSystem {
     }
 
     public VkRenderSystem addInstanceExtension(String ext) {
-        instanceExtensions.add(ext);
+        if (!instanceExtensions.contains(ext)) {
+            instanceExtensions.add(ext);
+        }
         return this;
     }
 
     public VkRenderSystem addDeviceExtension(String ext) {
-        deviceExtensions.add(ext);
+        if (!deviceExtensions.contains(ext)) {
+            deviceExtensions.add(ext);
+        }
         return this;
     }
 
@@ -119,14 +124,18 @@ public class VkRenderSystem implements IRenderSystem {
 
     @Override
     public void initRenderSystem() {
+        VulkanPresentationFeature.prepare(this);
         createInstance();
+        VulkanPresentationFeature.createSurface(this);
         validationLayers = new VulkanValidationLayers(instance);
         if (ENABLE_VALIDATION) {
             validationLayers.setupDebugMessenger();
         }
         VkPhysicalDevice physicalDevice = selectPhysicalDevice();
         capabilities.init(instance, physicalDevice);
+        VulkanPresentationFeature.validateDevice(this, physicalDevice);
         this.vulkanDevice = createLogicalDeviceWithCapabilities(physicalDevice);
+        VulkanPresentationFeature.completeInitialization(this);
         LOGGER.info("Vulkan 初始化完成");
     }
 
@@ -245,7 +254,11 @@ public class VkRenderSystem implements IRenderSystem {
 
     private VulkanDevice createLogicalDeviceWithCapabilities(VkPhysicalDevice physicalDevice) {
         try (MemoryStack stack = stackPush()) {
-            int graphicsFamilyIndex = VulkanQueueUtils.findQueueFamilyIndex(stack, VK_QUEUE_GRAPHICS_BIT, physicalDevice);
+            int graphicsFamilyIndex = VulkanPresentationFeature.findGraphicsPresentQueueFamily(
+                    stack,
+                    VK_QUEUE_GRAPHICS_BIT,
+                    physicalDevice
+            );
             if (graphicsFamilyIndex == -1) {
                 throw new RuntimeException("No suitable queue family found");
             }

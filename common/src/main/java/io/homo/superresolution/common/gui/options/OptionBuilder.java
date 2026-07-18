@@ -53,15 +53,19 @@ public class OptionBuilder {
             Class<T> clazz,
             T value
     ) {
-        return new EnumSelectorBuilder<>(name, clazz, value).setCategory(category);
+        EnumSelectorBuilder<T> builder = new EnumSelectorBuilder<>(name, clazz, value);
+        builder.setCategory(category);
+        return builder;
     }
 
-    public <T> SelectionListBuilder<T> selectorOption(
+    public <T> SelectionListBuilder<T, ?> selectorOption(
             Text name,
             T value,
             T[] values
     ) {
-        return (SelectionListBuilder<T>) new SelectionListBuilder(name, value, values).setCategory(category);
+        SelectionListBuilder<T, ?> builder = new SelectionListBuilder<>(name, value, values);
+        builder.setCategory(category);
+        return builder;
     }
 
     public BooleanSwitchBuilder booleanOption(

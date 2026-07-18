@@ -46,7 +46,7 @@ public class MixinPlugin implements IMixinConfigPlugin {
         String mixinName = getClassName(mClassPath).split("\\.")[1];
         return shouldApplyMixinByName(mixinName) && (
                 switch (mixinClassify) {
-                    case "core", "gui", "compat" -> true;
+                    case "core", "gui", "compat","lowlatency","presentation" -> true;
                     #if IS_DEV == 1
                     case "debug" -> true;
                     #else
@@ -58,6 +58,13 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     private boolean shouldApplyMixinByName(String name) {
+        if (name.startsWith("VulkanPresentation")) {
+            #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
+            return io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature.isRequested();
+            #else
+            return false;
+            #endif
+        }
         if (name.contains("ForceOpenGLVersion_WindowMixin")) {
             return !(Platform.currentPlatform.isModLoaded("threatengl") ||
                     Platform.currentPlatform.isModLoaded("gpu_tape") ||

@@ -56,6 +56,7 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
                 saveRunnable.run();
             }
         });
+        aSwitch.setTooltipSupplier(this::resolveTooltip);
         container.addControl(aSwitch);
     }
 

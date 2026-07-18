@@ -22,6 +22,7 @@ import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
+import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
@@ -62,22 +63,38 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
     public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
 
-        float contentX = bounds.x + ICON_MARGIN_LEFT;
         float centerY = bounds.y + bounds.height / 2;
 
+        String title = titleSupplier.get();
+        TextMetrics textMetrics = null;
+        if (title != null && !title.isEmpty()) {
+            textMetrics = ctx.measureTextMetrics(
+                    ctx.font(),
+                    FONT_SIZE,
+                    title,
+                    bounds.width - ICON_MARGIN_LEFT + ICON_SIZE + ICON_TEXT_GAP,
+                    bounds.height,
+                    800,
+                    false
+            );
+        }
         MaterialSymbol icon = iconSupplier.get();
+
+        //TODO: it`s incorrect
+        float contextWidth = (textMetrics != null ? textMetrics.maxLineWidth + ICON_TEXT_GAP : 0) + (icon != null ? ICON_MARGIN_LEFT + ICON_SIZE + ICON_TEXT_GAP : 0);
+        float contentX = bounds.x + (bounds.width / 2) - (contextWidth / 2);
+        contentX += ICON_MARGIN_LEFT;
         if (icon != null) {
             Vector2f iconPos = new Vector2f(contentX + ICON_SIZE / 2, centerY);
             icon.render(ctx, scheme().onSurface(), ICON_SIZE, iconPos);
             contentX += ICON_SIZE + ICON_TEXT_GAP;
         }
 
-        String title = titleSupplier.get();
-        if (title != null && !title.isEmpty()) {
+        if (textMetrics != null) {
             ctx.drawAlignedText(
                     ctx.font(),
                     FONT_SIZE,
-                    title,
+                    textMetrics,
                     contentX,
                     centerY,
                     bounds.width - contentX + bounds.x,
@@ -87,7 +104,6 @@ public class MaterialNavigationDrawerHeader extends MaterialWidget<MaterialNavig
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                     false
             );
-
         }
     }
 

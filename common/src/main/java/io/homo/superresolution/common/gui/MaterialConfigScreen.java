@@ -31,6 +31,10 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
+import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.lowlatency.LowLatencyMode;
+import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
+import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.gui.download.MaterialResourcesList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
@@ -180,6 +184,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         }
 
         float drawerWidth = drawer.getPreferredWidth(ctx);
+        float widthPercent = 0.185f;
+        drawerWidth = Math.max(drawerWidth, ctx.viewportWidth() * widthPercent);
         if (drawerWidth > 0) {
             navigationDrawerLayout.setWidth(drawerWidth);
             view.markLayoutDirty();
@@ -493,6 +499,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
     }
 
+    private OptionRequirement getLowLatencyModeItemRequirement(LowLatencyMode mode) {
+        return switch (mode) {
+            case None -> OptionRequirement.all();
+            case NVReflex -> () -> LowLatency.isAvailable()
+                    && Streamline.isSupportedPlatform()
+                    && Streamline.isNativeAvailable();
+        };
+    }
+
     private Frame createGeneralFrame() {
         ScrollableFrame frame = createStandardScrollableFrame();
         ContainerWidget container = createStandardContainer();
@@ -755,6 +770,76 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .build();
                 }
         );
+
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.category.presentation"),
+                builder -> builder.booleanOption(
+                                Text.translatable("superresolution.screen.config.options.label.enable_vulkan_presentation"),
+                                SuperResolutionConfig.isEnableVulkanPresentation())
+                        .setDefaultValue(() -> false)
+                        .setRequireRestartGame(true)
+                        .setDescription(Text.translatable(
+                                "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
+                        ))
+                        .setEnableRequirement(() -> !SuperResolutionConfig.isSkipInitVulkan())
+                        .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
+                                Text.translatable(
+                                        SuperResolutionConfig.isSkipInitVulkan()
+                                                ? "superresolution.screen.config.options.tooltip.enable_vulkan_presentation.vulkan_disabled"
+                                                : "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
+                                ).getString()
+                        )))
+                        .setSaveConsumer(SuperResolutionConfig::setEnableVulkanPresentation)
+                        .build()
+        );
+
+
+        addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.category.low_latency"),
+                builder -> {
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.low_latency_mode"),
+                                    LowLatencyMode.class,
+                                    SuperResolutionConfig.getLowLatencyMode())
+                            .setDefaultValue(LowLatencyMode.None)
+                            .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.lowlatencymode." + mode.name().toLowerCase()).getString())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
+                            .setEnableRequirement(() -> SuperResolutionConfig.isEnableVulkanPresentation())
+                            .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
+                                    Text.translatable(
+                                            SuperResolutionConfig.isEnableVulkanPresentation()
+                                                    ? "superresolution.screen.config.options.tooltip.low_latency_mode"
+                                                    : "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
+                                    ).getString()
+                            )))
+                            .setItemEnableRequirement(this::getLowLatencyModeItemRequirement)
+                            .setSaveConsumer(SuperResolutionConfig::setLowLatencyMode)
+                            .build();
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.nv_reflex_mode"),
+                                    NVIDIAReflexMode.class,
+                                    SuperResolutionConfig.getNVIDIAReflexMode())
+                            .setDefaultValue(NVIDIAReflexMode.OFF)
+                            .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.nvreflexmode." + mode.name().toLowerCase()).getString())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
+                            .setEnableRequirement(() -> SuperResolutionConfig.isEnableVulkanPresentation() && SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex)
+                            .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
+                                    Text.translatable(
+                                            !SuperResolutionConfig.isEnableVulkanPresentation()
+                                                    ? "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
+                                                    : SuperResolutionConfig.getLowLatencyMode() != LowLatencyMode.NVReflex
+                                                    ? "superresolution.screen.config.options.tooltip.nv_reflex_mode.low_latency_required"
+                                                    : "superresolution.screen.config.options.tooltip.nv_reflex_mode"
+                                    ).getString()
+                            )))
+                            .setSaveConsumer(SuperResolutionConfig::setNVIDIAReflexMode)
+                            .build();
+                }
+        );
+        #endif
 
         addLabeledOptionGroup(
                 container,
@@ -1021,7 +1106,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     InteropSyncMode.class,
                                     SuperResolutionConfig.getInteropSyncMode())
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
-                            .setDefaultValue(InteropSyncMode.LowLatency)
+                            .setDefaultValue(() -> InteropSyncMode.LowLatency)
                             .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
                             .setSaveConsumer((value) -> {
                                 SuperResolutionConfig.setInteropSyncMode(value);
@@ -1036,7 +1121,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     InternalTextureFormat.class,
                                     SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get())
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.internal_texture_format"))
-                            .setDefaultValue(SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
+                            .setDefaultValue(() -> SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
                             .setEnumNameProvider(format -> format.name())
                             .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
                             .build();

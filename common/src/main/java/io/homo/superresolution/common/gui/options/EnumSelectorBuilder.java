@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.gui.options;
 
-import com.google.common.collect.ImmutableList;
 import io.homo.superresolution.common.gui.impl.Text;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,21 +26,20 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class EnumSelectorBuilder<T extends Enum<T>> extends AbstractOptionBuilder<T, SelectionListOptionEntry<T>, EnumSelectorBuilder<T>> {
+public class EnumSelectorBuilder<T extends Enum<T>> extends SelectionListBuilder<T, EnumSelectorBuilder<T>> {
     private final Class<T> clazz;
-    private Function<Enum<T>, String> enumNameProvider;
 
     public EnumSelectorBuilder(Text fieldName, Class<T> clazz, T value) {
-        super(fieldName, value);
+        super(fieldName, value, clazz.getEnumConstants());
         Objects.requireNonNull(clazz, "Enum class must not be null");
         Objects.requireNonNull(value, "Enum value must not be null");
         this.clazz = clazz;
-        this.enumNameProvider = t -> t.name();
+        setNameProvider(t -> t.name());
     }
 
     public EnumSelectorBuilder<T> setEnumNameProvider(@NotNull Function<Enum<T>, String> enumNameProvider) {
         Objects.requireNonNull(enumNameProvider, "Enum name provider must not be null");
-        this.enumNameProvider = enumNameProvider;
+        setNameProvider(t -> enumNameProvider.apply(t));
         return this;
     }
 
@@ -56,14 +54,12 @@ public class EnumSelectorBuilder<T extends Enum<T>> extends AbstractOptionBuilde
         EnumListEntry<T> entry = new EnumListEntry<>(
                 this.name,
                 this.value,
-                ImmutableList.copyOf(this.clazz.getEnumConstants()),
-                (Function<T, String>) enumNameProvider
+                this.values,
+                this.nameProvider
         );
-        entry.setTooltipSupplier(v -> tooltipSupplier.apply(v));
-        entry.setDescriptionsSupplier(v -> descriptionsSupplier.apply(v));
-        if (errorSupplier != null) {
-            entry.setErrorSupplier(v -> errorSupplier.apply(v));
-        }
+        entry.setItemEnableRequirement(itemEnableRequirement);
+        entry.setValuesSupplier(valuesSupplier);
+        entry.setMenuItemTooltip(menuItemTooltipSupplier);
         return (EnumListEntry<T>) finishBuild(entry);
     }
 

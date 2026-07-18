@@ -55,11 +55,15 @@ public final class StreamlineInitConfig {
     }
 
     public static StreamlineInitConfig defaultConfig(Path pluginPath, Path logPath) {
-        return builder()
+        Builder builder = builder()
                 .pluginPath(pluginPath)
-                .logPath(logPath)
-                .features(StreamlineFeature.PCL)
-                .build();
+                .logPath(logPath);
+        if (io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature.shouldInitializeStreamline()) {
+            builder.features(StreamlineFeature.DLSS_G, StreamlineFeature.PCL, StreamlineFeature.REFLEX);
+        } else {
+            builder.features(StreamlineFeature.PCL, StreamlineFeature.REFLEX);
+        }
+        return builder.build();
     }
 
     public static final class Builder {

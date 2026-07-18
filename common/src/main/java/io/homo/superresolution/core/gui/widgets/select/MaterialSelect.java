@@ -702,6 +702,23 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         END
     }
 
+    @Override
+    public MaterialSelect<T> setTooltipSupplier(Supplier<Optional<Tooltip>> supplier) {
+        field.setTooltipSupplier(supplier);
+        return super.setTooltipSupplier(supplier);
+    }
+
+    @Override
+    public Optional<Tooltip> getTooltip() {
+        return field.getTooltip();
+    }
+
+    @Override
+    public MaterialSelect<T> setTooltip(Tooltip tooltip) {
+        field.setTooltip(tooltip);
+        return super.setTooltip(tooltip);
+    }
+
     private record SelectOption<T>(T value,
 
                                    String displayText,

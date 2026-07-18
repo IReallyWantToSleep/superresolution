@@ -23,6 +23,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
@@ -119,9 +120,14 @@ public class RenderSystems {
         try {
             VK.create();
         } catch (Exception | Error e) {
-            if (!e.getMessage().contains("Vulkan has already been created")) {
+            String message = e.getMessage();
+            if (message == null || !message.contains("Vulkan has already been created")) {
                 VkRenderSystem.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
                 VkRenderSystem.LOGGER.error("Vulkan 初始化错误详情", e);
+                if (VulkanPresentationFeature.isRequested()) {
+                    VulkanPresentationFeature.disableAfterFailure(e);
+                    throw new RuntimeException("Vulkan presentation requires a working Vulkan loader", e);
+                }
                 return;
             }
         }
@@ -155,8 +161,16 @@ public class RenderSystems {
             return;
         } catch (VulkanException vkException) {
             VkRenderSystem.LOGGER.error("Vulkan初始化失败，已禁用Vulkan", vkException);
+            if (VulkanPresentationFeature.isRequested()) {
+                VulkanPresentationFeature.disableAfterFailure(vkException);
+                throw vkException;
+            }
         } catch (Throwable e) {
             VkRenderSystem.LOGGER.error("Vulkan初始化失败，发生未知错误，已禁用Vulkan", e);
+            if (VulkanPresentationFeature.isRequested()) {
+                VulkanPresentationFeature.disableAfterFailure(e);
+                throw new RuntimeException("Vulkan presentation initialization failed", e);
+            }
         }
         vulkan = null;
     }

@@ -34,6 +34,8 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
+import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
@@ -43,6 +45,7 @@ import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
+import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResourceType;
 import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
@@ -69,6 +72,7 @@ public class ImGuiLayer {
         WINDOW_OPEN.put("Render Handler", new ImBoolean(true));
         WINDOW_OPEN.put("Textures", new ImBoolean(true));
         WINDOW_OPEN.put("Algorithm", new ImBoolean(true));
+        WINDOW_OPEN.put("Frame Capture", new ImBoolean(true));
     }
 
     private final List<DebugTextureEntry> textures = new ArrayList<>();
@@ -85,6 +89,7 @@ public class ImGuiLayer {
         collectProviderTextures(provider);
         collectHandlerTextures(handler);
         collectAlgorithmTextures();
+        collectFrameCaptureTextures();
 
         drawTitleBar();
         drawGeneralWindow(provider, handler);
@@ -96,6 +101,7 @@ public class ImGuiLayer {
             drawHandlerWindow(handler);
             drawTexturesWindow();
             drawAlgorithmWindow();
+            drawFrameCaptureWindow();
         }
 
         drawViewerWindows();
@@ -282,6 +288,54 @@ public class ImGuiLayer {
         ImGui.end();
     }
 
+    private void drawFrameCaptureWindow() {
+        if (!isWindowVisible("Frame Capture")) {
+            return;
+        }
+        beginWindow("Frame Capture", 470, 800, 520, 320);
+
+        ImGui.text("Initialized: " + FrameCaptureManager.isInitialized());
+        if (!FrameCaptureManager.isInitialized()) {
+            ImGui.end();
+            return;
+        }
+
+        FrameResources frame = FrameCaptureManager.peekCurrentFrame();
+        if (frame == null || !frame.hasAnyResource()) {
+            ImGui.text("No captured frame available.");
+            ImGui.end();
+            return;
+        }
+
+        ImGui.text("Logical Frame: " + frame.logicalFrameIndex());
+        ImGui.text("Generation: " + frame.generation());
+        ImGui.text("Slot Index: " + frame.index());
+        ImGui.text("Sealed: " + frame.isSealed());
+        ImGui.text("Submitted: " + frame.isSubmitted());
+        ImGui.separator();
+
+        drawFrameCaptureResource("Final Color", frame.hasFinalColor(), frame.finalColorGlTexture(), frame.finalColorVulkanTexture());
+        drawFrameCaptureResource("World Color", frame.hasWorldColor(), frame.worldColorGlTexture(), frame.worldColorVulkanTexture());
+        drawFrameCaptureResource("Depth", frame.hasDepth(), frame.depthGlTexture(), frame.depthVulkanTexture());
+        drawFrameCaptureResource("Motion Vector", frame.hasMotionVector(), frame.motionVectorGlTexture(), frame.motionVectorVulkanTexture());
+
+        ImGui.end();
+    }
+
+    private void drawFrameCaptureResource(String label, boolean valid, GlImportableTexture2D glTexture, ITexture vkTexture) {
+        ImGui.text(label + ": " + valid);
+        if (!valid || glTexture == null || vkTexture == null) {
+            return;
+        }
+        ImGui.text("  Size: " + vkTexture.getWidth() + "x" + vkTexture.getHeight());
+        ImGui.text("  Format: " + vkTexture.getTextureFormat());
+        ImGui.text("  Vulkan Handle: 0x" + Long.toHexString(vkTexture.handle()));
+        ImGui.text("  OpenGL Handle: 0x" + Long.toHexString(glTexture.handle()));
+        float previewHeight = glTexture.getHeight() * PREVIEW_WIDTH / Math.max(1, glTexture.getWidth());
+        ImGui.image(glTexture.handle(), PREVIEW_WIDTH, previewHeight, 0.0f, 1.0f, 1.0f, 0.0f);
+        ImGui.separator();
+    }
+
     private void drawFsr2Resources(Fsr2Context context) {
         for (Map.Entry<Fsr2PipelineResourceType, Fsr2PipelineResources.Fsr2ResourceEntry> entry : context.resources.resources().entrySet()) {
             Object resource = entry.getValue().getResource();
@@ -367,6 +421,29 @@ public class ImGuiLayer {
             String resourceKey = getFsr2ResourceKey(entry.getKey());
             ctx.addTexture(resourceKey, entry.getValue().getDescription().label, texture, resourceKey, true);
         }
+    }
+
+    private void collectFrameCaptureTextures() {
+        if (!FrameCaptureManager.isInitialized()) {
+            return;
+        }
+        FrameResources frame = FrameCaptureManager.peekCurrentFrame();
+        if (frame == null || !frame.hasAnyResource()) {
+            return;
+        }
+        ImGuiDebugContext ctx = new ImGuiDebugContext("capture", textures::add, this::openViewer);
+        addFrameCaptureTexture(ctx, "final_color", "Captured Final Color", frame.finalColorGlTexture(), frame.finalColorVulkanTexture());
+        addFrameCaptureTexture(ctx, "world_color", "Captured World Color", frame.worldColorGlTexture(), frame.worldColorVulkanTexture());
+        addFrameCaptureTexture(ctx, "depth", "Captured Depth", frame.depthGlTexture(), frame.depthVulkanTexture());
+        addFrameCaptureTexture(ctx, "motion_vector", "Captured Motion Vector", frame.motionVectorGlTexture(), frame.motionVectorVulkanTexture());
+    }
+
+    private void addFrameCaptureTexture(ImGuiDebugContext ctx, String id, String label, GlImportableTexture2D glTexture, ITexture vkTexture) {
+        if (glTexture == null || vkTexture == null) {
+            return;
+        }
+        String notes = String.format("vk=0x%X fmt=%s", vkTexture.handle(), vkTexture.getTextureFormat());
+        ctx.addTexture(id, label, glTexture, notes, true);
     }
 
     private void drawCaptureButtons() {

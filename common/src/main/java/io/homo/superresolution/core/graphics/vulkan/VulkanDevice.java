@@ -245,7 +245,12 @@ public class VulkanDevice implements IDevice {
             int[] waitDstStageMask,
             long[] signalSemaphores
     ) {
-        if (waitSemaphores != null && waitDstStageMask != null && waitSemaphores.length != waitDstStageMask.length) {
+        if ((waitSemaphores == null) != (waitDstStageMask == null)) {
+            throw new IllegalArgumentException(
+                    "waitSemaphores and waitDstStageMask must both be null or both be non-null"
+            );
+        }
+        if (waitSemaphores != null && waitSemaphores.length != waitDstStageMask.length) {
             throw new IllegalArgumentException("waitSemaphores and waitDstStageMask length mismatch");
         }
 

@@ -344,6 +344,7 @@ tasks.register("uploadToCurseForge") {
                 "${index + 1}. ${artifact.file.name} | "
                     + "${artifact.loaderName} | "
                     + "${artifact.gameVersions.joinToString(", ")} | "
+                    + "Client | "
                     + artifact.releaseType
             )
         }

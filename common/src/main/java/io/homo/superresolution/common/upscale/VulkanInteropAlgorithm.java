@@ -23,6 +23,8 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
@@ -40,6 +42,7 @@ import org.joml.Vector2f;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
+import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_TRANSFER_DST_EXT;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
 public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
@@ -146,6 +149,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
                             GL_LAYOUT_SHADER_READ_ONLY_EXT
                     }
             );
+            publishCaptureInputs(inFlight, dispatchResource);
 
             VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
             inFlight.frameData = FrameData.from(dispatchResource);
@@ -216,6 +220,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
                                 GL_LAYOUT_SHADER_READ_ONLY_EXT
                         }
                 );
+                publishCaptureInputs(inFlight, dispatchResource);
             }
             if (currentFrameIndex > 1) {
                 InFlightFrameResourcesSet inFlight;
@@ -353,6 +358,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
     }
 
     private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
+        inFlight.awaitCaptureRelease();
 
         String motionVectorPreprocessingFunction =
                 SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
@@ -364,6 +370,56 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
                 dispatchResource.resources().exposureTexture(), inFlight.inputExposureGlTexture,
                 motionVectorPreprocessingFunction
         );
+    }
+
+    private void publishCaptureInputs(
+            InFlightFrameResourcesSet inFlight,
+            DispatchResource dispatchResource
+    ) {
+        if (!VulkanPresentationFeature.isRequested()
+                || !FrameCaptureManager.isInitialized()
+                || dispatchResource.resources() == null) {
+            return;
+        }
+
+        boolean hasDepth = dispatchResource.resources().depthTexture() != null;
+        boolean hasMotionVectors = dispatchResource.resources().motionVectorsTexture() != null;
+        if (!hasDepth && !hasMotionVectors) {
+            return;
+        }
+
+        boolean captured = FrameCaptureManager.captureVulkanInputs(
+                dispatchResource.frameCount(),
+                hasDepth ? inFlight.inputDepthVkTexture : null,
+                hasDepth ? inFlight.inputDepthGlTexture : null,
+                hasDepth ? inFlight.captureDepthReady : null,
+                hasDepth ? inFlight.captureDepthRelease : null,
+                hasMotionVectors ? inFlight.inputMotionVectorsVkTexture : null,
+                hasMotionVectors ? inFlight.inputMotionVectorsGlTexture : null,
+                hasMotionVectors ? inFlight.captureMotionReady : null,
+                hasMotionVectors ? inFlight.captureMotionRelease : null
+        );
+        if (!captured) {
+            return;
+        }
+
+        if (hasDepth) {
+            inFlight.captureDepthReady.signalVulkan(
+                    new int[]{Math.toIntExact(inFlight.inputDepthGlTexture.handle())},
+                    new int[0],
+                    new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT}
+            );
+            inFlight.captureDepthPending = true;
+        }
+        if (hasMotionVectors) {
+            inFlight.captureMotionReady.signalVulkan(
+                    new int[]{Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle())},
+                    new int[0],
+                    new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT}
+            );
+            inFlight.captureMotionPending = true;
+        }
+
     }
 
     public record FrameData(
@@ -464,13 +520,20 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
 
         public VkGlInteropSemaphore glFinish;
         public VkGlInteropSemaphore upscaleVkFinish;
+        public VkGlInteropSemaphore captureDepthReady;
+        public VkGlInteropSemaphore captureDepthRelease;
+        public VkGlInteropSemaphore captureMotionReady;
+        public VkGlInteropSemaphore captureMotionRelease;
         public FrameData frameData;
         public VulkanCommandBuffer commandBuffer;
         public long fence;
 
         protected int index;
+        private boolean captureDepthPending;
+        private boolean captureMotionPending;
 
         public void destroy() {
+            awaitCaptureRelease();
             if (inputColorGlTexture != null) {
                 inputColorGlTexture.destroy();
             }
@@ -517,6 +580,18 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
 
             if (upscaleVkFinish != null) {
                 upscaleVkFinish.destroy();
+            }
+            if (captureDepthReady != null) {
+                captureDepthReady.destroy();
+            }
+            if (captureDepthRelease != null) {
+                captureDepthRelease.destroy();
+            }
+            if (captureMotionReady != null) {
+                captureMotionReady.destroy();
+            }
+            if (captureMotionRelease != null) {
+                captureMotionRelease.destroy();
             }
         }
 
@@ -602,6 +677,31 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
 
             this.glFinish = VkGlInteropSemaphore.create(vkDevice);
             this.upscaleVkFinish = VkGlInteropSemaphore.create(vkDevice);
+            if (VulkanPresentationFeature.isRequested()) {
+                this.captureDepthReady = VkGlInteropSemaphore.create(vkDevice);
+                this.captureDepthRelease = VkGlInteropSemaphore.create(vkDevice);
+                this.captureMotionReady = VkGlInteropSemaphore.create(vkDevice);
+                this.captureMotionRelease = VkGlInteropSemaphore.create(vkDevice);
+            }
+        }
+
+        private void awaitCaptureRelease() {
+            if (captureDepthPending && captureDepthRelease != null && inputDepthGlTexture != null) {
+                captureDepthRelease.waitVulkanSignal(
+                        new int[]{Math.toIntExact(inputDepthGlTexture.handle())},
+                        new int[0],
+                        new int[]{GL_LAYOUT_TRANSFER_DST_EXT}
+                );
+                captureDepthPending = false;
+            }
+            if (captureMotionPending && captureMotionRelease != null && inputMotionVectorsGlTexture != null) {
+                captureMotionRelease.waitVulkanSignal(
+                        new int[]{Math.toIntExact(inputMotionVectorsGlTexture.handle())},
+                        new int[0],
+                        new int[]{GL_LAYOUT_TRANSFER_DST_EXT}
+                );
+                captureMotionPending = false;
+            }
         }
     }
 }

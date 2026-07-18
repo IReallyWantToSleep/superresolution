@@ -37,6 +37,9 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
+import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.lowlatency.LowLatencyMode;
+import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
@@ -63,6 +66,7 @@ public class SuperResolutionConfig {
     public static final ModConfigSpec SPEC;
     public static final SpecialConfigs SPECIAL;
     public static final BooleanValue ENABLE_UPSCALE;
+    public static final BooleanValue ENABLE_VULKAN_PRESENTATION;
     public static final FloatValue UPSCALE_RATIO;
     public static final StringValue UPSCALE_ALGO;
     public static final FloatValue SHARPNESS;
@@ -86,6 +90,8 @@ public class SuperResolutionConfig {
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
     public static final FloatValue THEME_CONTRAST_LEVEL;
     public static final StringValue THEME_COLOR;
+    public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
+    public static final EnumValue<LowLatencyMode> LOW_LATENCY_MODE;
 
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
@@ -105,6 +111,15 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2
+        ENABLE_VULKAN_PRESENTATION = builder.defineBoolean(
+                "enable_vulkan_presentation",
+                () -> false,
+                "Present Minecraft through a Vulkan swapchain. Requires a game restart."
+        );
+        #else
+        ENABLE_VULKAN_PRESENTATION = null;
+        #endif
         UPSCALE_RATIO = builder.defineFloat(
                 "upscale_ratio",
                 () -> 1.7f,
@@ -295,6 +310,29 @@ public class SuperResolutionConfig {
                 (oldValue, newValue) ->
                         SuperResolution.recreateAlgorithm()
         );
+
+        LOW_LATENCY_MODE = builder.defineEnum(
+                "low_latency/mode",
+                LowLatencyMode.class,
+                () -> LowLatencyMode.None,
+                "Low latency mode"
+        );
+        LOW_LATENCY_MODE.onChange((oldValue, newValue) -> {
+            LowLatency.setMode(newValue);
+        });
+
+        NVIDIA_REFLEX_MODE = builder.defineEnum(
+                "low_latency/nv_reflex/mode",
+                NVIDIAReflexMode.class,
+                () -> NVIDIAReflexMode.OFF,
+                "NVIDIA Reflex low latency mode"
+        );
+
+        NVIDIA_REFLEX_MODE.onChange((oldValue, newValue) -> {
+            if (LowLatency.mode() == LowLatencyMode.NVReflex && LowLatency.lowLatency() != null) {
+                LowLatency.lowLatency().refresh();
+            }
+        });
 
         SPECIAL = new SpecialConfigs(builder);
         Path configPath = SuperResolutionConstants.CONFIG_FILE;
@@ -509,6 +547,20 @@ public class SuperResolutionConfig {
         ENABLE_IMGUI.set(value);
     }
 
+    public static boolean isEnableVulkanPresentation() {
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2
+        return ENABLE_VULKAN_PRESENTATION.get();
+        #else
+        return false;
+        #endif
+    }
+
+    public static void setEnableVulkanPresentation(boolean value) {
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2
+        ENABLE_VULKAN_PRESENTATION.set(value);
+        #endif
+    }
+
     public static boolean isGenerateMotionVectors() {
         return false;
     }
@@ -694,5 +746,21 @@ public class SuperResolutionConfig {
 
     public static void setThemeContrastLevel(float value) {
         THEME_CONTRAST_LEVEL.set(Math.max(-1.0f, Math.min(1.0f, value)));
+    }
+
+    public static LowLatencyMode getLowLatencyMode() {
+        return LOW_LATENCY_MODE.get();
+    }
+
+    public static void setLowLatencyMode(LowLatencyMode value) {
+        LOW_LATENCY_MODE.set(value);
+    }
+
+    public static NVIDIAReflexMode getNVIDIAReflexMode() {
+        return NVIDIA_REFLEX_MODE.get();
+    }
+
+    public static void setNVIDIAReflexMode(NVIDIAReflexMode value) {
+        NVIDIA_REFLEX_MODE.set(value);
     }
 }

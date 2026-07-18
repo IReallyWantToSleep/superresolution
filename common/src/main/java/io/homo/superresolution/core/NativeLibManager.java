@@ -21,6 +21,7 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.api.platform.OperatingSystem;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.SystemArchitecture;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.utils.MessageBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,17 +64,18 @@ public class NativeLibManager {
     static {
         OperatingSystem operatingSystem = new OperatingSystem();
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
+            boolean presentation = VulkanPresentationFeature.shouldInitializeStreamline();
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", false, false);
-            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", false, false);
-            LIB_STREAMLINE_COMMON = new NativeLib("sl.common", false, false, true);
-            LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", false, false, true);
-            LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, false, true);
-            LIB_STREAMLINE_REFLEX = new NativeLib("sl.reflex", false, false, true);
-            LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, false, true);
-            LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, false, true);
+            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", presentation, presentation);
+            LIB_STREAMLINE_COMMON = new NativeLib("sl.common", presentation, presentation, true);
+            LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", presentation, presentation, true);
+            LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, presentation, true);
+            LIB_STREAMLINE_REFLEX = new NativeLib("sl.reflex", false, presentation, true);
+            LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, presentation, true);
+            LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, presentation, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);

@@ -37,6 +37,8 @@ import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.none.None;
@@ -151,7 +153,14 @@ public final class SuperResolution implements Destroyable {
 
         OptiScalerLoader.loadConfiguredDll();
         #if MC_VER != MC_26_2
-        Streamline.prepareEarly();
+        boolean streamlineReady = Streamline.prepareEarly();
+        if (VulkanPresentationFeature.shouldInitializeStreamline() && !streamlineReady) {
+            IllegalStateException failure = new IllegalStateException(
+                    "Streamline is required for Vulkan presentation on Windows"
+            );
+            VulkanPresentationFeature.disableAfterFailure(failure);
+            throw failure;
+        }
         #endif
     }
 
@@ -388,6 +397,7 @@ public final class SuperResolution implements Destroyable {
             }
 
             if (currentAlgorithm != null) {
+                VulkanPresentationWindow.flushCapturedFrame();
                 currentAlgorithm.destroy();
             }
 
@@ -487,6 +497,7 @@ public final class SuperResolution implements Destroyable {
         w = Math.max(32,w) ;
         h = Math.max(32,h);
         if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            VulkanPresentationWindow.flushCapturedFrame();
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmResizeEvent(
                             currentAlgorithm,
@@ -510,6 +521,7 @@ public final class SuperResolution implements Destroyable {
         isInit = false;
         isRenderingInitialized = false;
         pendingResize = false;
+        VulkanPresentationFeature.shutdown();
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
             currentAlgorithm = null;
