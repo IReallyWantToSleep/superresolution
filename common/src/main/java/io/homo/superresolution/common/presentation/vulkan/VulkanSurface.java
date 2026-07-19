@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.PointerBuffer;
@@ -65,7 +66,7 @@ public final class VulkanSurface {
 		if (GLFW.glfwGetWindowAttrib(presentationHandle, GLFW_CLIENT_API) != GLFW_NO_API) {
 			throw new IllegalStateException("Vulkan presentation window must use GLFW_NO_API");
 		}
-		if (presentationHandle != Minecraft.getInstance().getWindow().handle()) {
+		if (presentationHandle != MinecraftWindow.getWindowHandle()) {
 			throw new IllegalStateException("Presentation handle is not the Minecraft window");
 		}
 		if (presentationHandle != PresentationWindowState.presentationHandle()) {

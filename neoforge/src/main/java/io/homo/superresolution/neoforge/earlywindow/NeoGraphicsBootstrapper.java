@@ -38,9 +38,8 @@ public class NeoGraphicsBootstrapper implements GraphicsBootstrapper {
         Streamline.prepareEarly();
         #endif
 
-        #if MC_VER >= MC_1_21_5
-        FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, true);
-        FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_PROVIDER, "sr-early-window");
-        #endif
+        //#if MC_VER >= MC_1_21_5
+        FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, false);
+        //#endif
     }
 }

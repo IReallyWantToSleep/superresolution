@@ -771,7 +771,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 }
         );
 
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
         addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.category.presentation"),

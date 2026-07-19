@@ -99,7 +99,7 @@ public class MinecraftUtils {
         #if MC_VER >= MC_1_21_11
         return Minecraft.getInstance().getFramerateLimitTracker().getFramerateLimit();
         #else
-        return Minecraft.getInstance().getFramerateLimit();
+        return Minecraft.getInstance().level == null && (Minecraft.getInstance().screen != null || Minecraft.getInstance().getOverlay() != null) ? 60 : Minecraft.getInstance().getWindow().getFramerateLimit();
         #endif
     }
 

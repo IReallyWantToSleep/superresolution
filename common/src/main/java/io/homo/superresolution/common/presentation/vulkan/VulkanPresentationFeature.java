@@ -13,6 +13,7 @@ package io.homo.superresolution.common.presentation.vulkan;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
@@ -51,7 +52,7 @@ public final class VulkanPresentationFeature {
     }
 
     public static boolean isRequested() {
-        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
         ensureConfigLoaded();
         if (startupRequested == null) {
             startupRequested = SuperResolutionConfig.isEnableVulkanPresentation()
@@ -79,7 +80,7 @@ public final class VulkanPresentationFeature {
             return;
         }
         isAvailable = true;
-        long presentationHandle = Minecraft.getInstance().getWindow().handle();
+        long presentationHandle = MinecraftWindow.getWindowHandle();
         if (presentationHandle != PresentationWindowState.presentationHandle()) {
             throw new IllegalStateException("Minecraft window does not match the Vulkan presentation handle");
         }

@@ -37,6 +37,7 @@ public class ForceOpenGLVersion_WindowMixin {
     }
 
     #else
+    
     @org.spongepowered.asm.mixin.injection.ModifyConstant(
             method = "<init>",
             constant = @org.spongepowered.asm.mixin.injection.Constant(

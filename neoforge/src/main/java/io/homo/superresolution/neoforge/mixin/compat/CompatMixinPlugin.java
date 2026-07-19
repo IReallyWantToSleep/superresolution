@@ -50,9 +50,7 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
         Platform.currentPlatform.init();
         #endif
 
-        #if MC_VER >= MC_1_21_5
         NeoOpenGLVersionOverride.override();
-        #endif
     }
 
     public String getRefMapperConfig() {
