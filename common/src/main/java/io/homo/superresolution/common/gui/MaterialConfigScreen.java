@@ -772,6 +772,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         );
 
         #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
+        final boolean supportsVulkanPresentation = true;
+        #else
+        final boolean supportsVulkanPresentation = false;
+        #endif
         addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.category.presentation"),
@@ -791,6 +795,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                                 : "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
                                 ).getString()
                         )))
+                        .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
                         .setSaveConsumer(SuperResolutionConfig::setEnableVulkanPresentation)
                         .build()
         );
@@ -817,6 +822,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             )))
                             .setItemEnableRequirement(this::getLowLatencyModeItemRequirement)
                             .setSaveConsumer(SuperResolutionConfig::setLowLatencyMode)
+                            .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
                             .build();
                     builder.enumSelectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.nv_reflex_mode"),
@@ -836,10 +842,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     ).getString()
                             )))
                             .setSaveConsumer(SuperResolutionConfig::setNVIDIAReflexMode)
+                            .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
                             .build();
                 }
         );
-        #endif
+
 
         addLabeledOptionGroup(
                 container,

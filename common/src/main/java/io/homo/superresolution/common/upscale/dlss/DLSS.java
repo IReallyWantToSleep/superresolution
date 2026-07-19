@@ -160,6 +160,9 @@ public class DLSS extends VulkanInteropAlgorithm {
             VulkanCommandBuffer commandBuffer,
             InFlightFrameResourcesSet inFlightFrameResourcesSet
     ) {
+        if (!NgxInitializer.initializeIfSupported()) {
+            return;
+        }
         if (ngxDlssFeature == null || ngxParameters == null) {
             return;
         }

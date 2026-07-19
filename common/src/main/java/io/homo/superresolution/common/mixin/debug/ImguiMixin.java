@@ -40,7 +40,7 @@ public class ImguiMixin {
         }
     }
     #elif MC_VER > MC_26_1_2
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuSurface;present()V"), method = "renderFrame")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V",ordinal = 2), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {
