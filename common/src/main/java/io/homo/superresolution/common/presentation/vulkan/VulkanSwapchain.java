@@ -10,6 +10,8 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
@@ -17,18 +19,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBufferRing;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkExtent2D;
-import org.lwjgl.vulkan.VkFormatProperties;
-import org.lwjgl.vulkan.VkImageBlit;
-import org.lwjgl.vulkan.VkImageMemoryBarrier;
-import org.lwjgl.vulkan.VkImageSubresourceRange;
-import org.lwjgl.vulkan.VkPhysicalDevice;
-import org.lwjgl.vulkan.VkPresentInfoKHR;
-import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
-import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
-import org.lwjgl.vulkan.VkSurfaceFormatKHR;
-import org.lwjgl.vulkan.VkSwapchainCreateInfoKHR;
+import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -61,6 +52,8 @@ final class VulkanSwapchain {
     private int syncIndex;
     private boolean recreateRequested = true;
     private boolean vsync = true;
+    private int imageFormat;
+    private int imageCount;
 
     VulkanSwapchain(VulkanPresentationContext context, VulkanSurface surface) {
         this.context = context;
@@ -68,6 +61,53 @@ final class VulkanSwapchain {
         this.device = context.device();
         createImageAvailableSemaphores();
         recreate();
+    }
+
+    private static VkImageSubresourceRange colorSubresource(MemoryStack stack) {
+        return VkImageSubresourceRange.calloc(stack)
+                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .baseMipLevel(0)
+                .levelCount(1)
+                .baseArrayLayer(0)
+                .layerCount(1);
+    }
+
+    private static int chooseCompositeAlpha(int supported) {
+        int[] choices = {
+                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+                VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+                VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR
+        };
+        for (int choice : choices) {
+            if ((supported & choice) != 0) {
+                return choice;
+            }
+        }
+        throw new IllegalStateException("Vulkan surface has no supported composite alpha mode");
+    }
+
+    private static int sourceAccessMask(int layout) {
+        if (layout == VK_IMAGE_LAYOUT_UNDEFINED) {
+            return 0;
+        }
+        if (layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+            return VK_ACCESS_TRANSFER_READ_BIT;
+        }
+        return VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    }
+
+    private static int sourceStageMask(int sourceLayout, int swapchainLayout) {
+        if (sourceLayout == VK_IMAGE_LAYOUT_UNDEFINED && swapchainLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+        return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    }
+
+    private static void check(int result, String operation) {
+        if (result != VK_SUCCESS) {
+            throw new IllegalStateException("Failed to " + operation + ", VkResult=" + result);
+        }
     }
 
     public void requestRecreate() {
@@ -118,6 +158,14 @@ final class VulkanSwapchain {
         VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
         commandBuffer.reset();
         commandBuffer.begin();
+        FrameGeneration.prepareFrame(
+                frame,
+                width,
+                height,
+                imageFormat,
+                imageCount,
+                commandBuffer.getNativeCommandBuffer().address()
+        );
         recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex);
         commandBuffer.end();
 
@@ -136,7 +184,12 @@ final class VulkanSwapchain {
         long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
         frame.markSubmitted(commandBuffer, fence);
         LowLatency.endSubmission();
-        return queuePresent(imageIndex);
+        boolean result = queuePresent(imageIndex);
+        FrameGeneration.finishPresent(
+                frame,
+                SuperResolutionConfig.getFrameGenerationMode().isEnabled()
+        );
+        return result;
     }
 
     public void consumeWithoutPresent(FrameResources frame) {
@@ -372,6 +425,8 @@ final class VulkanSwapchain {
             imageBuffer.get(newImages);
             swapchain = newSwapchain;
             images = newImages;
+            imageFormat = format.format();
+            this.imageCount = newImages.length;
             imageLayouts = new int[newImages.length];
             width = extent[0];
             height = extent[1];
@@ -512,53 +567,8 @@ final class VulkanSwapchain {
         return index;
     }
 
-    private static VkImageSubresourceRange colorSubresource(MemoryStack stack) {
-        return VkImageSubresourceRange.calloc(stack)
-                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
-                .baseMipLevel(0)
-                .levelCount(1)
-                .baseArrayLayer(0)
-                .layerCount(1);
-    }
+    private record SurfaceFormat(int format,
 
-    private static int chooseCompositeAlpha(int supported) {
-        int[] choices = {
-                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-                VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
-                VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
-                VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR
-        };
-        for (int choice : choices) {
-            if ((supported & choice) != 0) {
-                return choice;
-            }
-        }
-        throw new IllegalStateException("Vulkan surface has no supported composite alpha mode");
-    }
-
-    private static int sourceAccessMask(int layout) {
-        if (layout == VK_IMAGE_LAYOUT_UNDEFINED) {
-            return 0;
-        }
-        if (layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
-            return VK_ACCESS_TRANSFER_READ_BIT;
-        }
-        return VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-    }
-
-    private static int sourceStageMask(int sourceLayout, int swapchainLayout) {
-        if (sourceLayout == VK_IMAGE_LAYOUT_UNDEFINED && swapchainLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
-            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        }
-        return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-    }
-
-    private static void check(int result, String operation) {
-        if (result != VK_SUCCESS) {
-            throw new IllegalStateException("Failed to " + operation + ", VkResult=" + result);
-        }
-    }
-
-    private record SurfaceFormat(int format, int colorSpace) {
+                                 int colorSpace) {
     }
 }

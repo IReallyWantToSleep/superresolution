@@ -37,6 +37,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
+import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
@@ -92,7 +93,7 @@ public class SuperResolutionConfig {
     public static final StringValue THEME_COLOR;
     public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
     public static final EnumValue<LowLatencyMode> LOW_LATENCY_MODE;
-
+    public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
     public static final BooleanValue ENABLE_OPTISCALER;
@@ -321,6 +322,7 @@ public class SuperResolutionConfig {
             LowLatency.setMode(newValue);
         });
 
+
         NVIDIA_REFLEX_MODE = builder.defineEnum(
                 "low_latency/nv_reflex/mode",
                 NVIDIAReflexMode.class,
@@ -333,6 +335,13 @@ public class SuperResolutionConfig {
                 LowLatency.lowLatency().refresh();
             }
         });
+
+        FRAME_GENERATION_MODE = builder.defineEnum(
+                "frame_generation/mode",
+                FrameGenerationMode.class,
+                () -> FrameGenerationMode.OFF,
+                "NVIDIA DLSS Frame Generation mode"
+        );
 
         SPECIAL = new SpecialConfigs(builder);
         Path configPath = SuperResolutionConstants.CONFIG_FILE;
@@ -762,5 +771,13 @@ public class SuperResolutionConfig {
 
     public static void setNVIDIAReflexMode(NVIDIAReflexMode value) {
         NVIDIA_REFLEX_MODE.set(value);
+    }
+
+    public static FrameGenerationMode getFrameGenerationMode() {
+        return FRAME_GENERATION_MODE.get();
+    }
+
+    public static void setFrameGenerationMode(FrameGenerationMode value) {
+        FRAME_GENERATION_MODE.set(value);
     }
 }

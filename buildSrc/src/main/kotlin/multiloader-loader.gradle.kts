@@ -22,7 +22,8 @@ val requiredStreamlineLibraries = listOf(
     "sl.dlss_g.dll",
     "sl.interposer.dll",
     "sl.pcl.dll",
-    "sl.reflex.dll"
+    "sl.reflex.dll",
+    "nvngx_dlssg.dll"
 )
 val selectedStreamlineResourceDir = rootProject.layout.projectDirectory.dir(
     "common/src/main/resources/lib/${if (useDebugLib) "sl.dev" else "sl.rel"}"

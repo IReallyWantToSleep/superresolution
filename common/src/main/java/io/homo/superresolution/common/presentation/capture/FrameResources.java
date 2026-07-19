@@ -10,15 +10,22 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
+import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
+import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+import static org.lwjgl.vulkan.VK12.vkWaitSemaphores;
 
 public final class FrameResources {
     private final int index;
@@ -32,6 +39,8 @@ public final class FrameResources {
     private int logicalFrameIndex;
     private boolean sealed;
     private boolean unrecoverable;
+    private long dlssGInputCompletionSemaphore;
+    private long dlssGInputCompletionValue;
 
     FrameResources(int index, VulkanDevice device) {
         this.index = index;
@@ -219,6 +228,7 @@ public final class FrameResources {
         if (submittedCommandBuffer != null) {
             submittedCommandBuffer.waitForFence();
         }
+        awaitDlssGInputs();
         finalColor.awaitOwnedRelease();
         worldColor.awaitOwnedRelease();
         depth.awaitOwnedRelease();
@@ -226,13 +236,42 @@ public final class FrameResources {
         submittedCommandBuffer = null;
         fence = 0L;
     }
+    public void setDlssGInputCompletion(long semaphore, long value) {
+        if (semaphore == 0L || value <= 0L) {
+            throw new IllegalArgumentException("Invalid DLSS-G input completion timeline");
+        }
+        dlssGInputCompletionSemaphore = semaphore;
+        dlssGInputCompletionValue = value;
+    }
 
+    public void clearDlssGInputCompletion() {
+        dlssGInputCompletionSemaphore = 0L;
+        dlssGInputCompletionValue = 0L;
+    }
     private void requireWritable() {
         if (sealed) {
             throw new IllegalStateException("Frame capture is already sealed");
         }
     }
-
+    private void awaitDlssGInputs() {
+        if (dlssGInputCompletionSemaphore == 0L) {
+            return;
+        }
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO)
+                    .semaphoreCount(1)
+                    .pSemaphores(stack.longs(dlssGInputCompletionSemaphore))
+                    .pValues(stack.longs(dlssGInputCompletionValue));
+            int result = vkWaitSemaphores(RenderSystems.vulkan().device().getVkDevice(), waitInfo, Long.MAX_VALUE);
+            if (result != VK_SUCCESS) {
+                throw new IllegalStateException(
+                        "Failed to wait for DLSS-G input completion, VkResult=" + result
+                );
+            }
+        }
+        clearDlssGInputCompletion();
+    }
     private static void addReadySemaphore(List<Long> semaphores, FrameTextureResource resource) {
         if (resource.isValid()) {
             semaphores.add(resource.readySemaphore());

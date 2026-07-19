@@ -270,7 +270,8 @@ val requiredStreamlineLibraries = listOf(
     "sl.dlss_g.dll",
     "sl.interposer.dll",
     "sl.pcl.dll",
-    "sl.reflex.dll"
+    "sl.reflex.dll",
+    "nvngx_dlssg.dll"
 )
 
 fun registerStreamlineSyncTask(
@@ -321,7 +322,8 @@ tasks.named<ProcessResources>("processResources") {
         "lib/sl.dev/**",
         "lib/sl.rel/**",
         "lib/sl.*.dll",
-        "lib/NvLowLatencyVk.dll"
+        "lib/NvLowLatencyVk.dll",
+        "lib/nvngx_dlssg.dll"
     )
 
     from(streamlineResourceLibDir.dir(if (useDebugLib) "sl.dev" else "sl.rel")) {

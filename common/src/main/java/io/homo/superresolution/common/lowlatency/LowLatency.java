@@ -31,7 +31,7 @@ public class LowLatency {
     private static boolean pendingLatencyPing;
 
     public static LowLatencyMode mode() {
-        return mode;
+        return mode != null ? mode : SuperResolutionConfig.getLowLatencyMode();
     }
 
     private static LowLatencyMode mode;
@@ -51,6 +51,7 @@ public class LowLatency {
 
     public static void setMode(LowLatencyMode newMode) {
         if (!isAvailable()) return;
+        mode = newMode;
         if (mode != newMode) {
             mode = newMode;
             if (lowLatency != null) {
@@ -122,6 +123,7 @@ public class LowLatency {
 
         if (lowLatency == null && isAvailable()){
             lowLatency = createLowLatency(SuperResolutionConfig.getLowLatencyMode());
+            mode = SuperResolutionConfig.getLowLatencyMode();
         }
         if (lowLatency != null) {
             lowLatency.refresh();

@@ -31,6 +31,8 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
@@ -776,6 +778,25 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         #else
         final boolean supportsVulkanPresentation = false;
         #endif
+
+        addLabeledOptionGroup(
+                container,
+                Text.literal("帧生成"),(builder)->{
+                    FrameGenerationMode[] modes = FrameGeneration.availableModes();
+                    builder.selectorOption(
+                                    Text.translatable("anemone.screen.config.options.frame_generation"),
+                                    FrameGeneration.displayedMode(),
+                                    modes
+                            )
+                            .setDefaultValue(() -> FrameGenerationMode.AUTO)
+                            .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
+                            .setDescription(Text.translatable("anemone.screen.config.options.frame_generation.tooltip"))
+                            .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
+                            .build();
+
+                }
+        );
+
         addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.category.presentation"),

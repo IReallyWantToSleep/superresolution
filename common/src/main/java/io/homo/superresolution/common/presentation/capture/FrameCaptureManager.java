@@ -144,7 +144,7 @@ public final class FrameCaptureManager {
     }
 
     private static boolean isWorldFrame() {
-        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
+        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null
                 || !minecraft.isGameLoadFinished()
@@ -152,8 +152,7 @@ public final class FrameCaptureManager {
                 || minecraft.screen != null) {
             return false;
         }
-        Camera camera = minecraft.gameRenderer.getMainCamera();
-        return camera != null && camera.isInitialized() && !camera.isPanoramicMode();
+        return true;
         #else
         return false;
         #endif
