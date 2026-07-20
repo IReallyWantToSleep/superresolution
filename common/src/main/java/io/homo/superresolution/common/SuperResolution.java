@@ -39,6 +39,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.none.None;
@@ -532,6 +533,8 @@ public final class SuperResolution implements Destroyable {
         SuperResolutionNativeAPI.srShutdown();
         Streamline.shutdown();
         NgxInitializer.shutdown();
+        // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
+        PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();
     }
 }
