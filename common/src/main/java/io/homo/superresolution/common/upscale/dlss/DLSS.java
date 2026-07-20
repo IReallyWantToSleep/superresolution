@@ -70,7 +70,10 @@ public class DLSS extends VulkanInteropAlgorithm {
     private void recreateNgxContext(InitializationDescription desc) {
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         if (!NgxInitializer.initializeIfSupported()) {
-            throw new IllegalStateException("NGX is unavailable for the current GPU");
+            NgxVulkan.shutdown();
+            if (!NgxInitializer.initializeIfSupported()) {
+                throw new IllegalStateException("NGX is unavailable for the current GPU");
+            }
         }
 
         NgxParameters parameters = new NgxParameters();

@@ -302,11 +302,7 @@ public class FrameGeneration {
     }
 
     private static void updateSupport(StreamlineTypes.DlssGState state) {
-        maxGeneratedFrameCount = Math.clamp(
-                state.numFramesToGenerateMax,
-                0,
-                5
-        );
+        maxGeneratedFrameCount = state.numFramesToGenerateMax;
         minimumWidthOrHeight = Math.max(0, state.minWidthOrHeight);
     }
 

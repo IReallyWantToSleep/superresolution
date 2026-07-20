@@ -176,8 +176,10 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
-        FGConstantsFeature.initialize();
-        FGConstantsFeature.register();
+        if (SuperResolutionConfig.isEnableVulkanPresentation()) {
+            FGConstantsFeature.initialize();
+            FGConstantsFeature.register();
+        }
         if (Platform.currentPlatform.isInstallIris() && !B3DVulkanBridge.isB3DVulkanBackend()) {
             try {
                 Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);

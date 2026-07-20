@@ -120,5 +120,36 @@ public class MinecraftCameraState {
         Quaternionf inverseRotation = rotation.conjugate(new Quaternionf());
         return new Matrix4f().rotation(inverseRotation);
     }
+    #else
+    public static float getFov() {
+        return fov;
+    }
+
+    public static Vector3d getPosition() {
+        return new Vector3d(
+                Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().x,
+                Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().y,
+                Minecraft.getInstance().gameRenderer.getMainCamera().getPosition().z
+        );
+    }
+
+    public static Vector3f getLookVector() {
+        return new Vector3f(Minecraft.getInstance().gameRenderer.getMainCamera().getLookVector());
+    }
+
+    public static Vector3f getUpVector() {
+        return new Vector3f(Minecraft.getInstance().gameRenderer.getMainCamera().getUpVector());
+    }
+
+    public static Vector3f getLeftVector() {
+        return new Vector3f(Minecraft.getInstance().gameRenderer.getMainCamera().getLeftVector());
+    }
+
+    public static Matrix4f getViewRotationMatrix() {
+        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        var rotation = camera.rotation();
+        Quaternionf inverseRotation = rotation.conjugate(new Quaternionf());
+        return new Matrix4f().rotation(inverseRotation);
+    }
     #endif
 }

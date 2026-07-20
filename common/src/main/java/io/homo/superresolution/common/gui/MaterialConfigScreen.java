@@ -781,24 +781,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         addLabeledOptionGroup(
                 container,
-                Text.literal("帧生成"),(builder)->{
-                    FrameGenerationMode[] modes = FrameGeneration.availableModes();
-                    builder.selectorOption(
-                                    Text.translatable("anemone.screen.config.options.frame_generation"),
-                                    FrameGeneration.displayedMode(),
-                                    modes
-                            )
-                            .setDefaultValue(() -> FrameGenerationMode.AUTO)
-                            .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
-                            .setDescription(Text.translatable("anemone.screen.config.options.frame_generation.tooltip"))
-                            .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
-                            .build();
-
-                }
-        );
-
-        addLabeledOptionGroup(
-                container,
                 Text.translatable("superresolution.screen.config.category.presentation"),
                 builder -> builder.booleanOption(
                                 Text.translatable("superresolution.screen.config.options.label.enable_vulkan_presentation"),
@@ -865,6 +847,24 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setSaveConsumer(SuperResolutionConfig::setNVIDIAReflexMode)
                             .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
                             .build();
+                }
+        );
+
+        addLabeledOptionGroup(
+                container,
+                Text.literal("帧生成"),(builder)->{
+                    FrameGenerationMode[] modes = FrameGeneration.availableModes();
+                    builder.selectorOption(
+                                    Text.translatable("anemone.screen.config.options.frame_generation"),
+                                    FrameGeneration.displayedMode(),
+                                    modes
+                            )
+                            .setDefaultValue(() -> FrameGenerationMode.AUTO)
+                            .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
+                            .setDescription(Text.translatable("anemone.screen.config.options.frame_generation.tooltip"))
+                            .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
+                            .build();
+
                 }
         );
 
