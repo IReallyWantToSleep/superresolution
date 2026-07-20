@@ -1,5 +1,5 @@
 /*
- * Anemone Mod
+ * Super Resolution
  * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -42,10 +41,10 @@ public abstract class MinecraftReflexMixin {
 		),
 		require = 1
 	)
-	private void beginReflexFrame(CallbackInfo ci) {
+	private void super_resolution$beginReflexFrame(CallbackInfo ci) {
 		if (LowLatency.isAvailable()) {
-			LowLatency.sleep();
 			LowLatency.beginFrame();
+			LowLatency.sleep();
 			LowLatency.beginSimulation();
 		}
 	}
@@ -59,7 +58,7 @@ public abstract class MinecraftReflexMixin {
 		),
 		require = 1
 	)
-	private void beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
+	private void super_resolution$beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
 		if (!LowLatency.isAvailable()) {
 			return;
 		}
@@ -76,7 +75,7 @@ public abstract class MinecraftReflexMixin {
 		),
 		require = 1
 	)
-	private void limitDisplayFps(int framerateLimit) {
+	private void super_resolution$limitDisplayFps(int framerateLimit) {
 		if (!(LowLatency.isAvailable() && LowLatency.frameLimitUs() != 0 && LowLatency.mode() != LowLatencyMode.None) || !SuperResolution.gameIsLoaded) {
 			RenderSystem.limitDisplayFPS(framerateLimit);
 		}

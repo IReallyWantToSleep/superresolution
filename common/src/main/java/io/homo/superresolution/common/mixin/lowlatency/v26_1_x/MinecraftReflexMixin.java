@@ -1,5 +1,5 @@
 /*
- * Anemone Mod
+ * Super Resolution
  * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,6 @@ import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import net.minecraft.client.FramerateLimiter;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -42,12 +41,12 @@ public abstract class MinecraftReflexMixin {
 		),
 		require = 1
 	)
-	private void beginReflexFrame(CallbackInfo ci) {
+	private void super_resolution$beginReflexFrame(CallbackInfo ci) {
 		if (!LowLatency.isAvailable()) {
 			return;
 		}
-		LowLatency.sleep();
 		LowLatency.beginFrame();
+		LowLatency.sleep();
 		LowLatency.beginSimulation();
 	}
 
@@ -56,16 +55,12 @@ public abstract class MinecraftReflexMixin {
 		at = @At("HEAD"),
 		require = 1
 	)
-	private void beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
+	private void super_resolution$beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
 		if (!LowLatency.isAvailable()) {
 			return;
 		}
 		LowLatency.endSimulation();
 		LowLatency.beginSubmission();
-	}
-
-	@Inject(method = "renderFrame(Z)V", at = @At("RETURN"), require = 1)
-	private void finishManagedRenderFrame(boolean advanceGameTime, CallbackInfo ci) {
 	}
 
 	@Redirect(
@@ -77,7 +72,7 @@ public abstract class MinecraftReflexMixin {
 		),
 		require = 1
 	)
-	private void limitDisplayFps(int framerateLimit) {
+	private void super_resolution$limitDisplayFps(int framerateLimit) {
 		if (!(LowLatency.isAvailable() && LowLatency.frameLimitUs() != 0 && LowLatency.mode() != LowLatencyMode.None) || !SuperResolution.gameIsLoaded) {
 			FramerateLimiter.limitDisplayFPS(framerateLimit);
 		}

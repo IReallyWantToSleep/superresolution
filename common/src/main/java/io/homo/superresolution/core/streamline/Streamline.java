@@ -40,12 +40,18 @@ public final class Streamline {
     }
 
     public static StreamlineTypes.FrameToken nextFrame() {
-        if (!initAttempted) return null;
-        currentFrame = new StreamlineTypes.FrameToken();
-        defaultSession.getNewFrameToken(
-                RenderHandlerManager.getFrameCount(),
-                currentFrame
+        if (!isInitialized()) {
+            currentFrame = null;
+            return null;
+        }
+        StreamlineTypes.FrameToken next = new StreamlineTypes.FrameToken();
+        // Reflex begins before RenderHandlerManager.onFrameBegin() advances the SR frame counter.
+        int frameIndex = RenderHandlerManager.getFrameCount() + 1;
+        int result = defaultSession.getNewFrameToken(
+                frameIndex,
+                next
         );
+        currentFrame = result == 0 && next.nativeHandle != 0L ? next : null;
         return currentFrame;
     }
 
@@ -140,6 +146,7 @@ public final class Streamline {
         }
         defaultSession.close();
         defaultSession = null;
+        currentFrame = null;
         initAttempted = false;
     }
 

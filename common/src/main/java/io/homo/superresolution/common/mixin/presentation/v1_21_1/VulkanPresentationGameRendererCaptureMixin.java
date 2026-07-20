@@ -38,13 +38,13 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
                     shift = At.Shift.AFTER
             )
     )
-    private void super_resolution$captureWorldColor(
+    private void super_resolution$captureHudlessColor(
             DeltaTracker deltaTracker,
             boolean advanceGameTime,
             CallbackInfo ci
     ) {
         if (VulkanPresentationFeature.isRequested()) {
-            FrameCaptureManager.captureWorldColor();
+            FrameCaptureManager.captureHudlessColor();
         }
     }
 

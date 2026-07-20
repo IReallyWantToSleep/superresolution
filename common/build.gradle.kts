@@ -109,8 +109,8 @@ dependencies {
     compileOnly("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
     compileOnly("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")
 
-    compileOnly("com.electronwill.night-config:toml:3.6.0")
-    compileOnly("com.electronwill.night-config:core:3.6.0")
+    compileOnly("com.electronwill.night-config:toml:3.8.3")
+    compileOnly("com.electronwill.night-config:core:3.8.3")
 
     compileOnly("net.neoforged:bus:8.0.5")
 

@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom") version "1.16.3"
+    id("net.fabricmc.fabric-loom-remap") version "1.16.3"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -125,8 +125,8 @@ dependencies {
         implementation("org.lwjgl:lwjgl-vma::natives-linux")?.let { include(it) }
     }
 
-    implementation("com.electronwill.night-config:toml:3.6.0")?.let { include(it) }
-    implementation("com.electronwill.night-config:core:3.6.0")?.let { include(it) }
+    implementation("com.electronwill.night-config:toml:3.8.3")?.let { include(it) }
+    implementation("com.electronwill.night-config:core:3.8.3")?.let { include(it) }
 
     for (lib in versionConfig.fabric.dependencies.modrinth) {
         var depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"

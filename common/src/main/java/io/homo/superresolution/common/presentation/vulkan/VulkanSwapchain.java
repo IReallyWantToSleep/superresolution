@@ -10,7 +10,6 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
@@ -127,72 +126,87 @@ final class VulkanSwapchain {
     }
 
     public boolean present(FrameResources frame) {
-        if (!frame.hasFinalColor()) {
-            consumeWithoutPresent(frame);
-            return false;
-        }
-        if (recreateRequested) {
-            recreate();
-        }
-        if (swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
-            consumeWithoutPresent(frame);
+        PresentSubmission submission = submitPresentFrame(frame);
+        if (submission == null) {
             return false;
         }
 
-        int syncSlot = nextImageAvailableIndex();
-        int imageIndex = acquireImage(syncSlot);
-        if (imageIndex < 0) {
-            recreate();
-            if (swapchain == VK_NULL_HANDLE) {
+        try {
+            return queuePresent(submission.imageIndex());
+        } finally {
+            FrameGeneration.finishPresent(frame, submission.frameGenerationEnabled());
+        }
+    }
+
+    private PresentSubmission submitPresentFrame(FrameResources frame) {
+        try {
+            if (!frame.hasFinalColor()) {
                 consumeWithoutPresent(frame);
-                return false;
+                return null;
             }
-            imageIndex = acquireImage(syncSlot);
+            if (recreateRequested) {
+                recreate();
+            }
+            if (swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
+                consumeWithoutPresent(frame);
+                return null;
+            }
+
+            int syncSlot = nextImageAvailableIndex();
+            int imageIndex = acquireImage(syncSlot);
             if (imageIndex < 0) {
-                requestRecreate();
-                consumeWithoutPresent(frame);
-                return false;
+                recreate();
+                if (swapchain == VK_NULL_HANDLE) {
+                    consumeWithoutPresent(frame);
+                    return null;
+                }
+                imageIndex = acquireImage(syncSlot);
+                if (imageIndex < 0) {
+                    requestRecreate();
+                    consumeWithoutPresent(frame);
+                    return null;
+                }
             }
+
+            VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
+            commandBuffer.reset();
+            commandBuffer.begin();
+            boolean frameGenerationEnabled = FrameGeneration.prepareFrame(
+                    frame,
+                    width,
+                    height,
+                    imageFormat,
+                    imageCount,
+                    commandBuffer.getNativeCommandBuffer().address()
+            );
+            recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex);
+            commandBuffer.end();
+
+            long[] resourceWaits = frame.readySemaphores();
+            long[] resourceSignals = frame.releaseSemaphores();
+            long[] waits = new long[resourceWaits.length + 1];
+            int[] stages = new int[waits.length];
+            long[] signals = new long[resourceSignals.length + 1];
+            waits[0] = imageAvailable[syncSlot];
+            stages[0] = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            System.arraycopy(resourceWaits, 0, waits, 1, resourceWaits.length);
+            Arrays.fill(stages, 1, stages.length, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+            signals[0] = renderFinished[imageIndex];
+            System.arraycopy(resourceSignals, 0, signals, 1, resourceSignals.length);
+
+            long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
+            frame.markSubmitted(commandBuffer, fence);
+            return new PresentSubmission(imageIndex, frameGenerationEnabled);
+        } catch (Throwable throwable) {
+            FrameGeneration.disableFrameGeneration();
+            throw throwable;
+        } finally {
+            LowLatency.endSubmission();
         }
-
-        VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
-        commandBuffer.reset();
-        commandBuffer.begin();
-        FrameGeneration.prepareFrame(
-                frame,
-                width,
-                height,
-                imageFormat,
-                imageCount,
-                commandBuffer.getNativeCommandBuffer().address()
-        );
-        recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex);
-        commandBuffer.end();
-
-        long[] resourceWaits = frame.readySemaphores();
-        long[] resourceSignals = frame.releaseSemaphores();
-        long[] waits = new long[resourceWaits.length + 1];
-        int[] stages = new int[waits.length];
-        long[] signals = new long[resourceSignals.length + 1];
-        waits[0] = imageAvailable[syncSlot];
-        stages[0] = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        System.arraycopy(resourceWaits, 0, waits, 1, resourceWaits.length);
-        Arrays.fill(stages, 1, stages.length, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-        signals[0] = renderFinished[imageIndex];
-        System.arraycopy(resourceSignals, 0, signals, 1, resourceSignals.length);
-
-        long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
-        frame.markSubmitted(commandBuffer, fence);
-        LowLatency.endSubmission();
-        boolean result = queuePresent(imageIndex);
-        FrameGeneration.finishPresent(
-                frame,
-                SuperResolutionConfig.getFrameGenerationMode().isEnabled()
-        );
-        return result;
     }
 
     public void consumeWithoutPresent(FrameResources frame) {
+        FrameGeneration.disableFrameGeneration();
         try {
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
@@ -210,7 +224,6 @@ final class VulkanSwapchain {
                     signals.length == 0 ? NO_SEMAPHORES : signals
             );
             frame.markSubmitted(commandBuffer, fence);
-            LowLatency.endSubmission();
         } catch (Throwable throwable) {
             frame.markUnrecoverable();
             throw throwable;
@@ -240,8 +253,12 @@ final class VulkanSwapchain {
                     .pSwapchains(stack.longs(swapchain))
                     .pImageIndices(stack.ints(imageIndex));
             LowLatency.beginPresent();
-            int result = vkQueuePresentKHR(device.getMainQueue().getQueue(), presentInfo);
-            LowLatency.endPresent();
+            int result;
+            try {
+                result = vkQueuePresentKHR(device.getMainQueue().getQueue(), presentInfo);
+            } finally {
+                LowLatency.endPresent();
+            }
             if (result == VK_ERROR_OUT_OF_DATE_KHR) {
                 recreateRequested = true;
                 return false;
@@ -570,5 +587,8 @@ final class VulkanSwapchain {
     private record SurfaceFormat(int format,
 
                                  int colorSpace) {
+    }
+
+    private record PresentSubmission(int imageIndex, boolean frameGenerationEnabled) {
     }
 }

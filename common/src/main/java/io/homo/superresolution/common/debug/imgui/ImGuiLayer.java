@@ -315,7 +315,7 @@ public class ImGuiLayer {
         ImGui.separator();
 
         drawFrameCaptureResource("Final Color", frame.hasFinalColor(), frame.finalColorGlTexture(), frame.finalColorVulkanTexture());
-        drawFrameCaptureResource("World Color", frame.hasWorldColor(), frame.worldColorGlTexture(), frame.worldColorVulkanTexture());
+        drawFrameCaptureResource("HUD-less Color", frame.hasHudlessColor(), frame.hudlessColorGlTexture(), frame.hudlessColorVulkanTexture());
         drawFrameCaptureResource("Depth", frame.hasDepth(), frame.depthGlTexture(), frame.depthVulkanTexture());
         drawFrameCaptureResource("Motion Vector", frame.hasMotionVector(), frame.motionVectorGlTexture(), frame.motionVectorVulkanTexture());
 
@@ -433,7 +433,7 @@ public class ImGuiLayer {
         }
         ImGuiDebugContext ctx = new ImGuiDebugContext("capture", textures::add, this::openViewer);
         addFrameCaptureTexture(ctx, "final_color", "Captured Final Color", frame.finalColorGlTexture(), frame.finalColorVulkanTexture());
-        addFrameCaptureTexture(ctx, "world_color", "Captured World Color", frame.worldColorGlTexture(), frame.worldColorVulkanTexture());
+        addFrameCaptureTexture(ctx, "hudless_color", "Captured HUD-less Color", frame.hudlessColorGlTexture(), frame.hudlessColorVulkanTexture());
         addFrameCaptureTexture(ctx, "depth", "Captured Depth", frame.depthGlTexture(), frame.depthVulkanTexture());
         addFrameCaptureTexture(ctx, "motion_vector", "Captured Motion Vector", frame.motionVectorGlTexture(), frame.motionVectorVulkanTexture());
     }
@@ -731,4 +731,3 @@ public class ImGuiLayer {
         }
     }
 }
-

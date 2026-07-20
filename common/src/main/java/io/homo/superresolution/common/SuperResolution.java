@@ -29,8 +29,9 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
-import io.homo.superresolution.common.framegeneration.constants.FGConstantsFeature;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -49,7 +50,7 @@ import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
-import io.homo.superresolution.core.ngx.NgxVulkan;
+import io.homo.superresolution.core.ngx.NgxInitializer;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
@@ -176,10 +177,7 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
-        if (SuperResolutionConfig.isEnableVulkanPresentation()) {
-            FGConstantsFeature.initialize();
-            FGConstantsFeature.register();
-        }
+        FrameGeneration.initialize();
         if (Platform.currentPlatform.isInstallIris() && !B3DVulkanBridge.isB3DVulkanBackend()) {
             try {
                 Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
@@ -396,6 +394,7 @@ public final class SuperResolution implements Destroyable {
 
             if (currentAlgorithm != null) {
                 VulkanPresentationWindow.flushCapturedFrame();
+                FrameGeneration.invalidateHistory();
                 currentAlgorithm.destroy();
             }
 
@@ -511,6 +510,7 @@ public final class SuperResolution implements Destroyable {
             );
             // 分辨率变了，时序历史无效。
             currentAlgorithm.invalidateHistory();
+            FrameGeneration.invalidateHistory();
         }
         AlgorithmManager.resize(w, h);
     }
@@ -519,7 +519,9 @@ public final class SuperResolution implements Destroyable {
         isInit = false;
         isRenderingInitialized = false;
         pendingResize = false;
+        FrameGeneration.shutdown();
         VulkanPresentationFeature.shutdown();
+        LowLatency.shutdown();
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
             currentAlgorithm = null;
@@ -529,7 +531,7 @@ public final class SuperResolution implements Destroyable {
         }
         SuperResolutionNativeAPI.srShutdown();
         Streamline.shutdown();
-        NgxVulkan.shutdown();
+        NgxInitializer.shutdown();
         RenderSystems.destroy();
     }
 }

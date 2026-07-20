@@ -26,7 +26,6 @@ import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.core.streamline.Streamline;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -86,8 +85,6 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
-        Streamline.nextFrame();
-
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             super_resolution$b3dVulkanFrame = true;
             PerformanceTracker.push("Frame");

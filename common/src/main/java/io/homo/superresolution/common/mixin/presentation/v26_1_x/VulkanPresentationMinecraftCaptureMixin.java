@@ -20,28 +20,41 @@ package io.homo.superresolution.common.mixin.presentation.v26_1_x;
 
 #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public abstract class VulkanPresentationMinecraftCaptureMixin {
-    @Inject(
+    @Redirect(
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V",
-                    shift = At.Shift.AFTER
+                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V"
             )
     )
-    private void super_resolution$presentCapturedFrame(boolean advanceGameTime, CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
-            VulkanPresentationWindow.endMinecraftFrame();
+    private void super_resolution$renderAndPresent(
+            GameRenderer gameRenderer,
+            DeltaTracker deltaTracker,
+            boolean advanceGameTime
+    ) {
+        boolean rendered = false;
+        try {
+            gameRenderer.render(deltaTracker, advanceGameTime);
+            rendered = true;
+            if (VulkanPresentationFeature.isRequested()) {
+                VulkanPresentationWindow.endMinecraftFrame();
+            }
+        } finally {
+            if (!rendered) {
+                LowLatency.endSubmission();
+            }
         }
     }
 

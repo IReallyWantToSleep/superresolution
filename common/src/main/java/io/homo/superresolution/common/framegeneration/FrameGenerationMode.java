@@ -1,5 +1,5 @@
 /*
- * Anemone Mod
+ * Super Resolution
  * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,13 +21,13 @@ package io.homo.superresolution.common.framegeneration;
 import io.homo.superresolution.core.streamline.StreamlineTypes;
 
 public enum FrameGenerationMode {
-	OFF(StreamlineTypes.DlssGMode.OFF, 0, "anemone.screen.config.options.frame_generation.off"),
-	AUTO(StreamlineTypes.DlssGMode.AUTO, 1, "anemone.screen.config.options.frame_generation.auto"),
-	X2(StreamlineTypes.DlssGMode.ON, 1, "anemone.screen.config.options.frame_generation.x2"),
-	X3(StreamlineTypes.DlssGMode.ON, 2, "anemone.screen.config.options.frame_generation.x3"),
-	X4(StreamlineTypes.DlssGMode.ON, 3, "anemone.screen.config.options.frame_generation.x4"),
-	X5(StreamlineTypes.DlssGMode.ON, 4, "anemone.screen.config.options.frame_generation.x5"),
-	X6(StreamlineTypes.DlssGMode.ON, 5, "anemone.screen.config.options.frame_generation.x6");
+	OFF(StreamlineTypes.DlssGMode.OFF, 0, "superresolution.screen.config.options.frame_generation.off"),
+	AUTO(StreamlineTypes.DlssGMode.AUTO, 1, "superresolution.screen.config.options.frame_generation.auto"),
+	X2(StreamlineTypes.DlssGMode.ON, 1, "superresolution.screen.config.options.frame_generation.x2"),
+	X3(StreamlineTypes.DlssGMode.ON, 2, "superresolution.screen.config.options.frame_generation.x3"),
+	X4(StreamlineTypes.DlssGMode.ON, 3, "superresolution.screen.config.options.frame_generation.x4"),
+	X5(StreamlineTypes.DlssGMode.ON, 4, "superresolution.screen.config.options.frame_generation.x5"),
+	X6(StreamlineTypes.DlssGMode.ON, 5, "superresolution.screen.config.options.frame_generation.x6");
 
 	private final int nativeMode;
 	private final int generatedFrameCount;

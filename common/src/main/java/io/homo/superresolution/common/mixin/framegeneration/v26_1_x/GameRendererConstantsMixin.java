@@ -1,5 +1,5 @@
 /*
- * Anemone Mod
+ * Super Resolution
  * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,7 +34,7 @@ public abstract class GameRendererConstantsMixin {
 		at = @At("HEAD"),
 		require = 1
 	)
-	private void anemone$beginConstantsFrame(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
+	private void super_resolution$beginConstantsFrame(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
 		FGConstantsFeature.beginRenderFrame();
 	}
 
@@ -43,7 +43,7 @@ public abstract class GameRendererConstantsMixin {
 		at = @At("RETURN"),
 		require = 1
 	)
-	private void anemone$endConstantsFrame(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
+	private void super_resolution$endConstantsFrame(DeltaTracker deltaTracker, boolean advanceGameTime, CallbackInfo ci) {
 		FGConstantsFeature.endRenderFrame();
 	}
 }
@@ -56,4 +56,3 @@ import org.spongepowered.asm.mixin.Mixin;
 public abstract class GameRendererConstantsMixin {
 }
 #endif
-

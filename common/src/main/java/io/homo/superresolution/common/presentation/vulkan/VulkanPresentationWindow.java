@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -45,33 +46,54 @@ public final class VulkanPresentationWindow {
 	}
 
 	public static void endMinecraftFrame() {
-		VulkanPresentationContext presentationContext = context;
-		VulkanSurface presentationSurface = surface;
-		if (presentationContext == null || presentationSurface == null) {
-			return;
-		}
-		PresentationWindowState.requireOwnerThread();
-		presentationContext.tickWindow();
-
-		FrameResources frameResources = FrameCaptureManager.finishFrame();
-		if (frameResources == null) {
-			return;
-		}
-		presentationContext.setVsync(requestedVsync);
-		if (!frameResources.hasFinalColor()) {
-			presentationContext.consumeWithoutPresent(frameResources);
-			throw new IllegalStateException("Vulkan presentation frame is missing final color");
-		}
-		// MINIMIZE GUARD: Consume captured resources without acquiring or presenting a swapchain image.
-		if (!presentationSurface.shouldClose()
-			&& !presentationSurface.isMinimized()) {
-			boolean presented = presentationContext.present(frameResources);
-			if (presented && !shown) {
-				presentationSurface.show();
-				shown = true;
+		boolean submissionEndPending = true;
+		try {
+			VulkanPresentationContext presentationContext = context;
+			VulkanSurface presentationSurface = surface;
+			if (presentationContext == null || presentationSurface == null) {
+				return;
 			}
-		} else {
+			PresentationWindowState.requireOwnerThread();
+			presentationContext.tickWindow();
+
+			FrameResources frameResources = FrameCaptureManager.finishFrame();
+			if (frameResources == null) {
+				return;
+			}
+			presentationContext.setVsync(requestedVsync);
+			if (!frameResources.hasFinalColor()) {
+				submissionEndPending = false;
+				consumeRenderedFrame(presentationContext, frameResources);
+				throw new IllegalStateException("Vulkan presentation frame is missing final color");
+			}
+			// MINIMIZE GUARD: Consume captured resources without acquiring or presenting a swapchain image.
+			if (!presentationSurface.shouldClose()
+				&& !presentationSurface.isMinimized()) {
+				submissionEndPending = false;
+				boolean presented = presentationContext.present(frameResources);
+				if (presented && !shown) {
+					presentationSurface.show();
+					shown = true;
+				}
+			} else {
+				submissionEndPending = false;
+				consumeRenderedFrame(presentationContext, frameResources);
+			}
+		} finally {
+			if (submissionEndPending) {
+				LowLatency.endSubmission();
+			}
+		}
+	}
+
+	private static void consumeRenderedFrame(
+		VulkanPresentationContext presentationContext,
+		FrameResources frameResources
+	) {
+		try {
 			presentationContext.consumeWithoutPresent(frameResources);
+		} finally {
+			LowLatency.endSubmission();
 		}
 	}
 

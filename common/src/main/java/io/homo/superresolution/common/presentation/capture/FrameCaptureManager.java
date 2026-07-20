@@ -24,7 +24,6 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 
 public final class FrameCaptureManager {
@@ -47,13 +46,14 @@ public final class FrameCaptureManager {
         return FRAME_RING.isInitialized();
     }
 
-    public static void captureWorldColor() {
+    public static void captureHudlessColor() {
         if (!isInitialized() || !isWorldFrame()) {
             return;
         }
+        FrameResources frame = FRAME_RING.activeFrameOrNull();
         ITexture color = originColorTexture();
-        if (color != null) {
-            beginFrame(RenderHandlerManager.getFrameCount()).copyWorldColor(color);
+        if (frame != null && color != null) {
+            frame.copyHudlessColor(color);
         }
     }
 
@@ -152,7 +152,15 @@ public final class FrameCaptureManager {
                 || minecraft.screen != null) {
             return false;
         }
+        if (minecraft.gameRenderer.getMainCamera() == null
+                || !minecraft.gameRenderer.getMainCamera().isInitialized()) {
+            return false;
+        }
+        #if MC_VER >= MC_26_1
+        return !minecraft.gameRenderer.getMainCamera().isPanoramicMode();
+        #else
         return true;
+        #endif
         #else
         return false;
         #endif

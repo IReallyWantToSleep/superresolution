@@ -10,7 +10,6 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
@@ -29,8 +28,9 @@ import static org.lwjgl.vulkan.VK12.vkWaitSemaphores;
 
 public final class FrameResources {
     private final int index;
+    private final VulkanDevice device;
     private final FrameTextureResource finalColor;
-    private final FrameTextureResource worldColor;
+    private final FrameTextureResource hudlessColor;
     private final FrameTextureResource depth;
     private final FrameTextureResource motionVector;
     private VulkanCommandBuffer submittedCommandBuffer;
@@ -44,8 +44,9 @@ public final class FrameResources {
 
     FrameResources(int index, VulkanDevice device) {
         this.index = index;
+        this.device = device;
         finalColor = new FrameTextureResource(device, "SRPresentationFinalColor-" + index);
-        worldColor = new FrameTextureResource(device, "SRPresentationWorldColor-" + index);
+        hudlessColor = new FrameTextureResource(device, "SRPresentationHudlessColor-" + index);
         depth = new FrameTextureResource(device, "SRPresentationDepth-" + index);
         motionVector = new FrameTextureResource(device, "SRPresentationMotionVector-" + index);
     }
@@ -58,11 +59,12 @@ public final class FrameResources {
         generation = newGeneration;
         logicalFrameIndex = newLogicalFrameIndex;
         finalColor.beginFrame();
-        worldColor.beginFrame();
+        hudlessColor.beginFrame();
         depth.beginFrame();
         motionVector.beginFrame();
         submittedCommandBuffer = null;
         fence = 0L;
+        clearDlssGInputCompletion();
         sealed = false;
     }
 
@@ -71,9 +73,9 @@ public final class FrameResources {
         finalColor.copyFrom(source, false);
     }
 
-    void copyWorldColor(ITexture source) {
+    void copyHudlessColor(ITexture source) {
         requireWritable();
-        worldColor.copyFrom(source, false);
+        hudlessColor.copyFrom(source, false);
     }
 
     void copyDepth(ITexture source) {
@@ -117,7 +119,7 @@ public final class FrameResources {
         submittedCommandBuffer = commandBuffer;
         fence = submittedFence;
         finalColor.markSubmitted();
-        worldColor.markSubmitted();
+        hudlessColor.markSubmitted();
         depth.markSubmitted();
         motionVector.markSubmitted();
     }
@@ -129,7 +131,7 @@ public final class FrameResources {
     void destroy() {
         awaitReusable();
         finalColor.destroy();
-        worldColor.destroy();
+        hudlessColor.destroy();
         depth.destroy();
         motionVector.destroy();
     }
@@ -150,8 +152,8 @@ public final class FrameResources {
         return finalColor.isValid();
     }
 
-    public boolean hasWorldColor() {
-        return worldColor.isValid();
+    public boolean hasHudlessColor() {
+        return hudlessColor.isValid();
     }
 
     public boolean hasDepth() {
@@ -163,7 +165,7 @@ public final class FrameResources {
     }
 
     public boolean hasAnyResource() {
-        return hasFinalColor() || hasWorldColor() || hasDepth() || hasMotionVector();
+        return hasFinalColor() || hasHudlessColor() || hasDepth() || hasMotionVector();
     }
 
     public boolean isSealed() {
@@ -178,8 +180,8 @@ public final class FrameResources {
         return finalColor.vkTexture();
     }
 
-    public VulkanTexture worldColorVulkanTexture() {
-        return worldColor.vkTexture();
+    public VulkanTexture hudlessColorVulkanTexture() {
+        return hudlessColor.vkTexture();
     }
 
     public VulkanTexture depthVulkanTexture() {
@@ -194,8 +196,8 @@ public final class FrameResources {
         return finalColor.glTexture();
     }
 
-    public GlImportableTexture2D worldColorGlTexture() {
-        return worldColor.glTexture();
+    public GlImportableTexture2D hudlessColorGlTexture() {
+        return hudlessColor.glTexture();
     }
 
     public GlImportableTexture2D depthGlTexture() {
@@ -209,7 +211,7 @@ public final class FrameResources {
     public long[] readySemaphores() {
         List<Long> semaphores = new ArrayList<>(4);
         addReadySemaphore(semaphores, finalColor);
-        addReadySemaphore(semaphores, worldColor);
+        addReadySemaphore(semaphores, hudlessColor);
         addReadySemaphore(semaphores, depth);
         addReadySemaphore(semaphores, motionVector);
         return semaphores.stream().mapToLong(Long::longValue).toArray();
@@ -218,7 +220,7 @@ public final class FrameResources {
     public long[] releaseSemaphores() {
         List<Long> semaphores = new ArrayList<>(4);
         addReleaseSemaphore(semaphores, finalColor);
-        addReleaseSemaphore(semaphores, worldColor);
+        addReleaseSemaphore(semaphores, hudlessColor);
         addReleaseSemaphore(semaphores, depth);
         addReleaseSemaphore(semaphores, motionVector);
         return semaphores.stream().mapToLong(Long::longValue).toArray();
@@ -230,14 +232,14 @@ public final class FrameResources {
         }
         awaitDlssGInputs();
         finalColor.awaitOwnedRelease();
-        worldColor.awaitOwnedRelease();
+        hudlessColor.awaitOwnedRelease();
         depth.awaitOwnedRelease();
         motionVector.awaitOwnedRelease();
         submittedCommandBuffer = null;
         fence = 0L;
     }
     public void setDlssGInputCompletion(long semaphore, long value) {
-        if (semaphore == 0L || value <= 0L) {
+        if (!isSubmitted() || semaphore == 0L || value <= 0L) {
             throw new IllegalArgumentException("Invalid DLSS-G input completion timeline");
         }
         dlssGInputCompletionSemaphore = semaphore;
@@ -263,7 +265,7 @@ public final class FrameResources {
                     .semaphoreCount(1)
                     .pSemaphores(stack.longs(dlssGInputCompletionSemaphore))
                     .pValues(stack.longs(dlssGInputCompletionValue));
-            int result = vkWaitSemaphores(RenderSystems.vulkan().device().getVkDevice(), waitInfo, Long.MAX_VALUE);
+            int result = vkWaitSemaphores(device.getVkDevice(), waitInfo, Long.MAX_VALUE);
             if (result != VK_SUCCESS) {
                 throw new IllegalStateException(
                         "Failed to wait for DLSS-G input completion, VkResult=" + result
