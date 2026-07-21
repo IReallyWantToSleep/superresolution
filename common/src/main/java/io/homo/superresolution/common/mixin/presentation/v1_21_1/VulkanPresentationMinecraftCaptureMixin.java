@@ -20,7 +20,6 @@ package io.homo.superresolution.common.mixin.presentation.v1_21_1;
 
 #if MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.mixin.lowlatency.v1_21_1.RenderSystemAccessor;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
@@ -49,17 +48,9 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             DeltaTracker deltaTracker,
             boolean advanceGameTime
     ) {
-        boolean rendered = false;
-        try {
-            gameRenderer.render(deltaTracker, advanceGameTime);
-            rendered = true;
-            if (VulkanPresentationFeature.isRequested()) {
-                VulkanPresentationWindow.endMinecraftFrame();
-            }
-        } finally {
-            if (!rendered) {
-                LowLatency.endSubmission();
-            }
+        gameRenderer.render(deltaTracker, advanceGameTime);
+        if (VulkanPresentationFeature.isRequested()) {
+            VulkanPresentationWindow.endMinecraftFrame();
         }
     }
 

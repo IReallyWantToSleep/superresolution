@@ -140,15 +140,16 @@ final class VulkanSwapchain {
 
     private PresentSubmission submitPresentFrame(FrameResources frame) {
         try {
+            LowLatency.beginSubmission();
             if (!frame.hasFinalColor()) {
-                consumeWithoutPresent(frame);
+                consumeWithoutPresentInternal(frame);
                 return null;
             }
             if (recreateRequested) {
                 recreate();
             }
             if (swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
-                consumeWithoutPresent(frame);
+                consumeWithoutPresentInternal(frame);
                 return null;
             }
 
@@ -157,13 +158,13 @@ final class VulkanSwapchain {
             if (imageIndex < 0) {
                 recreate();
                 if (swapchain == VK_NULL_HANDLE) {
-                    consumeWithoutPresent(frame);
+                    consumeWithoutPresentInternal(frame);
                     return null;
                 }
                 imageIndex = acquireImage(syncSlot);
                 if (imageIndex < 0) {
                     requestRecreate();
-                    consumeWithoutPresent(frame);
+                    consumeWithoutPresentInternal(frame);
                     return null;
                 }
             }
@@ -206,6 +207,15 @@ final class VulkanSwapchain {
     }
 
     public void consumeWithoutPresent(FrameResources frame) {
+        try {
+            LowLatency.beginSubmission();
+            consumeWithoutPresentInternal(frame);
+        } finally {
+            LowLatency.endSubmission();
+        }
+    }
+
+    private void consumeWithoutPresentInternal(FrameResources frame) {
         FrameGeneration.disableFrameGeneration();
         try {
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);

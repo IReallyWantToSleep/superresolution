@@ -42,7 +42,6 @@ public abstract class MinecraftReflexMixin {
 			return;
 		}
 		LowLatency.endSimulation();
-		LowLatency.beginSubmission();
 	}
 
 	@Redirect(

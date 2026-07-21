@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -46,43 +45,33 @@ public final class VulkanPresentationWindow {
 	}
 
 	public static void endMinecraftFrame() {
-		boolean submissionEndPending = true;
-		try {
-			VulkanPresentationContext presentationContext = context;
-			VulkanSurface presentationSurface = surface;
-			if (presentationContext == null || presentationSurface == null) {
-				return;
-			}
-			PresentationWindowState.requireOwnerThread();
-			presentationContext.tickWindow();
+		VulkanPresentationContext presentationContext = context;
+		VulkanSurface presentationSurface = surface;
+		if (presentationContext == null || presentationSurface == null) {
+			return;
+		}
+		PresentationWindowState.requireOwnerThread();
+		presentationContext.tickWindow();
 
-			FrameResources frameResources = FrameCaptureManager.finishFrame();
-			if (frameResources == null) {
-				return;
+		FrameResources frameResources = FrameCaptureManager.finishFrame();
+		if (frameResources == null) {
+			return;
+		}
+		presentationContext.setVsync(requestedVsync);
+		if (!frameResources.hasFinalColor()) {
+			consumeRenderedFrame(presentationContext, frameResources);
+			throw new IllegalStateException("Vulkan presentation frame is missing final color");
+		}
+		// MINIMIZE GUARD: Consume captured resources without acquiring or presenting a swapchain image.
+		if (!presentationSurface.shouldClose()
+			&& !presentationSurface.isMinimized()) {
+			boolean presented = presentationContext.present(frameResources);
+			if (presented && !shown) {
+				presentationSurface.show();
+				shown = true;
 			}
-			presentationContext.setVsync(requestedVsync);
-			if (!frameResources.hasFinalColor()) {
-				submissionEndPending = false;
-				consumeRenderedFrame(presentationContext, frameResources);
-				throw new IllegalStateException("Vulkan presentation frame is missing final color");
-			}
-			// MINIMIZE GUARD: Consume captured resources without acquiring or presenting a swapchain image.
-			if (!presentationSurface.shouldClose()
-				&& !presentationSurface.isMinimized()) {
-				submissionEndPending = false;
-				boolean presented = presentationContext.present(frameResources);
-				if (presented && !shown) {
-					presentationSurface.show();
-					shown = true;
-				}
-			} else {
-				submissionEndPending = false;
-				consumeRenderedFrame(presentationContext, frameResources);
-			}
-		} finally {
-			if (submissionEndPending) {
-				LowLatency.endSubmission();
-			}
+		} else {
+			consumeRenderedFrame(presentationContext, frameResources);
 		}
 	}
 
@@ -90,11 +79,7 @@ public final class VulkanPresentationWindow {
 		VulkanPresentationContext presentationContext,
 		FrameResources frameResources
 	) {
-		try {
-			presentationContext.consumeWithoutPresent(frameResources);
-		} finally {
-			LowLatency.endSubmission();
-		}
+		presentationContext.consumeWithoutPresent(frameResources);
 	}
 
 	public static synchronized void setVsync(boolean enabled) {
