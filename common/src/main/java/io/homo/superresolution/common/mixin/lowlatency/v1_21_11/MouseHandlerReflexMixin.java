@@ -36,7 +36,7 @@ public abstract class MouseHandlerReflexMixin {
 		require = 1
 	)
 	private void super_resolution$handleTriggerFlash(long handle, MouseButtonInfo rawButtonInfo, int action, CallbackInfo ci) {
-		if (!LowLatency.isAvailable()) {
+		if (!LowLatency.isPclAvailable()) {
 			return;
 		}
 

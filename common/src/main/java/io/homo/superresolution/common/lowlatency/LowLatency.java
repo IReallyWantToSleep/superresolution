@@ -37,12 +37,13 @@ public final class LowLatency {
     public static synchronized void setMode(LowLatencyMode newMode) {
         LowLatencyMode selected = newMode == null ? LowLatencyMode.None : newMode;
         if (mode == selected && lowLatency != null) {
+            lowLatency.refresh();
             return;
         }
         releaseProvider();
         mode = selected;
-        if (isAvailable()) {
-            lowLatency = createLowLatency(selected);
+        if (Streamline.isInitialized()) {
+            lowLatency = createLowLatency();
             lowLatency.refresh();
         }
     }
@@ -80,15 +81,14 @@ public final class LowLatency {
     }
 
     public static synchronized void beginFrame(int frameIndex) {
-        if (!SuperResolution.gameIsLoaded || !isAvailable()) {
+        if (!SuperResolution.gameIsLoaded) {
             return;
         }
         Streamline.nextFrame(frameIndex);
         LowLatencyMode configuredMode = SuperResolutionConfig.getLowLatencyMode();
         if (lowLatency == null || mode != configuredMode) {
             setMode(configuredMode);
-        }
-        if (lowLatency != null) {
+        } else {
             lowLatency.refresh();
         }
     }
@@ -125,16 +125,21 @@ public final class LowLatency {
                 && VulkanPresentationFeature.isAvailable();
     }
 
+    public static boolean isPclAvailable() {
+        var frame = Streamline.currentFrame();
+        return lowLatency != null
+                && Streamline.isInitialized()
+                && frame != null
+                && frame.nativeHandle != 0L;
+    }
+
     public static synchronized void shutdown() {
         releaseProvider();
         mode = null;
     }
 
-    private static ILowLatency createLowLatency(LowLatencyMode selected) {
-        return switch (selected) {
-            case None -> new NoneLowLatency();
-            case NVReflex -> new NVIDIAReflex();
-        };
+    private static ILowLatency createLowLatency() {
+        return new NVIDIAReflex();
     }
 
     private static void setMarker(LowLatencyMarker marker) {

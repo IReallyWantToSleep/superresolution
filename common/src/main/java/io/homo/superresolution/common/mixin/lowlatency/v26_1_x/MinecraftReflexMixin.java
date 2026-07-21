@@ -42,9 +42,6 @@ public abstract class MinecraftReflexMixin {
 		require = 1
 	)
 	private void super_resolution$endSimulation(boolean advanceGameTime, CallbackInfo ci) {
-		if (!LowLatency.isAvailable()) {
-			return;
-		}
 		LowLatency.endSimulation();
 	}
 

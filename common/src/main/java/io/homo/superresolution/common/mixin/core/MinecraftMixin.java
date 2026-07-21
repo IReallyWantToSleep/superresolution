@@ -89,11 +89,9 @@ public abstract class MinecraftMixin {
     private void onRenderBegin(CallbackInfo ci) {
         if (SuperResolution.gameIsLoaded) {
             int frameIndex = GameFrameIndex.beginFrame();
-            if (LowLatency.isAvailable()) {
-                LowLatency.beginFrame(frameIndex);
-                LowLatency.sleep();
-                LowLatency.beginSimulation();
-            }
+            LowLatency.beginFrame(frameIndex);
+            LowLatency.sleep();
+            LowLatency.beginSimulation();
         }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             super_resolution$b3dVulkanFrame = true;

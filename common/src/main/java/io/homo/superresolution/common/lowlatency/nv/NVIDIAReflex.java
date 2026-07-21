@@ -14,6 +14,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.lowlatency.ILowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMarker;
+import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.streamline.StreamlineSession;
 import io.homo.superresolution.core.streamline.StreamlineTypes;
@@ -72,11 +73,7 @@ public final class NVIDIAReflex implements ILowLatency {
             return;
         }
         OptionsKey desired = new OptionsKey(
-                switch (SuperResolutionConfig.getNVIDIAReflexMode()) {
-                    case OFF -> StreamlineTypes.ReflexMode.OFF;
-                    case ON -> StreamlineTypes.ReflexMode.LOW_LATENCY;
-                    case BOOST -> StreamlineTypes.ReflexMode.LOW_LATENCY_WITH_BOOST;
-                },
+                configuredMode(),
                 LowLatency.frameLimitUs(),
                 StreamlineTypes.PclHotKey.VK_F13,
                 WinThreadId.INSTANCE.GetCurrentThreadId(),
@@ -103,6 +100,17 @@ public final class NVIDIAReflex implements ILowLatency {
             return;
         }
         session.reflexSleep(token);
+    }
+
+    private static int configuredMode() {
+        if (LowLatency.mode() == LowLatencyMode.None) {
+            return StreamlineTypes.ReflexMode.OFF;
+        }
+        return switch (SuperResolutionConfig.getNVIDIAReflexMode()) {
+            case OFF -> StreamlineTypes.ReflexMode.OFF;
+            case ON -> StreamlineTypes.ReflexMode.LOW_LATENCY;
+            case BOOST -> StreamlineTypes.ReflexMode.LOW_LATENCY_WITH_BOOST;
+        };
     }
 
     private void applyOptions(StreamlineSession session, OptionsKey desired, boolean force) {

@@ -37,7 +37,7 @@ public abstract class KeyboardHandlerReflexMixin {
 		require = 1
 	)
 	private void super_resolution$handleLatencyPing(long handle, int action, KeyEvent event, CallbackInfo ci) {
-		if (!LowLatency.isAvailable()) {
+		if (!LowLatency.isPclAvailable()) {
 			return;
 		}
 
