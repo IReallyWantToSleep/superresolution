@@ -156,7 +156,6 @@ public class IrisShaderCompatEventHandler {
         if (SuperResolutionConfig.isForceDisableShaderCompat()) {
             return;
         }
-        RenderHandlerManager.frameCount = 0;
 
         SRShaderCompatData config = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
         if (config == null) return;

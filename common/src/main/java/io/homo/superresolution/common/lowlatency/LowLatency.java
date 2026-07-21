@@ -79,11 +79,11 @@ public final class LowLatency {
         setMarker(LowLatencyMarker.RENDER_SUBMIT_END);
     }
 
-    public static synchronized void beginFrame() {
+    public static synchronized void beginFrame(int frameIndex) {
         if (!SuperResolution.gameIsLoaded || !isAvailable()) {
             return;
         }
-        Streamline.nextFrame();
+        Streamline.nextFrame(frameIndex);
         LowLatencyMode configuredMode = SuperResolutionConfig.getLowLatencyMode();
         if (lowLatency == null || mode != configuredMode) {
             setMode(configuredMode);

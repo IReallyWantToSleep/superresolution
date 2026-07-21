@@ -246,7 +246,6 @@ public class IrisShaderCompatUpscaleDispatcher {
         cachedNamedCompositePass = null;
         cachedOutputTargetTextures.clear();
         IrisShaderCompatEventHandler.failedToDispatchUpscale = false;
-        RenderHandlerManager.frameCount = 0;
         InteropResourcesConverter.destroy();
         SRCompatV2Processor.destroyPipelineCache();
     }

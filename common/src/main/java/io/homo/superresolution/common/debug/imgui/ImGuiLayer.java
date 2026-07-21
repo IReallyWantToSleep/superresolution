@@ -31,6 +31,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -162,7 +163,7 @@ public class ImGuiLayer {
         ImGui.text("Screen Size: %dx%d".formatted(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()));
         ImGui.text("Render Size: %dx%d".formatted(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()));
         ImGui.text("Scale Factor: %.3f".formatted(RenderHandlerManager.getScaleFactor()));
-        ImGui.text("Frame Count: " + RenderHandlerManager.getFrameCount());
+        ImGui.text("Frame Count: " + GameFrameIndex.current());
         if (!SuperResolution.gameIsLoaded || Minecraft.getInstance().level == null) {
             ImGui.separator();
             ImGui.text("Game world not ready.");

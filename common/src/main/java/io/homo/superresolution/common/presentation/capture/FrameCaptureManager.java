@@ -13,6 +13,7 @@ package io.homo.superresolution.common.presentation.capture;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -65,7 +66,7 @@ public final class FrameCaptureManager {
         if (color == null) {
             throw new IllegalStateException("Vulkan presentation final color is unavailable");
         }
-        beginFrame(RenderHandlerManager.getFrameCount()).copyFinalColor(color);
+        beginFrame(GameFrameIndex.current()).copyFinalColor(color);
     }
 
     public static boolean captureVulkanInputs(

@@ -21,7 +21,6 @@ package io.homo.superresolution.core.streamline;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -39,14 +38,12 @@ public final class Streamline {
         return currentFrame;
     }
 
-    public static StreamlineTypes.FrameToken nextFrame() {
+    public static StreamlineTypes.FrameToken nextFrame(int frameIndex) {
         if (!isInitialized()) {
             currentFrame = null;
             return null;
         }
         StreamlineTypes.FrameToken next = new StreamlineTypes.FrameToken();
-        // Reflex begins before RenderHandlerManager.onFrameBegin() advances the SR frame counter.
-        int frameIndex = RenderHandlerManager.getFrameCount() + 1;
         int result = defaultSession.getNewFrameToken(
                 frameIndex,
                 next

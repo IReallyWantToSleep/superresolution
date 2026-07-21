@@ -23,6 +23,7 @@ import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -144,7 +145,7 @@ public class AlgorithmManager {
     public static Vector2f getPreviousJitterOffset() {
         if (supportsJitter(SuperResolution.algorithmDescription)) {
             return Fsr2Utils.ffxFsr2GetJitterOffset(
-                    RenderHandlerManager.getFrameCount() - 1,
+                    GameFrameIndex.current() - 1,
                     Fsr2Utils.ffxFsr2GetJitterPhaseCount(
                             RenderHandlerManager.getRenderWidth(),
                             RenderHandlerManager.getScreenWidth()
@@ -157,7 +158,7 @@ public class AlgorithmManager {
     public static Vector2f getJitterOffset() {
         if (supportsJitter(SuperResolution.algorithmDescription)) {
             return Fsr2Utils.ffxFsr2GetJitterOffset(
-                    RenderHandlerManager.getFrameCount(),
+                    GameFrameIndex.current(),
                     Fsr2Utils.ffxFsr2GetJitterPhaseCount(
                             RenderHandlerManager.getRenderWidth(),
                             RenderHandlerManager.getScreenWidth()
@@ -190,7 +191,7 @@ public class AlgorithmManager {
                 RenderHandlerManager.getScreenHeight(),
                 new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
-                RenderHandlerManager.getFrameCount(),
+                GameFrameIndex.current(),
                 PerformanceTracker.getLastResultCPU("Frame"),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),

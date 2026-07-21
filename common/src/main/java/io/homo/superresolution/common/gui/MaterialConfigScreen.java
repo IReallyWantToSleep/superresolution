@@ -90,6 +90,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.joml.Vector2f;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -173,6 +174,26 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         MinecraftUtils.setScreen(parentScreen);
         MouseCursor.ARROW.use();
     }
+
+    #if MC_VER > MC_1_21_8
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (event.key() == GLFW.GLFW_KEY_INSERT) {
+            MinecraftUtils.setScreen(new WidgetShowcaseScreen(this));
+            return true;
+        }
+        return super.keyPressed(event);
+    }
+    #else
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_INSERT) {
+            MinecraftUtils.setScreen(new WidgetShowcaseScreen(this));
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    #endif
 
     @Override
     public void draw(RenderContext ctx, UIInputState inputState) {

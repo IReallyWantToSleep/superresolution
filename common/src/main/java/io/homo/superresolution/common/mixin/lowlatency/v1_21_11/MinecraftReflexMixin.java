@@ -33,23 +33,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 public abstract class MinecraftReflexMixin {
 	@Inject(
-		method = "run()V",
-		at = @At(
-			value = "INVOKE",
-			target = "Lnet/minecraft/client/Minecraft;runTick(Z)V",
-			ordinal = 0
-		),
-		require = 1
-	)
-	private void super_resolution$beginReflexFrame(CallbackInfo ci) {
-		if (LowLatency.isAvailable()) {
-			LowLatency.beginFrame();
-			LowLatency.sleep();
-			LowLatency.beginSimulation();
-		}
-	}
-
-	@Inject(
 		method = "runTick",
 		at = @At(
 				value = "INVOKE",

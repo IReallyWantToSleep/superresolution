@@ -29,6 +29,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -55,7 +56,6 @@ public class RenderHandlerManager {
     private static Minecraft minecraft;
     private static IMinecraftRenderHandler handler;
     private static String handlerProviderId;
-    public static int frameCount = 0;
     private static IBindableFrameBuffer originRenderTarget;
     private static boolean uiOnlyB3DVulkan;
 
@@ -106,7 +106,6 @@ public class RenderHandlerManager {
     }
 
     public static void onFrameBegin() {
-        frameCount++;
         if (uiOnlyB3DVulkan) {
             return;
         }
@@ -231,7 +230,7 @@ public class RenderHandlerManager {
     }
 
     public static int getFrameCount() {
-        return frameCount;
+        return GameFrameIndex.current();
     }
 
     private static boolean checkRenderWorldCallPos(CallType type) {

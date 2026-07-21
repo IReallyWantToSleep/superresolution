@@ -21,7 +21,9 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -85,6 +87,14 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
+        if (SuperResolution.gameIsLoaded) {
+            int frameIndex = GameFrameIndex.beginFrame();
+            if (LowLatency.isAvailable()) {
+                LowLatency.beginFrame(frameIndex);
+                LowLatency.sleep();
+                LowLatency.beginSimulation();
+            }
+        }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             super_resolution$b3dVulkanFrame = true;
             PerformanceTracker.push("Frame");
