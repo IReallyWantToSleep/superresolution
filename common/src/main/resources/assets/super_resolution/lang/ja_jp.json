@@ -226,7 +226,7 @@
     "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required": "低遅延モードを使用するには Vulkan プレゼンテーションを有効にして再起動してください。",
     "superresolution.screen.config.options.tooltip.nv_reflex_mode": "NVIDIA Reflex の低遅延強度を設定します。",
     "superresolution.screen.config.options.tooltip.nv_reflex_mode.low_latency_required": "低遅延モードを NVIDIA Reflex に設定すると変更できます。",
-    "superresolution.screen.config.options.frame_generation.tooltip": "NVIDIA DLSS フレーム生成で中間フレームを生成します。Vulkan プレゼンテーション、低遅延相互運用、NVIDIA Reflex を先に有効にしてください。",
+    "superresolution.screen.config.options.frame_generation.tooltip": "NVIDIA DLSS フレーム生成で中間フレームを生成します。Vulkan プレゼンテーション、低遅延相互運用、NVIDIA Reflex を先に有効にしてください。互換シェーダーパック（shader_compat）有効時のみ動作し、シェーダーオフまたは非互換時は自動的に無効になります。",
     "superresolution.screen.config.options.tooltip.force_disable_shader_compat": "有効にすると、MOD はシェーダーパックの超解像互換設定を無視し、通常モードでスケーリングします",
     "superresolution.screen.config.options.tooltip.generate_motion_vectors": "モーションベクトルは一部のアルゴリズム（FSR2、SGSR2）の超解像品質を向上できますが、パフォーマンスを犠牲にします（廃止済み）",
     "superresolution.screen.config.options.tooltip.inject_postChain_black_list": "一部の MOD は UI 効果を実現するために PostChain を使用しています。\nこの MOD が PostChain にコードを注入すると、UI 効果がワールドの描画解像度で描画され、いくつかの描画問題が発生します（例: ModernUI の画面ぼかし）。\nここに除外したい PostChain 名を追加すると、この MOD はそれらをスキップします。\n変更後はゲームの再起動が必要な場合があります。",

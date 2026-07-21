@@ -225,7 +225,7 @@
     "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required": "低延遲模式需要先啟用 Vulkan 呈現並重新啟動遊戲。",
     "superresolution.screen.config.options.tooltip.nv_reflex_mode": "設定 NVIDIA Reflex 低延遲強度。",
     "superresolution.screen.config.options.tooltip.nv_reflex_mode.low_latency_required": "低延遲模式設為 NVIDIA Reflex 後才能調整此選項。",
-    "superresolution.screen.config.options.frame_generation.tooltip": "透過 NVIDIA DLSS 影格生成插入中間影格。必須先啟用 Vulkan 呈現、低延遲互操作和 NVIDIA Reflex。",
+    "superresolution.screen.config.options.frame_generation.tooltip": "透過 NVIDIA DLSS 影格生成插入中間影格。必須先啟用 Vulkan 呈現、低延遲互操作和 NVIDIA Reflex。僅在相容光影（shader_compat）啟用時實際生效；關閉或不相容光影時自動停用。",
     "superresolution.screen.config.options.tooltip.force_disable_shader_compat": "啟用後，模組將忽略光影包相容性設定，並在一般模式下進行縮放",
     "superresolution.screen.config.options.tooltip.generate_motion_vectors": "動態向量可以改善某些演算法（FSR2、SGSR2）的品質，但可能會降低效能",
     "superresolution.screen.config.options.tooltip.inject_postChain_black_list": "某些模組會使用後處理鏈 (Post-chain) 來製作 UI 效果。注入後處理鏈可能會導致 UI 以世界解析度渲染，造成問題（例如 ModernUI 介面模糊）\n請在此新增要排除的後處理鏈名稱；模組會在注入時跳過它們\n變更可能需要重新啟動遊戲才能生效",

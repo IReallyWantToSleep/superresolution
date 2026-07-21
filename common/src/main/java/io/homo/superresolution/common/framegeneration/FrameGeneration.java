@@ -18,6 +18,8 @@ import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.streamline.StreamlineTypes;
 
@@ -117,11 +119,11 @@ public final class FrameGeneration {
 
     public static void setFrameGenerationMode(FrameGenerationMode mode) {
         FrameGenerationMode selected = mode;
-        if (selected == null || !isModeSupported(selected)) {
+        if (selected == null || !isHardwareModeSupported(selected)) {
             selected = FrameGenerationMode.OFF;
         }
         SuperResolutionConfig.setFrameGenerationMode(selected);
-        if (!selected.isEnabled()) {
+        if (!displayedMode().isEnabled()) {
             disableFrameGeneration();
         }
     }
@@ -157,7 +159,20 @@ public final class FrameGeneration {
                 && SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
     }
 
+    // FG only under shader_compat + loaded pack; vanilla/hack breaks UI presentation
+    static boolean isShaderEnvironmentCompatible() {
+        if (!SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+            return false;
+        }
+        SRWorkModeState state = SRWorkModeManager.getCurrentState();
+        return state.shaderPackInUse() && !state.shaderPackLoading();
+    }
+
     private static boolean isModeSupported(FrameGenerationMode mode) {
+        return isHardwareModeSupported(mode) && (mode == FrameGenerationMode.OFF || isShaderEnvironmentCompatible());
+    }
+
+    private static boolean isHardwareModeSupported(FrameGenerationMode mode) {
         if (mode == null || mode == FrameGenerationMode.OFF) {
             return mode == FrameGenerationMode.OFF;
         }

@@ -227,7 +227,7 @@
     "superresolution.screen.config.options.tooltip.enable_upscale": "开启后将使用所选算法对画面进行超分辨率",
     "superresolution.screen.config.options.tooltip.enable_vulkan_presentation": "通过 Vulkan 交换链呈现最终游戏画面。Windows 上会由 Streamline 挂钩 Vulkan 呈现路径。修改后需要重启游戏。",
     "superresolution.screen.config.options.tooltip.enable_vulkan_presentation.vulkan_disabled": "请先关闭“跳过初始化 Vulkan”并重启游戏，然后再启用 Vulkan 呈现。",
-    "superresolution.screen.config.options.frame_generation.tooltip": "通过 NVIDIA DLSS 帧生成插入中间帧。必须先启用 Vulkan 呈现、低延迟互操作和 NVIDIA Reflex。",
+    "superresolution.screen.config.options.frame_generation.tooltip": "通过 NVIDIA DLSS 帧生成插入中间帧。必须先启用 Vulkan 呈现、低延迟互操作和 NVIDIA Reflex。仅在兼容光影（shader_compat）启用时实际生效；关闭或不兼容光影时自动禁用。",
     "superresolution.screen.config.options.tooltip.low_latency_mode": "选择一项低延迟技术以降低输入延迟。当前仅支持 NVIDIA Reflex。",
     "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required": "低延迟模式需要启用 Vulkan 呈现。请先开启上方的“使用 Vulkan 呈现”并重启游戏。",
     "superresolution.screen.config.options.tooltip.nv_reflex_mode": "设置 NVIDIA Reflex 低延迟强度。ON 可降低延迟；BOOST 会进一步降低延迟，但会消耗少量性能。",
