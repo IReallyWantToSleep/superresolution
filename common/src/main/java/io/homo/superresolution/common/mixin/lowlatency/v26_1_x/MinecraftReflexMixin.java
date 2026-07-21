@@ -34,10 +34,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MinecraftReflexMixin {
 	@Inject(
 		method = "renderFrame(Z)V",
-		at = @At("HEAD"),
+		at = @At(
+			value = "INVOKE",
+			target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V",
+			shift = At.Shift.BEFORE
+		),
 		require = 1
 	)
-	private void super_resolution$beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
+	private void super_resolution$endSimulation(boolean advanceGameTime, CallbackInfo ci) {
 		if (!LowLatency.isAvailable()) {
 			return;
 		}
