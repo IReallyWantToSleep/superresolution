@@ -38,7 +38,8 @@ public class MouseCursor {
     public void use() {
         if (glfwCursor == -1 || glfwCursor == 0) {
             glfwCursor = GLFW.glfwCreateStandardCursor(id);
-        } else {
+        }
+        if (glfwCursor != 0) {
             GLFW.glfwSetCursor(
                     MinecraftWindow.getWindowHandle(),
                     glfwCursor

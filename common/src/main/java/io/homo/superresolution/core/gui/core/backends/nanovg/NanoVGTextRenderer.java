@@ -25,6 +25,7 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NVGtextRow;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
+import io.homo.superresolution.thirdparty.nanovg.TextBoundsResult;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
     public NanoVGTextRenderer(NanoVGContextWrapper context) {
     }
 
-    private float[] measureTextBounds(IFont font, String text, float fontSize, float lineHeight, float weight) {
+    private TextBoundsResult measureTextBounds(IFont font, String text, float fontSize, float lineHeight, float weight) {
         if (text == null || text.isEmpty()) {
             return null;
         }
@@ -44,26 +45,27 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
         contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
-        return contextPtr.textBounds(0, 0, text).bounds;
+        return contextPtr.textBounds(0, 0, text);
     }
 
     public float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        float[] bounds = measureTextBounds(font, text, fontSize, lineHeight, weight);
-        if (bounds == null) return 0;
-        return (bounds[2] - bounds[0]);
+        TextBoundsResult result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        return result == null ? 0f : result.advance;
     }
 
     public float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        float[] bounds = measureTextBounds(font, text, fontSize, lineHeight, weight);
-        if (bounds == null) return 0;
+        TextBoundsResult result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        if (result == null) return 0;
+        float[] bounds = result.bounds;
         return (bounds[3] - bounds[1]) - 2;
     }
 
     public Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        float[] bounds = measureTextBounds(font, text, fontSize, lineHeight, weight);
-        if (bounds == null) return new Vector2f(0);
+        TextBoundsResult result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        if (result == null) return new Vector2f(0);
+        float[] bounds = result.bounds;
         return new Vector2f(
-                (bounds[2] - bounds[0]),
+                result.advance,
                 (bounds[3] - bounds[1]) - 2.5f
         );
     }
@@ -167,8 +169,7 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         float maxLineWidth = 0;
         for (String line : lines) {
             // 直接使用已设置字重的上下文测量
-            float[] bounds = contextPtr.textBounds(0, 0, line).bounds;
-            float width = bounds[2] - bounds[0];
+            float width = contextPtr.textBounds(0, 0, line).advance;
             if (width > maxLineWidth) {
                 maxLineWidth = width;
             }

@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.core.gui.core.event;
 
+import io.homo.superresolution.core.gui.core.input.KeyInput;
+
 public interface GuiEventListener {
     default void mousePress(float x, float y, int button) {
     }
@@ -35,9 +37,17 @@ public interface GuiEventListener {
     }
 
     default void keyPress(int keyCode, int scancode, int modifiers) {
+        keyPress(KeyInput.fromRaw(keyCode, scancode, modifiers));
+    }
+
+    default void keyPress(KeyInput input) {
     }
 
     default void keyRelease(int keyCode, int scancode, int modifiers) {
+        keyRelease(KeyInput.fromRaw(keyCode, scancode, modifiers));
+    }
+
+    default void keyRelease(KeyInput input) {
     }
 
     default void charTyped(char codePoint, int modifiers) {
