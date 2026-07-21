@@ -36,12 +36,13 @@ public abstract class MinecraftReflexMixin {
 		method = "runTick",
 		at = @At(
 				value = "INVOKE",
-				target = "Lnet/minecraft/util/profiling/ProfilerFiller;popPush(Ljava/lang/String;)V",
-				ordinal = 4
+				target = "Lnet/minecraft/client/MouseHandler;handleAccumulatedMovement()V",
+				ordinal = 0,
+                shift = At.Shift.AFTER
 		),
 		require = 1
 	)
-	private void super_resolution$beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
+	private void super_resolution$endSimulation(boolean advanceGameTime, CallbackInfo ci) {
 		LowLatency.endSimulation();
 	}
 
