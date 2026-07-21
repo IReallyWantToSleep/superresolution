@@ -397,6 +397,7 @@ public final class SuperResolution implements Destroyable {
                 VulkanPresentationWindow.flushCapturedFrame();
                 FrameGeneration.invalidateHistory();
                 currentAlgorithm.destroy();
+                LowLatency.onDestructiveRebuild();
             }
 
             try {

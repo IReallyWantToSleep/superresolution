@@ -113,6 +113,13 @@ public final class LowLatency {
         }
     }
 
+    public static void onDestructiveRebuild() {
+        ILowLatency active = lowLatency;
+        if (active != null) {
+            active.invalidatePacing();
+        }
+    }
+
     public static boolean isAvailable() {
         return SuperResolutionConfig.isEnableVulkanPresentation()
                 && VulkanPresentationFeature.isAvailable();

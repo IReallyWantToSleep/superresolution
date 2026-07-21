@@ -19,8 +19,11 @@ import io.homo.superresolution.core.streamline.StreamlineSession;
 import io.homo.superresolution.core.streamline.StreamlineTypes;
 
 public final class NVIDIAReflex implements ILowLatency {
+    private static final int PACING_WARMUP_FRAMES = 3;
+
     private OptionsKey lastAppliedOptions;
     private StreamlineSession observedSession;
+    private int pacingWarmupRemaining;
 
     @Override
     public void setMarker(LowLatencyMarker marker) {
@@ -83,12 +86,23 @@ public final class NVIDIAReflex implements ILowLatency {
     }
 
     @Override
+    public void invalidatePacing() {
+        pacingWarmupRemaining = PACING_WARMUP_FRAMES;
+        lastAppliedOptions = null;
+    }
+
+    @Override
     public void sleep() {
         StreamlineSession session = sessionOrNull();
         StreamlineTypes.FrameToken token = tokenOrNull();
-        if (session != null && token != null) {
-            session.reflexSleep(token);
+        if (session == null || token == null) {
+            return;
         }
+        if (pacingWarmupRemaining > 0) {
+            pacingWarmupRemaining--;
+            return;
+        }
+        session.reflexSleep(token);
     }
 
     private void applyOptions(StreamlineSession session, OptionsKey desired, boolean force) {

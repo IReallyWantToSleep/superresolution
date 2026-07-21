@@ -26,4 +26,7 @@ public interface ILowLatency {
     void refresh();
 
     void sleep();
+
+    default void invalidatePacing() {
+    }
 }

@@ -126,6 +126,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private MaterialNavigationDrawer drawer;
     private List<Destroyable> destroyables = new ArrayList<>();
     private Map<String, List<QualityPresetOption>> qualityPresetOptionsCache;
+    private SelectionListOptionEntry<FrameGenerationMode> frameGenerationEntry;
     private boolean contentTransitionRunning;
     private Frame outgoingContentFrame;
     private long contentTransitionStartMs;
@@ -147,6 +148,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
         materialScheme = MaterialUI.Scheme;
         contentFrames = new HashMap<>();
+        frameGenerationEntry = null;
         currentContentKey = "general";
 
         getView().removeFrame(getDefaultFrame());
@@ -529,6 +531,14 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return OptionRequirement.all();
     }
 
+    private void refreshFrameGenerationOptions() {
+        if (frameGenerationEntry == null) {
+            return;
+        }
+        frameGenerationEntry.refreshDynamicValues();
+        frameGenerationEntry.setSelectedValue(FrameGeneration.displayedMode());
+    }
+
     private Frame createGeneralFrame() {
         ScrollableFrame frame = createStandardScrollableFrame();
         ContainerWidget container = createStandardContainer();
@@ -848,7 +858,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     ).getString()
                             )))
                             .setItemEnableRequirement(this::getLowLatencyModeItemRequirement)
-                            .setSaveConsumer(SuperResolutionConfig::setLowLatencyMode)
+                            .setSaveConsumer(mode -> {
+                                SuperResolutionConfig.setLowLatencyMode(mode);
+                                refreshFrameGenerationOptions();
+                            })
                             .build();
                     builder.enumSelectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.nv_reflex_mode"),
@@ -872,7 +885,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     ).getString()
                             )))
                             .setItemEnableRequirement(this::getNVIDIAReflexModeItemRequirement)
-                            .setSaveConsumer(SuperResolutionConfig::setNVIDIAReflexMode)
+                            .setSaveConsumer(mode -> {
+                                SuperResolutionConfig.setNVIDIAReflexMode(mode);
+                                refreshFrameGenerationOptions();
+                            })
                             .build();
                 }
         );
@@ -881,7 +897,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 container,
                 Text.translatable("superresolution.screen.config.category.frame_generation"), builder -> {
                     FrameGenerationMode[] modes = FrameGeneration.availableModes();
-                    builder.selectorOption(
+                    frameGenerationEntry = builder.selectorOption(
                                     Text.translatable("superresolution.screen.config.options.frame_generation"),
                                     FrameGeneration.displayedMode(),
                                     modes
@@ -890,6 +906,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
                             .setDescription(Text.translatable("superresolution.screen.config.options.frame_generation.tooltip"))
                             .setEnableRequirement(FrameGeneration::isSupported)
+                            .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
                             .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
                             .build();
                 }
@@ -1169,6 +1186,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
                                     SuperResolution.recreateAlgorithm();
                                 }
+                                refreshFrameGenerationOptions();
                             })
                             .build();
 
