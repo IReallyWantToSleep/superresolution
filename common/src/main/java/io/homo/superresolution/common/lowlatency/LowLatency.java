@@ -12,6 +12,7 @@ package io.homo.superresolution.common.lowlatency;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
@@ -53,7 +54,11 @@ public final class LowLatency {
         if (framerateLimit <= 0 || framerateLimit >= 260) {
             return 0;
         }
-        return (1_000_000 + framerateLimit - 1) / framerateLimit;
+        int outputMultiplier = FrameGeneration.isFrameGenerationEnabled()
+                ? 1 + FrameGeneration.displayedMode().generatedFrameCount()
+                : 1;
+        int outputFramerateLimit = framerateLimit * outputMultiplier;
+        return (1_000_000 + outputFramerateLimit - 1) / outputFramerateLimit;
     }
 
     public static void beginPresent() {
@@ -72,11 +77,11 @@ public final class LowLatency {
         setMarker(LowLatencyMarker.SIMULATION_END);
     }
 
-    public static void beginSubmission() {
+    public static void beginRenderSubmission() {
         setMarker(LowLatencyMarker.RENDER_SUBMIT_START);
     }
 
-    public static void endSubmission() {
+    public static void endRenderSubmission() {
         setMarker(LowLatencyMarker.RENDER_SUBMIT_END);
     }
 

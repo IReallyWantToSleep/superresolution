@@ -44,6 +44,7 @@ public abstract class MinecraftReflexMixin {
 	)
 	private void super_resolution$beginRenderSubmit(boolean advanceGameTime, CallbackInfo ci) {
 		LowLatency.endSimulation();
+		LowLatency.beginRenderSubmission();
 	}
 
 	@Redirect(

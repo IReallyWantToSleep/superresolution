@@ -63,13 +63,13 @@ public class MixinPlugin implements IMixinConfigPlugin {
     }
 
     private boolean shouldApplyMixinByName(String name) {
-        if (name.startsWith("VulkanPresentation")) {
-            #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1
-            return io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature.isRequested();
-            #else
-            return false;
-            #endif
-        }
+        //if (name.startsWith("VulkanPresentation")) {
+        //    #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1
+        //    return io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature.isRequested();
+        //    #else
+        //    return false;
+        //    #endif
+        //}
         if (name.contains("ForceOpenGLVersion_WindowMixin")) {
             return !(Platform.currentPlatform.isModLoaded("threatengl") ||
                     Platform.currentPlatform.isModLoaded("gpu_tape") ||

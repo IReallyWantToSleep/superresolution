@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -51,9 +52,12 @@ public final class VulkanPresentationWindow {
 			return;
 		}
 		PresentationWindowState.requireOwnerThread();
-		presentationContext.tickWindow();
 
 		FrameResources frameResources = FrameCaptureManager.finishFrame();
+		LowLatency.endRenderSubmission();
+
+		presentationContext.tickWindow();
+
 		if (frameResources == null) {
 			return;
 		}

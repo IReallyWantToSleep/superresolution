@@ -2860,7 +2860,7 @@ extern "C"
         FONStextIter iter, prevIter;
         FONSquad q;
         NVGvertex *verts;
-        float fontScale = ctx->devicePxRatio; // 光留下DPI缩放，原版的逻辑导致transform scale频繁变化时字体抖动
+        float fontScale = ctx->devicePxRatio; // 保持字形图集尺寸稳定，避免缩放动画期间重采样抖动
         float invscale = 1.0f / fontScale;
         int cverts = 0;
         int nverts = 0;
@@ -2950,7 +2950,7 @@ extern "C"
                             int maxRows)
     {
         NVGstate *state = nvg__getState(ctx);
-        float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+        float scale = ctx->devicePxRatio;
         float invscale = 1.0f / scale;
         FONStextIter iter, prevIter;
         FONSquad q;
@@ -3262,7 +3262,7 @@ extern "C"
     float nvgTextBounds(NVGcontext *ctx, float x, float y, const char *string, const char *end, float *bounds)
     {
         NVGstate *state = nvg__getState(ctx);
-        float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+        float scale = ctx->devicePxRatio;
         float invscale = 1.0f / scale;
         float width;
 
