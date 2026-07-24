@@ -151,12 +151,22 @@ public abstract class MinecraftMixin {
     @Inject(method = "stop",at = @At(value = "TAIL"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
+        SuperResolution.onClientStopped();
     }
     #else
-    //just like fabric`s invoke point
+    // Resource cleanup runs early (at the "Stopping!" log) while the interop OpenGL
+    // context is still current. The OpenGL context and Vulkan device are torn down at
+    // destroy() TAIL, after Minecraft has finished its own shutdown rendering (disconnect
+    // progress screen) and GL cleanup. Tearing them down early left that rendering
+    // without a current GL context and aborted the JVM on exit.
     @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;)V"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
+    }
+
+    @Inject(method = "destroy",at = @At(value = "TAIL"))
+    public void super_resolution$onDestroyTail(CallbackInfo ci) {
+        SuperResolution.onClientStopped();
     }
     #endif
 

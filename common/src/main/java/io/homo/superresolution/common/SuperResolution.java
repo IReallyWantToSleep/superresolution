@@ -95,6 +95,9 @@ public final class SuperResolution implements Destroyable {
     private static final long RESIZE_DEBOUNCE_MS = 120L;
     private static volatile boolean pendingResize = false;
     private static volatile long pendingResizeDeadlineMs = 0L;
+    // Guards the interop OpenGL context + Vulkan device teardown so it runs once per
+    // shutdown, whether triggered early (no presentation) or deferred to destroy() TAIL.
+    private static boolean graphicsBackendDestroyed = false;
 
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
@@ -191,6 +194,10 @@ public final class SuperResolution implements Destroyable {
 
     public static void onClientStopping() {
         SuperResolution.getInstance().destroy();
+    }
+
+    public static void onClientStopped() {
+        SuperResolution.getInstance().destroyGraphicsBackend();
     }
 
     public static void onClientSetup() {
@@ -521,6 +528,7 @@ public final class SuperResolution implements Destroyable {
         isInit = false;
         isRenderingInitialized = false;
         pendingResize = false;
+        graphicsBackendDestroyed = false;
         FrameGeneration.shutdown();
         VulkanPresentationFeature.shutdown();
         LowLatency.shutdown();
@@ -534,6 +542,22 @@ public final class SuperResolution implements Destroyable {
         SuperResolutionNativeAPI.srShutdown();
         Streamline.shutdown();
         NgxInitializer.shutdown();
+        // In Vulkan-presentation (interop) mode the hidden OpenGL context and the Vulkan
+        // device are torn down later, in destroyGraphicsBackend() at Minecraft.destroy()
+        // TAIL, so Minecraft's own shutdown rendering (the disconnect progress screen and
+        // GL resource cleanup) still has a current GL context. Destroying them here left
+        // that rendering without a context and aborted the JVM on exit. Without the
+        // interop presentation there is no shared context to protect, so tear down now.
+        if (!VulkanPresentationFeature.isRequested()) {
+            destroyGraphicsBackend();
+        }
+    }
+
+    public void destroyGraphicsBackend() {
+        if (graphicsBackendDestroyed) {
+            return;
+        }
+        graphicsBackendDestroyed = true;
         // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
         PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();
