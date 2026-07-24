@@ -36,6 +36,7 @@ import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
+import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkan;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.gui.download.MaterialResourcesList;
@@ -528,8 +529,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return switch (mode) {
             case None -> () -> !FrameGeneration.isFrameGenerationEnabled();
             case NVReflex -> () -> LowLatency.isAvailable()
-                    && Streamline.isSupportedPlatform()
-                    && Streamline.isNativeAvailable();
+                    && ((Streamline.isSupportedPlatform() && Streamline.isNativeAvailable())
+                    || NVIDIAReflexVulkan.isSupported());
         };
     }
 

@@ -299,6 +299,7 @@ public class VulkanDevice implements IDevice {
     }
 
     public void destroy() {
+        VulkanLowLatency.onDeviceDestroyed();
         waitForAllCommandBuffers();
         reapCompletedTransientResources();
         flushDeferredDestroys();

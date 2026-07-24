@@ -304,12 +304,17 @@ public class VkRenderSystem implements IRenderSystem {
 
             boolean hasOpticalFlowExtension = supportedDeviceExts.contains("VK_NV_optical_flow");
             boolean hasSynchronization2Extension = supportedDeviceExts.contains("VK_KHR_synchronization2");
+            boolean hasPresentIdExtension = enableDeviceExts.contains(KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME);
+            boolean hasLowLatency2Extension = enableDeviceExts.contains(NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
             VkPhysicalDeviceOpticalFlowFeaturesNV opticalFlowFeatures =
                     VkPhysicalDeviceOpticalFlowFeaturesNV.calloc(stack)
                             .sType(NVOpticalFlow.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
             VkPhysicalDeviceSynchronization2FeaturesKHR synchronization2Features =
                     VkPhysicalDeviceSynchronization2FeaturesKHR.calloc(stack)
                             .sType(KHRSynchronization2.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR);
+            VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures =
+                    VkPhysicalDevicePresentIdFeaturesKHR.calloc(stack)
+                            .sType(KHRPresentId.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR);
             long featureQueryChain = dynamicRenderingLocalReadFeatures.address();
             if (hasSynchronization2Extension) {
                 synchronization2Features.pNext(featureQueryChain);
@@ -318,6 +323,10 @@ public class VkRenderSystem implements IRenderSystem {
             if (hasOpticalFlowExtension) {
                 opticalFlowFeatures.pNext(featureQueryChain);
                 featureQueryChain = opticalFlowFeatures.address();
+            }
+            if (hasPresentIdExtension) {
+                presentIdFeatures.pNext(featureQueryChain);
+                featureQueryChain = presentIdFeatures.address();
             }
 
             VkPhysicalDeviceVulkan12Features features12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
@@ -345,6 +354,7 @@ public class VkRenderSystem implements IRenderSystem {
             boolean deviceSupportsSynchronization2 =
                     hasSynchronization2Extension && synchronization2Features.synchronization2();
             boolean deviceSupportsTimelineSemaphore = features12.timelineSemaphore();
+            boolean deviceSupportsPresentId = hasPresentIdExtension && presentIdFeatures.presentId();
             LOGGER.info("Vulkan 设备特性支持状态:");
             LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
             LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
@@ -360,6 +370,7 @@ public class VkRenderSystem implements IRenderSystem {
             LOGGER.info("  opticalFlow: {}", deviceSupportsOpticalFlow);
             LOGGER.info("  synchronization2: {}", deviceSupportsSynchronization2);
             LOGGER.info("  timelineSemaphore: {}", deviceSupportsTimelineSemaphore);
+            LOGGER.info("  presentId: {}", deviceSupportsPresentId);
 
             VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures =
                     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT.calloc(stack)
@@ -405,6 +416,14 @@ public class VkRenderSystem implements IRenderSystem {
                                 .pNext(deviceFeatureChain);
                 deviceFeatureChain = deviceOpticalFlowFeatures.address();
             }
+            if (deviceSupportsPresentId) {
+                VkPhysicalDevicePresentIdFeaturesKHR devicePresentIdFeatures =
+                        VkPhysicalDevicePresentIdFeaturesKHR.calloc(stack)
+                                .sType(KHRPresentId.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR)
+                                .presentId(true)
+                                .pNext(deviceFeatureChain);
+                deviceFeatureChain = devicePresentIdFeatures.address();
+            }
 
             VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
@@ -446,12 +465,23 @@ public class VkRenderSystem implements IRenderSystem {
                         "Failed to create logical device");
             }
 
-            return new VulkanDevice(
+            VulkanDevice vulkanDevice = new VulkanDevice(
                     instance,
                     physicalDevice,
                     new VkDevice(pDevice.get(0), physicalDevice, createInfo),
                     graphicsFamilyIndex
             );
+            // Native Reflex (VK_NV_low_latency2) needs present ids and timeline
+            // semaphores; when Streamline is initialized its interposer owns Reflex,
+            // so the raw path stays dormant there.
+            VulkanLowLatency.onDeviceCreated(
+                    vulkanDevice,
+                    hasLowLatency2Extension
+                            && deviceSupportsPresentId
+                            && deviceSupportsTimelineSemaphore
+                            && !Streamline.isInitialized()
+            );
+            return vulkanDevice;
         }
     }
 
