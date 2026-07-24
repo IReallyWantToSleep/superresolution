@@ -10,10 +10,16 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.framegeneration.FramePresentPlan;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBufferRing;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
@@ -51,6 +57,11 @@ final class VulkanSwapchain {
     private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
     private long[] renderFinished = new long[0];
     private VulkanCommandBufferRing generatedBlitCommandBuffers;
+    // 1x1 solid-color sources for the per-present cadence indicator (white = real
+    // frame, cyan = interpolated); blitted into a corner of the swapchain image.
+    private VulkanTexture realFrameIndicator;
+    private VulkanTexture generatedFrameIndicator;
+    private boolean indicatorCreationFailed;
 
     private long swapchain = VK_NULL_HANDLE;
     private long[] images = new long[0];
@@ -205,7 +216,12 @@ final class VulkanSwapchain {
                     imageCount,
                     commandBuffer.getNativeCommandBuffer().address()
             );
-            recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex);
+            // When DLSS-G produced an "output real" frame (indicator passthrough), present
+            // it instead of the raw backbuffer so the DLSS-FG indicator stays steady.
+            VulkanTexture realFrameSource = plan.realFrame() != null
+                    ? plan.realFrame()
+                    : frame.finalColorVulkanTexture();
+            recordBlit(commandBuffer, realFrameSource, imageIndex, false);
             commandBuffer.end();
 
             long[] resourceWaits = frame.readySemaphores();
@@ -257,7 +273,7 @@ final class VulkanSwapchain {
             VulkanCommandBuffer blitCommandBuffer = generatedCommandBuffers().acquire(device);
             blitCommandBuffer.reset();
             blitCommandBuffer.begin();
-            recordBlit(blitCommandBuffer, generatedTexture, generatedImageIndex);
+            recordBlit(blitCommandBuffer, generatedTexture, generatedImageIndex, true);
             blitCommandBuffer.end();
             device.submitCommandBuffer(
                     blitCommandBuffer,
@@ -329,6 +345,7 @@ final class VulkanSwapchain {
             generatedBlitCommandBuffers.destroy();
             generatedBlitCommandBuffers = null;
         }
+        destroyIndicatorTextures();
         destroySwapchain();
         for (int i = 0; i < imageAvailable.length; i++) {
             if (imageAvailable[i] != VK_NULL_HANDLE) {
@@ -415,7 +432,8 @@ final class VulkanSwapchain {
     private void recordBlit(
             VulkanCommandBuffer commandBuffer,
             VulkanTexture source,
-            int imageIndex
+            int imageIndex,
+            boolean generatedFrame
     ) {
         VkCommandBuffer nativeCommandBuffer = commandBuffer.getNativeCommandBuffer();
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -477,6 +495,10 @@ final class VulkanSwapchain {
                     VK_FILTER_NEAREST
             );
 
+            if (SuperResolutionConfig.isEnablePresentIndicator()) {
+                recordPresentIndicator(nativeCommandBuffer, stack, imageIndex, generatedFrame);
+            }
+
             VkImageMemoryBarrier.Buffer presentBarrier = VkImageMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
                     .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
@@ -499,6 +521,182 @@ final class VulkanSwapchain {
         }
         source.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         imageLayouts[imageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    }
+
+    /**
+     * Blits a small solid square into the top-right corner of the swapchain image
+     * (white = real frame, cyan = interpolated) so the frame generation cadence is
+     * visible on every present — the raw-NVNGX equivalent of the overlay Streamline
+     * stamps when it owns the swapchain. The swapchain image is still in
+     * TRANSFER_DST here, so this costs one tiny blit and no extra barriers.
+     */
+    private void recordPresentIndicator(
+            VkCommandBuffer nativeCommandBuffer,
+            MemoryStack stack,
+            int imageIndex,
+            boolean generatedFrame
+    ) {
+        if (!ensureIndicatorTextures()) {
+            return;
+        }
+        int size = Math.max(8, Math.min(width, height) / 64);
+        int margin = Math.max(4, size / 2);
+        if (width < size + margin * 2 || height < size + margin * 2) {
+            return;
+        }
+        int x = width - margin - size;
+        int y = margin;
+        VulkanTexture indicator = generatedFrame ? generatedFrameIndicator : realFrameIndicator;
+        VkImageBlit.Buffer blit = VkImageBlit.calloc(1, stack);
+        blit.srcSubresource()
+                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .mipLevel(0)
+                .baseArrayLayer(0)
+                .layerCount(1);
+        blit.srcOffsets(0).set(0, 0, 0);
+        blit.srcOffsets(1).set(1, 1, 1);
+        blit.dstSubresource()
+                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .mipLevel(0)
+                .baseArrayLayer(0)
+                .layerCount(1);
+        blit.dstOffsets(0).set(x, y, 0);
+        blit.dstOffsets(1).set(x + size, y + size, 1);
+        vkCmdBlitImage(
+                nativeCommandBuffer,
+                indicator.handle(),
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                images[imageIndex],
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                blit,
+                VK_FILTER_NEAREST
+        );
+    }
+
+    private boolean ensureIndicatorTextures() {
+        if (realFrameIndicator != null && generatedFrameIndicator != null) {
+            return true;
+        }
+        if (indicatorCreationFailed) {
+            return false;
+        }
+        try {
+            realFrameIndicator = createIndicatorTexture("SRPresentIndicatorReal");
+            generatedFrameIndicator = createIndicatorTexture("SRPresentIndicatorGenerated");
+            fillIndicatorTextures();
+            return true;
+        } catch (RuntimeException | Error e) {
+            indicatorCreationFailed = true;
+            destroyIndicatorTextures();
+            SuperResolution.LOGGER.warn("Failed to create the present indicator textures", e);
+            return false;
+        }
+    }
+
+    private VulkanTexture createIndicatorTexture(String label) {
+        TextureDescription description = TextureDescription.create()
+                .type(TextureType.Texture2D)
+                .format(TextureFormat.RGBA8)
+                .size(1, 1)
+                .usages(TextureUsages.create()
+                        .sampler()
+                        .transferSource()
+                        .transferDestination())
+                .label(label)
+                .build();
+        return (VulkanTexture) device.createTexture(description);
+    }
+
+    private void fillIndicatorTextures() {
+        VulkanCommandBuffer commandBuffer = device.createCommandBuffer();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            commandBuffer.begin();
+            recordIndicatorFill(commandBuffer.getNativeCommandBuffer(), stack, realFrameIndicator, 1.0f, 1.0f, 1.0f);
+            recordIndicatorFill(commandBuffer.getNativeCommandBuffer(), stack, generatedFrameIndicator, 0.0f, 1.0f, 1.0f);
+            commandBuffer.end();
+            device.submitCommandBuffer(commandBuffer);
+            commandBuffer.waitForFence();
+            realFrameIndicator.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            generatedFrameIndicator.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        } finally {
+            commandBuffer.destroy();
+        }
+    }
+
+    private void recordIndicatorFill(
+            VkCommandBuffer nativeCommandBuffer,
+            MemoryStack stack,
+            VulkanTexture texture,
+            float red,
+            float green,
+            float blue
+    ) {
+        VkImageMemoryBarrier.Buffer toTransferDst = VkImageMemoryBarrier.calloc(1, stack)
+                .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                .srcAccessMask(0)
+                .dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .oldLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                .newLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .image(texture.handle())
+                .subresourceRange(colorSubresource(stack));
+        vkCmdPipelineBarrier(
+                nativeCommandBuffer,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                null,
+                null,
+                toTransferDst
+        );
+
+        VkClearColorValue clearColor = VkClearColorValue.calloc(stack)
+                .float32(stack.floats(red, green, blue, 1.0f));
+        VkImageSubresourceRange.Buffer clearRange = VkImageSubresourceRange.calloc(1, stack)
+                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .baseMipLevel(0)
+                .levelCount(1)
+                .baseArrayLayer(0)
+                .layerCount(1);
+        vkCmdClearColorImage(
+                nativeCommandBuffer,
+                texture.handle(),
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                clearColor,
+                clearRange
+        );
+
+        VkImageMemoryBarrier.Buffer toTransferSrc = VkImageMemoryBarrier.calloc(1, stack)
+                .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                .srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT)
+                .dstAccessMask(VK_ACCESS_TRANSFER_READ_BIT)
+                .oldLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+                .newLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .image(texture.handle())
+                .subresourceRange(colorSubresource(stack));
+        vkCmdPipelineBarrier(
+                nativeCommandBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                null,
+                null,
+                toTransferSrc
+        );
+    }
+
+    private void destroyIndicatorTextures() {
+        if (realFrameIndicator != null) {
+            realFrameIndicator.destroy();
+            realFrameIndicator = null;
+        }
+        if (generatedFrameIndicator != null) {
+            generatedFrameIndicator.destroy();
+            generatedFrameIndicator = null;
+        }
     }
 
     private void recreate() {

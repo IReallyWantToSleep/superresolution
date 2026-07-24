@@ -20,7 +20,6 @@ import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.streamline.StreamlineTypes;
 
@@ -104,7 +103,7 @@ public final class FrameGeneration {
         }
 
         if (backend == FrameGenerationBackend.NGX) {
-            List<VulkanTexture> generated = NgxFrameGenerationAdapter.prepareFrame(
+            NgxFrameGenerationAdapter.PrepareResult result = NgxFrameGenerationAdapter.prepareFrame(
                     frameResources,
                     constants,
                     mode,
@@ -112,7 +111,9 @@ public final class FrameGeneration {
                     colorHeight,
                     commandBuffer
             );
-            return generated == null ? FramePresentPlan.none() : FramePresentPlan.generated(generated);
+            return result == null
+                    ? FramePresentPlan.none()
+                    : FramePresentPlan.generated(result.generatedFrames(), result.realFrame());
         }
 
         disableFrameGeneration();

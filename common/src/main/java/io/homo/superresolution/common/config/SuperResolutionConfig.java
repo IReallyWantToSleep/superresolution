@@ -77,6 +77,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue SKIP_INIT_VULKAN;
     public static final BooleanValue ENABLE_RENDER_DOC;
     public static final BooleanValue ENABLE_IMGUI;
+    public static final BooleanValue ENABLE_PRESENT_INDICATOR;
     public static final BooleanValue GENERATE_MOTION_VECTORS;
     public static final BooleanValue PAUSE_GAME_ON_GUI;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
@@ -231,6 +232,11 @@ public class SuperResolutionConfig {
                 "debug/enable_debug",
                 () -> false,
                 "Enable debug mode"
+        );
+        ENABLE_PRESENT_INDICATOR = builder.defineBoolean(
+                "debug/enable_present_indicator",
+                () -> false,
+                "Stamp a small square onto every presented frame (white = rendered, cyan = generated) to visualize frame generation cadence"
         );
         ENABLE_EXPERIMENTAL_FEATURES = builder.defineBoolean(
                 "experiment/enable_experimental_features",
@@ -563,6 +569,14 @@ public class SuperResolutionConfig {
 
     public static void setEnableImgui(boolean value) {
         ENABLE_IMGUI.set(value);
+    }
+
+    public static boolean isEnablePresentIndicator() {
+        return ENABLE_PRESENT_INDICATOR.get();
+    }
+
+    public static void setEnablePresentIndicator(boolean value) {
+        ENABLE_PRESENT_INDICATOR.set(value);
     }
 
     public static boolean isEnableVulkanPresentation() {

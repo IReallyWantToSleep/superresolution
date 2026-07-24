@@ -1579,6 +1579,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
                 .setSaveConsumer(SuperResolutionConfig::setEnableImgui)
                 .build();
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_present_indicator"),
+                        SuperResolutionConfig.isEnablePresentIndicator())
+                .setDefaultValue(() -> false)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_present_indicator"))
+                .setSaveConsumer(SuperResolutionConfig::setEnablePresentIndicator)
+                .build();
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
         return frame;

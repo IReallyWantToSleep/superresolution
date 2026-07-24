@@ -23,15 +23,21 @@ import java.util.List;
  * must present each of them (in order) before the real frame, with pacing.
  */
 public final class FramePresentPlan {
-    private static final FramePresentPlan NONE = new FramePresentPlan(false, List.of());
-    private static final FramePresentPlan STREAMLINE = new FramePresentPlan(true, List.of());
+    private static final FramePresentPlan NONE = new FramePresentPlan(false, List.of(), null);
+    private static final FramePresentPlan STREAMLINE = new FramePresentPlan(true, List.of(), null);
 
     private final boolean frameGenerationActive;
     private final List<VulkanTexture> generatedFrames;
+    private final VulkanTexture realFrame;
 
-    private FramePresentPlan(boolean frameGenerationActive, List<VulkanTexture> generatedFrames) {
+    private FramePresentPlan(
+            boolean frameGenerationActive,
+            List<VulkanTexture> generatedFrames,
+            VulkanTexture realFrame
+    ) {
         this.frameGenerationActive = frameGenerationActive;
         this.generatedFrames = generatedFrames;
+        this.realFrame = realFrame;
     }
 
     public static FramePresentPlan none() {
@@ -42,11 +48,11 @@ public final class FramePresentPlan {
         return STREAMLINE;
     }
 
-    public static FramePresentPlan generated(List<VulkanTexture> generatedFrames) {
+    public static FramePresentPlan generated(List<VulkanTexture> generatedFrames, VulkanTexture realFrame) {
         if (generatedFrames == null || generatedFrames.isEmpty()) {
             return NONE;
         }
-        return new FramePresentPlan(true, List.copyOf(generatedFrames));
+        return new FramePresentPlan(true, List.copyOf(generatedFrames), realFrame);
     }
 
     public boolean frameGenerationActive() {
@@ -55,5 +61,15 @@ public final class FramePresentPlan {
 
     public List<VulkanTexture> generatedFrames() {
         return generatedFrames;
+    }
+
+    /**
+     * The NVNGX "output real" frame — the rendered frame passed through DLSS-G, which
+     * carries the DLSS-FG indicator so it stays steady across real and generated
+     * frames. Present this instead of the raw backbuffer for the real frame. Null when
+     * the raw backbuffer should be presented directly.
+     */
+    public VulkanTexture realFrame() {
+        return realFrame;
     }
 }
