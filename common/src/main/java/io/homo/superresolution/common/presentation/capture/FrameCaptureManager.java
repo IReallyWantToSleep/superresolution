@@ -149,8 +149,7 @@ public final class FrameCaptureManager {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null
                 || !minecraft.isGameLoadFinished()
-                || minecraft.level == null
-                || minecraft.screen != null) {
+                || minecraft.level == null) {
             return false;
         }
         if (minecraft.gameRenderer.getMainCamera() == null
