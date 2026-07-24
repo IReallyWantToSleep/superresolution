@@ -40,7 +40,6 @@ import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
 import io.homo.superresolution.common.lowlatency.LowLatency;
-import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -93,8 +92,8 @@ public class SuperResolutionConfig {
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
     public static final FloatValue THEME_CONTRAST_LEVEL;
     public static final StringValue THEME_COLOR;
+    public static final StringValue LOW_LATENCY_MODE;
     public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
-    public static final EnumValue<LowLatencyMode> LOW_LATENCY_MODE;
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final EnumValue<FrameGenerationProvider> FRAME_GENERATION_PROVIDER;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
@@ -320,11 +319,12 @@ public class SuperResolutionConfig {
                         SuperResolution.recreateAlgorithm()
         );
 
-        LOW_LATENCY_MODE = builder.defineEnum(
+        LOW_LATENCY_MODE = builder.defineString(
                 "low_latency/mode",
-                LowLatencyMode.class,
-                () -> LowLatencyMode.None,
-                "Low latency mode"
+                () -> "superresolution:none",
+                "Low latency mode",
+                value -> value != null
+                        && io.homo.superresolution.api.registry.LowLatencyRegistry.isRegistered(value)
         );
         LOW_LATENCY_MODE.onChange((oldValue, newValue) -> {
             LowLatency.setMode(newValue);
@@ -339,7 +339,7 @@ public class SuperResolutionConfig {
         );
 
         NVIDIA_REFLEX_MODE.onChange((oldValue, newValue) -> {
-            if (LowLatency.mode() == LowLatencyMode.NVReflex && LowLatency.lowLatency() != null) {
+            if ("superresolution:nv_reflex".equals(LowLatency.modeId()) && LowLatency.lowLatency() != null) {
                 LowLatency.lowLatency().refresh();
             }
         });
@@ -780,11 +780,11 @@ public class SuperResolutionConfig {
         THEME_CONTRAST_LEVEL.set(Math.max(-1.0f, Math.min(1.0f, value)));
     }
 
-    public static LowLatencyMode getLowLatencyMode() {
+    public static String getLowLatencyMode() {
         return LOW_LATENCY_MODE.get();
     }
 
-    public static void setLowLatencyMode(LowLatencyMode value) {
+    public static void setLowLatencyMode(String value) {
         LOW_LATENCY_MODE.set(value);
     }
 

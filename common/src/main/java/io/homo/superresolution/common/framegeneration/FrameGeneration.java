@@ -14,7 +14,6 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.framegeneration.constants.FGConstants;
 import io.homo.superresolution.common.framegeneration.constants.FGConstantsFeature;
-import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
@@ -202,7 +201,7 @@ public final class FrameGeneration {
         return modes.toArray(FrameGenerationMode[]::new);
     }
 
-    static FrameGenerationBackend activeBackend() {
+    public static FrameGenerationBackend activeBackend() {
         // The frame_generation/provider config is applied at startup: it decides whether
         // Streamline is initialized (VulkanPresentationFeature.shouldInitializeStreamline).
         // At runtime the backend follows Streamline's actual init state, so changing the
@@ -237,7 +236,7 @@ public final class FrameGeneration {
         }
         if (activeBackend() == FrameGenerationBackend.STREAMLINE) {
             // Streamline DLSS-G requires Reflex to drive its present pacing.
-            return SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex
+            return "superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode())
                     && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
         }
         return activeBackend() == FrameGenerationBackend.NGX;
@@ -264,9 +263,4 @@ public final class FrameGeneration {
                 && mode.generatedFrameCount() <= supportedGeneratedFrameCount();
     }
 
-    enum FrameGenerationBackend {
-        NONE,
-        STREAMLINE,
-        NGX
-    }
 }

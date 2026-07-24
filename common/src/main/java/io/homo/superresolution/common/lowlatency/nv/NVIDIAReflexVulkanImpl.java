@@ -10,31 +10,22 @@
 
 package io.homo.superresolution.common.lowlatency.nv;
 
-import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.api.registry.LowLatencyMarker;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
-import io.homo.superresolution.common.lowlatency.ILowLatency;
-import io.homo.superresolution.common.lowlatency.LowLatency;
-import io.homo.superresolution.common.lowlatency.LowLatencyMarker;
-import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import net.minecraft.client.Minecraft;
 
 import static org.lwjgl.vulkan.NVLowLatency2.*;
 
-/**
- * NVIDIA Reflex via VK_NV_low_latency2, used where Streamline's sl.reflex is
- * unavailable (Linux). Markers arrive through the same {@link LowLatency} facade
- * as the Streamline provider; present markers are resolved against the present
- * prepared by the swapchain so DLSS-FG frames report as out-of-band.
- */
-public final class NVIDIAReflexVulkan implements ILowLatency {
+
+public final class NVIDIAReflexVulkanImpl implements ReflexImplementation {
     private static final int PACING_WARMUP_FRAMES = 3;
 
     private OptionsKey lastAppliedOptions;
     private int pacingWarmupRemaining;
 
-    public NVIDIAReflexVulkan() {
+    public NVIDIAReflexVulkanImpl() {
         VulkanLowLatency.setActive(true);
     }
 
@@ -67,8 +58,12 @@ public final class NVIDIAReflexVulkan implements ILowLatency {
     }
 
     @Override
-    public void refresh() {
-        OptionsKey desired = new OptionsKey(reflexEnabled(), boostEnabled(), realFrameIntervalUs());
+    public void refresh(int reflexMode) {
+        OptionsKey desired = new OptionsKey(
+                reflexMode != NVIDIAReflexMode.OFF.ordinal(),
+                reflexMode == NVIDIAReflexMode.BOOST.ordinal(),
+                realFrameIntervalUs()
+        );
         if (desired.equals(lastAppliedOptions)) {
             return;
         }
@@ -90,16 +85,6 @@ public final class NVIDIAReflexVulkan implements ILowLatency {
             return;
         }
         VulkanLowLatency.sleep();
-    }
-
-    private static boolean reflexEnabled() {
-        return LowLatency.mode() == LowLatencyMode.NVReflex
-                && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
-    }
-
-    private static boolean boostEnabled() {
-        return LowLatency.mode() == LowLatencyMode.NVReflex
-                && SuperResolutionConfig.getNVIDIAReflexMode() == NVIDIAReflexMode.BOOST;
     }
 
     /**

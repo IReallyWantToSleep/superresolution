@@ -35,10 +35,10 @@ import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
-import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
-import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkan;
 import io.homo.superresolution.core.streamline.Streamline;
+import io.homo.superresolution.api.registry.LowLatencyDescription;
+import io.homo.superresolution.api.registry.LowLatencyRegistry;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.gui.download.MaterialResourcesList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
@@ -526,12 +526,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
     }
 
-    private OptionRequirement getLowLatencyModeItemRequirement(LowLatencyMode mode) {
-        return switch (mode) {
-            case None -> () -> !FrameGeneration.isFrameGenerationEnabled();
-            case NVReflex -> () -> LowLatency.isAvailable()
-                    && ((Streamline.isSupportedPlatform() && Streamline.isNativeAvailable())
-                    || NVIDIAReflexVulkan.isSupported());
+    private OptionRequirement getLowLatencyModeItemRequirement(LowLatencyDescription description) {
+        if (description == null) {
+            return OptionRequirement.all();
+        }
+        return () -> {
+            if (description.getId().equals("superresolution:none")) {
+                return !FrameGeneration.isFrameGenerationEnabled();
+            }
+            return LowLatency.isAvailable() && description.getRequirement().check().support();
         };
     }
 
@@ -543,7 +546,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private boolean isReflexConfigured() {
-        return SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex
+        return "superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode())
                 && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
     }
 
@@ -871,12 +874,22 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 container,
                 Text.translatable("superresolution.screen.config.category.low_latency"),
                 builder -> {
-                    builder.enumSelectorOption(
+                    LowLatencyDescription currentMode = LowLatencyRegistry.getDescriptionById(SuperResolutionConfig.getLowLatencyMode());
+                    if (currentMode == null) {
+                        currentMode = LowLatencyRegistry.getDescriptionById("superresolution:none");
+                    }
+                    LowLatencyDescription[] descriptions = LowLatencyRegistry.getDescriptions().values().toArray(new LowLatencyDescription[0]);
+
+                    @SuppressWarnings("unchecked")
+                    SelectionListOptionEntry<LowLatencyDescription>[] modeEntryRef = new SelectionListOptionEntry[1];
+
+                    modeEntryRef[0] = builder.selectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.low_latency_mode"),
-                                    LowLatencyMode.class,
-                                    SuperResolutionConfig.getLowLatencyMode())
-                            .setDefaultValue(LowLatencyMode.None)
-                            .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.lowlatencymode." + mode.name().toLowerCase()).getString())
+                                    currentMode,
+                                    descriptions)
+                            .setDefaultValue(() -> LowLatencyRegistry.getDescriptionById("superresolution:none"))
+                            .setNameProvider(LowLatencyDescription::getDisplayName)
+                            .setValuesSupplier(() -> new ArrayList<>(LowLatencyRegistry.getDescriptions().values()))
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
                             .setEnableRequirement(OptionRequirement.all(
                                     () -> supportsVulkanPresentation,
@@ -890,11 +903,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     ).getString()
                             )))
                             .setItemEnableRequirement(this::getLowLatencyModeItemRequirement)
-                            .setSaveConsumer(mode -> {
-                                SuperResolutionConfig.setLowLatencyMode(mode);
+                            .setSaveConsumer((Consumer<LowLatencyDescription>) description -> {
+                                SuperResolutionConfig.setLowLatencyMode(description.getId());
                                 refreshFrameGenerationOptions();
                             })
                             .build();
+
+                    // Built-in NVIDIA Reflex mode option. External providers render their registered options below.
                     builder.enumSelectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.nv_reflex_mode"),
                                     NVIDIAReflexMode.class,
@@ -902,16 +917,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setDefaultValue(NVIDIAReflexMode.OFF)
                             .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.nvreflexmode." + mode.name().toLowerCase()).getString())
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
-                            .setEnableRequirement(OptionRequirement.all(
-                                    () -> supportsVulkanPresentation,
-                                    SuperResolutionConfig::isEnableVulkanPresentation,
-                                    () -> SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex
-                            ))
+                            .setEnableRequirement(() -> "superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode()))
                             .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                     Text.translatable(
                                             !SuperResolutionConfig.isEnableVulkanPresentation()
                                                     ? "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
-                                                    : SuperResolutionConfig.getLowLatencyMode() != LowLatencyMode.NVReflex
+                                                    : !"superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode())
                                                     ? "superresolution.screen.config.options.tooltip.nv_reflex_mode.low_latency_required"
                                                     : "superresolution.screen.config.options.tooltip.nv_reflex_mode"
                                     ).getString()

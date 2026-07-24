@@ -10,11 +10,13 @@
 
 package io.homo.superresolution.common.lowlatency;
 
+import io.homo.superresolution.api.registry.LowLatencyDescription;
+import io.homo.superresolution.api.registry.LowLatencyMarker;
+import io.homo.superresolution.api.registry.LowLatencyProvider;
+import io.homo.superresolution.api.registry.LowLatencyRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
-import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflex;
-import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkan;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
@@ -24,32 +26,48 @@ import net.minecraft.client.Minecraft;
 import javax.annotation.Nullable;
 
 public final class LowLatency {
-    private static LowLatencyMode mode;
-    private static @Nullable ILowLatency lowLatency;
+    private static @Nullable LowLatencyDescription mode;
+    private static @Nullable LowLatencyProvider lowLatency;
+
+    static {
+        LowLatencyDescriptions.register();
+    }
 
     private LowLatency() {
     }
 
-    public static LowLatencyMode mode() {
-        return mode != null ? mode : SuperResolutionConfig.getLowLatencyMode();
+    public static LowLatencyDescription mode() {
+        if (mode == null) {
+            String configuredId = SuperResolutionConfig.getLowLatencyMode();
+            LowLatencyDescription description = LowLatencyRegistry.getDescriptionById(configuredId);
+            mode = description != null ? description : LowLatencyRegistry.getDescriptionById("superresolution:none");
+        }
+        return mode;
     }
 
-    public static @Nullable ILowLatency lowLatency() {
+    public static @Nullable LowLatencyProvider lowLatency() {
         return lowLatency;
     }
 
-    public static synchronized void setMode(LowLatencyMode newMode) {
-        LowLatencyMode selected = newMode == null ? LowLatencyMode.None : newMode;
-        if (mode == selected && lowLatency != null) {
+    public static String modeId() {
+        LowLatencyDescription current = mode();
+        return current != null ? current.getId() : "superresolution:none";
+    }
+
+    public static synchronized void setMode(String newModeId) {
+        String selected = newModeId == null ? "superresolution:none" : newModeId;
+        LowLatencyDescription description = LowLatencyRegistry.getDescriptionById(selected);
+        if (description == null) {
+            description = LowLatencyRegistry.getDescriptionById("superresolution:none");
+        }
+        if (mode == description && lowLatency != null) {
             lowLatency.refresh();
             return;
         }
         releaseProvider();
-        mode = selected;
-        lowLatency = createLowLatency();
-        if (lowLatency != null) {
-            lowLatency.refresh();
-        }
+        mode = description;
+        lowLatency = description.createProvider();
+        lowLatency.refresh();
     }
 
     public static int frameLimitUs() {
@@ -94,9 +112,9 @@ public final class LowLatency {
         }
         Streamline.nextFrame(frameIndex);
         VulkanLowLatency.nextFrame();
-        LowLatencyMode configuredMode = SuperResolutionConfig.getLowLatencyMode();
-        if (lowLatency == null || mode != configuredMode) {
-            setMode(configuredMode);
+        String configuredId = SuperResolutionConfig.getLowLatencyMode();
+        if (lowLatency == null || mode == null || !configuredId.equals(mode.getId())) {
+            setMode(configuredId);
         } else {
             lowLatency.refresh();
         }
@@ -116,14 +134,14 @@ public final class LowLatency {
         if (!SuperResolution.gameIsLoaded) {
             return;
         }
-        ILowLatency active = lowLatency;
+        LowLatencyProvider active = lowLatency;
         if (active != null) {
             active.sleep();
         }
     }
 
     public static void onDestructiveRebuild() {
-        ILowLatency active = lowLatency;
+        LowLatencyProvider active = lowLatency;
         if (active != null) {
             active.invalidatePacing();
         }
@@ -147,21 +165,11 @@ public final class LowLatency {
         mode = null;
     }
 
-    private static @Nullable ILowLatency createLowLatency() {
-        if (Streamline.isInitialized()) {
-            return new NVIDIAReflex();
-        }
-        if (NVIDIAReflexVulkan.isSupported()) {
-            return new NVIDIAReflexVulkan();
-        }
-        return null;
-    }
-
     private static void setMarker(LowLatencyMarker marker) {
         if (!SuperResolution.gameIsLoaded) {
             return;
         }
-        ILowLatency active = lowLatency;
+        LowLatencyProvider active = lowLatency;
         if (active != null) {
             active.setMarker(marker);
         }

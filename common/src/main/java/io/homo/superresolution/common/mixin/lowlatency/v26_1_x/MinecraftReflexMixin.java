@@ -20,8 +20,8 @@ package io.homo.superresolution.common.mixin.lowlatency.v26_1_x;
 
 #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.api.registry.LowLatencyDescription;
 import io.homo.superresolution.common.lowlatency.LowLatency;
-import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import net.minecraft.client.FramerateLimiter;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -56,7 +56,9 @@ public abstract class MinecraftReflexMixin {
 		require = 1
 	)
 	private void super_resolution$limitDisplayFps(int framerateLimit) {
-		if (!(LowLatency.isAvailable() && LowLatency.frameLimitUs() != 0 && LowLatency.mode() != LowLatencyMode.None) || !SuperResolution.gameIsLoaded) {
+		LowLatencyDescription mode = LowLatency.mode();
+		boolean lowLatencyActive = mode != null && !"superresolution:none".equals(mode.getId());
+		if (!(LowLatency.isAvailable() && LowLatency.frameLimitUs() != 0 && lowLatencyActive) || !SuperResolution.gameIsLoaded) {
 			FramerateLimiter.limitDisplayFPS(framerateLimit);
 		}
 	}
