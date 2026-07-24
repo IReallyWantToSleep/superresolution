@@ -20,6 +20,7 @@ import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.streamline.StreamlineTypes;
 
@@ -39,6 +40,7 @@ public final class FrameGeneration {
         FGConstantsFeature.initialize();
         FGConstantsFeature.register();
         StreamlineFrameGenerationAdapter.initialize();
+        NgxFrameGenerationAdapter.initialize();
         initialized = true;
     }
 
@@ -47,11 +49,12 @@ public final class FrameGeneration {
             return;
         }
         StreamlineFrameGenerationAdapter.shutdown();
+        NgxFrameGenerationAdapter.shutdown();
         FGConstantsFeature.shutdown();
         initialized = false;
     }
 
-    public static synchronized boolean prepareFrame(
+    public static synchronized FramePresentPlan prepareFrame(
             FrameResources frameResources,
             int colorWidth,
             int colorHeight,
@@ -67,50 +70,96 @@ public final class FrameGeneration {
                 || !frameResources.hasHudlessColor()
                 || !frameResources.hasDepth()
                 || !frameResources.hasMotionVector()) {
-            StreamlineFrameGenerationAdapter.disable();
-            return false;
+            disableFrameGeneration();
+            return FramePresentPlan.none();
         }
 
-        StreamlineTypes.FrameToken token = Streamline.currentFrame();
         FGConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
-        if (token == null
-                || token.nativeHandle == 0L
-                || token.frameIndex != frameResources.logicalFrameIndex()
-                || constants == null) {
-            StreamlineFrameGenerationAdapter.disable();
-            return false;
+        if (constants == null) {
+            disableFrameGeneration();
+            return FramePresentPlan.none();
         }
 
-        return StreamlineFrameGenerationAdapter.prepareFrame(
-                frameResources,
-                constants,
-                token,
-                mode,
-                colorWidth,
-                colorHeight,
-                colorFormat,
-                backBufferCount,
-                commandBuffer
-        );
+        FrameGenerationBackend backend = activeBackend();
+        if (backend == FrameGenerationBackend.STREAMLINE) {
+            StreamlineTypes.FrameToken token = Streamline.currentFrame();
+            if (token == null
+                    || token.nativeHandle == 0L
+                    || token.frameIndex != frameResources.logicalFrameIndex()) {
+                StreamlineFrameGenerationAdapter.disable();
+                return FramePresentPlan.none();
+            }
+            boolean prepared = StreamlineFrameGenerationAdapter.prepareFrame(
+                    frameResources,
+                    constants,
+                    token,
+                    mode,
+                    colorWidth,
+                    colorHeight,
+                    colorFormat,
+                    backBufferCount,
+                    commandBuffer
+            );
+            return prepared ? FramePresentPlan.streamline() : FramePresentPlan.none();
+        }
+
+        if (backend == FrameGenerationBackend.NGX) {
+            List<VulkanTexture> generated = NgxFrameGenerationAdapter.prepareFrame(
+                    frameResources,
+                    constants,
+                    mode,
+                    colorWidth,
+                    colorHeight,
+                    commandBuffer
+            );
+            return generated == null ? FramePresentPlan.none() : FramePresentPlan.generated(generated);
+        }
+
+        disableFrameGeneration();
+        return FramePresentPlan.none();
     }
 
     public static synchronized void finishPresent(
             FrameResources frameResources,
-            boolean frameGenerationEnabled
+            FramePresentPlan plan
     ) {
-        StreamlineFrameGenerationAdapter.finishPresent(frameResources, frameGenerationEnabled);
+        if (activeBackend() == FrameGenerationBackend.STREAMLINE) {
+            StreamlineFrameGenerationAdapter.finishPresent(
+                    frameResources,
+                    plan != null && plan.frameGenerationActive()
+            );
+        }
     }
 
     public static synchronized void disableFrameGeneration() {
         StreamlineFrameGenerationAdapter.disable();
+        NgxFrameGenerationAdapter.disable();
     }
 
     public static void invalidateHistory() {
         FGConstantsFeature.invalidateHistory();
     }
 
+    /**
+     * Number of interpolated frames the presentation layer must present itself for
+     * the next frame. Zero when disabled or when Streamline presents them.
+     */
+    public static synchronized int plannedGeneratedFrameCount() {
+        if (!initialized || activeBackend() != FrameGenerationBackend.NGX) {
+            return 0;
+        }
+        FrameGenerationMode mode = displayedMode();
+        if (!mode.isEnabled()) {
+            return 0;
+        }
+        return Math.min(
+                Math.max(1, mode.generatedFrameCount()),
+                NgxFrameGenerationAdapter.supportedGeneratedFrameCount()
+        );
+    }
+
     public static boolean isSupported() {
-        return dependenciesSatisfied() && StreamlineFrameGenerationAdapter.isAvailable();
+        return dependenciesSatisfied() && backendAvailable();
     }
 
     public static boolean isFrameGenerationEnabled() {
@@ -134,10 +183,10 @@ public final class FrameGeneration {
     }
 
     public static FrameGenerationMode[] availableModes() {
-        if (!dependenciesSatisfied() || !StreamlineFrameGenerationAdapter.isAvailable()) {
+        if (!isSupported()) {
             return new FrameGenerationMode[]{FrameGenerationMode.OFF};
         }
-        return availableModesForMaximum(StreamlineFrameGenerationAdapter.supportedGeneratedFrameCount());
+        return availableModesForMaximum(supportedGeneratedFrameCount());
     }
 
     static FrameGenerationMode[] availableModesForMaximum(int maximumGeneratedFrames) {
@@ -152,11 +201,45 @@ public final class FrameGeneration {
         return modes.toArray(FrameGenerationMode[]::new);
     }
 
+    static FrameGenerationBackend activeBackend() {
+        return switch (SuperResolutionConfig.getFrameGenerationProvider()) {
+            case STREAMLINE -> Streamline.isInitialized()
+                    ? FrameGenerationBackend.STREAMLINE
+                    : FrameGenerationBackend.NONE;
+            case NGX -> FrameGenerationBackend.NGX;
+            case AUTO -> Streamline.isInitialized()
+                    ? FrameGenerationBackend.STREAMLINE
+                    : FrameGenerationBackend.NGX;
+        };
+    }
+
+    private static boolean backendAvailable() {
+        return switch (activeBackend()) {
+            case STREAMLINE -> StreamlineFrameGenerationAdapter.isAvailable();
+            case NGX -> NgxFrameGenerationAdapter.isAvailable();
+            case NONE -> false;
+        };
+    }
+
+    private static int supportedGeneratedFrameCount() {
+        return switch (activeBackend()) {
+            case STREAMLINE -> StreamlineFrameGenerationAdapter.supportedGeneratedFrameCount();
+            case NGX -> NgxFrameGenerationAdapter.supportedGeneratedFrameCount();
+            case NONE -> 0;
+        };
+    }
+
     static boolean dependenciesSatisfied() {
-        return SuperResolutionConfig.isEnableVulkanPresentation()
-                && SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex
-                && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF
-                && SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
+        if (!SuperResolutionConfig.isEnableVulkanPresentation()
+                || SuperResolutionConfig.getInteropSyncMode() != InteropSyncMode.LowLatency) {
+            return false;
+        }
+        if (activeBackend() == FrameGenerationBackend.STREAMLINE) {
+            // Streamline DLSS-G requires Reflex to drive its present pacing.
+            return SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex
+                    && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
+        }
+        return activeBackend() == FrameGenerationBackend.NGX;
     }
 
     // FG only under shader_compat + loaded pack; vanilla/hack breaks UI presentation
@@ -177,7 +260,12 @@ public final class FrameGeneration {
             return mode == FrameGenerationMode.OFF;
         }
         return isSupported()
-                && mode.generatedFrameCount()
-                <= StreamlineFrameGenerationAdapter.supportedGeneratedFrameCount();
+                && mode.generatedFrameCount() <= supportedGeneratedFrameCount();
+    }
+
+    enum FrameGenerationBackend {
+        NONE,
+        STREAMLINE,
+        NGX
     }
 }

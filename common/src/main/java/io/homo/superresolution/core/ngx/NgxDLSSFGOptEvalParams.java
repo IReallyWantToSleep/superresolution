@@ -67,6 +67,7 @@ public final class NgxDLSSFGOptEvalParams {
     public boolean orthoProjection;
     public float motionVectorsInvalidValue;
     public boolean motionVectorsDilated;
+    public boolean motionVectorsJittered;
     public boolean menuDetectionEnabled;
     public float minRelativeLinearDepthObjectSeparation = 40.0f;
 }

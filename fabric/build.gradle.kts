@@ -34,7 +34,7 @@ repositories {
     }
     maven {
         name = "Terraformers"
-        url = uri("https://maven.terraformersmc.com/")
+        url = uri("https://maven.terraformersmc.com/repository/maven-public")
     }
     maven {
         name = "Modrinth"
@@ -52,7 +52,7 @@ repositories {
     }
     maven {
         name = "CaffeineMC"
-        url = uri("https://maven.caffeinemc.net/releases")
+        url = uri("https://maven.caffeinemc.net/releases" )
         mavenContent { releasesOnly() }
         content {
             includeGroup("net.caffeinemc")

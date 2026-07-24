@@ -30,8 +30,10 @@ import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.nio.IntBuffer;
 
+import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+import static org.lwjgl.vulkan.NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.VK_QUEUE_GRAPHICS_BIT;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
@@ -90,6 +92,10 @@ public final class VulkanPresentationFeature {
             target.addInstanceExtension(MemoryUtil.memUTF8(extensions.get(i)));
         }
         target.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        // Native Reflex (VK_NV_low_latency2) rides on the presentation swapchain
+        // and needs present ids to correlate latency markers with presents.
+        target.addDeviceExtension(VK_KHR_PRESENT_ID_EXTENSION_NAME);
+        target.addDeviceExtension(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
         renderSystem = target;
     }
 

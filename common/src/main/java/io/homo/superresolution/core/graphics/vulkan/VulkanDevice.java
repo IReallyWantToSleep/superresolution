@@ -269,7 +269,9 @@ public class VulkanDevice implements IDevice {
                 submitInfo.pSignalSemaphores(stack.longs(signalSemaphores));
             }
 
-            VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
+            synchronized (mainQueue.submitLock()) {
+                VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
+            }
             commandBuffer.markSubmitted();
         }
         reapCompletedTransientResources();
@@ -288,13 +290,16 @@ public class VulkanDevice implements IDevice {
                                             .address()
                             )
                     );
-            VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
+            synchronized (mainQueue.submitLock()) {
+                VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
+            }
             commandBuffer.markSubmitted();
         }
         reapCompletedTransientResources();
     }
 
     public void destroy() {
+        VulkanLowLatency.onDeviceDestroyed();
         waitForAllCommandBuffers();
         reapCompletedTransientResources();
         flushDeferredDestroys();

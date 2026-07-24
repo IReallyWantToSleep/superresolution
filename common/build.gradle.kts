@@ -309,6 +309,14 @@ val syncStreamlineDebugLibs = registerStreamlineSyncTask(
     "sl.dev"
 )
 
+// Cross-platform NVNGX DLSS-G snippet: the Linux binary ships inside the vendored
+// DLSS SDK and is renamed to the unversioned form the NGX loader searches for.
+val dlssgLinuxSnippet = rootProject.file(
+    "native/cpp/SRNativeNGX/third_party/DLSS/lib/Linux_x86_64/" +
+            (if (useDebugLib) "dev" else "rel") +
+            "/libnvidia-ngx-dlssg.so.310.7.0"
+)
+
 tasks.named<ProcessResources>("processResources") {
     dependsOn(syncStreamlineReleaseLibs, syncStreamlineDebugLibs)
 
@@ -329,5 +337,14 @@ tasks.named<ProcessResources>("processResources") {
     from(streamlineResourceLibDir.dir(if (useDebugLib) "sl.dev" else "sl.rel")) {
         include(requiredStreamlineLibraries)
         into("lib")
+    }
+
+    if (dlssgLinuxSnippet.isFile) {
+        from(dlssgLinuxSnippet) {
+            rename { "libnvidia-ngx-dlssg.so" }
+            into("lib")
+        }
+    } else {
+        logger.warn("DLSS-G Linux snippet not found at ${dlssgLinuxSnippet}; the jar will not bundle it")
     }
 }

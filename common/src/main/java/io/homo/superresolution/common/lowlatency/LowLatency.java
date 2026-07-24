@@ -14,8 +14,10 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflex;
+import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkan;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.streamline.Streamline;
 
 import javax.annotation.Nullable;
@@ -43,8 +45,8 @@ public final class LowLatency {
         }
         releaseProvider();
         mode = selected;
-        if (Streamline.isInitialized()) {
-            lowLatency = createLowLatency();
+        lowLatency = createLowLatency();
+        if (lowLatency != null) {
             lowLatency.refresh();
         }
     }
@@ -90,6 +92,7 @@ public final class LowLatency {
             return;
         }
         Streamline.nextFrame(frameIndex);
+        VulkanLowLatency.nextFrame();
         LowLatencyMode configuredMode = SuperResolutionConfig.getLowLatencyMode();
         if (lowLatency == null || mode != configuredMode) {
             setMode(configuredMode);
@@ -143,8 +146,14 @@ public final class LowLatency {
         mode = null;
     }
 
-    private static ILowLatency createLowLatency() {
-        return new NVIDIAReflex();
+    private static @Nullable ILowLatency createLowLatency() {
+        if (Streamline.isInitialized()) {
+            return new NVIDIAReflex();
+        }
+        if (NVIDIAReflexVulkan.isSupported()) {
+            return new NVIDIAReflexVulkan();
+        }
+        return null;
     }
 
     private static void setMarker(LowLatencyMarker marker) {

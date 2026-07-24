@@ -38,6 +38,7 @@ import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
+import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
@@ -94,6 +95,7 @@ public class SuperResolutionConfig {
     public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
     public static final EnumValue<LowLatencyMode> LOW_LATENCY_MODE;
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
+    public static final EnumValue<FrameGenerationProvider> FRAME_GENERATION_PROVIDER;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
     public static final BooleanValue ENABLE_OPTISCALER;
@@ -341,6 +343,13 @@ public class SuperResolutionConfig {
                 FrameGenerationMode.class,
                 () -> FrameGenerationMode.OFF,
                 "NVIDIA DLSS Frame Generation mode"
+        );
+
+        FRAME_GENERATION_PROVIDER = builder.defineEnum(
+                "frame_generation/provider",
+                FrameGenerationProvider.class,
+                () -> FrameGenerationProvider.AUTO,
+                "DLSS Frame Generation backend. AUTO uses Streamline when it is initialized (Windows) and the cross-platform NVNGX path otherwise."
         );
 
         SPECIAL = new SpecialConfigs(builder);
@@ -779,5 +788,13 @@ public class SuperResolutionConfig {
 
     public static void setFrameGenerationMode(FrameGenerationMode value) {
         FRAME_GENERATION_MODE.set(value);
+    }
+
+    public static FrameGenerationProvider getFrameGenerationProvider() {
+        return FRAME_GENERATION_PROVIDER.get();
+    }
+
+    public static void setFrameGenerationProvider(FrameGenerationProvider value) {
+        FRAME_GENERATION_PROVIDER.set(value);
     }
 }

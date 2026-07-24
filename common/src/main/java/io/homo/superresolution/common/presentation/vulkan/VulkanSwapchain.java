@@ -11,18 +11,22 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.framegeneration.FramePresentPlan;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBufferRing;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -32,6 +36,9 @@ import static org.lwjgl.vulkan.VK11.VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 final class VulkanSwapchain {
     private static final int MAX_IN_FLIGHT_FRAMES = 3;
     private static final int DESIRED_SWAPCHAIN_IMAGES = 3;
+    // FrameGenerationMode.X6 generates up to 5 frames; each needs its own acquire.
+    private static final int MAX_GENERATED_FRAMES = 5;
+    private static final int ACQUIRE_SYNC_SLOTS = MAX_IN_FLIGHT_FRAMES * (MAX_GENERATED_FRAMES + 1);
     private static final long[] NO_SEMAPHORES = new long[0];
     private static final int[] NO_STAGES = new int[0];
 
@@ -40,8 +47,10 @@ final class VulkanSwapchain {
     private final VulkanDevice device;
     private final VulkanCommandBufferRing commandBuffers =
             new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES);
-    private final long[] imageAvailable = new long[MAX_IN_FLIGHT_FRAMES];
+    private final PresentPacer pacer = new PresentPacer();
+    private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
     private long[] renderFinished = new long[0];
+    private VulkanCommandBufferRing generatedBlitCommandBuffers;
 
     private long swapchain = VK_NULL_HANDLE;
     private long[] images = new long[0];
@@ -53,6 +62,7 @@ final class VulkanSwapchain {
     private boolean vsync = true;
     private int imageFormat;
     private int imageCount;
+    private int plannedGeneratedFrames;
 
     VulkanSwapchain(VulkanPresentationContext context, VulkanSurface surface) {
         this.context = context;
@@ -115,6 +125,7 @@ final class VulkanSwapchain {
 
     public void suspendPresentation() {
         requestRecreate();
+        pacer.awaitIdle();
         device.getMainQueue().waitIdle();
     }
 
@@ -132,17 +143,32 @@ final class VulkanSwapchain {
         }
 
         try {
+            if (submission.paced()) {
+                return true;
+            }
             return queuePresent(submission.imageIndex());
         } finally {
-            FrameGeneration.finishPresent(frame, submission.frameGenerationEnabled());
+            FrameGeneration.finishPresent(frame, submission.plan());
         }
     }
 
     private PresentSubmission submitPresentFrame(FrameResources frame) {
         try {
+            pacer.awaitIdle();
+            pacer.throwIfFailed();
+            if (pacer.consumeRecreateRequest()) {
+                recreateRequested = true;
+            }
             if (!frame.hasFinalColor()) {
                 consumeWithoutPresentInternal(frame);
                 return null;
+            }
+            plannedGeneratedFrames = Math.min(
+                    FrameGeneration.plannedGeneratedFrameCount(),
+                    MAX_GENERATED_FRAMES
+            );
+            if (plannedGeneratedFrames > 0 && imageCount < plannedGeneratedFrames + 2) {
+                recreateRequested = true;
             }
             if (recreateRequested) {
                 recreate();
@@ -171,7 +197,7 @@ final class VulkanSwapchain {
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
             commandBuffer.begin();
-            boolean frameGenerationEnabled = FrameGeneration.prepareFrame(
+            FramePresentPlan plan = FrameGeneration.prepareFrame(
                     frame,
                     width,
                     height,
@@ -196,11 +222,71 @@ final class VulkanSwapchain {
 
             long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
             frame.markSubmitted(commandBuffer, fence);
-            return new PresentSubmission(imageIndex, frameGenerationEnabled);
+
+            if (!plan.generatedFrames().isEmpty() && submitGeneratedFrames(plan, imageIndex)) {
+                return new PresentSubmission(imageIndex, plan, true);
+            }
+            return new PresentSubmission(imageIndex, plan, false);
         } catch (Throwable throwable) {
             FrameGeneration.disableFrameGeneration();
             throw throwable;
         }
+    }
+
+    /**
+     * Acquires and blits one swapchain image per interpolated frame, then hands the
+     * whole batch (interpolated frames first, real frame last) to the pacer thread.
+     * Returns false when the batch could not be set up; the caller then presents the
+     * real frame inline.
+     */
+    private boolean submitGeneratedFrames(FramePresentPlan plan, int realImageIndex) {
+        List<VulkanTexture> generated = plan.generatedFrames();
+        if (imageCount < generated.size() + 2) {
+            requestRecreate();
+            return false;
+        }
+        List<Integer> presentOrder = new ArrayList<>(generated.size() + 1);
+        for (VulkanTexture generatedTexture : generated) {
+            int syncSlot = nextImageAvailableIndex();
+            int generatedImageIndex = acquireImage(syncSlot);
+            if (generatedImageIndex < 0) {
+                requestRecreate();
+                presentAcquiredUnpaced(presentOrder);
+                return false;
+            }
+            VulkanCommandBuffer blitCommandBuffer = generatedCommandBuffers().acquire(device);
+            blitCommandBuffer.reset();
+            blitCommandBuffer.begin();
+            recordBlit(blitCommandBuffer, generatedTexture, generatedImageIndex);
+            blitCommandBuffer.end();
+            device.submitCommandBuffer(
+                    blitCommandBuffer,
+                    new long[]{imageAvailable[syncSlot]},
+                    new int[]{VK_PIPELINE_STAGE_TRANSFER_BIT},
+                    new long[]{renderFinished[generatedImageIndex]}
+            );
+            presentOrder.add(generatedImageIndex);
+        }
+        presentOrder.add(realImageIndex);
+        // Present ids for the whole batch are fixed now so the next frame starting
+        // on the render thread cannot shift them under the pacer thread.
+        VulkanLowLatency.expectGeneratedBatch(generated.size());
+        pacer.submitBatch(presentOrder, index -> presentImage(index, index != realImageIndex));
+        return true;
+    }
+
+    private void presentAcquiredUnpaced(List<Integer> imageIndices) {
+        for (int imageIndex : imageIndices) {
+            queuePresent(imageIndex);
+        }
+    }
+
+    private VulkanCommandBufferRing generatedCommandBuffers() {
+        if (generatedBlitCommandBuffers == null) {
+            generatedBlitCommandBuffers =
+                    new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES * MAX_GENERATED_FRAMES);
+        }
+        return generatedBlitCommandBuffers;
     }
 
     public void consumeWithoutPresent(FrameResources frame) {
@@ -236,8 +322,13 @@ final class VulkanSwapchain {
     }
 
     public void destroy() {
+        pacer.shutdown();
         device.getMainQueue().waitIdle();
         commandBuffers.destroy();
+        if (generatedBlitCommandBuffers != null) {
+            generatedBlitCommandBuffers.destroy();
+            generatedBlitCommandBuffers = null;
+        }
         destroySwapchain();
         for (int i = 0; i < imageAvailable.length; i++) {
             if (imageAvailable[i] != VK_NULL_HANDLE) {
@@ -250,6 +341,27 @@ final class VulkanSwapchain {
     }
 
     private boolean queuePresent(int imageIndex) {
+        int result = presentImage(imageIndex, false);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateRequested = true;
+            return false;
+        }
+        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            throw new IllegalStateException("Failed to present Vulkan swapchain image, VkResult=" + result);
+        }
+        if (result == VK_SUBOPTIMAL_KHR) {
+            recreateRequested = true;
+        }
+        return true;
+    }
+
+    /**
+     * Presents one swapchain image and returns the raw VkResult. Safe to call from
+     * the pacer thread; the queue lock serializes it against command submissions.
+     * Interpolated frames present as out-of-band so Reflex pacing only tracks the
+     * real frame.
+     */
+    private int presentImage(int imageIndex, boolean outOfBandPresent) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
@@ -257,24 +369,23 @@ final class VulkanSwapchain {
                     .swapchainCount(1)
                     .pSwapchains(stack.longs(swapchain))
                     .pImageIndices(stack.ints(imageIndex));
+            long presentId = VulkanLowLatency.beginPresent(outOfBandPresent);
+            if (presentId != 0L) {
+                VkPresentIdKHR presentIdInfo = VkPresentIdKHR.calloc(stack)
+                        .sType(KHRPresentId.VK_STRUCTURE_TYPE_PRESENT_ID_KHR)
+                        .swapchainCount(1)
+                        .pPresentIds(stack.longs(presentId));
+                presentInfo.pNext(presentIdInfo.address());
+            }
             LowLatency.beginPresent();
-            int result;
             try {
-                result = vkQueuePresentKHR(device.getMainQueue().getQueue(), presentInfo);
+                synchronized (device.getMainQueue().submitLock()) {
+                    return vkQueuePresentKHR(device.getMainQueue().getQueue(), presentInfo);
+                }
             } finally {
                 LowLatency.endPresent();
+                VulkanLowLatency.endPresent();
             }
-            if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-                recreateRequested = true;
-                return false;
-            }
-            if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-                throw new IllegalStateException("Failed to present Vulkan swapchain image, VkResult=" + result);
-            }
-            if (result == VK_SUBOPTIMAL_KHR) {
-                recreateRequested = true;
-            }
-            return true;
         }
     }
 
@@ -391,6 +502,8 @@ final class VulkanSwapchain {
     }
 
     private void recreate() {
+        pacer.awaitIdle();
+        pacer.invalidatePacing();
         surface.refreshFramebufferSize();
         if (surface.framebufferWidth() <= 0 || surface.framebufferHeight() <= 0) {
             width = 0;
@@ -415,6 +528,9 @@ final class VulkanSwapchain {
             int[] extent = chooseExtent(capabilities);
             int requestedImageCount = chooseImageCount(capabilities);
 
+            // Reflex: the swapchain must opt into latency mode at creation for
+            // vkSetLatencySleepModeNV / latency markers to be legal on it.
+            boolean latencyMode = VulkanLowLatency.isSupported();
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR)
                     .surface(context.surface())
@@ -430,6 +546,12 @@ final class VulkanSwapchain {
                     .presentMode(presentMode)
                     .clipped(true)
                     .oldSwapchain(swapchain);
+            if (latencyMode) {
+                VkSwapchainLatencyCreateInfoNV latencyCreateInfo = VkSwapchainLatencyCreateInfoNV.calloc(stack)
+                        .sType(NVLowLatency2.VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV)
+                        .latencyModeEnable(true);
+                createInfo.pNext(latencyCreateInfo.address());
+            }
 
             LongBuffer swapchainPointer = stack.mallocLong(1);
             check(vkCreateSwapchainKHR(device.getVkDevice(), createInfo, null, swapchainPointer), "create swapchain");
@@ -453,9 +575,11 @@ final class VulkanSwapchain {
             width = extent[0];
             height = extent[1];
             renderFinished = createSemaphores(stack, newImages.length);
+            VulkanLowLatency.onSwapchainCreated(newSwapchain, latencyMode);
 
             destroySemaphores(oldRenderFinished);
             if (oldSwapchain != VK_NULL_HANDLE) {
+                VulkanLowLatency.onSwapchainDestroyed(oldSwapchain);
                 vkDestroySwapchainKHR(device.getVkDevice(), oldSwapchain, null);
             }
             recreateRequested = false;
@@ -532,7 +656,13 @@ final class VulkanSwapchain {
     }
 
     private int chooseImageCount(VkSurfaceCapabilitiesKHR capabilities) {
-        int requested = Math.max(capabilities.minImageCount(), DESIRED_SWAPCHAIN_IMAGES);
+        int desired = DESIRED_SWAPCHAIN_IMAGES;
+        if (plannedGeneratedFrames > 0) {
+            // Frame generation holds one acquired image per interpolated frame plus
+            // the real frame, so the swapchain needs that many beyond the minimum.
+            desired = Math.max(desired, capabilities.minImageCount() + plannedGeneratedFrames + 1);
+        }
+        int requested = Math.max(capabilities.minImageCount(), desired);
         return capabilities.maxImageCount() > 0
                 ? Math.min(requested, capabilities.maxImageCount())
                 : requested;
@@ -563,6 +693,7 @@ final class VulkanSwapchain {
         width = 0;
         height = 0;
         if (swapchain != VK_NULL_HANDLE) {
+            VulkanLowLatency.onSwapchainDestroyed(swapchain);
             vkDestroySwapchainKHR(device.getVkDevice(), swapchain, null);
             swapchain = VK_NULL_HANDLE;
         }
@@ -596,6 +727,6 @@ final class VulkanSwapchain {
                                  int colorSpace) {
     }
 
-    private record PresentSubmission(int imageIndex, boolean frameGenerationEnabled) {
+    private record PresentSubmission(int imageIndex, FramePresentPlan plan, boolean paced) {
     }
 }

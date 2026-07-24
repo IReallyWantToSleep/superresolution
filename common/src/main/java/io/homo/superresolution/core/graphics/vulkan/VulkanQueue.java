@@ -30,6 +30,9 @@ import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 public class VulkanQueue {
     private final VulkanDevice device;
     private final int queueFamilyIndex;
+    // Guards every vkQueueSubmit/vkQueuePresentKHR/vkQueueWaitIdle on this queue;
+    // required because the frame-generation pacer presents from its own thread.
+    private final Object submitLock = new Object();
     private VkQueue queue;
 
     public VulkanQueue(VulkanDevice device, int queueFamilyIndex) {
@@ -55,7 +58,13 @@ public class VulkanQueue {
         return queue;
     }
 
+    public Object submitLock() {
+        return submitLock;
+    }
+
     public void waitIdle() {
-        VK_CHECK(vkQueueWaitIdle(queue), "Failed to wait for queue idle");
+        synchronized (submitLock) {
+            VK_CHECK(vkQueueWaitIdle(queue), "Failed to wait for queue idle");
+        }
     }
 }
