@@ -32,6 +32,7 @@ import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
@@ -544,6 +545,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private boolean isReflexConfigured() {
         return SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex
                 && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
+    }
+
+    private OptionRequirement getFrameGenerationProviderItemRequirement(FrameGenerationProvider provider) {
+        return switch (provider) {
+            // NVNGX is cross-platform; AUTO resolves to NVNGX where Streamline is absent.
+            case AUTO, NGX -> OptionRequirement.all();
+            // Streamline is Windows-only.
+            case STREAMLINE -> () -> Streamline.isSupportedPlatform() && Streamline.isNativeAvailable();
+        };
     }
 
     private OptionRequirement getInteropSyncModeItemRequirement(InteropSyncMode mode) {
@@ -1220,6 +1230,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setDefaultValue(() -> SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.getDefault())
                             .setEnumNameProvider(format -> format.name())
                             .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
+                            .build();
+
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.frame_generation_provider"),
+                                    FrameGenerationProvider.class,
+                                    SuperResolutionConfig.getFrameGenerationProvider())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_provider"))
+                            .setDefaultValue(() -> FrameGenerationProvider.AUTO)
+                            .setEnumNameProvider(provider -> switch ((FrameGenerationProvider) provider) {
+                                case AUTO -> "Auto";
+                                case STREAMLINE -> "Streamline";
+                                case NGX -> "NVNGX";
+                            })
+                            .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
+                            .setSaveConsumer(SuperResolutionConfig::setFrameGenerationProvider)
                             .build();
                 }
         );

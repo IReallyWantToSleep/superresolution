@@ -11,6 +11,7 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -74,7 +75,13 @@ public final class VulkanPresentationFeature {
     }
 
     public static boolean shouldInitializeStreamline() {
-        return isRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
+        // Streamline is Windows-only, and it must not be initialized when the frame
+        // generation provider is NGX (the NVNGX path drives Reflex through Vulkan
+        // instead). This is read once at startup, so switching the provider needs a
+        // restart. AUTO keeps Streamline on Windows.
+        return isRequested()
+                && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS
+                && SuperResolutionConfig.getFrameGenerationProvider() != FrameGenerationProvider.NGX;
     }
 
     public static synchronized void prepare(VkRenderSystem target) {

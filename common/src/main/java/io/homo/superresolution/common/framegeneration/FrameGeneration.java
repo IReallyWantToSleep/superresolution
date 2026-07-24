@@ -203,15 +203,15 @@ public final class FrameGeneration {
     }
 
     static FrameGenerationBackend activeBackend() {
-        return switch (SuperResolutionConfig.getFrameGenerationProvider()) {
-            case STREAMLINE -> Streamline.isInitialized()
-                    ? FrameGenerationBackend.STREAMLINE
-                    : FrameGenerationBackend.NONE;
-            case NGX -> FrameGenerationBackend.NGX;
-            case AUTO -> Streamline.isInitialized()
-                    ? FrameGenerationBackend.STREAMLINE
-                    : FrameGenerationBackend.NGX;
-        };
+        // The frame_generation/provider config is applied at startup: it decides whether
+        // Streamline is initialized (VulkanPresentationFeature.shouldInitializeStreamline).
+        // At runtime the backend follows Streamline's actual init state, so changing the
+        // provider only takes effect after a restart. Streamline runs frame generation when
+        // it is initialized (Windows + provider != NGX); otherwise the cross-platform NVNGX
+        // path runs it.
+        return Streamline.isInitialized()
+                ? FrameGenerationBackend.STREAMLINE
+                : FrameGenerationBackend.NGX;
     }
 
     private static boolean backendAvailable() {
