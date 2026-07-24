@@ -17,6 +17,7 @@
  */
 
 import groovy.json.JsonSlurper
+import net.neoforged.nfrtgradle.CreateMinecraftArtifacts
 import utils.CurseForgeUploader
 import utils.ModrinthUploader
 import java.io.BufferedReader
@@ -61,6 +62,24 @@ allprojects {
     }
 
     if (project.name != "native") {
+        // On Linux, NeoForm's decompile step spawns Vineflower with only -Xmx4G, which
+        // OOMs on modern Minecraft. Route the tool JVM through a wrapper that raises the
+        // heap. MDG sets `toolsJavaExecutable` from its tools toolchain in the task's
+        // registration action, so we override it with a `named(...).configure` action,
+        // which runs after the registration action and thus wins the last-write.
+        if (System.getProperty("os.name").contains("linux", ignoreCase = true)) {
+            val toolWrapper = rootProject.file("script/java_tool_wrapper.sh")
+            plugins.withId("net.neoforged.moddev") {
+                afterEvaluate {
+                    // Configure after registration (create$8 already ran during MDG's
+                    // afterEvaluate) so this set wins the last-write over MDG's toolchain.
+                    tasks.withType(CreateMinecraftArtifacts::class.java).forEach {
+                        it.toolsJavaExecutable.set(toolWrapper.absolutePath)
+                    }
+                }
+            }
+        }
+
         //apply(plugin = "systems.manifold.manifold-gradle-plugin")
         //extensions.findByName("manifold")?.withGroovyBuilder {
         //    setProperty("manifoldVersion", rootProject.property("manifold_version"))
