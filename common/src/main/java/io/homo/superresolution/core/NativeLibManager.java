@@ -57,6 +57,7 @@ public class NativeLibManager {
     public static NativeLib LIB_STREAMLINE_REFLEX = null;
     public static NativeLib LIB_STREAMLINE_NVNGX_REFLEX = null;
     public static NativeLib LIB_STREAMLINE_NVNGX_DLSSG = null;
+    public static NativeLib LIB_NGX_DLSSG_SNIPPET = null;
 
     public static NativeLib LIB_STREAMLINE_PCL = null;
     private static boolean nativeApiAvailable;
@@ -100,9 +101,11 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
+            LIB_NGX_DLSSG_SNIPPET = new NativeLib("libnvidia-ngx-dlssg", false, false, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
+            libs.add(LIB_NGX_DLSSG_SNIPPET);
 
         } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
