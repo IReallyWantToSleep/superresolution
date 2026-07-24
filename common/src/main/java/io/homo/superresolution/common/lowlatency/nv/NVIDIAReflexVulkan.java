@@ -18,6 +18,7 @@ import io.homo.superresolution.common.lowlatency.LowLatencyMarker;
 import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
+import net.minecraft.client.Minecraft;
 
 import static org.lwjgl.vulkan.NVLowLatency2.*;
 
@@ -112,7 +113,7 @@ public final class NVIDIAReflexVulkan implements ILowLatency {
         if (framerateLimit <= 0 || framerateLimit >= 260) {
             return 0;
         }
-        int outputMultiplier = FrameGeneration.isFrameGenerationEnabled()
+        int outputMultiplier = FrameGeneration.isFrameGenerationEnabled() && Minecraft.getInstance().level != null
                 ? 1 + FrameGeneration.displayedMode().generatedFrameCount()
                 : 1;
         return (int) (((long) outputMultiplier * 1_000_000L + framerateLimit - 1) / framerateLimit);

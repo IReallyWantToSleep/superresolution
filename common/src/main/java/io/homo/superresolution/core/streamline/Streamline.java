@@ -64,8 +64,7 @@ public final class Streamline {
     }
 
     public static boolean isNativeAvailable() {
-        return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE != null
-                && NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE.available;
+        return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE != null;
     }
 
     public static boolean isInitialized() {

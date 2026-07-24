@@ -19,6 +19,7 @@ import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.streamline.Streamline;
+import net.minecraft.client.Minecraft;
 
 import javax.annotation.Nullable;
 
@@ -56,7 +57,7 @@ public final class LowLatency {
         if (framerateLimit <= 0 || framerateLimit >= 260) {
             return 0;
         }
-        int outputMultiplier = FrameGeneration.isFrameGenerationEnabled()
+        int outputMultiplier = FrameGeneration.isFrameGenerationEnabled() && Minecraft.getInstance().level != null
                 ? 1 + FrameGeneration.displayedMode().generatedFrameCount()
                 : 1;
         int outputFramerateLimit = framerateLimit * outputMultiplier;

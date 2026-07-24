@@ -54,7 +54,7 @@ public class VkRenderSystem implements IRenderSystem {
     public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport() &&(
              Platform.currentPlatform.isDevelopmentEnvironment() ||
                      SuperResolutionConfig.isEnableDebug()
-    );
+    ) && false;
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
 
     private final List<String> instanceExtensions = new ArrayList<>();

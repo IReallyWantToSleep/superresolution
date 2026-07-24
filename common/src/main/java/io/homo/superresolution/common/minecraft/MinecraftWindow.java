@@ -37,7 +37,7 @@ public class MinecraftWindow {
     }
 
     public static Vector2f getWindowSize() {
-        #if MC_VER >= MC_26_1_2
+        #if 1//MC_VER >= MC_26_1_2
         if (hasWindow()) {
             WindowAccessor window = (WindowAccessor) (Object) Minecraft.getInstance().getWindow();
             return new Vector2f(
@@ -80,10 +80,10 @@ public class MinecraftWindow {
     }
 
     public static int getWindowSourceWidth() {
-        return getWindowSourceSize()[0];
+        return (int) getWindowSize().x;
     }
 
     public static int getWindowSourceHeight() {
-        return getWindowSourceSize()[1];
+        return (int) getWindowSize().y;
     }
 }
