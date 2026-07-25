@@ -32,7 +32,9 @@ import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
-import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
+import io.homo.superresolution.api.registry.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.FrameGenerationRegistry;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
@@ -550,13 +552,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
     }
 
-    private OptionRequirement getFrameGenerationProviderItemRequirement(FrameGenerationProvider provider) {
-        return switch (provider) {
-            // NVNGX is cross-platform; AUTO resolves to NVNGX where Streamline is absent.
-            case AUTO, NGX -> OptionRequirement.all();
-            // Streamline is Windows-only.
-            case STREAMLINE -> () -> Streamline.isSupportedPlatform() && Streamline.isNativeAvailable();
-        };
+    private OptionRequirement getFrameGenerationProviderItemRequirement(FrameGenerationDescription description) {
+        if (description == null) {
+            return OptionRequirement.all();
+        }
+        // The automatic entry is always selectable; it resolves to whatever came up.
+        if (description.isAutomatic()) {
+            return OptionRequirement.all();
+        }
+        return () -> description.getRequirement().check().support();
     }
 
     private OptionRequirement getInteropSyncModeItemRequirement(InteropSyncMode mode) {
@@ -1243,19 +1247,23 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
                             .build();
 
-                    builder.enumSelectorOption(
+                    // Via FrameGeneration so its static initializer has populated the
+                    // registry before the list below is read.
+                    FrameGenerationDescription currentProvider = FrameGeneration.mode();
+                    FrameGenerationDescription[] providerDescriptions =
+                            FrameGenerationRegistry.getDescriptions().values().toArray(new FrameGenerationDescription[0]);
+
+                    builder.selectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.frame_generation_provider"),
-                                    FrameGenerationProvider.class,
-                                    SuperResolutionConfig.getFrameGenerationProvider())
+                                    currentProvider,
+                                    providerDescriptions)
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_provider"))
-                            .setDefaultValue(() -> FrameGenerationProvider.AUTO)
-                            .setEnumNameProvider(provider -> switch ((FrameGenerationProvider) provider) {
-                                case AUTO -> "Auto";
-                                case STREAMLINE -> "Streamline";
-                                case NGX -> "NVNGX";
-                            })
+                            .setDefaultValue(() -> FrameGenerationRegistry.getDescriptionById(FrameGenerationDescriptions.AUTO_ID))
+                            .setNameProvider(FrameGenerationDescription::getDisplayName)
+                            .setValuesSupplier(() -> new ArrayList<>(FrameGenerationRegistry.getDescriptions().values()))
                             .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
-                            .setSaveConsumer(SuperResolutionConfig::setFrameGenerationProvider)
+                            .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
+                                    SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
                             .build();
                 }
         );

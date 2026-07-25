@@ -38,7 +38,7 @@ import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
-import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
@@ -95,7 +95,7 @@ public class SuperResolutionConfig {
     public static final StringValue LOW_LATENCY_MODE;
     public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
-    public static final EnumValue<FrameGenerationProvider> FRAME_GENERATION_PROVIDER;
+    public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
     public static final BooleanValue ENABLE_OPTISCALER;
@@ -351,11 +351,14 @@ public class SuperResolutionConfig {
                 "NVIDIA DLSS Frame Generation mode"
         );
 
-        FRAME_GENERATION_PROVIDER = builder.defineEnum(
+        FRAME_GENERATION_PROVIDER = builder.defineString(
                 "frame_generation/provider",
-                FrameGenerationProvider.class,
-                () -> FrameGenerationProvider.AUTO,
-                "DLSS Frame Generation backend. AUTO uses Streamline when it is initialized (Windows) and the cross-platform NVNGX path otherwise."
+                () -> FrameGenerationDescriptions.AUTO_ID,
+                "DLSS Frame Generation backend. The automatic entry uses Streamline when it came up (Windows) and the cross-platform NVNGX path otherwise.",
+                // Not checked against the registry: backends register later (and external
+                // ones later still), so an id is only resolved when it is used. An
+                // unknown id falls back to the automatic entry in FrameGeneration.mode().
+                value -> value != null && !value.isBlank()
         );
 
         SPECIAL = new SpecialConfigs(builder);
@@ -804,11 +807,11 @@ public class SuperResolutionConfig {
         FRAME_GENERATION_MODE.set(value);
     }
 
-    public static FrameGenerationProvider getFrameGenerationProvider() {
+    public static String getFrameGenerationProvider() {
         return FRAME_GENERATION_PROVIDER.get();
     }
 
-    public static void setFrameGenerationProvider(FrameGenerationProvider value) {
+    public static void setFrameGenerationProvider(String value) {
         FRAME_GENERATION_PROVIDER.set(value);
     }
 }

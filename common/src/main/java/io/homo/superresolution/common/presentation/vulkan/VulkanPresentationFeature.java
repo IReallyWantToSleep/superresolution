@@ -11,7 +11,7 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
-import io.homo.superresolution.common.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -81,7 +81,7 @@ public final class VulkanPresentationFeature {
         // restart. AUTO keeps Streamline on Windows.
         return isRequested()
                 && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS
-                && SuperResolutionConfig.getFrameGenerationProvider() != FrameGenerationProvider.NGX;
+                && !FrameGenerationDescriptions.NGX_ID.equals(SuperResolutionConfig.getFrameGenerationProvider());
     }
 
     public static synchronized void prepare(VkRenderSystem target) {

@@ -8,15 +8,9 @@
  * (at your option) any later version.
  */
 
-package io.homo.superresolution.common.framegeneration;
+package io.homo.superresolution.api.event;
 
-/**
- * Backend used to run DLSS Frame Generation.
- * AUTO selects Streamline when it is initialized (Windows presentation)
- * and falls back to the cross-platform NVNGX path otherwise.
- */
-public enum FrameGenerationProvider {
-    AUTO,
-    STREAMLINE,
-    NGX
+import net.neoforged.bus.api.Event;
+
+public final class FrameGenerationRegisterEvent extends Event {
 }
