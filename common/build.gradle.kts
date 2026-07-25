@@ -7,6 +7,9 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.tasks.Jar
+// Imported because in a Kotlin build script `java` resolves to the Gradle extension,
+// which shadows the java.* package.
+import java.util.zip.ZipFile
 
 plugins {
     `java-library`
@@ -322,17 +325,65 @@ if (publishingApiToShnexus && minecraftVersionConfig != "1.21.1") {
 // resolve to the task's own container, since Task is ExtensionAware too.
 val apiMainOutput = extensions.getByType<SourceSetContainer>().named("main").get().output
 
+// Java 21, i.e. the 1.21.1 configuration. The published API is a single artifact shared
+// by every Minecraft version that consumes it, so it has to be readable by the oldest
+// toolchain among them. 1.20.1 (Java 17) is deliberately not part of that set: no
+// consumer targets it, and holding the API back to Java 17 for its sake would be a cost
+// with no benefit.
+val apiMaxClassFileMajor = 65
+val apiSourceVersionConfig = "1.21.1"
+
 val apiJar = tasks.register<Jar>("apiJar") {
     group = "publishing"
     description = "Classes-only jar for mods compiling against the Super Resolution API"
     archiveClassifier.set("api")
     from(apiMainOutput)
     exclude("lib/**")
+
+    // The API is version-independent - its public signatures are identical across every
+    // supported Minecraft version - but its class files are not: each version compiles at
+    // its own java_version (17, 21, 25). A newer class file cannot be read at all by an
+    // older toolchain, so building this from the wrong config would silently produce an
+    // artifact that breaks consumers targeting older Minecraft. Enforce it here rather
+    // than relying on remembering.
+    doLast {
+        val offenders = mutableListOf<String>()
+        ZipFile(archiveFile.get().asFile).use { zip ->
+            zip.entries().asSequence()
+                .filter { it.name.endsWith(".class") }
+                .forEach { entry ->
+                    zip.getInputStream(entry).use { input ->
+                        val header = input.readNBytes(8)
+                        if (header.size == 8) {
+                            val major = ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
+                            if (major > apiMaxClassFileMajor) {
+                                offenders += "${entry.name} (class file major $major)"
+                            }
+                        }
+                    }
+                }
+        }
+        if (offenders.isNotEmpty()) {
+            throw GradleException(
+                "The API jar contains class files newer than Java 21 (major $apiMaxClassFileMajor), "
+                    + "so mods built for older Minecraft versions could not read it. "
+                    + "Build it from the oldest configuration that consumers target: "
+                    + "-Pminecraft_version_config=$apiSourceVersionConfig\n"
+                    + offenders.take(5).joinToString("\n") { "  $it" }
+                    + if (offenders.size > 5) "\n  ... and ${offenders.size - 5} more" else ""
+            )
+        }
+    }
 }
 
 extensions.configure<PublishingExtension> {
     publications {
         register<MavenPublication>("api") {
+            // One artifact for every Minecraft version: the API's public signatures are
+            // identical across all of them and reference no Minecraft types, so there is
+            // nothing to qualify the coordinate with. The group has to stay lowercase or
+            // case-sensitive repository lookups miss it; it is taken from the root project
+            // now that that is lowercase there too.
             groupId = rootProject.group.toString()
             artifactId = "superresolution-api"
             version = "${rootProject.property("mod_version")}" + if (srIsDevBuild) "-SNAPSHOT" else ""
