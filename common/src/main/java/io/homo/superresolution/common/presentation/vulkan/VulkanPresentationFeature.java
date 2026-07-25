@@ -75,13 +75,14 @@ public final class VulkanPresentationFeature {
     }
 
     public static boolean shouldInitializeStreamline() {
-        // Streamline is Windows-only, and it must not be initialized when the frame
-        // generation provider is NGX (the NVNGX path drives Reflex through Vulkan
-        // instead). This is read once at startup, so switching the provider needs a
-        // restart. AUTO keeps Streamline on Windows.
+        // Streamline is Windows-only, and it must not be initialized when a backend that
+        // does not use it is selected (those drive Reflex through Vulkan instead). This
+        // is read once at startup, so switching the provider needs a restart. The
+        // automatic entry keeps Streamline on Windows.
         return isRequested()
                 && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS
-                && !FrameGenerationDescriptions.NGX_ID.equals(SuperResolutionConfig.getFrameGenerationProvider());
+                && FrameGenerationDescriptions.mayUseStreamline(
+                        SuperResolutionConfig.getFrameGenerationProvider());
     }
 
     public static synchronized void prepare(VkRenderSystem target) {

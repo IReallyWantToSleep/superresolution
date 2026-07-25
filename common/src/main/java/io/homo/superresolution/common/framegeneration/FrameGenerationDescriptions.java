@@ -20,11 +20,20 @@ import io.homo.superresolution.core.streamline.Streamline;
 public final class FrameGenerationDescriptions {
     public static final String AUTO_ID = "superresolution:auto";
     public static final String STREAMLINE_ID = "superresolution:streamline";
-    public static final String NGX_ID = "superresolution:ngx";
 
     private static boolean registered;
 
     private FrameGenerationDescriptions() {
+    }
+
+    /**
+     * Whether {@code providerId} may end up using Streamline, which decides at startup
+     * whether Streamline is initialized at all. True for the automatic entry (it can
+     * resolve to Streamline) and for Streamline itself; false for any other backend,
+     * including ones registered by other mods, which then run without the interposer.
+     */
+    public static boolean mayUseStreamline(String providerId) {
+        return AUTO_ID.equals(providerId) || STREAMLINE_ID.equals(providerId);
     }
 
     /**
@@ -60,14 +69,9 @@ public final class FrameGenerationDescriptions {
                         .build()
         );
 
-        FrameGenerationRegistry.register(
-                FrameGenerationDescription.builder()
-                        .id(NGX_ID)
-                        .displayName("NVNGX")
-                        .providerFactory(NgxFrameGenerationBackend::new)
-                        .build()
-        );
-
+        // The cross-platform NVNGX backend lives in the Wisteria mod, which registers it
+        // from this event. Without it Super Resolution has frame generation only where
+        // Streamline runs.
         SuperResolutionAPI.EVENT_BUS.post(new FrameGenerationRegisterEvent());
     }
 }

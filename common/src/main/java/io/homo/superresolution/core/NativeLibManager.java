@@ -70,7 +70,8 @@ public class NativeLibManager {
         OperatingSystem operatingSystem = new OperatingSystem();
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
             boolean shouldExtract = VulkanPresentationFeature.isRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
-            boolean shouldLoad = !FrameGenerationDescriptions.NGX_ID.equals(SuperResolutionConfig.getFrameGenerationProvider());
+            boolean shouldLoad = FrameGenerationDescriptions.mayUseStreamline(
+                    SuperResolutionConfig.getFrameGenerationProvider());
             LIB_SUPER_RESOLUTION = new NativeLib(
                     "SuperResolution",
                     true,
