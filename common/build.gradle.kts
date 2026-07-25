@@ -348,3 +348,77 @@ tasks.named<ProcessResources>("processResources") {
         logger.warn("DLSS-G Linux snippet not found at ${dlssgLinuxSnippet}; the jar will not bundle it")
     }
 }
+
+/*
+ * API publishing.
+ *
+ * Only classes are published, without the bundled natives: the mod jar is ~44MB, of which
+ * ~42MB is native libraries that a dependent mod never needs to compile against. The API
+ * jar is a couple of MB, which matters because the publish matrix is one artifact per
+ * Minecraft version per loader.
+ *
+ * This module is never remapped, so publishing from here also side-steps having to choose
+ * between `jar` and Loom's `remapJar` depending on whether the target Minecraft version is
+ * obfuscated.
+ *
+ * Development builds publish as -SNAPSHOT so they stay redeployable; the mod's own version
+ * (which carries +dev.<commit> and the graphics backend, and is what the Modrinth and
+ * CurseForge tasks consume) is deliberately left alone.
+ */
+apply(plugin = "maven-publish")
+
+val srIsDevBuild = (gradle.extensions.extraProperties.properties["isDev"] as? Boolean) == true
+
+// Resolved out here on purpose: inside the task configuration block `extensions` would
+// resolve to the task's own container, since Task is ExtensionAware too.
+val apiMainOutput = extensions.getByType<SourceSetContainer>().named("main").get().output
+
+val apiJar = tasks.register<Jar>("apiJar") {
+    group = "publishing"
+    description = "Classes-only jar for mods compiling against the Super Resolution API"
+    archiveClassifier.set("api")
+    from(apiMainOutput)
+    exclude("lib/**")
+}
+
+extensions.configure<PublishingExtension> {
+    publications {
+        register<MavenPublication>("api") {
+            groupId = rootProject.group.toString()
+            artifactId = "${rootProject.property("mod_id")}-api-${versionConfig.common.modArtifactMinecraftVer}"
+            version = "${rootProject.property("mod_version")}" + if (srIsDevBuild) "-SNAPSHOT" else ""
+            artifact(apiJar) { classifier = null }
+            pom {
+                name.set("Super Resolution API")
+                description.set("Compile-time API for mods extending Super Resolution")
+                url.set("https://github.com/187J3X1-114514/superresolution")
+                licenses {
+                    license {
+                        name.set("GNU General Public License v3.0 or later")
+                        url.set("https://www.gnu.org/licenses/gpl-3.0.txt")
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        val nexusUser = providers.gradleProperty("shnexusUsername").orNull
+        val nexusPassword = providers.gradleProperty("shnexusPassword").orNull
+        if (nexusUser != null && nexusPassword != null) {
+            maven {
+                name = "shnexus"
+                // Nexus keeps releases immutable, so development builds have to go to the
+                // snapshot repository to stay redeployable.
+                url = uri(
+                    if (srIsDevBuild) "https://nexus.nyat.icu/repository/maven-snapshots/"
+                    else "https://nexus.nyat.icu/repository/maven-releases/"
+                )
+                credentials {
+                    username = nexusUser
+                    password = nexusPassword
+                }
+            }
+        }
+    }
+}
