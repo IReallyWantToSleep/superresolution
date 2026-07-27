@@ -566,33 +566,14 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return LowLatencyGroups.NONE;
     }
 
-    private List<LowLatencyDescription> selectedLowLatencyOptionDescriptions() {
-        String groupId = SuperResolutionConfig.getLowLatencyMode();
-        List<LowLatencyDescription> descriptions = new ArrayList<>();
-        LowLatencyDescription groupDescription = LowLatencyRegistry.getDescriptionById(groupId);
-        if (groupDescription != null) {
-            descriptions.add(groupDescription);
-        }
-        String backendId = FrameGeneration.activeLowLatencyBackendId();
-        LowLatencyDescription backendDescription = LowLatencyRegistry.getDescriptionById(backendId);
-        if (backendDescription != null && backendDescription != groupDescription) {
-            descriptions.add(backendDescription);
-        }
-        return descriptions;
+    private OptionRequirement lowLatencyOptionDisplayRequirement(LowLatencyDescription description) {
+        return () -> SuperResolutionConfig.getLowLatencyMode().equals(description.getId())
+                || FrameGeneration.activeLowLatencyBackendId().equals(description.getId());
     }
 
-    private List<FrameGenerationDescription> selectedFrameGenerationOptionDescriptions() {
-        List<FrameGenerationDescription> descriptions = new ArrayList<>();
-        FrameGenerationDescription groupDescription = FrameGeneration.mode();
-        if (groupDescription != null) {
-            descriptions.add(groupDescription);
-        }
-        FrameGenerationDescription backendDescription =
-                FrameGenerationRegistry.getDescriptionById(FrameGeneration.activeId());
-        if (backendDescription != null && backendDescription != groupDescription) {
-            descriptions.add(backendDescription);
-        }
-        return descriptions;
+    private OptionRequirement frameGenerationOptionDisplayRequirement(FrameGenerationDescription description) {
+        return () -> SuperResolutionConfig.getFrameGenerationProvider().equals(description.getId())
+                || FrameGeneration.activeId().equals(description.getId());
     }
 
     private OptionRequirement getLowLatencyGroupItemRequirement(BackendGroup group) {
@@ -680,21 +661,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         }
         frameGenerationEntry.refreshDynamicValues();
         frameGenerationEntry.setSelectedValue(FrameGeneration.displayedMode());
-    }
-
-    private void rebuildContentFrame(String key, Frame replacement) {
-        Frame previous = contentFrames.put(key, replacement);
-        if (!key.equals(currentContentKey) || previous == null || previous != currentContentFrame) {
-            return;
-        }
-        interruptContentTransition();
-        getView().removeFrame(previous);
-        currentContentFrame = replacement;
-        contentLayout = getView().addFrame(replacement);
-        contentLayout.setFlexGrow(1f);
-        contentLayout.setHeightPercent(100);
-        contentLayout.setPadding(YogaEdge.ALL, 0);
-        view.markLayoutDirty();
     }
 
     private Frame createGeneralFrame() {
@@ -1023,17 +989,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setSaveConsumer((Consumer<BackendGroup>) group -> {
                                 SuperResolutionConfig.setLowLatencyMode(group.getId());
                                 LowLatency.setMode(group.getId());
-                                rebuildContentFrame("general", createGeneralFrame());
+                                refreshFrameGenerationOptions();
                             })
                             .build();
 
-                    String selectedGroupId = SuperResolutionConfig.getLowLatencyMode();
-                    for (LowLatencyDescription description : selectedLowLatencyOptionDescriptions()) {
+                    for (LowLatencyDescription description : LowLatencyRegistry.getDescriptions().values()) {
                         for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
                             buildSpecialConfigOption(
                                     builder,
                                     option,
-                                    () -> selectedGroupId.equals(SuperResolutionConfig.getLowLatencyMode()),
+                                    null,
+                                    lowLatencyOptionDisplayRequirement(description),
                                     this::refreshFrameGenerationOptions
                             );
                         }
@@ -1364,19 +1330,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setNameProvider(d -> d.getDisplayName().getString())
                             .setValuesSupplier(this::frameGenerationProviderEntries)
                             .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
-                            .setSaveConsumer((Consumer<FrameGenerationDescription>) description -> {
-                                SuperResolutionConfig.setFrameGenerationProvider(description.getId());
-                                rebuildContentFrame("advanced", createAdvancedFrame());
-                            })
+                            .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
+                                    SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
                             .build();
 
-                    String selectedProviderId = SuperResolutionConfig.getFrameGenerationProvider();
-                    for (FrameGenerationDescription description : selectedFrameGenerationOptionDescriptions()) {
+                    for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
                         for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
                             buildSpecialConfigOption(
                                     builder,
                                     option,
-                                    () -> selectedProviderId.equals(SuperResolutionConfig.getFrameGenerationProvider()),
+                                    null,
+                                    frameGenerationOptionDisplayRequirement(description),
                                     null
                             );
                         }
@@ -1584,7 +1548,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private void buildSpecialConfigOption(OptionBuilder builder, SpecialConfigDescription<?> desc) {
-        buildSpecialConfigOption(builder, desc, null, null);
+        buildSpecialConfigOption(builder, desc, null, null, null);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1592,6 +1556,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             OptionBuilder builder,
             SpecialConfigDescription<?> desc,
             @Nullable OptionRequirement enableRequirement,
+            @Nullable OptionRequirement displayRequirement,
             @Nullable Runnable afterSave
     ) {
         Text optionName = Text.literal(desc.getName().getString());
@@ -1611,6 +1576,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 }
                 if (enableRequirement != null) {
                     opt.setEnableRequirement(enableRequirement);
+                }
+                if (displayRequirement != null) {
+                    opt.setDisplayRequirement(displayRequirement);
                 }
                 opt.build();
                 break;
@@ -1640,6 +1608,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 }
                 if (enableRequirement != null) {
                     opt.setEnableRequirement(enableRequirement);
+                }
+                if (displayRequirement != null) {
+                    opt.setDisplayRequirement(displayRequirement);
                 }
                 opt.build();
                 break;
@@ -1673,6 +1644,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 }
                 if (enableRequirement != null) {
                     opt.setEnableRequirement(enableRequirement);
+                }
+                if (displayRequirement != null) {
+                    opt.setDisplayRequirement(displayRequirement);
                 }
                 opt.build();
                 break;
