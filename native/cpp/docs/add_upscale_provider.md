@@ -10,7 +10,9 @@ Note: 除非你要添加的算法需要与C++本机库交互（截止0.8.2-alpha
 
 SR模组通过一个统一的 `SRAPI` 接口进行抽象。每个超分辨率算法（如 FSR, XeSS）都是一个独立的“提供器”（Provider）。SR模组通过加载这些提供器模块（动态链接库），并调用其标准化的函数来实现超分辨率功能。
 
-Note: `SRAPI`接口设计时完全不考虑D3D，所有提供器均假设运行在OpenGL或Vulkan环境中。 ~~*你问为什么就是懒*~~
+Note: `SRAPI`支持OpenGL、Vulkan和Direct3D 12。D3D12句柄在公共ABI中保持为不透明指针，
+因此非Windows平台不需要包含`d3d12.h`。D3D12提供器应在自己的Windows实现中将这些句柄转换为
+`ID3D12Device`、`ID3D12GraphicsCommandList`和`ID3D12Resource`。
 
 ### 关键接口和结构体 (`sr_api.h`)
 

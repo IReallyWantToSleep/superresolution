@@ -71,6 +71,17 @@ extern "C" {
         SRGetFuncAddress instanceProcAddr;
     } SRVulkanDeviceInfo;
 
+    /**
+     * Direct3D 12 device information.
+     *
+     * The handle is intentionally opaque so the SRAPI headers remain
+     * consumable on non-Windows platforms without including d3d12.h.
+     * D3D12 providers reinterpret it as an ID3D12Device pointer.
+     */
+    typedef struct SRD3D12DeviceInfo {
+        void *device;
+    } SRD3D12DeviceInfo;
+
     typedef struct SRCommandBufferOpenGL {
     } SRCommandBufferOpenGL;
 
@@ -78,12 +89,20 @@ extern "C" {
         VkCommandBuffer commandBuffer;
     } SRCommandBufferVulkan;
 
+    /**
+     * Opaque ID3D12GraphicsCommandList pointer.
+     */
+    typedef struct SRCommandBufferD3D12 {
+        void *commandList;
+    } SRCommandBufferD3D12;
+
     typedef struct SRDispatchCommandBufferInfo {
         SRRenderApiType renderApiType;
 
         union {
             SRCommandBufferOpenGL opengl;
             SRCommandBufferVulkan vulkan;
+            SRCommandBufferD3D12 d3d12;
         } apiCommandBuffer;
     } SRDispatchCommandBufferInfo;
 
@@ -98,6 +117,7 @@ extern "C" {
         union {
             SROpenGLDeviceInfo opengl;
             SRVulkanDeviceInfo vulkan;
+            SRD3D12DeviceInfo d3d12;
         } renderDeviceInfo;
 
         SRVectorUint2 upscaledSize;
@@ -112,6 +132,7 @@ extern "C" {
         SRTextureResourceDescription desc;
         void *handle;
         void *imageView; // 可选
+        SRResourceStates state;
     } SRTextureResource;
 
     typedef struct SRDispatchUpscaleDesc {

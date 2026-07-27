@@ -1,6 +1,6 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,23 +18,29 @@
 
 package io.homo.superresolution.srapi;
 
-public enum SRRenderApiType {
-    VULKAN(0),
-    OPENGL(1),
-    D3D12(2);
+/**
+ * Opaque Direct3D 12 device information passed through SRAPI.
+ *
+ * <p>{@code device} is the native address of an {@code ID3D12Device}.
+ * Keeping the value opaque lets the common Java API expose D3D12 without
+ * adding a platform-specific Java binding dependency.</p>
+ */
+public class SRD3D12DeviceInfo {
+    public long device;
 
-    public final int value;
-
-    SRRenderApiType(int value) {
-        this.value = value;
+    public SRD3D12DeviceInfo() {
+        this(0);
     }
 
-    public static SRRenderApiType fromValue(int value) {
-        for (SRRenderApiType type : values()) {
-            if (type.value == value) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown SRRenderApiType value: " + value);
+    public SRD3D12DeviceInfo(long device) {
+        this.device = device;
+    }
+
+    public long getDevice() {
+        return device;
+    }
+
+    public void setDevice(long device) {
+        this.device = device;
     }
 }

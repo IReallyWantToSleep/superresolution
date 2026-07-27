@@ -21,11 +21,14 @@ package io.homo.superresolution.srapi;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
+import java.util.EnumSet;
+
 public class SRTextureResource {
     public SRTextureResourceDescription description;
     public ITexture texture;
     public long handle;
     public long imageView = -1;
+    public int state = SRResourceStates.COMPUTE_READ.value;
 
 
     public SRTextureResource(ITexture texture) {
@@ -37,8 +40,37 @@ public class SRTextureResource {
         }
     }
 
+    /**
+     * Creates an SRAPI resource around an opaque native graphics resource.
+     * This is used by APIs such as D3D12 that do not yet implement ITexture.
+     */
+    public SRTextureResource(long handle, SRTextureResourceDescription description) {
+        this(handle, description, EnumSet.of(SRResourceStates.COMPUTE_READ));
+    }
+
+    public SRTextureResource(
+            long handle,
+            SRTextureResourceDescription description,
+            EnumSet<SRResourceStates> states) {
+        this.texture = null;
+        this.description = description;
+        this.handle = handle;
+        this.imageView = 0;
+        this.state = SRResourceStates.toBitmask(states);
+    }
+
     public long getHandle() {
-        this.handle = texture.handle();
+        if (texture != null) {
+            this.handle = texture.handle();
+        }
         return handle;
+    }
+
+    public EnumSet<SRResourceStates> getStates() {
+        return SRResourceStates.fromBitmask(state);
+    }
+
+    public void setStates(EnumSet<SRResourceStates> states) {
+        this.state = SRResourceStates.toBitmask(states);
     }
 }

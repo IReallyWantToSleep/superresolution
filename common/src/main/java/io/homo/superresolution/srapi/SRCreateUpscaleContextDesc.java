@@ -59,6 +59,10 @@ public class SRCreateUpscaleContextDesc implements AutoCloseable {
      * Vulkan设备信息（当renderApiType为VULKAN时使用）
      */
     private SRVulkanDeviceInfo vulkanDeviceInfo;
+    /**
+     * Direct3D 12设备信息（当renderApiType为D3D12时使用）
+     */
+    private SRD3D12DeviceInfo d3d12DeviceInfo;
 
     private SRCreateUpscaleContextDesc() {
         this.messageCallback = 0;
@@ -98,6 +102,23 @@ public class SRCreateUpscaleContextDesc implements AutoCloseable {
         return desc;
     }
 
+    /**
+     * 创建Direct3D 12上下文描述符
+     */
+    public static SRCreateUpscaleContextDesc createD3D12(
+            SRD3D12DeviceInfo deviceInfo,
+            Vector2i upscaledSize,
+            Vector2i renderSize,
+            EnumSet<SRUpscaleContextCreateFlags> flags) {
+        SRCreateUpscaleContextDesc desc = new SRCreateUpscaleContextDesc();
+        desc.renderApiType = SRRenderApiType.D3D12;
+        desc.d3d12DeviceInfo = deviceInfo;
+        desc.upscaledSize = upscaledSize;
+        desc.renderSize = renderSize;
+        desc.flags = flags;
+        return desc;
+    }
+
     public SRRenderApiType getRenderApiType() {
         return renderApiType;
     }
@@ -108,6 +129,10 @@ public class SRCreateUpscaleContextDesc implements AutoCloseable {
 
     public SRVulkanDeviceInfo getVulkanDeviceInfo() {
         return vulkanDeviceInfo;
+    }
+
+    public SRD3D12DeviceInfo getD3D12DeviceInfo() {
+        return d3d12DeviceInfo;
     }
 
     public Vector2i getUpscaledSize() {
