@@ -41,21 +41,36 @@ The Java/JNI layer mirrors those values with `long` native addresses. Raw
 D3D12 resources can be created with the `SRTextureResource(long, description,
 states)` constructor.
 
+## Renderer interop
+
+`D3D12InteropAlgorithm` implements the renderer-facing half as a sibling to
+`VulkanInteropAlgorithm`. The initial implementation deliberately uses a
+single serial resource set:
+
+1. query OpenGL's `GL_DEVICE_LUID_EXT` and create D3D12 on the matching DXGI
+   adapter;
+2. create five D3D12-owned shared committed textures for color, depth, motion
+   vectors, exposure, and output;
+3. import the resource handles into OpenGL with
+   `GL_EXT_memory_object_win32`;
+4. import a shared D3D12 timeline fence with `GL_EXT_semaphore_win32`;
+5. preprocess the Minecraft inputs in OpenGL, signal ownership to D3D12,
+   dispatch FFX API, signal ownership back to OpenGL, and flip the output into
+   the normal renderer texture.
+
+`FfxFSR4D3D12` supplies the FSR-specific context and dispatch descriptions.
+The algorithm is registered as `fsr4_d3d12` on Windows when the required
+OpenGL extensions are available. The signed DLL remains an explicit external
+resource and must be selected by the user.
+
 ## Prototype boundary
 
-This change makes SRAPI and its FSR provider D3D12-capable, but Minecraft still
-renders through OpenGL or the project's Vulkan path. A complete in-game FSR
-4.1 implementation additionally needs a Windows graphics interop layer that:
-
-- creates a D3D12 device on the same physical adapter;
-- shares the color, depth, motion-vector, exposure, and output resources with
-  the renderer;
-- translates resource layouts/states correctly; and
-- synchronizes OpenGL/Vulkan work with the D3D12 command queue and fences.
-
-That interop work belongs above SRAPI and should be implemented as a sibling to
-the existing `VulkanInteropAlgorithm`; it is intentionally not hidden inside
-the FFX provider.
+The resource import, fence round trip, and FFX command recording/execution have
+been validated in standalone smoke tests on an AMD Radeon RX 7900 XT. The
+remaining work is integration testing inside Minecraft, including validation
+of motion-vector/depth conventions and rendered image quality. A future
+high-performance mode can add multiple in-flight resource sets after the
+serial path is proven in game.
 
 ## Provider lifecycle
 
