@@ -704,7 +704,7 @@ extern "C" {
                              NVGscissor *scissor, float fringe, float strokeWidth, const NVGpath *paths, int npaths);
 
         void (*renderTriangles)(void *uptr, NVGpaint *paint, NVGcompositeOperationState compositeOperation,
-                                NVGscissor *scissor, const NVGvertex *verts, int nverts, float fringe);
+                                NVGscissor *scissor, const NVGvertex *verts, int nverts, float fringe, int fontImage);
 
         void (*renderDelete)(void *uptr);
     };

@@ -291,7 +291,7 @@ static void rhiFlushCallback(void *, float viewWidth, float viewHeight,
                              const void *verts, int nverts,
                              const void *paths, int npaths,
                              const void *calls, int ncalls,
-                             const unsigned char *uniforms, int uniformBytes, int fragSize) {
+                             const unsigned char *uniforms, int uniformBytes, int fragSize, int callStride) {
     if (!g0_envForCallback) {
         return;
     }
@@ -305,14 +305,14 @@ static void rhiFlushCallback(void *, float viewWidth, float viewHeight,
     jmethodID method = env->GetStaticMethodID(
             bridgeClass,
             "nFlush",
-            "(FFLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;II)V");
+            "(FFLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;III)V");
     if (!method) {
         return;
     }
 
     int vertsBytes = nverts * (int) sizeof(NVGvertex);
     int pathsBytes = npaths * (int) sizeof(NVGRHIPath);
-    int callsBytes = ncalls * (int) sizeof(NVGRHICall);
+    int callsBytes = ncalls * callStride;
 
     jobject vertsBuffer = makeDirectBuffer(env, verts, vertsBytes);
     jobject pathsBuffer = makeDirectBuffer(env, paths, pathsBytes);
@@ -332,7 +332,8 @@ static void rhiFlushCallback(void *, float viewWidth, float viewHeight,
             ncalls,
             uniformsBuffer,
             uniformBytes,
-            fragSize);
+            fragSize,
+            callStride);
 
     if (vertsBuffer) env->DeleteLocalRef(vertsBuffer);
     if (pathsBuffer) env->DeleteLocalRef(pathsBuffer);

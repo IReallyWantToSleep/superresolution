@@ -152,13 +152,8 @@ public final class SuperResolution implements Destroyable {
 
         OptiScalerLoader.loadConfiguredDll();
         #if MC_VER != MC_26_2
-        boolean streamlineReady = Streamline.prepareEarly();
-        if (VulkanPresentationFeature.shouldInitializeStreamline() && !streamlineReady) {
-            IllegalStateException failure = new IllegalStateException(
-                    "Streamline is required for Vulkan presentation on Windows"
-            );
-            VulkanPresentationFeature.disableAfterFailure(failure);
-            throw failure;
+        if (VulkanPresentationFeature.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
+            LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
         }
         #endif
     }

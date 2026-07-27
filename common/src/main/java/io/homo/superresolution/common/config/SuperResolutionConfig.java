@@ -37,6 +37,7 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
+import io.homo.superresolution.api.registry.FrameGenerationGroups;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.lowlatency.LowLatency;
@@ -808,7 +809,17 @@ public class SuperResolutionConfig {
     }
 
     public static String getFrameGenerationProvider() {
-        return FRAME_GENERATION_PROVIDER.get();
+        String stored = FRAME_GENERATION_PROVIDER.get();
+        // Configurations written before the algorithm-group split named a concrete backend;
+        // both of those backends now live in the DLSS FG group. Normalized on first read.
+        String migrated = switch (stored) {
+            case "superresolution:streamline", "wisteria:ngx" -> FrameGenerationGroups.DLSS_FG.getId();
+            default -> stored;
+        };
+        if (!migrated.equals(stored)) {
+            FRAME_GENERATION_PROVIDER.set(migrated);
+        }
+        return migrated;
     }
 
     public static void setFrameGenerationProvider(String value) {

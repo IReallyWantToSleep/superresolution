@@ -260,54 +260,6 @@ artifacts {
 }
 
 val useDebugLib = gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true
-val streamlineBinDir = rootProject.file(
-    providers.gradleProperty("streamline_bin_dir").orElse("K:/sl/bin/x64").get()
-)
-val streamlineResourceLibDir = layout.projectDirectory.dir("src/main/resources/lib")
-val requiredStreamlineLibraries = listOf(
-    "NvLowLatencyVk.dll",
-    "sl.common.dll",
-    "sl.dlss_g.dll",
-    "sl.interposer.dll",
-    "sl.pcl.dll",
-    "sl.reflex.dll",
-    "nvngx_dlssg.dll"
-)
-
-fun registerStreamlineSyncTask(
-    taskName: String,
-    sourceDir: File,
-    targetDirName: String
-) = tasks.register<Sync>(taskName) {
-    group = "build"
-    description = "Copy required Streamline libraries into $targetDirName"
-
-    from(sourceDir) {
-        include(requiredStreamlineLibraries)
-    }
-    into(streamlineResourceLibDir.dir(targetDirName))
-
-    doFirst {
-        val missingLibraries = requiredStreamlineLibraries.filterNot { sourceDir.resolve(it).isFile }
-        if (missingLibraries.isNotEmpty()) {
-            throw GradleException(
-                "Streamline library source is incomplete: ${sourceDir.absolutePath}; missing: " +
-                        missingLibraries.joinToString()
-            )
-        }
-    }
-}
-
-val syncStreamlineReleaseLibs = registerStreamlineSyncTask(
-    "syncStreamlineReleaseLibs",
-    streamlineBinDir,
-    "sl.rel"
-)
-val syncStreamlineDebugLibs = registerStreamlineSyncTask(
-    "syncStreamlineDebugLibs",
-    streamlineBinDir.resolve("development"),
-    "sl.dev"
-)
 
 // Cross-platform NVNGX DLSS-G snippet: the Linux binary ships inside the vendored
 // DLSS SDK and is renamed to the unversioned form the NGX loader searches for.
@@ -318,25 +270,10 @@ val dlssgLinuxSnippet = rootProject.file(
 )
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(syncStreamlineReleaseLibs, syncStreamlineDebugLibs)
-
     if (useDebugLib) {
         exclude("**/libSuperResolution*+*+release.*")
     } else {
         exclude("**/libSuperResolution*+*+debug.*")
-    }
-
-    exclude(
-        "lib/sl.dev/**",
-        "lib/sl.rel/**",
-        "lib/sl.*.dll",
-        "lib/NvLowLatencyVk.dll",
-        "lib/nvngx_dlssg.dll"
-    )
-
-    from(streamlineResourceLibDir.dir(if (useDebugLib) "sl.dev" else "sl.rel")) {
-        include(requiredStreamlineLibraries)
-        into("lib")
     }
 
     if (dlssgLinuxSnippet.isFile) {
@@ -368,6 +305,18 @@ tasks.named<ProcessResources>("processResources") {
 apply(plugin = "maven-publish")
 
 val srIsDevBuild = (gradle.extensions.extraProperties.properties["isDev"] as? Boolean) == true
+val minecraftVersionConfig = providers.gradleProperty("minecraft_version_config").orNull
+    ?: throw GradleException("缺少属性 minecraft_version_config")
+val publishingApiToShnexus = gradle.startParameter.taskNames.any { taskName ->
+    taskName.substringAfterLast(':') == "publishApiPublicationToShnexusRepository"
+}
+
+if (publishingApiToShnexus && minecraftVersionConfig != "1.21.1") {
+    throw GradleException(
+        "远程 Super Resolution API 发布必须使用 minecraft_version_config=1.21.1；"
+            + "请执行 :publishApiToShnexus。"
+    )
+}
 
 // Resolved out here on purpose: inside the task configuration block `extensions` would
 // resolve to the task's own container, since Task is ExtensionAware too.
@@ -385,7 +334,7 @@ extensions.configure<PublishingExtension> {
     publications {
         register<MavenPublication>("api") {
             groupId = rootProject.group.toString()
-            artifactId = "${rootProject.property("mod_id")}-api-${versionConfig.common.modArtifactMinecraftVer}"
+            artifactId = "superresolution-api"
             version = "${rootProject.property("mod_version")}" + if (srIsDevBuild) "-SNAPSHOT" else ""
             artifact(apiJar) { classifier = null }
             pom {

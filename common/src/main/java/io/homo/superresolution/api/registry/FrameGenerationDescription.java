@@ -12,6 +12,9 @@ package io.homo.superresolution.api.registry;
 
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
+import net.minecraft.network.chat.Component;
+
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,10 +23,13 @@ import java.util.function.Supplier;
 
 public final class FrameGenerationDescription {
     private final String id;
-    private final String displayName;
+    private final Component displayName;
     private final Requirement requirement;
     private final Supplier<FrameGenerationProvider> providerFactory;
     private final boolean automatic;
+    private final @Nullable BackendGroup group;
+    private final int priority;
+    private final LowLatencyBinding lowLatencyBinding;
     private final List<SpecialConfigDescription<?>> optionDescriptions;
 
     private FrameGenerationDescription(Builder builder) {
@@ -35,6 +41,11 @@ public final class FrameGenerationDescription {
             Objects.requireNonNull(builder.providerFactory, "providerFactory cannot be null");
         }
         this.providerFactory = builder.providerFactory;
+        this.group = builder.group;
+        this.priority = builder.priority;
+        this.lowLatencyBinding = builder.lowLatencyBinding != null
+                ? builder.lowLatencyBinding
+                : LowLatencyBinding.none();
         this.optionDescriptions = List.copyOf(builder.optionDescriptions);
     }
 
@@ -46,7 +57,7 @@ public final class FrameGenerationDescription {
         return id;
     }
 
-    public String getDisplayName() {
+    public Component getDisplayName() {
         return displayName;
     }
 
@@ -72,6 +83,21 @@ public final class FrameGenerationDescription {
         return providerFactory == null ? null : providerFactory.get();
     }
 
+    /** Algorithm group this backend belongs to. Null for the automatic entry and for
+     *  backends that opt out of grouping (the UI presents ungrouped backends individually). */
+    public @Nullable BackendGroup getGroup() {
+        return group;
+    }
+
+    /** Negotiation order within a group. Higher wins. Default 0. */
+    public int getPriority() {
+        return priority;
+    }
+
+    public LowLatencyBinding getLowLatencyBinding() {
+        return lowLatencyBinding;
+    }
+
     public List<SpecialConfigDescription<?>> getOptionDescriptions() {
         return optionDescriptions;
     }
@@ -90,10 +116,13 @@ public final class FrameGenerationDescription {
 
     public static class Builder {
         private String id;
-        private String displayName;
+        private Component displayName;
         private Requirement requirement = Requirement.nothing();
         private Supplier<FrameGenerationProvider> providerFactory;
         private boolean automatic;
+        private @Nullable BackendGroup group;
+        private int priority;
+        private LowLatencyBinding lowLatencyBinding = LowLatencyBinding.none();
         private final List<SpecialConfigDescription<?>> optionDescriptions = new ArrayList<>();
 
         public Builder id(String id) {
@@ -101,7 +130,7 @@ public final class FrameGenerationDescription {
             return this;
         }
 
-        public Builder displayName(String displayName) {
+        public Builder displayName(Component displayName) {
             this.displayName = displayName;
             return this;
         }
@@ -119,6 +148,21 @@ public final class FrameGenerationDescription {
         /** Marks this as the automatic entry; no provider factory is required. */
         public Builder automatic() {
             this.automatic = true;
+            return this;
+        }
+
+        public Builder group(BackendGroup group) {
+            this.group = group;
+            return this;
+        }
+
+        public Builder priority(int priority) {
+            this.priority = priority;
+            return this;
+        }
+
+        public Builder lowLatencyBinding(LowLatencyBinding binding) {
+            this.lowLatencyBinding = binding != null ? binding : LowLatencyBinding.none();
             return this;
         }
 

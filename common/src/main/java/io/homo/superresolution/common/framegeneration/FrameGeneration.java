@@ -10,17 +10,21 @@
 
 package io.homo.superresolution.common.framegeneration;
 
+import io.homo.superresolution.api.registry.BackendGroup;
 import io.homo.superresolution.api.registry.FrameGenerationDescription;
 import io.homo.superresolution.api.registry.FrameGenerationProvider;
 import io.homo.superresolution.api.registry.FrameGenerationRegistry;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.framegeneration.constants.FGConstants;
 import io.homo.superresolution.common.framegeneration.constants.FGConstantsFeature;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
+import io.homo.superresolution.core.streamline.Streamline;
 
 import javax.annotation.Nullable;
 
@@ -31,16 +35,20 @@ import java.util.Map;
 
 /**
  * Frontend for frame generation. Owns the backend-agnostic policy (mode gating,
- * shader-environment checks, per-frame constants) and dispatches the actual work to the
- * selected {@link FrameGenerationProvider}, which is chosen from
- * {@link FrameGenerationRegistry} by the {@code frame_generation/provider} config id.
+ * shader-environment checks, per-frame constants) and dispatches the actual work to a
+ * concrete {@link FrameGenerationProvider} picked by {@link BackendNegotiator} from the
+ * algorithm group ({@code frame_generation/provider} config value = group id or "auto").
  * <p>
- * The selection is applied at startup — it decides whether Streamline is initialized (see
+ * The FG group selection is applied at startup — together with the LL group configuration
+ * it decides whether Streamline is initialized (see
  * {@code VulkanPresentationFeature.shouldInitializeStreamline}) — so changing it takes
- * effect after a restart.
+ * effect after a restart. Within-group backend switches are re-negotiated each frame.
  */
 public final class FrameGeneration {
     private static final Map<String, FrameGenerationProvider> providers = new LinkedHashMap<>();
+    private static BackendNegotiator.Resolution loggedResolution;
+    private static @Nullable Boolean startupStreamlineRequested;
+    private static @Nullable Boolean loggedRestartStreamlineRequest;
     private static boolean initialized;
 
     static {
@@ -56,6 +64,7 @@ public final class FrameGeneration {
         }
         FGConstantsFeature.initialize();
         FGConstantsFeature.register();
+        startupStreamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
             if (description.isAutomatic() || !FrameGenerationRegistry.isSupported(description)) {
                 continue;
@@ -77,6 +86,9 @@ public final class FrameGeneration {
             provider.shutdown();
         }
         providers.clear();
+        loggedResolution = null;
+        startupStreamlineRequested = null;
+        loggedRestartStreamlineRequest = null;
         FGConstantsFeature.shutdown();
         initialized = false;
     }
@@ -202,6 +214,8 @@ public final class FrameGeneration {
 
     /**
      * The configured entry, falling back to the automatic one when the id is unknown.
+     * The returned description may be an algorithm group representative (automatic with a
+     * group) rather than a concrete backend.
      */
     public static FrameGenerationDescription mode() {
         FrameGenerationDescription description =
@@ -212,28 +226,68 @@ public final class FrameGeneration {
     }
 
     /**
-     * Id of the backend actually in use, which differs from {@link #mode()} when the
-     * automatic entry is selected or the chosen backend did not come up. Empty when
-     * nothing is usable.
+     * Id of the FG backend actually in use, as resolved by the negotiator for the
+     * currently configured FG and LL groups. Empty when nothing is usable.
      */
     public static synchronized String activeId() {
-        FrameGenerationDescription description = mode();
-        if (description != null && !description.isAutomatic()) {
-            FrameGenerationProvider selected = providers.get(description.getId());
-            if (selected != null && selected.isAvailable()) {
-                return description.getId();
-            }
-            // The chosen backend is not usable this session; fall back rather than
-            // disabling frame generation outright, as the previous enum-based
-            // selection did.
+        String id = activeResolution().fgBackendId();
+        return id == null ? "" : id;
+    }
+
+    /**
+     * Id of the LL backend the negotiator picked to pair with the current FG choice.
+     * Empty when no LL backend is active. Callers on the LL side (mainly {@link LowLatency})
+     * use this to switch providers when the FG side's binding constraints flip.
+     */
+    public static synchronized String activeLowLatencyBackendId() {
+        String id = activeResolution().lowLatencyBackendId();
+        return id == null ? "" : id;
+    }
+
+    /**
+     * Runs the negotiator with the current configuration. Cheap enough to invoke per frame
+     * (a few map iterations); callers that hit it repeatedly per frame should cache locally.
+     */
+    private static synchronized BackendNegotiator.Resolution activeResolution() {
+        String fgGroupId = configuredFgGroupId();
+        BackendNegotiator.Resolution resolution = fgGroupId == null || fgGroupId.isEmpty()
+                ? BackendNegotiator.Resolution.EMPTY
+                : BackendNegotiator.resolve(
+                        fgGroupId,
+                        LowLatency.configuredGroupId(),
+                        providers::get
+                );
+        logResolution(resolution);
+        logRestartRequirement();
+        return resolution;
+    }
+
+    private static void logResolution(BackendNegotiator.Resolution resolution) {
+        if (!resolution.equals(loggedResolution)) {
+            SuperResolution.LOGGER.info(
+                    "Frame generation backend negotiation: fg={}, lowLatency={}",
+                    resolution.fgBackendId(),
+                    resolution.lowLatencyBackendId()
+            );
+            loggedResolution = resolution;
         }
-        // Automatic: first registered backend that came up this session.
-        for (Map.Entry<String, FrameGenerationProvider> entry : providers.entrySet()) {
-            if (entry.getValue().isAvailable()) {
-                return entry.getKey();
-            }
+    }
+
+    private static void logRestartRequirement() {
+        if (startupStreamlineRequested == null) {
+            return;
         }
-        return "";
+        boolean streamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
+        if (streamlineRequested == startupStreamlineRequested
+                || Boolean.valueOf(streamlineRequested).equals(loggedRestartStreamlineRequest)
+                || (!streamlineRequested && !Streamline.isInterposerLoaded())) {
+            return;
+        }
+        SuperResolution.LOGGER.warn(
+                "Streamline backend selection changed after startup; restart the game to {} the Streamline interposer.",
+                streamlineRequested ? "load" : "unload"
+        );
+        loggedRestartStreamlineRequest = streamlineRequested;
     }
 
     private static synchronized @Nullable FrameGenerationProvider activeProvider() {
@@ -242,15 +296,20 @@ public final class FrameGeneration {
     }
 
     /**
-     * Coarse identity of the active backend. Kept for consumers that only need to know
-     * whether Streamline owns presentation this session (Reflex does).
+     * Derives the FG group id passed to the negotiator from the configured entry. Automatic
+     * with no group means "any group"; automatic with a group means "this group only";
+     * a concrete backend selection restricts to that backend's group.
      */
-    public static FrameGenerationBackend activeBackend() {
-        String id = activeId();
-        if (FrameGenerationDescriptions.STREAMLINE_ID.equals(id)) {
-            return FrameGenerationBackend.STREAMLINE;
+    private static @Nullable String configuredFgGroupId() {
+        FrameGenerationDescription description = mode();
+        if (description == null) {
+            return null;
         }
-        return id.isEmpty() ? FrameGenerationBackend.NONE : FrameGenerationBackend.NGX;
+        BackendGroup group = description.getGroup();
+        if (description.isAutomatic()) {
+            return group != null ? group.getId() : BackendNegotiator.AUTO_FG_GROUP;
+        }
+        return group != null ? group.getId() : null;
     }
 
     private static boolean backendAvailable() {

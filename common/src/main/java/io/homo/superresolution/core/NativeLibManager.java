@@ -53,15 +53,7 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
-    public static NativeLib LIB_STREAMLINE_INTERPOSER = null;
-    public static NativeLib LIB_STREAMLINE_COMMON = null;
-    public static NativeLib LIB_STREAMLINE_DLSS_G = null;
-    public static NativeLib LIB_STREAMLINE_REFLEX = null;
-    public static NativeLib LIB_STREAMLINE_NVNGX_REFLEX = null;
-    public static NativeLib LIB_STREAMLINE_NVNGX_DLSSG = null;
     public static NativeLib LIB_NGX_DLSSG_SNIPPET = null;
-
-    public static NativeLib LIB_STREAMLINE_PCL = null;
     private static boolean nativeApiAvailable;
     private static boolean librariesExtracted;
     private static boolean librariesLoaded;
@@ -97,61 +89,12 @@ public class NativeLibManager {
                     shouldLoad,
                     shouldExtract
             );
-            LIB_STREAMLINE_COMMON = new NativeLib(
-                    "sl.common",
-                    shouldLoad,
-                    shouldExtract,
-                    true
-            );
-            LIB_STREAMLINE_INTERPOSER = new NativeLib(
-                    "sl.interposer",
-                    shouldLoad,
-                    shouldExtract,
-                    true
-            );
-            LIB_STREAMLINE_DLSS_G = new NativeLib(
-                    "sl.dlss_g",
-                    false,
-                    shouldExtract,
-                    true
-            );
-            LIB_STREAMLINE_REFLEX = new NativeLib(
-                    "sl.reflex",
-                    false,
-                    shouldExtract,
-                    true
-            );
-            LIB_STREAMLINE_PCL = new NativeLib(
-                    "sl.pcl",
-                    false,
-                    shouldExtract,
-                    true
-            );
-            LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib(
-                    "NvLowLatencyVk",
-                    false,
-                    shouldExtract,
-                    true
-            );
-            LIB_STREAMLINE_NVNGX_DLSSG = new NativeLib(
-                    "nvngx_dlssg",
-                    false,
-                    false,
-                    true
-            );
 
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
-            libs.add(LIB_STREAMLINE_COMMON);
-            libs.add(LIB_STREAMLINE_INTERPOSER);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
-            libs.add(LIB_STREAMLINE_DLSS_G);
-            libs.add(LIB_STREAMLINE_REFLEX);
-            libs.add(LIB_STREAMLINE_PCL);
-            libs.add(LIB_STREAMLINE_NVNGX_REFLEX);
-            libs.add(LIB_STREAMLINE_NVNGX_DLSSG);
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);

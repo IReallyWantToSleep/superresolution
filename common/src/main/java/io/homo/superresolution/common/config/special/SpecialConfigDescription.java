@@ -25,6 +25,8 @@ import net.minecraft.network.chat.Component;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class SpecialConfigDescription<T> {
     protected String key;
@@ -40,6 +42,8 @@ public class SpecialConfigDescription<T> {
     protected Pair<Float, Float> valueRange = null;
     protected Consumer<T> saveConsumer;
     protected boolean valueNameIsSupplier = false;
+    protected Supplier<T> valueSupplier = null;
+    protected Predicate<T> itemEnableRequirement = (a) -> true;
 
     public static <T> SpecialConfigDescription<T> of(String key, ConfigSpecType type, T defaultValue) {
         return new SpecialConfigDescription<T>()
@@ -167,11 +171,32 @@ public class SpecialConfigDescription<T> {
     }
 
     public T getValue() {
-        return value;
+        return valueSupplier != null ? valueSupplier.get() : value;
     }
 
     public SpecialConfigDescription<T> setValue(T value) {
         this.value = value;
         return this;
+    }
+
+    /** Reads the live value from the owning config instead of the cached field. */
+    public SpecialConfigDescription<T> setValueSupplier(Supplier<T> valueSupplier) {
+        this.valueSupplier = valueSupplier;
+        return this;
+    }
+
+    public boolean isItemEnabled(T item) {
+        return itemEnableRequirement.test(item);
+    }
+
+    /** Gates individual entries of an enum option, e.g. to forbid turning a dependency off. */
+    public SpecialConfigDescription<T> setItemEnableRequirement(Predicate<T> itemEnableRequirement) {
+        this.itemEnableRequirement = itemEnableRequirement;
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Predicate<Object> getItemEnableRequirementAsObject() {
+        return (Predicate<Object>) itemEnableRequirement;
     }
 }

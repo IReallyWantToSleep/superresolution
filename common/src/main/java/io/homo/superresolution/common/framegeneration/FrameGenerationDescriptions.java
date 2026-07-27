@@ -10,16 +10,17 @@
 
 package io.homo.superresolution.common.framegeneration;
 
+import io.homo.superresolution.api.StreamlineDistribution;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.FrameGenerationRegisterEvent;
 import io.homo.superresolution.api.registry.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.FrameGenerationGroups;
 import io.homo.superresolution.api.registry.FrameGenerationRegistry;
-import io.homo.superresolution.api.utils.Requirement;
-import io.homo.superresolution.core.streamline.Streamline;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 
 public final class FrameGenerationDescriptions {
     public static final String AUTO_ID = "superresolution:auto";
-    public static final String STREAMLINE_ID = "superresolution:streamline";
 
     private static boolean registered;
 
@@ -27,13 +28,26 @@ public final class FrameGenerationDescriptions {
     }
 
     /**
-     * Whether {@code providerId} may end up using Streamline, which decides at startup
-     * whether Streamline is initialized at all. True for the automatic entry (it can
-     * resolve to Streamline) and for Streamline itself; false for any other backend,
-     * including ones registered by other mods, which then run without the interposer.
+     * Whether the current configuration might resolve to a Streamline-backed FG backend,
+     * which decides at startup whether Super Resolution loads the Streamline interposer.
+     * <p>
+     * Streamline is only preloaded when all of these hold: (a) the FG algorithm is auto or
+     * the DLSS FG group, (b) a Streamline distributor (Wisteria) has been registered via
+     * {@link StreamlineDistribution}, and (c) startup-time Reflex is configured on
+     * ({@code low_latency/mode = superresolution:nv_reflex} and NVIDIA Reflex mode ≠ OFF).
+     * Runtime backend selection is otherwise the negotiator's job.
      */
     public static boolean mayUseStreamline(String providerId) {
-        return AUTO_ID.equals(providerId) || STREAMLINE_ID.equals(providerId);
+        if (!AUTO_ID.equals(providerId) && !FrameGenerationGroups.DLSS_FG.getId().equals(providerId)) {
+            return false;
+        }
+        if (!StreamlineDistribution.isProvided()) {
+            return false;
+        }
+        if (!"superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode())) {
+            return false;
+        }
+        return SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
     }
 
     /**
@@ -50,28 +64,23 @@ public final class FrameGenerationDescriptions {
         FrameGenerationRegistry.register(
                 FrameGenerationDescription.builder()
                         .id(AUTO_ID)
-                        .displayName("Auto")
+                        .displayName(net.minecraft.network.chat.Component.translatable("superresolution.algorithm.frame_generation.auto"))
                         .automatic()
                         .build()
         );
 
-        // Registration order is the automatic entry's preference order: Streamline first,
-        // so Windows keeps using the interposer whenever it actually came up.
+        // DLSS Frame Generation group representative. Concrete backends
+        // (Streamline / NVNGX) are registered by the Wisteria mod through
+        // FrameGenerationRegisterEvent and join this group via .group(DLSS_FG).
         FrameGenerationRegistry.register(
                 FrameGenerationDescription.builder()
-                        .id(STREAMLINE_ID)
-                        .displayName("Streamline")
-                        .requirement(
-                                Requirement.nothing()
-                                        .isTrue(() -> Streamline.isSupportedPlatform() && Streamline.isNativeAvailable())
-                        )
-                        .providerFactory(StreamlineFrameGenerationBackend::new)
+                        .id(FrameGenerationGroups.DLSS_FG.getId())
+                        .displayName(FrameGenerationGroups.DLSS_FG.getDisplayName())
+                        .automatic()
+                        .group(FrameGenerationGroups.DLSS_FG)
                         .build()
         );
 
-        // The cross-platform NVNGX backend lives in the Wisteria mod, which registers it
-        // from this event. Without it Super Resolution has frame generation only where
-        // Streamline runs.
         SuperResolutionAPI.EVENT_BUS.post(new FrameGenerationRegisterEvent());
     }
 }

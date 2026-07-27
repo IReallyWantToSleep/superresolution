@@ -23,6 +23,8 @@ import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.api.registry.BackendGroup;
+import io.homo.superresolution.api.registry.LowLatencyGroups;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.common.SuperResolution;
@@ -93,6 +95,7 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 
@@ -522,29 +525,96 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         getView().showDialog(dialog);
     }
 
+    private void openRestartRequiredDialog() {
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconRestartAlt())
+                .headline(Text.translatable("superresolution.screen.config.dialog.restart_required.title").getString())
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.restart_required.message").getString())
+                .addAction(Text.translatable("superresolution.screen.config.dialog.restart_required.action.confirm").getString(), MaterialButtonVariant.Tonal, MaterialDialog::dismiss);
+        getView().showDialog(dialog);
+    }
+
     private boolean isExperimentalAlgorithm(AlgorithmDescription<?> algorithmDescription){
         return algorithmDescription.equals(AlgorithmDescriptions.DLSS) ||
                 algorithmDescription.equals(AlgorithmDescriptions.XESS) ||
                 algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
     }
 
-    private OptionRequirement getLowLatencyModeItemRequirement(LowLatencyDescription description) {
-        if (description == null) {
-            return OptionRequirement.all();
-        }
-        return () -> {
-            if (description.getId().equals("superresolution:none")) {
-                return !FrameGeneration.isFrameGenerationEnabled();
+    /**
+     * The selectable low latency entries: the "none" sentinel plus every group that at least
+     * one registered backend belongs to. Concrete backends are never listed; the negotiator
+     * picks one inside the selected group at runtime.
+     */
+    private List<BackendGroup> lowLatencyGroups() {
+        List<BackendGroup> groups = new ArrayList<>();
+        groups.add(LowLatencyGroups.NONE);
+        for (LowLatencyDescription description : LowLatencyRegistry.getDescriptions().values()) {
+            BackendGroup group = description.getGroup();
+            if (group != null && !groups.contains(group)) {
+                groups.add(group);
             }
-            return LowLatency.isAvailable() && description.getRequirement().check().support();
-        };
+        }
+        return groups;
     }
 
-    private OptionRequirement getNVIDIAReflexModeItemRequirement(NVIDIAReflexMode mode) {
-        if (mode == NVIDIAReflexMode.OFF) {
+    private BackendGroup lowLatencyGroupById(String id) {
+        for (BackendGroup group : lowLatencyGroups()) {
+            if (group.getId().equals(id)) {
+                return group;
+            }
+        }
+        return LowLatencyGroups.NONE;
+    }
+
+    private List<LowLatencyDescription> selectedLowLatencyOptionDescriptions() {
+        String groupId = SuperResolutionConfig.getLowLatencyMode();
+        List<LowLatencyDescription> descriptions = new ArrayList<>();
+        LowLatencyDescription groupDescription = LowLatencyRegistry.getDescriptionById(groupId);
+        if (groupDescription != null) {
+            descriptions.add(groupDescription);
+        }
+        String backendId = FrameGeneration.activeLowLatencyBackendId();
+        LowLatencyDescription backendDescription = LowLatencyRegistry.getDescriptionById(backendId);
+        if (backendDescription != null && backendDescription != groupDescription) {
+            descriptions.add(backendDescription);
+        }
+        return descriptions;
+    }
+
+    private List<FrameGenerationDescription> selectedFrameGenerationOptionDescriptions() {
+        List<FrameGenerationDescription> descriptions = new ArrayList<>();
+        FrameGenerationDescription groupDescription = FrameGeneration.mode();
+        if (groupDescription != null) {
+            descriptions.add(groupDescription);
+        }
+        FrameGenerationDescription backendDescription =
+                FrameGenerationRegistry.getDescriptionById(FrameGeneration.activeId());
+        if (backendDescription != null && backendDescription != groupDescription) {
+            descriptions.add(backendDescription);
+        }
+        return descriptions;
+    }
+
+    private OptionRequirement getLowLatencyGroupItemRequirement(BackendGroup group) {
+        if (group == null) {
+            return OptionRequirement.all();
+        }
+        if (group.equals(LowLatencyGroups.NONE)) {
             return () -> !FrameGeneration.isFrameGenerationEnabled();
         }
-        return OptionRequirement.all();
+        return () -> LowLatency.isAvailable() && lowLatencyGroupHasUsableBackend(group);
+    }
+
+    private boolean lowLatencyGroupHasUsableBackend(BackendGroup group) {
+        for (LowLatencyDescription description : LowLatencyRegistry.getDescriptions().values()) {
+            if (group.equals(description.getGroup())
+                    && LowLatencyRegistry.isSupported(description)
+                    && description.isAvailable()
+                    && description.dependenciesSatisfied()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isReflexConfigured() {
@@ -552,15 +622,49 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
     }
 
+    /**
+     * Frame generation entries shown to the user: the automatic entry plus one entry per
+     * algorithm group. Concrete backends registered inside a group stay hidden.
+     */
+    private List<FrameGenerationDescription> frameGenerationProviderEntries() {
+        List<FrameGenerationDescription> entries = new ArrayList<>();
+        for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
+            if (description.isAutomatic()
+                    && (description.getGroup() == null || frameGenerationGroupHasUsableBackend(description.getGroup()))) {
+                entries.add(description);
+            }
+        }
+        return entries;
+    }
+
     private OptionRequirement getFrameGenerationProviderItemRequirement(FrameGenerationDescription description) {
         if (description == null) {
             return OptionRequirement.all();
         }
-        // The automatic entry is always selectable; it resolves to whatever came up.
-        if (description.isAutomatic()) {
+        BackendGroup group = description.getGroup();
+        // The "any group" entry is always selectable; it resolves to whatever came up.
+        if (group == null) {
             return OptionRequirement.all();
         }
-        return () -> description.getRequirement().check().support();
+        return () -> frameGenerationGroupHasUsableBackend(group);
+    }
+
+    private boolean frameGenerationGroupHasUsableBackend(BackendGroup group) {
+        for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
+            if (!description.isAutomatic()
+                    && group.equals(description.getGroup())
+                    && description.getRequirement().check().support()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasAvailableFrameGenerationBackend() {
+        FrameGeneration.mode();
+        return FrameGenerationRegistry.getDescriptions().values().stream()
+                .anyMatch(description -> !description.isAutomatic()
+                        && FrameGenerationRegistry.isSupported(description));
     }
 
     private OptionRequirement getInteropSyncModeItemRequirement(InteropSyncMode mode) {
@@ -576,6 +680,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         }
         frameGenerationEntry.refreshDynamicValues();
         frameGenerationEntry.setSelectedValue(FrameGeneration.displayedMode());
+    }
+
+    private void rebuildContentFrame(String key, Frame replacement) {
+        Frame previous = contentFrames.put(key, replacement);
+        if (!key.equals(currentContentKey) || previous == null || previous != currentContentFrame) {
+            return;
+        }
+        interruptContentTransition();
+        getView().removeFrame(previous);
+        currentContentFrame = replacement;
+        contentLayout = getView().addFrame(replacement);
+        contentLayout.setFlexGrow(1f);
+        contentLayout.setHeightPercent(100);
+        contentLayout.setPadding(YogaEdge.ALL, 0);
+        view.markLayoutDirty();
     }
 
     private Frame createGeneralFrame() {
@@ -878,22 +997,16 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 container,
                 Text.translatable("superresolution.screen.config.category.low_latency"),
                 builder -> {
-                    LowLatencyDescription currentMode = LowLatencyRegistry.getDescriptionById(SuperResolutionConfig.getLowLatencyMode());
-                    if (currentMode == null) {
-                        currentMode = LowLatencyRegistry.getDescriptionById("superresolution:none");
-                    }
-                    LowLatencyDescription[] descriptions = LowLatencyRegistry.getDescriptions().values().toArray(new LowLatencyDescription[0]);
+                    BackendGroup currentGroup = lowLatencyGroupById(SuperResolutionConfig.getLowLatencyMode());
+                    List<BackendGroup> groups = lowLatencyGroups();
 
-                    @SuppressWarnings("unchecked")
-                    SelectionListOptionEntry<LowLatencyDescription>[] modeEntryRef = new SelectionListOptionEntry[1];
-
-                    modeEntryRef[0] = builder.selectorOption(
+                    builder.selectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.low_latency_mode"),
-                                    currentMode,
-                                    descriptions)
-                            .setDefaultValue(() -> LowLatencyRegistry.getDescriptionById("superresolution:none"))
-                            .setNameProvider(LowLatencyDescription::getDisplayName)
-                            .setValuesSupplier(() -> new ArrayList<>(LowLatencyRegistry.getDescriptions().values()))
+                                    currentGroup,
+                                    groups.toArray(new BackendGroup[0]))
+                            .setDefaultValue(() -> LowLatencyGroups.NONE)
+                            .setNameProvider(g -> g.getDisplayName().getString())
+                            .setValuesSupplier(this::lowLatencyGroups)
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
                             .setEnableRequirement(OptionRequirement.all(
                                     () -> supportsVulkanPresentation,
@@ -906,58 +1019,48 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                                     : "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
                                     ).getString()
                             )))
-                            .setItemEnableRequirement(this::getLowLatencyModeItemRequirement)
-                            .setSaveConsumer((Consumer<LowLatencyDescription>) description -> {
-                                SuperResolutionConfig.setLowLatencyMode(description.getId());
-                                refreshFrameGenerationOptions();
+                            .setItemEnableRequirement(this::getLowLatencyGroupItemRequirement)
+                            .setSaveConsumer((Consumer<BackendGroup>) group -> {
+                                SuperResolutionConfig.setLowLatencyMode(group.getId());
+                                LowLatency.setMode(group.getId());
+                                rebuildContentFrame("general", createGeneralFrame());
                             })
                             .build();
 
-                    // Built-in NVIDIA Reflex mode option. External providers render their registered options below.
-                    builder.enumSelectorOption(
-                                    Text.translatable("superresolution.screen.config.options.label.nv_reflex_mode"),
-                                    NVIDIAReflexMode.class,
-                                    SuperResolutionConfig.getNVIDIAReflexMode())
-                            .setDefaultValue(NVIDIAReflexMode.OFF)
-                            .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.nvreflexmode." + mode.name().toLowerCase()).getString())
-                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
-                            .setEnableRequirement(() -> "superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode()))
-                            .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
-                                    Text.translatable(
-                                            !SuperResolutionConfig.isEnableVulkanPresentation()
-                                                    ? "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
-                                                    : !"superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode())
-                                                    ? "superresolution.screen.config.options.tooltip.nv_reflex_mode.low_latency_required"
-                                                    : "superresolution.screen.config.options.tooltip.nv_reflex_mode"
-                                    ).getString()
-                            )))
-                            .setItemEnableRequirement(this::getNVIDIAReflexModeItemRequirement)
-                            .setSaveConsumer(mode -> {
-                                SuperResolutionConfig.setNVIDIAReflexMode(mode);
-                                refreshFrameGenerationOptions();
-                            })
-                            .build();
+                    String selectedGroupId = SuperResolutionConfig.getLowLatencyMode();
+                    for (LowLatencyDescription description : selectedLowLatencyOptionDescriptions()) {
+                        for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
+                            buildSpecialConfigOption(
+                                    builder,
+                                    option,
+                                    () -> selectedGroupId.equals(SuperResolutionConfig.getLowLatencyMode()),
+                                    this::refreshFrameGenerationOptions
+                            );
+                        }
+                    }
                 }
         );
 
-        addLabeledOptionGroup(
-                container,
-                Text.translatable("superresolution.screen.config.category.frame_generation"), builder -> {
-                    FrameGenerationMode[] modes = FrameGeneration.availableModes();
-                    frameGenerationEntry = builder.selectorOption(
-                                    Text.translatable("superresolution.screen.config.options.frame_generation"),
-                                    FrameGeneration.displayedMode(),
-                                    modes
-                            )
-                            .setDefaultValue(() -> FrameGenerationMode.OFF)
-                            .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
-                            .setDescription(Text.translatable("superresolution.screen.config.options.frame_generation.tooltip"))
-                            .setEnableRequirement(FrameGeneration::isSupported)
-                            .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
-                            .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
-                            .build();
-                }
-        );
+        if (hasAvailableFrameGenerationBackend()) {
+            addLabeledOptionGroup(
+                    container,
+                    Text.translatable("superresolution.screen.config.category.frame_generation"), builder -> {
+                        FrameGenerationMode[] modes = FrameGeneration.availableModes();
+                        frameGenerationEntry = builder.selectorOption(
+                                        Text.translatable("superresolution.screen.config.options.frame_generation"),
+                                        FrameGeneration.displayedMode(),
+                                        modes
+                                )
+                                .setDefaultValue(() -> FrameGenerationMode.OFF)
+                                .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
+                                .setDescription(Text.translatable("superresolution.screen.config.options.frame_generation.tooltip"))
+                                .setEnableRequirement(FrameGeneration::isSupported)
+                                .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
+                                .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
+                                .build();
+                    }
+            );
+        }
 
 
         addLabeledOptionGroup(
@@ -1250,21 +1353,34 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     // Via FrameGeneration so its static initializer has populated the
                     // registry before the list below is read.
                     FrameGenerationDescription currentProvider = FrameGeneration.mode();
-                    FrameGenerationDescription[] providerDescriptions =
-                            FrameGenerationRegistry.getDescriptions().values().toArray(new FrameGenerationDescription[0]);
+                    List<FrameGenerationDescription> providerEntries = frameGenerationProviderEntries();
 
                     builder.selectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.frame_generation_provider"),
                                     currentProvider,
-                                    providerDescriptions)
+                                    providerEntries.toArray(new FrameGenerationDescription[0]))
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_provider"))
                             .setDefaultValue(() -> FrameGenerationRegistry.getDescriptionById(FrameGenerationDescriptions.AUTO_ID))
-                            .setNameProvider(FrameGenerationDescription::getDisplayName)
-                            .setValuesSupplier(() -> new ArrayList<>(FrameGenerationRegistry.getDescriptions().values()))
+                            .setNameProvider(d -> d.getDisplayName().getString())
+                            .setValuesSupplier(this::frameGenerationProviderEntries)
                             .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
-                            .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
-                                    SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
+                            .setSaveConsumer((Consumer<FrameGenerationDescription>) description -> {
+                                SuperResolutionConfig.setFrameGenerationProvider(description.getId());
+                                rebuildContentFrame("advanced", createAdvancedFrame());
+                            })
                             .build();
+
+                    String selectedProviderId = SuperResolutionConfig.getFrameGenerationProvider();
+                    for (FrameGenerationDescription description : selectedFrameGenerationOptionDescriptions()) {
+                        for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
+                            buildSpecialConfigOption(
+                                    builder,
+                                    option,
+                                    () -> selectedProviderId.equals(SuperResolutionConfig.getFrameGenerationProvider()),
+                                    null
+                            );
+                        }
+                    }
                 }
         );
 
@@ -1387,6 +1503,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         OptionCategory category = new OptionCategory(categoryName);
         OptionBuilder builder = new OptionBuilder(category);
         builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
+        builder.setRestartRequiredCallback(this::openRestartRequiredDialog);
         return builder;
     }
 
@@ -1466,8 +1583,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void buildSpecialConfigOption(OptionBuilder builder, SpecialConfigDescription<?> desc) {
+        buildSpecialConfigOption(builder, desc, null, null);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void buildSpecialConfigOption(
+            OptionBuilder builder,
+            SpecialConfigDescription<?> desc,
+            @Nullable OptionRequirement enableRequirement,
+            @Nullable Runnable afterSave
+    ) {
         Text optionName = Text.literal(desc.getName().getString());
         Optional<Component> tooltip = desc.getTooltip();
 
@@ -1476,9 +1602,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 SpecialConfigDescription<Boolean> boolDesc = (SpecialConfigDescription<Boolean>) desc;
                 var opt = builder.booleanOption(optionName, boolDesc.getValue())
                         .setDefaultValue(() -> boolDesc.getDefaultValue())
-                        .setSaveConsumer(boolDesc.getSaveConsumer());
+                        .setSaveConsumer(value -> {
+                            boolDesc.getSaveConsumer().accept(value);
+                            runAfterSave(afterSave);
+                        });
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
+                }
+                if (enableRequirement != null) {
+                    opt.setEnableRequirement(enableRequirement);
                 }
                 opt.build();
                 break;
@@ -1488,17 +1620,26 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 Class enumClass = enumDesc.getClazz();
                 Enum enumValue = (Enum) enumDesc.getValue();
                 Enum defaultEnumValue = (Enum) enumDesc.getDefaultValue();
+                Consumer<Object> enumSaveConsumer = value -> {
+                    enumDesc.getSaveConsumerAsObject().accept(value);
+                    runAfterSave(afterSave);
+                };
                 EnumSelectorBuilder<?> opt = (EnumSelectorBuilder<?>) builder.enumSelectorOption(optionName, enumClass, enumValue)
                         .setDefaultValue(defaultEnumValue)
-                        .setSaveConsumer(enumDesc.getSaveConsumer());
+                        .setSaveConsumer(enumSaveConsumer);
                 if (enumDesc.isValueNameIsSupplier()) {
                     opt.setEnumNameProvider(e ->
                             ((Function<Object, Optional<Component>>) enumDesc.getValueNameSupplierAsObject())
                                     .apply(e).orElse(Component.empty()).getString()
                     );
                 }
+                opt.setItemEnableRequirement(item ->
+                        () -> enumDesc.getItemEnableRequirementAsObject().test(item));
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
+                }
+                if (enableRequirement != null) {
+                    opt.setEnableRequirement(enableRequirement);
                 }
                 opt.build();
                 break;
@@ -1515,6 +1656,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         .setDefaultValue(() -> floatDesc.getDefaultValue())
                         .setSaveConsumer((v) -> {
                             floatDesc.getSaveConsumer().accept(v.floatValue());
+                            runAfterSave(afterSave);
                             return true;
                         });
                 if (floatDesc.isValueNameIsSupplier()) {
@@ -1529,11 +1671,20 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
+                if (enableRequirement != null) {
+                    opt.setEnableRequirement(enableRequirement);
+                }
                 opt.build();
                 break;
             }
             default:
                 break;
+        }
+    }
+
+    private static void runAfterSave(@Nullable Runnable afterSave) {
+        if (afterSave != null) {
+            afterSave.run();
         }
     }
 

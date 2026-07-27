@@ -26,7 +26,10 @@ import net.minecraft.client.Minecraft;
 import javax.annotation.Nullable;
 
 public final class LowLatency {
+    /** The configured group representative (never a concrete backend). */
     private static @Nullable LowLatencyDescription mode;
+    /** The negotiator-resolved backend description (may differ from {@link #mode}). */
+    private static @Nullable LowLatencyDescription activeBackend;
     private static @Nullable LowLatencyProvider lowLatency;
 
     static {
@@ -36,13 +39,22 @@ public final class LowLatency {
     private LowLatency() {
     }
 
+    /**
+     * The configured low-latency algorithm group. Returned as a {@link LowLatencyDescription}
+     * for backward compatibility with existing consumers that check its id
+     * (e.g. {@code !"superresolution:none".equals(mode.getId())}).
+     */
     public static LowLatencyDescription mode() {
         if (mode == null) {
-            String configuredId = SuperResolutionConfig.getLowLatencyMode();
-            LowLatencyDescription description = LowLatencyRegistry.getDescriptionById(configuredId);
-            mode = description != null ? description : LowLatencyRegistry.getDescriptionById("superresolution:none");
+            mode = resolveConfiguredGroup();
         }
         return mode;
+    }
+
+    /** Group id of the configured low-latency algorithm. */
+    public static String configuredGroupId() {
+        LowLatencyDescription current = mode();
+        return current != null ? current.getId() : LowLatencyDescriptions.NONE_ID;
     }
 
     public static @Nullable LowLatencyProvider lowLatency() {
@@ -50,24 +62,18 @@ public final class LowLatency {
     }
 
     public static String modeId() {
-        LowLatencyDescription current = mode();
-        return current != null ? current.getId() : "superresolution:none";
+        return configuredGroupId();
     }
 
+    /** Records a new configured group id and re-resolves the active backend accordingly. */
     public static synchronized void setMode(String newModeId) {
-        String selected = newModeId == null ? "superresolution:none" : newModeId;
+        String selected = newModeId == null ? LowLatencyDescriptions.NONE_ID : newModeId;
         LowLatencyDescription description = LowLatencyRegistry.getDescriptionById(selected);
         if (description == null) {
-            description = LowLatencyRegistry.getDescriptionById("superresolution:none");
+            description = LowLatencyRegistry.getDescriptionById(LowLatencyDescriptions.NONE_ID);
         }
-        if (mode == description && lowLatency != null) {
-            lowLatency.refresh();
-            return;
-        }
-        releaseProvider();
         mode = description;
-        lowLatency = description.createProvider();
-        lowLatency.refresh();
+        renegotiate();
     }
 
     public static int frameLimitUs() {
@@ -113,10 +119,10 @@ public final class LowLatency {
         Streamline.nextFrame(frameIndex);
         VulkanLowLatency.nextFrame();
         String configuredId = SuperResolutionConfig.getLowLatencyMode();
-        if (lowLatency == null || mode == null || !configuredId.equals(mode.getId())) {
+        if (mode == null || !configuredId.equals(mode.getId())) {
             setMode(configuredId);
         } else {
-            lowLatency.refresh();
+            renegotiate();
         }
     }
 
@@ -162,7 +168,39 @@ public final class LowLatency {
 
     public static synchronized void shutdown() {
         releaseProvider();
+        activeBackend = null;
         mode = null;
+    }
+
+    /**
+     * Re-runs the {@code (fg, ll)} negotiation and swaps the active provider if the
+     * resolved backend changed. Called on config changes and per-frame in
+     * {@link #beginFrame(int)} because the FG side's binding constraints can flip which
+     * LL backend is picked at any time.
+     */
+    private static void renegotiate() {
+        String targetBackendId = FrameGeneration.activeLowLatencyBackendId();
+        LowLatencyDescription target = targetBackendId.isEmpty()
+                ? null
+                : LowLatencyRegistry.getDescriptionById(targetBackendId);
+        if (target != activeBackend) {
+            releaseProvider();
+            activeBackend = target;
+            if (target != null) {
+                lowLatency = target.createProvider();
+            }
+        }
+        if (lowLatency != null) {
+            lowLatency.refresh();
+        }
+    }
+
+    private static LowLatencyDescription resolveConfiguredGroup() {
+        String configuredId = SuperResolutionConfig.getLowLatencyMode();
+        LowLatencyDescription description = LowLatencyRegistry.getDescriptionById(configuredId);
+        return description != null
+                ? description
+                : LowLatencyRegistry.getDescriptionById(LowLatencyDescriptions.NONE_ID);
     }
 
     private static void setMarker(LowLatencyMarker marker) {

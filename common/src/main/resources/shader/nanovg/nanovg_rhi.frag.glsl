@@ -1,6 +1,7 @@
 #version 460
 
 layout(binding = 2) uniform sampler2D tex;
+layout(binding = 3) uniform sampler2D fontTex;
 
 layout(std140, binding = 1) uniform frag {
     mat3 scissorMat;
@@ -62,12 +63,24 @@ void main() {
         result = color;
     } else if (type == 2) {
         result = vec4(1.0, 1.0, 1.0, 1.0);
-    } else {
+    } else if (type == 3) {
         vec4 color = texture(tex, ftcoord);
         if (texType == 1) color = vec4(color.xyz * color.w, color.w);
         if (texType == 2) color = vec4(color.x);
         color *= scissor;
         result = color * innerCol;
+    } else if (type == 4) {
+        vec2 pt = (paintMat * vec3(fpos, 1.0)).xy;
+        float d = clamp((sdroundrect(pt, extent, radius) + feather * 0.5) / feather, 0.0, 1.0);
+        float coverage = texture(fontTex, ftcoord).r;
+        result = mix(innerCol, outerCol, d) * coverage * scissor;
+    } else {
+        vec2 pt = (paintMat * vec3(fpos, 1.0)).xy / extent;
+        vec4 color = texture(tex, pt);
+        if (texType == 1) color = vec4(color.xyz * color.w, color.w);
+        if (texType == 2) color = vec4(color.x);
+        float coverage = texture(fontTex, ftcoord).r;
+        result = color * innerCol * coverage * scissor;
     }
     outColor = result;
 }

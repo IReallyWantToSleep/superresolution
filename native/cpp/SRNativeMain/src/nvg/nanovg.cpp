@@ -2835,14 +2835,12 @@ extern "C"
         NVGpaint paint = state->fill;
 
         // Render triangles.
-        paint.image = ctx->fontImages[ctx->fontImageIdx];
-
         // Apply global alpha
         paint.innerColor.a *= state->alpha;
         paint.outerColor.a *= state->alpha;
 
         ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts,
-                                    nverts, ctx->fringeWidth);
+                                    nverts, ctx->fringeWidth, ctx->fontImages[ctx->fontImageIdx]);
 
         ctx->drawCallCount++;
         ctx->textTriCount += nverts / 3;

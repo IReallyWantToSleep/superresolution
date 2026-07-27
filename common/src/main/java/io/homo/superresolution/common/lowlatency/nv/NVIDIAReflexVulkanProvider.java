@@ -11,6 +11,8 @@
 package io.homo.superresolution.common.lowlatency.nv;
 
 import io.homo.superresolution.api.registry.LowLatencyMarker;
+import io.homo.superresolution.api.registry.LowLatencyProvider;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
@@ -18,14 +20,18 @@ import net.minecraft.client.Minecraft;
 
 import static org.lwjgl.vulkan.NVLowLatency2.*;
 
-
-public final class NVIDIAReflexVulkanImpl implements ReflexImplementation {
+/**
+ * VK_NV_low_latency2 backend for NVIDIA Reflex. Registered inside the
+ * {@code superresolution:nv_reflex} group by {@code LowLatencyDescriptions}.
+ * The Streamline-based Reflex backend lives in the Wisteria mod.
+ */
+public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
     private static final int PACING_WARMUP_FRAMES = 3;
 
     private OptionsKey lastAppliedOptions;
     private int pacingWarmupRemaining;
 
-    public NVIDIAReflexVulkanImpl() {
+    public NVIDIAReflexVulkanProvider() {
         VulkanLowLatency.setActive(true);
     }
 
@@ -58,7 +64,8 @@ public final class NVIDIAReflexVulkanImpl implements ReflexImplementation {
     }
 
     @Override
-    public void refresh(int reflexMode) {
+    public void refresh() {
+        int reflexMode = SuperResolutionConfig.getNVIDIAReflexMode().ordinal();
         OptionsKey desired = new OptionsKey(
                 reflexMode != NVIDIAReflexMode.OFF.ordinal(),
                 reflexMode == NVIDIAReflexMode.BOOST.ordinal(),

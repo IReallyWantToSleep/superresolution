@@ -12,18 +12,25 @@ package io.homo.superresolution.api.registry;
 
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
+import net.minecraft.network.chat.Component;
+
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public final class LowLatencyDescription {
     private final String id;
-    private final String displayName;
+    private final Component displayName;
     private final Requirement requirement;
     private final Supplier<LowLatencyProvider> providerFactory;
+    private final BooleanSupplier availability;
+    private final BooleanSupplier dependenciesSatisfied;
+    private final @Nullable BackendGroup group;
+    private final int priority;
     private final List<SpecialConfigDescription<?>> optionDescriptions;
 
     private LowLatencyDescription(Builder builder) {
@@ -31,6 +38,10 @@ public final class LowLatencyDescription {
         this.displayName = Objects.requireNonNull(builder.displayName, "displayName cannot be null");
         this.requirement = Objects.requireNonNull(builder.requirement, "requirement cannot be null");
         this.providerFactory = Objects.requireNonNull(builder.providerFactory, "providerFactory cannot be null");
+        this.availability = Objects.requireNonNull(builder.availability, "availability cannot be null");
+        this.dependenciesSatisfied = Objects.requireNonNull(builder.dependenciesSatisfied, "dependenciesSatisfied cannot be null");
+        this.group = builder.group;
+        this.priority = builder.priority;
         this.optionDescriptions = List.copyOf(builder.optionDescriptions);
     }
 
@@ -42,7 +53,7 @@ public final class LowLatencyDescription {
         return id;
     }
 
-    public String getDisplayName() {
+    public Component getDisplayName() {
         return displayName;
     }
 
@@ -56,6 +67,23 @@ public final class LowLatencyDescription {
 
     public LowLatencyProvider createProvider() {
         return providerFactory.get();
+    }
+
+    public boolean isAvailable() {
+        return availability.getAsBoolean();
+    }
+
+    public boolean dependenciesSatisfied() {
+        return dependenciesSatisfied.getAsBoolean();
+    }
+
+    public @Nullable BackendGroup getGroup() {
+        return group;
+    }
+
+    /** Negotiation order within a group. Higher wins. Default 0. */
+    public int getPriority() {
+        return priority;
     }
 
     public List<SpecialConfigDescription<?>> getOptionDescriptions() {
@@ -76,9 +104,13 @@ public final class LowLatencyDescription {
 
     public static class Builder {
         private String id;
-        private String displayName;
+        private Component displayName;
         private Requirement requirement = Requirement.nothing();
         private Supplier<LowLatencyProvider> providerFactory;
+        private BooleanSupplier availability = () -> true;
+        private BooleanSupplier dependenciesSatisfied = () -> true;
+        private @Nullable BackendGroup group;
+        private int priority;
         private final List<SpecialConfigDescription<?>> optionDescriptions = new ArrayList<>();
 
         public Builder id(String id) {
@@ -86,7 +118,7 @@ public final class LowLatencyDescription {
             return this;
         }
 
-        public Builder displayName(String displayName) {
+        public Builder displayName(Component displayName) {
             this.displayName = displayName;
             return this;
         }
@@ -98,6 +130,26 @@ public final class LowLatencyDescription {
 
         public Builder providerFactory(Supplier<LowLatencyProvider> providerFactory) {
             this.providerFactory = providerFactory;
+            return this;
+        }
+
+        public Builder availability(BooleanSupplier availability) {
+            this.availability = availability;
+            return this;
+        }
+
+        public Builder dependenciesSatisfied(BooleanSupplier dependenciesSatisfied) {
+            this.dependenciesSatisfied = dependenciesSatisfied;
+            return this;
+        }
+
+        public Builder group(BackendGroup group) {
+            this.group = group;
+            return this;
+        }
+
+        public Builder priority(int priority) {
+            this.priority = priority;
             return this;
         }
 

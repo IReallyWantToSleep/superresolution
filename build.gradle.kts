@@ -229,6 +229,30 @@ tasks.register<Delete>("cleanBuildJars") {
     delete(srOutputDir)
 }
 
+tasks.register<GradleBuild>("publishApiToShnexus") {
+    group = "publishing"
+    description = "以 Minecraft 1.21.1（Java 21）配置发布 Super Resolution API 到 shnexus"
+    buildName = "superresolution_api_1_21_1"
+    dir = rootDir
+    setTasks(listOf(":common:publishApiPublicationToShnexusRepository"))
+    startParameter.projectProperties["minecraft_version_config"] = "1.21.1"
+    startParameter.projectProperties["is_dev"] = "true"
+    listOf("shnexusUsername", "shnexusPassword").forEach { property ->
+        providers.gradleProperty(property).orNull?.let { value ->
+            startParameter.projectProperties[property] = value
+        }
+    }
+    startParameter.consoleOutput = ConsoleOutput.Plain
+
+    doFirst {
+        val missing = listOf("shnexusUsername", "shnexusPassword")
+            .filterNot { providers.gradleProperty(it).isPresent }
+        if (missing.isNotEmpty()) {
+            throw GradleException("缺少远程发布凭据: ${missing.joinToString()}")
+        }
+    }
+}
+
 tasks.register("buildOneVersion") {
     group = "build"
     description = "构建指定版本并收集产物，使用 -Psr.version=<configName>"

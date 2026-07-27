@@ -17,14 +17,15 @@ import java.util.List;
 /**
  * Result of preparing frame generation for one presented frame.
  * <p>
- * With the Streamline backend the interpolated frames are produced and presented
- * by the Streamline swapchain interposer, so {@link #generatedFrames()} is empty.
- * With the NVNGX backend the interpolated frames are returned here and the caller
- * must present each of them (in order) before the real frame, with pacing.
+ * Backends that produce and present interpolated frames themselves (e.g. through a
+ * swapchain interposer) return {@link #externallyPresented()}, and {@link #generatedFrames()}
+ * is empty. Backends that hand back the interpolated frames for the presentation layer to
+ * present return {@link #generated}, and the caller must present each frame (in order)
+ * before the real frame, with pacing.
  */
 public final class FramePresentPlan {
     private static final FramePresentPlan NONE = new FramePresentPlan(false, List.of(), null);
-    private static final FramePresentPlan STREAMLINE = new FramePresentPlan(true, List.of(), null);
+    private static final FramePresentPlan EXTERNALLY_PRESENTED = new FramePresentPlan(true, List.of(), null);
 
     private final boolean frameGenerationActive;
     private final List<VulkanTexture> generatedFrames;
@@ -44,8 +45,13 @@ public final class FramePresentPlan {
         return NONE;
     }
 
-    public static FramePresentPlan streamline() {
-        return STREAMLINE;
+    /**
+     * The active backend produced and will present the generated frames itself (via, e.g.,
+     * a swapchain interposer); the presentation layer must not reserve extra swapchain
+     * images or present interpolated frames on the backend's behalf.
+     */
+    public static FramePresentPlan externallyPresented() {
+        return EXTERNALLY_PRESENTED;
     }
 
     public static FramePresentPlan generated(List<VulkanTexture> generatedFrames, VulkanTexture realFrame) {
