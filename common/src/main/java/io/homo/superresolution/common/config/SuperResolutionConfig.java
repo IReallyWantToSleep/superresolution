@@ -324,8 +324,10 @@ public class SuperResolutionConfig {
                 "low_latency/mode",
                 () -> "superresolution:none",
                 "Low latency mode",
-                value -> value != null
-                        && io.homo.superresolution.api.registry.LowLatencyRegistry.isRegistered(value)
+                // Low-latency backends register after the main config is constructed
+                // (and external backends may register even later). Resolve unknown
+                // ids at runtime instead of overwriting persisted configuration here.
+                value -> value != null && !value.isBlank()
         );
         LOW_LATENCY_MODE.onChange((oldValue, newValue) -> {
             LowLatency.setMode(newValue);

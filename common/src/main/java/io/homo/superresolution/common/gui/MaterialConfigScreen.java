@@ -1024,6 +1024,36 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
                                 .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
                                 .build();
+
+                        // Via FrameGeneration so its static initializer has populated the
+                        // registry before the list below is read.
+                        FrameGenerationDescription currentProvider = FrameGeneration.mode();
+                        List<FrameGenerationDescription> providerEntries = frameGenerationProviderEntries();
+
+                        builder.selectorOption(
+                                        Text.translatable("superresolution.screen.config.options.label.frame_generation_provider"),
+                                        currentProvider,
+                                        providerEntries.toArray(new FrameGenerationDescription[0]))
+                                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_provider"))
+                                .setDefaultValue(() -> FrameGenerationRegistry.getDescriptionById(FrameGenerationDescriptions.AUTO_ID))
+                                .setNameProvider(d -> d.getDisplayName().getString())
+                                .setValuesSupplier(this::frameGenerationProviderEntries)
+                                .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
+                                .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
+                                        SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
+                                .build();
+
+                        for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
+                            for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
+                                buildSpecialConfigOption(
+                                        builder,
+                                        option,
+                                        null,
+                                        frameGenerationOptionDisplayRequirement(description),
+                                        null
+                                );
+                            }
+                        }
                     }
             );
         }
@@ -1316,35 +1346,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
                             .build();
 
-                    // Via FrameGeneration so its static initializer has populated the
-                    // registry before the list below is read.
-                    FrameGenerationDescription currentProvider = FrameGeneration.mode();
-                    List<FrameGenerationDescription> providerEntries = frameGenerationProviderEntries();
-
-                    builder.selectorOption(
-                                    Text.translatable("superresolution.screen.config.options.label.frame_generation_provider"),
-                                    currentProvider,
-                                    providerEntries.toArray(new FrameGenerationDescription[0]))
-                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_provider"))
-                            .setDefaultValue(() -> FrameGenerationRegistry.getDescriptionById(FrameGenerationDescriptions.AUTO_ID))
-                            .setNameProvider(d -> d.getDisplayName().getString())
-                            .setValuesSupplier(this::frameGenerationProviderEntries)
-                            .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
-                            .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
-                                    SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
-                            .build();
-
-                    for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
-                        for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
-                            buildSpecialConfigOption(
-                                    builder,
-                                    option,
-                                    null,
-                                    frameGenerationOptionDisplayRequirement(description),
-                                    null
-                            );
-                        }
-                    }
                 }
         );
 

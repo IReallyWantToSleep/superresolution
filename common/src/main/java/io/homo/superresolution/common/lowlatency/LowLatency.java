@@ -118,9 +118,12 @@ public final class LowLatency {
         }
         Streamline.nextFrame(frameIndex);
         VulkanLowLatency.nextFrame();
-        String configuredId = SuperResolutionConfig.getLowLatencyMode();
-        if (mode == null || !configuredId.equals(mode.getId())) {
-            setMode(configuredId);
+        // Resolve the configured group first so an unknown persisted id falls back to
+        // "none" without recreating the fallback provider on every frame. Re-resolving
+        // also lets a backend registered later become active without rewriting config.
+        LowLatencyDescription configured = resolveConfiguredGroup();
+        if (mode == null || !configured.equals(mode)) {
+            setMode(configured.getId());
         } else {
             renegotiate();
         }
