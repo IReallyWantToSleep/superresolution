@@ -25,6 +25,23 @@ official AMD FSR SDK release and pass its absolute path through the
 provider looks for `amd_fidelityfx_upscaler_dx12.dll` in the process' secure
 DLL search directories.
 
+For a D3D12-only development build on Windows, configure CMake with
+`-DSR_FSR_FFX_API_ONLY=ON`. This builds the signed FFX API provider without
+the legacy Vulkan providers or their Vulkan SDK/build-time dependencies. The
+option is disabled by default, so normal release builds retain the complete
+FSR 2/3 provider set.
+
+```powershell
+cmake -S . -B buildWindowsD3D12Dev `
+  -DSR_FSR=ON `
+  -DSR_FSR_FFX_API_ONLY=ON `
+  -DSR_XESS=OFF `
+  -DSR_NGX=OFF `
+  -DSR_STREAMLINE=OFF `
+  -DENABLE_OPT=OFF
+cmake --build buildWindowsD3D12Dev --config Debug --target SR_FSR_LIB
+```
+
 ## D3D12 SRAPI handles
 
 The cross-platform SRAPI ABI does not include `d3d12.h`. It carries:
