@@ -1011,20 +1011,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             addLabeledOptionGroup(
                     container,
                     Text.translatable("superresolution.screen.config.category.frame_generation"), builder -> {
-                        FrameGenerationMode[] modes = FrameGeneration.availableModes();
-                        frameGenerationEntry = builder.selectorOption(
-                                        Text.translatable("superresolution.screen.config.options.frame_generation"),
-                                        FrameGeneration.displayedMode(),
-                                        modes
-                                )
-                                .setDefaultValue(() -> FrameGenerationMode.OFF)
-                                .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
-                                .setDescription(Text.translatable("superresolution.screen.config.options.frame_generation.tooltip"))
-                                .setEnableRequirement(FrameGeneration::isSupported)
-                                .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
-                                .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
-                                .build();
-
                         // Via FrameGeneration so its static initializer has populated the
                         // registry before the list below is read.
                         FrameGenerationDescription currentProvider = FrameGeneration.mode();
@@ -1041,6 +1027,20 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
                                 .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
                                         SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
+                                .build();
+
+                        FrameGenerationMode[] modes = FrameGeneration.availableModes();
+                        frameGenerationEntry = builder.selectorOption(
+                                        Text.translatable("superresolution.screen.config.options.frame_generation"),
+                                        FrameGeneration.displayedMode(),
+                                        modes
+                                )
+                                .setDefaultValue(() -> FrameGenerationMode.OFF)
+                                .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
+                                .setDescription(Text.translatable("superresolution.screen.config.options.frame_generation.tooltip"))
+                                .setEnableRequirement(FrameGeneration::isSupported)
+                                .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
+                                .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
                                 .build();
 
                         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
