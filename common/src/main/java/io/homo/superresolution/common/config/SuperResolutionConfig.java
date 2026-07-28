@@ -97,6 +97,7 @@ public class SuperResolutionConfig {
     public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final StringValue FRAME_GENERATION_PROVIDER;
+    public static final StringValue FRAME_GENERATION_BACKEND;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
     public static final BooleanValue ENABLE_OPTISCALER;
@@ -357,10 +358,17 @@ public class SuperResolutionConfig {
         FRAME_GENERATION_PROVIDER = builder.defineString(
                 "frame_generation/provider",
                 () -> FrameGenerationDescriptions.AUTO_ID,
-                "DLSS Frame Generation backend. The automatic entry uses Streamline when it came up (Windows) and the cross-platform NVNGX path otherwise.",
+                "DLSS Frame Generation algorithm group. The automatic entry considers every registered group.",
                 // Not checked against the registry: backends register later (and external
                 // ones later still), so an id is only resolved when it is used. An
                 // unknown id falls back to the automatic entry in FrameGeneration.mode().
+                value -> value != null && !value.isBlank()
+        );
+
+        FRAME_GENERATION_BACKEND = builder.defineString(
+                "frame_generation/backend",
+                () -> FrameGenerationDescriptions.AUTO_ID,
+                "Concrete DLSS Frame Generation backend preference. Auto keeps the registered backend priority.",
                 value -> value != null && !value.isBlank()
         );
 
@@ -815,10 +823,18 @@ public class SuperResolutionConfig {
         // Configurations written before the algorithm-group split named a concrete backend;
         // both of those backends now live in the DLSS FG group. Normalized on first read.
         String migrated = switch (stored) {
-            case "superresolution:streamline", "wisteria:ngx" -> FrameGenerationGroups.DLSS_FG.getId();
+            case "superresolution:streamline", "wisteria:streamline", "wisteria:ngx" ->
+                    FrameGenerationGroups.DLSS_FG.getId();
             default -> stored;
         };
         if (!migrated.equals(stored)) {
+            if (FrameGenerationDescriptions.AUTO_ID.equals(FRAME_GENERATION_BACKEND.get())) {
+                FRAME_GENERATION_BACKEND.set(
+                        "wisteria:ngx".equals(stored)
+                                ? "wisteria:ngx"
+                                : "wisteria:streamline"
+                );
+            }
             FRAME_GENERATION_PROVIDER.set(migrated);
         }
         return migrated;
@@ -826,5 +842,31 @@ public class SuperResolutionConfig {
 
     public static void setFrameGenerationProvider(String value) {
         FRAME_GENERATION_PROVIDER.set(value);
+    }
+
+    public static String getFrameGenerationBackend() {
+        String stored = FRAME_GENERATION_BACKEND.get();
+        if (!FrameGenerationDescriptions.AUTO_ID.equals(stored)) {
+            return stored;
+        }
+
+        // Preserve configurations written before provider selection was split into an
+        // algorithm group and a concrete backend preference.
+        String legacyProvider = FRAME_GENERATION_PROVIDER.get();
+        String migrated = switch (legacyProvider) {
+            case "superresolution:streamline", "wisteria:streamline" -> "wisteria:streamline";
+            case "wisteria:ngx" -> "wisteria:ngx";
+            default -> stored;
+        };
+        if (!migrated.equals(stored)) {
+            FRAME_GENERATION_BACKEND.set(migrated);
+        }
+        return migrated;
+    }
+
+    public static void setFrameGenerationBackend(String value) {
+        FRAME_GENERATION_BACKEND.set(
+                value == null || value.isBlank() ? FrameGenerationDescriptions.AUTO_ID : value
+        );
     }
 }

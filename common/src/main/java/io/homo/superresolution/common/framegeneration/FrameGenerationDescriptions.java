@@ -21,6 +21,8 @@ import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 
 public final class FrameGenerationDescriptions {
     public static final String AUTO_ID = "superresolution:auto";
+    private static final String WISTERIA_STREAMLINE_ID = "wisteria:streamline";
+    private static final String WISTERIA_NGX_ID = "wisteria:ngx";
 
     private static boolean registered;
 
@@ -39,6 +41,10 @@ public final class FrameGenerationDescriptions {
      */
     public static boolean mayUseStreamline(String providerId) {
         if (!AUTO_ID.equals(providerId) && !FrameGenerationGroups.DLSS_FG.getId().equals(providerId)) {
+            return false;
+        }
+        String preferredBackend = SuperResolutionConfig.getFrameGenerationBackend();
+        if (!AUTO_ID.equals(preferredBackend) && !WISTERIA_STREAMLINE_ID.equals(preferredBackend)) {
             return false;
         }
         if (!StreamlineDistribution.isProvided()) {

@@ -44,6 +44,7 @@ public class SpecialConfigDescription<T> {
     protected boolean valueNameIsSupplier = false;
     protected Supplier<T> valueSupplier = null;
     protected Predicate<T> itemEnableRequirement = (a) -> true;
+    protected boolean requiresRestartGame;
 
     public static <T> SpecialConfigDescription<T> of(String key, ConfigSpecType type, T defaultValue) {
         return new SpecialConfigDescription<T>()
@@ -192,6 +193,15 @@ public class SpecialConfigDescription<T> {
     /** Gates individual entries of an enum option, e.g. to forbid turning a dependency off. */
     public SpecialConfigDescription<T> setItemEnableRequirement(Predicate<T> itemEnableRequirement) {
         this.itemEnableRequirement = itemEnableRequirement;
+        return this;
+    }
+
+    public boolean isRequiresRestartGame() {
+        return requiresRestartGame;
+    }
+
+    public SpecialConfigDescription<T> setRequiresRestartGame(boolean requiresRestartGame) {
+        this.requiresRestartGame = requiresRestartGame;
         return this;
     }
 

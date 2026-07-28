@@ -37,18 +37,21 @@ import java.util.Map;
  * Frontend for frame generation. Owns the backend-agnostic policy (mode gating,
  * shader-environment checks, per-frame constants) and dispatches the actual work to a
  * concrete {@link FrameGenerationProvider} picked by {@link BackendNegotiator} from the
- * algorithm group ({@code frame_generation/provider} config value = group id or "auto").
+ * algorithm group ({@code frame_generation/provider}) and optional concrete backend
+ * preference ({@code frame_generation/backend}).
  * <p>
- * The FG group selection is applied at startup — together with the LL group configuration
- * it decides whether Streamline is initialized (see
- * {@code VulkanPresentationFeature.shouldInitializeStreamline}) — so changing it takes
- * effect after a restart. Within-group backend switches are re-negotiated each frame.
+ * The FG group and concrete backend preference are latched at startup — together with the
+ * LL group configuration they decide whether Streamline is initialized (see
+ * {@code VulkanPresentationFeature.shouldInitializeStreamline}) — so changing either takes
+ * effect after a restart. Runtime availability and low-latency bindings are still
+ * re-negotiated as needed.
  */
 public final class FrameGeneration {
     private static final Map<String, FrameGenerationProvider> providers = new LinkedHashMap<>();
     private static BackendNegotiator.Resolution loggedResolution;
     private static @Nullable Boolean startupStreamlineRequested;
     private static @Nullable Boolean loggedRestartStreamlineRequest;
+    private static @Nullable String startupPreferredFgBackendId;
     private static boolean initialized;
 
     static {
@@ -65,6 +68,7 @@ public final class FrameGeneration {
         FGConstantsFeature.initialize();
         FGConstantsFeature.register();
         startupStreamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
+        startupPreferredFgBackendId = SuperResolutionConfig.getFrameGenerationBackend();
         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
             if (description.isAutomatic() || !FrameGenerationRegistry.isSupported(description)) {
                 continue;
@@ -89,6 +93,7 @@ public final class FrameGeneration {
         loggedResolution = null;
         startupStreamlineRequested = null;
         loggedRestartStreamlineRequest = null;
+        startupPreferredFgBackendId = null;
         FGConstantsFeature.shutdown();
         initialized = false;
     }
@@ -255,6 +260,9 @@ public final class FrameGeneration {
                 : BackendNegotiator.resolve(
                         fgGroupId,
                         LowLatency.configuredGroupId(),
+                        startupPreferredFgBackendId != null
+                                ? startupPreferredFgBackendId
+                                : SuperResolutionConfig.getFrameGenerationBackend(),
                         providers::get
                 );
         logResolution(resolution);

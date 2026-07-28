@@ -572,8 +572,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private OptionRequirement frameGenerationOptionDisplayRequirement(FrameGenerationDescription description) {
-        return () -> SuperResolutionConfig.getFrameGenerationProvider().equals(description.getId())
-                || FrameGeneration.activeId().equals(description.getId());
+        return () -> FrameGeneration.isFrameGenerationEnabled()
+                && (SuperResolutionConfig.getFrameGenerationProvider().equals(description.getId())
+                || FrameGeneration.activeId().equals(description.getId()));
     }
 
     private OptionRequirement getLowLatencyGroupItemRequirement(BackendGroup group) {
@@ -1581,6 +1582,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 if (displayRequirement != null) {
                     opt.setDisplayRequirement(displayRequirement);
                 }
+                opt.setRequireRestartGame(boolDesc.isRequiresRestartGame());
                 opt.build();
                 break;
             }
@@ -1613,6 +1615,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 if (displayRequirement != null) {
                     opt.setDisplayRequirement(displayRequirement);
                 }
+                opt.setRequireRestartGame(enumDesc.isRequiresRestartGame());
                 opt.build();
                 break;
             }
@@ -1649,6 +1652,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 if (displayRequirement != null) {
                     opt.setDisplayRequirement(displayRequirement);
                 }
+                opt.setRequireRestartGame(floatDesc.isRequiresRestartGame());
                 opt.build();
                 break;
             }

@@ -65,11 +65,24 @@ public final class BackendNegotiator {
             @Nullable String lowLatencyGroupId,
             Function<String, FrameGenerationProvider> fgProviderLookup
     ) {
+        return resolve(fgGroupId, lowLatencyGroupId, null, fgProviderLookup);
+    }
+
+    public static Resolution resolve(
+            @Nullable String fgGroupId,
+            @Nullable String lowLatencyGroupId,
+            @Nullable String preferredFgBackendId,
+            Function<String, FrameGenerationProvider> fgProviderLookup
+    ) {
         List<LowLatencyDescription> lowLatencyCandidates = collectLowLatencyCandidates(lowLatencyGroupId);
 
         boolean fgEnabled = fgGroupId != null && !fgGroupId.isEmpty();
         if (fgEnabled) {
-            for (FrameGenerationDescription fg : collectFrameGenerationCandidates(fgGroupId, fgProviderLookup)) {
+            for (FrameGenerationDescription fg : collectFrameGenerationCandidates(
+                    fgGroupId,
+                    preferredFgBackendId,
+                    fgProviderLookup
+            )) {
                 LowLatencyDescription paired = pickLowLatency(fg.getLowLatencyBinding(), lowLatencyCandidates);
                 if (paired == null && fg.getLowLatencyBinding().getKind() == LowLatencyBinding.Kind.REQUIRES) {
                     continue;
@@ -105,12 +118,19 @@ public final class BackendNegotiator {
 
     private static List<FrameGenerationDescription> collectFrameGenerationCandidates(
             String fgGroupId,
+            @Nullable String preferredFgBackendId,
             Function<String, FrameGenerationProvider> providerLookup
     ) {
         boolean auto = AUTO_FG_GROUP.equals(fgGroupId);
+        boolean preferredAuto = preferredFgBackendId == null
+                || preferredFgBackendId.isBlank()
+                || AUTO_FG_GROUP.equals(preferredFgBackendId);
         List<FrameGenerationDescription> out = new ArrayList<>();
         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
             if (description.isAutomatic()) {
+                continue;
+            }
+            if (!preferredAuto && !description.getId().equals(preferredFgBackendId)) {
                 continue;
             }
             BackendGroup group = description.getGroup();
