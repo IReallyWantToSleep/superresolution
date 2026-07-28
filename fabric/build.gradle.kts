@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom-remap") version "1.16.3"
+    id("net.fabricmc.fabric-loom") version "1.16.3"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -34,7 +34,7 @@ repositories {
     }
     maven {
         name = "Terraformers"
-        url = uri("https://maven.terraformersmc.com/repository/maven-public")
+        url = uri("https://maven.terraformersmc.com")
     }
     maven {
         name = "Modrinth"
