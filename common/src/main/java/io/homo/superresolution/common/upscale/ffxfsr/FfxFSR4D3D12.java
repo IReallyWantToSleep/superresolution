@@ -13,7 +13,6 @@ package io.homo.superresolution.common.upscale.ffxfsr;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.D3D12InteropAlgorithm;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.NativeLibManager;
@@ -30,15 +29,17 @@ import java.util.EnumSet;
 /**
  * AMD FSR 4.1 through the signed FFX API Direct3D 12 provider.
  */
-public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
+public final class FfxFSR4D3D12
+        extends D3D12InteropAlgorithm<SRUpscaleContext> {
     public static final String UPSCALER_DLL_NAME =
             "amd_fidelityfx_upscaler_dx12.dll";
     private static final long PROVIDER_ID = 0x8000006L;
 
-    private SRUpscaleContext context;
-
     @Override
-    protected void onD3D12InteropCreated(InitializationDescription desc) {
+    protected SRUpscaleContext createD3D12Upscaler(
+            InitializationDescription desc,
+            D3D12InteropContext interop,
+            InteropSize size) {
         Path providerLibrary = NativeLibManager.LIB_SUPER_RESOLUTION_FSR4
                 .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath())
                 .toAbsolutePath();
@@ -88,16 +89,16 @@ public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
                         SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
             }
 
-            context = new SRUpscaleContext(0);
+            SRUpscaleContext context = new SRUpscaleContext(0);
             try (SRCreateUpscaleContextDesc createDesc =
                          SRCreateUpscaleContextDesc.createD3D12(
-                                 new SRD3D12DeviceInfo(d3d12Interop.getDevice()),
+                                 new SRD3D12DeviceInfo(interop.getDevice()),
                                  new Vector2i(
-                                         RenderHandlerManager.getScreenWidth(),
-                                         RenderHandlerManager.getScreenHeight()),
+                                         size.screenWidth(),
+                                         size.screenHeight()),
                                  new Vector2i(
-                                         RenderHandlerManager.getRenderWidth(),
-                                         RenderHandlerManager.getRenderHeight()),
+                                         size.renderWidth(),
+                                         size.renderHeight()),
                                  flags)) {
                 SRReturnCode pathCode = createDesc
                         .getExtraParams()
@@ -114,7 +115,6 @@ public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
                                 provider,
                                 createDesc);
                 if (createCode != SRReturnCode.OK) {
-                    context = null;
                     throw new IllegalStateException(
                             "Could not create the FSR 4.1 context: " +
                                     createCode);
@@ -123,56 +123,55 @@ public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
                         SuperResolutionNativeAPI.srInitUpscaleContext(context);
                 if (initCode != SRReturnCode.OK) {
                     context.destroy();
-                    context = null;
                     throw new IllegalStateException(
                             "Could not initialize the FSR 4.1 context: " +
                                     initCode);
                 }
             }
+            return context;
         }
     }
 
     @Override
-    protected void onBeforeD3D12InteropDestroyed() {
-        if (context != null) {
-            if (context.nativePtr > 0) {
-                SRReturnCode code = context.destroy();
-                if (code != SRReturnCode.OK) {
-                    SuperResolution.LOGGER.error(
-                            "Failed to destroy FSR 4.1 context: {}",
-                            code);
-                }
+    protected void destroyD3D12Upscaler(SRUpscaleContext context) {
+        if (context.nativePtr > 0) {
+            SRReturnCode code = context.destroy();
+            if (code != SRReturnCode.OK) {
+                SuperResolution.LOGGER.error(
+                        "Failed to destroy FSR 4.1 context: {}",
+                        code);
             }
-            context = null;
         }
     }
 
     @Override
-    protected boolean isD3D12UpscalerReady() {
-        return context != null && context.nativePtr > 0;
+    protected boolean isD3D12UpscalerReady(SRUpscaleContext context) {
+        return context.nativePtr > 0;
     }
 
     @Override
     protected boolean dispatchD3D12Upscale(
+            SRUpscaleContext context,
+            D3D12InteropContext interop,
             long commandList,
             DispatchResource dispatchResource) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
             desc.setCommandBuffer(
                     SRDispatchCommandBufferInfo.createD3D12(commandList));
             desc.setColor(resource(
-                    d3d12Interop.inputColor(),
+                    interop.inputColor(),
                     SRResourceStates.COMPUTE_READ));
             desc.setDepth(resource(
-                    d3d12Interop.inputDepth(),
+                    interop.inputDepth(),
                     SRResourceStates.COMPUTE_READ));
             desc.setMotionVectors(resource(
-                    d3d12Interop.inputMotionVectors(),
+                    interop.inputMotionVectors(),
                     SRResourceStates.COMPUTE_READ));
             // Minecraft does not currently provide a valid exposure texture.
             // The context therefore always uses FFX auto exposure rather than
             // binding the uninitialized 1x1 interop exposure resource.
             desc.setOutput(resource(
-                    d3d12Interop.outputColor(),
+                    interop.outputColor(),
                     SRResourceStates.COMMON));
 
             desc.setJitterOffset(new Vector2f(dispatchResource.jitterOffset()));

@@ -28,43 +28,143 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 
+import java.util.Objects;
+
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 
 /**
  * Low-latency OpenGL/Direct3D 12 interop path.
  *
+ * <p>Every interop texture, semaphore, output framebuffer, and provider
+ * context belongs to one immutable-size resource generation. Resize creates a
+ * complete replacement generation before publishing it; dispatch therefore
+ * cannot combine a new frame size with resources from an older size.</p>
+ *
  * <p>D3D12 owns the shared committed resources and a shared timeline fence.
  * OpenGL imports those objects, writes the preprocessed inputs, signals the
  * fence, waits for the D3D12 dispatch, and then copies the vertically flipped
  * output into a regular OpenGL texture.</p>
  */
-public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
-    protected D3D12InteropContext d3d12Interop;
-    protected GlD3D12ImportableTexture2D inputColor;
-    protected GlD3D12ImportableTexture2D inputDepth;
-    protected GlD3D12ImportableTexture2D inputMotionVectors;
-    protected GlD3D12ImportableTexture2D inputExposure;
-    protected GlD3D12ImportableTexture2D outputColor;
+public abstract class D3D12InteropAlgorithm<U> extends AbstractAlgorithm {
+    private enum LifecycleState {
+        NEW,
+        READY,
+        RESIZE_PENDING,
+        REBUILDING,
+        DESTROYED
+    }
 
-    private D3D12InteropSemaphore semaphore;
-    private GlTexture2D flippedOutput;
-    private IFrameBuffer outputFramebuffer;
-    private int builtRenderWidth = -1;
-    private int builtRenderHeight = -1;
-    private int builtScreenWidth = -1;
-    private int builtScreenHeight = -1;
+    /**
+     * The dimensions bound to one resource generation.
+     *
+     * <p>The screen dimensions are sampled once and the render dimensions are
+     * derived from that same snapshot. This avoids constructing a generation
+     * from values observed on opposite sides of a window resize.</p>
+     */
+    protected record InteropSize(
+            int renderWidth,
+            int renderHeight,
+            int screenWidth,
+            int screenHeight) {
+        public InteropSize {
+            if (renderWidth < 1 || renderHeight < 1 ||
+                    screenWidth < 1 || screenHeight < 1) {
+                throw new IllegalArgumentException(
+                        "Interop dimensions must be positive");
+            }
+        }
+
+        private static InteropSize capture() {
+            return fromScreenSize(
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight());
+        }
+
+        private static InteropSize fromScreenSize(int width, int height) {
+            int screenWidth = Math.max(width, 32);
+            int screenHeight = Math.max(height, 32);
+            float scaleFactor = RenderHandlerManager.getScaleFactor();
+            return new InteropSize(
+                    (int) Math.max(screenWidth * scaleFactor, 32),
+                    (int) Math.max(screenHeight * scaleFactor, 32),
+                    screenWidth,
+                    screenHeight);
+        }
+
+        private boolean matches(DispatchResource dispatchResource) {
+            return dispatchResource.renderWidth() == renderWidth &&
+                    dispatchResource.renderHeight() == renderHeight &&
+                    dispatchResource.screenWidth() == screenWidth &&
+                    dispatchResource.screenHeight() == screenHeight;
+        }
+    }
+
+    private static final class InteropResources {
+        private final InteropSize size;
+        private final D3D12InteropContext context;
+        private final GlD3D12ImportableTexture2D inputColor;
+        private final GlD3D12ImportableTexture2D inputDepth;
+        private final GlD3D12ImportableTexture2D inputMotionVectors;
+        private final GlD3D12ImportableTexture2D inputExposure;
+        private final GlD3D12ImportableTexture2D outputColor;
+        private final D3D12InteropSemaphore semaphore;
+        private final GlTexture2D flippedOutput;
+        private final IFrameBuffer outputFramebuffer;
+        private final int[] sharedTextureIds;
+
+        private InteropResources(
+                InteropSize size,
+                D3D12InteropContext context,
+                GlD3D12ImportableTexture2D inputColor,
+                GlD3D12ImportableTexture2D inputDepth,
+                GlD3D12ImportableTexture2D inputMotionVectors,
+                GlD3D12ImportableTexture2D inputExposure,
+                GlD3D12ImportableTexture2D outputColor,
+                D3D12InteropSemaphore semaphore,
+                GlTexture2D flippedOutput,
+                IFrameBuffer outputFramebuffer) {
+            this.size = size;
+            this.context = context;
+            this.inputColor = inputColor;
+            this.inputDepth = inputDepth;
+            this.inputMotionVectors = inputMotionVectors;
+            this.inputExposure = inputExposure;
+            this.outputColor = outputColor;
+            this.semaphore = semaphore;
+            this.flippedOutput = flippedOutput;
+            this.outputFramebuffer = outputFramebuffer;
+            this.sharedTextureIds = new int[]{
+                    Math.toIntExact(inputColor.handle()),
+                    Math.toIntExact(inputDepth.handle()),
+                    Math.toIntExact(inputMotionVectors.handle()),
+                    Math.toIntExact(inputExposure.handle()),
+                    Math.toIntExact(outputColor.handle())
+            };
+        }
+    }
+
+    private record Generation<U>(InteropResources resources, U upscaler) {
+    }
+
+    private Generation<U> activeGeneration;
+    private LifecycleState lifecycleState = LifecycleState.NEW;
     private boolean resizeMismatchLogged;
 
-    protected abstract void onD3D12InteropCreated(InitializationDescription desc);
+    protected abstract U createD3D12Upscaler(
+            InitializationDescription desc,
+            D3D12InteropContext interop,
+            InteropSize size);
 
-    protected abstract void onBeforeD3D12InteropDestroyed();
+    protected abstract void destroyD3D12Upscaler(U upscaler);
 
     protected abstract boolean dispatchD3D12Upscale(
+            U upscaler,
+            D3D12InteropContext interop,
             long commandList,
             DispatchResource dispatchResource);
 
-    protected boolean isD3D12UpscalerReady() {
+    protected boolean isD3D12UpscalerReady(U upscaler) {
         return true;
     }
 
@@ -75,12 +175,34 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
                     "The optional D3D12 interop native library is unavailable.");
         }
         this.initDesc = desc;
+        lifecycleState = LifecycleState.REBUILDING;
         try {
-            createResources();
-            onD3D12InteropCreated(desc);
+            activeGeneration = createGeneration(InteropSize.capture());
+            lifecycleState = LifecycleState.READY;
         } catch (Throwable throwable) {
+            lifecycleState = LifecycleState.DESTROYED;
+            throw throwable;
+        }
+    }
+
+    private Generation<U> createGeneration(InteropSize size) {
+        InteropResources resources = createInteropResources(size);
+        U upscaler = null;
+        try {
+            upscaler = Objects.requireNonNull(
+                    createD3D12Upscaler(initDesc, resources.context, size),
+                    "D3D12 upscaler creation returned null");
+            return new Generation<>(resources, upscaler);
+        } catch (Throwable throwable) {
+            if (upscaler != null) {
+                try {
+                    destroyD3D12Upscaler(upscaler);
+                } catch (Throwable cleanupFailure) {
+                    throwable.addSuppressed(cleanupFailure);
+                }
+            }
             try {
-                destroyResources();
+                destroyInteropResources(resources);
             } catch (Throwable cleanupFailure) {
                 throwable.addSuppressed(cleanupFailure);
             }
@@ -88,84 +210,133 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
         }
     }
 
-    private void createResources() {
-        d3d12Interop = D3D12InteropContext.create(
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight(),
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight(),
-                SuperResolutionConfig.getInternalTextureFormat());
+    private InteropResources createInteropResources(InteropSize size) {
+        D3D12InteropContext context = null;
+        GlD3D12ImportableTexture2D inputColor = null;
+        GlD3D12ImportableTexture2D inputDepth = null;
+        GlD3D12ImportableTexture2D inputMotionVectors = null;
+        GlD3D12ImportableTexture2D inputExposure = null;
+        GlD3D12ImportableTexture2D outputColor = null;
+        D3D12InteropSemaphore semaphore = null;
+        GlTexture2D flippedOutput = null;
+        IFrameBuffer outputFramebuffer = null;
+        try {
+            context = D3D12InteropContext.create(
+                    size.renderWidth(),
+                    size.renderHeight(),
+                    size.screenWidth(),
+                    size.screenHeight(),
+                    SuperResolutionConfig.getInternalTextureFormat());
 
-        inputColor = new GlD3D12ImportableTexture2D(d3d12Interop.inputColor());
-        inputDepth = new GlD3D12ImportableTexture2D(d3d12Interop.inputDepth());
-        inputMotionVectors = new GlD3D12ImportableTexture2D(d3d12Interop.inputMotionVectors());
-        inputExposure = new GlD3D12ImportableTexture2D(d3d12Interop.inputExposure());
-        outputColor = new GlD3D12ImportableTexture2D(d3d12Interop.outputColor());
-        semaphore = new D3D12InteropSemaphore(d3d12Interop.getFenceSharedHandle());
+            inputColor = new GlD3D12ImportableTexture2D(context.inputColor());
+            inputDepth = new GlD3D12ImportableTexture2D(context.inputDepth());
+            inputMotionVectors =
+                    new GlD3D12ImportableTexture2D(context.inputMotionVectors());
+            inputExposure =
+                    new GlD3D12ImportableTexture2D(context.inputExposure());
+            outputColor = new GlD3D12ImportableTexture2D(context.outputColor());
+            semaphore =
+                    new D3D12InteropSemaphore(context.getFenceSharedHandle());
 
-        flippedOutput = (GlTexture2D) RenderSystems.opengl().device().createTexture(
-                TextureDescription.create()
-                        .type(TextureType.Texture2D)
-                        .usages(TextureUsages.create().sampler().storage())
-                        .format(SuperResolutionConfig.getInternalTextureFormat())
-                        .width(RenderHandlerManager.getScreenWidth())
-                        .height(RenderHandlerManager.getScreenHeight())
-                        .label("D3D12UpscaleFlippedOutput")
-                        .build());
-        outputFramebuffer = RenderSystems.opengl().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(flippedOutput)
-                        .label("D3D12UpscaleOutputFramebuffer")
-                        .build());
-        builtRenderWidth = RenderHandlerManager.getRenderWidth();
-        builtRenderHeight = RenderHandlerManager.getRenderHeight();
-        builtScreenWidth = RenderHandlerManager.getScreenWidth();
-        builtScreenHeight = RenderHandlerManager.getScreenHeight();
-        resizeMismatchLogged = false;
+            flippedOutput =
+                    (GlTexture2D) RenderSystems.opengl().device().createTexture(
+                            TextureDescription.create()
+                                    .type(TextureType.Texture2D)
+                                    .usages(TextureUsages.create()
+                                            .sampler()
+                                            .storage())
+                                    .format(SuperResolutionConfig
+                                            .getInternalTextureFormat())
+                                    .width(size.screenWidth())
+                                    .height(size.screenHeight())
+                                    .label("D3D12UpscaleFlippedOutput")
+                                    .build());
+            outputFramebuffer =
+                    RenderSystems.opengl().device().createFramebuffer(
+                            FramebufferDescription.create()
+                                    .colorAttachment(flippedOutput)
+                                    .label("D3D12UpscaleOutputFramebuffer")
+                                    .build());
+            return new InteropResources(
+                    size,
+                    context,
+                    inputColor,
+                    inputDepth,
+                    inputMotionVectors,
+                    inputExposure,
+                    outputColor,
+                    semaphore,
+                    flippedOutput,
+                    outputFramebuffer);
+        } catch (Throwable throwable) {
+            try {
+                destroyPartialInteropResources(
+                        context,
+                        inputColor,
+                        inputDepth,
+                        inputMotionVectors,
+                        inputExposure,
+                        outputColor,
+                        semaphore,
+                        flippedOutput,
+                        outputFramebuffer);
+            } catch (Throwable cleanupFailure) {
+                throwable.addSuppressed(cleanupFailure);
+            }
+            throw throwable;
+        }
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
         super.dispatch(dispatchResource);
-        if (d3d12Interop == null || !isD3D12UpscalerReady()) {
+        Generation<U> generation = activeGeneration;
+        if (lifecycleState == LifecycleState.DESTROYED ||
+                lifecycleState == LifecycleState.REBUILDING ||
+                generation == null ||
+                !isD3D12UpscalerReady(generation.upscaler())) {
             return false;
         }
-        if (!matchesBuiltSize(dispatchResource)) {
+
+        InteropResources resources = generation.resources();
+        if (!resources.size.matches(dispatchResource)) {
+            lifecycleState = LifecycleState.RESIZE_PENDING;
             if (!resizeMismatchLogged) {
                 SuperResolution.LOGGER.warn(
-                        "Skipping D3D12 upscale while resize is pending: " +
-                                "dispatch render={}x{}, screen={}x{}; " +
-                                "built render={}x{}, screen={}x{}",
+                        "Retaining the previous D3D12 output while resize is " +
+                                "pending: dispatch render={}x{}, screen={}x{}; " +
+                                "active generation render={}x{}, screen={}x{}",
                         dispatchResource.renderWidth(),
                         dispatchResource.renderHeight(),
                         dispatchResource.screenWidth(),
                         dispatchResource.screenHeight(),
-                        builtRenderWidth,
-                        builtRenderHeight,
-                        builtScreenWidth,
-                        builtScreenHeight);
+                        resources.size.renderWidth(),
+                        resources.size.renderHeight(),
+                        resources.size.screenWidth(),
+                        resources.size.screenHeight());
                 resizeMismatchLogged = true;
             }
             needsHistoryReset = true;
             return false;
         }
+        lifecycleState = LifecycleState.READY;
 
         InteropResourcesConverter.processInputTextures(
                 dispatchResource.resources().colorTexture(),
-                inputColor,
+                resources.inputColor,
                 dispatchResource.resources().depthTexture(),
-                inputDepth,
+                resources.inputDepth,
                 dispatchResource.resources().motionVectorsTexture(),
-                inputMotionVectors,
+                resources.inputMotionVectors,
                 dispatchResource.resources().exposureTexture(),
-                inputExposure,
-                SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction());
+                resources.inputExposure,
+                SRWorkModeManager.getCurrentState()
+                        .motionVectorPreprocessingFunction());
 
-        int[] sharedTextures = sharedTextureIds();
-        long openGlReadyValue = d3d12Interop.nextFenceValue();
-        semaphore.signal(
+        long openGlReadyValue = resources.context.nextFenceValue();
+        resources.semaphore.signal(
                 openGlReadyValue,
-                sharedTextures,
+                resources.sharedTextureIds,
                 new int[]{
                         GL_LAYOUT_SHADER_READ_ONLY_EXT,
                         GL_LAYOUT_SHADER_READ_ONLY_EXT,
@@ -174,22 +345,24 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
                         GL_LAYOUT_GENERAL_EXT
                 });
 
-        d3d12Interop.beginFrame(openGlReadyValue);
+        resources.context.beginFrame(openGlReadyValue);
         boolean dispatched;
-        long d3d12DoneValue = d3d12Interop.nextFenceValue();
+        long d3d12DoneValue = resources.context.nextFenceValue();
         try {
             dispatched = dispatchD3D12Upscale(
-                    d3d12Interop.getCommandList(),
+                    generation.upscaler(),
+                    resources.context,
+                    resources.context.getCommandList(),
                     dispatchResource);
         } finally {
             // Always close and submit the command list, then reacquire every
             // resource in OpenGL. This keeps the allocator and cross-API
             // ownership usable even if a provider throws after recording part
             // of a dispatch.
-            d3d12Interop.executeFrame(d3d12DoneValue);
-            semaphore.waitFor(
+            resources.context.executeFrame(d3d12DoneValue);
+            resources.semaphore.waitFor(
                     d3d12DoneValue,
-                    sharedTextures,
+                    resources.sharedTextureIds,
                     new int[]{
                             GL_LAYOUT_SHADER_READ_ONLY_EXT,
                             GL_LAYOUT_SHADER_READ_ONLY_EXT,
@@ -199,119 +372,152 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
                     });
         }
 
-        InteropResourcesConverter.flipY(outputColor, flippedOutput);
+        InteropResourcesConverter.flipY(
+                resources.outputColor,
+                resources.flippedOutput);
         return dispatched;
-    }
-
-    private boolean matchesBuiltSize(DispatchResource dispatchResource) {
-        return dispatchResource.renderWidth() == builtRenderWidth &&
-                dispatchResource.renderHeight() == builtRenderHeight &&
-                dispatchResource.screenWidth() == builtScreenWidth &&
-                dispatchResource.screenHeight() == builtScreenHeight;
-    }
-
-    private int[] sharedTextureIds() {
-        return new int[]{
-                Math.toIntExact(inputColor.handle()),
-                Math.toIntExact(inputDepth.handle()),
-                Math.toIntExact(inputMotionVectors.handle()),
-                Math.toIntExact(inputExposure.handle()),
-                Math.toIntExact(outputColor.handle())
-        };
     }
 
     @Override
     public void resize(int width, int height) {
-        if (isD3D12UpscalerReady() &&
-                RenderHandlerManager.getRenderWidth() == builtRenderWidth &&
-                RenderHandlerManager.getRenderHeight() == builtRenderHeight &&
-                RenderHandlerManager.getScreenWidth() == builtScreenWidth &&
-                RenderHandlerManager.getScreenHeight() == builtScreenHeight) {
+        InteropSize targetSize = InteropSize.fromScreenSize(width, height);
+        Generation<U> previous = activeGeneration;
+        if (previous != null &&
+                previous.resources().size.equals(targetSize) &&
+                isD3D12UpscalerReady(previous.upscaler())) {
+            lifecycleState = LifecycleState.READY;
+            resizeMismatchLogged = false;
             return;
         }
-        destroyResources();
-        needsHistoryReset = true;
+
+        lifecycleState = LifecycleState.REBUILDING;
+        if (previous != null) {
+            drainGeneration(previous);
+        }
+
+        Generation<U> replacement;
         try {
-            createResources();
-            onD3D12InteropCreated(initDesc);
+            replacement = createGeneration(targetSize);
         } catch (Throwable throwable) {
-            try {
-                destroyResources();
-            } catch (Throwable cleanupFailure) {
-                throwable.addSuppressed(cleanupFailure);
-            }
+            lifecycleState = previous == null
+                    ? LifecycleState.DESTROYED
+                    : LifecycleState.RESIZE_PENDING;
             throw throwable;
+        }
+
+        // Publish only after both the interop resources and provider context
+        // are ready. If construction fails, the previous generation remains
+        // intact and can still provide its last completed output.
+        activeGeneration = replacement;
+        lifecycleState = LifecycleState.READY;
+        resizeMismatchLogged = false;
+        needsHistoryReset = true;
+
+        if (previous != null) {
+            destroyGeneration(previous, false);
         }
     }
 
     @Override
     public void destroy() {
-        destroyResources();
+        Generation<U> generation = activeGeneration;
+        activeGeneration = null;
+        lifecycleState = LifecycleState.DESTROYED;
+        resizeMismatchLogged = false;
+        if (generation != null) {
+            destroyGeneration(generation, true);
+        }
     }
 
-    private void destroyResources() {
-        if (d3d12Interop != null) {
-            // OpenGL command buffers are submitted asynchronously and their
-            // waitForFence() implementation is a no-op. Drain the GL queue
-            // before deleting imported memory objects or releasing their
-            // owning D3D12 resources during resize.
-            RenderSystems.opengl().finish();
-            d3d12Interop.waitIdle();
-        }
-        onBeforeD3D12InteropDestroyed();
+    private void drainGeneration(Generation<U> generation) {
+        // OpenGL command buffers are submitted asynchronously and their
+        // waitForFence() implementation is a no-op. Drain the GL queue before
+        // deleting imported memory objects or releasing their owning D3D12
+        // resources during resize.
+        RenderSystems.opengl().finish();
+        generation.resources().context.waitIdle();
+    }
 
+    private void destroyGeneration(
+            Generation<U> generation,
+            boolean drain) {
+        if (drain) {
+            drainGeneration(generation);
+        }
+        try {
+            destroyD3D12Upscaler(generation.upscaler());
+        } finally {
+            destroyInteropResources(generation.resources());
+        }
+    }
+
+    private static void destroyInteropResources(
+            InteropResources resources) {
+        destroyPartialInteropResources(
+                resources.context,
+                resources.inputColor,
+                resources.inputDepth,
+                resources.inputMotionVectors,
+                resources.inputExposure,
+                resources.outputColor,
+                resources.semaphore,
+                resources.flippedOutput,
+                resources.outputFramebuffer);
+    }
+
+    private static void destroyPartialInteropResources(
+            D3D12InteropContext context,
+            GlD3D12ImportableTexture2D inputColor,
+            GlD3D12ImportableTexture2D inputDepth,
+            GlD3D12ImportableTexture2D inputMotionVectors,
+            GlD3D12ImportableTexture2D inputExposure,
+            GlD3D12ImportableTexture2D outputColor,
+            D3D12InteropSemaphore semaphore,
+            GlTexture2D flippedOutput,
+            IFrameBuffer outputFramebuffer) {
         if (outputFramebuffer != null) {
             outputFramebuffer.destroy();
-            outputFramebuffer = null;
         }
         if (flippedOutput != null) {
             flippedOutput.destroy();
-            flippedOutput = null;
         }
         if (outputColor != null) {
             outputColor.destroy();
-            outputColor = null;
         }
         if (inputExposure != null) {
             inputExposure.destroy();
-            inputExposure = null;
         }
         if (inputMotionVectors != null) {
             inputMotionVectors.destroy();
-            inputMotionVectors = null;
         }
         if (inputDepth != null) {
             inputDepth.destroy();
-            inputDepth = null;
         }
         if (inputColor != null) {
             inputColor.destroy();
-            inputColor = null;
         }
         if (semaphore != null) {
             semaphore.close();
-            semaphore = null;
         }
-        if (d3d12Interop != null) {
-            d3d12Interop.close();
-            d3d12Interop = null;
+        if (context != null) {
+            context.close();
         }
-        builtRenderWidth = -1;
-        builtRenderHeight = -1;
-        builtScreenWidth = -1;
-        builtScreenHeight = -1;
-        resizeMismatchLogged = false;
     }
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        return outputFramebuffer;
+        Generation<U> generation = activeGeneration;
+        return generation == null
+                ? null
+                : generation.resources().outputFramebuffer;
     }
 
     @Override
     public int getOutputTextureId() {
-        return flippedOutput == null
+        Generation<U> generation = activeGeneration;
+        return generation == null
                 ? 0
-                : Math.toIntExact(flippedOutput.handle());
+                : Math.toIntExact(
+                        generation.resources().flippedOutput.handle());
     }
 }
