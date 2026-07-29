@@ -178,6 +178,7 @@ public final class SuperResolution implements Destroyable {
         instance = new SuperResolution();
         SuperResolution.check();
         SuperResolution.preInit();
+        Streamline.prepareEarly();
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
