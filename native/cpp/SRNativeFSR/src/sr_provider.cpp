@@ -1,10 +1,6 @@
 #include "sr/fsr/sr_provider.h"
-#include "sr/fsr/fsr2.h"
-#include "sr/fsr/fsr3.h"
 
-static constexpr uint32_t PROVIDER_COUNT = 2;
-
-static SRUpscaleProvider g_providers[PROVIDER_COUNT];
+static SRUpscaleProvider g_providers[2];
 static bool g_initialized = false;
 
 static void ensureInitialized() {
@@ -28,7 +24,7 @@ extern "C" {
 
     SR_API SRReturnCode srGetFfxFSRUpscaleProvidersCount(uint32_t *outCount) {
         ensureInitialized();
-        *outCount = PROVIDER_COUNT;
+        *outCount = 2;
         return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 }
