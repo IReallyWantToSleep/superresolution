@@ -157,7 +157,9 @@ dependencies {
     if (versionConfig.common.architecturyApiVersion != null) {
         implementation("dev.architectury:architectury-neoforge:${versionConfig.common.architecturyApiVersion}")
     }
-    implementation("net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8")
+    // Sodium's NeoForge API exposes Fabric's Event type, but this Fabric mod must not be
+    // placed directly on NeoForge's runtime classpath. Sodium provides it at runtime.
+    compileOnly("net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8")
 
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
         var depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"

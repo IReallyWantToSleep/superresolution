@@ -146,7 +146,8 @@ dependencies {
     implementation(files(mergeVmaNatives.get().archiveFile))
     add("jarJar", files(mergeVmaNatives.get().archiveFile))
     //modImplementation("dev.architectury:architectury-forge:${versionConfig.common.architecturyApiVersion}")
-    implementation("net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb")
+    // Sodium's Forge API exposes Fabric's Event type, but Fabric API is not a Forge runtime mod.
+    compileOnly("net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb")
 
     val busDep = implementation("net.neoforged:bus:8.0.5")
     if (busDep != null) jarJar(busDep)
