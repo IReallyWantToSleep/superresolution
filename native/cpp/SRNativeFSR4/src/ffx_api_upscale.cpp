@@ -1,4 +1,4 @@
-#include "sr/fsr/ffx_api_upscale.h"
+#include "sr/fsr4/ffx_api_upscale.h"
 
 #if defined(ON_WIN64)
 
@@ -7,7 +7,7 @@
 #endif
 #include <windows.h>
 
-#include "sr/fsr/ffx_api_minimal.h"
+#include "sr/fsr4/ffx_api_minimal.h"
 
 #include <cwchar>
 #include <cstring>

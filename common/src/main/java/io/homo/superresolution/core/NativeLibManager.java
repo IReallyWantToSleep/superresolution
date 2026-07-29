@@ -48,6 +48,7 @@ public class NativeLibManager {
     private static final List<NativeLib> libs = new ArrayList<>();
     public static NativeLib LIB_SUPER_RESOLUTION = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
@@ -67,6 +68,7 @@ public class NativeLibManager {
             boolean presentation = VulkanPresentationFeature.shouldInitializeStreamline();
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
+            LIB_SUPER_RESOLUTION_FSR4 = new NativeLib("SuperResolutionFSR4", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", false, false);
             LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", presentation, presentation);
@@ -78,6 +80,7 @@ public class NativeLibManager {
             LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, presentation, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
+            libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
             libs.add(LIB_STREAMLINE_COMMON);

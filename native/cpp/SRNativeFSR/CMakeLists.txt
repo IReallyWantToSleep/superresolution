@@ -6,18 +6,7 @@ if (NOT (ON_LINUX OR ON_WINDOWS))
     message(FATAL_ERROR "${LIB_PLATFORM} 平台不支持FSR")
 endif()
 
-option(
-    SR_FSR_FFX_API_ONLY
-    "Only build the signed FFX API D3D12 provider (Windows only)"
-    OFF
-)
-if(SR_FSR_FFX_API_ONLY AND NOT ON_WINDOWS)
-    message(FATAL_ERROR "SR_FSR_FFX_API_ONLY is only supported on Windows")
-endif()
-
-if(NOT SR_FSR_FFX_API_ONLY)
-    find_package(Vulkan REQUIRED)
-endif()
+find_package(Vulkan REQUIRED)
 
 # ============================================================
 # FidelityFX SDK: 从子模块源码构建 / 使用预编译库
@@ -30,9 +19,7 @@ option(SR_FSR_BUILD_SDK "从源码编译 FidelityFX SDK（需要 SDK 子模块�
 # SDK 编译产物输出目录（同时也是预编译库查找目录）
 set(FFX_SDK_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libraries/${LIB_PLATFORM}")
 
-if(SR_FSR_FFX_API_ONLY)
-    message(STATUS "[FSR] 仅构建签名 FFX API D3D12 provider")
-elseif(SR_FSR_BUILD_SDK)
+if(SR_FSR_BUILD_SDK)
     # --- 检查子模块是否已初始化 ---
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SDK/CMakeLists.txt")
         message(FATAL_ERROR
@@ -169,23 +156,13 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-if(SR_FSR_FFX_API_ONLY)
-    set(ALL_SRC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ffx_api_upscale.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sr_provider.cpp
-    )
-else()
-    aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src ALL_SRC)
-endif()
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src ALL_SRC)
 add_library(SR_FSR_LIB SHARED ${ALL_SRC})
 
 target_compile_definitions(SR_FSR_LIB PRIVATE
     ${_SR_FSR_PLATFORM_DEFS}
     SRLIB_VERSION="${SRLIB_VERSION}"
 )
-if(SR_FSR_FFX_API_ONLY)
-    target_compile_definitions(SR_FSR_LIB PRIVATE SR_FSR_FFX_API_ONLY)
-endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set_target_properties(SR_FSR_LIB PROPERTIES OUTPUT_NAME "SuperResolutionFSR+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
@@ -193,15 +170,11 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set_target_properties(SR_FSR_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionFSR+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
 endif()
 
-if(SR_FSR_FFX_API_ONLY)
-    target_link_libraries(SR_FSR_LIB SR_MAIN_LIB)
-else()
-    target_link_libraries(SR_FSR_LIB
-        SR_MAIN_LIB
-        ${FFX_LINK_BACKEND}
-        ${FFX_LINK_FSR2}
-        ${FFX_LINK_FSR3UP}
-        ${FFX_LINK_FSR3}
-        ${Vulkan_LIBRARIES}
-    )
-endif()
+target_link_libraries(SR_FSR_LIB
+    SR_MAIN_LIB
+    ${FFX_LINK_BACKEND}
+    ${FFX_LINK_FSR2}
+    ${FFX_LINK_FSR3UP}
+    ${FFX_LINK_FSR3}
+    ${Vulkan_LIBRARIES}
+)

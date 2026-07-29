@@ -39,7 +39,7 @@ public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
 
     @Override
     protected void onD3D12InteropCreated(InitializationDescription desc) {
-        Path providerLibrary = NativeLibManager.LIB_SUPER_RESOLUTION_FSR
+        Path providerLibrary = NativeLibManager.LIB_SUPER_RESOLUTION_FSR4
                 .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath())
                 .toAbsolutePath();
         Path upscalerDll = SuperResolutionConstants.NATIVE_LIBRARIES_DIR
@@ -58,8 +58,8 @@ public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
         SRReturnCode loadCode =
                 SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                         providerLibrary.toString(),
-                        "srGetFfxFSRUpscaleProviders",
-                        "srGetFfxFSRUpscaleProvidersCount");
+                        "srGetFfxFSR4UpscaleProviders",
+                        "srGetFfxFSR4UpscaleProvidersCount");
         if (loadCode != SRReturnCode.OK) {
             throw new IllegalStateException(
                     "Could not load FSR providers: " + loadCode);
