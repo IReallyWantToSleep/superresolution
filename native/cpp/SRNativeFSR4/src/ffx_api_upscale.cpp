@@ -7,7 +7,10 @@
 #endif
 #include <windows.h>
 
-#include "sr/fsr4/ffx_api_minimal.h"
+#include <ffx_api.h>
+#include <ffx_api_types.h>
+#include <dx12/ffx_api_dx12.h>
+#include <ffx_upscale.h>
 
 #include <cwchar>
 #include <cstring>

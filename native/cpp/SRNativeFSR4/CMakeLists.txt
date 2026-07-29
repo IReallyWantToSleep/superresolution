@@ -17,6 +17,8 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/../SRNativeMain/include
+        ${PROJECT_SOURCE_DIR}/../third_party/FidelityFX/2.3.0/api/include
+        ${PROJECT_SOURCE_DIR}/../third_party/FidelityFX/2.3.0/upscalers/include
         ${PROJECT_SOURCE_DIR}/src
 )
 
