@@ -40,6 +40,7 @@ import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.xess.XeSS;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import net.minecraft.network.chat.Component;
 
@@ -197,6 +198,7 @@ public class AlgorithmDescriptions {
                                     .requiredGlExtension("GL_EXT_semaphore_win32")
                                     .glMajorVersion(4)
                                     .glMinorVersion(6)
+                                    .isTrue(NativeLibManager::d3d12InteropAvailable)
                     )
                     .extraResources(
                             ExtraResources.builder()

@@ -47,6 +47,7 @@ public class NativeLibManager {
     #endif
     private static final List<NativeLib> libs = new ArrayList<>();
     public static NativeLib LIB_SUPER_RESOLUTION = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_D3D12_INTEROP = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
@@ -67,6 +68,8 @@ public class NativeLibManager {
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
             boolean presentation = VulkanPresentationFeature.shouldInitializeStreamline();
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
+            LIB_SUPER_RESOLUTION_D3D12_INTEROP =
+                    new NativeLib("SuperResolutionD3D12Interop", true, false);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_FSR4 = new NativeLib("SuperResolutionFSR4", false, false);
             LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
@@ -79,6 +82,7 @@ public class NativeLibManager {
             LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, presentation, true);
             LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, presentation, true);
             libs.add(LIB_SUPER_RESOLUTION);
+            libs.add(LIB_SUPER_RESOLUTION_D3D12_INTEROP);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
@@ -110,6 +114,11 @@ public class NativeLibManager {
 
     public static boolean nativeApiAvailable() {
         return nativeApiAvailable;
+    }
+
+    public static boolean d3d12InteropAvailable() {
+        return LIB_SUPER_RESOLUTION_D3D12_INTEROP != null
+                && LIB_SUPER_RESOLUTION_D3D12_INTEROP.available;
     }
 
     public static void createLibraryDir(Path path) {

@@ -61,7 +61,9 @@ states)` constructor.
 ## Renderer interop
 
 `D3D12InteropAlgorithm` implements the renderer-facing half as a sibling to
-`VulkanInteropAlgorithm`. The initial implementation deliberately uses a
+`VulkanInteropAlgorithm`. Its JNI implementation lives in the reusable
+`SRNativeD3D12Interop` module rather than the FSR4 provider module. The
+initial implementation deliberately uses a
 single serial resource set:
 
 1. query OpenGL's `GL_DEVICE_LUID_EXT` and create D3D12 on the matching DXGI

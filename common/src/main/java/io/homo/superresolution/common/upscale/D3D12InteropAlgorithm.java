@@ -15,6 +15,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.d3d12.D3D12InteropContext;
 import io.homo.superresolution.core.graphics.d3d12.D3D12InteropSemaphore;
@@ -67,6 +68,10 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
 
     @Override
     public void initialize(InitializationDescription desc) {
+        if (!NativeLibManager.d3d12InteropAvailable()) {
+            throw new IllegalStateException(
+                    "The optional D3D12 interop native library is unavailable.");
+        }
         this.initDesc = desc;
         try {
             createResources();
