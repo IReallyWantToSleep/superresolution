@@ -204,6 +204,10 @@ public class AlgorithmDescriptions {
                             ExtraResources.builder()
                                     .add(ExtraResource.builder(
                                                     FfxFSR4D3D12.UPSCALER_DLL_NAME)
+                                            .addRemote(
+                                                    "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/v2.3.0/Kits/FidelityFX/signedbin/amd_fidelityfx_upscaler_dx12.dll",
+                                                    "AMD FidelityFX SDK v2.3.0"
+                                            )
                                             .build())
                                     .build()
                     )
