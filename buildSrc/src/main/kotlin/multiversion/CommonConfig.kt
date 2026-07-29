@@ -11,6 +11,11 @@ class CommonConfig(config: Map<*, *>) {
         ?: emptyList()
 
     val lwjglVersion: String = config["lwjgl_version"]?.toString().orEmpty()
+
+    // LWJGL 3.3.4 移除了旧版 stb_image_resize API（stbir_resize_uint8），而旧版
+    // Minecraft 的 NativeImage.resizeSubRectTo 链接的正是该 API，因此这类版本需要在
+    // 配置里单独指定 lwjgl_stb_version（如 3.3.3）；缺省时跟随 lwjgl_version。
+    val lwjglStbVersion: String = config["lwjgl_stb_version"]?.toString()?.takeIf { it.isNotBlank() } ?: lwjglVersion
     val architecturyApiVersion: String? = config["architectury_api_version"]?.toString()
     val clothConfigVersion: String? = config["cloth_config_version"]?.toString()
     val modArtifactMinecraftVer: String = config["mod_artifact_minecraft_ver"]?.toString().orEmpty()

@@ -85,7 +85,7 @@ allprojects {
                     force("org.lwjgl:lwjgl-opengl:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-vulkan:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-openal:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
-                    force("org.lwjgl:lwjgl-stb:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
+                    force("org.lwjgl:lwjgl-stb:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglStbVersion}")
                     force("org.lwjgl:lwjgl-jemalloc:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-tinyfd:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-freetype:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
