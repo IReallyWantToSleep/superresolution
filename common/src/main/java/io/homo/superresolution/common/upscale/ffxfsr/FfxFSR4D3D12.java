@@ -173,7 +173,7 @@ public final class FfxFSR4D3D12 extends D3D12InteropAlgorithm {
             // binding the uninitialized 1x1 interop exposure resource.
             desc.setOutput(resource(
                     d3d12Interop.outputColor(),
-                    SRResourceStates.UNORDERED_ACCESS));
+                    SRResourceStates.COMMON));
 
             desc.setJitterOffset(new Vector2f(dispatchResource.jitterOffset()));
             desc.setMotionVectorScale(new Vector2f(

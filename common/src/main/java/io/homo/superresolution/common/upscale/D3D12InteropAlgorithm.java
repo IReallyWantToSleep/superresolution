@@ -164,10 +164,10 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
                     d3d12DoneValue,
                     sharedTextures,
                     new int[]{
-                            GL_LAYOUT_GENERAL_EXT,
-                            GL_LAYOUT_GENERAL_EXT,
-                            GL_LAYOUT_GENERAL_EXT,
-                            GL_LAYOUT_GENERAL_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
+                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
                             GL_LAYOUT_GENERAL_EXT
                     });
         }
@@ -217,6 +217,11 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
 
     private void destroyResources() {
         if (d3d12Interop != null) {
+            // OpenGL command buffers are submitted asynchronously and their
+            // waitForFence() implementation is a no-op. Drain the GL queue
+            // before deleting imported memory objects or releasing their
+            // owning D3D12 resources during resize.
+            RenderSystems.opengl().finish();
             d3d12Interop.waitIdle();
         }
         onBeforeD3D12InteropDestroyed();
