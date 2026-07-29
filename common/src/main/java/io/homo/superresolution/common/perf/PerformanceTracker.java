@@ -40,6 +40,20 @@ public class PerformanceTracker {
         contextMap.computeIfAbsent(operationName, k -> new TrackerContext());
     }
 
+    public static void beginFrame() {
+        TrackerContext ctx = contextMap.get("Frame");
+        if (ctx == null) {
+            addOperation("Frame");
+            ctx = contextMap.get("Frame");
+            if (ctx == null) {
+                return;
+            }
+        }
+
+        ctx.tempCpuStart = System.nanoTime();
+        ctx.cpuStartPending = true;
+    }
+
     public static void push(String operationName) {
         TrackerContext ctx = contextMap.get(operationName);
         if (ctx == null) {
@@ -50,7 +64,10 @@ public class PerformanceTracker {
             }
         }
 
-        ctx.tempCpuStart = System.nanoTime();
+        if (!("Frame".equals(operationName) && ctx.cpuStartPending)) {
+            ctx.tempCpuStart = System.nanoTime();
+        }
+        ctx.cpuStartPending = false;
 
         if (!SuperResolutionConfig.isEnableDetailedProfiling()) {
             return;
@@ -82,6 +99,7 @@ public class PerformanceTracker {
 
         long end = System.nanoTime();
         ctx.cpuTimes[ctx.cursor] = end - ctx.tempCpuStart;
+        ctx.cpuStartPending = false;
 
         if (SuperResolutionConfig.isEnableDetailedProfiling()) {
             tryCleanPendingResults(ctx);
@@ -229,6 +247,7 @@ public class PerformanceTracker {
 
         int cursor = 0;
         long tempCpuStart = 0;
+        boolean cpuStartPending = false;
         boolean queriesInitialized = false;
 
         TrackerContext() {
@@ -260,6 +279,7 @@ public class PerformanceTracker {
             Arrays.fill(cpuTimes, 0);
             Arrays.fill(gpuTimes, 0);
             cursor = 0;
+            cpuStartPending = false;
         }
     }
 }

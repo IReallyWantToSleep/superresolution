@@ -87,6 +87,8 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
+        // Include Reflex pacing in the CPU frame delta used by GUI animations.
+        PerformanceTracker.beginFrame();
         if (SuperResolution.gameIsLoaded) {
             int frameIndex = GameFrameIndex.beginFrame();
             LowLatency.beginFrame(frameIndex);

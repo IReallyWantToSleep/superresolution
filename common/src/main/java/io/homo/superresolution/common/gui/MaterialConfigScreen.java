@@ -123,6 +123,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final float GROUP_TITLE_PILL_MIN_HEIGHT = 30f;
     private static final float FRAME_TITLE_PILL_HORIZONTAL_PADDING = 16f;
     private static final float GROUP_TITLE_PILL_HORIZONTAL_PADDING = 9f;
+    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
+    private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = true;
+    #else
+    private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = false;
+    #endif
 
     private final Screen parentScreen;
     private MaterialScheme materialScheme;
@@ -686,6 +691,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .setText(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.text").getString())
                     .setDisplayRequirement(OptionRequirement.isTrue(B3DVulkanBridge::isB3DVulkanBackend))
                     .build();
+            if (!CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION) {
+                builder.hintOption(Text.literal("vulkan_presentation_unavailable"))
+                        .setIcon(MaterialSymbols.iconWarning())
+                        .setTitle(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.title").getString())
+                        .setText(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.text").getString())
+                        .build();
+            }
             builder.hintOption(Text.literal("tip114514"))
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
@@ -927,13 +939,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 }
         );
 
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
-        final boolean supportsVulkanPresentation = true;
-        #else
-        final boolean supportsVulkanPresentation = false;
-        #endif
-
-        addLabeledOptionGroup(
+        if (CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION) {
+            addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.category.presentation"),
                 builder -> builder.booleanOption(
@@ -945,8 +952,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
                         ))
                         .setEnableRequirement(OptionRequirement.all(
-                                () -> !SuperResolutionConfig.isSkipInitVulkan(),
-                                OptionRequirement.isTrue(() -> supportsVulkanPresentation)
+                                () -> !SuperResolutionConfig.isSkipInitVulkan()
                         ))
                         .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                 Text.translatable(
@@ -975,10 +981,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setNameProvider(g -> g.getDisplayName().getString())
                             .setValuesSupplier(this::lowLatencyGroups)
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
-                            .setEnableRequirement(OptionRequirement.all(
-                                    () -> supportsVulkanPresentation,
-                                    SuperResolutionConfig::isEnableVulkanPresentation
-                            ))
+                            .setEnableRequirement(SuperResolutionConfig::isEnableVulkanPresentation)
                             .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                     Text.translatable(
                                             SuperResolutionConfig.isEnableVulkanPresentation()
@@ -1057,6 +1060,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         }
                     }
             );
+        }
         }
 
 

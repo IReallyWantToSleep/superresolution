@@ -18,7 +18,9 @@
 
 package io.homo.superresolution.common;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.SuperResolutionAPI;
@@ -60,6 +62,9 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public final class SuperResolution implements Destroyable {

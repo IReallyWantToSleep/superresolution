@@ -361,6 +361,8 @@
     "superresolution.screen.config.hint.performance_warning.text": "No shader pack is currently active. Vanilla Minecraft has a low graphics load, so super resolution cannot improve performance and may cause frame rate drops. Compatibility in vanilla mode is limited and may cause rendering conflicts with some mods.",
     "superresolution.screen.config.hint.b3d_vulkan_unavailable.title": "Super Resolution cannot work on the Vulkan backend",
     "superresolution.screen.config.hint.b3d_vulkan_unavailable.text": "The Vulkan graphics backend is currently in use. Because Iris does not support the Vulkan backend yet, Super Resolution cannot enable upscaling or scaling in this environment; you can still open the configuration screen, but all features will be unavailable.",
+    "superresolution.screen.config.hint.vulkan_presentation_unavailable.title": "Feature Unavailable",
+    "superresolution.screen.config.hint.vulkan_presentation_unavailable.text": "This version does not support Vulkan Presentation, Low Latency, or related features.",
     "superresolution.screen.config.hint.shader_compat_warning.title": "Shader Compatibility Warning",
     "superresolution.screen.config.hint.shader_compat_warning.text": "The current shader pack has not been adapted for the super resolution mod and will run in compatibility mode. This mode may cause: blurry visuals, ghosting artifacts, performance degradation, and reduced compatibility with other mods.",
     "superresolution.translate.PoweredByDeepSeek": "Powered by DeepSeek"
