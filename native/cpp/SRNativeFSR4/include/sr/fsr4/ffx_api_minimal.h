@@ -148,6 +148,11 @@ struct FfxApiResource {
     uint32_t state;
 };
 
+struct FfxApiEffectMemoryUsage {
+    uint64_t totalUsageInBytes;
+    uint64_t aliasableUsageInBytes;
+};
+
 typedef void *(*ffxAlloc)(void *pUserData, uint64_t size);
 typedef void (*ffxDealloc)(void *pUserData, void *pMem);
 
@@ -196,6 +201,8 @@ struct FfxApiFunctions {
 #define FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12 \
     FFX_API_MAKE_BACKEND_SUB_ID(FFX_API_BACKEND_ID_DX12, 0x02)
 #define FFX_API_QUERY_DESC_TYPE_GET_PROVIDER_VERSION 6u
+#define FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE \
+    FFX_API_MAKE_EFFECT_SUB_ID(FFX_API_EFFECT_ID_UPSCALE, 0x08)
 
 #define FFX_UPSCALER_VERSION_MAJOR 4
 #define FFX_UPSCALER_VERSION_MINOR 1
@@ -264,4 +271,9 @@ struct ffxQueryGetProviderVersion {
     ffxQueryDescHeader header;
     uint64_t versionId;
     const char *versionName;
+};
+
+struct ffxQueryDescUpscaleGetGPUMemoryUsage {
+    ffxQueryDescHeader header;
+    FfxApiEffectMemoryUsage *gpuMemoryUsageUpscaler;
 };

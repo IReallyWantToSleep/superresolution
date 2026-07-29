@@ -1,17 +1,18 @@
 #include "sr/fsr4/sr_provider.h"
 #include "sr/fsr4/ffx_api_upscale.h"
 
+#include <mutex>
+
 static constexpr uint32_t PROVIDER_COUNT = 1;
 
 static SRUpscaleProvider g_providers[PROVIDER_COUNT];
-static bool g_initialized = false;
+static std::once_flag g_initializeOnce;
 
 static void ensureInitialized() {
-    if (!g_initialized) {
+    std::call_once(g_initializeOnce, [] {
         g_providers[0].providerId = SR_MODULES_FSR4_ID;
         g_providers[0].callbacks = srGetFfxApiUpscaleCallbacks();
-        g_initialized = true;
-    }
+    });
 }
 
 extern "C" {

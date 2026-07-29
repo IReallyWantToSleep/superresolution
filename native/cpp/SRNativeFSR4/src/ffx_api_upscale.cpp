@@ -211,7 +211,10 @@ extern "C" {
             &privateData->createDesc.header,
             nullptr);
         if (code != FFX_API_RETURN_OK) {
-            report(desc, SR_MESSAGE_TYPE_ERROR, L"FFX API failed to create an upscaling context.");
+            const std::wstring message =
+                L"FFX API failed to create an upscaling context. Code=" +
+                std::to_wstring(code);
+            report(desc, SR_MESSAGE_TYPE_ERROR, message.c_str());
             FreeLibrary(module);
             delete privateData;
             return fromFfxReturnCode(code);
@@ -272,10 +275,18 @@ extern "C" {
             }
             case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO: {
                 static thread_local SRQueryGpuMemoryResult memoryResult = {};
-                // The modern API exposes a pre-creation V2 memory query. Keep
-                // SRAPI's context query valid until that richer query surface
-                // is represented in SRAPI.
-                memoryResult.gpuMemory = 0;
+                FfxApiEffectMemoryUsage usage = {};
+                ffxQueryDescUpscaleGetGPUMemoryUsage query = {};
+                query.header.type =
+                    FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE;
+                query.gpuMemoryUsageUpscaler = &usage;
+                const ffxReturnCode_t code = privateData->functions.query(
+                    &privateData->context,
+                    &query.header);
+                if (code != FFX_API_RETURN_OK) {
+                    return fromFfxReturnCode(code);
+                }
+                memoryResult.gpuMemory = usage.totalUsageInBytes;
                 result->type = queryType;
                 result->data = &memoryResult;
                 return SR_RETURN_CODE_OK;
@@ -298,9 +309,11 @@ extern "C" {
         if (!context || !context->userContext || !desc) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
-        if (desc->commandList.renderApiType != SR_RENDER_API_TYPE_D3D12 ||
-            !desc->commandList.apiCommandBuffer.d3d12.commandList) {
+        if (desc->commandList.renderApiType != SR_RENDER_API_TYPE_D3D12) {
             return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
+        }
+        if (!desc->commandList.apiCommandBuffer.d3d12.commandList) {
+            return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
 
         auto *privateData = static_cast<SRFfxApiPrivateData *>(context->userContext);
