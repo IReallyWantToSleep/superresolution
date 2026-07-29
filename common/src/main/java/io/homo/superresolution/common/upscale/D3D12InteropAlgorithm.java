@@ -12,6 +12,7 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
@@ -53,6 +54,7 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
     private int builtRenderHeight = -1;
     private int builtScreenWidth = -1;
     private int builtScreenHeight = -1;
+    private boolean resizeMismatchLogged;
 
     protected abstract void onD3D12InteropCreated(InitializationDescription desc);
 
@@ -119,12 +121,32 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
         builtRenderHeight = RenderHandlerManager.getRenderHeight();
         builtScreenWidth = RenderHandlerManager.getScreenWidth();
         builtScreenHeight = RenderHandlerManager.getScreenHeight();
+        resizeMismatchLogged = false;
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
         super.dispatch(dispatchResource);
         if (d3d12Interop == null || !isD3D12UpscalerReady()) {
+            return false;
+        }
+        if (!matchesBuiltSize(dispatchResource)) {
+            if (!resizeMismatchLogged) {
+                SuperResolution.LOGGER.warn(
+                        "Skipping D3D12 upscale while resize is pending: " +
+                                "dispatch render={}x{}, screen={}x{}; " +
+                                "built render={}x{}, screen={}x{}",
+                        dispatchResource.renderWidth(),
+                        dispatchResource.renderHeight(),
+                        dispatchResource.screenWidth(),
+                        dispatchResource.screenHeight(),
+                        builtRenderWidth,
+                        builtRenderHeight,
+                        builtScreenWidth,
+                        builtScreenHeight);
+                resizeMismatchLogged = true;
+            }
+            needsHistoryReset = true;
             return false;
         }
 
@@ -179,6 +201,13 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
 
         InteropResourcesConverter.flipY(outputColor, flippedOutput);
         return dispatched;
+    }
+
+    private boolean matchesBuiltSize(DispatchResource dispatchResource) {
+        return dispatchResource.renderWidth() == builtRenderWidth &&
+                dispatchResource.renderHeight() == builtRenderHeight &&
+                dispatchResource.screenWidth() == builtScreenWidth &&
+                dispatchResource.screenHeight() == builtScreenHeight;
     }
 
     private int[] sharedTextureIds() {
@@ -271,6 +300,7 @@ public abstract class D3D12InteropAlgorithm extends AbstractAlgorithm {
         builtRenderHeight = -1;
         builtScreenWidth = -1;
         builtScreenHeight = -1;
+        resizeMismatchLogged = false;
     }
 
     @Override
