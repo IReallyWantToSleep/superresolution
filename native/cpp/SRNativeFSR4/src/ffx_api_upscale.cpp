@@ -18,9 +18,16 @@
 #include <string>
 
 namespace {
+    struct SRFfxApiFunctions {
+        PfnFfxCreateContext createContext;
+        PfnFfxDestroyContext destroyContext;
+        PfnFfxQuery query;
+        PfnFfxDispatch dispatch;
+    };
+
     struct SRFfxApiPrivateData {
         HMODULE module = nullptr;
-        FfxApiFunctions functions = {};
+        SRFfxApiFunctions functions = {};
         ffxContext context = nullptr;
         ffxCreateContextDescUpscale createDesc = {};
         ffxCreateBackendDX12Desc backendDesc = {};
@@ -50,7 +57,7 @@ namespace {
         }
     }
 
-    bool loadFunctions(HMODULE module, FfxApiFunctions *outFunctions) {
+    bool loadFunctions(HMODULE module, SRFfxApiFunctions *outFunctions) {
         outFunctions->createContext = reinterpret_cast<PfnFfxCreateContext>(
             GetProcAddress(module, "ffxCreateContext"));
         outFunctions->destroyContext = reinterpret_cast<PfnFfxDestroyContext>(
@@ -203,7 +210,8 @@ extern "C" {
 
         privateData->backendDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_BACKEND_DX12;
         privateData->backendDesc.header.pNext = &privateData->versionDesc.header;
-        privateData->backendDesc.device = desc->renderDeviceInfo.d3d12.device;
+        privateData->backendDesc.device = static_cast<ID3D12Device *>(
+            desc->renderDeviceInfo.d3d12.device);
 
         privateData->versionDesc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE_VERSION;
         privateData->versionDesc.header.pNext = nullptr;
