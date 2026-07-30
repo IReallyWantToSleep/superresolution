@@ -93,7 +93,9 @@ allprojects {
             options.compilerArgs.add("-Xplugin:Manifold")
             options.encoding = "UTF-8"
             options.isFork = true
-            options.forkOptions.memoryMaximumSize = "4g"
+            // One forked javac per concurrent compile task, so this multiplies by
+            // org.gradle.workers.max. Keep the product well under physical RAM.
+            options.forkOptions.memoryMaximumSize = "2g"
         }
 
         dependencies {
