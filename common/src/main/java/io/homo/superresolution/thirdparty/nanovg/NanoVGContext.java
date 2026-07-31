@@ -217,8 +217,14 @@ public class NanoVGContext implements AutoCloseable {
 
     private static native void nLineStyle(long ctx, int lineStyle);
 
+    private static native long nTextMeasureStateVersion(long ctx);
+
     public long getNativeHandle() {
         return nativeHandle;
+    }
+
+    public long textMeasureStateVersion() {
+        return nTextMeasureStateVersion(nativeHandle);
     }
 
     public void beginFrame(float windowWidth, float windowHeight, float devicePixelRatio) {

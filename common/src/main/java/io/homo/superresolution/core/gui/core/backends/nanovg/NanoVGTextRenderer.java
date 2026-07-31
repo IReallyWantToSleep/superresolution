@@ -29,45 +29,126 @@ import io.homo.superresolution.thirdparty.nanovg.TextBoundsResult;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class NanoVGTextRenderer extends NanoVGRendererBase {
+    private static final int TEXT_BOUNDS_CACHE_CAPACITY = 256;
+
+    private final Map<TextBoundsCacheKey, CachedTextBounds> textBoundsCache =
+            new LinkedHashMap<>(TEXT_BOUNDS_CACHE_CAPACITY, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<TextBoundsCacheKey, CachedTextBounds> eldest) {
+                    return size() > TEXT_BOUNDS_CACHE_CAPACITY;
+                }
+            };
+    private long lastContextHandle = Long.MIN_VALUE;
+    private int lastDevicePixelRatioBits = Integer.MIN_VALUE;
 
     public NanoVGTextRenderer(NanoVGContextWrapper context) {
     }
 
-    private TextBoundsResult measureTextBounds(IFont font, String text, float fontSize, float lineHeight, float weight) {
+    public void clearTextBoundsCache() {
+        textBoundsCache.clear();
+        lastContextHandle = Long.MIN_VALUE;
+        lastDevicePixelRatioBits = Integer.MIN_VALUE;
+    }
+
+    private CachedTextBounds measureTextBounds(IFont font, String text, float fontSize, float lineHeight, float weight) {
         if (text == null || text.isEmpty()) {
             return null;
         }
+
+        invalidateCacheIfContextChanged();
         contextPtr.fontFace(font.name());
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
         contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
-        return contextPtr.textBounds(0, 0, text);
+
+        TextBoundsCacheKey key = new TextBoundsCacheKey(
+                font.nativeId(),
+                font.name(),
+                text,
+                canonicalFloatBits(fontSize),
+                canonicalFloatBits(lineHeight),
+                canonicalFloatBits(weight),
+                contextPtr.textMeasureStateVersion()
+        );
+        CachedTextBounds cached = textBoundsCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+
+        TextBoundsResult result = contextPtr.textBounds(0, 0, text);
+        cached = CachedTextBounds.from(result);
+        textBoundsCache.put(key, cached);
+        return cached;
     }
 
     public float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        TextBoundsResult result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        CachedTextBounds result = measureTextBounds(font, text, fontSize, lineHeight, weight);
         return result == null ? 0f : result.advance;
     }
 
     public float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        TextBoundsResult result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        CachedTextBounds result = measureTextBounds(font, text, fontSize, lineHeight, weight);
         if (result == null) return 0;
-        float[] bounds = result.bounds;
-        return (bounds[3] - bounds[1]) - 2;
+        return (result.maxY - result.minY) - 2;
     }
 
     public Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        TextBoundsResult result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        CachedTextBounds result = measureTextBounds(font, text, fontSize, lineHeight, weight);
         if (result == null) return new Vector2f(0);
-        float[] bounds = result.bounds;
         return new Vector2f(
                 result.advance,
-                (bounds[3] - bounds[1]) - 2.5f
+                (result.maxY - result.minY) - 2.5f
         );
+    }
+
+    private void invalidateCacheIfContextChanged() {
+        long contextHandle = contextPtr.getNativeHandle();
+        int devicePixelRatioBits = canonicalFloatBits(nvg.devicePixelRatio());
+        if (contextHandle != lastContextHandle || devicePixelRatioBits != lastDevicePixelRatioBits) {
+            textBoundsCache.clear();
+            lastContextHandle = contextHandle;
+            lastDevicePixelRatioBits = devicePixelRatioBits;
+        }
+    }
+
+    private static int canonicalFloatBits(float value) {
+        return value == 0.0f ? 0 : Float.floatToIntBits(value);
+    }
+
+    private record TextBoundsCacheKey(
+            int fontId,
+            String fontName,
+            String text,
+            int fontSizeBits,
+            int lineHeightBits,
+            int weightBits,
+            long textMeasureStateVersion
+    ) {
+    }
+
+    private record CachedTextBounds(
+            float advance,
+            float minX,
+            float minY,
+            float maxX,
+            float maxY
+    ) {
+        private static CachedTextBounds from(TextBoundsResult result) {
+            float[] bounds = result.bounds;
+            return new CachedTextBounds(
+                    result.advance,
+                    bounds[0],
+                    bounds[1],
+                    bounds[2],
+                    bounds[3]
+            );
+        }
     }
 
     public void drawAlignedText(

@@ -1030,6 +1030,12 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
     env->ReleaseStringUTFChars(font, fontStr);
 }
 
+JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextMeasureStateVersion(
+    JNIEnv *, jclass, jlong ptr) {
+    NanoVGContext *ctx = (NanoVGContext *) ptr;
+    return (jlong) ctx->TextMeasureStateVersion();
+}
+
 JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nText(
     JNIEnv *env, jclass, jlong ptr, jfloat x, jfloat y, jstring string) {
     NanoVGContext *ctx = (NanoVGContext *) ptr;

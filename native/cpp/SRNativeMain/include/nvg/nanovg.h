@@ -607,6 +607,9 @@ extern "C" {
     // Sets the font face based on specified name of current text style.
     void nvgFontFace(NVGcontext *ctx, const char *font);
 
+    // Returns the current text measurement state version.
+    unsigned long long nvgTextMeasureStateVersion(NVGcontext *ctx);
+
     // Draws text string at specified location. If end is specified only the sub-string up to the end is drawn.
     float nvgText(NVGcontext *ctx, float x, float y, const char *string, const char *end);
 
