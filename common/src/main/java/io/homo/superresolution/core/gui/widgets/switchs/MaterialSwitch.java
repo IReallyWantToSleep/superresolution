@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui.widgets.switchs;
 
+import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
@@ -31,11 +32,18 @@ import io.homo.superresolution.core.utils.Color;
 import org.joml.Vector2f;
 
 public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
+    private static final long COLOR_TRANSITION_DURATION = 67;
+    private static final long ICON_OPACITY_DURATION = 33;
+    private static final long HANDLE_POSITION_DURATION = 300;
+    private static final long HANDLE_SIZE_DURATION = 250;
+    private static final long PRESSED_HANDLE_SIZE_DURATION = 100;
+
     protected Animator.FloatAnimator hoverAnimator;
     protected Animator.FloatAnimator pressAnimator;
     protected Animator.FloatAnimator handlePositionAnimator;
     protected Animator.FloatAnimator changeAnimator;
     protected Animator.FloatAnimator handleSizeAnimator;
+    protected Animator.FloatAnimator iconOpacityAnimator;
     private boolean checked;
 
     public MaterialSwitch() {
@@ -68,7 +76,11 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
             }
             if (changeAnimator != null) {
                 changeAnimator.cancel();
-                changeAnimator.set(0f);
+                changeAnimator.set(checked ? 1f : 0f);
+            }
+            if (iconOpacityAnimator != null) {
+                iconOpacityAnimator.cancel();
+                iconOpacityAnimator.set(checked ? 1f : 0f);
             }
         }
         return this;
@@ -82,12 +94,12 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
             // 打开开关
             handlePositionAnimator
                     .timeInterpolator(new BezierInterpolator(0.175, 0.885, 0.32, 1.275))
-                    .duration(250)
+                    .duration(HANDLE_POSITION_DURATION)
                     .to(getBounds().width - 32)
                     .start();
             handleSizeAnimator
                     .timeInterpolator(new BezierInterpolator(0.2, 0, 0, 1))
-                    .duration(200)
+                    .duration(HANDLE_SIZE_DURATION)
                     .to(
                             (style().showCheckedIconWhenEnable()
                                     || style().showCheckedIconAlways())
@@ -100,12 +112,12 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
             // 关闭开关
             handlePositionAnimator
                     .timeInterpolator(new BezierInterpolator(0.175, 0.885, 0.32, 1.275))
-                    .duration(250)
+                    .duration(HANDLE_POSITION_DURATION)
                     .to(0f)
                     .start();
             handleSizeAnimator
                     .timeInterpolator(new BezierInterpolator(0.2, 0, 0, 1))
-                    .duration(200)
+                    .duration(HANDLE_SIZE_DURATION)
                     .to(
                             (style().showUncheckedIconWhenEnable()
                                     || style().showUncheckedIconAlways())
@@ -118,8 +130,13 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
 
         changeAnimator
                 .timeInterpolator(TimeInterpolator.linear())
-                .duration(200)
-                .fromTo(0f, 1f)
+                .duration(COLOR_TRANSITION_DURATION)
+                .fromTo(changeAnimator.get(), newChecked ? 1f : 0f)
+                .start();
+        iconOpacityAnimator
+                .timeInterpolator(TimeInterpolator.linear())
+                .duration(ICON_OPACITY_DURATION)
+                .fromTo(iconOpacityAnimator.get(), newChecked ? 1f : 0f)
                 .start();
         this.checked = newChecked;
         return this;
@@ -141,6 +158,9 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
 
         this.changeAnimator = new Animator.FloatAnimator();
         this.changeAnimator.set(0f);
+
+        this.iconOpacityAnimator = new Animator.FloatAnimator();
+        this.iconOpacityAnimator.set(0f);
 
         float initialHandleSize = (style().showUncheckedIconWhenEnable() || style().showUncheckedIconAlways())
                 ? MaterialSwitchSize.Default.handleSizeWithIcon()
@@ -175,7 +195,8 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 pressAnimator,
                 handlePositionAnimator,
                 changeAnimator,
-                handleSizeAnimator);
+                handleSizeAnimator,
+                iconOpacityAnimator);
         updateRectangle();
         Rectangle bounds = getBounds();
         if (handleSizeAnimator
@@ -210,11 +231,10 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 colors.trackColor,
                 true);
 
-        if (!isChecked()) {
+        if (colors.outlineAlpha > 0.001f) {
             ctx.beginPath();
-            ctx.strokeColor(
-                    isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.08))
-                            : scheme().outline());
+            ctx.strokeColor(colors.outlineColor.copy()
+                    .alpha((int) (colors.outlineColor.alpha() * colors.outlineAlpha)));
             ctx.strokeWidth(MaterialSwitchSize.Default.trackOutlineWidth());
             ctx.roundedRect(
                     bounds.x,
@@ -243,36 +263,24 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                             .alpha((int) (0.1 * 255 * hoverAnimator.get())),
                     true);
         }
-        if ((isChecked() && (style().showCheckedIconWhenEnable() && isChecked()
-                || style().showCheckedIconAlways()))) {
-            float checkedIconX = bounds.x + bounds.width - 16;
-            MaterialSymbols.iconCheck().render(
+        float iconOpacityProgress = getIconOpacityProgress();
+        if (style().showCheckedIconWhenEnable() || style().showCheckedIconAlways()) {
+            renderIcon(
                     ctx,
-                    colors.iconColor.copy().alpha(
-                            !handlePositionAnimator.isRunning() ? 255
-                                    : Math.min((int) ((handlePositionAnimator
-                                                       .progress() * 1.8) * 255),
-                                    255)),
-                    MaterialSwitchSize.Default.iconSize(),
-                    new Vector2f(
-                            checkedIconX,
-                            bounds.getCenterY()));
-        }
-        if ((!isChecked() && (style().showUncheckedIconWhenEnable() && !isChecked()
-                || style().showUncheckedIconAlways()))) {
-            float closeIconX = bounds.x + 16;
-            float alpha = isDisabled() ? 1
-                    : clamp(!handlePositionAnimator.isRunning() ? 255f
-                            : Math.min(((handlePositionAnimator.progress() * 1.8f)
-                                        * 255f), 255f) / 255f,
-                    0, 1);
-            MaterialSymbols.iconClose().render(
-                    ctx,
+                    MaterialSymbols.iconCheck(),
                     colors.iconColor,
-                    MaterialSwitchSize.Default.iconSize(),
-                    new Vector2f(
-                            closeIconX,
-                            bounds.getCenterY()));
+                    iconOpacityProgress,
+                    handleX,
+                    bounds.getCenterY());
+        }
+        if (style().showUncheckedIconWhenEnable() || style().showUncheckedIconAlways()) {
+            renderIcon(
+                    ctx,
+                    MaterialSymbols.iconClose(),
+                    colors.iconColor,
+                    1f - iconOpacityProgress,
+                    handleX,
+                    bounds.getCenterY());
         }
         ctx.endGroup();
     }
@@ -285,21 +293,97 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         return Math.min(max, Math.max(value, min));
     }
 
+    private float getCheckedProgress() {
+        if (changeAnimator == null || changeAnimator.get() == null) {
+            return isChecked() ? 1f : 0f;
+        }
+        return clamp(changeAnimator.get(), 0f, 1f);
+    }
+
+    private float getIconOpacityProgress() {
+        if (iconOpacityAnimator == null || iconOpacityAnimator.get() == null) {
+            return isChecked() ? 1f : 0f;
+        }
+        return clamp(iconOpacityAnimator.get(), 0f, 1f);
+    }
+
+    private void renderIcon(
+            RenderContext ctx,
+            MaterialSymbol icon,
+            Color color,
+            float alpha,
+            float x,
+            float y) {
+        if (alpha <= 0.001f) {
+            return;
+        }
+        icon.render(
+                ctx,
+                color.copy().alpha((int) (color.alpha() * clamp(alpha, 0f, 1f))),
+                MaterialSwitchSize.Default.iconSize(),
+                new Vector2f(x, y));
+    }
+
     private SwitchColors getSwitchColors() {
         SwitchColors colors = new SwitchColors();
-        colors.trackColor = isDisabled()
-                ? (isChecked() ? scheme().onSurface().copy().alpha((int) (255 * 0.1))
-                   : scheme().surfaceVariant()).copy().alpha((int) (255 * 0.1))
-                : (isChecked() ? scheme().primary() : scheme().surfaceContainerHighest());
-        colors.handleColor = isDisabled()
-                ? (isChecked() ? scheme().surface()
-                   : scheme().onSurface().copy().alpha((int) (255 * 0.38)))
-                : (isChecked() ? scheme().onPrimary() : scheme().outline());
-        colors.iconColor = isDisabled()
-                ? (isChecked() ? scheme().surfaceContainerHighest().copy().alpha((int) (0 * 0.38))
-                   : scheme().surfaceContainerHighest().copy().alpha((int) (255 * 0.38)))
-                : (isChecked() ? scheme().primary() : scheme().surfaceContainerHighest());
+        float checkedProgress = getCheckedProgress();
+        colors.trackColor = Color.lerp(
+                getUncheckedTrackColor(),
+                getCheckedTrackColor(),
+                checkedProgress);
+        colors.handleColor = Color.lerp(
+                getUncheckedHandleColor(),
+                getCheckedHandleColor(),
+                checkedProgress);
+        colors.iconColor = Color.lerp(
+                getUncheckedIconColor(),
+                getCheckedIconColor(),
+                checkedProgress);
+        colors.outlineColor = getUncheckedOutlineColor();
+        colors.outlineAlpha = 1f - checkedProgress;
         return colors;
+    }
+
+    private Color getCheckedTrackColor() {
+        return isDisabled()
+                ? scheme().onSurface().copy().alpha((int) (255 * 0.1))
+                : scheme().primary();
+    }
+
+    private Color getUncheckedTrackColor() {
+        return isDisabled()
+                ? scheme().surfaceVariant().copy().alpha((int) (255 * 0.1))
+                : scheme().surfaceContainerHighest();
+    }
+
+    private Color getCheckedHandleColor() {
+        return isDisabled()
+                ? scheme().surface()
+                : scheme().onPrimary();
+    }
+
+    private Color getUncheckedHandleColor() {
+        return isDisabled()
+                ? scheme().onSurface().copy().alpha((int) (255 * 0.38))
+                : scheme().outline();
+    }
+
+    private Color getCheckedIconColor() {
+        return isDisabled()
+                ? scheme().surfaceContainerHighest().copy().alpha(0)
+                : scheme().primary();
+    }
+
+    private Color getUncheckedIconColor() {
+        return isDisabled()
+                ? scheme().surfaceContainerHighest().copy().alpha((int) (255 * 0.38))
+                : scheme().surfaceContainerHighest();
+    }
+
+    private Color getUncheckedOutlineColor() {
+        return isDisabled()
+                ? scheme().onSurface().copy().alpha((int) (255 * 0.08))
+                : scheme().outline();
     }
 
     private void onHover(Vector2f mousePosition, boolean hover) {
@@ -307,13 +391,13 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
             hoverAnimator
                     .timeInterpolator(TimeInterpolator.linear())
                     .to(1f)
-                    .duration(200)
+                    .duration(COLOR_TRANSITION_DURATION)
                     .start();
         } else {
             hoverAnimator
                     .timeInterpolator(TimeInterpolator.linear())
                     .to(0f)
-                    .duration(200)
+                    .duration(COLOR_TRANSITION_DURATION)
                     .start();
         }
 
@@ -322,7 +406,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
     private void onPress(Vector2f mousePosition) {
         handleSizeAnimator
                 .timeInterpolator(TimeInterpolator.linear())
-                .duration(150)
+                .duration(PRESSED_HANDLE_SIZE_DURATION)
                 .to((style().showCheckedIconWhenEnable() && isChecked()) || style()
                         .showCheckedIconAlways() ? MaterialSwitchSize.Default
                                                    .handleSizePressWithIcon()
@@ -331,7 +415,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
                 .start();
         hoverAnimator
                 .timeInterpolator(new BezierInterpolator(0.2, 0, 0, 1))
-                .duration(200)
+                .duration(COLOR_TRANSITION_DURATION)
                 .to(1f)
                 .start();
         pressAnimator
@@ -346,7 +430,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         if (isHovered()) {
             hoverAnimator
                     .timeInterpolator(TimeInterpolator.linear())
-                    .duration(200)
+                    .duration(COLOR_TRANSITION_DURATION)
                     .to(1f)
                     .start();
         }
@@ -361,5 +445,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         Color iconColor;
         Color handleColor;
         Color trackColor;
+        Color outlineColor;
+        float outlineAlpha;
     }
 }

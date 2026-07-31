@@ -35,6 +35,8 @@ import org.joml.Vector2f;
 import java.util.function.Function;
 
 public class MaterialSlider extends MaterialWidget<MaterialSlider> {
+    private static final float VALUE_APPROACH_SPEED = 30f;
+
     protected MaterialSliderAnimationSet animationSet;
     protected boolean isInputting;
     protected Number lastValue;
@@ -42,6 +44,10 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     private Number step = 0.0;
     private Number max = 1.0;
     private Number min = 0.0;
+    private float animatedProgress;
+    private float targetProgress;
+    private long lastValueAnimationTimeNanos;
+    private boolean valueAnimationInitialized;
     private Function<Number, String> valueIndicatorTextFormater = Object::toString;
 
     public MaterialSlider(MaterialSliderSize size, float width) {
@@ -71,6 +77,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         slider.max = max;
         slider.value = value;
         slider.step = step;
+        slider.targetProgress = slider.progressForValue(value);
         return slider;
     }
 
@@ -105,6 +112,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
     public MaterialSlider setValue(Number value) {
         Number oldValue = this.value;
         this.value = value;
+        targetProgress = progressForValue(value);
         eventBus.post(new WidgetEvent.ChangeEvent<>(oldValue, value));
         return this;
     }
@@ -124,6 +132,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
     public MaterialSlider setMax(Number max) {
         this.max = max;
+        targetProgress = progressForValue(value);
         return this;
     }
 
@@ -133,12 +142,14 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
     public MaterialSlider setMin(Number min) {
         this.min = min;
+        targetProgress = progressForValue(value);
         return this;
     }
 
     public MaterialSlider range(Number min, Number max) {
         this.min = min;
         this.max = max;
+        targetProgress = progressForValue(value);
         return this;
     }
 
@@ -178,11 +189,12 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
             animationSet.handleSize.set(style().size().handleWidth());
         }
         animationSet.update();
+        updateValueApproach();
 
         SliderColors colors = getSliderColors();
         Rectangle bounds = getBounds();
 
-        float progress = (float) ((value.doubleValue() - min.doubleValue()) / (max.doubleValue() - min.doubleValue()));
+        float progress = getAnimatedProgress();
         float availableWidth = bounds.width - style().size().stepsHorizontalPadding() * 2;
         float handleXPosition = bounds.x + availableWidth * progress;
         float handleWidth = animationSet.handleSize.get();
@@ -194,7 +206,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         drawInactiveTrack(ctx, bounds, colors, activeTrackWidth, handleWidth);
 
         if (step.doubleValue() > 0 && style().steps()) {
-            drawSteps(ctx, bounds, colors, handleXPosition, availableWidth);
+            drawSteps(ctx, bounds, colors, handleXPosition, availableWidth, progress);
         }
         ctx.restore();
         ctx.endGroup();
@@ -269,8 +281,18 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         }
     }
 
-    private void drawSteps(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition, float availableWidth) {
+    private void drawSteps(
+            RenderContext ctx,
+            Rectangle bounds,
+            SliderColors colors,
+            float handleXPosition,
+            float availableWidth,
+            float progress
+    ) {
         int steps = (int) Math.floor((max.doubleValue() - min.doubleValue()) / step().doubleValue());
+        if (steps <= 0) {
+            return;
+        }
         float stepSpacing = availableWidth / (steps);
 
         for (int stepIndex = 0; stepIndex <= steps; stepIndex++) {
@@ -278,8 +300,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
             if (Math.abs(stepXPosition - handleXPosition) < stepSpacing / 2) {
                 continue;
             }
-            double stepValue = min.doubleValue() + stepIndex * step.doubleValue();
-            Color stepColor = value.doubleValue() >= stepValue ?
+            Color stepColor = progress >= (float) stepIndex / steps ?
                     colors.stepActiveIndicatorsColor : colors.stepInactiveIndicatorsColor;
             ctx.arc(
                     stepXPosition,
@@ -377,6 +398,47 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         return Math.min(max, Math.max(value, min));
     }
 
+    private float progressForValue(Number value) {
+        double range = max.doubleValue() - min.doubleValue();
+        if (range <= 0) {
+            return 0f;
+        }
+        return clamp(
+                (float) ((value.doubleValue() - min.doubleValue()) / range),
+                0f,
+                1f
+        );
+    }
+
+    private float getAnimatedProgress() {
+        if (!valueAnimationInitialized) {
+            return targetProgress;
+        }
+        return animatedProgress;
+    }
+
+    private void updateValueApproach() {
+        long currentTimeNanos = System.nanoTime();
+        if (!valueAnimationInitialized) {
+            animatedProgress = targetProgress;
+            lastValueAnimationTimeNanos = currentTimeNanos;
+            valueAnimationInitialized = true;
+            return;
+        }
+
+        float elapsedSeconds = (currentTimeNanos - lastValueAnimationTimeNanos) / 1_000_000_000f;
+        lastValueAnimationTimeNanos = currentTimeNanos;
+        if (elapsedSeconds <= 0f) {
+            return;
+        }
+
+        float approach = 1f - (float) Math.exp(-VALUE_APPROACH_SPEED * elapsedSeconds);
+        animatedProgress += (targetProgress - animatedProgress) * approach;
+        if (Math.abs(targetProgress - animatedProgress) < 0.0001f) {
+            animatedProgress = targetProgress;
+        }
+    }
+
     private void updateValueFromMouse(Vector2f mousePosition) {
         float progress = calcProgressFromMouse(mousePosition);
         double range = max.doubleValue() - min.doubleValue();
@@ -388,8 +450,10 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         }
 
         newValue = clamp(newValue, min.doubleValue(), max.doubleValue());
-        eventBus.post(new WidgetEvent.InputEvent<>(this.value, value));
+        Number oldValue = this.value;
+        eventBus.post(new WidgetEvent.InputEvent<>(oldValue, newValue));
         this.value = newValue;
+        targetProgress = progressForValue(newValue);
     }
 
     private void onPress(Vector2f mousePosition) {

@@ -321,7 +321,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         if (style().variant() == MaterialTextFieldVariant.Filled) {
             drawFilledContainer(ctx, fieldBounds, size, colors, focusProgress);
         } else {
-            drawOutlinedContainer(ctx, fieldBounds, size, colors, focusProgress);
+            drawOutlinedContainer(ctx, fieldBounds, size, colors, focusProgress, labelProgress);
         }
 
         float contentStartX = fieldBounds.x + size.horizontalPadding();
@@ -584,20 +584,61 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
             Rectangle bounds,
             MaterialTextFieldSize size,
             TextFieldColors colors,
-            float focusProgress
+            float focusProgress,
+            float labelProgress
     ) {
         float outlineWidth = size.outlineWidth()
                 + (size.focusedOutlineWidth() - size.outlineWidth()) * focusProgress;
+        float radius = Math.min(size.cornerRadius(), Math.min(bounds.width, bounds.height) / 2f);
+        float left = bounds.x;
+        float right = bounds.getLimitX();
+        float top = bounds.y;
+        float bottom = bounds.getLimitY();
+        float topLeft = left + radius;
+        float topRight = right - radius;
+
+        float gapStart = topLeft;
+        float gapEnd = topLeft;
+        if (!label.isEmpty() && labelProgress > 0f) {
+            float labelFontSize = lerp(size.labelCenterFontSize(), size.labelFontSize(), labelProgress);
+            float labelWidth = ctx.measureTextWidth(label, labelFontSize, labelFontSize + 2f);
+            float gapHalfWidth = (labelWidth + 8f) * Math.min(1f, labelProgress) / 2f;
+            float gapCenter = labelStartX(bounds, size) + labelWidth / 2f;
+            gapStart = Math.max(topLeft, Math.min(topRight, gapCenter - gapHalfWidth));
+            gapEnd = Math.max(gapStart, Math.min(topRight, gapCenter + gapHalfWidth));
+        }
+
+        ctx.beginPath();
         ctx.strokeWidth(outlineWidth);
-        ctx.roundedRect(
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                bounds.height,
-                size.cornerRadius(),
-                colors.outlineColor,
-                false
-        );
+        ctx.strokeColor(colors.outlineColor);
+
+        if (gapStart == topLeft && gapEnd == topLeft) {
+            ctx.roundedRect(left, top, bounds.width, bounds.height, radius);
+        } else {
+            // RenderContext.arc() exposes NanoVG's counter-clockwise direction,
+            // so trace the outline counter-clockwise to keep each corner arc short.
+            ctx.move(topRight, top);
+            ctx.lineTo(gapEnd, top);
+            ctx.move(gapStart, top);
+            ctx.lineTo(topLeft, top);
+            ctx.arc(left + radius, top + radius, radius, -(float) (Math.PI / 2f), -(float) Math.PI);
+            ctx.lineTo(left, bottom - radius);
+            ctx.arc(left + radius, bottom - radius, radius, -(float) Math.PI, -(float) (Math.PI * 1.5f));
+            ctx.lineTo(right - radius, bottom);
+            ctx.arc(right - radius, bottom - radius, radius, -(float) (Math.PI * 1.5f), -(float) (Math.PI * 2f));
+            ctx.lineTo(right, top + radius);
+            ctx.arc(right - radius, top + radius, radius, 0f, -(float) (Math.PI / 2f));
+        }
+
+        ctx.endPath(false);
+    }
+
+    private float labelStartX(Rectangle bounds, MaterialTextFieldSize size) {
+        float startX = bounds.x + size.horizontalPadding();
+        if (leadingIcon != null) {
+            startX += size.iconSize() + size.iconTextGap();
+        }
+        return startX;
     }
 
     private void drawLabel(
@@ -622,7 +663,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
 
         if (style().variant() == MaterialTextFieldVariant.Outlined && labelProgress > 0f) {
             float labelWidth = ctx.measureTextWidth(label, labelFontSize, labelFontSize + 2f);
-            float backgroundAlpha = 255f * labelProgress;
+            float backgroundAlpha = 255f * Math.min(1f, labelProgress);
             ctx.rect(
                     contentStartX - 4f,
                     labelY - labelFontSize / 2f,
