@@ -38,6 +38,7 @@ import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
+import io.homo.superresolution.core.gui.widgets.chip.MaterialChip;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.hint.MaterialHintPane;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
@@ -145,6 +146,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
                 .addSectionHeader("Widgets")
                 .addItem("Label", MaterialSymbols.iconTitle(), "label")
                 .addItem("Button", MaterialSymbols.iconSmartButton(), "button")
+                .addItem("Chip", MaterialSymbols.iconLabel(), "chip")
                 .addItem("Switch", MaterialSymbols.iconToggleOn(), "switch")
                 .addItem("Slider", MaterialSymbols.iconTune(), "slider")
                 .addItem("Select", MaterialSymbols.iconArrowDropDown(), "select")
@@ -185,6 +187,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
 
         Frame frame = switch (key) {
             case "button" -> createButtonFrame();
+            case "chip" -> createChipFrame();
             case "switch" -> createSwitchFrame();
             case "slider" -> createSliderFrame();
             case "select" -> createSelectFrame();
@@ -327,6 +330,79 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
                 .text(() -> "Click count: " + clickCount[0]);
         clickCounter.onClick(event -> clickCount[0]++);
         container.addChild(clickCounter);
+
+        finishFrame(frame, container);
+        return frame;
+    }
+
+    private Frame createChipFrame() {
+        ScrollableFrame frame = createScrollableFrame();
+        ContainerWidget container = createPageContainer();
+        addPageHeader(
+                container,
+                "Material Chip",
+                "Assist, filter, input and suggestion chips with icons, selection, elevation, disabled state and removal."
+        );
+
+        addSectionTitle(container, "Chip types");
+        ContainerWidget types = createWrappingRow();
+        types.addChild(MaterialChip.assist("Run optimizer")
+                .leadingIcon(MaterialSymbols.iconAutoAwesome()));
+        types.addChild(MaterialChip.filter("High quality")
+                .leadingIcon(MaterialSymbols.iconTune()));
+        types.addChild(MaterialChip.input("Player one")
+                .avatar(MaterialSymbols.iconPerson())
+                .trailingIcon(MaterialSymbols.iconClose()));
+        types.addChild(MaterialChip.suggestion("Use DLSS")
+                .leadingIcon(MaterialSymbols.iconLightbulb()));
+        container.addChild(types);
+
+        addSectionTitle(container, "Selection and surfaces");
+        MaterialChip filterChip = MaterialChip.filter("Vulkan backend")
+                .leadingIcon(MaterialSymbols.iconFilterAlt())
+                .selected(true);
+        MaterialLabel filterState = createValueLabel(
+                () -> filterChip.isSelected() ? "Selected" : "Unselected"
+        );
+        ContainerWidget selection = createWrappingRow();
+        selection.addChild(filterChip);
+        selection.addChild(filterState);
+        selection.addChild(MaterialChip.filter("Flat filter"));
+        selection.addChild(MaterialChip.suggestion("Elevated suggestion")
+                .leadingIcon(MaterialSymbols.iconAutoAwesome())
+                .elevated(true));
+        container.addChild(selection);
+
+        addSectionTitle(container, "Input chip actions");
+        final boolean[] removed = {false};
+        MaterialChip removable = MaterialChip.input("Temporary tag")
+                .avatar(MaterialSymbols.iconPerson())
+                .trailingIcon(MaterialSymbols.iconClose())
+                .onRemove(chip -> {
+                    removed[0] = true;
+                    chip.setVisible(false);
+                });
+        MaterialLabel removalState = createValueLabel(
+                () -> removed[0] ? "Removed from the input list" : "Click the close icon to remove this chip"
+        );
+        ContainerWidget inputActions = createWrappingRow();
+        inputActions.addChild(removable);
+        inputActions.addChild(removalState);
+        container.addChild(inputActions);
+
+        addSectionTitle(container, "Disabled");
+        ContainerWidget disabled = createWrappingRow();
+        disabled.addChild(MaterialChip.assist("Disabled assist")
+                .leadingIcon(MaterialSymbols.iconInfo())
+                .setDisabled(true));
+        disabled.addChild(MaterialChip.filter("Disabled selected")
+                .selected(true)
+                .setDisabled(true));
+        disabled.addChild(MaterialChip.input("Disabled input")
+                .avatar(MaterialSymbols.iconPerson())
+                .trailingIcon(MaterialSymbols.iconClose())
+                .setDisabled(true));
+        container.addChild(disabled);
 
         finishFrame(frame, container);
         return frame;

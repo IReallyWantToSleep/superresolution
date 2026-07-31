@@ -215,6 +215,11 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
         return this;
     }
 
+    public MaterialWidgetOverlay<T> setRippleAlpha(float alpha) {
+        ripple.setPressedAlpha(alpha);
+        return this;
+    }
+
     public void destroy() {
         if (hoverAnimator != null) {
             if (hoverAnimator.isRunning()) {
