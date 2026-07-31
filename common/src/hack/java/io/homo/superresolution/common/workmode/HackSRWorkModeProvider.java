@@ -5,7 +5,13 @@ import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.MinecraftRenderHandler;
 
+import java.lang.reflect.Method;
+import java.util.Optional;
+
 public class HackSRWorkModeProvider implements SRWorkModeProvider {
+    private static boolean irisReloadReflectionInitialized;
+    private static Method irisGetCurrentPackMethod;
+
     @Override
     public String id() {
         return SRWorkModeManager.HACK;
@@ -23,7 +29,44 @@ public class HackSRWorkModeProvider implements SRWorkModeProvider {
 
     @Override
     public SRWorkModeState getState() {
-        return SRWorkModeState.defaults();
+        SRWorkModeState defaults = SRWorkModeState.defaults();
+        return new SRWorkModeState(
+                defaults.initializationDescription(),
+                defaults.internalTextureFormat(),
+                defaults.motionVectorPreprocessingFunction(),
+                isShaderPackInUse(),
+                defaults.shaderPackLoading()
+        );
+    }
+
+    private boolean isShaderPackInUse() {
+        initIrisReloadReflection();
+        if (irisGetCurrentPackMethod == null) {
+            return false;
+        }
+        try {
+            Optional<?> shaderPack = (Optional<?>) irisGetCurrentPackMethod.invoke(null);
+            return shaderPack.isPresent();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static void initIrisReloadReflection() {
+        if (irisReloadReflectionInitialized) {
+            return;
+        }
+        synchronized (HackSRWorkModeProvider.class) {
+            if (irisReloadReflectionInitialized) {
+                return;
+            }
+            try {
+                Class<?> irisClass = Class.forName("net.irisshaders.iris.Iris");
+                irisGetCurrentPackMethod = irisClass.getMethod("getCurrentPack");
+            } catch (Throwable ignored) {
+            }
+            irisReloadReflectionInitialized = true;
+        }
     }
 
     @Override
