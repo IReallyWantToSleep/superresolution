@@ -214,6 +214,10 @@ public final class FrameGeneration {
                 modes.add(mode);
             }
         }
+        // if there are exactly three modes (OFF,AUTO,2X),remove AUTO
+        if (modes.size() == 3) {
+            modes.remove(FrameGenerationMode.AUTO);
+        }
         return modes.toArray(FrameGenerationMode[]::new);
     }
 
