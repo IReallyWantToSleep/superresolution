@@ -23,23 +23,32 @@ import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 public class VulkanCommandBufferRing {
     private final int bufferCount;
     private final VulkanCommandBuffer[] commandBuffers;
+    private final VulkanCommandPool commandPool;
     private boolean initialized;
     private int cursor = 0;
     private int acquiredIndex = -1;
 
     public VulkanCommandBufferRing(int bufferCount) {
+        this(bufferCount, null);
+    }
+
+    public VulkanCommandBufferRing(int bufferCount, VulkanCommandPool commandPool) {
         if (bufferCount <= 0) {
             throw new IllegalArgumentException("initialBufferCount must be greater than 0");
         }
         this.bufferCount = bufferCount;
         this.commandBuffers = new VulkanCommandBuffer[bufferCount];
+        this.commandPool = commandPool;
         initialized = false;
     }
 
     public VulkanCommandBuffer acquire(VulkanDevice device) {
         if (!initialized) {
             for (int i = 0; i < bufferCount; i++) {
-                commandBuffers[i] = (VulkanCommandBuffer) device.defaultCommandPool().createCommandBuffer(CommandBufferBehavior.ReusableSequential);
+                VulkanCommandPool pool = commandPool != null
+                        ? commandPool
+                        : (VulkanCommandPool) device.defaultCommandPool();
+                commandBuffers[i] = pool.createCommandBuffer(CommandBufferBehavior.ReusableSequential);
             }
             initialized = true;
         }

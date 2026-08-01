@@ -29,7 +29,7 @@ import net.minecraft.client.Minecraft;
 
 public final class FrameCaptureManager {
     private static final CaptureFrameRing FRAME_RING = new CaptureFrameRing();
-    private static FrameResources lastFinishedFrame;
+    private static volatile FrameResources lastFinishedFrame;
     private static boolean registered;
 
     private FrameCaptureManager() {

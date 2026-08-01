@@ -20,6 +20,7 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
@@ -263,11 +264,24 @@ public class VkRenderSystem implements IRenderSystem {
                 throw new RuntimeException("No suitable queue family found");
             }
 
-            VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.calloc(1, stack);
-            queueCreateInfos.get(0)
-                    .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
-                    .queueFamilyIndex(graphicsFamilyIndex)
-                    .pQueuePriorities(stack.floats(1.0f));
+            IntBuffer queueFamilyCount = stack.ints(0);
+            vkGetPhysicalDeviceQueueFamilyProperties(
+                    physicalDevice,
+                    queueFamilyCount,
+                    null
+            );
+            VkQueueFamilyProperties.Buffer queueFamilyProperties =
+                    VkQueueFamilyProperties.calloc(queueFamilyCount.get(0), stack);
+            vkGetPhysicalDeviceQueueFamilyProperties(
+                    physicalDevice,
+                    queueFamilyCount,
+                    queueFamilyProperties
+            );
+            int availableGraphicsQueueCount =
+                    queueFamilyProperties.get(graphicsFamilyIndex).queueCount();
+            FrameGeneration.StartupProviderSelection startupProvider =
+                    FrameGeneration.startupProviderSelection();
+            boolean asyncDispatchRequested = startupProvider.applicationManagedAsync();
 
             List<String> enableDeviceExts = new ArrayList<>();
             List<String> supportedDeviceExts = capabilities.getDeviceExtensions();
@@ -372,6 +386,18 @@ public class VkRenderSystem implements IRenderSystem {
             LOGGER.info("  timelineSemaphore: {}", deviceSupportsTimelineSemaphore);
             LOGGER.info("  presentId: {}", deviceSupportsPresentId);
 
+            boolean createFrameGenerationQueue = asyncDispatchRequested
+                    && availableGraphicsQueueCount >= 2
+                    && deviceSupportsTimelineSemaphore;
+            VkDeviceQueueCreateInfo.Buffer queueCreateInfos =
+                    VkDeviceQueueCreateInfo.calloc(1, stack);
+            queueCreateInfos.get(0)
+                    .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
+                    .queueFamilyIndex(graphicsFamilyIndex)
+                    .pQueuePriorities(createFrameGenerationQueue
+                            ? stack.floats(1.0f, 1.0f)
+                            : stack.floats(1.0f));
+
             VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures =
                     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT.calloc(stack)
                             .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT)
@@ -465,12 +491,54 @@ public class VkRenderSystem implements IRenderSystem {
                         "Failed to create logical device");
             }
 
+            VkDevice logicalDevice = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
+            boolean timelineSemaphoreEnabled = deviceSupportsTimelineSemaphore
+                    && logicalDevice.getCapabilities().vkSignalSemaphore != VK_NULL_HANDLE
+                    && logicalDevice.getCapabilities().vkWaitSemaphores != VK_NULL_HANDLE
+                    && logicalDevice.getCapabilities().vkGetSemaphoreCounterValue != VK_NULL_HANDLE;
+            VulkanAsyncDispatchCapabilities asyncDispatchCapabilities =
+                    VulkanAsyncDispatchCapabilities.evaluate(
+                            startupProvider.providerId(),
+                            asyncDispatchRequested,
+                            graphicsFamilyIndex,
+                            availableGraphicsQueueCount,
+                            deviceSupportsTimelineSemaphore,
+                            timelineSemaphoreEnabled,
+                            createFrameGenerationQueue
+                    );
             VulkanDevice vulkanDevice = new VulkanDevice(
                     instance,
                     physicalDevice,
-                    new VkDevice(pDevice.get(0), physicalDevice, createInfo),
-                    graphicsFamilyIndex
+                    logicalDevice,
+                    graphicsFamilyIndex,
+                    true,
+                    createFrameGenerationQueue,
+                    asyncDispatchCapabilities
             );
+            LOGGER.info(
+                    "Vulkan main queue: handle=0x{}, family={}, index={}",
+                    Long.toHexString(vulkanDevice.getMainQueue().getQueue().address()),
+                    vulkanDevice.getMainQueue().getQueueFamilyIndex(),
+                    vulkanDevice.getMainQueue().getQueueIndex()
+            );
+            if (vulkanDevice.getFrameGenerationQueue() != null) {
+                LOGGER.info(
+                        "Vulkan FG queue: handle=0x{}, family={}, index={}",
+                        Long.toHexString(
+                                vulkanDevice.getFrameGenerationQueue().getQueue().address()
+                        ),
+                        vulkanDevice.getFrameGenerationQueue().getQueueFamilyIndex(),
+                        vulkanDevice.getFrameGenerationQueue().getQueueIndex()
+                );
+            }
+            if (asyncDispatchRequested
+                    && !vulkanDevice.asyncDispatchCapabilities().available()) {
+                LOGGER.warn(
+                        "Frame generation provider '{}' is unavailable: {}",
+                        startupProvider.providerId(),
+                        vulkanDevice.asyncDispatchCapabilities().unavailableReason()
+                );
+            }
             // Native Reflex (VK_NV_low_latency2) needs present ids and timeline
             // semaphores; when Streamline is initialized its interposer owns Reflex,
             // so the raw path stays dormant there.

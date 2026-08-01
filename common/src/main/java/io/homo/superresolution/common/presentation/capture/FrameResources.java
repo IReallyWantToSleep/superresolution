@@ -33,14 +33,14 @@ public final class FrameResources {
     private final FrameTextureResource hudlessColor;
     private final FrameTextureResource depth;
     private final FrameTextureResource motionVector;
-    private VulkanCommandBuffer submittedCommandBuffer;
-    private long fence;
-    private long generation;
-    private int logicalFrameIndex;
-    private boolean sealed;
-    private boolean unrecoverable;
-    private long dlssGInputCompletionSemaphore;
-    private long dlssGInputCompletionValue;
+    private final FrameResourceLifecycle lifecycle = new FrameResourceLifecycle();
+    private volatile VulkanCommandBuffer submittedCommandBuffer;
+    private volatile long fence;
+    private volatile long generation;
+    private volatile int logicalFrameIndex;
+    private volatile boolean unrecoverable;
+    private volatile long dlssGInputCompletionSemaphore;
+    private volatile long dlssGInputCompletionValue;
 
     FrameResources(int index, VulkanDevice device) {
         this.index = index;
@@ -65,7 +65,7 @@ public final class FrameResources {
         submittedCommandBuffer = null;
         fence = 0L;
         clearDlssGInputCompletion();
-        sealed = false;
+        lifecycle.beginRecording();
     }
 
     void copyFinalColor(ITexture source) {
@@ -109,19 +109,38 @@ public final class FrameResources {
     }
 
     void seal() {
-        sealed = true;
+        lifecycle.seal();
+    }
+
+    void discardEmptyRecording() {
+        if (hasAnyResource()) {
+            throw new IllegalStateException("Cannot discard a capture slot that owns resources");
+        }
+        lifecycle.discardEmptyRecording();
+    }
+
+    public void markQueued() {
+        lifecycle.markQueued();
+    }
+
+    public void markDispatching() {
+        lifecycle.markDispatching();
     }
 
     public void markSubmitted(VulkanCommandBuffer commandBuffer, long submittedFence) {
-        if (!sealed) {
-            throw new IllegalStateException("Frame capture must be sealed before submission");
+        if (commandBuffer == null || submittedFence == 0L) {
+            throw new IllegalArgumentException(
+                    "Submitted command buffer and fence must be non-null/non-zero"
+            );
         }
+        lifecycle.requireSubmittable();
         submittedCommandBuffer = commandBuffer;
         fence = submittedFence;
         finalColor.markSubmitted();
         hudlessColor.markSubmitted();
         depth.markSubmitted();
         motionVector.markSubmitted();
+        lifecycle.markSubmitted();
     }
 
     public void markUnrecoverable() {
@@ -169,11 +188,18 @@ public final class FrameResources {
     }
 
     public boolean isSealed() {
-        return sealed;
+        return switch (lifecycle.state()) {
+            case SEALED, QUEUED, DISPATCHING, SUBMITTED -> true;
+            case REUSABLE, RECORDING -> false;
+        };
     }
 
     public boolean isSubmitted() {
-        return fence != 0L;
+        return lifecycle.state() == FrameResourceState.SUBMITTED && fence != 0L;
+    }
+
+    public FrameResourceState state() {
+        return lifecycle.state();
     }
 
     public VulkanTexture finalColorVulkanTexture() {
@@ -227,8 +253,18 @@ public final class FrameResources {
     }
 
     private void awaitReusable() {
-        if (submittedCommandBuffer != null) {
-            submittedCommandBuffer.waitForFence();
+        FrameResourceState state = lifecycle.state();
+        if (state == FrameResourceState.REUSABLE) {
+            return;
+        }
+        if (state != FrameResourceState.SUBMITTED) {
+            throw new IllegalStateException(
+                    "Frame capture slot is still owned in state " + state
+            );
+        }
+        VulkanCommandBuffer commandBuffer = submittedCommandBuffer;
+        if (commandBuffer != null) {
+            commandBuffer.waitForFence();
         }
         awaitDlssGInputs();
         finalColor.awaitOwnedRelease();
@@ -237,6 +273,7 @@ public final class FrameResources {
         motionVector.awaitOwnedRelease();
         submittedCommandBuffer = null;
         fence = 0L;
+        lifecycle.markReusable();
     }
     public void setDlssGInputCompletion(long semaphore, long value) {
         if (!isSubmitted() || semaphore == 0L || value <= 0L) {
@@ -251,8 +288,10 @@ public final class FrameResources {
         dlssGInputCompletionValue = 0L;
     }
     private void requireWritable() {
-        if (sealed) {
-            throw new IllegalStateException("Frame capture is already sealed");
+        if (lifecycle.state() != FrameResourceState.RECORDING) {
+            throw new IllegalStateException(
+                    "Frame capture is not writable in state " + lifecycle.state()
+            );
         }
     }
     private void awaitDlssGInputs() {

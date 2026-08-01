@@ -30,6 +30,7 @@ public final class FrameGenerationDescription {
     private final @Nullable BackendGroup group;
     private final int priority;
     private final LowLatencyBinding lowLatencyBinding;
+    private final FrameGenerationExecutionModel executionModel;
     private final List<SpecialConfigDescription<?>> optionDescriptions;
 
     private FrameGenerationDescription(Builder builder) {
@@ -46,6 +47,10 @@ public final class FrameGenerationDescription {
         this.lowLatencyBinding = builder.lowLatencyBinding != null
                 ? builder.lowLatencyBinding
                 : LowLatencyBinding.none();
+        this.executionModel = Objects.requireNonNull(
+                builder.executionModel,
+                "executionModel cannot be null"
+        );
         this.optionDescriptions = List.copyOf(builder.optionDescriptions);
     }
 
@@ -98,6 +103,15 @@ public final class FrameGenerationDescription {
         return lowLatencyBinding;
     }
 
+    /**
+     * Startup-visible ownership declaration. This mirrors the provider's runtime
+     * declaration so Vulkan queue requirements can be decided before the provider is
+     * initialized.
+     */
+    public FrameGenerationExecutionModel getExecutionModel() {
+        return executionModel;
+    }
+
     public List<SpecialConfigDescription<?>> getOptionDescriptions() {
         return optionDescriptions;
     }
@@ -123,6 +137,8 @@ public final class FrameGenerationDescription {
         private @Nullable BackendGroup group;
         private int priority;
         private LowLatencyBinding lowLatencyBinding = LowLatencyBinding.none();
+        private FrameGenerationExecutionModel executionModel =
+                FrameGenerationExecutionModel.EXTERNAL_INTERPOSER;
         private final List<SpecialConfigDescription<?>> optionDescriptions = new ArrayList<>();
 
         public Builder id(String id) {
@@ -163,6 +179,14 @@ public final class FrameGenerationDescription {
 
         public Builder lowLatencyBinding(LowLatencyBinding binding) {
             this.lowLatencyBinding = binding != null ? binding : LowLatencyBinding.none();
+            return this;
+        }
+
+        public Builder executionModel(FrameGenerationExecutionModel executionModel) {
+            this.executionModel = Objects.requireNonNull(
+                    executionModel,
+                    "executionModel cannot be null"
+            );
             return this;
         }
 

@@ -37,7 +37,7 @@ public class ForceOpenGLVersion_WindowMixin {
     }
 
     #else
-    
+
     @org.spongepowered.asm.mixin.injection.ModifyConstant(
             method = "<init>",
             constant = @org.spongepowered.asm.mixin.injection.Constant(
@@ -48,6 +48,7 @@ public class ForceOpenGLVersion_WindowMixin {
     public int modifyGlMajorVersion(int value) {
         return GraphicsCapabilities.getHighestOpenGLVersion().left();
     }
+
     #if MC_VER == MC_1_21_11
     @org.spongepowered.asm.mixin.injection.ModifyConstant(
             method = "<init>",

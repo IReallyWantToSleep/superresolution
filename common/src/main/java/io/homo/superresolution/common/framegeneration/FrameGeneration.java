@@ -11,9 +11,13 @@
 package io.homo.superresolution.common.framegeneration;
 
 import io.homo.superresolution.api.registry.BackendGroup;
+import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchRequest;
+import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
 import io.homo.superresolution.api.registry.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.FrameGenerationExecutionModel;
 import io.homo.superresolution.api.registry.FrameGenerationProvider;
 import io.homo.superresolution.api.registry.FrameGenerationRegistry;
+import io.homo.superresolution.api.registry.ProviderInputSnapshot;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
@@ -24,14 +28,18 @@ import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.vulkan.VulkanAsyncDispatchCapabilities;
 import io.homo.superresolution.core.streamline.Streamline;
 
 import javax.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Frontend for frame generation. Owns the backend-agnostic policy (mode gating,
@@ -52,6 +60,7 @@ public final class FrameGeneration {
     private static @Nullable Boolean startupStreamlineRequested;
     private static @Nullable Boolean loggedRestartStreamlineRequest;
     private static @Nullable String startupPreferredFgBackendId;
+    private static @Nullable String loggedAsyncCapabilityFailure;
     private static boolean initialized;
 
     static {
@@ -75,6 +84,14 @@ public final class FrameGeneration {
             }
             FrameGenerationProvider provider = description.createProvider();
             if (provider != null) {
+                if (provider.executionModel() != description.getExecutionModel()) {
+                    throw new IllegalStateException(
+                            "Frame generation provider '" + description.getId()
+                                    + "' declares " + provider.executionModel()
+                                    + " at runtime but its description declares "
+                                    + description.getExecutionModel()
+                    );
+                }
                 providers.put(description.getId(), provider);
                 provider.initialize();
             }
@@ -94,6 +111,7 @@ public final class FrameGeneration {
         startupStreamlineRequested = null;
         loggedRestartStreamlineRequest = null;
         startupPreferredFgBackendId = null;
+        loggedAsyncCapabilityFailure = null;
         FGConstantsFeature.shutdown();
         initialized = false;
     }
@@ -110,6 +128,7 @@ public final class FrameGeneration {
         FrameGenerationProvider provider = activeProvider();
         if (!initialized
                 || provider == null
+                || provider.executionModel() != FrameGenerationExecutionModel.EXTERNAL_INTERPOSER
                 || !mode.isEnabled()
                 || frameResources == null
                 || commandBuffer == 0L
@@ -138,12 +157,120 @@ public final class FrameGeneration {
         );
     }
 
+    /**
+     * Captures immutable render-side input for the one negotiated application-managed
+     * provider. Returning {@code null} marks the frame as real-only; this method never
+     * dispatches provider work.
+     */
+    public static synchronized @Nullable ProviderInputSnapshot captureProviderInputSnapshotForFrame(
+            FrameResources frameResources
+    ) {
+        String providerId = activeApplicationManagedProviderId();
+        return providerId.isEmpty()
+                ? null
+                : captureProviderInputSnapshotForFrame(providerId, frameResources);
+    }
+
+    /**
+     * Captures inputs only when the active provider still matches the scheduler
+     * lifecycle that requested the snapshot.
+     */
+    public static synchronized @Nullable ProviderInputSnapshot captureProviderInputSnapshotForFrame(
+            String expectedProviderId,
+            FrameResources frameResources
+    ) {
+        Objects.requireNonNull(expectedProviderId, "expectedProviderId cannot be null");
+        if (expectedProviderId.isBlank()) {
+            throw new IllegalArgumentException("expectedProviderId cannot be blank");
+        }
+        FrameGenerationMode mode = displayedMode();
+        ProviderSelection selection = activeProviderSelection();
+        if (!initialized
+                || selection == null
+                || !selection.id().equals(expectedProviderId)
+                || selection.executionModel() != FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC
+                || !mode.isEnabled()
+                || frameResources == null
+                || !frameResources.hasHudlessColor()
+                || !frameResources.hasDepth()
+                || !frameResources.hasMotionVector()) {
+            return null;
+        }
+
+        FGConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
+        if (constants == null) {
+            return null;
+        }
+        return selection.provider().captureInputSnapshot(
+                selection.id(),
+                frameResources,
+                constants,
+                mode
+        );
+    }
+
+    /**
+     * Returns whether an existing scheduler may keep owning application-managed
+     * presentation. A temporarily unavailable provider is compatible and produces
+     * Real-only jobs; selecting another provider or an external interposer requires
+     * a drain/restart instead of sharing one scheduler lifecycle.
+     */
+    public static synchronized boolean isApplicationManagedSchedulerCompatible(
+            String schedulerProviderId
+    ) {
+        Objects.requireNonNull(schedulerProviderId, "schedulerProviderId cannot be null");
+        if (schedulerProviderId.isBlank()) {
+            throw new IllegalArgumentException("schedulerProviderId cannot be blank");
+        }
+        ProviderSelection selection = activeProviderSelection();
+        return selection == null
+                || (selection.executionModel() == FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC
+                && selection.id().equals(schedulerProviderId));
+    }
+
+    /**
+     * Dispatches the provider captured by {@link ProviderInputSnapshot#providerId()}.
+     * Provider code runs outside the facade monitor on the scheduler's FG thread.
+     */
+    public static AsyncFrameGenerationDispatchResult dispatchAsync(
+            AsyncFrameGenerationDispatchRequest request
+    ) {
+        Objects.requireNonNull(request, "request cannot be null");
+        ProviderSelection selection;
+        synchronized (FrameGeneration.class) {
+            selection = activeProviderSelection();
+            if (!initialized || selection == null) {
+                return AsyncFrameGenerationDispatchResult.failed(
+                        "No active frame-generation provider"
+                );
+            }
+            if (selection.executionModel() != FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC) {
+                return AsyncFrameGenerationDispatchResult.failed(
+                        "Active provider does not use application-managed async dispatch"
+                );
+            }
+            if (!selection.id().equals(request.providerInputSnapshot().providerId())) {
+                return AsyncFrameGenerationDispatchResult.failed(
+                        "Provider changed after the input snapshot was captured"
+                );
+            }
+            if (request.frameResources().logicalFrameIndex()
+                    != request.providerInputSnapshot().logicalFrameIndex()) {
+                return AsyncFrameGenerationDispatchResult.failed(
+                        "Provider input snapshot does not belong to the queued frame"
+                );
+            }
+        }
+        return selection.provider().dispatchAsync(request);
+    }
+
     public static synchronized void finishPresent(
             FrameResources frameResources,
             FramePresentPlan plan
     ) {
         FrameGenerationProvider provider = activeProvider();
-        if (provider != null) {
+        if (provider != null
+                && provider.executionModel() == FrameGenerationExecutionModel.EXTERNAL_INTERPOSER) {
             provider.finishPresent(frameResources, plan != null && plan.frameGenerationActive());
         }
     }
@@ -254,6 +381,44 @@ public final class FrameGeneration {
     }
 
     /**
+     * Execution model of the single negotiated provider, or {@code null} when no provider
+     * is active. A scheduler must only start for
+     * {@link FrameGenerationExecutionModel#APPLICATION_MANAGED_ASYNC}.
+     */
+    public static synchronized @Nullable FrameGenerationExecutionModel activeExecutionModel() {
+        ProviderSelection selection = activeProviderSelection();
+        return selection == null ? null : selection.executionModel();
+    }
+
+    /**
+     * Id of the single application-managed provider selected for the current scheduler
+     * lifecycle, or an empty string when the active provider retains external ownership.
+     */
+    public static synchronized String activeApplicationManagedProviderId() {
+        ProviderSelection selection = activeProviderSelection();
+        return selection != null
+                && selection.executionModel() == FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC
+                ? selection.id()
+                : "";
+    }
+
+    /**
+     * Resolves the startup-visible provider declaration before provider initialization.
+     * Vulkan device creation uses this immutable declaration to decide whether it must
+     * request a second queue. Runtime negotiation still performs the full provider
+     * availability and dependency checks after initialization.
+     */
+    public static synchronized StartupProviderSelection startupProviderSelection() {
+        FrameGenerationDescription description = resolveStartupProviderDescription();
+        return description == null
+                ? StartupProviderSelection.NONE
+                : new StartupProviderSelection(
+                        description.getId(),
+                        description.getExecutionModel()
+                );
+    }
+
+    /**
      * Runs the negotiator with the current configuration. Cheap enough to invoke per frame
      * (a few map iterations); callers that hit it repeatedly per frame should cache locally.
      */
@@ -267,7 +432,7 @@ public final class FrameGeneration {
                         startupPreferredFgBackendId != null
                                 ? startupPreferredFgBackendId
                                 : SuperResolutionConfig.getFrameGenerationBackend(),
-                        providers::get
+                        FrameGeneration::providerForNegotiation
                 );
         logResolution(resolution);
         logRestartRequirement();
@@ -303,8 +468,89 @@ public final class FrameGeneration {
     }
 
     private static synchronized @Nullable FrameGenerationProvider activeProvider() {
+        ProviderSelection selection = activeProviderSelection();
+        return selection == null ? null : selection.provider();
+    }
+
+    private static @Nullable FrameGenerationProvider providerForNegotiation(String id) {
+        FrameGenerationProvider provider = providers.get(id);
+        if (provider == null
+                || provider.executionModel() != FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC) {
+            return provider;
+        }
+        String unavailableReason = asyncDispatchUnavailableReason(id);
+        if (unavailableReason.isEmpty()) {
+            return provider;
+        }
+        String logKey = id + ": " + unavailableReason;
+        if (!logKey.equals(loggedAsyncCapabilityFailure)) {
+            SuperResolution.LOGGER.warn(
+                    "Frame generation provider '{}' is unavailable: {}",
+                    id,
+                    unavailableReason
+            );
+            loggedAsyncCapabilityFailure = logKey;
+        }
+        return null;
+    }
+
+    private static String asyncDispatchUnavailableReason(String providerId) {
+        if (RenderSystems.vulkan() == null || RenderSystems.vulkan().device() == null) {
+            return "Vulkan device is unavailable";
+        }
+        VulkanAsyncDispatchCapabilities capabilities =
+                RenderSystems.vulkan().device().asyncDispatchCapabilities();
+        if (capabilities.available() && providerId.equals(capabilities.providerId())) {
+            return "";
+        }
+        if (capabilities.available()) {
+            return "Vulkan async foundation was created for provider '"
+                    + capabilities.providerId() + "', not '" + providerId + "'";
+        }
+        return capabilities.unavailableReason();
+    }
+
+    private static @Nullable ProviderSelection activeProviderSelection() {
         String id = activeId();
-        return id.isEmpty() ? null : providers.get(id);
+        if (id.isEmpty()) {
+            return null;
+        }
+        FrameGenerationProvider provider = providers.get(id);
+        return provider == null
+                ? null
+                : new ProviderSelection(id, provider, provider.executionModel());
+    }
+
+    private static @Nullable FrameGenerationDescription resolveStartupProviderDescription() {
+        String fgGroupId = configuredFgGroupId();
+        if (fgGroupId == null || fgGroupId.isEmpty()) {
+            return null;
+        }
+        String preferredBackendId = SuperResolutionConfig.getFrameGenerationBackend();
+        boolean autoGroup = BackendNegotiator.AUTO_FG_GROUP.equals(fgGroupId);
+        boolean preferredAuto = preferredBackendId == null
+                || preferredBackendId.isBlank()
+                || BackendNegotiator.AUTO_FG_GROUP.equals(preferredBackendId);
+        List<FrameGenerationDescription> candidates = new ArrayList<>();
+        for (FrameGenerationDescription description
+                : FrameGenerationRegistry.getDescriptions().values()) {
+            if (description.isAutomatic()) {
+                continue;
+            }
+            if (!preferredAuto && !description.getId().equals(preferredBackendId)) {
+                continue;
+            }
+            BackendGroup group = description.getGroup();
+            if (!autoGroup && (group == null || !fgGroupId.equals(group.getId()))) {
+                continue;
+            }
+            if (!FrameGenerationRegistry.isSupported(description)) {
+                continue;
+            }
+            candidates.add(description);
+        }
+        candidates.sort(Comparator.comparingInt(FrameGenerationDescription::getPriority).reversed());
+        return candidates.isEmpty() ? null : candidates.get(0);
     }
 
     /**
@@ -362,5 +608,32 @@ public final class FrameGeneration {
         }
         return isSupported()
                 && mode.generatedFrameCount() <= supportedGeneratedFrameCount();
+    }
+
+    private record ProviderSelection(
+            String id,
+            FrameGenerationProvider provider,
+            FrameGenerationExecutionModel executionModel
+    ) {
+    }
+
+    public record StartupProviderSelection(
+            String providerId,
+            FrameGenerationExecutionModel executionModel
+    ) {
+        private static final StartupProviderSelection NONE =
+                new StartupProviderSelection("", FrameGenerationExecutionModel.EXTERNAL_INTERPOSER);
+
+        public StartupProviderSelection {
+            providerId = Objects.requireNonNull(providerId, "providerId cannot be null");
+            executionModel = Objects.requireNonNull(
+                    executionModel,
+                    "executionModel cannot be null"
+            );
+        }
+
+        public boolean applicationManagedAsync() {
+            return executionModel == FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC;
+        }
     }
 }

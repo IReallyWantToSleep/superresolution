@@ -41,6 +41,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private CommandBufferState state = CommandBufferState.Executable;
     private long reusableFence = VK_NULL_HANDLE;
     private boolean inFlight = false;
+    private volatile long submissionGeneration;
     private VkCommandBuffer nativeCommandBuffer;
     private VulkanRenderPass activeRenderPass;
     private VulkanGraphicsPipeline boundGraphicsPipeline;
@@ -59,7 +60,11 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         this.ownerPool = ownerPool;
         this.behavior = behavior;
         nativeCommandBuffer = ownerPool.createNativeCommandBuffer();
-        vulkanDevice.setDebugName(VK_OBJECT_TYPE_COMMAND_BUFFER, nativeCommandBuffer.address(), "CommandBuffer:" + behavior);
+        vulkanDevice.setDebugName(
+                VK_OBJECT_TYPE_COMMAND_BUFFER,
+                nativeCommandBuffer.address(),
+                ownerPool.getQueue().role().debugLabel() + " CommandBuffer:" + behavior
+        );
     }
 
     public VkCommandBuffer getNativeCommandBuffer() {
@@ -232,6 +237,30 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     void markSubmitted() {
         inFlight = true;
+        long nextGeneration = submissionGeneration + 1L;
+        if (nextGeneration <= 0L) {
+            throw new IllegalStateException("Command buffer submission generation overflowed");
+        }
+        submissionGeneration = nextGeneration;
+    }
+
+    public long submissionGeneration() {
+        return submissionGeneration;
+    }
+
+    public boolean isSubmissionComplete(long generation) {
+        requireKnownSubmissionGeneration(generation);
+        if (submissionGeneration > generation) {
+            return true;
+        }
+        return isFenceSignaled();
+    }
+
+    public void waitForSubmission(long generation) {
+        requireKnownSubmissionGeneration(generation);
+        if (submissionGeneration == generation) {
+            waitForFence();
+        }
     }
 
     public void markExternalSubmitted() {
@@ -249,6 +278,14 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     public void markExternalComplete() {
         inFlight = false;
         destroyTransientResourcesIfComplete();
+    }
+
+    private void requireKnownSubmissionGeneration(long generation) {
+        if (generation <= 0L || generation > submissionGeneration) {
+            throw new IllegalArgumentException(
+                    "Unknown command buffer submission generation " + generation
+            );
+        }
     }
 
     void _beginRenderPass(VulkanRenderPass renderPass) {

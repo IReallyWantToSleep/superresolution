@@ -14,14 +14,14 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
 import java.util.Arrays;
 
-final class CaptureFrameRing {
-    static final int MAX_IN_FLIGHT_FRAMES = 3;
+public final class CaptureFrameRing {
+    public static final int MAX_IN_FLIGHT_FRAMES = 3;
     private final FrameResources[] slots = new FrameResources[MAX_IN_FLIGHT_FRAMES];
     private int cursor;
     private long generation;
-    private FrameResources activeFrame;
+    private volatile FrameResources activeFrame;
 
-    void initialize(VulkanDevice device) {
+    synchronized void initialize(VulkanDevice device) {
         if (slots[0] != null) {
             return;
         }
@@ -35,11 +35,11 @@ final class CaptureFrameRing {
         }
     }
 
-    boolean isInitialized() {
+    synchronized boolean isInitialized() {
         return slots[0] != null;
     }
 
-    FrameResources beginFrame(int logicalFrameIndex) {
+    synchronized FrameResources beginFrame(int logicalFrameIndex) {
         if (activeFrame != null) {
             if (activeFrame.logicalFrameIndex() != logicalFrameIndex) {
                 throw new IllegalStateException(
@@ -49,11 +49,7 @@ final class CaptureFrameRing {
             }
             return activeFrame;
         }
-        FrameResources frame = slots[cursor];
-        if (frame == null) {
-            throw new IllegalStateException("Frame capture resources are not initialized");
-        }
-        cursor = (cursor + 1) % slots.length;
+        FrameResources frame = selectReusableSlot();
         frame.begin(++generation, logicalFrameIndex);
         activeFrame = frame;
         return frame;
@@ -63,17 +59,21 @@ final class CaptureFrameRing {
         return activeFrame;
     }
 
-    FrameResources finishFrame() {
+    synchronized FrameResources finishFrame() {
         FrameResources frame = activeFrame;
         activeFrame = null;
-        if (frame == null || !frame.hasAnyResource()) {
+        if (frame == null) {
+            return null;
+        }
+        if (!frame.hasAnyResource()) {
+            frame.discardEmptyRecording();
             return null;
         }
         frame.seal();
         return frame;
     }
 
-    void destroy() {
+    synchronized void destroy() {
         activeFrame = null;
         for (FrameResources frame : slots) {
             if (frame != null) {
@@ -83,5 +83,38 @@ final class CaptureFrameRing {
         Arrays.fill(slots, null);
         cursor = 0;
         generation = 0;
+    }
+
+    private FrameResources selectReusableSlot() {
+        for (int offset = 0; offset < slots.length; offset++) {
+            int index = (cursor + offset) % slots.length;
+            FrameResources frame = requireSlot(index);
+            if (frame.state() == FrameResourceState.REUSABLE) {
+                cursor = (index + 1) % slots.length;
+                return frame;
+            }
+        }
+        for (int offset = 0; offset < slots.length; offset++) {
+            int index = (cursor + offset) % slots.length;
+            FrameResources frame = requireSlot(index);
+            if (frame.state() == FrameResourceState.SUBMITTED) {
+                cursor = (index + 1) % slots.length;
+                return frame;
+            }
+        }
+        throw new IllegalStateException(
+                "No reusable capture slot is available; states="
+                        + Arrays.toString(Arrays.stream(slots)
+                                .map(FrameResources::state)
+                                .toArray())
+        );
+    }
+
+    private FrameResources requireSlot(int index) {
+        FrameResources frame = slots[index];
+        if (frame == null) {
+            throw new IllegalStateException("Frame capture resources are not initialized");
+        }
+        return frame;
     }
 }

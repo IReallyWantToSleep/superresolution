@@ -10,7 +10,12 @@
 
 package io.homo.superresolution.common.framegeneration;
 
+import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.FrameGenerationDispatchCompletion;
+import io.homo.superresolution.api.registry.ProviderOutputLease;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+
+import javax.annotation.Nullable;
 
 import java.util.List;
 
@@ -21,24 +26,37 @@ import java.util.List;
  * swapchain interposer) return {@link #externallyPresented()}, and {@link #generatedFrames()}
  * is empty. Backends that hand back the interpolated frames for the presentation layer to
  * present return {@link #generated}, and the caller must present each frame (in order)
- * before the real frame, with pacing.
+ * before the real frame, with pacing. Application-managed async providers use
+ * {@link #applicationManaged(AsyncFrameGenerationDispatchResult)} so the output lease and
+ * dispatch completion remain attached to the display plan.
  */
 public final class FramePresentPlan {
-    private static final FramePresentPlan NONE = new FramePresentPlan(false, List.of(), null);
-    private static final FramePresentPlan EXTERNALLY_PRESENTED = new FramePresentPlan(true, List.of(), null);
+    private static final FramePresentPlan NONE =
+            new FramePresentPlan(false, false, List.of(), null, null, null);
+    private static final FramePresentPlan EXTERNALLY_PRESENTED =
+            new FramePresentPlan(true, true, List.of(), null, null, null);
 
     private final boolean frameGenerationActive;
+    private final boolean externallyPresented;
     private final List<VulkanTexture> generatedFrames;
-    private final VulkanTexture realFrame;
+    private final @Nullable VulkanTexture realFrame;
+    private final @Nullable ProviderOutputLease providerOutputLease;
+    private final @Nullable AsyncFrameGenerationDispatchResult.HistoryDisposition historyDisposition;
 
     private FramePresentPlan(
             boolean frameGenerationActive,
+            boolean externallyPresented,
             List<VulkanTexture> generatedFrames,
-            VulkanTexture realFrame
+            @Nullable VulkanTexture realFrame,
+            @Nullable ProviderOutputLease providerOutputLease,
+            @Nullable AsyncFrameGenerationDispatchResult.HistoryDisposition historyDisposition
     ) {
         this.frameGenerationActive = frameGenerationActive;
+        this.externallyPresented = externallyPresented;
         this.generatedFrames = generatedFrames;
         this.realFrame = realFrame;
+        this.providerOutputLease = providerOutputLease;
+        this.historyDisposition = historyDisposition;
     }
 
     public static FramePresentPlan none() {
@@ -54,15 +72,47 @@ public final class FramePresentPlan {
         return EXTERNALLY_PRESENTED;
     }
 
-    public static FramePresentPlan generated(List<VulkanTexture> generatedFrames, VulkanTexture realFrame) {
+    public static FramePresentPlan generated(
+            List<VulkanTexture> generatedFrames,
+            @Nullable VulkanTexture realFrame
+    ) {
         if (generatedFrames == null || generatedFrames.isEmpty()) {
             return NONE;
         }
-        return new FramePresentPlan(true, List.copyOf(generatedFrames), realFrame);
+        return new FramePresentPlan(
+                true,
+                false,
+                List.copyOf(generatedFrames),
+                realFrame,
+                null,
+                null
+        );
+    }
+
+    /**
+     * Converts one complete async dispatch into an immutable display plan. Failed
+     * dispatches remain {@link #none()} so the scheduler builds its real-only batch.
+     */
+    public static FramePresentPlan applicationManaged(AsyncFrameGenerationDispatchResult result) {
+        if (result == null || !result.succeeded() || result.outputLease() == null) {
+            return NONE;
+        }
+        return new FramePresentPlan(
+                result.actualGeneratedCount() > 0,
+                false,
+                List.copyOf(result.generatedOutputs()),
+                result.realOutput(),
+                result.outputLease(),
+                result.historyDisposition()
+        );
     }
 
     public boolean frameGenerationActive() {
         return frameGenerationActive;
+    }
+
+    public boolean isExternallyPresented() {
+        return externallyPresented;
     }
 
     public List<VulkanTexture> generatedFrames() {
@@ -70,12 +120,25 @@ public final class FramePresentPlan {
     }
 
     /**
-     * The NVNGX "output real" frame — the rendered frame passed through DLSS-G, which
-     * carries the DLSS-FG indicator so it stays steady across real and generated
-     * frames. Present this instead of the raw backbuffer for the real frame. Null when
-     * the raw backbuffer should be presented directly.
+     * Optional provider-produced real output. Present this instead of the captured
+     * backbuffer for the real display item. Null when the captured real frame should be
+     * presented directly.
      */
-    public VulkanTexture realFrame() {
+    public @Nullable VulkanTexture realFrame() {
         return realFrame;
+    }
+
+    public @Nullable ProviderOutputLease providerOutputLease() {
+        return providerOutputLease;
+    }
+
+    public FrameGenerationDispatchCompletion dispatchCompletion() {
+        return providerOutputLease == null
+                ? FrameGenerationDispatchCompletion.completed()
+                : providerOutputLease.completion();
+    }
+
+    public @Nullable AsyncFrameGenerationDispatchResult.HistoryDisposition historyDisposition() {
+        return historyDisposition;
     }
 }

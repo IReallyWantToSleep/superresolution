@@ -24,18 +24,39 @@ import io.homo.superresolution.common.presentation.capture.FrameResources;
  * {@link FrameGenerationDescription} to {@link FrameGenerationRegistry}, which is what the
  * {@code FrameGenerationRegisterEvent} exists for.
  * <p>
- * {@code FrameGeneration} performs the backend-agnostic gating (presentation enabled, mode
- * enabled, required render targets present, per-frame constants available) before calling
- * {@link #prepareFrame}; an implementation only handles its own runtime. All methods run
- * on the render thread under {@code FrameGeneration}'s monitor, so they need no additional
- * locking against each other.
+ * {@code FrameGeneration} performs backend-agnostic gating before invoking a provider.
+ * Providers must declare an {@link #executionModel()} so Super Resolution does not mix
+ * external-interposer ownership with its application-managed async scheduler.
+ * <p>
+ * Lifecycle and external-interposer methods are serialized by {@code FrameGeneration}.
+ * {@link FrameGenerationExecutionModel#APPLICATION_MANAGED_ASYNC} snapshot capture runs
+ * on the render thread, while dispatch, provider session/history work, output-lease
+ * acquisition, and release run only on the scheduler's FG thread. Async dispatch is not
+ * performed while holding {@code FrameGeneration}'s monitor, so implementations must
+ * protect state shared with lifecycle calls.
  */
 public interface FrameGenerationProvider {
 
-    /** One-time setup, called when frame generation initializes. */
+    /**
+     * Defaults to the existing external/interposer ownership model so providers compiled
+     * against the previous API keep their presentation path until they explicitly opt in.
+     */
+    default FrameGenerationExecutionModel executionModel() {
+        return FrameGenerationExecutionModel.EXTERNAL_INTERPOSER;
+    }
+
+    /**
+     * One-time setup, called when frame generation initializes. Application-managed
+     * providers must limit this to thread-agnostic setup; FG-thread-affine feature or
+     * session creation belongs to async dispatch lifecycle.
+     */
     void initialize();
 
-    /** One-time teardown, called when frame generation shuts down. */
+    /**
+     * One-time teardown after the scheduler has stopped and drained all output leases.
+     * Application-managed providers must release thread-affine session resources on the
+     * FG thread before this final teardown.
+     */
     void shutdown();
 
     /** Whether the backend's hardware / driver support is actually present. */
@@ -58,14 +79,16 @@ public interface FrameGenerationProvider {
     boolean dependenciesSatisfied();
 
     /**
-     * Records this frame's generation into {@code commandBuffer} and returns the plan the
-     * presentation layer should follow. Never returns {@code null}; return
-     * {@link FramePresentPlan#none()} to fall back to presenting the raw backbuffer.
+     * External-interposer compatibility entry point. Records or configures this frame and
+     * returns the plan the existing synchronous presentation path should follow. Never
+     * returns {@code null}; return {@link FramePresentPlan#none()} to fall back to the raw
+     * backbuffer.
      * <p>
      * {@code colorFormat} and {@code backBufferCount} describe the swapchain and are only
      * needed by backends that configure a swapchain interposer; others may ignore them.
+     * Application-managed async providers are never dispatched through this method.
      */
-    FramePresentPlan prepareFrame(
+    default FramePresentPlan prepareFrame(
             FrameResources frameResources,
             FGConstants constants,
             FrameGenerationMode mode,
@@ -73,7 +96,45 @@ public interface FrameGenerationProvider {
             int colorHeight,
             int colorFormat,
             int backBufferCount,
-            long commandBuffer);
+            long commandBuffer
+    ) {
+        return FramePresentPlan.none();
+    }
+
+    /**
+     * Captures immutable provider inputs before the render thread transfers ownership of
+     * {@code frameResources}. Implementations may return a custom immutable snapshot.
+     * Feature/session creation, reset, dispatch, and release are forbidden here.
+     */
+    default ProviderInputSnapshot captureInputSnapshot(
+            String providerId,
+            FrameResources frameResources,
+            FGConstants constants,
+            FrameGenerationMode mode
+    ) {
+        return ProviderInputSnapshot.of(
+                providerId,
+                frameResources.logicalFrameIndex(),
+                mode,
+                constants,
+                constants.reset() != 0
+        );
+    }
+
+    /**
+     * Records one complete application-managed dispatch on the scheduler's FG thread.
+     * The provider must not acquire swapchain images, call {@code vkQueuePresentKHR}, or
+     * publish partial outputs. On failure, return
+     * {@link AsyncFrameGenerationDispatchResult#failed(String)} and let the scheduler
+     * construct the real-only batch.
+     */
+    default AsyncFrameGenerationDispatchResult dispatchAsync(
+            AsyncFrameGenerationDispatchRequest request
+    ) {
+        return AsyncFrameGenerationDispatchResult.failed(
+                "Provider does not implement application-managed async dispatch"
+        );
+    }
 
     /** Called once the frame's presents have been submitted. */
     void finishPresent(FrameResources frameResources, boolean frameGenerationActive);
