@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -83,6 +84,10 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
             createImageView(stack);
             updateDebugLabels();
         }
+        SuperResolution.LOGGER.info(
+            "Created Vulkan texture",
+            new RuntimeException()
+        );
     }
 
     private String debugBaseLabel() {
@@ -112,6 +117,18 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
 
     private void exportMemoryHandle(MemoryStack stack) {
         exportedHandle = VulkanInterop.IMPL.vkGetMemoryHandle(stack, device.getVkDevice(), imageMemory);
+    }
+
+    public long takeExportedMemoryHandle() {
+        if (!exportable) {
+            throw new VulkanException("Texture is not exportable");
+        }
+        if (exportedHandle == -1) {
+            throw new VulkanException("Memory handle not exported");
+        }
+        long handle = exportedHandle;
+        exportedHandle = -1;
+        return handle;
     }
 
     private void createImage(MemoryStack stack) {
@@ -320,10 +337,12 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         long imageToDestroy = image;
         long allocationToDestroy = vmaAllocation;
         long imageMemoryToDestroy = imageMemory;
+        long exportedHandleToClose = exportedHandle;
         imageView = VK_NULL_HANDLE;
         image = VK_NULL_HANDLE;
         vmaAllocation = VK_NULL_HANDLE;
         imageMemory = VK_NULL_HANDLE;
+        exportedHandle = -1;
 
         if (imageViewToDestroy != VK_NULL_HANDLE) {
             device.queueForDestroy(() -> vkDestroyImageView(device.getVkDevice(), imageViewToDestroy, null));
@@ -334,6 +353,11 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         } else if (imageMemoryToDestroy != VK_NULL_HANDLE) {
             device.queueForDestroy(() -> allocator.freeImage(imageToDestroy, imageMemoryToDestroy));
         }
+        VulkanInterop.closeUnimportedExportedHandle(exportedHandleToClose);
+        SuperResolution.LOGGER.info(
+            "Destroyed Vulkan texture",
+            new RuntimeException()
+        );
     }
 
     public long getExportedMemoryHandle() {

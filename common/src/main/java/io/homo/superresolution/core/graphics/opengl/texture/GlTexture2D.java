@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.opengl.texture;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
@@ -52,6 +53,10 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         this.description = description;
         this.width = description.getWidth();
         this.height = description.getHeight();
+        SuperResolution.LOGGER.info(
+            "Created OpenGL texture",
+            new RuntimeException()
+        );
 
     }
 
@@ -233,5 +238,10 @@ public class GlTexture2D implements ITexture, IDebuggableObject {
         mipViews.clear();
         Gl.DSA.deleteTexture(this.id);
         this.id = -1;
+        SuperResolution.LOGGER.info(
+            "Destroyed OpenGL texture",
+            new RuntimeException()
+        );
+
     }
 }

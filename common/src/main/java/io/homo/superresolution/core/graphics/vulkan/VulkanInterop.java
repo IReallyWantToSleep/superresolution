@@ -31,6 +31,7 @@ import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
+import static org.lwjgl.system.linux.UNISTD.close;
 import static org.lwjgl.vulkan.VK11.*;
 
 public class VulkanInterop {
@@ -41,6 +42,36 @@ public class VulkanInterop {
             IMPL = new WindowsVulkanInteropExtImpl();
         } else {
             IMPL = new LinuxVulkanInteropExtImpl();
+        }
+    }
+
+    public static void closeUnimportedExportedHandle(long handle) {
+        if (handle == -1L) {
+            return;
+        }
+        switch (OperatingSystemType.get()) {
+            case WINDOWS -> closeWin32Handle(handle);
+            case LINUX -> {
+                if (handle >= 0L && close(Math.toIntExact(handle)) != 0) {
+                    throw new IllegalStateException("Failed to close exported Linux file descriptor");
+                }
+            }
+            default -> throw new UnsupportedOperationException("Unsupported external-handle platform");
+        }
+    }
+
+    public static void closeImportedExportedHandle(long handle) {
+        if (OperatingSystemType.get() == OperatingSystemType.WINDOWS) {
+            closeWin32Handle(handle);
+        }
+    }
+
+    private static void closeWin32Handle(long handle) {
+        if (handle == -1L) {
+            return;
+        }
+        if (!WinKernel32.INSTANCE.CloseHandle(Pointer.createConstant(handle))) {
+            throw new IllegalStateException("Failed to close exported Win32 external handle");
         }
     }
 
