@@ -31,7 +31,8 @@ public final class RealFrameJob {
     private final long realPresentId;
     private final FrameResources frameResources;
     private final @Nullable ProviderInputSnapshot providerInputSnapshot;
-    private final long submittedAtNanos;
+    private final long producerTimeNanos;
+    private final int plannedGeneratedCount;
     private final int colorWidth;
     private final int colorHeight;
     private final @Nullable TextureFormat colorFormat;
@@ -45,7 +46,8 @@ public final class RealFrameJob {
             long realPresentId,
             FrameResources frameResources,
             @Nullable ProviderInputSnapshot providerInputSnapshot,
-            long submittedAtNanos,
+            long producerTimeNanos,
+            int plannedGeneratedCount,
             boolean historyResetRequested,
             boolean presentAllowed
     ) {
@@ -61,13 +63,17 @@ public final class RealFrameJob {
                     "Provider input snapshot does not belong to the queued logical frame"
             );
         }
+        if (plannedGeneratedCount < 0) {
+            throw new IllegalArgumentException("plannedGeneratedCount cannot be negative");
+        }
         this.realIndex = realIndex;
         this.logicalFrameIndex = logicalFrameIndex;
         this.latencyFrameId = latencyFrameId;
         this.realPresentId = realPresentId;
         this.frameResources = frameResources;
         this.providerInputSnapshot = providerInputSnapshot;
-        this.submittedAtNanos = submittedAtNanos;
+        this.producerTimeNanos = producerTimeNanos;
+        this.plannedGeneratedCount = plannedGeneratedCount;
         VulkanTexture color = frameResources.finalColorVulkanTexture();
         this.colorWidth = color == null ? 0 : color.getWidth();
         this.colorHeight = color == null ? 0 : color.getHeight();
@@ -100,8 +106,12 @@ public final class RealFrameJob {
         return providerInputSnapshot;
     }
 
-    public long submittedAtNanos() {
-        return submittedAtNanos;
+    public long producerTimeNanos() {
+        return producerTimeNanos;
+    }
+
+    public int plannedGeneratedCount() {
+        return plannedGeneratedCount;
     }
 
     public int colorWidth() {

@@ -22,8 +22,10 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
+import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
@@ -376,6 +378,8 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
     ) {
         if (!VulkanPresentationFeature.isRequested()
                 || !FrameCaptureManager.isInitialized()
+                // Real-only presentation does not consume these borrowed textures.
+                || !FrameGeneration.isFrameGenerationEnabled()
                 || dispatchResource.resources() == null) {
             return;
         }
@@ -386,7 +390,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
             return;
         }
 
-        boolean captured = FrameCaptureManager.captureVulkanInputs(
+        FrameResources captureFrame = FrameCaptureManager.captureVulkanInputs(
                 dispatchResource.frameCount(),
                 hasDepth ? inFlight.inputDepthVkTexture : null,
                 hasDepth ? inFlight.inputDepthGlTexture : null,
@@ -397,11 +401,16 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
                 hasMotionVectors ? inFlight.captureMotionReady : null,
                 hasMotionVectors ? inFlight.captureMotionRelease : null
         );
-        if (!captured) {
+        if (captureFrame == null) {
             return;
         }
 
-        if (hasDepth) {
+        boolean borrowedDepth = hasDepth && captureFrame.hasDepth();
+        boolean borrowedMotionVectors = hasMotionVectors && captureFrame.hasMotionVector();
+        if (borrowedDepth || borrowedMotionVectors) {
+            inFlight.captureInputsFrame = captureFrame;
+        }
+        if (borrowedDepth) {
             inFlight.captureDepthReady.signalVulkan(
                     new int[]{Math.toIntExact(inFlight.inputDepthGlTexture.handle())},
                     new int[0],
@@ -409,7 +418,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
             );
             inFlight.captureDepthPending = true;
         }
-        if (hasMotionVectors) {
+        if (borrowedMotionVectors) {
             inFlight.captureMotionReady.signalVulkan(
                     new int[]{Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle())},
                     new int[0],
@@ -529,6 +538,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
         protected int index;
         private boolean captureDepthPending;
         private boolean captureMotionPending;
+        private FrameResources captureInputsFrame;
 
         public void destroy() {
             awaitCaptureRelease();
@@ -684,6 +694,15 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
         }
 
         private void awaitCaptureRelease() {
+            if ((captureDepthPending || captureMotionPending) && captureInputsFrame == null) {
+                throw new IllegalStateException(
+                        "Borrowed interop inputs are pending without a capture frame"
+                );
+            }
+            if (captureInputsFrame != null
+                    && (captureDepthPending || captureMotionPending)) {
+                captureInputsFrame.awaitBorrowedInputReleaseSubmission();
+            }
             if (captureDepthPending && captureDepthRelease != null && inputDepthGlTexture != null) {
                 captureDepthRelease.waitVulkanSignal(
                         new int[]{Math.toIntExact(inputDepthGlTexture.handle())},
@@ -699,6 +718,9 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
                         new int[]{GL_LAYOUT_TRANSFER_DST_EXT}
                 );
                 captureMotionPending = false;
+            }
+            if (!captureDepthPending && !captureMotionPending) {
+                captureInputsFrame = null;
             }
         }
     }

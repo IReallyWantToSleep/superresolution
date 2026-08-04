@@ -39,7 +39,10 @@ public final class VulkanPresentationWindow {
 		if (context != null) {
 			return;
 		}
-		FrameCaptureManager.initialize(presentationContext.device());
+		FrameCaptureManager.initialize(
+				presentationContext.device(),
+				presentationContext.framePacingTiming()
+		);
 		presentationContext.setVsync(requestedVsync);
 		context = presentationContext;
 		surface = presentationSurface;
@@ -102,6 +105,15 @@ public final class VulkanPresentationWindow {
 		if (pending != null) {
 			presentationContext.consumeWithoutPresent(pending);
 		}
+	}
+
+	public static boolean shutdownApplicationManagedProvider(
+			String providerId,
+			Runnable teardown
+	) {
+		VulkanPresentationContext presentationContext = context;
+		return presentationContext != null
+				&& presentationContext.shutdownApplicationManagedProvider(providerId, teardown);
 	}
 
 	public static synchronized void shutdown() {

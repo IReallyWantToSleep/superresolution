@@ -31,6 +31,7 @@ public final class LowLatency {
     /** The negotiator-resolved backend description (may differ from {@link #mode}). */
     private static @Nullable LowLatencyDescription activeBackend;
     private static @Nullable LowLatencyProvider lowLatency;
+    private static volatile long currentLatencyFrameId;
 
     static {
         LowLatencyDescriptions.register();
@@ -116,8 +117,9 @@ public final class LowLatency {
         if (!SuperResolution.gameIsLoaded) {
             return;
         }
+        currentLatencyFrameId = frameIndex;
         Streamline.nextFrame(frameIndex);
-        VulkanLowLatency.nextFrame();
+        VulkanLowLatency.nextFrame(frameIndex);
         // Resolve the configured group first so an unknown persisted id falls back to
         // "none" without recreating the fallback provider on every frame. Re-resolving
         // also lets a backend registered later become active without rewriting config.
@@ -127,6 +129,10 @@ public final class LowLatency {
         } else {
             renegotiate();
         }
+    }
+
+    public static long currentLatencyFrameId() {
+        return currentLatencyFrameId;
     }
 
     public static void onLatencyPing(boolean pressed) {

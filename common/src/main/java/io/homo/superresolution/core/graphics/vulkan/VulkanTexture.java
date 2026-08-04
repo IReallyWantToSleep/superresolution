@@ -84,10 +84,6 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
             createImageView(stack);
             updateDebugLabels();
         }
-        SuperResolution.LOGGER.info(
-            "Created Vulkan texture",
-            new RuntimeException()
-        );
     }
 
     private String debugBaseLabel() {
@@ -354,10 +350,6 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
             device.queueForDestroy(() -> allocator.freeImage(imageToDestroy, imageMemoryToDestroy));
         }
         VulkanInterop.closeUnimportedExportedHandle(exportedHandleToClose);
-        SuperResolution.LOGGER.info(
-            "Destroyed Vulkan texture",
-            new RuntimeException()
-        );
     }
 
     public long getExportedMemoryHandle() {

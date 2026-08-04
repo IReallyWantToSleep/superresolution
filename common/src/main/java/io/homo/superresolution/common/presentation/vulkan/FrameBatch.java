@@ -26,7 +26,10 @@ public final class FrameBatch {
     private final long realIndex;
     private final int generatedCount;
     private final long batchId;
+    private final long latencyFrameId;
+    private final long realPresentId;
     private final long batchIntervalNanos;
+    private final boolean pacingEnabled;
     private final List<PresentFrame> presentFrames;
     private final @Nullable ProviderOutputLease providerOutputLease;
     private final FrameGenerationDispatchCompletion dispatchCompletion;
@@ -36,7 +39,10 @@ public final class FrameBatch {
             long realIndex,
             int generatedCount,
             long batchId,
+            long latencyFrameId,
+            long realPresentId,
             long batchIntervalNanos,
+            boolean pacingEnabled,
             List<PresentFrame> presentFrames,
             @Nullable ProviderOutputLease providerOutputLease,
             FrameGenerationDispatchCompletion dispatchCompletion,
@@ -51,8 +57,14 @@ public final class FrameBatch {
         if (presentFrames.size() != generatedCount + 1) {
             throw new IllegalArgumentException("Frame batch item count does not match generated count");
         }
+        if (pacingEnabled && generatedCount == 0) {
+            throw new IllegalArgumentException("Real-only batch cannot enable pacing");
+        }
         if (presentFrames.get(presentFrames.size() - 1).kind() != PresentFrame.Kind.REAL) {
             throw new IllegalArgumentException("Real frame must be the final batch item");
+        }
+        if (presentFrames.get(presentFrames.size() - 1).presentId() != realPresentId) {
+            throw new IllegalArgumentException("Real present id does not match its batch");
         }
         if (dispatchCompletion == null) {
             throw new IllegalArgumentException("dispatchCompletion cannot be null");
@@ -71,8 +83,11 @@ public final class FrameBatch {
                 throw new IllegalArgumentException("Generated frames must precede the real frame");
             }
             if (frame.realIndex() != realIndex
+                    || frame.latencyFrameId() != latencyFrameId
                     || frame.batchId() != batchId
-                    || frame.batchIntervalNanos() != batchIntervalNanos) {
+                    || frame.batchIntervalNanos() != batchIntervalNanos
+                    || frame.batchGeneratedCount() != generatedCount
+                    || frame.pacingEnabled() != pacingEnabled) {
                 throw new IllegalArgumentException("Present frame metadata does not match its batch");
             }
             if (frame.sourceLease() != providerOutputLease
@@ -85,7 +100,10 @@ public final class FrameBatch {
         this.realIndex = realIndex;
         this.generatedCount = generatedCount;
         this.batchId = batchId;
+        this.latencyFrameId = latencyFrameId;
+        this.realPresentId = realPresentId;
         this.batchIntervalNanos = batchIntervalNanos;
+        this.pacingEnabled = pacingEnabled;
         this.presentFrames = List.copyOf(presentFrames);
         this.providerOutputLease = providerOutputLease;
         this.dispatchCompletion = dispatchCompletion;
@@ -95,17 +113,23 @@ public final class FrameBatch {
     public static FrameBatch realOnly(
             long realIndex,
             long batchId,
+            long latencyFrameId,
+            long realPresentId,
             long batchIntervalNanos,
-            PresentFrame realFrame
+            PresentFrame realFrame,
+            FrameGenerationDispatchCompletion completion
     ) {
         return new FrameBatch(
                 realIndex,
                 0,
                 batchId,
+                latencyFrameId,
+                realPresentId,
                 batchIntervalNanos,
+                false,
                 List.of(realFrame),
                 null,
-                FrameGenerationDispatchCompletion.completed(),
+                completion,
                 null
         );
     }
@@ -114,7 +138,10 @@ public final class FrameBatch {
             long realIndex,
             int generatedCount,
             long batchId,
+            long latencyFrameId,
+            long realPresentId,
             long batchIntervalNanos,
+            boolean pacingEnabled,
             List<PresentFrame> presentFrames,
             ProviderOutputLease providerOutputLease,
             FrameGenerationDispatchCompletion dispatchCompletion,
@@ -124,7 +151,10 @@ public final class FrameBatch {
                 realIndex,
                 generatedCount,
                 batchId,
+                latencyFrameId,
+                realPresentId,
                 batchIntervalNanos,
+                pacingEnabled,
                 presentFrames,
                 providerOutputLease,
                 dispatchCompletion,
@@ -144,8 +174,20 @@ public final class FrameBatch {
         return batchId;
     }
 
+    public long latencyFrameId() {
+        return latencyFrameId;
+    }
+
+    public long realPresentId() {
+        return realPresentId;
+    }
+
     public long batchIntervalNanos() {
         return batchIntervalNanos;
+    }
+
+    public boolean pacingEnabled() {
+        return pacingEnabled;
     }
 
     public List<PresentFrame> presentFrames() {

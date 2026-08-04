@@ -28,6 +28,7 @@ public final class PresentFrame {
 
     private final long displayIndex;
     private final long realIndex;
+    private final long latencyFrameId;
     private final Kind kind;
     private final long swapchainGeneration;
     private final long swapchainHandle;
@@ -38,6 +39,8 @@ public final class PresentFrame {
     private final boolean outOfBand;
     private final long batchId;
     private final long batchIntervalNanos;
+    private final int batchGeneratedCount;
+    private final boolean pacingEnabled;
     private final @Nullable ProviderOutputLease sourceLease;
     private final FrameGenerationDispatchCompletion sourceCompletion;
     private final VulkanBinarySemaphoreLease acquireLease;
@@ -46,6 +49,7 @@ public final class PresentFrame {
     PresentFrame(
             long displayIndex,
             long realIndex,
+            long latencyFrameId,
             Kind kind,
             long swapchainGeneration,
             long swapchainHandle,
@@ -56,6 +60,8 @@ public final class PresentFrame {
             boolean outOfBand,
             long batchId,
             long batchIntervalNanos,
+            int batchGeneratedCount,
+            boolean pacingEnabled,
             @Nullable ProviderOutputLease sourceLease,
             FrameGenerationDispatchCompletion sourceCompletion,
             @Nullable VulkanBinarySemaphoreLease acquireLease
@@ -75,8 +81,14 @@ public final class PresentFrame {
         if (submissionTicket <= 0L) {
             throw new IllegalArgumentException("submissionTicket must be positive");
         }
-        if (batchId <= 0L || batchIntervalNanos <= 0L) {
+        if (batchId <= 0L || batchIntervalNanos <= 0L || batchGeneratedCount < 0) {
             throw new IllegalArgumentException("PresentFrame batch metadata is invalid");
+        }
+        if (kind == Kind.GENERATED && batchGeneratedCount == 0) {
+            throw new IllegalArgumentException("Generated frame requires a generated batch");
+        }
+        if (pacingEnabled && batchGeneratedCount == 0) {
+            throw new IllegalArgumentException("Real-only frame cannot enable pacing");
         }
         if (sourceCompletion == null) {
             throw new IllegalArgumentException("sourceCompletion cannot be null");
@@ -86,6 +98,7 @@ public final class PresentFrame {
         }
         this.displayIndex = displayIndex;
         this.realIndex = realIndex;
+        this.latencyFrameId = latencyFrameId;
         this.kind = kind;
         this.swapchainGeneration = swapchainGeneration;
         this.swapchainHandle = swapchainHandle;
@@ -96,6 +109,8 @@ public final class PresentFrame {
         this.outOfBand = outOfBand;
         this.batchId = batchId;
         this.batchIntervalNanos = batchIntervalNanos;
+        this.batchGeneratedCount = batchGeneratedCount;
+        this.pacingEnabled = pacingEnabled;
         this.sourceLease = sourceLease;
         this.sourceCompletion = sourceCompletion;
         this.acquireLease = acquireLease;
@@ -107,6 +122,10 @@ public final class PresentFrame {
 
     public long realIndex() {
         return realIndex;
+    }
+
+    public long latencyFrameId() {
+        return latencyFrameId;
     }
 
     public Kind kind() {
@@ -147,6 +166,14 @@ public final class PresentFrame {
 
     public long batchIntervalNanos() {
         return batchIntervalNanos;
+    }
+
+    public int batchGeneratedCount() {
+        return batchGeneratedCount;
+    }
+
+    public boolean pacingEnabled() {
+        return pacingEnabled;
     }
 
     public @Nullable ProviderOutputLease sourceLease() {

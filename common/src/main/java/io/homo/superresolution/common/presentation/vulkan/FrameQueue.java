@@ -40,11 +40,11 @@ final class FrameQueue<T> implements AutoCloseable {
         this.capacity = capacity;
     }
 
-    void put(T item) throws InterruptedException {
-        putBatch(List.of(item));
+    long put(T item) throws InterruptedException {
+        return putBatch(List.of(item));
     }
 
-    void putBatch(Collection<? extends T> batch) throws InterruptedException {
+    long putBatch(Collection<? extends T> batch) throws InterruptedException {
         List<? extends T> snapshot = List.copyOf(batch);
         if (snapshot.isEmpty()) {
             throw new IllegalArgumentException("batch cannot be empty");
@@ -53,14 +53,42 @@ final class FrameQueue<T> implements AutoCloseable {
             throw new IllegalArgumentException("batch exceeds queue capacity");
         }
 
+        long waitedNanos = 0L;
         lock.lockInterruptibly();
         try {
             while (!closed && capacity - items.size() < snapshot.size()) {
-                hasCapacity.await();
+                long waitStartedAtNanos = System.nanoTime();
+                try {
+                    hasCapacity.await();
+                } finally {
+                    waitedNanos += Math.max(0L, System.nanoTime() - waitStartedAtNanos);
+                }
             }
             requireOpen();
             items.addAll(snapshot);
             notEmpty.signalAll();
+            return waitedNanos;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Waits until a producer can atomically publish a batch of the requested size.
+     * The caller remains responsible for immediately calling {@link #putBatch(Collection)};
+     * this queue has one producer in the application-managed presentation pipeline.
+     */
+    void awaitCapacityFor(int requiredCapacity) throws InterruptedException {
+        if (requiredCapacity <= 0 || requiredCapacity > capacity) {
+            throw new IllegalArgumentException("requiredCapacity must be between 1 and queue capacity");
+        }
+
+        lock.lockInterruptibly();
+        try {
+            while (!closed && capacity - items.size() < requiredCapacity) {
+                hasCapacity.await();
+            }
+            requireOpen();
         } finally {
             lock.unlock();
         }

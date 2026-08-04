@@ -189,6 +189,13 @@ public final class VulkanPresentationFeature {
         VulkanPresentationWindow.initialize(VulkanPresentationContext.initialize(SURFACE), SURFACE);
     }
 
+    public static boolean shutdownApplicationManagedProvider(
+            String providerId,
+            Runnable teardown
+    ) {
+        return VulkanPresentationWindow.shutdownApplicationManagedProvider(providerId, teardown);
+    }
+
     public static synchronized void shutdown() {
         VulkanPresentationWindow.shutdown();
         if (renderSystem != null && SURFACE.surface() != 0L && renderSystem.getVulkanInstance() != null) {

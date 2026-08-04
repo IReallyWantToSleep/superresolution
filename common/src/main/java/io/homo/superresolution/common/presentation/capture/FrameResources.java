@@ -10,6 +10,7 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
+import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
@@ -29,22 +30,36 @@ import static org.lwjgl.vulkan.VK12.vkWaitSemaphores;
 public final class FrameResources {
     private final int index;
     private final VulkanDevice device;
+    private final FramePacingTiming framePacingTiming;
     private final FrameTextureResource finalColor;
     private final FrameTextureResource hudlessColor;
     private final FrameTextureResource depth;
     private final FrameTextureResource motionVector;
     private final FrameResourceLifecycle lifecycle = new FrameResourceLifecycle();
+    private final Object borrowedInputReleaseMonitor = new Object();
     private volatile VulkanCommandBuffer submittedCommandBuffer;
+    private volatile long submittedCommandBufferGeneration;
     private volatile long fence;
     private volatile long generation;
     private volatile int logicalFrameIndex;
     private volatile boolean unrecoverable;
     private volatile long dlssGInputCompletionSemaphore;
     private volatile long dlssGInputCompletionValue;
+    private boolean borrowedInputReleaseRequired;
+    private boolean borrowedInputReleaseSubmitted;
+    private boolean borrowedInputReleaseFailed;
 
-    FrameResources(int index, VulkanDevice device) {
+    FrameResources(
+            int index,
+            VulkanDevice device,
+            FramePacingTiming framePacingTiming
+    ) {
+        if (framePacingTiming == null) {
+            throw new IllegalArgumentException("framePacingTiming cannot be null");
+        }
         this.index = index;
         this.device = device;
+        this.framePacingTiming = framePacingTiming;
         finalColor = new FrameTextureResource(device, "SRPresentationFinalColor-" + index);
         hudlessColor = new FrameTextureResource(device, "SRPresentationHudlessColor-" + index);
         depth = new FrameTextureResource(device, "SRPresentationDepth-" + index);
@@ -63,8 +78,10 @@ public final class FrameResources {
         depth.beginFrame();
         motionVector.beginFrame();
         submittedCommandBuffer = null;
+        submittedCommandBufferGeneration = 0L;
         fence = 0L;
         clearDlssGInputCompletion();
+        resetBorrowedInputReleaseSubmission();
         lifecycle.beginRecording();
     }
 
@@ -96,6 +113,9 @@ public final class FrameResources {
     ) {
         requireWritable();
         depth.borrow(vkTexture, glTexture, ready, release);
+        if (depth.isValid()) {
+            requireBorrowedInputReleaseSubmission();
+        }
     }
 
     void borrowMotionVector(
@@ -106,6 +126,9 @@ public final class FrameResources {
     ) {
         requireWritable();
         motionVector.borrow(vkTexture, glTexture, ready, release);
+        if (motionVector.isValid()) {
+            requireBorrowedInputReleaseSubmission();
+        }
     }
 
     void seal() {
@@ -134,17 +157,58 @@ public final class FrameResources {
             );
         }
         lifecycle.requireSubmittable();
+        long commandBufferGeneration = commandBuffer.submissionGeneration();
+        if (commandBufferGeneration <= 0L) {
+            throw new IllegalStateException(
+                    "Frame capture cannot track a command buffer without a submission generation"
+            );
+        }
         submittedCommandBuffer = commandBuffer;
+        submittedCommandBufferGeneration = commandBufferGeneration;
         fence = submittedFence;
         finalColor.markSubmitted();
         hudlessColor.markSubmitted();
         depth.markSubmitted();
         motionVector.markSubmitted();
         lifecycle.markSubmitted();
+        publishBorrowedInputReleaseSubmission();
     }
 
     public void markUnrecoverable() {
         unrecoverable = true;
+        failBorrowedInputReleaseSubmission();
+    }
+
+    /**
+     * Waits until a queue submission has published the release signals for borrowed
+     * interop inputs. OpenGL must not wait on those semaphores before that submission exists.
+     */
+    public void awaitBorrowedInputReleaseSubmission() {
+        synchronized (borrowedInputReleaseMonitor) {
+            while (borrowedInputReleaseRequired
+                    && !borrowedInputReleaseSubmitted
+                    && !borrowedInputReleaseFailed) {
+                long waitStartedAtNanos = System.nanoTime();
+                try {
+                    borrowedInputReleaseMonitor.wait();
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(
+                            "Interrupted while waiting for borrowed interop input release submission",
+                            exception
+                    );
+                } finally {
+                    framePacingTiming.recordExcludedWait(
+                            Math.max(0L, System.nanoTime() - waitStartedAtNanos)
+                    );
+                }
+            }
+            if (borrowedInputReleaseFailed) {
+                throw new IllegalStateException(
+                        "Borrowed interop input release could not be submitted"
+                );
+            }
+        }
     }
 
     void destroy() {
@@ -263,8 +327,9 @@ public final class FrameResources {
             );
         }
         VulkanCommandBuffer commandBuffer = submittedCommandBuffer;
-        if (commandBuffer != null) {
-            commandBuffer.waitForFence();
+        long commandBufferGeneration = submittedCommandBufferGeneration;
+        if (commandBuffer != null && commandBufferGeneration > 0L) {
+            commandBuffer.waitForSubmission(commandBufferGeneration);
         }
         awaitDlssGInputs();
         finalColor.awaitOwnedRelease();
@@ -272,6 +337,7 @@ public final class FrameResources {
         depth.awaitOwnedRelease();
         motionVector.awaitOwnedRelease();
         submittedCommandBuffer = null;
+        submittedCommandBufferGeneration = 0L;
         fence = 0L;
         lifecycle.markReusable();
     }
@@ -313,6 +379,39 @@ public final class FrameResources {
         }
         clearDlssGInputCompletion();
     }
+
+    private void resetBorrowedInputReleaseSubmission() {
+        synchronized (borrowedInputReleaseMonitor) {
+            borrowedInputReleaseRequired = false;
+            borrowedInputReleaseSubmitted = false;
+            borrowedInputReleaseFailed = false;
+        }
+    }
+
+    private void requireBorrowedInputReleaseSubmission() {
+        synchronized (borrowedInputReleaseMonitor) {
+            borrowedInputReleaseRequired = true;
+        }
+    }
+
+    private void publishBorrowedInputReleaseSubmission() {
+        synchronized (borrowedInputReleaseMonitor) {
+            if (borrowedInputReleaseRequired) {
+                borrowedInputReleaseSubmitted = true;
+                borrowedInputReleaseMonitor.notifyAll();
+            }
+        }
+    }
+
+    private void failBorrowedInputReleaseSubmission() {
+        synchronized (borrowedInputReleaseMonitor) {
+            if (borrowedInputReleaseRequired) {
+                borrowedInputReleaseFailed = true;
+                borrowedInputReleaseMonitor.notifyAll();
+            }
+        }
+    }
+
     private static void addReadySemaphore(List<Long> semaphores, FrameTextureResource resource) {
         if (resource.isValid()) {
             semaphores.add(resource.readySemaphore());

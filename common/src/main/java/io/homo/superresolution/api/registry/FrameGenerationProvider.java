@@ -53,9 +53,17 @@ public interface FrameGenerationProvider {
     void initialize();
 
     /**
-     * One-time teardown after the scheduler has stopped and drained all output leases.
-     * Application-managed providers must release thread-affine session resources on the
-     * FG thread before this final teardown.
+     * One-time teardown after every application-managed scheduler has drained. This method
+     * runs on the scheduler's FG thread only for an
+     * {@link FrameGenerationExecutionModel#APPLICATION_MANAGED_ASYNC} provider that owns a
+     * live scheduler. Use it for thread-affine feature, session, and output-pool release.
+     */
+    default void shutdownOnFrameGenerationThread() {
+    }
+
+    /**
+     * One-time thread-agnostic teardown after any required
+     * {@link #shutdownOnFrameGenerationThread()} call has completed.
      */
     void shutdown();
 

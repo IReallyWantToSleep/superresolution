@@ -23,6 +23,7 @@ public record VulkanAsyncDispatchCapabilities(
         boolean timelineSemaphoreSupported,
         boolean timelineSemaphoreEnabled,
         boolean frameGenerationQueueCreated,
+        boolean presentQueueCreated,
         String unavailableReason
 ) {
     public VulkanAsyncDispatchCapabilities {
@@ -37,7 +38,8 @@ public record VulkanAsyncDispatchCapabilities(
             int availableQueueCount,
             boolean timelineSemaphoreSupported,
             boolean timelineSemaphoreEnabled,
-            boolean frameGenerationQueueCreated
+            boolean frameGenerationQueueCreated,
+            boolean presentQueueCreated
     ) {
         String reason = "";
         if (!requested) {
@@ -62,6 +64,7 @@ public record VulkanAsyncDispatchCapabilities(
                 timelineSemaphoreSupported,
                 timelineSemaphoreEnabled,
                 frameGenerationQueueCreated,
+                presentQueueCreated,
                 reason
         );
     }
@@ -79,6 +82,7 @@ public record VulkanAsyncDispatchCapabilities(
                 timelineSemaphoreSupported,
                 timelineSemaphoreEnabled,
                 frameGenerationQueueCreated,
+                presentQueueCreated,
                 Objects.requireNonNull(reason, "reason cannot be null")
         );
     }

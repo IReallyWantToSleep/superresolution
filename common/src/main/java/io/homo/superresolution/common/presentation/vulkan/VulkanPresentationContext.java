@@ -41,6 +41,7 @@ public final class VulkanPresentationContext {
 	private final VkRenderSystem renderSystem;
 	private final VulkanDevice device;
 	private final VulkanSurface surface;
+	private final FramePacingTiming framePacingTiming = new FramePacingTiming();
 	private final VulkanSwapchain swapchain;
 	private boolean minimized;
 
@@ -91,6 +92,13 @@ public final class VulkanPresentationContext {
 		swapchain.setVsync(enabled);
 	}
 
+	public boolean shutdownApplicationManagedProvider(
+			String providerId,
+			Runnable teardown
+	) {
+		return swapchain.shutdownApplicationManagedProvider(providerId, teardown);
+	}
+
 	public void destroy() {
 		swapchain.destroy();
 		surface.destroySurface(renderSystem.getVulkanInstance());
@@ -102,6 +110,10 @@ public final class VulkanPresentationContext {
 
 	public VulkanDevice device() {
 		return device;
+	}
+
+	public FramePacingTiming framePacingTiming() {
+		return framePacingTiming;
 	}
 
 	public VkPhysicalDevice physicalDevice() {

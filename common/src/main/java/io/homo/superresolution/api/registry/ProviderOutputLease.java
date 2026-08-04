@@ -40,6 +40,15 @@ public interface ProviderOutputLease extends AutoCloseable {
 
     boolean isReleased();
 
+    /**
+     * Cancels a successful provider dispatch that was never submitted. Providers
+     * with speculative CPU-side state, such as tracked image layouts, should roll
+     * that state back before releasing the slot.
+     */
+    default void abort() {
+        release();
+    }
+
     void release();
 
     @Override

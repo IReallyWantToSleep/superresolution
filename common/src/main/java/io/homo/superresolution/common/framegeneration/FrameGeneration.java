@@ -99,21 +99,45 @@ public final class FrameGeneration {
         initialized = true;
     }
 
-    public static synchronized void shutdown() {
-        if (!initialized) {
-            return;
+    public static void shutdown() {
+        List<FrameGenerationProvider> providersToShutdown;
+        List<ApplicationManagedShutdown> applicationManagedShutdowns;
+        synchronized (FrameGeneration.class) {
+            if (!initialized) {
+                return;
+            }
+            providersToShutdown = List.copyOf(providers.values());
+            applicationManagedShutdowns = new ArrayList<>();
+            for (Map.Entry<String, FrameGenerationProvider> entry : providers.entrySet()) {
+                if (entry.getValue().executionModel()
+                        == FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC) {
+                    applicationManagedShutdowns.add(
+                            new ApplicationManagedShutdown(entry.getKey(), entry.getValue())
+                    );
+                }
+            }
+            initialized = false;
         }
-        for (FrameGenerationProvider provider : providers.values()) {
+
+        for (ApplicationManagedShutdown shutdown : applicationManagedShutdowns) {
+            VulkanPresentationFeature.shutdownApplicationManagedProvider(
+                    shutdown.providerId(),
+                    shutdown.provider()::shutdownOnFrameGenerationThread
+            );
+        }
+        for (FrameGenerationProvider provider : providersToShutdown) {
             provider.shutdown();
         }
-        providers.clear();
-        loggedResolution = null;
-        startupStreamlineRequested = null;
-        loggedRestartStreamlineRequest = null;
-        startupPreferredFgBackendId = null;
-        loggedAsyncCapabilityFailure = null;
-        FGConstantsFeature.shutdown();
-        initialized = false;
+
+        synchronized (FrameGeneration.class) {
+            providers.clear();
+            loggedResolution = null;
+            startupStreamlineRequested = null;
+            loggedRestartStreamlineRequest = null;
+            startupPreferredFgBackendId = null;
+            loggedAsyncCapabilityFailure = null;
+            FGConstantsFeature.shutdown();
+        }
     }
 
     public static synchronized FramePresentPlan prepareFrame(
@@ -608,6 +632,12 @@ public final class FrameGeneration {
         }
         return isSupported()
                 && mode.generatedFrameCount() <= supportedGeneratedFrameCount();
+    }
+
+    private record ApplicationManagedShutdown(
+            String providerId,
+            FrameGenerationProvider provider
+    ) {
     }
 
     private record ProviderSelection(

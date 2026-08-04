@@ -10,6 +10,7 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
+import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
 import java.util.Arrays;
@@ -21,13 +22,16 @@ public final class CaptureFrameRing {
     private long generation;
     private volatile FrameResources activeFrame;
 
-    synchronized void initialize(VulkanDevice device) {
+    synchronized void initialize(
+            VulkanDevice device,
+            FramePacingTiming framePacingTiming
+    ) {
         if (slots[0] != null) {
             return;
         }
         try {
             for (int i = 0; i < slots.length; i++) {
-                slots[i] = new FrameResources(i, device);
+                slots[i] = new FrameResources(i, device, framePacingTiming);
             }
         } catch (Throwable throwable) {
             destroy();

@@ -41,7 +41,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private CommandBufferState state = CommandBufferState.Executable;
     private long reusableFence = VK_NULL_HANDLE;
     private boolean inFlight = false;
-    private volatile long submissionGeneration;
+    private long submissionGeneration;
     private VkCommandBuffer nativeCommandBuffer;
     private VulkanRenderPass activeRenderPass;
     private VulkanGraphicsPipeline boundGraphicsPipeline;
@@ -67,12 +67,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         );
     }
 
-    public VkCommandBuffer getNativeCommandBuffer() {
+    public synchronized VkCommandBuffer getNativeCommandBuffer() {
         return nativeCommandBuffer;
     }
 
     @Override
-    public void begin() {
+    public synchronized void begin() {
         ensureNotDestroyed();
         if (state == CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is already recording");
@@ -93,7 +93,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public void end() {
+    public synchronized void end() {
         ensureNotDestroyed();
         if (state != CommandBufferState.Recording) {
             throw new IllegalStateException("Command buffer is not in recording state");
@@ -107,7 +107,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public void reset() {
+    public synchronized void reset() {
         ensureNotDestroyed();
         if (behavior == CommandBufferBehavior.OneTimeSubmit) {
             throw new IllegalStateException("Cannot reset a one-time submit command buffer");
@@ -123,7 +123,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public void destroy() {
+    public synchronized void destroy() {
         if (state == CommandBufferState.Destroyed) {
             return;
         }
@@ -142,7 +142,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public void submit(IDevice device) {
+    public synchronized void submit(IDevice device) {
         ensureNotDestroyed();
         if (state != CommandBufferState.Executable) {
             throw new IllegalStateException("Command buffer must be executable before submit");
@@ -170,7 +170,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public CommandBufferState state() {
+    public synchronized CommandBufferState state() {
         if (state == CommandBufferState.Destroyed) {
             return CommandBufferState.Destroyed;
         }
@@ -181,12 +181,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public boolean isInFlight() {
+    public synchronized boolean isInFlight() {
         return state() == CommandBufferState.Pending;
     }
 
     @Override
-    public boolean isFenceSignaled() {
+    public synchronized boolean isFenceSignaled() {
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
             destroyTransientResourcesIfComplete();
@@ -206,7 +206,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     }
 
     @Override
-    public void waitForFence() {
+    public synchronized void waitForFence() {
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
             destroyTransientResourcesIfComplete();
@@ -222,7 +222,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         return behavior;
     }
 
-    long prepareFenceForSubmit() {
+    synchronized long prepareFenceForSubmit() {
         ensureNotDestroyed();
         if (reusableFence == VK_NULL_HANDLE) {
             reusableFence = ownerPool.getFencePool().createFence();
@@ -235,7 +235,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         return reusableFence;
     }
 
-    void markSubmitted() {
+    synchronized void markSubmissionFailed() {
+        inFlight = false;
+        destroyTransientResourcesIfComplete();
+    }
+
+    synchronized void markSubmitted() {
         inFlight = true;
         long nextGeneration = submissionGeneration + 1L;
         if (nextGeneration <= 0L) {
@@ -244,11 +249,11 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         submissionGeneration = nextGeneration;
     }
 
-    public long submissionGeneration() {
+    public synchronized long submissionGeneration() {
         return submissionGeneration;
     }
 
-    public boolean isSubmissionComplete(long generation) {
+    public synchronized boolean isSubmissionComplete(long generation) {
         requireKnownSubmissionGeneration(generation);
         if (submissionGeneration > generation) {
             return true;
@@ -256,14 +261,14 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         return isFenceSignaled();
     }
 
-    public void waitForSubmission(long generation) {
+    public synchronized void waitForSubmission(long generation) {
         requireKnownSubmissionGeneration(generation);
         if (submissionGeneration == generation) {
             waitForFence();
         }
     }
 
-    public void markExternalSubmitted() {
+    public synchronized void markExternalSubmitted() {
         ensureNotDestroyed();
         if (state != CommandBufferState.Executable) {
             throw new IllegalStateException("Command buffer must be executable before external submit");
@@ -271,11 +276,11 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         inFlight = true;
     }
 
-    public boolean isExternallyComplete() {
+    public synchronized boolean isExternallyComplete() {
         return inFlight;
     }
 
-    public void markExternalComplete() {
+    public synchronized void markExternalComplete() {
         inFlight = false;
         destroyTransientResourcesIfComplete();
     }
@@ -414,14 +419,14 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         return activeRenderPass;
     }
 
-    void addTransientResource(Destroyable destroyable) {
+    synchronized void addTransientResource(Destroyable destroyable) {
         if (destroyable == null) {
             return;
         }
         transientResources.add(destroyable);
     }
 
-    void destroyTransientResourcesIfComplete() {
+    synchronized void destroyTransientResourcesIfComplete() {
         if (!transientResources.isEmpty() && !isInFlight()) {
             destroyTransientResources();
         }

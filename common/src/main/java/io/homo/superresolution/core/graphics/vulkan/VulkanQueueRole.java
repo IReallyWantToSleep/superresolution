@@ -12,7 +12,8 @@ package io.homo.superresolution.core.graphics.vulkan;
 
 public enum VulkanQueueRole {
     MAIN("Main"),
-    FRAME_GENERATION("FrameGeneration");
+    FRAME_GENERATION("FrameGeneration"),
+    PRESENT("Present");
 
     private final String debugLabel;
 

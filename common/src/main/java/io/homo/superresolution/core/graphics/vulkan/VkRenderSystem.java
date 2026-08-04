@@ -54,8 +54,8 @@ public class VkRenderSystem implements IRenderSystem {
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/Vulkan");
     public static final boolean ENABLE_VALIDATION = VulkanValidationLayers.checkValidationLayerSupport() &&(
              Platform.currentPlatform.isDevelopmentEnvironment() ||
-                     SuperResolutionConfig.isEnableDebug()
-    ) && false;
+                      SuperResolutionConfig.isEnableDebug()
+    );
     private static final int DEFAULT_API_VERSION = VK_API_VERSION_1_2;
 
     private final List<String> instanceExtensions = new ArrayList<>();
@@ -389,12 +389,16 @@ public class VkRenderSystem implements IRenderSystem {
             boolean createFrameGenerationQueue = asyncDispatchRequested
                     && availableGraphicsQueueCount >= 2
                     && deviceSupportsTimelineSemaphore;
+            boolean createPresentQueue = createFrameGenerationQueue
+                    && availableGraphicsQueueCount >= 3;
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos =
                     VkDeviceQueueCreateInfo.calloc(1, stack);
             queueCreateInfos.get(0)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO)
                     .queueFamilyIndex(graphicsFamilyIndex)
-                    .pQueuePriorities(createFrameGenerationQueue
+                    .pQueuePriorities(createPresentQueue
+                            ? stack.floats(1.0f, 1.0f, 1.0f)
+                            : createFrameGenerationQueue
                             ? stack.floats(1.0f, 1.0f)
                             : stack.floats(1.0f));
 
@@ -504,7 +508,8 @@ public class VkRenderSystem implements IRenderSystem {
                             availableGraphicsQueueCount,
                             deviceSupportsTimelineSemaphore,
                             timelineSemaphoreEnabled,
-                            createFrameGenerationQueue
+                            createFrameGenerationQueue,
+                            createPresentQueue
                     );
             VulkanDevice vulkanDevice = new VulkanDevice(
                     instance,
@@ -513,6 +518,7 @@ public class VkRenderSystem implements IRenderSystem {
                     graphicsFamilyIndex,
                     true,
                     createFrameGenerationQueue,
+                    createPresentQueue,
                     asyncDispatchCapabilities
             );
             LOGGER.info(
@@ -529,6 +535,28 @@ public class VkRenderSystem implements IRenderSystem {
                         ),
                         vulkanDevice.getFrameGenerationQueue().getQueueFamilyIndex(),
                         vulkanDevice.getFrameGenerationQueue().getQueueIndex()
+                );
+            }
+            if (vulkanDevice.getDedicatedPresentQueue() != null) {
+                LOGGER.info(
+                        "Vulkan Present queue: handle=0x{}, family={}, index={}",
+                        Long.toHexString(
+                                vulkanDevice.getDedicatedPresentQueue().getQueue().address()
+                        ),
+                        vulkanDevice.getDedicatedPresentQueue().getQueueFamilyIndex(),
+                        vulkanDevice.getDedicatedPresentQueue().getQueueIndex()
+                );
+            }
+            if (asyncDispatchRequested
+                    && vulkanDevice.asyncDispatchCapabilities().available()
+                    && !vulkanDevice.hasDedicatedPresentQueue()) {
+                LOGGER.warn(
+                        "Vulkan application-managed present queue was not created; "
+                                + "falling back to main queue (family={}, index={}) because "
+                                + "the selected family exposes only {} queue(s)",
+                        vulkanDevice.getMainQueue().getQueueFamilyIndex(),
+                        vulkanDevice.getMainQueue().getQueueIndex(),
+                        availableGraphicsQueueCount
                 );
             }
             if (asyncDispatchRequested

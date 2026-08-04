@@ -15,6 +15,7 @@ import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
@@ -35,12 +36,15 @@ public final class FrameCaptureManager {
     private FrameCaptureManager() {
     }
 
-    public static synchronized void initialize(VulkanDevice device) {
+    public static synchronized void initialize(
+            VulkanDevice device,
+            FramePacingTiming framePacingTiming
+    ) {
         if (!registered) {
             SuperResolutionAPI.EVENT_BUS.addListener(FrameCaptureManager::onAlgorithmDispatch);
             registered = true;
         }
-        FRAME_RING.initialize(device);
+        FRAME_RING.initialize(device, framePacingTiming);
     }
 
     public static boolean isInitialized() {
@@ -69,7 +73,7 @@ public final class FrameCaptureManager {
         beginFrame(GameFrameIndex.current()).copyFinalColor(color);
     }
 
-    public static boolean captureVulkanInputs(
+    public static FrameResources captureVulkanInputs(
             int logicalFrameIndex,
             VulkanTexture depthVk,
             GlImportableTexture2D depthGl,
@@ -81,12 +85,12 @@ public final class FrameCaptureManager {
             VkGlInteropSemaphore motionRelease
     ) {
         if (!isInitialized() || !isWorldFrame()) {
-            return false;
+            return null;
         }
         FrameResources frame = beginFrame(logicalFrameIndex);
         frame.borrowDepth(depthVk, depthGl, depthReady, depthRelease);
         frame.borrowMotionVector(motionVk, motionGl, motionReady, motionRelease);
-        return true;
+        return frame;
     }
 
     public static FrameResources finishFrame() {

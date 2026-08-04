@@ -15,9 +15,11 @@ import io.homo.superresolution.api.registry.ProviderInputSnapshot;
 import io.homo.superresolution.api.registry.ProviderOutputLease;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.CaptureFrameRing;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,13 +37,11 @@ import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 final class AsyncFrameGenerationScheduler implements AutoCloseable {
     static final int REAL_QUEUE_CAPACITY = CaptureFrameRing.MAX_IN_FLIGHT_FRAMES - 1;
     static final int MAX_GENERATED_FRAMES = 5;
-    static final int PRESENT_QUEUE_CAPACITY =
-            REAL_QUEUE_CAPACITY * (MAX_GENERATED_FRAMES + 1);
+    static final int MAX_PRESENTS_PER_BATCH = MAX_GENERATED_FRAMES + 1;
+    // This bounds queued present work. VulkanSwapchain separately tracks images that
+    // remain acquired after the present thread removes them from this queue.
+    static final int PRESENT_QUEUE_CAPACITY = MAX_PRESENTS_PER_BATCH;
 
-    private static final double INTERVAL_EMA_ALPHA = 0.2;
-    private static final long DEFAULT_REAL_PERIOD_NANOS = 16_666_667L;
-    private static final long MIN_REAL_PERIOD_NANOS = 1_000_000L;
-    private static final long MAX_REAL_PERIOD_NANOS = 500_000_000L;
     private static final long MAX_PRESENT_INTERVAL_NANOS = 100_000_000L;
     private static final long FINAL_SPIN_WINDOW_NANOS = 200_000L;
     private static final long THREAD_JOIN_TIMEOUT_NANOS = 2_000_000_000L;
@@ -53,29 +53,41 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
             new FrameQueue<>(REAL_QUEUE_CAPACITY);
     private final FrameQueue<PresentFrame> presentFramesQueue =
             new FrameQueue<>(PRESENT_QUEUE_CAPACITY);
+    private final ConcurrentLinkedQueue<AcquireLeaseRelease> pendingAcquireReleases =
+            new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<ProviderLeaseRelease> pendingProviderReleases =
             new ConcurrentLinkedQueue<>();
     private final AtomicLong nextRealIndex = new AtomicLong();
     private final AtomicLong nextDisplayIndex = new AtomicLong();
     private final AtomicLong nextBatchId = new AtomicLong();
     private final Object presentState = new Object();
+    private final Object closeState = new Object();
+    private final FramePacingTiming framePacingTiming;
+    private final FramePacingEstimator framePacingEstimator;
     private final NanoClock clock;
 
     private volatile Throwable failure;
+    private Runnable terminalTeardown;
+    private boolean fgTerminated;
+    private boolean fgPauseRequested;
+    private boolean fgInFlight;
     private boolean presentInFlight;
     private boolean presentPaused;
     private Thread fgThread;
     private Thread presentThread;
-    private long previousSubmittedAtNanos;
-    private boolean hasPreviousSubmittedAt;
-    private double realPeriodEmaNanos;
 
     AsyncFrameGenerationScheduler(
             VulkanSwapchain swapchain,
             VulkanDevice device,
             String providerId
     ) {
-        this(swapchain, device, providerId, System::nanoTime);
+        this(
+                swapchain,
+                device,
+                providerId,
+                swapchain == null ? null : swapchain.framePacingTiming(),
+                System::nanoTime
+        );
     }
 
     AsyncFrameGenerationScheduler(
@@ -84,7 +96,26 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
             String providerId,
             NanoClock clock
     ) {
-        if (swapchain == null || device == null || clock == null) {
+        this(
+                swapchain,
+                device,
+                providerId,
+                createTiming(clock),
+                clock
+        );
+    }
+
+    private AsyncFrameGenerationScheduler(
+            VulkanSwapchain swapchain,
+            VulkanDevice device,
+            String providerId,
+            FramePacingTiming framePacingTiming,
+            NanoClock clock
+    ) {
+        if (swapchain == null
+                || device == null
+                || framePacingTiming == null
+                || clock == null) {
             throw new IllegalArgumentException("scheduler dependencies cannot be null");
         }
         if (providerId == null || providerId.isBlank()) {
@@ -106,7 +137,10 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         this.swapchain = swapchain;
         this.device = device;
         this.providerId = providerId;
+        this.framePacingTiming = framePacingTiming;
         this.clock = clock;
+        this.framePacingEstimator =
+                new FramePacingEstimator(providerId, framePacingTiming, clock::nanoTime);
         startThreads();
     }
 
@@ -156,25 +190,69 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
             }
         }
 
+        long latencyFrameId = LowLatency
+                .currentLatencyFrameId();
+        long realPresentId = presentAllowed
+                ? VulkanLowLatency
+                        .claimCurrentFramePresentId()
+                : 0L;
+        int plannedGeneratedCount = Math.min(
+                Math.max(0, FrameGeneration.plannedGeneratedFrameCount()),
+                MAX_GENERATED_FRAMES
+        );
         RealFrameJob job = new RealFrameJob(
                 realIndex,
                 frameResources.logicalFrameIndex(),
-                0L,
-                0L,
+                latencyFrameId,
+                realPresentId,
                 frameResources,
                 providerInputSnapshot,
-                clock.nanoTime(),
+                framePacingTiming.producerTimeNanos(),
+                plannedGeneratedCount,
                 providerInputSnapshot != null
                         && providerInputSnapshot.historyResetRequested(),
                 presentAllowed
         );
         frameResources.markQueued();
         try {
-            realFramesQueue.put(job);
+            // The immutable timestamp is taken before publication. Recording the
+            // completed put wait here removes it from the next producer interval.
+            long excludedWaitNanos = realFramesQueue.put(job);
+            framePacingTiming.recordExcludedWait(excludedWaitNanos);
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while enqueueing a real frame", e);
+        } catch (IllegalStateException e) {
+            throwIfFailed();
+            throw e;
+        }
+    }
+
+    boolean isWorkerThread() {
+        Thread currentThread = Thread.currentThread();
+        return currentThread == fgThread || currentThread == presentThread;
+    }
+
+    void awaitPresentationDrain() {
+        if (isWorkerThread()) {
+            throw new IllegalStateException("Presentation drain cannot run on a scheduler worker thread");
+        }
+        synchronized (presentState) {
+            fgPauseRequested = true;
+            presentPaused = true;
+            presentState.notifyAll();
+            boolean interrupted = false;
+            while (fgInFlight || !presentFramesQueue.isEmpty() || presentInFlight) {
+                try {
+                    presentState.wait();
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -201,6 +279,7 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
 
     void resumePresenting() {
         synchronized (presentState) {
+            fgPauseRequested = false;
             presentPaused = false;
             presentState.notifyAll();
         }
@@ -224,13 +303,60 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         return presentFramesQueue.size();
     }
 
+    void shutdownProviderOnFgThread(String expectedProviderId, Runnable teardown) {
+        if (!providerId.equals(expectedProviderId)) {
+            throw new IllegalStateException(
+                    "Scheduler provider '" + providerId + "' does not match teardown provider '"
+                            + expectedProviderId + "'"
+            );
+        }
+        if (Thread.currentThread() == fgThread) {
+            throw new IllegalStateException("FG thread cannot wait for its own terminal teardown");
+        }
+        if (teardown == null) {
+            throw new IllegalArgumentException("terminal teardown cannot be null");
+        }
+        synchronized (closeState) {
+            if (fgTerminated) {
+                throw new IllegalStateException("FG thread has already terminated");
+            }
+            if (terminalTeardown != null) {
+                throw new IllegalStateException("A terminal provider teardown is already registered");
+            }
+            terminalTeardown = teardown;
+            realFramesQueue.close();
+            resumeWorkersForShutdown();
+        }
+        awaitFgTermination();
+        throwIfFailed();
+    }
+
     @Override
     public void close() {
-        realFramesQueue.close();
-        join(fgThread);
+        if (Thread.currentThread() == fgThread) {
+            throw new IllegalStateException("FG thread cannot close its own scheduler");
+        }
+        synchronized (closeState) {
+            realFramesQueue.close();
+            resumeWorkersForShutdown();
+        }
+        awaitFgTermination();
         presentFramesQueue.close();
         join(presentThread);
         throwIfFailed();
+    }
+
+    private void awaitFgTermination() {
+        Thread thread = fgThread;
+        if (thread == null) {
+            return;
+        }
+        join(thread);
+        synchronized (closeState) {
+            if (!fgTerminated) {
+                throw new IllegalStateException("FG thread did not terminate before scheduler shutdown");
+            }
+        }
     }
 
     private void requireCompatibleProviderLifecycle() {
@@ -251,12 +377,22 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         fgThread.start();
     }
 
+    private void resumeWorkersForShutdown() {
+        synchronized (presentState) {
+            fgPauseRequested = false;
+            presentPaused = false;
+            presentState.notifyAll();
+        }
+    }
+
     private void runFgLoop() {
         try {
             while (true) {
+                releasePendingAcquireLeases();
                 releasePendingProviderLeases();
                 FrameQueue.HeadResult<RealFrameJob> head = realFramesQueue.awaitHead(
-                        () -> !pendingProviderReleases.isEmpty()
+                        () -> !pendingAcquireReleases.isEmpty()
+                                || !pendingProviderReleases.isEmpty()
                 );
                 if (head.externalWake()) {
                     continue;
@@ -266,43 +402,89 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
                 }
 
                 RealFrameJob job = head.value();
-                job.frameResources().markDispatching();
-                releasePendingProviderLeases();
-                long batchId = nextBatchId.incrementAndGet();
-                long realPeriodNanos = nextRealPeriod(job);
-                FrameBatch batch = swapchain.submitApplicationManagedFrame(
-                        job,
-                        nextDisplayIndex.get(),
-                        batchId,
-                        realPeriodNanos,
-                        providerId
-                );
-                if (batch != null) {
-                    try {
-                        presentFramesQueue.putBatch(batch.presentFrames());
-                    } catch (Throwable throwable) {
-                        releaseUnpublishedBatch(batch);
-                        throw throwable;
+                synchronized (presentState) {
+                    while (fgPauseRequested) {
+                        presentState.notifyAll();
+                        presentState.wait();
                     }
-                    nextDisplayIndex.addAndGet(batch.presentFrames().size());
+                    fgInFlight = true;
                 }
-                realFramesQueue.removeHead(job);
+                try {
+                    job.frameResources().markDispatching();
+                    releasePendingAcquireLeases();
+                    releasePendingProviderLeases();
+                    presentFramesQueue.awaitCapacityFor(maxPresentFramesFor(job));
+                    long batchId = nextBatchId.incrementAndGet();
+                    long realPeriodNanos = framePacingEstimator.observeRealFrame(
+                            job,
+                            swapchain.swapchainGeneration()
+                    );
+                    FrameBatch batch = swapchain.submitApplicationManagedFrame(
+                            job,
+                            nextDisplayIndex.get(),
+                            batchId,
+                            realPeriodNanos,
+                            providerId,
+                            framePacingEstimator
+                    );
+                    if (batch != null) {
+                        try {
+                            presentFramesQueue.putBatch(batch.presentFrames());
+                        } catch (Throwable throwable) {
+                            releaseUnpublishedBatch(batch);
+                            throw throwable;
+                        }
+                        nextDisplayIndex.addAndGet(batch.presentFrames().size());
+                    }
+                    realFramesQueue.removeHead(job);
+                } finally {
+                    synchronized (presentState) {
+                        fgInFlight = false;
+                        presentState.notifyAll();
+                    }
+                }
             }
         } catch (Throwable throwable) {
             fail(throwable);
         } finally {
             presentFramesQueue.close();
-            waitForPresentThreadToDrain();
+            boolean presentDrained = waitForPresentThreadToDrain();
             try {
+                if (!presentDrained) {
+                    throw new IllegalStateException(
+                            "Cannot run terminal provider teardown before present thread drains"
+                    );
+                }
+                releasePendingAcquireLeases();
                 releasePendingProviderLeases();
+                runTerminalTeardown();
             } catch (Throwable throwable) {
                 recordFailure(throwable);
+            } finally {
+                synchronized (closeState) {
+                    fgTerminated = true;
+                    closeState.notifyAll();
+                }
             }
         }
     }
 
+    private static int maxPresentFramesFor(RealFrameJob job) {
+        ProviderInputSnapshot snapshot = job.providerInputSnapshot();
+        if (snapshot == null) {
+            return 1;
+        }
+        int generatedCount = Math.min(
+                Math.max(0, snapshot.mode().generatedFrameCount()),
+                MAX_GENERATED_FRAMES
+        );
+        return generatedCount + 1;
+    }
+
     private void runPresentLoop() {
         long nextTick = 0L;
+        boolean previousPacingEnabled = false;
+        int previousGeneratedCount = -1;
         try {
             while (true) {
                 FrameQueue.TakeResult<PresentFrame> result = presentFramesQueue.takeResult();
@@ -311,18 +493,24 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
                 }
                 PresentFrame frame = result.value();
                 if (failure != null) {
+                    nextTick = 0L;
+                    previousPacingEnabled = false;
+                    previousGeneratedCount = -1;
                     releaseScheduledFrame(frame);
                     continue;
                 }
-                if (result.waited()) {
-                    nextTick = 0L;
-                }
                 if (!swapchain.isCurrentGeneration(frame)) {
+                    nextTick = 0L;
+                    previousPacingEnabled = false;
+                    previousGeneratedCount = -1;
                     releaseScheduledFrame(frame);
                     continue;
                 }
                 synchronized (presentState) {
                     if (presentPaused) {
+                        nextTick = 0L;
+                        previousPacingEnabled = false;
+                        previousGeneratedCount = -1;
                         releaseScheduledFrame(frame);
                         presentState.notifyAll();
                         continue;
@@ -332,10 +520,18 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
 
                 long interval = frame.batchIntervalNanos();
                 long now = clock.nanoTime();
-                if (nextTick == 0L) {
-                    nextTick = now;
+                boolean pacingEnabled = frame.pacingEnabled();
+                if (!pacingEnabled) {
+                    nextTick = 0L;
+                } else {
+                    boolean resetTimeline = result.waited()
+                            || !previousPacingEnabled
+                            || previousGeneratedCount != frame.batchGeneratedCount();
+                    if (resetTimeline || nextTick == 0L) {
+                        nextTick = now;
+                    }
+                    sleepUntil(nextTick);
                 }
-                sleepUntil(nextTick);
 
                 try {
                     device.requirePresentSubmitTimeline().awaitIssued(frame.submissionTicket());
@@ -357,11 +553,17 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
                     }
                 }
 
-                nextTick += interval;
-                long lateBy = clock.nanoTime() - nextTick;
-                if (lateBy > Math.max(interval * 4L, MAX_PRESENT_INTERVAL_NANOS)) {
-                    nextTick = clock.nanoTime();
+                if (pacingEnabled) {
+                    nextTick += interval;
+                    long lateBy = clock.nanoTime() - nextTick;
+                    if (lateBy > Math.max(interval * 4L, MAX_PRESENT_INTERVAL_NANOS)) {
+                        nextTick = clock.nanoTime();
+                    }
+                } else {
+                    nextTick = 0L;
                 }
+                previousPacingEnabled = pacingEnabled;
+                previousGeneratedCount = frame.batchGeneratedCount();
             }
         } catch (Throwable throwable) {
             fail(throwable);
@@ -374,33 +576,12 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         }
     }
 
-    private long nextRealPeriod(RealFrameJob job) {
-        if (job.historyResetRequested()) {
-            previousSubmittedAtNanos = 0L;
-            hasPreviousSubmittedAt = false;
-            realPeriodEmaNanos = 0.0;
-        }
-        long submittedAt = job.submittedAtNanos();
-        if (hasPreviousSubmittedAt) {
-            long sample = clamp(
-                    submittedAt - previousSubmittedAtNanos,
-                    MIN_REAL_PERIOD_NANOS,
-                    MAX_REAL_PERIOD_NANOS
-            );
-            realPeriodEmaNanos = realPeriodEmaNanos <= 0.0
-                    ? sample
-                    : realPeriodEmaNanos * (1.0 - INTERVAL_EMA_ALPHA)
-                            + sample * INTERVAL_EMA_ALPHA;
-        }
-        previousSubmittedAtNanos = submittedAt;
-        hasPreviousSubmittedAt = true;
-        return realPeriodEmaNanos <= 0.0
-                ? DEFAULT_REAL_PERIOD_NANOS
-                : Math.round(realPeriodEmaNanos);
-    }
-
     private void releaseScheduledFrame(PresentFrame frame) {
-        swapchain.discardScheduledFrame(frame);
+        swapchain.releaseScheduledTarget(frame);
+        pendingAcquireReleases.add(
+                new AcquireLeaseRelease(frame, frame.sourceCompletion())
+        );
+        realFramesQueue.signalConsumer();
         if (frame.kind() == PresentFrame.Kind.REAL && frame.sourceLease() != null) {
             pendingProviderReleases.add(
                     new ProviderLeaseRelease(
@@ -413,7 +594,9 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
     }
 
     private void releaseUnpublishedBatch(FrameBatch batch) {
+        batch.dispatchCompletion().awaitCompletion();
         for (PresentFrame frame : batch.presentFrames()) {
+            swapchain.releaseScheduledTarget(frame);
             swapchain.discardScheduledFrame(frame);
         }
         ProviderOutputLease lease = batch.providerOutputLease();
@@ -421,6 +604,14 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
             releaseProviderLease(
                     new ProviderLeaseRelease(lease, batch.dispatchCompletion())
             );
+        }
+    }
+
+    private void releasePendingAcquireLeases() {
+        AcquireLeaseRelease release;
+        while ((release = pendingAcquireReleases.poll()) != null) {
+            release.completion().awaitCompletion();
+            swapchain.discardScheduledFrame(release.frame());
         }
     }
 
@@ -435,6 +626,16 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         release.completion().awaitCompletion();
         if (!release.lease().isReleased()) {
             release.lease().release();
+        }
+    }
+
+    private void runTerminalTeardown() {
+        Runnable teardown;
+        synchronized (closeState) {
+            teardown = terminalTeardown;
+        }
+        if (teardown != null) {
+            teardown.run();
         }
     }
 
@@ -453,10 +654,10 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         }
     }
 
-    private void waitForPresentThreadToDrain() {
+    private boolean waitForPresentThreadToDrain() {
         Thread thread = presentThread;
         if (thread == null || thread == Thread.currentThread()) {
-            return;
+            return true;
         }
         boolean interrupted = false;
         long deadline = System.nanoTime() + THREAD_JOIN_TIMEOUT_NANOS;
@@ -466,6 +667,7 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
             } catch (InterruptedException e) {
                 interrupted = true;
             }
+            releasePendingAcquireLeases();
             releasePendingProviderLeases();
         }
         if (thread.isAlive()) {
@@ -477,6 +679,7 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         if (interrupted) {
             Thread.currentThread().interrupt();
         }
+        return !thread.isAlive();
     }
 
     private void fail(Throwable throwable) {
@@ -502,13 +705,21 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         if (thread == null || thread == Thread.currentThread()) {
             return;
         }
-        try {
-            thread.join(2_000L);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        boolean interrupted = false;
+        long deadline = System.nanoTime() + THREAD_JOIN_TIMEOUT_NANOS;
+        while (thread.isAlive() && System.nanoTime() < deadline) {
+            try {
+                thread.join(20L);
+            } catch (InterruptedException e) {
+                interrupted = true;
+            }
         }
         if (thread.isAlive()) {
             thread.interrupt();
+            throw new IllegalStateException("Scheduler worker did not terminate before teardown");
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -526,8 +737,24 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
         }
     }
 
-    private static long clamp(long value, long min, long max) {
-        return Math.max(min, Math.min(max, value));
+    private static FramePacingTiming createTiming(NanoClock clock) {
+        if (clock == null) {
+            throw new IllegalArgumentException("clock cannot be null");
+        }
+        return new FramePacingTiming(clock::nanoTime);
+    }
+
+    private record AcquireLeaseRelease(
+            PresentFrame frame,
+            FrameGenerationDispatchCompletion completion
+    ) {
+        private AcquireLeaseRelease {
+            if (frame == null || completion == null) {
+                throw new IllegalArgumentException(
+                        "Acquire lease release dependencies cannot be null"
+                );
+            }
+        }
     }
 
     private record ProviderLeaseRelease(
