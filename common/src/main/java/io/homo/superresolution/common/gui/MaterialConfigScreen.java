@@ -110,8 +110,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final String ABOUT_GITHUB_URL = "https://github.com/187J3X1-114514/superresolution";
     private static final String ABOUT_WEBSITE_URL = "https://sr.187j3x1-114514.org/";
     private static final String ABOUT_WIKI_URL = "https://sr.187j3x1-114514.org/docs";
-    private static final long CONTENT_TRANSITION_FADE_OUT_DURATION_MS = 150L;
-    private static final long CONTENT_TRANSITION_FADE_IN_DURATION_MS = 150L;
+    private static final long CONTENT_TRANSITION_FADE_OUT_DURATION_MS = 120L;
+    private static final long CONTENT_TRANSITION_FADE_IN_DURATION_MS = 120L;
     private static final long CONTENT_TRANSITION_TOTAL_DURATION_MS =
             CONTENT_TRANSITION_FADE_OUT_DURATION_MS + CONTENT_TRANSITION_FADE_IN_DURATION_MS;
     private static final float CONTENT_TRANSITION_OFFSET_RATIO = 0.06f;

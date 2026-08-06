@@ -2103,18 +2103,18 @@ final class VulkanSwapchain {
         IntBuffer modes = stack.mallocInt(count.get(0));
         check(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, context.surface(), count, modes),
                 "get present modes");
-
+        for (int i = 0; i < modes.capacity(); i++) {
+            if (modes.get(i) == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+                return VK_PRESENT_MODE_IMMEDIATE_KHR;
+            }
+        }
         for (int i = 0; i < modes.capacity(); i++) {
             if (modes.get(i) == VK_PRESENT_MODE_MAILBOX_KHR) {
                 return VK_PRESENT_MODE_MAILBOX_KHR;
             }
         }
 
-        for (int i = 0; i < modes.capacity(); i++) {
-            if (modes.get(i) == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-                return VK_PRESENT_MODE_IMMEDIATE_KHR;
-            }
-        }
+
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
