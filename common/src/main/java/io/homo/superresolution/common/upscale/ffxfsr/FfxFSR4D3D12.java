@@ -78,9 +78,10 @@ public final class FfxFSR4D3D12
             }
 
             EnumSet<SRUpscaleContextCreateFlags> flags =
-                    EnumSet.of(
-                            SRUpscaleContextCreateFlags.ENABLE_DEBUG,
-                            SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE);
+                    EnumSet.of(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
+            if (desc.isAutoExposure()) {
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE);
+            }
             if (desc.isHdrInput()) {
                 flags.add(SRUpscaleContextCreateFlags.ENABLE_HDR);
             }
@@ -167,9 +168,12 @@ public final class FfxFSR4D3D12
             desc.setMotionVectors(resource(
                     interop.inputMotionVectors(),
                     SRResourceStates.COMPUTE_READ));
-            // Minecraft does not currently provide a valid exposure texture.
-            // The context therefore always uses FFX auto exposure rather than
-            // binding the uninitialized 1x1 interop exposure resource.
+            if (!initDesc.isAutoExposure() &&
+                    dispatchResource.resources().exposureTexture() != null) {
+                desc.setExposure(resource(
+                        interop.inputExposure(),
+                        SRResourceStates.COMPUTE_READ));
+            }
             desc.setOutput(resource(
                     interop.outputColor(),
                     SRResourceStates.COMMON));

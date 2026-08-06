@@ -145,7 +145,11 @@ public class FfxFSR extends SRApiAlgorithm {
             desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
             desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
             desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-            desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
+            if (!initDesc.isAutoExposure() &&
+                    inFlightFrameResourcesSet.hasInputExposure) {
+                desc.setExposure(new SRTextureResource(
+                        inFlightFrameResourcesSet.inputExposureVkTexture));
+            }
             desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
 
             desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));

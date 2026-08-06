@@ -327,7 +327,7 @@ createContext(uint64_t adapterLuid, uint32_t renderWidth, uint32_t renderHeight,
   if (!motionVectors) {
     return nullptr;
   }
-  auto exposure = createSharedTexture(*device, 1, 1, DXGI_FORMAT_R16_FLOAT);
+  auto exposure = createSharedTexture(*device, 1, 1, DXGI_FORMAT_R32_FLOAT);
   if (!exposure) {
     return nullptr;
   }

@@ -142,13 +142,15 @@ public class SRCompatConfigV2Parser {
                             return null;
                         }
                     }
-                    boolean autoExposureEffective = !(rawProfile.upscale != null &&
-                            rawProfile.upscale.inputs != null &&
-                            rawProfile.upscale.inputs.containsKey("exposure"));
+                    RawSchemaV2.RawInputTexture exposureInput =
+                            rawProfile.upscale.inputs == null
+                                    ? null
+                                    : rawProfile.upscale.inputs.get("exposure");
+                    boolean externalExposureEnabled =
+                            exposureInput != null && exposureInput.enabled;
+                    boolean autoExposureEffective = !externalExposureEnabled;
                     if (
-                            rawProfile.upscale != null &&
-                                    rawProfile.upscale.inputs != null &&
-                                    rawProfile.upscale.inputs.containsKey("exposure") &&
+                            externalExposureEnabled &&
                                     rawProfile.upscale.auto_exposure
                     ){
                         SuperResolution.LOGGER.warn("配置警告：profile '{}' 中 upscale.auto_exposure 为 true ，但同时启用 exposure 输入纹理，已自动忽略auto_exposure设置，默认为false。", worldKey);

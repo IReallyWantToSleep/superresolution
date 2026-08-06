@@ -59,8 +59,8 @@ public final class D3D12InteropContext implements AutoCloseable {
                 SRSurfaceFormat.R16G16_FLOAT);
         this.inputExposure = readResource(
                 D3D12InteropNative.RESOURCE_INPUT_EXPOSURE,
-                textureDescription(1, 1, TextureFormat.R16F, "D3D12InputExposure"),
-                SRSurfaceFormat.R16_FLOAT);
+                textureDescription(1, 1, TextureFormat.R32F, "D3D12InputExposure"),
+                SRSurfaceFormat.R32_FLOAT);
         this.outputColor = readResource(
                 D3D12InteropNative.RESOURCE_OUTPUT_COLOR,
                 textureDescription(outputWidth, outputHeight, colorFormat, "D3D12OutputColor"),

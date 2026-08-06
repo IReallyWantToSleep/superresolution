@@ -359,6 +359,8 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
 
     private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
         inFlight.awaitCaptureRelease();
+        inFlight.hasInputExposure =
+                dispatchResource.resources().exposureTexture() != null;
 
         String motionVectorPreprocessingFunction =
                 SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
@@ -531,6 +533,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
         protected int index;
         private boolean captureDepthPending;
         private boolean captureMotionPending;
+        public boolean hasInputExposure;
 
         public void destroy() {
             awaitCaptureRelease();
@@ -638,7 +641,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
             this.inputExposureVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
                             .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(TextureFormat.R16F)
+                            .format(TextureFormat.R32F)
                             .type(TextureType.Texture2D)
                             .width(1)
                             .height(1)
