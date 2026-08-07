@@ -22,7 +22,6 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import net.neoforged.bus.api.BusBuilder;
 import net.neoforged.bus.api.IEventBus;
 
@@ -59,23 +58,5 @@ public class SuperResolutionAPI {
 
     public static AbstractAlgorithm getCurrentAlgorithm() {
         return SuperResolution.currentAlgorithm;
-    }
-
-    public static void debugRenderdocCapture() {
-        RenderHandlerManager.needCapture();
-    }
-
-    public static void debugRenderdocCaptureUpscale() {
-        RenderHandlerManager.needCaptureUpscale();
-    }
-
-    public static void debugRenderdocCaptureVulkan() {
-        RenderHandlerManager.needCaptureVulkan();
-    }
-
-    public static void debugRenderdocTriggerCapture() {
-        if (RenderDoc.renderdoc != null) {
-            RenderDoc.renderdoc.TriggerCapture.call();
-        }
     }
 }

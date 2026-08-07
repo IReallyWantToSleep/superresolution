@@ -448,21 +448,6 @@ public class ImGuiLayer {
     }
 
     private void drawCaptureButtons() {
-        if (ImGui.button("Capture")) {
-            SuperResolutionAPI.debugRenderdocCapture();
-        }
-        ImGui.sameLine();
-        if (ImGui.button("CaptureUpscale")) {
-            SuperResolutionAPI.debugRenderdocCaptureUpscale();
-        }
-        ImGui.sameLine();
-        if (ImGui.button("CaptureVulkan")) {
-            SuperResolutionAPI.debugRenderdocCaptureVulkan();
-        }
-        ImGui.sameLine();
-        if (ImGui.button("TriggerCapture")) {
-            SuperResolutionAPI.debugRenderdocTriggerCapture();
-        }
     }
 
     private void drawTextureCard(DebugTextureEntry entry) {

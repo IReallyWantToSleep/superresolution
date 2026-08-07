@@ -20,13 +20,11 @@ package io.homo.superresolution.common.minecraft.handler;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.sun.jna.Pointer;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
@@ -37,20 +35,15 @@ import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 
 public class RenderHandlerManager {
-    public static boolean needCapture = false;
-    public static boolean needCaptureVulkan = false;
-    public static boolean needCaptureUpscale = false;
     private static boolean isRenderingWorld;
     private static boolean shouldApplyScale;
     private static Minecraft minecraft;
@@ -140,21 +133,6 @@ public class RenderHandlerManager {
         }
 
         shouldApplyScale = true;
-        if (RenderHandlerManager.needCapture) {
-            if (RenderDoc.renderdoc != null) {
-                RenderDoc.renderdoc.StartFrameCapture.call(null, null);
-            }
-        }
-        if (RenderHandlerManager.needCaptureVulkan) {
-            if (RenderDoc.renderdoc != null) {
-                if (RenderSystems.vulkan() != null) {
-                    RenderDoc.renderdoc.StartFrameCapture.call(
-                            new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                            null
-                    );
-                }
-            }
-        }
         SuperResolutionAPI.EVENT_BUS.post(new LevelRenderStartEvent());
         handler.onRenderWorldBegin(type);
     }
@@ -169,23 +147,6 @@ public class RenderHandlerManager {
         if (checkRenderWorldCallPos(type)) {
             handler.onRenderWorldEnd(type);
             SuperResolutionAPI.EVENT_BUS.post(new LevelRenderEndEvent());
-            if (RenderHandlerManager.needCapture) {
-                if (RenderDoc.renderdoc != null) {
-                    RenderHandlerManager.needCapture = false;
-                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
-                }
-            }
-            if (RenderHandlerManager.needCaptureVulkan) {
-                if (RenderDoc.renderdoc != null) {
-                    if (RenderSystems.vulkan() != null) {
-                        RenderHandlerManager.needCaptureVulkan = false;
-                        RenderDoc.renderdoc.EndFrameCapture.call(
-                                new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                                null
-                        );
-                    }
-                }
-            }
             shouldApplyScale = false;
         }
         GlDebug.popGroup();
@@ -215,18 +176,6 @@ public class RenderHandlerManager {
         }
         updateHandler();
         handler.onProcessPostChain(postChain);
-    }
-
-    public static void needCapture() {
-        needCapture = true;
-    }
-
-    public static void needCaptureVulkan() {
-        needCaptureVulkan = true;
-    }
-
-    public static void needCaptureUpscale() {
-        needCaptureUpscale = true;
     }
 
     public static int getFrameCount() {

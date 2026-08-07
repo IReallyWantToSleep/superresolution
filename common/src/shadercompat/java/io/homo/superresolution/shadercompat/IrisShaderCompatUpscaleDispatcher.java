@@ -46,16 +46,10 @@ import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
-import net.irisshaders.iris.pipeline.CompositeRenderer;
-import net.minecraft.client.Minecraft;
 import org.joml.Vector2f;
 import org.lwjgl.opengl.GL41;
 
@@ -64,9 +58,6 @@ import java.util.Map;
 
 import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 
-/**
- * 狗屎一坨，以至于我不得不写注释
- */
 public class IrisShaderCompatUpscaleDispatcher {
     public static Map<String, Object> debugInfo = new HashMap<>();
 
@@ -394,13 +385,6 @@ public class IrisShaderCompatUpscaleDispatcher {
         /*
         升采样阶段开始
          */
-        {
-            if (RenderHandlerManager.needCaptureUpscale) {
-                if (RenderDoc.renderdoc != null) {
-                    RenderDoc.renderdoc.StartFrameCapture.call(null, null);
-                }
-            }
-        }
         GlDebug.pushGroup(64108436, "SR Upscale");
         AlgorithmManager.update();
         // MotionVectorsGenerator 已被弃用
@@ -488,14 +472,6 @@ public class IrisShaderCompatUpscaleDispatcher {
             }
         }
         GlDebug.popGroup();
-        {
-            if (RenderHandlerManager.needCaptureUpscale) {
-                if (RenderDoc.renderdoc != null) {
-                    RenderHandlerManager.needCaptureUpscale = false;
-                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
-                }
-            }
-        }
         PerformanceTracker.pop("Upscale");
     }
 }

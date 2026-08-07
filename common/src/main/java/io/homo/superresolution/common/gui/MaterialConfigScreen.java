@@ -83,6 +83,7 @@ import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
+import io.homo.superresolution.common.gui.widgets.SponsorChip;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
@@ -102,6 +103,7 @@ import org.lwjgl.glfw.GLFW;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -144,6 +146,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private Frame outgoingContentFrame;
     private long contentTransitionStartMs;
     private float contentTransitionOffsetY;
+    private boolean sponsorRequestStarted;
+    private long sponsorRequestGeneration;
+    private CompletableFuture<SponsorService.Result> sponsorRequest;
 
     public MaterialConfigScreen(Screen parentScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
@@ -181,6 +186,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     public void onClose() {
+        sponsorRequestGeneration++;
+        if (sponsorRequest != null) {
+            sponsorRequest.cancel(true);
+        }
         clearContentTransitionState();
         destroyables.forEach(Destroyable::destroy);
         MinecraftUtils.setScreen(parentScreen);
@@ -1924,6 +1933,22 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         }
         container.addChild(contributorsCard);
 
+        TitlePill sponsorSection = createSectionPill(
+                Text.translatable("superresolution.screen.config.info.about.sponsors").getString()
+        );
+        sponsorSection.layout().setMargin(YogaEdge.TOP, 12);
+        sponsorSection.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(sponsorSection);
+
+        InfoCard sponsorsCard = new InfoCard();
+        ContainerWidget sponsorsContainer = new SponsorWrappingRow();
+        sponsorsContainer.layout().setWidthPercent(100);
+        sponsorsContainer.layout().setMinHeight(32);
+        sponsorsContainer.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.loading"));
+        sponsorsCard.addChild(sponsorsContainer);
+        container.addChild(sponsorsCard);
+        loadSponsors(sponsorsContainer);
+
         TitlePill librarySection = createSectionPill(
                 Text.translatable("superresolution.screen.config.info.about.libraries").getString()
         );
@@ -2003,6 +2028,81 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         finalizeFrame(frame, container);
         return frame;
+    }
+
+    private MaterialLabel createSponsorStateLabel(String key) {
+        MaterialLabel label = MaterialLabel.create()
+                .text(Text.translatable(key).getString())
+                .fontSize(13)
+                .color(MaterialScheme::onSurfaceVariant);
+        label.style().wrap(true);
+        label.layout().setWidthPercent(100);
+        return label;
+    }
+
+    private void loadSponsors(ContainerWidget container) {
+        if (sponsorRequestStarted) {
+            return;
+        }
+        sponsorRequestStarted = true;
+        long generation = ++sponsorRequestGeneration;
+        sponsorRequest = SponsorService.fetchAsync();
+        sponsorRequest.thenAccept(result -> Minecraft.getInstance().execute(() -> {
+            if (generation != sponsorRequestGeneration || Minecraft.getInstance().screen != this) {
+                return;
+            }
+            for (var child : new ArrayList<>(container.getChildren())) {
+                container.removeChild(child);
+            }
+            if (!result.success()) {
+                container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.error"));
+            } else if (result.sponsors().isEmpty()) {
+                container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.empty"));
+            } else {
+                container.layout().setFlexDirection(YogaFlexDirection.ROW);
+                container.layout().setWrap(YogaWrap.WRAP);
+                container.layout().setGap(YogaGutter.ALL, 8);
+                container.layout().setAlignItems(YogaAlign.CENTER);
+                container.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+                for (SponsorService.Sponsor sponsor : result.sponsors()) {
+                    container.addChild(new SponsorChip(sponsor));
+                }
+            }
+            view.markLayoutDirty();
+        }));
+    }
+
+    private static class SponsorWrappingRow extends ContainerWidget {
+        private static final float CHIP_GAP = 8f;
+
+        @Override
+        public void layouting(RenderContext ctx) {
+            super.layouting(ctx);
+            int lastLine = -1;
+            for (var child : getChildren()) {
+                lastLine = Math.max(lastLine, child.getLayoutNode().getLineIndex());
+            }
+            if (lastLine < 0) {
+                return;
+            }
+            float cursor = Float.POSITIVE_INFINITY;
+            for (var child : getChildren()) {
+                var node = child.getLayoutNode();
+                if (node.getLineIndex() == lastLine) {
+                    cursor = Math.min(cursor, node.getLayoutX());
+                }
+            }
+            if (!Float.isFinite(cursor)) {
+                return;
+            }
+            for (var child : getChildren()) {
+                var node = child.getLayoutNode();
+                if (node.getLineIndex() == lastLine) {
+                    node.setLayoutPosition(cursor, YogaPhysicalEdge.LEFT);
+                    cursor += node.getLayoutWidth() + CHIP_GAP;
+                }
+            }
+        }
     }
 
     private InfoCard createAboutBrandCard() {

@@ -155,48 +155,27 @@ public class MaterialChip extends MaterialWidget<MaterialChip> {
         selectionAnimator.update();
         Rectangle bounds = getRawBounds();
         ChipColors colors = getChipColors();
-        int elevation = getElevation();
 
         ctx.beginGroup(style().zIndex());
-        if (elevation > 0) {
-            MaterialElevation.draw(
-                    ctx,
-                    elevation,
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    bounds.height,
-                    CONTAINER_RADIUS,
-                    scheme().shadow()
-            );
-        }
-        if (colors.background != null) {
-            ctx.roundedRect(
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    bounds.height,
-                    CONTAINER_RADIUS,
-                    colors.background,
-                    true
-            );
-        }
-        if (colors.selectedBackground != null && colors.selectedBackground.alpha() > 0) {
-            ctx.roundedRect(
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    bounds.height,
-                    CONTAINER_RADIUS,
-                    colors.selectedBackground,
-                    true
-            );
-        }
+        drawBackground(ctx, bounds, colors);
+        drawContent(ctx, bounds, colors);
+        ctx.endGroup();
+    }
 
-        if (!isDisabled()) {
+    protected void drawBackground(RenderContext ctx, Rectangle bounds, ChipColors colors) {
+        int elevation = getElevation();
+        if (elevation > 0) {
+            MaterialElevation.draw(ctx, elevation, bounds.x, bounds.y, bounds.width, bounds.height,
+                    CONTAINER_RADIUS, scheme().shadow());
+        }
+        drawContainerBackground(ctx, bounds, colors.background);
+        if (colors.selectedBackground != null && colors.selectedBackground.alpha() > 0) {
+            ctx.roundedRect(bounds.x, bounds.y, bounds.width, bounds.height, CONTAINER_RADIUS,
+                    colors.selectedBackground, true);
+        }
+        if (!isDisabled() && shouldRenderMaterialOverlay()) {
             overlay.renderHoverOverlay(ctx, colors.stateLayer);
         }
-
         if (colors.outline != null) {
             ctx.beginPath();
             ctx.strokeWidth(1f);
@@ -205,86 +184,58 @@ public class MaterialChip extends MaterialWidget<MaterialChip> {
             ctx.endPath(false);
         }
 
-        if (!isDisabled() && dragged) {
-            ctx.roundedRect(
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    bounds.height,
-                    CONTAINER_RADIUS,
-                    colors.stateLayer.copy().alpha((int) (255f * 0.16f)),
-                    true
-            );
-        }
-
-        if (!isDisabled()) {
+        if (!isDisabled() && shouldRenderMaterialOverlay()) {
+            if (!isDisabled() && dragged) {
+                ctx.roundedRect(bounds.x, bounds.y, bounds.width, bounds.height, CONTAINER_RADIUS,
+                        colors.stateLayer.copy().alpha((int) (255f * 0.16f)), true);
+            }
             overlay.renderRippleOverlay(ctx, colors.stateLayer);
         }
+    }
 
+    protected boolean shouldRenderMaterialOverlay() {
+        return true;
+    }
+
+    protected void drawContainerBackground(RenderContext ctx, Rectangle bounds, Color color) {
+        if (color != null) {
+            ctx.roundedRect(bounds.x, bounds.y, bounds.width, bounds.height, CONTAINER_RADIUS, color, true);
+        }
+    }
+
+    protected void drawContent(RenderContext ctx, Rectangle bounds, ChipColors colors) {
         ctx.save();
         if (isDisabled()) {
             ctx.pushAlpha(0.38f);
         }
-
         float contentX = bounds.x + getLeadingStartPadding();
         MaterialSymbol avatar = avatarSupplier.get();
         MaterialSymbol leadingIcon = leadingIconSupplier.get();
         if (avatar != null) {
             float centerX = contentX + AVATAR_SIZE / 2f;
             float centerY = bounds.getCenterY();
-            ctx.arc(
-                    centerX,
-                    centerY,
-                    AVATAR_RADIUS,
-                    scheme().primaryContainer(),
-                    true
-            );
-            avatar.render(
-                    ctx,
-                    scheme().onPrimaryContainer(),
-                    ICON_SIZE,
-                    new Vector2f(centerX, centerY)
-            );
+            ctx.arc(centerX, centerY, AVATAR_RADIUS, scheme().primaryContainer(), true);
+            avatar.render(ctx, scheme().onPrimaryContainer(), ICON_SIZE, new Vector2f(centerX, centerY));
             contentX += AVATAR_SIZE + ICON_TEXT_GAP;
         } else if (leadingIcon != null) {
             float centerX = contentX + ICON_SIZE / 2f;
-            leadingIcon.render(
-                    ctx,
-                    colors.leadingIcon,
-                    ICON_SIZE,
-                    new Vector2f(centerX, bounds.getCenterY())
-            );
+            leadingIcon.render(ctx, colors.leadingIcon, ICON_SIZE, new Vector2f(centerX, bounds.getCenterY()));
             contentX += ICON_SIZE + ICON_TEXT_GAP;
         }
-
-        String text = textSupplier.get();
-        ctx.drawAlignedText(
-                ctx.font(),
-                LABEL_FONT_SIZE,
-                text == null ? "" : text,
-                contentX,
-                bounds.getCenterY(),
-                Math.max(0f, bounds.x + bounds.width - getTrailingContentEnd() - contentX),
-                LABEL_LINE_HEIGHT,
-                LABEL_WEIGHT,
-                colors.label,
-                TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
-                false
-        );
-
+        drawText(ctx, bounds, colors, contentX);
         MaterialSymbol trailingIcon = trailingIconSupplier.get();
         if (trailingIcon != null) {
             float centerX = bounds.x + bounds.width - 8f - ICON_SIZE / 2f;
-            trailingIcon.render(
-                    ctx,
-                    colors.trailingIcon,
-                    ICON_SIZE,
-                    new Vector2f(centerX, bounds.getCenterY())
-            );
+            trailingIcon.render(ctx, colors.trailingIcon, ICON_SIZE, new Vector2f(centerX, bounds.getCenterY()));
         }
-
         ctx.restore();
-        ctx.endGroup();
+    }
+
+    protected void drawText(RenderContext ctx, Rectangle bounds, ChipColors colors, float contentX) {
+        String text = textSupplier.get();
+        ctx.drawAlignedText(ctx.font(), LABEL_FONT_SIZE, text == null ? "" : text, contentX, bounds.getCenterY(),
+                Math.max(0f, bounds.x + bounds.width - getTrailingContentEnd() - contentX), LABEL_LINE_HEIGHT,
+                LABEL_WEIGHT, colors.label, TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE), false);
     }
 
     @Override
@@ -573,7 +524,7 @@ public class MaterialChip extends MaterialWidget<MaterialChip> {
         return colors;
     }
 
-    private static class ChipColors {
+    protected static class ChipColors {
         Color background;
         Color selectedBackground;
         Color outline;

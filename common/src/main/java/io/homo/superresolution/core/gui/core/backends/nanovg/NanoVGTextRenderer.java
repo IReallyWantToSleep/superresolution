@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
@@ -198,6 +199,58 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         contextPtr.fontFace(fontName);
         contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
         contextPtr.fillColor(vgColor);
+
+        float yPos = startY + 1.5f;
+        for (String line : metrics.lines) {
+            contextPtr.text(startX, yPos, line);
+            yPos += lineHeight;
+        }
+        contextPtr.restore();
+    }
+
+    public void drawAlignedText(
+            IFont font, float fontSize, String text,
+            float startX, float startY, float maxWidth, float lineHeight,
+            float weight, IPaint paint, TextAlign align, boolean wrap) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        if (align == null) {
+            align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
+        }
+        String fontName = font.name();
+
+        contextPtr.save();
+        TextMetrics metrics = calculateTextMetrics(font, fontSize, text, maxWidth, lineHeight, wrap, weight);
+        contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
+        contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
+        contextPtr.fillPaint(((NanoVGBackendPaint) paint).get());
+
+        float yPos = startY + 1.5f;
+        for (String line : metrics.lines) {
+            contextPtr.text(startX, yPos, line);
+            yPos += lineHeight;
+        }
+        contextPtr.restore();
+    }
+
+    public void drawAlignedText(
+            IFont font, float fontSize, TextMetrics metrics,
+            float startX, float startY, float maxWidth, float lineHeight,
+            float weight, IPaint paint, TextAlign align, boolean wrap) {
+        if (align == null) {
+            align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
+        }
+        String fontName = font.name();
+
+        contextPtr.save();
+        contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
+        contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
+        contextPtr.fillPaint(((NanoVGBackendPaint) paint).get());
 
         float yPos = startY + 1.5f;
         for (String line : metrics.lines) {
