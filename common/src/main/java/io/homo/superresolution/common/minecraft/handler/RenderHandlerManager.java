@@ -46,6 +46,7 @@ import org.joml.Vector2i;
 public class RenderHandlerManager {
     private static boolean isRenderingWorld;
     private static boolean shouldApplyScale;
+    private static boolean worldDebugGroupPushed;
     private static Minecraft minecraft;
     private static IMinecraftRenderHandler handler;
     private static String handlerProviderId;
@@ -70,32 +71,41 @@ public class RenderHandlerManager {
             return;
         }
         updateHandler();
-        handler.resize();
+        if (handler != null) {
+            handler.resize();
+        }
     }
 
 
-    private static boolean needUpdateHandler() {
-        if (handler == null) {
-            return true;
+    private static boolean needUpdateHandler(SRWorkModeProvider provider) {
+        if (provider == null) {
+            return handler != null;
         }
-        return !SRWorkModeManager.getCurrentProvider().id().equals(handlerProviderId);
+        return handler == null || !provider.id().equals(handlerProviderId);
     }
 
     public static void updateHandler() {
         if (uiOnlyB3DVulkan) {
             return;
         }
-        if (needUpdateHandler()) {
-            if (handler != null) {
-                handler.destroy();
-                handler = null;
-            }
-            SRWorkModeProvider provider = SRWorkModeManager.getCurrentProvider();
-            handler = provider.createRenderHandler();
-            handlerProviderId = provider.id();
-            handler.initialize();
-            needResize = true;
+        SRWorkModeProvider provider = SRWorkModeManager.getCurrentProvider();
+        if (!needUpdateHandler(provider)) {
+            return;
         }
+        if (handler != null) {
+            handler.destroy();
+        }
+        handler = null;
+        handlerProviderId = null;
+        shouldApplyScale = false;
+        worldDebugGroupPushed = false;
+        if (provider == null) {
+            return;
+        }
+        handler = provider.createRenderHandler();
+        handlerProviderId = provider.id();
+        handler.initialize();
+        needResize = true;
     }
 
     public static void onFrameBegin() {
@@ -121,7 +131,9 @@ public class RenderHandlerManager {
             return;
         }
         updateHandler();
-        GlDebug.pushGroup(74108435, "MinecraftLevelRender");
+        if (handler == null) {
+            return;
+        }
         if (SuperResolution.cachedWidth != RenderHandlerManager.getScreenWidth() || SuperResolution.cachedHeight != RenderHandlerManager.getScreenHeight()) {
             SuperResolution.getInstance().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         }
@@ -132,6 +144,8 @@ public class RenderHandlerManager {
             return;
         }
 
+        GlDebug.pushGroup(74108435, "MinecraftLevelRender");
+        worldDebugGroupPushed = true;
         shouldApplyScale = true;
         SuperResolutionAPI.EVENT_BUS.post(new LevelRenderStartEvent());
         handler.onRenderWorldBegin(type);
@@ -144,19 +158,26 @@ public class RenderHandlerManager {
         if (type == CallType.LEVEL_RENDERER) {
             isRenderingWorld = false;
         }
+        if (handler == null) {
+            worldDebugGroupPushed = false;
+            return;
+        }
         if (checkRenderWorldCallPos(type)) {
             handler.onRenderWorldEnd(type);
             SuperResolutionAPI.EVENT_BUS.post(new LevelRenderEndEvent());
             shouldApplyScale = false;
         }
-        GlDebug.popGroup();
+        if (worldDebugGroupPushed) {
+            GlDebug.popGroup();
+            worldDebugGroupPushed = false;
+        }
     }
 
     public static void onRenderHandBegin() {
         if (uiOnlyB3DVulkan) {
             return;
         }
-        if (checkRenderHandCallPos()) {
+        if (checkRenderHandCallPos() && handler != null) {
             handler.onRenderHandBegin();
         }
     }
@@ -165,7 +186,7 @@ public class RenderHandlerManager {
         if (uiOnlyB3DVulkan) {
             return;
         }
-        if (checkRenderHandCallPos()) {
+        if (checkRenderHandCallPos() && handler != null) {
             handler.onRenderHandEnd();
         }
     }
@@ -175,6 +196,9 @@ public class RenderHandlerManager {
             return;
         }
         updateHandler();
+        if (handler == null) {
+            return;
+        }
         handler.onProcessPostChain(postChain);
     }
 

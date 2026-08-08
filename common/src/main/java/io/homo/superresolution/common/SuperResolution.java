@@ -202,6 +202,8 @@ public final class SuperResolution implements Destroyable {
     }
 
     public static void onClientSetup() {
+        SuperResolutionConfig.SPEC.load();
+        SuperResolutionConfig.freezeStartupOptions();
         SuperResolutionKeyMapping.registerKeyMapping();
         SRWorkModeManager.onClientSetup();
     }

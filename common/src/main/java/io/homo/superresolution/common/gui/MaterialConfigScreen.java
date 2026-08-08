@@ -530,6 +530,27 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
+    private void openUnstableIncompatibleShaderSupportDialog(BooleanSwitchOptionEntry entry) {
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconWarning())
+                .scrimDismiss(false)
+                .headline(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.title").getString())
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.message").getString())
+                .addAction(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.action.cancel").getString(), MaterialButtonVariant.Filled, dialog1->{
+                    SuperResolutionConfig.setEnableUnstableIncompatibleShaderSupport(false);
+                    SuperResolutionConfig.SPEC.save();
+                    entry.setCurrentValue(false);
+                    dialog1.dismiss();
+                })
+                .addAction(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.action.confirm").getString(), MaterialButtonVariant.Text, dialog1 -> {
+                    SuperResolutionConfig.setEnableUnstableIncompatibleShaderSupport(true);
+                    SuperResolutionConfig.SPEC.save();
+                    entry.setCurrentValue(true);
+                    dialog1.dismiss();
+                });
+        getView().showDialog(dialog);
+    }
+
     private void openCreateAlgorithmFailedDialog(AlgorithmDescription<?> description) {
         MaterialDialog dialog = MaterialDialog.create()
                 .icon(MaterialSymbols.iconError())
@@ -711,31 +732,25 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
                     .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
-                    .setDisplayRequirement(OptionRequirement.isTrue(() -> SuperResolutionConfig.isEnableUpscaleOriginal() && !SRWorkModeManager.getCurrentState().shaderPackInUse() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
+                    .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.getCurrentState().shaderPackInUse()))
                     .build();
             builder.hintOption(Text.literal("shader_compat_warning"))
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
                     .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
-                    .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
-                            SuperResolutionConfig.isEnableUpscaleOriginal() &&
-                            SRWorkModeManager.getCurrentState().shaderPackInUse()))
+                    .setDisplayRequirement(OptionRequirement.isTrue(() ->
+                            !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
+                            SRWorkModeManager.getCurrentState().shaderPackInUse()
+                    ))
                     .build();
 
             builder.booleanOption(
                             Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
-                            SuperResolutionConfig.isEnableUpscaleOriginal())
+                            SuperResolutionConfig.isEnableUpscale())
                     .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                     .setDefaultValue(() -> true)
+                    .setEnableRequirement(SRWorkModeManager::hasAvailableWorkMode)
                     .setSaveConsumer(SuperResolutionConfig::setEnableUpscale)
-                    .build();
-
-            builder.booleanOption(
-                            Text.translatable("superresolution.screen.config.options.label.disable_upscale_on_vanilla"),
-                            SuperResolutionConfig.isDisableUpscaleOnVanilla())
-                    .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla"))
-                    .setDefaultValue(() -> false)
-                    .setSaveConsumer(SuperResolutionConfig::setDisableUpscaleOnVanilla)
                     .build();
 
             algoSelectRef[0] = builder.selectorOption(
@@ -1366,13 +1381,24 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.group.advanced.shader_compatibility"),
-                builder -> builder.booleanOption(
-                                Text.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
-                                SuperResolutionConfig.isForceDisableShaderCompat())
-                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
-                        .setDefaultValue(() -> false)
-                        .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
-                        .build()
+                builder -> {
+                    final BooleanSwitchOptionEntry[] entryRef = new BooleanSwitchOptionEntry[1];
+                    entryRef[0] = builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.enable_unstable_incompatible_shader_support"),
+                                    SuperResolutionConfig.isEnableUnstableIncompatibleShaderSupport())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_unstable_incompatible_shader_support"))
+                            .setDefaultValue(() -> false)
+                            //.setRequireRestartGame(true)
+                            .setSaveConsumer(value -> {
+                                if (value) {
+                                    openUnstableIncompatibleShaderSupportDialog(entryRef[0]);
+                                    return false;
+                                }
+                                SuperResolutionConfig.setEnableUnstableIncompatibleShaderSupport(false);
+                                return true;
+                            })
+                            .build();
+                }
         );
 
         addLabeledOptionGroup(

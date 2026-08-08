@@ -86,8 +86,7 @@ public class SuperResolutionConfig {
     public static final StringValue DATASET_PATH;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
     public static final BooleanValue ENABLE_DEBUG;
-    public static final BooleanValue DISABLE_UPSCALE_ON_VANILLA;
-    public static final BooleanValue FORCE_DISABLE_SHADER_COMPAT;
+    public static final BooleanValue ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
@@ -105,6 +104,8 @@ public class SuperResolutionConfig {
 
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
+    private static volatile boolean unstableIncompatibleShaderSupportStartup;
+    private static volatile boolean startupOptionsFrozen;
 
     static {
         ModConfigSpecBuilder builder = new ModConfigSpecBuilder();
@@ -296,18 +297,10 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Enable more detailed performance profiling for advanced analysis."
         );
-        FORCE_DISABLE_SHADER_COMPAT = builder.defineBoolean(
-                "force_disable_shader_compat",
+        ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT = builder.defineBoolean(
+                "enable_unstable_incompatible_shader_support",
                 () -> false,
-                "Force disable shader pack compatibility mode."
-        );
-        FORCE_DISABLE_SHADER_COMPAT.onChange((oldValue, newValue) -> {
-            SRWorkModeManager.reloadShaderPack();
-        });
-        DISABLE_UPSCALE_ON_VANILLA = builder.defineBoolean(
-                "disable_upscale_on_vanilla",
-                () -> false,
-                "Disable Super Resolution when using vanilla rendering."
+                "Enable unstable super resolution support for incompatible shader packs. Requires a game restart."
         );
 
         INTERNAL_TEXTURE_FORMAT = builder.defineEnum(
@@ -388,6 +381,26 @@ public class SuperResolutionConfig {
             );
 
         };
+    }
+
+    public static synchronized void freezeStartupOptions() {
+        if (startupOptionsFrozen) {
+            return;
+        }
+        unstableIncompatibleShaderSupportStartup = ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.get();
+        startupOptionsFrozen = true;
+    }
+
+    public static boolean isUnstableIncompatibleShaderSupportEnabledAtStartup() {
+        return startupOptionsFrozen && unstableIncompatibleShaderSupportStartup;
+    }
+
+    public static boolean isEnableUnstableIncompatibleShaderSupport() {
+        return ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.get();
+    }
+
+    public static void setEnableUnstableIncompatibleShaderSupport(boolean value) {
+        ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.set(value);
     }
 
     public static AlgorithmDescription<?> getDefaultAlgorithm() {
@@ -502,26 +515,25 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableUpscale() {
-        if (SuperResolutionConfig.isDisableUpscaleOnVanilla()) {
-            SRWorkModeState state = SRWorkModeManager.getCurrentState();
-            return isEnableUpscaleOriginal() && (
-                    state.shaderPackInUse() ||
-                            state.shaderPackLoading()
-            );
+        if (!SRWorkModeManager.hasAvailableWorkMode()) {
+            return false;
         }
         return isEnableUpscaleOriginal();
     }
 
-    public static void setEnableUpscale(boolean value) {
-        boolean resolutionChanged = isEnableUpscale() != value;
+    public static boolean setEnableUpscale(boolean value) {
+        if (value && !SRWorkModeManager.hasAvailableWorkMode()) {
+            return false;
+        }
+        boolean previousValue = isEnableUpscale();
         ENABLE_UPSCALE.set(value);
-        if (resolutionChanged) {
+        if (previousValue != isEnableUpscale()) {
             resolutionChangeCallback.run();
             if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
                 SRWorkModeManager.reloadShaderPack();
             }
         }
-
+        return true;
     }
 
     public static float getSharpness() {
@@ -663,26 +675,6 @@ public class SuperResolutionConfig {
         ENABLE_DEBUG.set(value);
         GlDebug.setEnabled(value);
         VulkanDebug.setEnabled(value);
-    }
-
-    public static boolean isForceDisableShaderCompat() {
-        return FORCE_DISABLE_SHADER_COMPAT.get();
-    }
-
-    public static void setForceDisableShaderCompat(boolean value) {
-        FORCE_DISABLE_SHADER_COMPAT.set(value);
-    }
-
-    public static boolean isDisableUpscaleOnVanilla() {
-        return DISABLE_UPSCALE_ON_VANILLA.get();
-    }
-
-    public static void setDisableUpscaleOnVanilla(boolean value) {
-        boolean lastEnableUpscale = isEnableUpscale();
-        DISABLE_UPSCALE_ON_VANILLA.set(value);
-        if (lastEnableUpscale != isEnableUpscale()) {
-            resolutionChangeCallback.run();
-        }
     }
 
     public static boolean isEnableExperimentalFeatures() {

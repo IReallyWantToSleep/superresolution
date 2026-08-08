@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.workmode;
 
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.common.compat.iris.IrisCompatHelper;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +17,7 @@ public record SRWorkModeState(
                 InitializationDescription.defaults(),
                 TextureFormat.RGBA16F,
                 null,
-                false,
+                IrisCompatHelper.hasActiveShaderpack(),
                 false
         );
     }

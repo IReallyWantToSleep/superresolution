@@ -106,6 +106,9 @@ public final class FGConstantsFeature {
 
         SRWorkModeProvider workModeProvider = SRWorkModeManager.getCurrentProvider();
         SRWorkModeState workModeState = SRWorkModeManager.getCurrentState();
+        if (workModeProvider == null) {
+            return;
+        }
         String workModeId = workModeProvider.id();
         boolean motionVectorsJittered = workModeState.initializationDescription().isMotionJittered();
         boolean cameraMotionIncluded =

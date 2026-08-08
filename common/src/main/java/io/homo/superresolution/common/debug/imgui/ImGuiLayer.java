@@ -681,11 +681,7 @@ public class ImGuiLayer {
     }
 
     private SRWorkModeProvider safeGetCurrentProvider() {
-        try {
-            return SRWorkModeManager.getCurrentProvider();
-        } catch (IllegalStateException ignored) {
-            return null;
-        }
+        return SRWorkModeManager.getCurrentProvider();
     }
 
     private static float nanosToMillis(long nanos) {

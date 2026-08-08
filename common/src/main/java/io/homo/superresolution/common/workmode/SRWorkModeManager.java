@@ -62,6 +62,7 @@ public final class SRWorkModeManager {
         return PROVIDERS.get(id);
     }
 
+    @Nullable
     public static SRWorkModeProvider getCurrentProvider() {
         SRWorkModeProvider fallback = PROVIDERS.get(HACK);
         for (SRWorkModeProvider provider : PROVIDERS.values()) {
@@ -69,17 +70,16 @@ public final class SRWorkModeManager {
                 return provider;
             }
         }
-        if (fallback == null) {
-            throw new IllegalStateException("未注册 hack 工作模式");
-        }
-        return fallback;
+        return fallback != null && fallback.isActive() ? fallback : null;
+    }
+
+    public static boolean hasAvailableWorkMode() {
+        return getCurrentProvider() != null;
     }
 
     public static SRWorkModeState getCurrentState() {
-        SRWorkModeProvider provider;
-        try {
-            provider = getCurrentProvider();
-        } catch (IllegalStateException ignored) {
+        SRWorkModeProvider provider = getCurrentProvider();
+        if (provider == null) {
             return SRWorkModeState.defaults();
         }
         SRWorkModeState state = provider.getState();
@@ -87,17 +87,14 @@ public final class SRWorkModeManager {
     }
 
     public static boolean isCurrentMode(String id) {
-        try {
-            return getCurrentProvider().id().equals(id);
-        } catch (IllegalStateException ignored) {
-            return false;
-        }
+        SRWorkModeProvider provider = getCurrentProvider();
+        return provider != null && provider.id().equals(id);
     }
 
     public static void reloadShaderPack() {
-        try {
-            getCurrentProvider().reloadShaderPack();
-        } catch (IllegalStateException ignored) {
+        SRWorkModeProvider provider = getCurrentProvider();
+        if (provider != null) {
+            provider.reloadShaderPack();
         }
     }
 }
