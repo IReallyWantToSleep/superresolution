@@ -2074,7 +2074,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         long generation = ++sponsorRequestGeneration;
         sponsorRequest = SponsorService.fetchAsync();
         sponsorRequest.thenAccept(result -> Minecraft.getInstance().execute(() -> {
-            if (generation != sponsorRequestGeneration || Minecraft.getInstance().screen != this) {
+            if (generation != sponsorRequestGeneration || MinecraftUtils.getScreen() != this) {
                 return;
             }
             for (var child : new ArrayList<>(container.getChildren())) {

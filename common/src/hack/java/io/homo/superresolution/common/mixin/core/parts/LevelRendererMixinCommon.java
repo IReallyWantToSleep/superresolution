@@ -37,7 +37,7 @@ public class LevelRendererMixinCommon {
     #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
     private void onResizePostChain(PostChain instance, int w, int h) {
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             instance.resize(w, h);
             return;
         }
@@ -48,7 +48,7 @@ public class LevelRendererMixinCommon {
     #if MC_VER > MC_26_1_2
     @Inject(at = @At(value = "HEAD"), method = "render", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             return;
         }
         if (Minecraft.getInstance().level != null) {
@@ -58,7 +58,7 @@ public class LevelRendererMixinCommon {
 
     @Inject(at = @At(value = "RETURN"), method = "render")
     private void onRenderWorldEnd(CallbackInfo ci) {
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             return;
         }
         if (Minecraft.getInstance().level != null) {
