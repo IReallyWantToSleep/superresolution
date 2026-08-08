@@ -314,9 +314,9 @@ val publishingApiToShnexus = gradle.startParameter.taskNames.any { taskName ->
     taskName.substringAfterLast(':') == "publishApiPublicationToShnexusRepository"
 }
 
-if (publishingApiToShnexus && minecraftVersionConfig != "1.21.1") {
+if (publishingApiToShnexus && minecraftVersionConfig != "1.20.1") {
     throw GradleException(
-        "远程 Super Resolution API 发布必须使用 minecraft_version_config=1.21.1；"
+        "远程 Super Resolution API 发布必须使用 minecraft_version_config=1.20.1；"
             + "请执行 :publishApiToShnexus。"
     )
 }
@@ -325,13 +325,11 @@ if (publishingApiToShnexus && minecraftVersionConfig != "1.21.1") {
 // resolve to the task's own container, since Task is ExtensionAware too.
 val apiMainOutput = extensions.getByType<SourceSetContainer>().named("main").get().output
 
-// Java 21, i.e. the 1.21.1 configuration. The published API is a single artifact shared
+// Java 17, i.e. the 1.20.1 configuration. The published API is a single artifact shared
 // by every Minecraft version that consumes it, so it has to be readable by the oldest
-// toolchain among them. 1.20.1 (Java 17) is deliberately not part of that set: no
-// consumer targets it, and holding the API back to Java 17 for its sake would be a cost
-// with no benefit.
-val apiMaxClassFileMajor = 65
-val apiSourceVersionConfig = "1.21.1"
+// toolchain among them.
+val apiMaxClassFileMajor = 61
+val apiSourceVersionConfig = "1.20.1"
 
 val apiJar = tasks.register<Jar>("apiJar") {
     group = "publishing"
@@ -365,7 +363,7 @@ val apiJar = tasks.register<Jar>("apiJar") {
         }
         if (offenders.isNotEmpty()) {
             throw GradleException(
-                "The API jar contains class files newer than Java 21 (major $apiMaxClassFileMajor), "
+                "The API jar contains class files newer than Java 17 (major $apiMaxClassFileMajor), "
                     + "so mods built for older Minecraft versions could not read it. "
                     + "Build it from the oldest configuration that consumers target: "
                     + "-Pminecraft_version_config=$apiSourceVersionConfig\n"

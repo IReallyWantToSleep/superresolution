@@ -102,9 +102,9 @@ public final class PresentationWindowState {
     }
 
     public static synchronized void resetAfterStartupFailure() {
-        destroyRenderWindow();
         presentationHandle = NULL;
-        clearOwnerThreadIfUnused();
+        renderHandle = NULL;
+        ownerThread = null;
     }
 
     public static synchronized void requireOwnerThread() {

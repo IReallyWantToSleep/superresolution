@@ -233,11 +233,11 @@ tasks.register<Delete>("cleanBuildJars") {
 
 tasks.register<GradleBuild>("publishApiToShnexus") {
     group = "publishing"
-    description = "以 Minecraft 1.21.1（Java 21）配置发布 Super Resolution API 到 shnexus"
-    buildName = "superresolution_api_1_21_1"
+    description = "以 Minecraft 1.20.1（Java 17）配置发布 Super Resolution API 到 shnexus"
+    buildName = "superresolution_api_1_20_1"
     dir = rootDir
     setTasks(listOf(":common:publishApiPublicationToShnexusRepository"))
-    startParameter.projectProperties["minecraft_version_config"] = "1.21.1"
+    startParameter.projectProperties["minecraft_version_config"] = "1.20.1"
     startParameter.projectProperties["is_dev"] = "true"
     listOf("shnexusUsername", "shnexusPassword").forEach { property ->
         providers.gradleProperty(property).orNull?.let { value ->
