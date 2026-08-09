@@ -26,8 +26,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 
 import java.util.*;
 
@@ -51,26 +50,19 @@ public class SRCompatBuiltinMacros {
         });
 
         AlgorithmDescription<?> description = SuperResolution.algorithmDescription;
+        boolean frameGenOnly = IrisShaderCompatUtils.isCurrentProfileFrameGenerationOnly();
 
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
             AlgorithmDescription<?> selectedAlgorithm = description != null
                     ? description
                     : SuperResolutionConfig.getUpscaleAlgorithm();
-            boolean frameGenOnly = false;
-            SRShaderCompatData data = ShaderCompatHandler.getShaderCompatData();
-            if (data != null) {
-                SRShaderCompatData.WorldProfile profile = data.getProfileForWorld("*");
-                if (profile != null && profile.upscale != null) {
-                    frameGenOnly = profile.upscale.onlySupportsFrameGeneration;
-                }
-            }
             preprocessor.addMacro("SR_ENABLE", "1");
             preprocessor.addMacro("SR_DISABLE", "0");
             preprocessor.addMacro("SR_ALGO_SUPPORTS_JITTER",
                     AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
             preprocessor.addMacro("SR_USING_ALGO", Integer.toString(idMap.get(selectedAlgorithm)));
-            preprocessor.addMacro("SR_SHOULD_APPLY_SCALE", "1");
-            preprocessor.addMacro("SR_SHOULD_APPLY_JITTER", "1");
+            preprocessor.addMacro("SR_SHOULD_APPLY_SCALE", frameGenOnly ? "0" : "1");
+            preprocessor.addMacro("SR_SHOULD_APPLY_JITTER", frameGenOnly ? "0" : "1");
             preprocessor.addMacro("SR_SCALED_WIDTH",
                     Integer.toString(SuperResolutionAPI.getRenderWidth()));
             preprocessor.addMacro("SR_SCALED_HEIGHT",
@@ -112,16 +104,8 @@ public class SRCompatBuiltinMacros {
 
         // region V2
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            boolean frameGenOnlyV2 = false;
-            SRShaderCompatData dataV2 = ShaderCompatHandler.getShaderCompatData();
-            if (dataV2 != null) {
-                SRShaderCompatData.WorldProfile profileV2 = dataV2.getProfileForWorld("*");
-                if (profileV2 != null && profileV2.upscale != null) {
-                    frameGenOnlyV2 = profileV2.upscale.onlySupportsFrameGeneration;
-                }
-            }
-            float rsf = frameGenOnlyV2 ? 1.0f : SuperResolutionConfig.getRenderScaleFactor();
-            float ratio = frameGenOnlyV2 ? 1.0f : SuperResolutionConfig.getUpscaleRatio();
+            float rsf = frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor();
+            float ratio = frameGenOnly ? 1.0f : SuperResolutionConfig.getUpscaleRatio();
             preprocessor.addMacro("SR_UPSCALE_RATIO_HALF",
                     Float.toString(ratio * 0.5F));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR_HALF",

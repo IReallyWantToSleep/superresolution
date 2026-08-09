@@ -30,7 +30,9 @@ public class HackSRWorkModeProvider implements SRWorkModeProvider {
                 defaults.internalTextureFormat(),
                 defaults.motionVectorPreprocessingFunction(),
                 IrisCompatHelper.hasActiveShaderpack(),
-                defaults.shaderPackLoading()
+                defaults.shaderPackLoading(),
+                defaults.onlySupportsFrameGeneration(),
+                defaults.disabledAlgorithms()
         );
     }
 

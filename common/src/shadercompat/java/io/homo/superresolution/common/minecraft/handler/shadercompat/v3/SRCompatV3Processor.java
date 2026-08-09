@@ -33,7 +33,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.MacroRegistrar;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatConfigParser;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.UniformRegistrar;
@@ -83,7 +83,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                         description.equals(AlgorithmDescriptions.XESS)
         ) {
             return false;
-        }else {
+        } else {
             return IrisShaderCompatUtils.getCurrentConfig()
                     .map(p -> p.upscale.customs != null && p.upscale.customs.motionVectorPreprocessingFunction != null)
                     .orElse(false);
@@ -119,7 +119,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                         description.equals(AlgorithmDescriptions.XESS)
         ) {
             return rawJitter.mul(1, -1);
-        }else {
+        } else {
             return rawJitter;
         }
     }
@@ -211,14 +211,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
             r.registerMacro("SR_ALGO_DLSS_RENDERPRESET_" + preset.toString(), Integer.toString(preset.getCode()));
         });
 
-        boolean frameGenOnly = false;
-        SRShaderCompatData frameGenData = ShaderCompatHandler.getShaderCompatData();
-        if (frameGenData != null) {
-            SRShaderCompatData.WorldProfile frameGenProfile = frameGenData.getProfileForWorld("*");
-            if (frameGenProfile != null && frameGenProfile.upscale != null) {
-                frameGenOnly = frameGenProfile.upscale.onlySupportsFrameGeneration;
-            }
-        }
+        boolean frameGenOnly = IrisShaderCompatUtils.isCurrentProfileFrameGenerationOnly();
 
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
             AlgorithmDescription<?> selectedAlgorithm = description != null
@@ -230,8 +223,8 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                     AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
             r.registerMacro("SR_USING_ALGO", Integer.toString(
                     idMap.get(selectedAlgorithm)));
-            r.registerMacro("SR_SHOULD_APPLY_SCALE", "1");
-            r.registerMacro("SR_SHOULD_APPLY_JITTER", "1");
+            r.registerMacro("SR_SHOULD_APPLY_SCALE", frameGenOnly ? "0" : "1");
+            r.registerMacro("SR_SHOULD_APPLY_JITTER", frameGenOnly ? "0" : "1");
             r.registerMacro("SR_SCALED_WIDTH",
                     Integer.toString(SuperResolutionAPI.getRenderWidth()));
             r.registerMacro("SR_SCALED_HEIGHT",
@@ -291,7 +284,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
         // endregion
 
         // region V3
-        r.registerMacro("SR_CONFIG_SCHEMA_VERSION", "3");
+        r.registerMacro("SR_CONFIG_SCHEMA_VERSION", Integer.toString(SRCompatConfigParser.LATEST_CONFIG_VERSION));
         // endregion
     }
 

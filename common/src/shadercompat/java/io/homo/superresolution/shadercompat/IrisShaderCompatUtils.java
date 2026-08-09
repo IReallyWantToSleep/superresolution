@@ -53,6 +53,18 @@ public class IrisShaderCompatUtils {
         );
     }
 
+    public static boolean isCurrentProfileFrameGenerationOnly() {
+        try {
+            return getCurrentConfig()
+                    .map(profile -> profile.enabled
+                            && profile.upscale != null
+                            && profile.upscale.onlySupportsFrameGeneration)
+                    .orElse(false);
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     public static Optional<SRShaderCompatData> getCurrentShaderPackConfig() {
         return Optional.ofNullable(
                 getCurrentShaderPack().map(

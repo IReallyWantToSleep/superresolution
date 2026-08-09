@@ -448,6 +448,12 @@ public class SuperResolutionConfig {
             return defaultAlgo;
         }
 
+        // 光影包禁用的算法只在运行期回退，不写回配置——卸载光影包后恢复用户原选择
+        if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algo.codeName)) {
+            SuperResolution.LOGGER.warn("算法 {} 已被当前光影包禁用，回退到默认算法", algo.displayName);
+            return getDefaultAlgorithm();
+        }
+
         return algo;
     }
 
