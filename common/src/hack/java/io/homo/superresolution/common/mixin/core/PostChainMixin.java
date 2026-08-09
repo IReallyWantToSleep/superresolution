@@ -18,32 +18,13 @@
 
 package io.homo.superresolution.common.mixin.core;
 
-import com.google.gson.JsonSyntaxException;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
-import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import net.minecraft.client.renderer.PostChain;
-import net.minecraft.client.renderer.PostPass;
-import net.minecraft.client.renderer.texture.TextureManager;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #if MC_VER > MC_1_21_10
-import net.minecraft.resources.Identifier;
 #else
 import net.minecraft.resources.ResourceLocation;
 #endif
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+
 
 @Mixin(PostChain.class)
 public abstract class PostChainMixin {
@@ -79,7 +60,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+        if (!HackWorkModeEligibility.isHackSelected()) {
             return;
         }
 
@@ -108,7 +89,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+        if (!HackWorkModeEligibility.isHackSelected()) {
             return;
         }
 
@@ -140,7 +121,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+        if (!HackWorkModeEligibility.isHackSelected()) {
             return;
         }
         if (
@@ -157,8 +138,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
-            ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getOriginRenderTarget().asMcRenderTarget());
+        if (!HackWorkModeEligibility.isHackSelected()) {
             return;
         }
         RenderHandlerManager.onProcessPostChain((PostChain) (Object) this);

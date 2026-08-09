@@ -28,19 +28,76 @@ import org.lwjgl.opengl.EXTSemaphoreFD;
 import org.lwjgl.opengl.EXTSemaphoreWin32;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.Struct;
+import org.lwjgl.system.linux.UNISTD;
 import org.lwjgl.vulkan.*;
+
+import java.lang.reflect.Method;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK11.*;
 
 public class VulkanInterop {
     public static final VulkanInteropExt IMPL;
+    private static final Method LINUX_CLOSE = findLinuxClose();
 
     static {
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             IMPL = new WindowsVulkanInteropExtImpl();
         } else {
             IMPL = new LinuxVulkanInteropExtImpl();
+        }
+    }
+
+    public static void closeUnimportedExportedHandle(long handle) {
+        if (handle == -1L) {
+            return;
+        }
+        switch (OperatingSystemType.get()) {
+            case WINDOWS -> closeWin32Handle(handle);
+            case LINUX -> {
+                if (handle >= 0L && closeLinuxFileDescriptor(Math.toIntExact(handle)) != 0) {
+                    throw new IllegalStateException("Failed to close exported Linux file descriptor");
+                }
+            }
+            default -> throw new UnsupportedOperationException("Unsupported external-handle platform");
+        }
+    }
+
+    public static void closeImportedExportedHandle(long handle) {
+        if (OperatingSystemType.get() == OperatingSystemType.WINDOWS) {
+            closeWin32Handle(handle);
+        }
+    }
+
+    private static void closeWin32Handle(long handle) {
+        if (handle == -1L) {
+            return;
+        }
+        if (!WinKernel32.INSTANCE.CloseHandle(Pointer.createConstant(handle))) {
+            throw new IllegalStateException("Failed to close exported Win32 external handle");
+        }
+    }
+
+    private static Method findLinuxClose() {
+        try {
+            return UNISTD.class.getMethod("nclose", long.class, int.class);
+        } catch (NoSuchMethodException ignored) {
+            try {
+                return UNISTD.class.getMethod("close", int.class);
+            } catch (NoSuchMethodException exception) {
+                throw new IllegalStateException("LWJGL does not expose a Linux close function", exception);
+            }
+        }
+    }
+
+    private static int closeLinuxFileDescriptor(int fileDescriptor) {
+        try {
+            Object result = LINUX_CLOSE.getParameterCount() == 2
+                    ? LINUX_CLOSE.invoke(null, 0L, fileDescriptor)
+                    : LINUX_CLOSE.invoke(null, fileDescriptor);
+            return (int) result;
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to close exported Linux file descriptor", exception);
         }
     }
 

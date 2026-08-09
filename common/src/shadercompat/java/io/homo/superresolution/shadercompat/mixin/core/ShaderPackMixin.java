@@ -19,7 +19,6 @@
 package io.homo.superresolution.shadercompat.mixin.core;
 
 import com.google.common.collect.ImmutableList;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.shadercompat.IrisSRCompatShaderPack;
@@ -67,11 +66,11 @@ public class ShaderPackMixin implements IrisSRCompatShaderPack {
 
     @Unique
     public SRShaderCompatData superresolution$getSuperResolutionComaptConfig() {
-        return SuperResolutionConfig.isForceDisableShaderCompat() ? null : superresolution$config;
+        return superresolution$config;
     }
 
     @Unique
     public boolean superresolution$isSupportsSuperResolution() {
-        return !SuperResolutionConfig.isForceDisableShaderCompat() && superresolution$config != null;
+        return superresolution$config != null;
     }
 }

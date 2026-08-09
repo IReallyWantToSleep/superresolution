@@ -31,25 +31,29 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.ngx.NgxInitializer;
-import io.homo.superresolution.core.ngx.NgxVulkan;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
@@ -96,6 +100,9 @@ public final class SuperResolution implements Destroyable {
     private static final long RESIZE_DEBOUNCE_MS = 120L;
     private static volatile boolean pendingResize = false;
     private static volatile long pendingResizeDeadlineMs = 0L;
+    // Guards the interop OpenGL context + Vulkan device teardown so it runs once per
+    // shutdown, whether triggered early (no presentation) or deferred to destroy() TAIL.
+    private static boolean graphicsBackendDestroyed = false;
 
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
@@ -148,8 +155,11 @@ public final class SuperResolution implements Destroyable {
             minecraft = Minecraft.getInstance();
         }
 
+        OptiScalerLoader.loadConfiguredDll();
         #if MC_VER != MC_26_2
-        Streamline.prepareEarly();
+        if (VulkanPresentationFeature.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
+            LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
+        }
         #endif
     }
 
@@ -168,9 +178,11 @@ public final class SuperResolution implements Destroyable {
         instance = new SuperResolution();
         SuperResolution.check();
         SuperResolution.preInit();
+        Streamline.prepareEarly();
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
+        FrameGeneration.initialize();
         if (Platform.currentPlatform.isInstallIris() && !B3DVulkanBridge.isB3DVulkanBackend()) {
             try {
                 Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
@@ -185,7 +197,13 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.getInstance().destroy();
     }
 
+    public static void onClientStopped() {
+        SuperResolution.getInstance().destroyGraphicsBackend();
+    }
+
     public static void onClientSetup() {
+        SuperResolutionConfig.SPEC.load();
+        SuperResolutionConfig.freezeStartupOptions();
         SuperResolutionKeyMapping.registerKeyMapping();
         SRWorkModeManager.onClientSetup();
     }
@@ -386,7 +404,10 @@ public final class SuperResolution implements Destroyable {
             }
 
             if (currentAlgorithm != null) {
+                VulkanPresentationWindow.flushCapturedFrame();
+                FrameGeneration.invalidateHistory();
                 currentAlgorithm.destroy();
+                LowLatency.onDestructiveRebuild();
             }
 
             try {
@@ -485,6 +506,7 @@ public final class SuperResolution implements Destroyable {
         w = Math.max(32,w) ;
         h = Math.max(32,h);
         if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            VulkanPresentationWindow.flushCapturedFrame();
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmResizeEvent(
                             currentAlgorithm,
@@ -500,6 +522,7 @@ public final class SuperResolution implements Destroyable {
             );
             // 分辨率变了，时序历史无效。
             currentAlgorithm.invalidateHistory();
+            FrameGeneration.invalidateHistory();
         }
         AlgorithmManager.resize(w, h);
     }
@@ -508,6 +531,10 @@ public final class SuperResolution implements Destroyable {
         isInit = false;
         isRenderingInitialized = false;
         pendingResize = false;
+        graphicsBackendDestroyed = false;
+        FrameGeneration.shutdown();
+        VulkanPresentationFeature.shutdown();
+        LowLatency.shutdown();
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
             currentAlgorithm = null;
@@ -517,7 +544,25 @@ public final class SuperResolution implements Destroyable {
         }
         SuperResolutionNativeAPI.srShutdown();
         Streamline.shutdown();
-        NgxVulkan.shutdown();
+        NgxInitializer.shutdown();
+        // In Vulkan-presentation (interop) mode the hidden OpenGL context and the Vulkan
+        // device are torn down later, in destroyGraphicsBackend() at Minecraft.destroy()
+        // TAIL, so Minecraft's own shutdown rendering (the disconnect progress screen and
+        // GL resource cleanup) still has a current GL context. Destroying them here left
+        // that rendering without a context and aborted the JVM on exit. Without the
+        // interop presentation there is no shared context to protect, so tear down now.
+        if (!VulkanPresentationFeature.isRequested()) {
+            destroyGraphicsBackend();
+        }
+    }
+
+    public void destroyGraphicsBackend() {
+        if (graphicsBackendDestroyed) {
+            return;
+        }
+        graphicsBackendDestroyed = true;
+        // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
+        PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();
     }
 }

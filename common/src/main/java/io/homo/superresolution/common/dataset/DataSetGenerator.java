@@ -177,8 +177,6 @@ public class DataSetGenerator {
     }
 
     private static void onLevelBegin(LevelRenderStartEvent event) {
-        int frameCount = RenderHandlerManager.getFrameCount();
-
         boolean sequenceKeyDown = SEQUENCE_KEYMAPPING.isDown();
         if (sequenceKeyDown && !seqKeyWasDown && !seqActive && !seqDraining) {
             initSequenceCapture();
@@ -285,8 +283,6 @@ public class DataSetGenerator {
     }
 
     private static void onLevelEnd(LevelRenderEndEvent event) {
-        int frameCount = RenderHandlerManager.getFrameCount();
-
         handleSequenceCapture();
 
         if (!SAVE_KEYMAPPING.isDown()) {

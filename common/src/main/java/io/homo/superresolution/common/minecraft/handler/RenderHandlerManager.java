@@ -20,41 +20,36 @@ package io.homo.superresolution.common.minecraft.handler;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.sun.jna.Pointer;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LevelRenderEndEvent;
 import io.homo.superresolution.api.event.LevelRenderStartEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.debug.imgui.ImGuiLayer;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 
 public class RenderHandlerManager {
-    public static boolean needCapture = false;
-    public static boolean needCaptureVulkan = false;
-    public static boolean needCaptureUpscale = false;
     private static boolean isRenderingWorld;
     private static boolean shouldApplyScale;
+    private static boolean worldDebugGroupPushed;
     private static Minecraft minecraft;
     private static IMinecraftRenderHandler handler;
     private static String handlerProviderId;
-    public static int frameCount = 0;
     private static IBindableFrameBuffer originRenderTarget;
     private static boolean uiOnlyB3DVulkan;
 
@@ -76,41 +71,50 @@ public class RenderHandlerManager {
             return;
         }
         updateHandler();
-        handler.resize();
+        if (handler != null) {
+            handler.resize();
+        }
     }
 
 
-    private static boolean needUpdateHandler() {
-        if (handler == null) {
-            return true;
+    private static boolean needUpdateHandler(SRWorkModeProvider provider) {
+        if (provider == null) {
+            return handler != null;
         }
-        return !SRWorkModeManager.getCurrentProvider().id().equals(handlerProviderId);
+        return handler == null || !provider.id().equals(handlerProviderId);
     }
 
     public static void updateHandler() {
         if (uiOnlyB3DVulkan) {
             return;
         }
-        if (needUpdateHandler()) {
-            if (handler != null) {
-                handler.destroy();
-                handler = null;
-            }
-            SRWorkModeProvider provider = SRWorkModeManager.getCurrentProvider();
-            handler = provider.createRenderHandler();
-            handlerProviderId = provider.id();
-            handler.initialize();
-            needResize = true;
+        SRWorkModeProvider provider = SRWorkModeManager.getCurrentProvider();
+        if (!needUpdateHandler(provider)) {
+            return;
         }
+        if (handler != null) {
+            handler.destroy();
+        }
+        handler = null;
+        handlerProviderId = null;
+        shouldApplyScale = false;
+        worldDebugGroupPushed = false;
+        if (provider == null) {
+            return;
+        }
+        handler = provider.createRenderHandler();
+        handlerProviderId = provider.id();
+        handler.initialize();
+        needResize = true;
     }
 
     public static void onFrameBegin() {
-        frameCount++;
         if (uiOnlyB3DVulkan) {
             return;
         }
         if (needResize) {
             MinecraftUtils.resize();
+            VulkanPresentationWindow.flushCapturedFrame();
             SuperResolution.getCurrentAlgorithm().resize(
                     RenderHandlerManager.getScreenWidth(),
                     RenderHandlerManager.getScreenHeight()
@@ -127,7 +131,9 @@ public class RenderHandlerManager {
             return;
         }
         updateHandler();
-        GlDebug.pushGroup(74108435, "MinecraftLevelRender");
+        if (handler == null) {
+            return;
+        }
         if (SuperResolution.cachedWidth != RenderHandlerManager.getScreenWidth() || SuperResolution.cachedHeight != RenderHandlerManager.getScreenHeight()) {
             SuperResolution.getInstance().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         }
@@ -138,22 +144,9 @@ public class RenderHandlerManager {
             return;
         }
 
+        GlDebug.pushGroup(74108435, "MinecraftLevelRender");
+        worldDebugGroupPushed = true;
         shouldApplyScale = true;
-        if (RenderHandlerManager.needCapture) {
-            if (RenderDoc.renderdoc != null) {
-                RenderDoc.renderdoc.StartFrameCapture.call(null, null);
-            }
-        }
-        if (RenderHandlerManager.needCaptureVulkan) {
-            if (RenderDoc.renderdoc != null) {
-                if (RenderSystems.vulkan() != null) {
-                    RenderDoc.renderdoc.StartFrameCapture.call(
-                            new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                            null
-                    );
-                }
-            }
-        }
         SuperResolutionAPI.EVENT_BUS.post(new LevelRenderStartEvent());
         handler.onRenderWorldBegin(type);
     }
@@ -165,36 +158,26 @@ public class RenderHandlerManager {
         if (type == CallType.LEVEL_RENDERER) {
             isRenderingWorld = false;
         }
+        if (handler == null) {
+            worldDebugGroupPushed = false;
+            return;
+        }
         if (checkRenderWorldCallPos(type)) {
             handler.onRenderWorldEnd(type);
             SuperResolutionAPI.EVENT_BUS.post(new LevelRenderEndEvent());
-            if (RenderHandlerManager.needCapture) {
-                if (RenderDoc.renderdoc != null) {
-                    RenderHandlerManager.needCapture = false;
-                    RenderDoc.renderdoc.EndFrameCapture.call(null, null);
-                }
-            }
-            if (RenderHandlerManager.needCaptureVulkan) {
-                if (RenderDoc.renderdoc != null) {
-                    if (RenderSystems.vulkan() != null) {
-                        RenderHandlerManager.needCaptureVulkan = false;
-                        RenderDoc.renderdoc.EndFrameCapture.call(
-                                new Pointer(RenderSystems.vulkan().getVulkanInstance().address()),
-                                null
-                        );
-                    }
-                }
-            }
             shouldApplyScale = false;
         }
-        GlDebug.popGroup();
+        if (worldDebugGroupPushed) {
+            GlDebug.popGroup();
+            worldDebugGroupPushed = false;
+        }
     }
 
     public static void onRenderHandBegin() {
         if (uiOnlyB3DVulkan) {
             return;
         }
-        if (checkRenderHandCallPos()) {
+        if (checkRenderHandCallPos() && handler != null) {
             handler.onRenderHandBegin();
         }
     }
@@ -203,7 +186,7 @@ public class RenderHandlerManager {
         if (uiOnlyB3DVulkan) {
             return;
         }
-        if (checkRenderHandCallPos()) {
+        if (checkRenderHandCallPos() && handler != null) {
             handler.onRenderHandEnd();
         }
     }
@@ -213,23 +196,14 @@ public class RenderHandlerManager {
             return;
         }
         updateHandler();
+        if (handler == null) {
+            return;
+        }
         handler.onProcessPostChain(postChain);
     }
 
-    public static void needCapture() {
-        needCapture = true;
-    }
-
-    public static void needCaptureVulkan() {
-        needCaptureVulkan = true;
-    }
-
-    public static void needCaptureUpscale() {
-        needCaptureUpscale = true;
-    }
-
     public static int getFrameCount() {
-        return frameCount;
+        return GameFrameIndex.current();
     }
 
     private static boolean checkRenderWorldCallPos(CallType type) {

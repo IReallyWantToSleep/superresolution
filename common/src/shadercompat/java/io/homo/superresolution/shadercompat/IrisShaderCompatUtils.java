@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.shadercompat;
 
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -68,7 +67,7 @@ public class IrisShaderCompatUtils {
     }
 
     public static boolean shouldApplySuperResolutionChanges() {
-        return !SuperResolutionConfig.isForceDisableShaderCompat() && (IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack()) && getCurrentShaderPack().isPresent() &&
+        return (IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack()) && getCurrentShaderPack().isPresent() &&
                 ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution()
                 && getCurrentConfig().isPresent()
                 && getCurrentConfig().get().enabled
@@ -77,7 +76,6 @@ public class IrisShaderCompatUtils {
 
     public static TextureFormat getInternalTextureFormat() {
         if (
-                !SuperResolutionConfig.isForceDisableShaderCompat() &&
                         IrisApi.getInstance().isShaderPackInUse() &&
                         getCurrentShaderPack().isPresent() &&
                         ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution() &&

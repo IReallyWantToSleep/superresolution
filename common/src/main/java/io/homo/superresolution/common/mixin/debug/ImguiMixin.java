@@ -22,16 +22,17 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.api.platform.Platform;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Minecraft.class)
+@Mixin(GameRenderer.class)
 public class ImguiMixin {
     #if IS_DEV == 1
     #if MC_VER < MC_1_21_5
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;unbindWrite()V"), method = "runTick")
+    @Inject(at = @At(value = "TAIL"), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {
@@ -39,7 +40,7 @@ public class ImguiMixin {
         }
     }
     #elif MC_VER > MC_26_1_2
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuSurface;present()V"), method = "renderFrame")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V",ordinal = 2), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {
@@ -47,7 +48,7 @@ public class ImguiMixin {
         }
     }
     #elif MC_VER > MC_1_21_11
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/pipeline/RenderTarget;blitToScreen()V"), method = "renderFrame")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V",ordinal = 2), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {
@@ -55,7 +56,7 @@ public class ImguiMixin {
         }
     }
     #else
-    @Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;updateDisplay(Lcom/mojang/blaze3d/TracyFrameCapture;)V"), method = "runTick")
+    @Inject(at = @At(value = "RETURN"), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {

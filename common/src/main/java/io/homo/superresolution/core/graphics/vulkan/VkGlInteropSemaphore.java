@@ -41,26 +41,56 @@ public class VkGlInteropSemaphore {
 
     public static VkGlInteropSemaphore create(VulkanDevice vulkanDevice) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack);
-            semaphoreCreateInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-            semaphoreCreateInfo.pNext(VulkanInterop.IMPL.createVkExportSemaphoreCreateInfo(stack).address());
             long[] pVkSemaphore = new long[]{0};
-            VK_CHECK(vkCreateSemaphore(
-                    vulkanDevice.getVkDevice(),
-                    semaphoreCreateInfo,
-                    null,
-                    pVkSemaphore
-            ));
-            vulkanDevice.setDebugName(VK_OBJECT_TYPE_SEMAPHORE, pVkSemaphore[0], "VkGlInteropSemaphore");
-            long pExpSemaphore = VulkanInterop.IMPL.vkGetSemaphoreHandleKHR(
-                    stack,
-                    vulkanDevice.getVkDevice(),
-                    VulkanInterop.IMPL.createVkSemaphoreGetHandleInfoKHR(stack, pVkSemaphore[0])
-            );
+            int pGlSemaphore = 0;
+            long exportedSemaphoreHandle = -1;
+            boolean imported = false;
+            try {
+                VkSemaphoreCreateInfo semaphoreCreateInfo = VkSemaphoreCreateInfo.calloc(stack);
+                semaphoreCreateInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+                semaphoreCreateInfo.pNext(VulkanInterop.IMPL.createVkExportSemaphoreCreateInfo(stack).address());
+                VK_CHECK(vkCreateSemaphore(
+                        vulkanDevice.getVkDevice(),
+                        semaphoreCreateInfo,
+                        null,
+                        pVkSemaphore
+                ));
+                vulkanDevice.setDebugName(VK_OBJECT_TYPE_SEMAPHORE, pVkSemaphore[0], "VkGlInteropSemaphore");
+                exportedSemaphoreHandle = VulkanInterop.IMPL.vkGetSemaphoreHandleKHR(
+                        stack,
+                        vulkanDevice.getVkDevice(),
+                        VulkanInterop.IMPL.createVkSemaphoreGetHandleInfoKHR(stack, pVkSemaphore[0])
+                );
 
-            int pGlSemaphores = glGenSemaphoresEXT();
-            VulkanInterop.IMPL.glImportSemaphoreHandleEXT(stack, pGlSemaphores, pExpSemaphore);
-            return new VkGlInteropSemaphore(pVkSemaphore[0], pGlSemaphores, pExpSemaphore, vulkanDevice);
+                pGlSemaphore = glGenSemaphoresEXT();
+                VulkanInterop.IMPL.glImportSemaphoreHandleEXT(stack, pGlSemaphore, exportedSemaphoreHandle);
+                imported = true;
+                return new VkGlInteropSemaphore(
+                        pVkSemaphore[0],
+                        pGlSemaphore,
+                        exportedSemaphoreHandle,
+                        vulkanDevice
+                );
+            } catch (Throwable throwable) {
+                try {
+                    if (pGlSemaphore != 0) {
+                        glDeleteSemaphoresEXT(pGlSemaphore);
+                    }
+                } finally {
+                    try {
+                        if (pVkSemaphore[0] != 0L) {
+                            vkDestroySemaphore(vulkanDevice.getVkDevice(), pVkSemaphore[0], null);
+                        }
+                    } finally {
+                        if (imported) {
+                            VulkanInterop.closeImportedExportedHandle(exportedSemaphoreHandle);
+                        } else {
+                            VulkanInterop.closeUnimportedExportedHandle(exportedSemaphoreHandle);
+                        }
+                    }
+                }
+                throw throwable;
+            }
         }
     }
 
@@ -77,12 +107,19 @@ public class VkGlInteropSemaphore {
     }
 
     public void destroy() {
-        vkDestroySemaphore(
-                device.getVkDevice(),
-                vkSemaphoreHandle,
-                null
-        );
-        glDeleteSemaphoresEXT((int) glSemaphoreHandle);
+        try {
+            vkDestroySemaphore(
+                    device.getVkDevice(),
+                    vkSemaphoreHandle,
+                    null
+            );
+        } finally {
+            try {
+                glDeleteSemaphoresEXT((int) glSemaphoreHandle);
+            } finally {
+                VulkanInterop.closeImportedExportedHandle(semaphoreHandle);
+            }
+        }
     }
 
     public void signalVulkan(int[] textures, int[] buffers, int[] dstLayouts) {

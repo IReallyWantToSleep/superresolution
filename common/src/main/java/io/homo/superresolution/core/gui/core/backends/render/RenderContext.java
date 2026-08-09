@@ -239,9 +239,17 @@ public interface RenderContext {
                          float x, float y, float lineMaxWidth, float lineHeight, float weight,
                          Color color, TextAlign align, boolean wrap);
 
+    void drawAlignedText(IFont font, float fontSize, String text,
+                         float x, float y, float lineMaxWidth, float lineHeight, float weight,
+                         IPaint paint, TextAlign align, boolean wrap);
+
     void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
                          float x, float y, float lineMaxWidth, float lineHeight, float weight,
                          Color color, TextAlign align, boolean wrap);
+
+    void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics,
+                         float x, float y, float lineMaxWidth, float lineHeight, float weight,
+                         IPaint paint, TextAlign align, boolean wrap);
 
     default float measureTextWidth(IFont font, String text, float fontSize, float lineHeight) {
         return measureTextWidth(font, text, fontSize, lineHeight, DEFAULT_FONT_WEIGHT);

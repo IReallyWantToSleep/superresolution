@@ -21,7 +21,9 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -85,6 +87,14 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
+        // Include Reflex pacing in the CPU frame delta used by GUI animations.
+        PerformanceTracker.beginFrame();
+        if (SuperResolution.gameIsLoaded) {
+            int frameIndex = GameFrameIndex.beginFrame();
+            LowLatency.beginFrame(frameIndex);
+            LowLatency.sleep();
+            LowLatency.beginSimulation();
+        }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             super_resolution$b3dVulkanFrame = true;
             PerformanceTracker.push("Frame");
@@ -143,12 +153,22 @@ public abstract class MinecraftMixin {
     @Inject(method = "stop",at = @At(value = "TAIL"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
+        SuperResolution.onClientStopped();
     }
     #else
-    //just like fabric`s invoke point
+    // Resource cleanup runs early (at the "Stopping!" log) while the interop OpenGL
+    // context is still current. The OpenGL context and Vulkan device are torn down at
+    // destroy() TAIL, after Minecraft has finished its own shutdown rendering (disconnect
+    // progress screen) and GL cleanup. Tearing them down early left that rendering
+    // without a current GL context and aborted the JVM on exit.
     @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;)V"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
+    }
+
+    @Inject(method = "destroy",at = @At(value = "TAIL"))
+    public void super_resolution$onDestroyTail(CallbackInfo ci) {
+        SuperResolution.onClientStopped();
     }
     #endif
 

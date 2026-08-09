@@ -29,8 +29,10 @@ import imgui.flag.ImGuiFreeTypeBuilderFlags;
 #endif
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
+import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.impl.Destroyable;
 import org.lwjgl.glfw.GLFW;
 
@@ -62,7 +64,7 @@ public class ImguiMain implements Destroyable {
         ImGui.createContext();
         ImGuiIO io = ImGui.getIO();
         io.getFonts().setFreeTypeRenderer(true);
-        //io.addConfigFlags(ImGuiConfigFlags.ViewportsEnable);
+        io.addConfigFlags(ImGuiConfigFlags.NoMouseCursorChange);
         loadCustomFont(io);
         imGuiGlfw.init(MinecraftWindow.getWindowHandle(), true);
         imGuiGl3.init();
@@ -144,11 +146,5 @@ public class ImguiMain implements Destroyable {
         }
         ImGui.render();
         imGuiGl3.renderDrawData(ImGui.getDrawData());
-        if (ImGui.getIO().hasConfigFlags(ImGuiConfigFlags.ViewportsEnable)) {
-            final long backupWindowPtr = org.lwjgl.glfw.GLFW.glfwGetCurrentContext();
-            ImGui.updatePlatformWindows();
-            ImGui.renderPlatformWindowsDefault();
-            GLFW.glfwMakeContextCurrent(backupWindowPtr);
-        }
     }
 }

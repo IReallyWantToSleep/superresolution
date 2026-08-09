@@ -132,4 +132,15 @@ extra["writeDefines"] = ::writeDefines
 extra["getCurrentVersionConfig"] = ::getCurrentVersionConfig
 extra["versionConfig"] = versionConfigVar
 
-writeDefines()
+// The multi-version orchestrator (buildAllVersions / buildVersion_*) runs each version
+// in a nested Gradle build that writes build.properties for its own version. The
+// orchestrator itself compiles nothing, so it must NOT write build.properties with the
+// default version: doing so races against a nested build and makes manifold's #if MC_VER
+// resolve to the wrong version mid-compile. Only write outside the orchestrator.
+val isMultiVersionOrchestrator = gradle.startParameter.taskNames.any { taskName ->
+    val simpleName = taskName.substringAfterLast(':')
+    simpleName == "buildAllVersions" || simpleName == "buildAll" || simpleName.startsWith("buildVersion_")
+}
+if (!isMultiVersionOrchestrator) {
+    writeDefines()
+}

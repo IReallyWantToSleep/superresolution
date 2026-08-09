@@ -213,6 +213,9 @@ public final class NgxVulkan {
         parameters.setUnsignedInt(NgxConstants.WIDTH, createParams.width);
         parameters.setUnsignedInt(NgxConstants.HEIGHT, createParams.height);
         parameters.setUnsignedInt(NgxConstants.DLSSFG_BACKBUFFER_FORMAT, createParams.nativeBackbufferFormat);
+        parameters.setUnsignedInt(NgxConstants.DLSSFG_INTERNAL_WIDTH, createParams.renderWidth);
+        parameters.setUnsignedInt(NgxConstants.DLSSFG_INTERNAL_HEIGHT, createParams.renderHeight);
+        parameters.setUnsignedInt(NgxConstants.DLSSFG_DYNAMIC_RESOLUTION, createParams.dynamicResolutionScaling ? 1 : 0);
         return createFeature(commandBuffer, NgxConstants.FEATURE_FRAME_GENERATION, parameters, outFeature);
     }
 
@@ -269,6 +272,7 @@ public final class NgxVulkan {
         parameters.setUnsignedInt("DLSSG.OrthoProjection", bool(value.orthoProjection));
         parameters.setFloat("DLSSG.MvecInvalidValue", value.motionVectorsInvalidValue);
         parameters.setUnsignedInt("DLSSG.MvecDilated", bool(value.motionVectorsDilated));
+        parameters.setUnsignedInt(NgxConstants.DLSSFG_MVEC_JITTERED, bool(value.motionVectorsJittered));
         parameters.setUnsignedInt("DLSSG.MenuDetectionEnabled", bool(value.menuDetectionEnabled));
         setSubrect(parameters, "DLSSG.MVecsSubrect", value.motionVectorsSubrectBase, value.motionVectorsSubrectSize);
         setSubrect(parameters, "DLSSG.DepthSubrect", value.depthSubrectBase, value.depthSubrectSize);

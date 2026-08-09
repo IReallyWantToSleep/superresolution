@@ -17,6 +17,7 @@
  */
 
 import groovy.json.JsonSlurper
+import net.neoforged.nfrtgradle.CreateMinecraftArtifacts
 import utils.CurseForgeUploader
 import utils.ModrinthUploader
 import java.io.BufferedReader
@@ -61,6 +62,24 @@ allprojects {
     }
 
     if (project.name != "native") {
+        // On Linux, NeoForm's decompile step spawns Vineflower with only -Xmx4G, which
+        // OOMs on modern Minecraft. Route the tool JVM through a wrapper that raises the
+        // heap. MDG sets `toolsJavaExecutable` from its tools toolchain in the task's
+        // registration action, so we override it with a `named(...).configure` action,
+        // which runs after the registration action and thus wins the last-write.
+        if (System.getProperty("os.name").contains("linux", ignoreCase = true)) {
+            val toolWrapper = rootProject.file("script/java_tool_wrapper.sh")
+            plugins.withId("net.neoforged.moddev") {
+                afterEvaluate {
+                    // Configure after registration (create$8 already ran during MDG's
+                    // afterEvaluate) so this set wins the last-write over MDG's toolchain.
+                    tasks.withType(CreateMinecraftArtifacts::class.java).forEach {
+                        it.toolsJavaExecutable.set(toolWrapper.absolutePath)
+                    }
+                }
+            }
+        }
+
         //apply(plugin = "systems.manifold.manifold-gradle-plugin")
         //extensions.findByName("manifold")?.withGroovyBuilder {
         //    setProperty("manifoldVersion", rootProject.property("manifold_version"))
@@ -74,7 +93,9 @@ allprojects {
             options.compilerArgs.add("-Xplugin:Manifold")
             options.encoding = "UTF-8"
             options.isFork = true
-            options.forkOptions.memoryMaximumSize = "4g"
+            // One forked javac per concurrent compile task, so this multiplies by
+            // org.gradle.workers.max. Keep the product well under physical RAM.
+            options.forkOptions.memoryMaximumSize = "2g"
         }
 
         dependencies {
@@ -208,6 +229,30 @@ tasks.register<Delete>("cleanBuildJars") {
     group = "build"
     description = "清理 build_jars 输出目录"
     delete(srOutputDir)
+}
+
+tasks.register<GradleBuild>("publishApiToShnexus") {
+    group = "publishing"
+    description = "以 Minecraft 1.21.1（Java 21）配置发布 Super Resolution API 到 shnexus"
+    buildName = "superresolution_api_1_21_1"
+    dir = rootDir
+    setTasks(listOf(":common:publishApiPublicationToShnexusRepository"))
+    startParameter.projectProperties["minecraft_version_config"] = "1.21.1"
+    startParameter.projectProperties["is_dev"] = "true"
+    listOf("shnexusUsername", "shnexusPassword").forEach { property ->
+        providers.gradleProperty(property).orNull?.let { value ->
+            startParameter.projectProperties[property] = value
+        }
+    }
+    startParameter.consoleOutput = ConsoleOutput.Plain
+
+    doFirst {
+        val missing = listOf("shnexusUsername", "shnexusPassword")
+            .filterNot { providers.gradleProperty(it).isPresent }
+        if (missing.isNotEmpty()) {
+            throw GradleException("缺少远程发布凭据: ${missing.joinToString()}")
+        }
+    }
 }
 
 tasks.register("buildOneVersion") {
@@ -344,6 +389,7 @@ tasks.register("uploadToCurseForge") {
                 "${index + 1}. ${artifact.file.name} | "
                     + "${artifact.loaderName} | "
                     + "${artifact.gameVersions.joinToString(", ")} | "
+                    + "Client | "
                     + artifact.releaseType
             )
         }

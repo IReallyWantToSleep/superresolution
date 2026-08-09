@@ -75,47 +75,16 @@ public abstract class AbstractContainerWidget<T extends AbstractContainerWidget<
     @Override
     public void keyPress(int keyCode, int scancode, int modifiers) {
         super.keyPress(keyCode, scancode, modifiers);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.keyPress(keyCode, scancode, modifiers);
-                }
-            }
-        }
     }
 
     @Override
     public void keyRelease(int keyCode, int scancode, int modifiers) {
         super.keyRelease(keyCode, scancode, modifiers);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.keyRelease(keyCode, scancode, modifiers);
-                }
-            }
-        }
     }
 
     @Override
     public void charTyped(char codePoint, int modifiers) {
         super.charTyped(codePoint, modifiers);
-        if (isDisabled() || !isVisible()) {
-            return;
-        }
-        for (ILayoutElement child : children) {
-            if (child instanceof AbstractWidget<?> widget) {
-                if (widget.isVisible() && !widget.isDisabled()) {
-                    widget.charTyped(codePoint, modifiers);
-                }
-            }
-        }
     }
 
     @Override

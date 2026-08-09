@@ -19,53 +19,137 @@
 package io.homo.superresolution.core.gui.core.backends.nanovg;
 
 import io.homo.superresolution.core.gui.core.backends.interfaces.IFont;
+import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NVGtextRow;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
+import io.homo.superresolution.thirdparty.nanovg.TextBoundsResult;
 import org.joml.Vector2f;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class NanoVGTextRenderer extends NanoVGRendererBase {
+    private static final int TEXT_BOUNDS_CACHE_CAPACITY = 256;
+
+    private final Map<TextBoundsCacheKey, CachedTextBounds> textBoundsCache =
+            new LinkedHashMap<>(TEXT_BOUNDS_CACHE_CAPACITY, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<TextBoundsCacheKey, CachedTextBounds> eldest) {
+                    return size() > TEXT_BOUNDS_CACHE_CAPACITY;
+                }
+            };
+    private long lastContextHandle = Long.MIN_VALUE;
+    private int lastDevicePixelRatioBits = Integer.MIN_VALUE;
 
     public NanoVGTextRenderer(NanoVGContextWrapper context) {
     }
 
-    private float[] measureTextBounds(IFont font, String text, float fontSize, float lineHeight, float weight) {
+    public void clearTextBoundsCache() {
+        textBoundsCache.clear();
+        lastContextHandle = Long.MIN_VALUE;
+        lastDevicePixelRatioBits = Integer.MIN_VALUE;
+    }
+
+    private CachedTextBounds measureTextBounds(IFont font, String text, float fontSize, float lineHeight, float weight) {
         if (text == null || text.isEmpty()) {
             return null;
         }
+
+        invalidateCacheIfContextChanged();
         contextPtr.fontFace(font.name());
         contextPtr.fontSize(fontSize);
         contextPtr.textLineHeight(lineHeight);
         contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
-        return contextPtr.textBounds(0, 0, text).bounds;
+
+        TextBoundsCacheKey key = new TextBoundsCacheKey(
+                font.nativeId(),
+                font.name(),
+                text,
+                canonicalFloatBits(fontSize),
+                canonicalFloatBits(lineHeight),
+                canonicalFloatBits(weight),
+                contextPtr.textMeasureStateVersion()
+        );
+        CachedTextBounds cached = textBoundsCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+
+        TextBoundsResult result = contextPtr.textBounds(0, 0, text);
+        cached = CachedTextBounds.from(result);
+        textBoundsCache.put(key, cached);
+        return cached;
     }
 
     public float measureTextWidth(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        float[] bounds = measureTextBounds(font, text, fontSize, lineHeight, weight);
-        if (bounds == null) return 0;
-        return (bounds[2] - bounds[0]);
+        CachedTextBounds result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        return result == null ? 0f : result.advance;
     }
 
     public float measureTextHeight(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        float[] bounds = measureTextBounds(font, text, fontSize, lineHeight, weight);
-        if (bounds == null) return 0;
-        return (bounds[3] - bounds[1]) - 2;
+        CachedTextBounds result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        if (result == null) return 0;
+        return (result.maxY - result.minY) - 2;
     }
 
     public Vector2f measureText(IFont font, String text, float fontSize, float lineHeight, float weight) {
-        float[] bounds = measureTextBounds(font, text, fontSize, lineHeight, weight);
-        if (bounds == null) return new Vector2f(0);
+        CachedTextBounds result = measureTextBounds(font, text, fontSize, lineHeight, weight);
+        if (result == null) return new Vector2f(0);
         return new Vector2f(
-                (bounds[2] - bounds[0]),
-                (bounds[3] - bounds[1]) - 2.5f
+                result.advance,
+                (result.maxY - result.minY) - 2.5f
         );
+    }
+
+    private void invalidateCacheIfContextChanged() {
+        long contextHandle = contextPtr.getNativeHandle();
+        int devicePixelRatioBits = canonicalFloatBits(nvg.devicePixelRatio());
+        if (contextHandle != lastContextHandle || devicePixelRatioBits != lastDevicePixelRatioBits) {
+            textBoundsCache.clear();
+            lastContextHandle = contextHandle;
+            lastDevicePixelRatioBits = devicePixelRatioBits;
+        }
+    }
+
+    private static int canonicalFloatBits(float value) {
+        return value == 0.0f ? 0 : Float.floatToIntBits(value);
+    }
+
+    private record TextBoundsCacheKey(
+            int fontId,
+            String fontName,
+            String text,
+            int fontSizeBits,
+            int lineHeightBits,
+            int weightBits,
+            long textMeasureStateVersion
+    ) {
+    }
+
+    private record CachedTextBounds(
+            float advance,
+            float minX,
+            float minY,
+            float maxX,
+            float maxY
+    ) {
+        private static CachedTextBounds from(TextBoundsResult result) {
+            float[] bounds = result.bounds;
+            return new CachedTextBounds(
+                    result.advance,
+                    bounds[0],
+                    bounds[1],
+                    bounds[2],
+                    bounds[3]
+            );
+        }
     }
 
     public void drawAlignedText(
@@ -124,6 +208,58 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         contextPtr.restore();
     }
 
+    public void drawAlignedText(
+            IFont font, float fontSize, String text,
+            float startX, float startY, float maxWidth, float lineHeight,
+            float weight, IPaint paint, TextAlign align, boolean wrap) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        if (align == null) {
+            align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
+        }
+        String fontName = font.name();
+
+        contextPtr.save();
+        TextMetrics metrics = calculateTextMetrics(font, fontSize, text, maxWidth, lineHeight, wrap, weight);
+        contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
+        contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
+        contextPtr.fillPaint(((NanoVGBackendPaint) paint).get());
+
+        float yPos = startY + 1.5f;
+        for (String line : metrics.lines) {
+            contextPtr.text(startX, yPos, line);
+            yPos += lineHeight;
+        }
+        contextPtr.restore();
+    }
+
+    public void drawAlignedText(
+            IFont font, float fontSize, TextMetrics metrics,
+            float startX, float startY, float maxWidth, float lineHeight,
+            float weight, IPaint paint, TextAlign align, boolean wrap) {
+        if (align == null) {
+            align = TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_TOP);
+        }
+        String fontName = font.name();
+
+        contextPtr.save();
+        contextPtr.textAlign(toNvgAlign(align.horizontal()) | toNvgAlign(align.vertical()));
+        contextPtr.fontSize(fontSize);
+        contextPtr.fontFace(fontName);
+        contextPtr.fontSetVariationAxis(font.nativeId(), "wght", weight);
+        contextPtr.fillPaint(((NanoVGBackendPaint) paint).get());
+
+        float yPos = startY + 1.5f;
+        for (String line : metrics.lines) {
+            contextPtr.text(startX, yPos, line);
+            yPos += lineHeight;
+        }
+        contextPtr.restore();
+    }
+
     private int toNvgAlign(TextAlignType alignType) {
         return switch (alignType) {
             case ALIGN_LEFT -> 1;
@@ -167,8 +303,7 @@ public class NanoVGTextRenderer extends NanoVGRendererBase {
         float maxLineWidth = 0;
         for (String line : lines) {
             // 直接使用已设置字重的上下文测量
-            float[] bounds = contextPtr.textBounds(0, 0, line).bounds;
-            float width = bounds[2] - bounds[0];
+            float width = contextPtr.textBounds(0, 0, line).advance;
             if (width > maxLineWidth) {
                 maxLineWidth = width;
             }

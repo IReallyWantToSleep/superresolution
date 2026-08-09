@@ -21,6 +21,9 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.api.platform.OperatingSystem;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.SystemArchitecture;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.utils.MessageBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,12 +53,7 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
-    public static NativeLib LIB_STREAMLINE_INTERPOSER = null;
-    public static NativeLib LIB_STREAMLINE_COMMON = null;
-    public static NativeLib LIB_STREAMLINE_DLSS_G = null;
-    public static NativeLib LIB_STREAMLINE_REFLEX = null;
-    public static NativeLib LIB_STREAMLINE_NVNGX_REFLEX = null;
-    public static NativeLib LIB_STREAMLINE_PCL = null;
+    public static NativeLib LIB_NGX_DLSSG_SNIPPET = null;
     private static boolean nativeApiAvailable;
     private static boolean librariesExtracted;
     private static boolean librariesLoaded;
@@ -63,28 +61,40 @@ public class NativeLibManager {
     static {
         OperatingSystem operatingSystem = new OperatingSystem();
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
-            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
-            LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
-            LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
-            LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
-            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", true, false);
-            LIB_STREAMLINE_COMMON = new NativeLib("sl.common", true, false, true);
-            LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", true, false, true);
-            LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, false, true);
-            LIB_STREAMLINE_REFLEX = new NativeLib("sl.reflex", false, false, true);
-            LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, false, true);
-            LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, false, true);
+            boolean shouldExtract = VulkanPresentationFeature.isRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
+            boolean shouldLoad = FrameGenerationDescriptions.mayUseStreamline(
+                    SuperResolutionConfig.getFrameGenerationProvider());
+            LIB_SUPER_RESOLUTION = new NativeLib(
+                    "SuperResolution",
+                    true,
+                    true
+            );
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib(
+                    "SuperResolutionFSR",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_XESS = new NativeLib(
+                    "SuperResolutionXeSS",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_NGX = new NativeLib(
+                    "SuperResolutionNGX",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib(
+                    "SuperResolutionStreamline",
+                    shouldLoad,
+                    shouldExtract
+            );
+
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
-            libs.add(LIB_STREAMLINE_COMMON);
-            libs.add(LIB_STREAMLINE_INTERPOSER);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
-            libs.add(LIB_STREAMLINE_DLSS_G);
-            libs.add(LIB_STREAMLINE_REFLEX);
-            libs.add(LIB_STREAMLINE_PCL);
-            libs.add(LIB_STREAMLINE_NVNGX_REFLEX);
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);
@@ -93,9 +103,11 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
+            LIB_NGX_DLSSG_SNIPPET = new NativeLib("libnvidia-ngx-dlssg", false, false, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
+            libs.add(LIB_NGX_DLSSG_SNIPPET);
 
         } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);

@@ -30,11 +30,27 @@ import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 public class VulkanQueue {
     private final VulkanDevice device;
     private final int queueFamilyIndex;
+    private final int queueIndex;
+    private final VulkanQueueRole role;
+    // Guards every vkQueueSubmit/vkQueuePresentKHR/vkQueueWaitIdle on this queue;
+    // required because the frame-generation pacer presents from its own thread.
+    private final Object submitLock = new Object();
     private VkQueue queue;
 
     public VulkanQueue(VulkanDevice device, int queueFamilyIndex) {
+        this(device, queueFamilyIndex, 0, VulkanQueueRole.MAIN);
+    }
+
+    public VulkanQueue(
+            VulkanDevice device,
+            int queueFamilyIndex,
+            int queueIndex,
+            VulkanQueueRole role
+    ) {
         this.device = device;
         this.queueFamilyIndex = queueFamilyIndex;
+        this.queueIndex = queueIndex;
+        this.role = role;
         getDeviceQueue();
     }
 
@@ -42,12 +58,31 @@ public class VulkanQueue {
         return queueFamilyIndex;
     }
 
+    public int getQueueIndex() {
+        return queueIndex;
+    }
+
+    public VulkanQueueRole role() {
+        return role;
+    }
+
     private void getDeviceQueue() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(device.getVkDevice(), queueFamilyIndex, 0, pQueue);
+            vkGetDeviceQueue(device.getVkDevice(), queueFamilyIndex, queueIndex, pQueue);
             queue = new VkQueue(pQueue.get(0), device.getVkDevice());
-            device.setDebugName(VK_OBJECT_TYPE_QUEUE, queue.address(), "Main Queue family=" + queueFamilyIndex);
+            if (queue.address() == 0L) {
+                throw new IllegalStateException(
+                        "Vulkan returned a null " + role + " queue for family "
+                                + queueFamilyIndex + " index " + queueIndex
+                );
+            }
+            device.setDebugName(
+                    VK_OBJECT_TYPE_QUEUE,
+                    queue.address(),
+                    role.debugLabel() + " Queue family=" + queueFamilyIndex
+                            + " index=" + queueIndex
+            );
         }
     }
 
@@ -55,7 +90,13 @@ public class VulkanQueue {
         return queue;
     }
 
+    public Object submitLock() {
+        return submitLock;
+    }
+
     public void waitIdle() {
-        VK_CHECK(vkQueueWaitIdle(queue), "Failed to wait for queue idle");
+        synchronized (submitLock) {
+            VK_CHECK(vkQueueWaitIdle(queue), "Failed to wait for queue idle");
+        }
     }
 }

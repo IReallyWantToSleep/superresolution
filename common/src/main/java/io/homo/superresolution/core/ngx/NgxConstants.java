@@ -33,6 +33,7 @@ public final class NgxConstants {
     public static final int FEATURE_IMAGE_SIGNAL_PROCESSING = 9;
     public static final int FEATURE_DEEP_RESOLVE = 10;
     public static final int FEATURE_FRAME_GENERATION = 11;
+    public static final int FEATURE_RAY_RECONSTRUCTION = 13;
 
     public static final int RESOURCE_VK_IMAGE_VIEW = 0;
     public static final int RESOURCE_VK_BUFFER = 1;
@@ -43,6 +44,8 @@ public final class NgxConstants {
     public static final int LOGGING_OFF = 0;
     public static final int LOGGING_ON = 1;
     public static final int LOGGING_VERBOSE = 2;
+    public static final int LOGGING_NUM = 3;
+
 
     public static final int DLSS_FLAG_NONE = 0;
     public static final int DLSS_FLAG_HDR = 1 << 0;
@@ -117,6 +120,17 @@ public final class NgxConstants {
     public static final String DLSSFG_OUTPUT_DISABLE_INTERPOLATION = "DLSSG.OutputDisableInterpolation";
     public static final String DLSSFG_MULTI_FRAME_COUNT = "DLSSG.MultiFrameCount";
     public static final String DLSSFG_MULTI_FRAME_INDEX = "DLSSG.MultiFrameIndex";
+    public static final String DLSSFG_MULTI_FRAME_COUNT_MAX = "DLSSG.MultiFrameCountMax";
+    public static final String DLSSFG_INTERNAL_WIDTH = "DLSSG.InternalWidth";
+    public static final String DLSSFG_INTERNAL_HEIGHT = "DLSSG.InternalHeight";
+    public static final String DLSSFG_DYNAMIC_RESOLUTION = "DLSSG.DynamicResolution";
+    public static final String DLSSFG_MVEC_JITTERED = "DLSSG.MvecJittered";
+
+    public static final String FRAME_GENERATION_AVAILABLE = "FrameGeneration.Available";
+    public static final String FRAME_GENERATION_FEATURE_INIT_RESULT = "FrameGeneration.FeatureInitResult";
+    public static final String FRAME_GENERATION_NEEDS_UPDATED_DRIVER = "FrameGeneration.NeedsUpdatedDriver";
+    public static final String FRAME_GENERATION_MIN_DRIVER_VERSION_MAJOR = "FrameGeneration.MinDriverVersionMajor";
+    public static final String FRAME_GENERATION_MIN_DRIVER_VERSION_MINOR = "FrameGeneration.MinDriverVersionMinor";
 
     private NgxConstants() {
     }

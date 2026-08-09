@@ -192,6 +192,7 @@ class CurseForgeUploader {
     static Map<String, Object> createMetadata(ArtifactInfo artifact, String changelog) {
         List<String> gameVersionNames = new ArrayList<>(artifact.gameVersions)
         gameVersionNames.add(artifact.loaderName)
+        gameVersionNames.add("Client")
 
         Map<String, Object> metadata = new LinkedHashMap<>()
         metadata["changelog"] = changelog

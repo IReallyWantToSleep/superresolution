@@ -2,7 +2,6 @@ package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.platform.Platform;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
@@ -97,7 +96,6 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
         SRWorkModeState state = getState();
         ctx.property("Shader Pack In Use", state.shaderPackInUse());
         ctx.property("Shader Pack Loading", state.shaderPackLoading());
-        ctx.property("Force Disable Shader Compat", SuperResolutionConfig.isForceDisableShaderCompat());
         ctx.property("Internal Format", state.internalTextureFormat());
         ctx.property("Motion Vector Preprocess", state.motionVectorPreprocessingFunction());
 

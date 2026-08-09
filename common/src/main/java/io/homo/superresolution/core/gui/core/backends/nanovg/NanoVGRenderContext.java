@@ -420,6 +420,16 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     @Override
+    public void drawAlignedText(IFont font, float fontSize, String text, float x, float y, float lineMaxWidth, float lineHeight, float weight, IPaint paint, TextAlign align, boolean wrap) {
+        NanoVGBackend.RENDERER.TEXT.drawAlignedText(font, fontSize, text, x, y, lineMaxWidth, lineHeight, weight, paint, align, wrap);
+    }
+
+    @Override
+    public void drawAlignedText(IFont font, float fontSize, TextMetrics textMetrics, float x, float y, float lineMaxWidth, float lineHeight, float weight, IPaint paint, TextAlign align, boolean wrap) {
+        NanoVGBackend.RENDERER.TEXT.drawAlignedText(font, fontSize, textMetrics, x, y, lineMaxWidth, lineHeight, weight, paint, align, wrap);
+    }
+
+    @Override
     public RenderTree renderTree() {
         return renderTree;
     }

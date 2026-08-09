@@ -33,6 +33,7 @@ public class GlImportableTexture2D extends GlTexture2D {
 
     private final VulkanTexture sourceTexture;
     private int glMemoryObject = 0;
+    private long exportedMemoryHandle = -1;
 
     public GlImportableTexture2D(VulkanTexture sourceTexture) {
         super(sourceTexture.getTextureDescription());
@@ -49,47 +50,81 @@ public class GlImportableTexture2D extends GlTexture2D {
         ) {
             configureTextureParameters();
 
-            long handle = sourceTexture.getExportedMemoryHandle();
+            long handle = sourceTexture.takeExportedMemoryHandle();
+            exportedMemoryHandle = handle;
             long size = sourceTexture.getMemorySize();
+            boolean imported = false;
 
-            SuperResolution.LOGGER.info(
-                    "OpenGL-Vulkan interop texture: MemoryHandle {} MemorySize {}bits Size {}x{}px PixelSize {} Levels {} Format {}",
-                    handle,
-                    size,
-                    sourceTexture.getWidth(),
-                    sourceTexture.getHeight(),
-                    sourceTexture.getTextureFormat().getBytesPerPixel(),
-                    sourceTexture.getMipmapSettings().getLevels(),
-                    sourceTexture.getTextureFormat()
-            );
+            try {
+                SuperResolution.LOGGER.info(
+                        "OpenGL-Vulkan interop texture: MemoryHandle {} MemorySize {}bits Size {}x{}px PixelSize {} Levels {} Format {}",
+                        handle,
+                        size,
+                        sourceTexture.getWidth(),
+                        sourceTexture.getHeight(),
+                        sourceTexture.getTextureFormat().getBytesPerPixel(),
+                        sourceTexture.getMipmapSettings().getLevels(),
+                        sourceTexture.getTextureFormat()
+                );
 
-            int[] memoryObjects = new int[1];
-            glCreateMemoryObjectsEXT(memoryObjects);
-            glMemoryObject = memoryObjects[0];
+                int[] memoryObjects = new int[1];
+                glCreateMemoryObjectsEXT(memoryObjects);
+                glMemoryObject = memoryObjects[0];
 
-            // The backing Vulkan allocation is dedicated (VkMemoryDedicatedAllocateInfo). Mark the GL
-            // memory object dedicated BEFORE importing so GL sizes/maps the texture to fit the dedicated
-            // allocation exactly, instead of a generic huge-page-rounded block that overruns it
-            // (NVRM "vaHi <= pMemBlock->end" / dmaAllocMapping_GM107).
-            glMemoryObjectParameterivEXT(glMemoryObject, GL_DEDICATED_MEMORY_OBJECT_EXT, new int[]{GL_TRUE});
+                // The backing Vulkan allocation is dedicated (VkMemoryDedicatedAllocateInfo). Mark the GL
+                // memory object dedicated BEFORE importing so GL sizes/maps the texture to fit the dedicated
+                // allocation exactly, instead of a generic huge-page-rounded block that overruns it
+                // (NVRM "vaHi <= pMemBlock->end" / dmaAllocMapping_GM107).
+                glMemoryObjectParameterivEXT(glMemoryObject, GL_DEDICATED_MEMORY_OBJECT_EXT, new int[]{GL_TRUE});
 
-            VulkanInterop.IMPL.glImportMemoryEXT(glMemoryObject, size, handle);
+                VulkanInterop.IMPL.glImportMemoryEXT(glMemoryObject, size, handle);
+                imported = true;
 
-            glBindTexture(GL_TEXTURE_2D, (int) this.handle());
-            glTextureStorageMem2DEXT((int) this.handle(),
-                    sourceTexture.getMipmapSettings().getLevels(),
-                    sourceTexture.getTextureFormat().gl(),
-                    sourceTexture.getWidth(),
-                    sourceTexture.getHeight(),
-                    glMemoryObject,
-                    0);
+                glBindTexture(GL_TEXTURE_2D, (int) this.handle());
+                glTextureStorageMem2DEXT((int) this.handle(),
+                        sourceTexture.getMipmapSettings().getLevels(),
+                        sourceTexture.getTextureFormat().gl(),
+                        sourceTexture.getWidth(),
+                        sourceTexture.getHeight(),
+                        glMemoryObject,
+                        0);
+            } catch (Throwable throwable) {
+                destroyMemoryObject();
+                releaseExportedMemoryHandle(imported);
+                super.destroy();
+                throw throwable;
+            }
         }
     }
 
     @Override
     public void destroy() {
-        super.destroy();
-        glDeleteMemoryObjectsEXT(glMemoryObject);
+        try {
+            super.destroy();
+        } finally {
+            try {
+                destroyMemoryObject();
+            } finally {
+                releaseExportedMemoryHandle(true);
+            }
+        }
+    }
+
+    private void destroyMemoryObject() {
+        if (glMemoryObject != 0) {
+            glDeleteMemoryObjectsEXT(glMemoryObject);
+            glMemoryObject = 0;
+        }
+    }
+
+    private void releaseExportedMemoryHandle(boolean imported) {
+        long handle = exportedMemoryHandle;
+        exportedMemoryHandle = -1;
+        if (imported) {
+            VulkanInterop.closeImportedExportedHandle(handle);
+        } else {
+            VulkanInterop.closeUnimportedExportedHandle(handle);
+        }
     }
 
 }

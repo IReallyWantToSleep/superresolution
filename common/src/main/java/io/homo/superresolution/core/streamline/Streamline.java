@@ -18,9 +18,11 @@
 
 package io.homo.superresolution.core.streamline;
 
+import io.homo.superresolution.api.StreamlineDistribution;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import org.lwjgl.system.Configuration;
@@ -29,10 +31,36 @@ import org.lwjgl.vulkan.VkPhysicalDevice;
 import java.nio.file.Path;
 
 public final class Streamline {
+    private static final String INTERPOSER_FILE_NAME = "sl.interposer.dll";
+
     private static boolean initAttempted;
+    private static boolean interposerLoaded;
     private static StreamlineSession defaultSession;
+    private static StreamlineTypes.FrameToken currentFrame;
+
+    public static StreamlineTypes.FrameToken currentFrame() {
+        return currentFrame;
+    }
+
+    public static StreamlineTypes.FrameToken nextFrame(int frameIndex) {
+        if (!isInitialized()) {
+            currentFrame = null;
+            return null;
+        }
+        StreamlineTypes.FrameToken next = new StreamlineTypes.FrameToken();
+        int result = defaultSession.getNewFrameToken(
+                frameIndex,
+                next
+        );
+        currentFrame = result == 0 && next.nativeHandle != 0L ? next : null;
+        return currentFrame;
+    }
 
     private Streamline() {
+    }
+
+    public static StreamlineSession session() {
+        return defaultSession;
     }
 
     public static boolean isSupportedPlatform() {
@@ -41,11 +69,15 @@ public final class Streamline {
 
     public static boolean isNativeAvailable() {
         return NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE != null
-                && NativeLibManager.LIB_SUPER_RESOLUTION_STREAMLINE.available;
+                && StreamlineDistribution.isProvided();
     }
 
     public static boolean isInitialized() {
         return defaultSession != null && !defaultSession.isClosed();
+    }
+
+    public static boolean isInterposerLoaded() {
+        return interposerLoaded;
     }
 
     public static boolean isSupportedOnCurrentVersion() {
@@ -53,9 +85,15 @@ public final class Streamline {
     }
 
     public static synchronized boolean prepareEarly() {
-        Path nativeDir = SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath();
+        if (!VulkanPresentationFeature.shouldInitializeStreamline()) {
+            return false;
+        }
+        Path pluginDir = StreamlineDistribution.pluginDirectory();
+        if (pluginDir == null) {
+            return false;
+        }
         return prepareEarly(StreamlineInitConfig.defaultConfig(
-                nativeDir,
+                pluginDir,
                 SuperResolutionConstants.ERROR_DIR.getPath().toAbsolutePath()
         ));
     }
@@ -64,18 +102,37 @@ public final class Streamline {
         if (!isSupportedOnCurrentVersion() || !isSupportedPlatform()) {
             return false;
         }
-        Configuration.VULKAN_LIBRARY_NAME.set(
-                NativeLibManager.LIB_STREAMLINE_INTERPOSER.getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath()).toAbsolutePath().toString()
-        );
+        if (!VulkanPresentationFeature.shouldInitializeStreamline()) {
+            return false;
+        }
+        Path pluginDir = StreamlineDistribution.pluginDirectory();
+        if (pluginDir == null) {
+            return false;
+        }
+        Path interposer = pluginDir.resolve(INTERPOSER_FILE_NAME).toAbsolutePath();
+        try {
+            // sl.interposer.dll resolves sl.common.dll by plain name, so the latter has to
+            // already be in the process before the interposer itself is loaded.
+            System.load(pluginDir.resolve("sl.common.dll").toAbsolutePath().toString());
+            System.load(interposer.toString());
+            interposerLoaded = true;
+        } catch (Throwable failure) {
+            SuperResolution.LOGGER.error("Failed to load the Streamline interposer from {}", pluginDir, failure);
+            return false;
+        }
+        Configuration.VULKAN_LIBRARY_NAME.set(interposer.toString());
         NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         return initEarly(config);
     }
 
     public static synchronized boolean initEarly() {
-        Path nativeDir = SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().toAbsolutePath();
+        Path pluginDir = StreamlineDistribution.pluginDirectory();
+        if (pluginDir == null) {
+            return false;
+        }
         return initEarly(StreamlineInitConfig.defaultConfig(
-                nativeDir,
+                pluginDir,
                 SuperResolutionConstants.DATA_DIR.getPath().toAbsolutePath()
         ));
     }
@@ -116,6 +173,7 @@ public final class Streamline {
         }
         defaultSession.close();
         defaultSession = null;
+        currentFrame = null;
         initAttempted = false;
     }
 

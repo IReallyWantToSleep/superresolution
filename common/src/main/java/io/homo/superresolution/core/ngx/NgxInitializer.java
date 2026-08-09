@@ -31,6 +31,7 @@ public final class NgxInitializer {
     private static final String ENGINE_VERSION = "11.45.14";
     private static final Object INIT_LOCK = new Object();
 
+    private static boolean bindingLoaded;
     private static boolean initialized;
     private static long initializedDevice;
     private static boolean supportChecked;
@@ -40,9 +41,6 @@ public final class NgxInitializer {
     private NgxInitializer() {
     }
 
-    /**
-     * Queries DLSS support for the active Vulkan physical device before initializing NGX.
-     */
     public static boolean initializeIfSupported() {
         if (!isBindingAvailable() || !RenderSystems.isSupportVulkan()) {
             return false;
@@ -55,6 +53,35 @@ public final class NgxInitializer {
 
         synchronized (INIT_LOCK) {
             long deviceHandle = vulkanDevice.getVkDevice().address();
+            if (initialized
+                    && initializedDevice == deviceHandle
+                    && supportChecked
+                    && supportCheckedDevice == deviceHandle) {
+                return supported;
+            }
+
+            if (!loadBinding()) {
+                return false;
+            }
+
+            if (!initialized || initializedDevice != deviceHandle) {
+                try {
+                    LargeStackExecutor.run(
+                            "SR-DLSS-NGX-Init",
+                            () -> initializeForDevice(vulkanDevice, createFeatureInfo())
+                    );
+                    supported = true;
+                } catch (RuntimeException e) {
+                    shutdownLocked(true);
+                    supported = false;
+                    SuperResolution.LOGGER.info(
+                            "Skipping NGX initialization because the current GPU could not initialize DLSS",
+                            e
+                    );
+                    return false;
+                }
+            }
+
             if (!supportChecked || supportCheckedDevice != deviceHandle) {
                 supportChecked = true;
                 supportCheckedDevice = deviceHandle;
@@ -80,25 +107,13 @@ public final class NgxInitializer {
                     return false;
                 }
             }
+            return true;
+        }
+    }
 
-            if (!supported) {
-                return false;
-            }
-
-            try {
-                LargeStackExecutor.run(
-                        "SR-DLSS-NGX-Init",
-                        () -> initializeForDevice(vulkanDevice, createFeatureInfo())
-                );
-                return true;
-            } catch (RuntimeException e) {
-                supported = false;
-                SuperResolution.LOGGER.info(
-                        "Skipping NGX initialization because the current GPU could not initialize DLSS",
-                        e
-                );
-                return false;
-            }
+    public static void shutdown() {
+        synchronized (INIT_LOCK) {
+            shutdownLocked(false);
         }
     }
 
@@ -132,13 +147,34 @@ public final class NgxInitializer {
         };
         featureInfo.minimumLoggingLevel = NgxConstants.LOGGING_ON;
         featureInfo.loggingCallback = (message, loggingLevel, sourceFeature) ->
-                SuperResolution.LOGGER.debug(
+                SuperResolution.LOGGER.info(
                         "NGX [{}:{}] {}",
-                        sourceFeature,
-                        loggingLevel,
+                        sourceFeatureToString(sourceFeature),
+                        loggingLevelToString(loggingLevel),
                         message == null ? "" : message.stripTrailing()
                 );
         return featureInfo;
+    }
+
+    private static String sourceFeatureToString(int sourceFeature) {
+        return switch (sourceFeature) {
+            case NgxConstants.FEATURE_SUPER_SAMPLING -> "SUPER_SAMPLING";
+            case NgxConstants.FEATURE_IMAGE_SIGNAL_PROCESSING -> "IMAGE_SIGNAL_PROCESSING";
+            case NgxConstants.FEATURE_DEEP_RESOLVE -> "DEEP_RESOLVE";
+            case NgxConstants.FEATURE_FRAME_GENERATION -> "FRAME_GENERATION";
+            case NgxConstants.FEATURE_RAY_RECONSTRUCTION -> "RAY_RECONSTRUCTION";
+            default -> "UNKNOWN";
+        };
+    }
+
+    private static String loggingLevelToString(int loggingLevel) {
+        return switch (loggingLevel) {
+            case NgxConstants.LOGGING_OFF -> "OFF";
+            case NgxConstants.LOGGING_ON -> "ON";
+            case NgxConstants.LOGGING_VERBOSE -> "VERBOSE";
+            case NgxConstants.LOGGING_NUM -> "NUM";
+            default -> "UNKNOWN";
+        };
     }
 
     private static void initializeForDevice(VulkanDevice vulkanDevice, NgxFeatureCommonInfo featureInfo) {
@@ -147,13 +183,7 @@ public final class NgxInitializer {
             return;
         }
         if (initialized) {
-            int shutdownResult = NgxVulkan.shutdown();
-            if (!NgxConstants.succeeded(shutdownResult)) {
-                SuperResolution.LOGGER.warn("Failed to shut down NGX before switching Vulkan devices. Result: {}",
-                        shutdownResult);
-            }
-            initialized = false;
-            initializedDevice = 0L;
+            shutdownLocked(false);
         }
 
         int result = NgxVulkan.initWithProjectId(
@@ -174,9 +204,40 @@ public final class NgxInitializer {
         initializedDevice = deviceHandle;
     }
 
+    private static boolean loadBinding() {
+        if (bindingLoaded) {
+            return true;
+        }
+        try {
+            System.load(
+                    NativeLibManager.LIB_SUPER_RESOLUTION_NGX
+                            .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath())
+                            .toAbsolutePath()
+                            .toString()
+            );
+            bindingLoaded = true;
+            return true;
+        } catch (UnsatisfiedLinkError e) {
+            return false;
+        }
+    }
+
+    private static void shutdownLocked(boolean force) {
+        if (bindingLoaded && (initialized || force)) {
+            int shutdownResult = NgxVulkan.shutdown();
+            if (!NgxConstants.succeeded(shutdownResult)) {
+                SuperResolution.LOGGER.warn("Failed to shut down NGX. Result: {}", shutdownResult);
+            }
+        }
+        initialized = false;
+        initializedDevice = 0L;
+        supportChecked = false;
+        supportCheckedDevice = 0L;
+        supported = false;
+    }
+
     private static boolean isBindingAvailable() {
-        return NativeLibManager.LIB_SUPER_RESOLUTION_NGX != null
-                && NativeLibManager.LIB_SUPER_RESOLUTION_NGX.available;
+        return NativeLibManager.LIB_SUPER_RESOLUTION_NGX != null;
     }
 
     private static void requireSuccess(String operation, int result) {

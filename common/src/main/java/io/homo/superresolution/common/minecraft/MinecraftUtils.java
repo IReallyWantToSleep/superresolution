@@ -94,4 +94,20 @@ public class MinecraftUtils {
     public static float getCameraNear(){
         return 0.05F;
     }
+
+    private static int _getFramerateLimit() {
+        #if MC_VER >= MC_1_21_11
+        return Minecraft.getInstance().getFramerateLimitTracker().getFramerateLimit();
+        #else
+        return Minecraft.getInstance().level == null && (Minecraft.getInstance().screen != null || Minecraft.getInstance().getOverlay() != null) ? 60 : Minecraft.getInstance().getWindow().getFramerateLimit();
+        #endif
+    }
+
+    public static int getFramerateLimit() {
+        int framerateLimit = _getFramerateLimit();
+        if (framerateLimit >= 260) {
+            framerateLimit = 0;
+        }
+        return framerateLimit;
+    }
 }

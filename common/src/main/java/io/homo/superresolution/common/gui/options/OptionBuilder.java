@@ -38,6 +38,7 @@ public class OptionBuilder {
     protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
     protected Runnable saveRunnable = () -> {
     };
+    protected Runnable restartRequiredCallback = null;
 
     public OptionBuilder(OptionCategory category) {
         this.category = category;
@@ -48,20 +49,29 @@ public class OptionBuilder {
         return this;
     }
 
+    public OptionBuilder setRestartRequiredCallback(Runnable restartRequiredCallback) {
+        this.restartRequiredCallback = restartRequiredCallback;
+        return this;
+    }
+
     public <T extends Enum<T>> EnumSelectorBuilder<T> enumSelectorOption(
             Text name,
             Class<T> clazz,
             T value
     ) {
-        return new EnumSelectorBuilder<>(name, clazz, value).setCategory(category);
+        EnumSelectorBuilder<T> builder = new EnumSelectorBuilder<>(name, clazz, value);
+        builder.setCategory(category);
+        return builder;
     }
 
-    public <T> SelectionListBuilder<T> selectorOption(
+    public <T> SelectionListBuilder<T, ?> selectorOption(
             Text name,
             T value,
             T[] values
     ) {
-        return (SelectionListBuilder<T>) new SelectionListBuilder(name, value, values).setCategory(category);
+        SelectionListBuilder<T, ?> builder = new SelectionListBuilder<>(name, value, values);
+        builder.setCategory(category);
+        return builder;
     }
 
     public BooleanSwitchBuilder booleanOption(
@@ -87,6 +97,13 @@ public class OptionBuilder {
         return new ColorSelectBuilder(name, value).setCategory(category);
     }
 
+    public FileSelectorBuilder fileSelectorOption(
+            Text name,
+            String value
+    ) {
+        return new FileSelectorBuilder(name, value).setCategory(category);
+    }
+
     public HintBuilder hintOption(Text name) {
         return new HintBuilder(name).setCategory(category);
     }
@@ -100,16 +117,25 @@ public class OptionBuilder {
         OptionsContainer container = new OptionsContainer();
 
         for (AbstractOptionEntry<?, ?> entry : category.getEntries()) {
-            entry.setSaveRunnable(saveRunnable);
+            entry.setSaveRunnable(createEntrySaveRunnable(entry));
             container.addEntry(entry);
         }
 
         for (AbstractOptionEntry<?, ?> entry : entries) {
-            entry.setSaveRunnable(saveRunnable);
+            entry.setSaveRunnable(createEntrySaveRunnable(entry));
             container.addEntry(entry);
         }
 
         return container;
+    }
+
+    private Runnable createEntrySaveRunnable(AbstractOptionEntry<?, ?> entry) {
+        return () -> {
+            saveRunnable.run();
+            if (entry.isRequiresRestartGame() && restartRequiredCallback != null) {
+                restartRequiredCallback.run();
+            }
+        };
     }
 
     public static class OptionsContainer extends MaterialContainerWidget<OptionsContainer> {

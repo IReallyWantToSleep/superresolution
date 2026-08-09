@@ -80,10 +80,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
         style().size(size);
         getLayoutNode().setDebugName("MaterialButton");
         updateRectangle();
-        float cornerSize = style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                : style().size().squareCornerSize();
         initAnimators();
-        pressAnimator.fromTo(cornerSize, cornerSize).duration(1).start();
     }
 
     public static MaterialButton create(MaterialButtonSize size) {
@@ -148,6 +145,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     public MaterialButton size(MaterialButtonSize size) {
         style().size(size);
         updateRectangle();
+        resetRestingCornerSize();
         return this;
     }
 
@@ -185,6 +183,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     public MaterialButton shape(MaterialButtonShape shape) {
         if (this.style instanceof MaterialButtonStyle) {
             ((MaterialButtonStyle) this.style).shape(shape);
+            resetRestingCornerSize();
         }
         return this;
     }
@@ -198,6 +197,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
             buttonStyle.shape(shape);
         }
         updateRectangle();
+        resetRestingCornerSize();
         return this;
     }
 
@@ -349,8 +349,20 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     private float getCornerSize() {
-        return pressAnimator == null ? (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                                        : style().size().squareCornerSize()) : pressAnimator.get();
+        return pressAnimator == null ? getRestingCornerSize() : pressAnimator.get();
+    }
+
+    private float getRestingCornerSize() {
+        return style().shape() == MaterialButtonShape.Round
+                ? getBounds().height / 2f
+                : style().size().squareCornerSize();
+    }
+
+    private void resetRestingCornerSize() {
+        if (pressAnimator != null && !pressAnimator.isRunning()) {
+            float cornerSize = getRestingCornerSize();
+            pressAnimator.fromTo(cornerSize, cornerSize);
+        }
     }
 
     private ButtonColors getButtonColors() {
@@ -430,8 +442,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
     }
 
     private void onRelease(Vector2f mousePosition) {
-        float cornerSize = style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                : style().size().squareCornerSize();
+        float cornerSize = getRestingCornerSize();
         if (pressAnimator.isRunning() && Math.abs(pressAnimator.targetValue() - style().size().pressedCornerSize()) < 0.01f) {
             pressAnimator.onLifecycle(new Animator.AnimatorLifecycleListener() {
                 @Override
@@ -452,10 +463,8 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
 
     private void initAnimators() {
         pressAnimator = new Animator.FloatAnimator(
-                (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                        : style().size().squareCornerSize()),
-                (style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                        : style().size().squareCornerSize()));
+                getRestingCornerSize(),
+                getRestingCornerSize());
         pressAnimator.duration(100);
         pressAnimator.timeInterpolator(TimeInterpolator.easeInOutQuart());
         pressAnimator.onLifecycle(new Animator.AnimatorLifecycleListener() {
@@ -463,8 +472,7 @@ public class MaterialButton extends MaterialWidget<MaterialButton> {
             public void onEnd() {
                 if (pendingRelease) {
                     pendingRelease = false;
-                    float cornerSize = style().shape() == MaterialButtonShape.Round ? getBounds().height / 2
-                            : style().size().squareCornerSize();
+                    float cornerSize = getRestingCornerSize();
                     pressAnimator.timeInterpolator(TimeInterpolator.easeOutCubic());
                     pressAnimator.fromTo(pressAnimator.get(), cornerSize);
                     pressAnimator.duration(PRESS_ANIMATION_DURATION);

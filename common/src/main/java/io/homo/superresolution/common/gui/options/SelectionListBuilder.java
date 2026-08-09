@@ -29,7 +29,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionListOptionEntry<T>, SelectionListBuilder<T>> {
+public class SelectionListBuilder<T, SELF extends SelectionListBuilder<T, SELF>>
+        extends AbstractOptionBuilder<T, SelectionListOptionEntry<T>, SELF> {
     protected ImmutableList<T> values;
     protected Function<T, String> nameProvider;
     protected @Nullable Function<T, OptionRequirement> itemEnableRequirement = null;
@@ -45,18 +46,20 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
         return menuItemTooltipSupplier;
     }
 
-    public SelectionListBuilder<T> setMenuItemTooltipSupplier(@Nullable Function<T, Optional<Tooltip>> menuItemTooltipSupplier) {
+    @SuppressWarnings("unchecked")
+    public SELF setMenuItemTooltipSupplier(@Nullable Function<T, Optional<Tooltip>> menuItemTooltipSupplier) {
         this.menuItemTooltipSupplier = menuItemTooltipSupplier;
-        return this;
+        return (SELF) this;
     }
 
     public @Nullable Function<T, OptionRequirement> getItemEnableRequirement() {
         return itemEnableRequirement;
     }
 
-    public SelectionListBuilder<T> setItemEnableRequirement(@Nullable Function<T, OptionRequirement> itemEnableRequirement) {
+    @SuppressWarnings("unchecked")
+    public SELF setItemEnableRequirement(@Nullable Function<T, OptionRequirement> itemEnableRequirement) {
         this.itemEnableRequirement = itemEnableRequirement;
-        return this;
+        return (SELF) this;
     }
 
     @Override
@@ -73,18 +76,21 @@ public class SelectionListBuilder<T> extends AbstractOptionBuilder<T, SelectionL
         return finishBuild(entry);
     }
 
-    public SelectionListBuilder<T> setValues(T[] valuesArray) {
+    @SuppressWarnings("unchecked")
+    public SELF setValues(T[] valuesArray) {
         this.values = ImmutableList.copyOf(valuesArray);
-        return this;
+        return (SELF) this;
     }
 
-    public SelectionListBuilder<T> setNameProvider(@Nullable Function<T, String> nameProvider) {
+    @SuppressWarnings("unchecked")
+    public SELF setNameProvider(@Nullable Function<T, String> nameProvider) {
         this.nameProvider = nameProvider != null ? nameProvider : t -> t.toString();
-        return this;
+        return (SELF) this;
     }
 
-    public SelectionListBuilder<T> setValuesSupplier(@Nullable Supplier<List<T>> valuesSupplier) {
+    @SuppressWarnings("unchecked")
+    public SELF setValuesSupplier(@Nullable Supplier<List<T>> valuesSupplier) {
         this.valuesSupplier = valuesSupplier;
-        return this;
+        return (SELF) this;
     }
 }

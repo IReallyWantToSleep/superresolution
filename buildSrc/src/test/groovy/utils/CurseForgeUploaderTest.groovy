@@ -97,6 +97,7 @@ class CurseForgeUploaderTest {
             assertTrue(
                     artifact.metadata["gameVersionNames"].contains(artifact.loaderName)
             )
+            assertTrue(artifact.metadata["gameVersionNames"].contains("Client"))
         }
     }
 
@@ -210,7 +211,7 @@ class CurseForgeUploaderTest {
                     metadata: [
                             changelog       : "# 1.0.0",
                             changelogType   : "markdown",
-                            gameVersionNames: ["26.2", "Fabric"],
+                            gameVersionNames: ["26.2", "Fabric", "Client"],
                             releaseType     : "release"
                     ]
             )
