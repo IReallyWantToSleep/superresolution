@@ -410,6 +410,7 @@ public final class SuperResolution implements Destroyable {
                 LowLatency.onDestructiveRebuild();
             }
 
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.initialize(desc);

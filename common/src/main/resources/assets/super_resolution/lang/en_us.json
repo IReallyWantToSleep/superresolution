@@ -254,6 +254,8 @@
     "superresolution.screen.text.none": "None",
     "superresolution.screen.config.options.tooltip.algo.experimental_warning": "This algorithm is experimental, unstable, and may cause crashes or errors",
     "superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint": "This algorithm is experimental, unstable, and may cause crashes or errors\nTo use it, please enable \"Experimental\" > \"Enable Experimental Features\"",
+    "superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack": "This algorithm is disabled by the shader pack",
+    "superresolution.screen.config.options.tooltip.algo.none_requires_frame_generation_only": "Frame generation only mode is not supported by the current shader pack",
     "superresolution.screen.config.options.tooltip.algo.unsupported_reason_header": "This algorithm is not supported. Reasons:",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_version": "· OpenGL version not supported",
     "superresolution.screen.config.options.tooltip.algo.reason.opengl_extension": "· Missing required OpenGL extensions",
@@ -266,6 +268,7 @@
     "superresolution.screen.config.options.tooltip.algo.reason.dev_env_only": "· Only available in development environment",
     "superresolution.screen.config.options.tooltip.algo.reason.other": "· Other reasons",
     "superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported": "Custom ratio is not supported for this algorithm",
+    "superresolution.screen.config.options.tooltip.upscale_ratio.frame_generation_only": "Upscale ratio cannot be changed in frame generation only mode",
     "superresolution.screen.config.hint.performance_warning.title": "Performance and Compatibility Warning",
     "superresolution.screen.config.hint.performance_warning.text": "No shader pack is currently active. Vanilla Minecraft has a low graphics load, so super resolution cannot improve performance and may cause frame rate drops. Compatibility in vanilla mode is limited and may cause rendering conflicts with some mods.",
     "superresolution.screen.config.hint.b3d_vulkan_unavailable.title": "Super Resolution cannot work on the Vulkan backend",
@@ -274,5 +277,7 @@
     "superresolution.screen.config.hint.vulkan_presentation_unavailable.text": "This version does not support Vulkan Presentation, Low Latency, or related features.",
     "superresolution.screen.config.hint.shader_compat_warning.title": "Shader Compatibility Warning",
     "superresolution.screen.config.hint.shader_compat_warning.text.compat": "The current shader pack has not been adapted for Super Resolution and will run in compatibility mode. This mode may cause blurry visuals, ghosting, reduced performance, and decreased compatibility with other mods.",
-    "superresolution.screen.config.hint.shader_compat_warning.text.disabled": "The current shader pack has not been adapted for Super Resolution, and super resolution is disabled. After enabling \"Enable Unadapted Shader Compatibility Mode\" and restarting the game, it will run in compatibility mode, which may cause blurry visuals, ghosting, reduced performance, and decreased compatibility with other mods."
+    "superresolution.screen.config.hint.shader_compat_warning.text.disabled": "The current shader pack has not been adapted for Super Resolution, and super resolution is disabled. After enabling \"Enable Unadapted Shader Compatibility Mode\" and restarting the game, it will run in compatibility mode, which may cause blurry visuals, ghosting, reduced performance, and decreased compatibility with other mods.",
+    "superresolution.screen.config.hint.frame_generation_only_warning.title": "Frame Generation Only Mode",
+    "superresolution.screen.config.hint.frame_generation_only_warning.text": "This shader pack uses frame-generation-only mode. Super resolution is disabled."
 }

@@ -26,6 +26,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 
 import java.util.*;
 
@@ -49,32 +50,35 @@ public class SRCompatBuiltinMacros {
         });
 
         AlgorithmDescription<?> description = SuperResolution.algorithmDescription;
+        AlgorithmDescription<?> selectedAlgorithm = description != null
+                ? description
+                : SuperResolutionConfig.getUpscaleAlgorithm();
+        boolean frameGenOnly = SuperResolutionConfig.isEnableUpscaleOriginal()
+                && IrisShaderCompatUtils.isFrameGenerationOnlySupported()
+                && AlgorithmDescriptions.NONE.equals(selectedAlgorithm);
 
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            AlgorithmDescription<?> selectedAlgorithm = description != null
-                    ? description
-                    : SuperResolutionConfig.getUpscaleAlgorithm();
             preprocessor.addMacro("SR_ENABLE", "1");
             preprocessor.addMacro("SR_DISABLE", "0");
             preprocessor.addMacro("SR_ALGO_SUPPORTS_JITTER",
-                    AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
+                    !frameGenOnly && AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
             preprocessor.addMacro("SR_USING_ALGO", Integer.toString(idMap.get(selectedAlgorithm)));
-            preprocessor.addMacro("SR_SHOULD_APPLY_SCALE", "1");
-            preprocessor.addMacro("SR_SHOULD_APPLY_JITTER", "1");
+            preprocessor.addMacro("SR_SHOULD_APPLY_SCALE", frameGenOnly ? "0" : "1");
+            preprocessor.addMacro("SR_SHOULD_APPLY_JITTER", frameGenOnly ? "0" : "1");
             preprocessor.addMacro("SR_SCALED_WIDTH",
-                    Integer.toString(SuperResolutionAPI.getRenderWidth()));
+                    Integer.toString(frameGenOnly ? SuperResolutionAPI.getScreenWidth() : SuperResolutionAPI.getRenderWidth()));
             preprocessor.addMacro("SR_SCALED_HEIGHT",
-                    Integer.toString(SuperResolutionAPI.getRenderHeight()));
+                    Integer.toString(frameGenOnly ? SuperResolutionAPI.getScreenHeight() : SuperResolutionAPI.getRenderHeight()));
             preprocessor.addMacro("SR_SCREEN_WIDTH",
                     Integer.toString(SuperResolutionAPI.getScreenWidth()));
             preprocessor.addMacro("SR_SCREEN_HEIGHT",
                     Integer.toString(SuperResolutionAPI.getScreenHeight()));
             preprocessor.addMacro("SR_UPSCALE_RATIO",
-                    Float.toString(SuperResolutionConfig.getUpscaleRatio()));
+                    Float.toString(frameGenOnly ? 1.0f : SuperResolutionConfig.getUpscaleRatio()));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR",
-                    Float.toString(SuperResolutionConfig.getRenderScaleFactor()));
+                    Float.toString(frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor()));
             preprocessor.addMacro("SR_JITTER_SEQUENCE_LENGTH",
-                    Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
+                    frameGenOnly ? "0" : Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             preprocessor.addMacro("SR_ALGO_DLSS_RENDERPRESET",
                     selectedAlgorithm.equals(AlgorithmDescriptions.DLSS) ?
                             Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :
@@ -101,17 +105,21 @@ public class SRCompatBuiltinMacros {
         // endregion
 
         // region V2
-        preprocessor.addMacro("SR_CONFIG_SCHEMA_VERSION", "2");
-
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            float rsf = frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor();
+            float ratio = frameGenOnly ? 1.0f : SuperResolutionConfig.getUpscaleRatio();
             preprocessor.addMacro("SR_UPSCALE_RATIO_HALF",
-                    Float.toString(SuperResolutionConfig.getUpscaleRatio() * 0.5F));
+                    Float.toString(ratio * 0.5F));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR_HALF",
-                    Float.toString(SuperResolutionConfig.getRenderScaleFactor() * 0.5F));
+                    Float.toString(rsf * 0.5F));
         } else {
             preprocessor.addMacro("SR_UPSCALE_RATIO_HALF", Float.toString(0.5F));
             preprocessor.addMacro("SR_RENDER_SCALE_FACTOR_HALF", Float.toString(0.5F));
         }
+        // endregion
+
+        // region V3
+        preprocessor.addMacro("SR_CONFIG_SCHEMA_VERSION", Integer.toString(SRCompatConfigParser.LATEST_CONFIG_VERSION));
         // endregion
     }
 }

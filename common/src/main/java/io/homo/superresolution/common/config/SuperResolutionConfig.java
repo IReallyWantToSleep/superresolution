@@ -448,6 +448,19 @@ public class SuperResolutionConfig {
             return defaultAlgo;
         }
 
+        // 光影包禁用的算法只在运行期回退，不写回配置——卸载光影包后恢复用户原选择
+        if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algo.codeName)) {
+            SuperResolution.LOGGER.warn("算法 {} 已被当前光影包禁用，回退到默认算法", algo.displayName);
+            return getDefaultAlgorithm();
+        }
+
+        // None（仅帧生成模式）仅在光影包声明支持时可用；不写回配置，切换光影后自动恢复
+        if (AlgorithmDescriptions.NONE.equals(algo)
+                && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
+            SuperResolution.LOGGER.warn("当前光影包不支持仅帧生成模式，None 算法不可用，回退到默认算法");
+            return getDefaultAlgorithm();
+        }
+
         return algo;
     }
 
