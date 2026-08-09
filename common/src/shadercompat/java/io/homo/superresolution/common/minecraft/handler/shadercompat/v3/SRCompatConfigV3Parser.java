@@ -162,12 +162,10 @@ public class SRCompatConfigV3Parser {
                     if (rawProfile.upscale.disabled_algorithms != null) {
                         for (String algoId : rawProfile.upscale.disabled_algorithms) {
                             if (algoId == null || algoId.isBlank()) {
-                                SuperResolution.LOGGER.error("配置错误：profile '{}' 中 upscale.disabled_algorithms 包含空值。", worldKey);
-                                return null;
+                                SuperResolution.LOGGER.warn("配置警告：profile '{}' 中 upscale.disabled_algorithms 包含空值。", worldKey);
                             }
                             if (!AlgorithmRegistry.getAlgorithmMap().containsKey(algoId)) {
-                                SuperResolution.LOGGER.error("配置错误：profile '{}' 中 upscale.disabled_algorithms 包含未知的算法 ID: {}", worldKey, algoId);
-                                return null;
+                                SuperResolution.LOGGER.warn("配置警告：profile '{}' 中 upscale.disabled_algorithms 包含未知的算法 ID: {}", worldKey, algoId);
                             }
                         }
                         disabledAlgorithms = rawProfile.upscale.disabled_algorithms;

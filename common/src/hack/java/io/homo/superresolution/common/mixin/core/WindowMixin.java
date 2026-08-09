@@ -87,7 +87,7 @@ public class WindowMixin {
     private void getScaleFactor(CallbackInfoReturnable<Double> ci) {
         if (!SuperResolution.isPreInit) return;
 
-        if (HackWorkModeEligibility.isHackSelected())
+        if (IrisCompatHelper.isHackSelected())
             ci.setReturnValue(ci.getReturnValue() * RenderHandlerManager.getCurrentScaleFactor());
     }
     #else

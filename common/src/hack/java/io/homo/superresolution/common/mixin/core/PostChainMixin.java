@@ -18,9 +18,23 @@
 
 package io.homo.superresolution.common.mixin.core;
 
-import net.minecraft.client.renderer.PostChain;
-import org.spongepowered.asm.mixin.Mixin;
+import com.google.gson.JsonSyntaxException;
+import com.mojang.blaze3d.pipeline.*;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.compat.iris.IrisCompatHelper;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
+import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.texture.*;
+import org.spongepowered.asm.mixin.*;
+import java.io.*;
+import java.util.*;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.*;
+
 #if MC_VER > MC_1_21_10
+import net.minecraft.resources.Identifier;
 #else
 import net.minecraft.resources.ResourceLocation;
 #endif
@@ -60,7 +74,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             return;
         }
 
@@ -121,7 +135,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             return;
         }
         if (
@@ -138,7 +152,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             return;
         }
         RenderHandlerManager.onProcessPostChain((PostChain) (Object) this);
