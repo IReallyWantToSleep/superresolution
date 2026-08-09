@@ -33,6 +33,7 @@ import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
@@ -234,6 +235,11 @@ public class RenderHandlerManager {
     }
 
     public static float getScaleFactor() {
+        // 仅帧生成模式（None 算法）：禁用渲染比例，光影包按原生分辨率渲染
+        if (AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm())
+                && SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
+            return 1;
+        }
         return SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getRenderScaleFactor() : 1;
     }
 
