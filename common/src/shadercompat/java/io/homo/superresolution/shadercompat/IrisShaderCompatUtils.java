@@ -53,12 +53,12 @@ public class IrisShaderCompatUtils {
         );
     }
 
-    public static boolean isCurrentProfileFrameGenerationOnly() {
+    public static boolean isFrameGenerationOnlySupported() {
         try {
             return getCurrentConfig()
                     .map(profile -> profile.enabled
                             && profile.upscale != null
-                            && profile.upscale.onlySupportsFrameGeneration)
+                            && profile.upscale.supportsFrameGenerationOnly)
                     .orElse(false);
         } catch (Throwable ignored) {
             return false;

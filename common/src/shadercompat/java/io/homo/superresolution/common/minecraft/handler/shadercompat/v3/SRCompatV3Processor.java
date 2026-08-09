@@ -211,24 +211,26 @@ public class SRCompatV3Processor implements SRCompatProcessor {
             r.registerMacro("SR_ALGO_DLSS_RENDERPRESET_" + preset.toString(), Integer.toString(preset.getCode()));
         });
 
-        boolean frameGenOnly = IrisShaderCompatUtils.isCurrentProfileFrameGenerationOnly();
+        AlgorithmDescription<?> selectedAlgorithm = description != null
+                ? description
+                : SuperResolutionConfig.getUpscaleAlgorithm();
+        boolean frameGenOnly = SuperResolutionConfig.isEnableUpscaleOriginal()
+                && IrisShaderCompatUtils.isFrameGenerationOnlySupported()
+                && AlgorithmDescriptions.NONE.equals(selectedAlgorithm);
 
         if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            AlgorithmDescription<?> selectedAlgorithm = description != null
-                    ? description
-                    : SuperResolutionConfig.getUpscaleAlgorithm();
             r.registerMacro("SR_ENABLE", "1");
             r.registerMacro("SR_DISABLE", "0");
             r.registerMacro("SR_ALGO_SUPPORTS_JITTER",
-                    AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
+                    !frameGenOnly && AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
             r.registerMacro("SR_USING_ALGO", Integer.toString(
                     idMap.get(selectedAlgorithm)));
             r.registerMacro("SR_SHOULD_APPLY_SCALE", frameGenOnly ? "0" : "1");
             r.registerMacro("SR_SHOULD_APPLY_JITTER", frameGenOnly ? "0" : "1");
             r.registerMacro("SR_SCALED_WIDTH",
-                    Integer.toString(SuperResolutionAPI.getRenderWidth()));
+                    Integer.toString(frameGenOnly ? SuperResolutionAPI.getScreenWidth() : SuperResolutionAPI.getRenderWidth()));
             r.registerMacro("SR_SCALED_HEIGHT",
-                    Integer.toString(SuperResolutionAPI.getRenderHeight()));
+                    Integer.toString(frameGenOnly ? SuperResolutionAPI.getScreenHeight() : SuperResolutionAPI.getRenderHeight()));
             r.registerMacro("SR_SCREEN_WIDTH",
                     Integer.toString(SuperResolutionAPI.getScreenWidth()));
             r.registerMacro("SR_SCREEN_HEIGHT",
@@ -239,7 +241,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                     Float.toString(frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor()));
 
             r.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
-                    Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
+                    frameGenOnly ? "0" : Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             r.registerMacro("SR_ALGO_DLSS_RENDERPRESET",
                     selectedAlgorithm.equals(AlgorithmDescriptions.DLSS) ?
                             Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :

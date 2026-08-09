@@ -739,7 +739,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .setTitle(Text.translatable("superresolution.screen.config.hint.frame_generation_only_warning.title").getString())
                     .setText(Text.translatable("superresolution.screen.config.hint.frame_generation_only_warning.text").getString())
                     .setDisplayRequirement(OptionRequirement.isTrue(() ->
-                            SRWorkModeManager.getCurrentState().onlySupportsFrameGeneration()))
+                            SRWorkModeManager.getCurrentState().supportsFrameGeneration()
+                                    && AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm())))
                     .build();
             builder.hintOption(Text.literal("shader_compat_warning"))
                     .setIcon(MaterialSymbols.iconWarning())
@@ -817,7 +818,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     return true;
 
                                 },
-                                () -> !SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName())
+                                () -> !SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName()),
+                                () -> !AlgorithmDescriptions.NONE.equals(algorithmDescription)
+                                        || SRWorkModeManager.getCurrentState().supportsFrameGeneration()
                         );
                     })
                     .setMenuItemTooltipSupplier((algo)->{
@@ -828,6 +831,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName())) {
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack").getString());
+                        }
+                        if (AlgorithmDescriptions.NONE.equals(algorithmDescription)
+                                && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.none_requires_frame_generation_only").getString());
                         }
                         if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
                             sb.append("\n");
@@ -894,6 +902,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             initialPresetOptions.toArray(new QualityPresetOption[0]))
                     .setNameProvider(QualityPresetOption::displayName)
                     .setValuesSupplier(() -> getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm()))
+                    .setEnableRequirement(() -> !AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm()))
                     .setSaveConsumer((presetOption) -> {
                         if (presetOption == null || presetOption.custom() || syncingQualityPreset[0]) {
                             return true;
@@ -938,8 +947,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     }
                             ))
                     )
-                    .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
+                    .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())
+                            && !AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm()))
                     .setTooltipSupplier((t)->{
+                        if (AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm())){
+                            return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.frame_generation_only").getString()));
+                        }
                         if (!isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())){
                             return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported").getString()));
                         }else {

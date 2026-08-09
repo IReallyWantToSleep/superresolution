@@ -38,6 +38,7 @@ import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompa
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v3.SRCompatV3Processor;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropResourcesConverter;
@@ -258,6 +259,13 @@ public class IrisShaderCompatUpscaleDispatcher {
         SRCompatProcessor processor = shaderCompatData != null ? shaderCompatData.getProcessor() : null;
         AbstractAlgorithm algorithm = SuperResolution.getCurrentAlgorithm();
         AlgorithmDescription<?> description = SuperResolution.algorithmDescription;
+
+        // 仅帧生成模式（None 算法）：什么也不做，不 copy 输入/输出
+        if (currentConfig.supportsFrameGenerationOnly && AlgorithmDescriptions.NONE.equals(description)) {
+            PerformanceTracker.pop("Upscale");
+            return;
+        }
+
         boolean needUpdate = false;
         boolean needsPreProcessColor = processor != null && processor.needsPreProcessColor(shaderCompatData, algorithm, description);
         boolean needsPreProcessDepth = processor != null && processor.needsPreProcessDepth(shaderCompatData, algorithm, description);
@@ -387,7 +395,6 @@ public class IrisShaderCompatUpscaleDispatcher {
         /*
         升采样阶段开始
          */
-        boolean frameGenOnly = currentConfig.onlySupportsFrameGeneration;
         AlgorithmManager.update();
         // MotionVectorsGenerator 已被弃用
         Vector2f rawJitter = getJitterOffset();
@@ -411,13 +418,11 @@ public class IrisShaderCompatUpscaleDispatcher {
                     )
             );
         }
-        if (!frameGenOnly) {
-            GlDebug.pushGroup(64108436, "SR Upscale");
-            try (GlState ignored_ = new GlState()) {
-                SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
-            }
-            GlDebug.popGroup();
+        GlDebug.pushGroup(64108436, "SR Upscale");
+        try (GlState ignored_ = new GlState()) {
+            SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
         }
+        GlDebug.popGroup();
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmDispatchFinishEvent(
@@ -429,56 +434,54 @@ public class IrisShaderCompatUpscaleDispatcher {
         /*
         升采样阶段结束
          */
-        if (!frameGenOnly) {
-            GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
-            IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-            if (currentConfig.outputTextures.get("upscaled_color").enabled) {
-                for (String targetName : currentConfig.outputTextures.get("upscaled_color").targetNames) {
-                    ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
-                            name -> IrisTextureResolver.getIrisTexture(
-                                    compositeRenderer,
-                                    name,
-                                    pass,
-                                    false
-                            ));
-                    ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
-                    if (targetTexture != null && sourceTexture != null) {
-                        if (
-                                targetTexture.getTextureFormat() != sourceTexture.getTextureFormat()
-                        ) {
-                            GlTextureCopier.copy(
-                                    CopyOperation.create()
-                                            .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
-                                            .dst(targetTexture)
-                                            .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
-                                            .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
-                                            .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
-                                            .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
-                            );
-                        } else {
-                            Gl.DSA.copyImageSubData(
-                                    (int) sourceTexture.handle(),
-                                    GL41.GL_TEXTURE_2D,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    (int) targetTexture.handle(),
-                                    GL41.GL_TEXTURE_2D,
-                                    0,
-                                    outputConfig.region.getX(),
-                                    outputConfig.region.getY(),
-                                    0,
-                                    outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2],
-                                    outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[3],
-                                    1
-                            );
-                        }
+        GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
+        IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+        if (currentConfig.outputTextures.get("upscaled_color").enabled) {
+            for (String targetName : currentConfig.outputTextures.get("upscaled_color").targetNames) {
+                ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
+                        name -> IrisTextureResolver.getIrisTexture(
+                                compositeRenderer,
+                                name,
+                                pass,
+                                false
+                        ));
+                ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
+                if (targetTexture != null && sourceTexture != null) {
+                    if (
+                            targetTexture.getTextureFormat() != sourceTexture.getTextureFormat()
+                    ) {
+                        GlTextureCopier.copy(
+                                CopyOperation.create()
+                                        .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
+                                        .dst(targetTexture)
+                                        .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
+                                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
+                        );
+                    } else {
+                        Gl.DSA.copyImageSubData(
+                                (int) sourceTexture.handle(),
+                                GL41.GL_TEXTURE_2D,
+                                0,
+                                0,
+                                0,
+                                0,
+                                (int) targetTexture.handle(),
+                                GL41.GL_TEXTURE_2D,
+                                0,
+                                outputConfig.region.getX(),
+                                outputConfig.region.getY(),
+                                0,
+                                outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2],
+                                outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[3],
+                                1
+                        );
                     }
                 }
             }
-            GlDebug.popGroup();
         }
+        GlDebug.popGroup();
         PerformanceTracker.pop("Upscale");
     }
 }

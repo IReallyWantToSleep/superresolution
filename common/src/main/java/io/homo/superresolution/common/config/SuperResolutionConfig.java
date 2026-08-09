@@ -454,6 +454,13 @@ public class SuperResolutionConfig {
             return getDefaultAlgorithm();
         }
 
+        // None（仅帧生成模式）仅在光影包声明支持时可用；不写回配置，切换光影后自动恢复
+        if (AlgorithmDescriptions.NONE.equals(algo)
+                && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
+            SuperResolution.LOGGER.warn("当前光影包不支持仅帧生成模式，None 算法不可用，回退到默认算法");
+            return getDefaultAlgorithm();
+        }
+
         return algo;
     }
 

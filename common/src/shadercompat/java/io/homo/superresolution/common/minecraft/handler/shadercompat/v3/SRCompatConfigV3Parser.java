@@ -184,7 +184,7 @@ public class SRCompatConfigV3Parser {
                             rawProfile.upscale.auto_exposure && autoExposureEffective,
                             rawProfile.upscale.motion_jittered,
                             customsConfig,
-                            rawProfile.upscale.only_supports_frame_generation,
+                            rawProfile.upscale.supports_frame_generation_only,
                             disabledAlgorithms
                     );
                 } else {
@@ -468,7 +468,7 @@ public class SRCompatConfigV3Parser {
             boolean auto_exposure;
             boolean motion_jittered;
             RawCustoms customs;
-            boolean only_supports_frame_generation;
+            boolean supports_frame_generation_only;
             List<String> disabled_algorithms;
         }
 

@@ -72,7 +72,7 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
                 ShaderCompatHandler.irisApiIsShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack(),
                 ShaderCompatHandler.isLoadingShader(),
                 profile.isPresent() && profile.get().enabled && profile.get().upscale != null &&
-                        profile.get().upscale.onlySupportsFrameGeneration,
+                        profile.get().upscale.supportsFrameGenerationOnly,
                 disabledAlgorithms
         );
     }

@@ -76,7 +76,7 @@ public class SRShaderCompatData {
         public final boolean isAutoExposure;
         public final boolean isMotionJittered;
         public final @Nullable CustomsConfig customs;
-        public final boolean onlySupportsFrameGeneration;
+        public final boolean supportsFrameGenerationOnly;
         public final List<String> disabledAlgorithms;
 
 
@@ -102,9 +102,9 @@ public class SRShaderCompatData {
                              @Nullable SourceConfig preExposure,
                              boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered,
                              @Nullable CustomsConfig customs,
-                             boolean onlySupportsFrameGeneration) {
+                             boolean supportsFrameGenerationOnly) {
             this(enabled, trigger, internalFormat, inputTextures, outputTextures,
-                    preExposure, isHdrInput, isAutoExposure, isMotionJittered, customs, onlySupportsFrameGeneration, Collections.emptyList());
+                    preExposure, isHdrInput, isAutoExposure, isMotionJittered, customs, supportsFrameGenerationOnly, Collections.emptyList());
         }
 
         public UpscaleConfig(boolean enabled, PipelineTrigger trigger, TextureFormat internalFormat,
@@ -112,7 +112,7 @@ public class SRShaderCompatData {
                              @Nullable SourceConfig preExposure,
                              boolean isHdrInput,boolean isAutoExposure,boolean isMotionJittered,
                              @Nullable CustomsConfig customs,
-                             boolean onlySupportsFrameGeneration,
+                             boolean supportsFrameGenerationOnly,
                              List<String> disabledAlgorithms) {
             this.enabled = enabled;
             this.trigger = trigger;
@@ -124,7 +124,7 @@ public class SRShaderCompatData {
             this.isAutoExposure = isAutoExposure;
             this.isMotionJittered = isMotionJittered;
             this.customs = customs;
-            this.onlySupportsFrameGeneration = onlySupportsFrameGeneration;
+            this.supportsFrameGenerationOnly = supportsFrameGenerationOnly;
             this.disabledAlgorithms = disabledAlgorithms != null ? disabledAlgorithms : Collections.emptyList();
         }
     }

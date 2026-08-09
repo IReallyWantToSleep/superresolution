@@ -31,7 +31,7 @@ public class HackSRWorkModeProvider implements SRWorkModeProvider {
                 defaults.motionVectorPreprocessingFunction(),
                 IrisCompatHelper.hasActiveShaderpack(),
                 defaults.shaderPackLoading(),
-                defaults.onlySupportsFrameGeneration(),
+                defaults.supportsFrameGeneration(),
                 defaults.disabledAlgorithms()
         );
     }

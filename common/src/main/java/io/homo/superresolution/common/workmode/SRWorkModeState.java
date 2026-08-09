@@ -14,7 +14,7 @@ public record SRWorkModeState(
         @Nullable String motionVectorPreprocessingFunction,
         boolean shaderPackInUse,
         boolean shaderPackLoading,
-        boolean onlySupportsFrameGeneration,
+        boolean supportsFrameGeneration,
         List<String> disabledAlgorithms
 ) {
     public static SRWorkModeState defaults() {
