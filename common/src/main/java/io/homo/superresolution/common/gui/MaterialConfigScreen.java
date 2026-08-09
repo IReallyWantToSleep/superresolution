@@ -737,7 +737,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             builder.hintOption(Text.literal("shader_compat_warning"))
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
-                    .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
+                    .setText(Text.translatable(
+                            SuperResolutionConfig.isUnstableIncompatibleShaderSupportEnabledAtStartup()
+                                    ? "superresolution.screen.config.hint.shader_compat_warning.text.compat"
+                                    : "superresolution.screen.config.hint.shader_compat_warning.text.disabled"
+                    ).getString())
                     .setDisplayRequirement(OptionRequirement.isTrue(() ->
                             !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
                             SRWorkModeManager.getCurrentState().shaderPackInUse()
