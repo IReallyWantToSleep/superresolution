@@ -106,6 +106,10 @@
                 {
                     "name": "oculus",
                     "version": "1.20.1-1.8.0"
+                },
+                {
+                    "name": "mixinbooster",
+                    "version": "0.1.3+1.20.1"
                 }
             ]
         }
