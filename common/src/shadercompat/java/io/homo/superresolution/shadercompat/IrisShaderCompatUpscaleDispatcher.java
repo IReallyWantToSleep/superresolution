@@ -245,6 +245,10 @@ public class IrisShaderCompatUpscaleDispatcher {
     }
 
     public static void dispatchUpscale(ICompositeRendererAccessor compositeRenderer, NamedCompositePass pass) {
+        SuperResolution.resizeAlgorithmIfChanged(
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
+        );
         if (!SuperResolutionConfig.isEnableUpscaleOriginal()) {
             return;
         }

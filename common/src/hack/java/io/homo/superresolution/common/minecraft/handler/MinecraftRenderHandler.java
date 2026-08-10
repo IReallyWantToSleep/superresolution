@@ -217,6 +217,10 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
         if (!checkRenderWorldCallPos(type)) {
             return;
         }
+        SuperResolution.resizeAlgorithmIfChanged(
+                RenderHandlerManager.getScreenWidth(),
+                RenderHandlerManager.getScreenHeight()
+        );
         updateRenderTarget();
         updateRenderTargetSize();
         if (SuperResolutionConfig.isEnableUpscale()) {

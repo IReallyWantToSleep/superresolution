@@ -36,7 +36,6 @@ import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
-import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
@@ -88,6 +87,8 @@ public final class SuperResolution implements Destroyable {
     public static AlgorithmDescription<?> algorithmDescription;
     public static int framebufferWidth = 0;
     public static int framebufferHeight = 0;
+    // 算法输出尺寸缓存：记录最近一次 algo resize 的 w/h。
+    // w/h 由调用方传入，可能不等于游戏窗口/帧缓冲区大小。
     public static int cachedWidth;
     public static int cachedHeight;
     public static Thread renderThread;
@@ -96,10 +97,6 @@ public final class SuperResolution implements Destroyable {
     #else
     public static boolean isUsingVulkan = false;
     #endif
-    // 窗口拖拽时每帧触发 resize；算法重建昂贵，去抖到尺寸稳定后执行一次。
-    private static final long RESIZE_DEBOUNCE_MS = 120L;
-    private static volatile boolean pendingResize = false;
-    private static volatile long pendingResizeDeadlineMs = 0L;
     // Guards the interop OpenGL context + Vulkan device teardown so it runs once per
     // shutdown, whether triggered early (no presentation) or deferred to destroy() TAIL.
     private static boolean graphicsBackendDestroyed = false;
@@ -345,6 +342,9 @@ public final class SuperResolution implements Destroyable {
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.initialize(desc);
+                // 算法创建时已按当前尺寸初始化，同步尺寸缓存避免渲染路径上重复重建。
+                cachedWidth = RenderHandlerManager.getScreenWidth();
+                cachedHeight = RenderHandlerManager.getScreenHeight();
                 SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
                 return true;
             } catch (Exception e) {
@@ -414,6 +414,8 @@ public final class SuperResolution implements Destroyable {
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.initialize(desc);
+                cachedWidth = RenderHandlerManager.getScreenWidth();
+                cachedHeight = RenderHandlerManager.getScreenHeight();
                 lastAppliedDesc = desc;
                 lastAppliedAlgorithm = algorithmDescription;
                 return true;
@@ -462,76 +464,60 @@ public final class SuperResolution implements Destroyable {
 
         isInit = true;
         if (!B3DVulkanBridge.isB3DVulkanBackend()) {
-            this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+            cachedWidth = RenderHandlerManager.getScreenWidth();
+            cachedHeight = RenderHandlerManager.getScreenHeight();
         }
     }
 
-    public void resize(int width, int height) {
-        if (width == cachedWidth && height == cachedHeight && !pendingResize) {
+    /**
+     * 由渲染路径每帧调用：hack 模式在 MinecraftRenderHandler.onRenderWorldBegin，
+     * shadercompat 模式在 IrisShaderCompatUpscaleDispatcher.dispatchUpscale。
+     * 仅在传入尺寸与缓存的算法尺寸不一致时才重建算法资源，无去抖。
+     * w/h 由调用方决定，可能不等于游戏窗口/帧缓冲区大小。
+     */
+    public static void resizeAlgorithmIfChanged(int w, int h) {
+        if (w == cachedWidth && h == cachedHeight) {
             return;
         }
-        // 立刻更新 cached 让上游比较立即等价，实际重建交给 tickResize 去抖后执行。
-        cachedWidth = width;
-        cachedHeight = height;
-        pendingResize = true;
-        pendingResizeDeadlineMs = System.currentTimeMillis() + RESIZE_DEBOUNCE_MS;
+        resizeAlgorithm(w, h);
     }
 
+    /** 立即重建算法资源并更新尺寸缓存；尺寸未变但内部参数变化（如渲染比例）时使用。 */
     public void forceResize(int width, int height) {
-        cachedWidth = width;
-        cachedHeight = height;
-        pendingResize = false;
-        SuperResolution self = getInstance();
-        if (self != null) {
-            self.applyPendingResize();
-        }
+        resizeAlgorithm(width, height);
     }
 
-    /** 每帧调用；尺寸稳定 RESIZE_DEBOUNCE_MS 后才真正重建算法。 */
-    public static void tickResize() {
-        if (!pendingResize) return;
-        if (System.currentTimeMillis() < pendingResizeDeadlineMs) return;
-        pendingResize = false;
-        SuperResolution self = getInstance();
-        if (self != null) {
-            self.applyPendingResize();
-        }
-    }
-
-    private void applyPendingResize() {
+    private static void resizeAlgorithm(int w, int h) {
+        cachedWidth = w;
+        cachedHeight = h;
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             return;
         }
-        int w = MinecraftWindow.getWindowWidth();
-        int h = MinecraftWindow.getWindowHeight();
-        w = Math.max(32,w) ;
-        h = Math.max(32,h);
-        if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            VulkanPresentationWindow.flushCapturedFrame();
-            SuperResolutionAPI.EVENT_BUS.post(
-                    new AlgorithmResizeEvent(
-                            currentAlgorithm,
-                            RenderHandlerManager.getScreenWidth(),
-                            RenderHandlerManager.getScreenHeight(),
-                            RenderHandlerManager.getRenderWidth(),
-                            RenderHandlerManager.getRenderHeight()
-                    )
-            );
-            currentAlgorithm.resize(
-                    w,
-                    h
-            );
-            // 分辨率变了，时序历史无效。
-            currentAlgorithm.invalidateHistory();
-            FrameGeneration.invalidateHistory();
+        if (currentAlgorithm == null || !SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            return;
         }
-        AlgorithmManager.resize(w, h);
+        VulkanPresentationWindow.flushCapturedFrame();
+        SuperResolutionAPI.EVENT_BUS.post(
+                new AlgorithmResizeEvent(
+                        currentAlgorithm,
+                        RenderHandlerManager.getScreenWidth(),
+                        RenderHandlerManager.getScreenHeight(),
+                        RenderHandlerManager.getRenderWidth(),
+                        RenderHandlerManager.getRenderHeight()
+                )
+        );
+        currentAlgorithm.resize(
+                w,
+                h
+        );
+        // 分辨率变了，时序历史无效。
+        currentAlgorithm.invalidateHistory();
+        FrameGeneration.invalidateHistory();
     }
 
     public void destroy() {
         isInit = false;
         isRenderingInitialized = false;
-        pendingResize = false;
         graphicsBackendDestroyed = false;
         FrameGeneration.shutdown();
         VulkanPresentationFeature.shutdown();

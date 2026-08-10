@@ -46,6 +46,11 @@
                     "name": "fabric-permissions-api",
                     "version": "0.6.1",
                     "minecraft_version": "1.21.11"
+                },
+                {
+                    "name": "replaymod",
+                    "version": "26.1-2.6.27",
+                    "minecraft_version": "26.1"
                 }
             ],
             "local": [

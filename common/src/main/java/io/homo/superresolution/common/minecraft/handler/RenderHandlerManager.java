@@ -120,6 +120,8 @@ public class RenderHandlerManager {
                     RenderHandlerManager.getScreenWidth(),
                     RenderHandlerManager.getScreenHeight()
             );
+            SuperResolution.cachedWidth = RenderHandlerManager.getScreenWidth();
+            SuperResolution.cachedHeight = RenderHandlerManager.getScreenHeight();
             needResize = false;
         }
     }
@@ -134,9 +136,6 @@ public class RenderHandlerManager {
         updateHandler();
         if (handler == null) {
             return;
-        }
-        if (SuperResolution.cachedWidth != RenderHandlerManager.getScreenWidth() || SuperResolution.cachedHeight != RenderHandlerManager.getScreenHeight()) {
-            SuperResolution.getInstance().resize(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         }
         if (type == CallType.LEVEL_RENDERER) {
             isRenderingWorld = true;
