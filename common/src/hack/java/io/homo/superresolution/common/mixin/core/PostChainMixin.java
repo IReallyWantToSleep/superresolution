@@ -103,7 +103,7 @@ public abstract class PostChainMixin {
         if (super_resolution$onBlackList()) {
             return;
         }
-        if (!HackWorkModeEligibility.isHackSelected()) {
+        if (!IrisCompatHelper.isHackSelected()) {
             return;
         }
 
