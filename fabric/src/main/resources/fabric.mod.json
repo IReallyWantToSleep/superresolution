@@ -45,6 +45,11 @@
     "suggests": {
     },
     "breaks": {
-        "resolutioncontrol": "*"
+        "resolutioncontrol-plus-plus": "*",
+        "resolutioncontrol-plus": "*",
+        "resolutioncontrol": "*",
+        "renderscale": "*",
+        "gpu_booster": "*",
+        "gpu_tape": "*"
     }
 }

@@ -20,6 +20,49 @@ versionRange = "{versionRange}"
 ordering = "NONE"
 side = "BOTH"
 
+# Forge 1.20.1 没有 INCOMPATIBLE 依赖类型，用"可选依赖 + 不存在的版本"代替：这些 mod 存在时报版本不匹配错误，缺席时忽略
+[[dependencies.super_resolution]]
+modId = "resolutioncontrol-plus-plus"
+mandatory = false
+versionRange = "[INCOMPATIBLE]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "resolutioncontrol-plus"
+mandatory = false
+versionRange = "[INCOMPATIBLE]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "resolutioncontrol"
+mandatory = false
+versionRange = "[INCOMPATIBLE]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "renderscale"
+mandatory = false
+versionRange = "[INCOMPATIBLE]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "gpu_booster"
+mandatory = false
+versionRange = "[INCOMPATIBLE]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "gpu_tape"
+mandatory = false
+versionRange = "[INCOMPATIBLE]"
+ordering = "NONE"
+side = "BOTH"
+
 [mods."sodium:options"]
 "mixin.features.render.gui.debug" = false
 

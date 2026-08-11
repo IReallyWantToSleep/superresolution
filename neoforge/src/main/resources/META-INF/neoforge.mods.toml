@@ -20,6 +20,48 @@ versionRange = "${versionRange}"
 ordering = "NONE"
 side = "BOTH"
 
+[[dependencies.super_resolution]]
+modId = "resolutioncontrol-plus-plus"
+type = "INCOMPATIBLE"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "resolutioncontrol-plus"
+type = "INCOMPATIBLE"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "resolutioncontrol"
+type = "INCOMPATIBLE"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "renderscale"
+type = "INCOMPATIBLE"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "gpu_booster"
+type = "INCOMPATIBLE"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.super_resolution]]
+modId = "gpu_tape"
+type = "INCOMPATIBLE"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "BOTH"
+
 [mods."sodium:options"]
 "mixin.features.render.gui.debug" = false
 "mixin.workarounds" = false

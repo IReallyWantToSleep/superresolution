@@ -74,6 +74,8 @@ public final class SuperResolution implements Destroyable {
             .add("resolutioncontrol-plus")
             .add("resolutioncontrol")
             .add("renderscale")
+            .add("gpu_booster")
+            .add("gpu_tape")
             .build();
     private static final Requirement commonRequirement = Requirement.nothing()
             .glMajorVersion(4).glMinorVersion(1);
@@ -87,8 +89,6 @@ public final class SuperResolution implements Destroyable {
     public static AlgorithmDescription<?> algorithmDescription;
     public static int framebufferWidth = 0;
     public static int framebufferHeight = 0;
-    // 算法输出尺寸缓存：记录最近一次 algo resize 的 w/h。
-    // w/h 由调用方传入，可能不等于游戏窗口/帧缓冲区大小。
     public static int cachedWidth;
     public static int cachedHeight;
     public static Thread renderThread;
@@ -469,12 +469,6 @@ public final class SuperResolution implements Destroyable {
         }
     }
 
-    /**
-     * 由渲染路径每帧调用：hack 模式在 MinecraftRenderHandler.onRenderWorldBegin，
-     * shadercompat 模式在 IrisShaderCompatUpscaleDispatcher.dispatchUpscale。
-     * 仅在传入尺寸与缓存的算法尺寸不一致时才重建算法资源，无去抖。
-     * w/h 由调用方决定，可能不等于游戏窗口/帧缓冲区大小。
-     */
     public static void resizeAlgorithmIfChanged(int w, int h) {
         if (w == cachedWidth && h == cachedHeight) {
             return;
@@ -482,7 +476,6 @@ public final class SuperResolution implements Destroyable {
         resizeAlgorithm(w, h);
     }
 
-    /** 立即重建算法资源并更新尺寸缓存；尺寸未变但内部参数变化（如渲染比例）时使用。 */
     public void forceResize(int width, int height) {
         resizeAlgorithm(width, height);
     }
