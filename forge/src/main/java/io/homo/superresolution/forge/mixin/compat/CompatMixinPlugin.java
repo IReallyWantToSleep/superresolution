@@ -19,7 +19,6 @@
 package io.homo.superresolution.forge.mixin.compat;
 
 import io.homo.superresolution.api.platform.Platform;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.forge.platform.ForgePlatform;
 import net.minecraftforge.fml.loading.FMLConfig;
@@ -43,6 +42,23 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
         Platform.currentPlatform = new ForgePlatform();
         Platform.currentPlatform.init();
 
+        if (FMLConfig.getBoolConfigValue(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+            String infoZH = "SuperResolution需要覆盖OpenGL版本，但由于一些原因，你需要关闭游戏并重新打开它\n请不要把fml.toml中的earlyWindowControl修改为true，这会导致这条消息再次出现。";
+            String infoEN = "SuperResolution requires OpenGL version override, but due to technical constraints, you must close and restart the game.\nPlease do NOT manually revert earlyWindowControl to true, as this will trigger this message again.";
+
+            FMLConfig.updateConfig(FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, false);
+            LOGGER.info(infoZH);
+            LOGGER.info(infoEN);
+            MessageBox.createInfo(
+                    """
+                            %s
+                            
+                            %s
+                            """.formatted(infoZH, infoEN),
+                    "Info"
+            );
+            System.exit(1);
+        }
     }
 
     public String getRefMapperConfig() {
