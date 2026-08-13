@@ -87,6 +87,8 @@ import io.homo.superresolution.common.gui.widgets.SponsorChip;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialCircularProgressIndicator;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialProgressShape;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.utils.Color;
@@ -449,7 +451,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 })
                 .setSelectedByValue("general");
         drawer.layout().setWidthPercent(100);
-        drawer.layout().setHeightPercent(100);
+        drawer.layout().setHeightPercent(100f);
         container.addChild(drawer);
 
         frame.setRoot(container);
@@ -770,7 +772,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             SuperResolutionConfig.getUpscaleAlgorithm(),
                             AlgorithmRegistry.getAlgorithmMap().values().toArray())
                     .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
-                    .setDefaultValue(() -> AlgorithmDescriptions.FSR1)
+                    .setDefaultValue(SuperResolutionConfig::getDefaultAlgorithm)
                     .setSaveConsumer((obj) -> {
                         AlgorithmDescription<?> algo = (AlgorithmDescription<?>) obj;
                         List<ExtraResource> lostResources = algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
@@ -1490,14 +1492,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalFeatures)
                 .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.generate_motion_vectors"),
-                        SuperResolutionConfig.isGenerateMotionVectors())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
-                .setEnableRequirement(() -> false)
-                .build();
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
         return frame;
@@ -1808,13 +1802,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setSaveConsumer(SuperResolutionConfig::setDebugDumpShader)
                 .build();
         builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
-                        SuperResolutionConfig.isEnableRenderDoc())
-                .setDefaultValue(() -> true)
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
-                .setSaveConsumer(SuperResolutionConfig::setEnableRenderDoc)
-                .build();
-        builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_imgui"),
                         SuperResolutionConfig.isEnableImgui())
                 .setDefaultValue(() -> true)
@@ -1969,6 +1956,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("Enaium", Text.translatable("superresolution.screen.config.info.about.contributor.enaium.desc").getString(), "https://github.com/Enaium", "/assets/super_resolution/textures/gui/contributors/Enaium.png"),
                 new ContributorInfo("rrtt217", Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.desc").getString(), "https://github.com/rrtt217", "/assets/super_resolution/textures/gui/contributors/rrtt217.png"),
                 new ContributorInfo("筱烷", Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.desc").getString(), "https://github.com/Shiroiame-Kusu", "/assets/super_resolution/textures/gui/contributors/Shiroiame-Kusu.png"),
+                new ContributorInfo("shiromizu", Text.translatable("superresolution.screen.config.info.about.contributor.shiromizu.desc").getString(), "https://github.com/shiromizu-hui", "/assets/super_resolution/textures/gui/contributors/shiromizu.png"),
+                new ContributorInfo("eastear2333", Text.translatable("superresolution.screen.config.info.about.contributor.eastear2333.desc").getString(), "https://github.com/eastear23333", "/assets/super_resolution/textures/gui/contributors/eastear2333.png"),
                 new ContributorInfo("ChloePrime", Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.desc").getString(), "https://github.com/ChloePrime", "/assets/super_resolution/textures/gui/contributors/ChloePrime.png"),
                 new ContributorInfo("EnderPhantomWing", Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.desc").getString(), "https://github.com/EnderPhantomWing", "/assets/super_resolution/textures/gui/contributors/EnderPhantomWing.png"),
                 new ContributorInfo("索德列斯", Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/suodeliesi.png"),
@@ -1998,10 +1987,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         InfoCard sponsorsCard = new InfoCard();
         ContainerWidget sponsorsContainer = new SponsorWrappingRow();
         sponsorsContainer.layout().setWidthPercent(100);
-        sponsorsContainer.layout().setMinHeight(32);
-        sponsorsContainer.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.loading"));
+        sponsorsContainer.layout().setMinHeight(100);
         sponsorsCard.addChild(sponsorsContainer);
         container.addChild(sponsorsCard);
+        showSponsorLoadingState(sponsorsContainer);
         loadSponsors(sponsorsContainer);
 
         TitlePill librarySection = createSectionPill(
@@ -2090,8 +2079,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .text(Text.translatable(key).getString())
                 .fontSize(13)
                 .color(MaterialScheme::onSurfaceVariant);
-        label.style().wrap(true);
-        label.layout().setWidthPercent(100);
+        label.style().sizeToContent(true);
         return label;
     }
 
@@ -2106,14 +2094,14 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             if (generation != sponsorRequestGeneration || MinecraftUtils.getScreen() != this) {
                 return;
             }
-            for (var child : new ArrayList<>(container.getChildren())) {
-                container.removeChild(child);
-            }
             if (!result.success()) {
-                container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.error"));
+                showSponsorErrorState(container);
             } else if (result.sponsors().isEmpty()) {
-                container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.empty"));
+                showSponsorMessageState(container, "superresolution.screen.config.info.about.sponsors.empty");
             } else {
+                for (var child : new ArrayList<>(container.getChildren())) {
+                    container.removeChild(child);
+                }
                 container.layout().setFlexDirection(YogaFlexDirection.ROW);
                 container.layout().setWrap(YogaWrap.WRAP);
                 container.layout().setGap(YogaGutter.ALL, 8);
@@ -2122,9 +2110,54 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 for (SponsorService.Sponsor sponsor : result.sponsors()) {
                     container.addChild(new SponsorChip(sponsor));
                 }
+                view.markLayoutDirty();
             }
-            view.markLayoutDirty();
         }));
+    }
+
+    private void applySponsorMessageStateLayout(ContainerWidget container) {
+        for (var child : new ArrayList<>(container.getChildren())) {
+            container.removeChild(child);
+        }
+        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        container.layout().setWrap(YogaWrap.NO_WRAP);
+        container.layout().setGap(YogaGutter.ALL, 8);
+        container.layout().setAlignItems(YogaAlign.CENTER);
+        container.layout().setJustifyContent(YogaJustify.CENTER);
+    }
+
+    private void showSponsorLoadingState(ContainerWidget container) {
+        applySponsorMessageStateLayout(container);
+        MaterialCircularProgressIndicator indicator = new MaterialCircularProgressIndicator()
+                .setIndeterminate(true)
+                .setShape(MaterialProgressShape.FLAT);
+        indicator.setElementWidth(MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT);
+        indicator.setElementHeight(MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT);
+        container.addChild(indicator);
+        container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.loading"));
+        view.markLayoutDirty();
+    }
+
+    private void showSponsorMessageState(ContainerWidget container, String key) {
+        applySponsorMessageStateLayout(container);
+        container.addChild(createSponsorStateLabel(key));
+        view.markLayoutDirty();
+    }
+
+    private void showSponsorErrorState(ContainerWidget container) {
+        applySponsorMessageStateLayout(container);
+        container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.error"));
+        MaterialButton retryButton = MaterialButton.tonal(
+                        Text.translatable("superresolution.screen.config.info.about.sponsors.retry").getString())
+                .icon(MaterialSymbols.iconRefresh())
+                .size(MaterialButtonSize.Small);
+        retryButton.onClick(e -> {
+            sponsorRequestStarted = false;
+            showSponsorLoadingState(container);
+            loadSponsors(container);
+        });
+        container.addChild(retryButton);
+        view.markLayoutDirty();
     }
 
     private static class SponsorWrappingRow extends ContainerWidget {
@@ -2133,6 +2166,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         @Override
         public void layouting(RenderContext ctx) {
             super.layouting(ctx);
+            if (layout().getFlexDirection() != YogaFlexDirection.ROW) {
+                return;
+            }
             int lastLine = -1;
             for (var child : getChildren()) {
                 lastLine = Math.max(lastLine, child.getLayoutNode().getLineIndex());

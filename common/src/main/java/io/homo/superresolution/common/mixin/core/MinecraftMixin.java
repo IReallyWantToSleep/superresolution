@@ -20,7 +20,6 @@ package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.debug.PerformanceInfo;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;

@@ -24,6 +24,7 @@ import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.gui.NanoVGScreen;
+import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -47,7 +48,9 @@ import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSelectionMode;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSize;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialCircularProgressIndicator;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialProgressShape;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelectSize;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
@@ -848,10 +851,10 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         addPageHeader(
                 container,
                 "Material Progress Indicator",
-                "Fixed, ranged, disabled and slider-controlled linear progress indicators."
+                "M3 Expressive flat and wavy progress indicators in linear and circular variants."
         );
 
-        addSectionTitle(container, "Fixed values");
+        addSectionTitle(container, "Linear flat - 4dp track");
         container.addChild(createLabeledControl("25 percent", createProgressIndicator(0.25f)));
         container.addChild(createLabeledControl("65 percent", createProgressIndicator(0.65f)));
         container.addChild(createLabeledControl("Complete", createProgressIndicator(1f)));
@@ -862,22 +865,137 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         configureProgressIndicator(ranged);
         container.addChild(createLabeledControl("Range 25-75 percent", ranged));
 
+        addSectionTitle(container, "Linear flat - 8dp track");
+        container.addChild(createLabeledControl("65 percent", createThickProgressIndicator(0.65f, MaterialProgressShape.FLAT)));
+
+        addSectionTitle(container, "Linear wavy - 4dp track");
+        container.addChild(createLabeledControl("65 percent", createWavyProgressIndicator(0.65f, MaterialLinearProgressIndicator.DEFAULT_TRACK_THICKNESS)));
+
+        addSectionTitle(container, "Linear wavy - 8dp track");
+        container.addChild(createLabeledControl("65 percent", createWavyProgressIndicator(0.65f, 8f)));
+
+        addSectionTitle(container, "Indeterminate");
+        container.addChild(createLabeledControl("Flat", createIndeterminateLinear(MaterialProgressShape.FLAT, MaterialLinearProgressIndicator.DEFAULT_TRACK_THICKNESS)));
+        container.addChild(createLabeledControl("Wavy", createIndeterminateLinear(MaterialProgressShape.WAVY, MaterialLinearProgressIndicator.DEFAULT_TRACK_THICKNESS)));
+
         addSectionTitle(container, "Disabled");
         MaterialLinearProgressIndicator disabled = createProgressIndicator(0.55f);
         disabled.setDisabled(true);
-        container.addChild(createLabeledControl("Disabled at 55 percent", disabled));
+        container.addChild(createLabeledControl("Disabled flat at 55 percent", disabled));
+        MaterialLinearProgressIndicator disabledWavy = createWavyProgressIndicator(0.55f, MaterialLinearProgressIndicator.DEFAULT_TRACK_THICKNESS);
+        disabledWavy.setDisabled(true);
+        container.addChild(createLabeledControl("Disabled wavy at 55 percent", disabledWavy));
+
+        addSectionTitle(container, "Circular determinate");
+        ContainerWidget circularRow = createCircularRow(
+                createCircularIndicator("40dp flat", 0.65f, MaterialProgressShape.FLAT, MaterialCircularProgressIndicator.DEFAULT_TRACK_THICKNESS, MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT),
+                createCircularIndicator("44dp thick flat", 0.65f, MaterialProgressShape.FLAT, 8f, MaterialCircularProgressIndicator.SIZE_FLAT_THICK),
+                createCircularIndicator("48dp wavy", 0.65f, MaterialProgressShape.WAVY, MaterialCircularProgressIndicator.DEFAULT_TRACK_THICKNESS, MaterialCircularProgressIndicator.SIZE_WAVY_DEFAULT),
+                createCircularIndicator("52dp thick wavy", 0.65f, MaterialProgressShape.WAVY, 8f, MaterialCircularProgressIndicator.SIZE_WAVY_THICK)
+        );
+        container.addChild(circularRow);
+
+        addSectionTitle(container, "Circular indeterminate");
+        ContainerWidget circularIndeterminateRow = createCircularRow(
+                createIndeterminateCircular("Flat", MaterialProgressShape.FLAT, MaterialCircularProgressIndicator.DEFAULT_TRACK_THICKNESS, MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT),
+                createIndeterminateCircular("Wavy", MaterialProgressShape.WAVY, MaterialCircularProgressIndicator.DEFAULT_TRACK_THICKNESS, MaterialCircularProgressIndicator.SIZE_WAVY_DEFAULT)
+        );
+        container.addChild(circularIndeterminateRow);
 
         addSectionTitle(container, "Interactive value");
         MaterialLinearProgressIndicator progress = createProgressIndicator(0.4f);
+        MaterialLinearProgressIndicator wavyProgress = createWavyProgressIndicator(0.4f, MaterialLinearProgressIndicator.DEFAULT_TRACK_THICKNESS);
+        MaterialCircularProgressIndicator circularProgress = new MaterialCircularProgressIndicator().setProgress(0.4f);
+        circularProgress.setElementWidth(MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT);
+        circularProgress.setElementHeight(MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT);
         MaterialSlider progressSlider = MaterialSlider.of(0d, 1d, 0.4d, 0.05d, 520f)
                 .usePercentageFormatter();
         configureSlider(progressSlider);
-        progressSlider.onChange(event -> progress.setProgress(((Number) event.getNewValue()).floatValue()));
+        progressSlider.onChange(event -> {
+            float value = ((Number) event.getNewValue()).floatValue();
+            progress.setProgress(value);
+            wavyProgress.setProgress(value);
+            circularProgress.setProgress(value);
+        });
         container.addChild(createLabeledControl("Controlled by the slider below", progress));
+        container.addChild(createLabeledControl("Wavy follows the same value", wavyProgress));
+        container.addChild(createLabeledControl("Circular follows the same value", circularProgress));
         container.addChild(progressSlider);
 
         finishFrame(frame, container);
         return frame;
+    }
+
+    private MaterialLinearProgressIndicator createThickProgressIndicator(float progress, MaterialProgressShape shape) {
+        MaterialLinearProgressIndicator indicator = new MaterialLinearProgressIndicator()
+                .setProgress(progress)
+                .setTrackThickness(8f)
+                .setShape(shape);
+        configureProgressIndicator(indicator);
+        return indicator;
+    }
+
+    private MaterialLinearProgressIndicator createWavyProgressIndicator(float progress, float trackThickness) {
+        MaterialLinearProgressIndicator indicator = new MaterialLinearProgressIndicator()
+                .setProgress(progress)
+                .setTrackThickness(trackThickness)
+                .setShape(MaterialProgressShape.WAVY);
+        configureProgressIndicator(indicator);
+        return indicator;
+    }
+
+    private MaterialLinearProgressIndicator createIndeterminateLinear(MaterialProgressShape shape, float trackThickness) {
+        MaterialLinearProgressIndicator indicator = new MaterialLinearProgressIndicator()
+                .setIndeterminate(true)
+                .setTrackThickness(trackThickness)
+                .setShape(shape);
+        configureProgressIndicator(indicator);
+        return indicator;
+    }
+
+    private ContainerWidget createCircularIndicator(String label, float progress, MaterialProgressShape shape,
+                                                    float trackThickness, float size) {
+        MaterialCircularProgressIndicator indicator = new MaterialCircularProgressIndicator()
+                .setProgress(progress)
+                .setTrackThickness(trackThickness)
+                .setShape(shape);
+        indicator.setElementWidth(size);
+        indicator.setElementHeight(size);
+        return createCircularLabeledControl(label, indicator);
+    }
+
+    private ContainerWidget createIndeterminateCircular(String label, MaterialProgressShape shape,
+                                                        float trackThickness, float size) {
+        MaterialCircularProgressIndicator indicator = new MaterialCircularProgressIndicator()
+                .setIndeterminate(true)
+                .setTrackThickness(trackThickness)
+                .setShape(shape);
+        indicator.setElementWidth(size);
+        indicator.setElementHeight(size);
+        return createCircularLabeledControl(label, indicator);
+    }
+
+    private ContainerWidget createCircularLabeledControl(String label, AbstractWidget<?> control) {
+        ContainerWidget container = new ContainerWidget();
+        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        container.layout().setGap(YogaGutter.COLUMN, 12f);
+        container.layout().setMargin(YogaEdge.BOTTOM, 8f);
+        container.layout().setAlignItems(YogaAlign.CENTER);
+        container.addChild(MaterialLabel.create().text(label).fontSize(14f));
+        container.addChild(control);
+        return container;
+    }
+
+    private ContainerWidget createCircularRow(ContainerWidget... items) {
+        ContainerWidget row = new ContainerWidget();
+        row.layout().setFlexDirection(YogaFlexDirection.ROW);
+        row.layout().setGap(YogaGutter.ROW, 24f);
+        row.layout().setAlignItems(YogaAlign.FLEX_END);
+        row.layout().setMargin(YogaEdge.BOTTOM, 8f);
+        for (ContainerWidget item : items) {
+            row.addChild(item);
+        }
+        return row;
     }
 
     private Frame createChartFrame() {
@@ -1201,7 +1319,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         return row;
     }
 
-    private ContainerWidget createLabeledControl(String label, MaterialLinearProgressIndicator control) {
+    private ContainerWidget createLabeledControl(String label, AbstractWidget<?> control) {
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100f);
@@ -1254,7 +1372,11 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
 
     private void configureProgressIndicator(MaterialLinearProgressIndicator indicator) {
         indicator.layout().setWidthPercent(100f);
-        indicator.setElementHeight(10f);
+        float height = indicator.getTrackThickness();
+        if (indicator.getShape() == MaterialProgressShape.WAVY) {
+            height += 2f * indicator.getWaveAmplitude();
+        }
+        indicator.setElementHeight(height);
     }
 
     private void configureSlider(MaterialSlider slider) {

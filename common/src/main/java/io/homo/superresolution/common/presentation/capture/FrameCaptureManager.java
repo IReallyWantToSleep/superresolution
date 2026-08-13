@@ -13,6 +13,7 @@ package io.homo.superresolution.common.presentation.capture;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
@@ -149,10 +150,10 @@ public final class FrameCaptureManager {
     }
 
     private static boolean isWorldFrame() {
-        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
+        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2  || MC_VER == MC_1_20_1
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null
-                || !minecraft.isGameLoadFinished()
+                || !SuperResolution.gameIsLoaded
                 || minecraft.level == null) {
             return false;
         }
