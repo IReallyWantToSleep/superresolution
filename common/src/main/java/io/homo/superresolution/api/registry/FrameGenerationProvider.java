@@ -135,6 +135,14 @@ public interface FrameGenerationProvider {
      * publish partial outputs. On failure, return
      * {@link AsyncFrameGenerationDispatchResult#failed(String)} and let the scheduler
      * construct the real-only batch.
+     * <p>
+     * The request supplies one command buffer per requested generated frame, and each is
+     * submitted separately so a generated frame can be presented as soon as its own work
+     * retires. Record the work producing generated frame {@code k} into
+     * {@link AsyncFrameGenerationDispatchRequest#generatedFrameCommandBuffer(int)} for
+     * {@code k}, and shared setup into
+     * {@link AsyncFrameGenerationDispatchRequest#commandBuffer()}. Returning fewer frames
+     * than requested means only the buffers below that count were recorded into.
      */
     default AsyncFrameGenerationDispatchResult dispatchAsync(
             AsyncFrameGenerationDispatchRequest request
