@@ -178,3 +178,8 @@ target_link_libraries(SR_FSR_LIB
     ${FFX_LINK_FSR3}
     ${Vulkan_LIBRARIES}
 )
+
+if(NOT WIN32)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    target_link_libraries(SR_FSR_LIB -static-libgcc)
+endif()

@@ -158,6 +158,7 @@ build_jars
 
 *.pdb
 /native/cpp/output/
+/native/cpp/prebuilt/
 /native/cpp/buildLinux/*
 /native/cpp/buildWindows/*
 /native/cpp/buildWindows*
