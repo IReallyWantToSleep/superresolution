@@ -33,17 +33,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public abstract class VulkanPresentationMinecraftCaptureMixin {
-    @Redirect(
+    @Inject(
             method = "runTick",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(FJZ)V"
+                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(FJZ)V",
+                    shift = At.Shift.AFTER
             )
     )
     private void super_resolution$renderAndPresent(
-            GameRenderer instance, float partialTicks, long nanoTime, boolean renderLevel
+            boolean renderLevel, CallbackInfo ci
     ) {
-        instance.render(partialTicks,nanoTime, renderLevel);
         if (VulkanPresentationFeature.isRequested()) {
             VulkanPresentationWindow.endMinecraftFrame();
         }

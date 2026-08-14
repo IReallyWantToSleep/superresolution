@@ -36,19 +36,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public abstract class VulkanPresentationMinecraftCaptureMixin {
-    @Redirect(
+    @Inject(
             method = "runTick",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V"
+                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V",
+                    shift = At.Shift.AFTER
             )
     )
     private void super_resolution$renderAndPresent(
-            GameRenderer gameRenderer,
-            DeltaTracker deltaTracker,
-            boolean advanceGameTime
+            boolean renderLevel, CallbackInfo ci
     ) {
-        gameRenderer.render(deltaTracker, advanceGameTime);
         if (VulkanPresentationFeature.isRequested()) {
             VulkanPresentationWindow.endMinecraftFrame();
         }

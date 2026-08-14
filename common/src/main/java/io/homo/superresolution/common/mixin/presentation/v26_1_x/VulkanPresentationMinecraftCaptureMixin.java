@@ -27,23 +27,23 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public abstract class VulkanPresentationMinecraftCaptureMixin {
-    @Redirect(
+    @Inject(
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V"
+                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V",
+                    shift =  At.Shift.AFTER
             )
     )
     private void super_resolution$renderAndPresent(
-            GameRenderer gameRenderer,
-            DeltaTracker deltaTracker,
-            boolean advanceGameTime
+            boolean advanceGameTime, CallbackInfo ci
     ) {
-        gameRenderer.render(deltaTracker, advanceGameTime);
         if (VulkanPresentationFeature.isRequested()) {
             VulkanPresentationWindow.endMinecraftFrame();
         }
