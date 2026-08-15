@@ -3,12 +3,13 @@ name: Build and Upload Artifacts
 on:
   workflow_dispatch:
     inputs:
-      name:
-        description: "name"
-        required: true
-      tag_name:
-        description: "tag_name"
-        required: true
+      commit_hash:
+        description: "Commit SHA to build (leave empty to use the selected branch HEAD)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
 
 jobs:
   build-native-linux:
@@ -18,50 +19,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.commit_hash || github.sha }}
           submodules: recursive
 
-      - name: Restore native cache (Linux)
-        id: native-cache-linux
-        uses: actions/cache@v4
-        with:
-          path: |
-            common/src/main/resources/lib
-          key: native-libs-linux-${{ hashFiles('native/**') }}
-          restore-keys: |
-            native-libs-linux-
-
       - name: Install dependencies
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         run: |
           sudo apt update
           sudo apt install -y cmake build-essential ninja-build
 
       - name: Install Vulkan SDK
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: humbletim/install-vulkan-sdk@033219e2d69dd4d3e873e217eb385fdd4b4438f4
         with:
           version: 1.4.321.1
           cache: true
 
       - name: Validate Gradle wrapper
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: gradle/actions/wrapper-validation@v4
 
       - name: Setup JDK 21
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: temurin
 
       - name: Set up Clang
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: egor-tensin/setup-clang@v1
         with:
           version: latest
 
       - name: Setup Gradle
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
@@ -73,19 +59,14 @@ jobs:
             caches/build-cache-1
 
       - name: Install Python packages
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
         working-directory: native/cpp
         run: python init.py
 
       - name: Build native libraries (Linux)
-        if: steps.native-cache-linux.outputs.cache-hit != 'true'
-        id: build
-        run: ./gradlew buildNative
-        continue-on-error: true
+        run: ./gradlew :native:clean :native:buildNative
 
       - name: Upload Linux native libraries
         uses: actions/upload-artifact@v4
@@ -102,38 +83,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.commit_hash || github.sha }}
           submodules: recursive
 
-      - name: Restore native cache (Windows)
-        id: native-cache-windows
-        uses: actions/cache@v4
-        with:
-          path: |
-            common/src/main/resources/lib
-          key: native-libs-windows-${{ hashFiles('native/**') }}
-          restore-keys: |
-            native-libs-windows-
-
       - name: Install Vulkan SDK
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: humbletim/install-vulkan-sdk@033219e2d69dd4d3e873e217eb385fdd4b4438f4
         with:
           version: 1.4.321.1
           cache: true
 
       - name: Validate Gradle wrapper
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: gradle/actions/wrapper-validation@v4
 
       - name: Setup JDK 21
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: temurin
 
       - name: Setup Gradle
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
@@ -145,19 +113,14 @@ jobs:
             caches/build-cache-1
 
       - name: Install Python packages
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
         working-directory: native/cpp
         run: python init.py
 
       - name: Build native libraries (Windows)
-        if: steps.native-cache-windows.outputs.cache-hit != 'true'
-        id: build
-        run: .\gradlew.bat buildNative
-        continue-on-error: true
+        run: .\gradlew.bat :native:clean :native:buildNative
 
       - name: Upload Windows native libraries
         uses: actions/upload-artifact@v4
@@ -170,10 +133,19 @@ jobs:
   build-and-upload:
     needs: [build-native-linux, build-native-windows]
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - enable_auto_download: true
+            upload_target: modrinth
+          - enable_auto_download: false
+            upload_target: curseforge
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.commit_hash || github.sha }}
           submodules: recursive
 
       - name: Download Linux native libraries
@@ -201,22 +173,32 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build all versions
-        id: build
-        if: ${{ !cancelled() }}
-        run: ./gradlew buildAllVersions
-        continue-on-error: true
+        run: >
+          ./gradlew buildAllVersions
+          -Pis_dev=false
+          -Puse_debug_lib=false
+          -Pis_vulkan=false
+          -Penable_auto_download=${{ matrix.enable_auto_download }}
 
-      - name: Find latest changelog
-        id: changelog
-        run: echo "LATEST_CHANGELOG=$(python3 .github/scripts/find_latest_changelog.py changelogs)" >> $GITHUB_OUTPUT
+      - name: Upload to Modrinth
+        if: matrix.upload_target == 'modrinth'
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+        run: >
+          printf 'Y\nY\n' | ./gradlew uploadToModrinth
+          -Pis_dev=false
+          -Puse_debug_lib=false
+          -Pis_vulkan=false
+          -Penable_auto_download=true
 
-      - name: Upload Artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ github.event.inputs.name }}
-          tag_name: ${{ github.event.inputs.tag_name }}
-          token: ${{ secrets.TOKEN }}
-          body_path: ./changelogs/${{ steps.changelog.outputs.LATEST_CHANGELOG }}
-          files: |
-            ./build_jars/**
-            ./changelogs/${{ steps.changelog.outputs.LATEST_CHANGELOG }}
+      - name: Upload to CurseForge
+        if: matrix.upload_target == 'curseforge'
+        env:
+          CURSEFORGE_API_TOKEN: ${{ secrets.CURSEFORGE_API_TOKEN }}
+        run: >
+          ./gradlew uploadToCurseForge
+          -Pcurseforge.autoConfirm=true
+          -Pis_dev=false
+          -Puse_debug_lib=false
+          -Pis_vulkan=false
+          -Penable_auto_download=false
