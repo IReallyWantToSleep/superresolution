@@ -20,6 +20,7 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
@@ -364,10 +365,10 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
                 SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
 
         InteropResourcesConverter.processInputTextures(
-                dispatchResource.resources().colorTexture(), inFlight.inputColorGlTexture,
-                dispatchResource.resources().depthTexture(), inFlight.inputDepthGlTexture,
-                dispatchResource.resources().motionVectorsTexture(), inFlight.inputMotionVectorsGlTexture,
-                dispatchResource.resources().exposureTexture(), inFlight.inputExposureGlTexture,
+                dispatchResource.resources().get(InputResourceType.Color), inFlight.inputColorGlTexture,
+                dispatchResource.resources().get(InputResourceType.Depth), inFlight.inputDepthGlTexture,
+                dispatchResource.resources().get(InputResourceType.MotionVectors), inFlight.inputMotionVectorsGlTexture,
+                dispatchResource.resources().get(InputResourceType.Exposure), inFlight.inputExposureGlTexture,
                 motionVectorPreprocessingFunction
         );
     }
@@ -384,8 +385,8 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
             return;
         }
 
-        boolean hasDepth = dispatchResource.resources().depthTexture() != null;
-        boolean hasMotionVectors = dispatchResource.resources().motionVectorsTexture() != null;
+        boolean hasDepth = dispatchResource.resources().has(InputResourceType.Depth);
+        boolean hasMotionVectors = dispatchResource.resources().has(InputResourceType.MotionVectors);
         if (!hasDepth && !hasMotionVectors) {
             return;
         }

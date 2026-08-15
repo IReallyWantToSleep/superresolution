@@ -20,6 +20,7 @@ package io.homo.superresolution.common.upscale.none;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -50,12 +51,12 @@ public class None extends AbstractAlgorithm {
         Gl.DSA.framebufferTexture(
                 cachedFrameBufferId,
                 GL43.GL_COLOR_ATTACHMENT0,
-                (int) dispatchResource.resources().colorTexture().handle(),
+                (int) dispatchResource.resources().get(InputResourceType.Color).handle(),
                 0
         );
         cachedFrameBuffer = new OnlyNameFramebuffer(
                 cachedFrameBufferId,
-                dispatchResource.resources().colorTexture()
+                dispatchResource.resources().get(InputResourceType.Color)
         );
         return true;
     }

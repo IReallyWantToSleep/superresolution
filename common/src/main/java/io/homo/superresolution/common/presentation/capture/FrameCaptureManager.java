@@ -11,6 +11,7 @@
 package io.homo.superresolution.common.presentation.capture;
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
@@ -131,11 +132,11 @@ public final class FrameCaptureManager {
         }
         FrameResources frame = beginFrame(dispatch.frameCount());
         InputResourceSet resources = dispatch.resources();
-        if (resources.depthTexture() != null) {
-            frame.copyDepth(resources.depthTexture());
+        if (resources.has(InputResourceType.Depth)) {
+            frame.copyDepth(resources.get(InputResourceType.Depth));
         }
-        if (resources.motionVectorsTexture() != null) {
-            frame.copyMotionVector(resources.motionVectorsTexture());
+        if (resources.has(InputResourceType.MotionVectors)) {
+            frame.copyMotionVector(resources.get(InputResourceType.MotionVectors));
         }
     }
 

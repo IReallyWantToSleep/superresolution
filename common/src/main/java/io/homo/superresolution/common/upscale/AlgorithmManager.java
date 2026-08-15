@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
@@ -211,16 +212,17 @@ public class AlgorithmManager {
 
                 1.0f,
 
-                new InputResourceSet(
-                        color,
-                        depth,
-                        motionVectors == null ?
-                                getMotionVectorsFrameBuffer() == null ?
-                                        null :
-                                        getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
-                                motionVectors,
-                        null
-                )
+                InputResourceSet.create()
+                        .with(InputResourceType.Color, color)
+                        .with(InputResourceType.Depth, depth)
+                        .with(
+                                InputResourceType.MotionVectors,
+                                motionVectors == null ?
+                                        getMotionVectorsFrameBuffer() == null ?
+                                                null :
+                                                getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
+                                        motionVectors
+                        )
         );
     }
 

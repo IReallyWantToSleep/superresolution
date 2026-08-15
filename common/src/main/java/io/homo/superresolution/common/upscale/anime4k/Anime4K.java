@@ -20,6 +20,7 @@ package io.homo.superresolution.common.upscale.anime4k;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
@@ -239,7 +240,7 @@ public class Anime4K extends AbstractAlgorithm {
 
     private ITexture resolveTextureForDispatch(String source) {
         if ("inputColor".equals(source)) {
-            return getResources() != null ? getResources().colorTexture() : null;
+            return getResources() != null ? getResources().get(InputResourceType.Color) : null;
         }
         return resolveTexture(source);
     }

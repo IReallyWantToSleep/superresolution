@@ -20,6 +20,7 @@ package io.homo.superresolution.common.upscale.fsr1;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -124,7 +125,7 @@ public class FSR1 extends AbstractAlgorithm {
         Vector3i workGroupSize = getWorkGroupSize();
 
         // EASU pass
-        fsr1EASUPipeline.descriptorSet().samplerTexture("inImage", getResources().colorTexture());
+        fsr1EASUPipeline.descriptorSet().samplerTexture("inImage", getResources().get(InputResourceType.Color));
         fsr1EASUPipeline.descriptorSet().storageImage("outImage", fsr1TempTexture);
         fsr1EASUPipeline.descriptorSet().uniformBuffer("fsr1_data", fsr1UBO);
         fsr1EASUPipeline.descriptorSet().update();

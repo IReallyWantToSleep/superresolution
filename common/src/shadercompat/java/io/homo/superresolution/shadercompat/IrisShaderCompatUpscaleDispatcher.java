@@ -24,6 +24,7 @@ import io.homo.irisapi.IrisAPI;
 import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
@@ -172,12 +173,11 @@ public class IrisShaderCompatUpscaleDispatcher {
 
                 preExposure,
 
-                new InputResourceSet(
-                        colorTexture.getAlgorithmTexture(colorPreProcessed),
-                        depthTexture.getAlgorithmTexture(depthPreProcessed),
-                        motionVectorsInput,
-                        resolvedExposureTexture
-                )
+                InputResourceSet.create()
+                        .with(InputResourceType.Color, colorTexture.getAlgorithmTexture(colorPreProcessed))
+                        .with(InputResourceType.Depth, depthTexture.getAlgorithmTexture(depthPreProcessed))
+                        .with(InputResourceType.MotionVectors, motionVectorsInput)
+                        .with(InputResourceType.Exposure, resolvedExposureTexture)
 
         );
     }

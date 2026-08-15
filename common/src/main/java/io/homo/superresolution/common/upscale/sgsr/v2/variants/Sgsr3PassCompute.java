@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
+import io.homo.superresolution.api.InputResourceType;
+
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -66,12 +68,12 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         swapHistoryOutput();
         swapLumaHistory();
         Vector3i wg = getWorkGroupSize();
-        convertPipeline.descriptorSet().samplerTexture("InputOpaqueColor", sgsr.getInputResourceSet().colorTexture());
-        convertPipeline.descriptorSet().samplerTexture("InputColor", sgsr.getInputResourceSet().colorTexture());
-        convertPipeline.descriptorSet().samplerTexture("InputDepth", sgsr.getInputResourceSet().depthTexture());
-        convertPipeline.descriptorSet().samplerTexture("InputVelocity", sgsr.getInputResourceSet().motionVectorsTexture());
-        if (sgsr.getInputResourceSet().exposureTexture() != null) {
-            convertPipeline.descriptorSet().samplerTexture("InputExposure", sgsr.getInputResourceSet().exposureTexture());
+        convertPipeline.descriptorSet().samplerTexture("InputOpaqueColor", sgsr.getInputResourceSet().get(InputResourceType.Color));
+        convertPipeline.descriptorSet().samplerTexture("InputColor", sgsr.getInputResourceSet().get(InputResourceType.Color));
+        convertPipeline.descriptorSet().samplerTexture("InputDepth", sgsr.getInputResourceSet().get(InputResourceType.Depth));
+        convertPipeline.descriptorSet().samplerTexture("InputVelocity", sgsr.getInputResourceSet().get(InputResourceType.MotionVectors));
+        if (sgsr.getInputResourceSet().has(InputResourceType.Exposure)) {
+            convertPipeline.descriptorSet().samplerTexture("InputExposure", sgsr.getInputResourceSet().get(InputResourceType.Exposure));
         }
         convertPipeline.descriptorSet().storageImage("YCoCgColor", YCoCgColor);
         convertPipeline.descriptorSet().storageImage("MotionDepthAlphaBuffer", MotionDepthAlphaBuffer);
