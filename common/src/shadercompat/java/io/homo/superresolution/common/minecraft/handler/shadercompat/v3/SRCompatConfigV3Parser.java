@@ -21,6 +21,7 @@ package io.homo.superresolution.common.minecraft.handler.shadercompat.v3;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
@@ -301,7 +302,17 @@ public class SRCompatConfigV3Parser {
                 SuperResolution.LOGGER.error("配置错误：profile '{}' upscale.inputs.{} 的 region 必须为长度为 4 的整数数组。", worldKey, k);
                 return new HashMap<>();
             }
-            result.put(k, new SRShaderCompatData.InputTexture(
+            InputResourceType inputType = InputResourceType.fromV3InputKey(k);
+            String normalizedKey = inputType == null ? k : inputType.getV3InputKey();
+            if (result.containsKey(normalizedKey)) {
+                SuperResolution.LOGGER.error(
+                        "配置错误：profile '{}' upscale.inputs 中资源 '{}' 被重复定义。",
+                        worldKey,
+                        normalizedKey
+                );
+                return new HashMap<>();
+            }
+            result.put(normalizedKey, new SRShaderCompatData.InputTexture(
                     v.enabled,
                     v.src,
                     TextureRegion.fromList(v.region)

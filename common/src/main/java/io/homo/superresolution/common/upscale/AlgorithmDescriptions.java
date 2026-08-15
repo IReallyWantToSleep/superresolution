@@ -32,6 +32,7 @@ import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.upscale.anime4k.Anime4K;
 import io.homo.superresolution.common.upscale.dlss.DLSS;
+import io.homo.superresolution.common.upscale.dlssrr.DLSSRR;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
@@ -241,6 +242,45 @@ public class AlgorithmDescriptions {
             .customUpscaleRatio(false)
             .build();
 
+    public static final AlgorithmDescription<DLSSRR> DLSSRR = AlgorithmDescription.builder(DLSSRR.class)
+            .briefName("NVIDIA DLSS-RR")
+            .codeName("dlssrr")
+            .displayName("NVIDIA DLSS Ray Reconstruction")
+            .requirement(
+                    Requirement.nothing()
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.LINUX))
+                            .requiredGlExtension("GL_EXT_memory_object")
+                            .requiredGlExtension("GL_EXT_semaphore")
+                            .glMajorVersion(4)
+                            .glMinorVersion(6)
+                            .requireVulkan(true)
+            )
+            .extraResources(
+                    Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS
+                            ? ExtraResources.builder()
+                            .add(ExtraResource.builder("nvngx_dlss.dll")
+                                    .addRemote(
+                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
+                                            "CNB Mirror"
+                                    )
+                                    .build()
+                            )
+                            .add(ExtraResource.builder("nvngx_dlssd.dll")
+                                    .addRemote(
+                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlssd.dll",
+                                            "CNB Mirror"
+                                    )
+                                    .build()
+                            )
+                            .build()
+                            : ExtraResources.builder().build()
+            )
+            .supportJitter(true)
+            .qualityPresets(DLSS_QUALITY_PRESETS)
+            .customUpscaleRatio(false)
+            .build();
+
     public static final AlgorithmDescription<Sgsr1> SGSR1 = AlgorithmDescription.builder(Sgsr1.class)
             .briefName("SGSR V1")
             .codeName("sgsr1")
@@ -287,6 +327,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR);
         AlgorithmRegistry.registry(XESS);
         AlgorithmRegistry.registry(DLSS);
+        AlgorithmRegistry.registry(DLSSRR);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {

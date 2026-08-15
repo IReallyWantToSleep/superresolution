@@ -26,6 +26,9 @@ import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.utils.LargeStackExecutor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public final class NgxInitializer {
     private static final String PROJECT_ID = "3a799712-b54a-407c-82b0-eb3366f0f1e3";
     private static final String ENGINE_VERSION = "11.45.14";
@@ -34,14 +37,17 @@ public final class NgxInitializer {
     private static boolean bindingLoaded;
     private static boolean initialized;
     private static long initializedDevice;
-    private static boolean supportChecked;
-    private static boolean supported;
+    private static final Map<Integer, Boolean> featureSupport = new HashMap<>();
     private static long supportCheckedDevice;
 
     private NgxInitializer() {
     }
 
     public static boolean initializeIfSupported() {
+        return initializeIfSupported(NgxConstants.FEATURE_SUPER_SAMPLING);
+    }
+
+    public static boolean initializeIfSupported(int feature) {
         if (!isBindingAvailable() || !RenderSystems.isSupportVulkan()) {
             return false;
         }
@@ -55,9 +61,9 @@ public final class NgxInitializer {
             long deviceHandle = vulkanDevice.getVkDevice().address();
             if (initialized
                     && initializedDevice == deviceHandle
-                    && supportChecked
-                    && supportCheckedDevice == deviceHandle) {
-                return supported;
+                    && supportCheckedDevice == deviceHandle
+                    && featureSupport.containsKey(feature)) {
+                return featureSupport.get(feature);
             }
 
             if (!loadBinding()) {
@@ -70,44 +76,51 @@ public final class NgxInitializer {
                             "SR-DLSS-NGX-Init",
                             () -> initializeForDevice(vulkanDevice, createFeatureInfo())
                     );
-                    supported = true;
                 } catch (RuntimeException e) {
                     shutdownLocked(true);
-                    supported = false;
                     SuperResolution.LOGGER.info(
-                            "Skipping NGX initialization because the current GPU could not initialize DLSS",
+                            "Skipping NGX initialization because the current GPU could not initialize feature {}",
+                            feature,
                             e
                     );
                     return false;
                 }
             }
 
-            if (!supportChecked || supportCheckedDevice != deviceHandle) {
-                supportChecked = true;
+            if (supportCheckedDevice != deviceHandle) {
+                featureSupport.clear();
                 supportCheckedDevice = deviceHandle;
-                NgxFeatureRequirement requirements;
-                try {
-                    requirements = getFeatureRequirements(vulkanDevice, createFeatureInfo());
-                } catch (RuntimeException e) {
-                    supported = false;
-                    SuperResolution.LOGGER.info(
-                            "Skipping NGX initialization because DLSS compatibility could not be queried for this GPU",
-                            e
-                    );
-                    return false;
-                }
-                supported = requirements.featureSupported == 0;
-                if (!supported) {
-                    SuperResolution.LOGGER.info(
-                            "Skipping NGX initialization for this GPU. Feature support mask: {}, minimum GPU architecture: {}, minimum OS version: {}",
-                            requirements.featureSupported,
-                            requirements.minHardwareArchitecture,
-                            requirements.minOsVersion
-                    );
-                    return false;
-                }
             }
-            return true;
+            Boolean cachedSupport = featureSupport.get(feature);
+            if (cachedSupport != null) {
+                return cachedSupport;
+            }
+
+            NgxFeatureRequirement requirements;
+            try {
+                requirements = getFeatureRequirements(vulkanDevice, createFeatureInfo(), feature);
+            } catch (RuntimeException e) {
+                featureSupport.put(feature, false);
+                SuperResolution.LOGGER.info(
+                        "Skipping NGX feature {} because compatibility could not be queried for this GPU",
+                        feature,
+                        e
+                );
+                return false;
+            }
+
+            boolean supported = requirements.featureSupported == 0;
+            featureSupport.put(feature, supported);
+            if (!supported) {
+                SuperResolution.LOGGER.info(
+                        "Skipping NGX feature {} for this GPU. Feature support mask: {}, minimum GPU architecture: {}, minimum OS version: {}",
+                        feature,
+                        requirements.featureSupported,
+                        requirements.minHardwareArchitecture,
+                        requirements.minOsVersion
+                );
+            }
+            return supported;
         }
     }
 
@@ -119,10 +132,11 @@ public final class NgxInitializer {
 
     private static NgxFeatureRequirement getFeatureRequirements(
             VulkanDevice vulkanDevice,
-            NgxFeatureCommonInfo featureInfo
+            NgxFeatureCommonInfo featureInfo,
+            int feature
     ) {
         NgxFeatureDiscoveryInfo discoveryInfo = new NgxFeatureDiscoveryInfo();
-        discoveryInfo.feature = NgxConstants.FEATURE_SUPER_SAMPLING;
+        discoveryInfo.feature = feature;
         discoveryInfo.identifier.projectId = PROJECT_ID;
         discoveryInfo.identifier.engineType = NgxConstants.ENGINE_CUSTOM;
         discoveryInfo.identifier.engineVersion = ENGINE_VERSION;
@@ -231,9 +245,8 @@ public final class NgxInitializer {
         }
         initialized = false;
         initializedDevice = 0L;
-        supportChecked = false;
+        featureSupport.clear();
         supportCheckedDevice = 0L;
-        supported = false;
     }
 
     private static boolean isBindingAvailable() {

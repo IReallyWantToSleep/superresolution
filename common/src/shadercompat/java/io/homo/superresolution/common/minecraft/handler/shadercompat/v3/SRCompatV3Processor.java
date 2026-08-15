@@ -80,6 +80,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
         if (
                 description.equals(AlgorithmDescriptions.FSR) ||
                         description.equals(AlgorithmDescriptions.DLSS) ||
+                        description.equals(AlgorithmDescriptions.DLSSRR) ||
                         description.equals(AlgorithmDescriptions.XESS)
         ) {
             return false;
@@ -116,6 +117,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
         if (
                 description.equals(AlgorithmDescriptions.FSR) ||
                         description.equals(AlgorithmDescriptions.DLSS) ||
+                        description.equals(AlgorithmDescriptions.DLSSRR) ||
                         description.equals(AlgorithmDescriptions.XESS)
         ) {
             return rawJitter.mul(1, -1);
@@ -243,7 +245,8 @@ public class SRCompatV3Processor implements SRCompatProcessor {
             r.registerMacro("SR_JITTER_SEQUENCE_LENGTH",
                     frameGenOnly ? "0" : Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             r.registerMacro("SR_ALGO_DLSS_RENDERPRESET",
-                    selectedAlgorithm.equals(AlgorithmDescriptions.DLSS) ?
+                    (selectedAlgorithm.equals(AlgorithmDescriptions.DLSS)
+                            || selectedAlgorithm.equals(AlgorithmDescriptions.DLSSRR)) ?
                             Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :
                             "0");
         } else {

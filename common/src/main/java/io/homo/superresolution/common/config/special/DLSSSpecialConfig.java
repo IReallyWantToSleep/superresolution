@@ -57,7 +57,8 @@ public class DLSSSpecialConfig extends SpecialConfig {
                         .setSaveConsumer((v) -> {
                             if (getSpecialConfigs().DLSS.RENDER_PRESET.get() != v) {
                                 getSpecialConfigs().DLSS.RENDER_PRESET.set(v);
-                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.DLSS) {
+                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.DLSS
+                                        || SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.DLSSRR) {
                                     SuperResolution.recreateAlgorithm();
                                 }
                             }

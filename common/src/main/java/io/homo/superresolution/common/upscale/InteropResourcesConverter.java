@@ -161,27 +161,34 @@ public class InteropResourcesConverter {
             init();
         }
 
-        TextureFormat outputFormat = output.getTextureFormat();
-        ComputePipeline computePipeline = getOrCreateFlipYPipeline(outputFormat);
-
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         try {
-            computePipeline.descriptorSet().samplerTexture("inputTexture", input);
-            computePipeline.descriptorSet().storageImage("outputTexture", output);
-            computePipeline.descriptorSet().update();
             commandBuffer.begin();
-            commandBuffer.bindPipeline(computePipeline);
-            commandBuffer.dispatch(
-                    (input.getWidth() + 15) / 16,
-                    (input.getHeight() + 15) / 16,
-                    1
-            );
+            flipY(commandBuffer, input, output);
             commandBuffer.end();
             RenderSystems.current().device().submitCommandBuffer(commandBuffer);
             commandBuffer.waitForFence();
         } finally {
             commandBuffer.destroy();
         }
+    }
+
+    public static void flipY(ICommandBuffer commandBuffer, ITexture input, ITexture output) {
+        if (!isInit) {
+            init();
+        }
+
+        TextureFormat outputFormat = output.getTextureFormat();
+        ComputePipeline computePipeline = getOrCreateFlipYPipeline(outputFormat);
+        computePipeline.descriptorSet().samplerTexture("inputTexture", input);
+        computePipeline.descriptorSet().storageImage("outputTexture", output);
+        computePipeline.descriptorSet().update();
+        commandBuffer.bindPipeline(computePipeline);
+        commandBuffer.dispatch(
+                (input.getWidth() + 15) / 16,
+                (input.getHeight() + 15) / 16,
+                1
+        );
     }
 
     private static void init() {
@@ -356,21 +363,29 @@ public class InteropResourcesConverter {
 
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
         try {
-            flipMotionVectorYPipeline.descriptorSet().samplerTexture("inputMotionVector", input);
-            flipMotionVectorYPipeline.descriptorSet().storageImage("outputMotionVector", output);
-            flipMotionVectorYPipeline.descriptorSet().update();
             commandBuffer.begin();
-            commandBuffer.bindPipeline(flipMotionVectorYPipeline);
-            commandBuffer.dispatch(
-                    (input.getWidth() + 15) / 16,
-                    (input.getHeight() + 15) / 16,
-                    1
-            );
+            flipMotionVectorY(commandBuffer, input, output);
             commandBuffer.end();
             RenderSystems.current().device().submitCommandBuffer(commandBuffer);
             commandBuffer.waitForFence();
         } finally {
             commandBuffer.destroy();
         }
+    }
+
+    public static void flipMotionVectorY(ICommandBuffer commandBuffer, ITexture input, ITexture output) {
+        if (!isInit) {
+            init();
+        }
+
+        flipMotionVectorYPipeline.descriptorSet().samplerTexture("inputMotionVector", input);
+        flipMotionVectorYPipeline.descriptorSet().storageImage("outputMotionVector", output);
+        flipMotionVectorYPipeline.descriptorSet().update();
+        commandBuffer.bindPipeline(flipMotionVectorYPipeline);
+        commandBuffer.dispatch(
+                (input.getWidth() + 15) / 16,
+                (input.getHeight() + 15) / 16,
+                1
+        );
     }
 }
