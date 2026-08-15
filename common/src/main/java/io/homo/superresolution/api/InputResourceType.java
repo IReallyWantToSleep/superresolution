@@ -23,18 +23,18 @@ public enum InputResourceType {
     Depth("depth"),
     MotionVectors("motion_vectors"),
     Exposure("exposure"),
-    DiffuseAlbedo("DiffuseAlbedo"),
-    SpecularAlbedo("SpecularAlbedo"),
-    Normals("Normals"),
-    Roughness("Roughness"),
-    NormalRoughness("NormalRoughness"),
-    SpecularMotionVectors("SpecularMotionVectors"),
-    SpecularHitDistance("SpecularHitDistance"),
-    TransparencyLayer("TransparencyLayer"),
-    TransparencyLayerOpacity("TransparencyLayerOpacity"),
-    ColorBeforeTransparency("ColorBeforeTransparency"),
-    ScreenSpaceSubsurfaceScatteringGuide("ScreenSpaceSubsurfaceScatteringGuide"),
-    DepthOfFieldGuide("DepthOfFieldGuide");
+    DiffuseAlbedo("diffuse_albedo"),
+    SpecularAlbedo("specular_albedo"),
+    Normals("normals"),
+    Roughness("roughness"),
+    NormalRoughness("normal_roughness"),
+    SpecularMotionVectors("specular_motion_vectors"),
+    SpecularHitDistance("specular_hit_distance"),
+    TransparencyLayer("transparency_layer"),
+    TransparencyLayerOpacity("transparency_layer_opacity"),
+    ColorBeforeTransparency("color_before_transparency"),
+    ScreenSpaceSubsurfaceScatteringGuide("screen_space_subsurface_scattering_guide"),
+    DepthOfFieldGuide("depth_of_field_guide");
 
     private final String v3InputKey;
 
