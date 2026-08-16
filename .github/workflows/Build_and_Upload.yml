@@ -172,33 +172,25 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Configure Gradle build properties
+        env:
+          GRADLE_IS_DEV: 'false'
+          GRADLE_USE_DEBUG_LIB: 'false'
+          GRADLE_IS_VULKAN: 'false'
+          GRADLE_ENABLE_AUTO_DOWNLOAD: ${{ matrix.enable_auto_download }}
+        run: python3 .github/scripts/update_gradle_properties.py
+
       - name: Build all versions
-        run: >
-          ./gradlew buildAllVersions
-          -Pis_dev=false
-          -Puse_debug_lib=false
-          -Pis_vulkan=false
-          -Penable_auto_download=${{ matrix.enable_auto_download }}
+        run: ./gradlew buildAllVersions
 
       - name: Upload to Modrinth
         if: matrix.upload_target == 'modrinth'
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-        run: >
-          printf 'Y\nY\n' | ./gradlew uploadToModrinth
-          -Pis_dev=false
-          -Puse_debug_lib=false
-          -Pis_vulkan=false
-          -Penable_auto_download=true
+        run: printf 'Y\nY\n' | ./gradlew uploadToModrinth
 
       - name: Upload to CurseForge
         if: matrix.upload_target == 'curseforge'
         env:
           CURSEFORGE_API_TOKEN: ${{ secrets.CURSEFORGE_API_TOKEN }}
-        run: >
-          ./gradlew uploadToCurseForge
-          -Pcurseforge.autoConfirm=true
-          -Pis_dev=false
-          -Puse_debug_lib=false
-          -Pis_vulkan=false
-          -Penable_auto_download=false
+        run: printf 'Y\n' | ./gradlew uploadToCurseForge
