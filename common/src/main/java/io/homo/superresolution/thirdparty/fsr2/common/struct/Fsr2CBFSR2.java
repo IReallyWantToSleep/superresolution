@@ -151,7 +151,11 @@ public class Fsr2CBFSR2 implements IBufferData {
                 jitterSequenceLength--;
             }
         }
-        deltaTime = desc.frameTimeDelta();
+        // The cbuffer slot at offset 112 holds deltaTime in seconds, while the dispatch
+        // description carries milliseconds. Upstream FFX converts and clamps here
+        // (ffx_fsr2.cpp: deltaTime = max(0, min(1, frameTimeDelta / 1000))); this port
+        // was assigning the millisecond value straight through.
+        deltaTime = Math.max(0.0f, Math.min(1.0f, desc.frameTimeDelta() / 1000.0f));
         dynamicResChangeFactor = 0.0f;
         viewSpaceToMetersFactor = desc.viewSpaceToMetersFactor() > 0 ? desc.viewSpaceToMetersFactor() : 1.0f;
         fillBuffer();

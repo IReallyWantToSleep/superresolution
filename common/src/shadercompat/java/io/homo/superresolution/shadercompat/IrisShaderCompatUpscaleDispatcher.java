@@ -154,7 +154,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
                 RenderHandlerManager.getFrameCount(),
-                PerformanceTracker.getLastResultCPU("Frame"),
+                AlgorithmManager.getFrameTimeDeltaMs(),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 MinecraftUtils.getCameraNear(),
