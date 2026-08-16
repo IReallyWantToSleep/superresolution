@@ -22,7 +22,6 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.neoforge.compat.sodium.SodiumOptionScreen;
 import net.neoforged.api.distmarker.Dist;
@@ -55,11 +54,6 @@ public final class SuperResolutionNeoForge {
     @SubscribeEvent
     public static void registerBindings(RegisterKeyMappingsEvent event) {
         event.register(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
-        if (SuperResolutionConfig.isEnableDatasetGenerator()) {
-            event.register(DataSetGenerator.SAVE_KEYMAPPING);
-            event.register(DataSetGenerator.SEQUENCE_KEYMAPPING);
-        }
-        SuperResolutionKeyMapping.registerKeyMapping();
     }
 
     @SubscribeEvent

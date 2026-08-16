@@ -21,8 +21,6 @@ package io.homo.superresolution.fabric;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.SuperResolutionKeyMapping;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.fabric.compat.sodium.SodiumOptionScreen;
 import net.fabricmc.api.ClientModInitializer;
 #if MC_VER > MC_1_21_11
@@ -41,18 +39,8 @@ public final class SuperResolutionFabricClient implements ClientModInitializer {
         SuperResolution.onClientSetup();
         #if MC_VER > MC_1_21_11
         KeyMappingHelper.registerKeyMapping(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
-        if (SuperResolutionConfig.isEnableDatasetGenerator()) {
-            KeyMappingHelper.registerKeyMapping(DataSetGenerator.SAVE_KEYMAPPING);
-            KeyMappingHelper.registerKeyMapping(DataSetGenerator.SEQUENCE_KEYMAPPING);
-        }
         #else
         KeyBindingHelper.registerKeyBinding(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
-        if (SuperResolutionConfig.isEnableDatasetGenerator()) {
-            KeyBindingHelper.registerKeyBinding(DataSetGenerator.SAVE_KEYMAPPING);
-            KeyBindingHelper.registerKeyBinding(DataSetGenerator.SEQUENCE_KEYMAPPING);
-        }
         #endif
-
-        SuperResolutionKeyMapping.registerKeyMapping();
     }
 }

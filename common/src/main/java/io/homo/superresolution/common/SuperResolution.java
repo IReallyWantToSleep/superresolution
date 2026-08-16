@@ -171,7 +171,6 @@ public final class SuperResolution implements Destroyable {
         }
         SuperResolutionConfig.SPEC.load();
         gameIsStarted = true;
-        SuperResolutionKeyMapping.registerKeyMapping();
         instance = new SuperResolution();
         SuperResolution.check();
         SuperResolution.preInit();
@@ -201,7 +200,6 @@ public final class SuperResolution implements Destroyable {
     public static void onClientSetup() {
         SuperResolutionConfig.SPEC.load();
         SuperResolutionConfig.freezeStartupOptions();
-        SuperResolutionKeyMapping.registerKeyMapping();
         SRWorkModeManager.onClientSetup();
     }
 

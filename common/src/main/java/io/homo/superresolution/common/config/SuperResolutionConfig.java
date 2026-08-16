@@ -82,8 +82,6 @@ public class SuperResolutionConfig {
     public static final BooleanValue PAUSE_GAME_ON_GUI;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
-    public static final BooleanValue ENABLE_DATASET_GENERATOR;
-    public static final StringValue DATASET_PATH;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
     public static final BooleanValue ENABLE_DEBUG;
     public static final BooleanValue ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT;
@@ -282,16 +280,6 @@ public class SuperResolutionConfig {
                 "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
         );
 
-        ENABLE_DATASET_GENERATOR = builder.defineBoolean(
-                "dataset/enable_dataset_generator",
-                () -> false,
-                ""
-        );
-        DATASET_PATH = builder.defineString(
-                "dataset/dataset_path",
-                () -> "msrDataset",
-                ""
-        );
         ENABLE_DETAILED_PROFILING = builder.defineBoolean(
                 "debug/enable_detailed_profiling",
                 () -> false,
@@ -662,14 +650,6 @@ public class SuperResolutionConfig {
 
     public static void setEnableCompatShaderCompiler(boolean value) {
         ENABLE_COMPAT_SHADER_COMPILER.set(value);
-    }
-
-    public static boolean isEnableDatasetGenerator() {
-        return ENABLE_DATASET_GENERATOR.get();
-    }
-
-    public static void setEnableDatasetGenerator(boolean value) {
-        ENABLE_DATASET_GENERATOR.set(value);
     }
 
     public static boolean isEnableDetailedProfiling() {

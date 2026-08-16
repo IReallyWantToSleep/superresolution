@@ -19,8 +19,6 @@
 package io.homo.superresolution.common;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.dataset.DataSetGenerator;
 import net.minecraft.client.KeyMapping;
 
 public class SuperResolutionKeyMapping {
@@ -51,15 +49,4 @@ public class SuperResolutionKeyMapping {
             "Super Resolution"
     );
     #endif
-    private static boolean registeredKeyMapping = false;
-
-    public static void registerKeyMapping() {
-        if (!registeredKeyMapping) {
-            if (SuperResolutionConfig.isEnableDatasetGenerator()) {
-                DataSetGenerator.init();
-            }
-
-        }
-        registeredKeyMapping = true;
-    }
 }
