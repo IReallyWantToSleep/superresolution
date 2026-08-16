@@ -34,9 +34,7 @@ public final class NgxInitializer {
     private static boolean bindingLoaded;
     private static boolean initialized;
     private static long initializedDevice;
-    private static boolean supportChecked;
     private static boolean supported;
-    private static long supportCheckedDevice;
 
     private NgxInitializer() {
     }
@@ -54,9 +52,7 @@ public final class NgxInitializer {
         synchronized (INIT_LOCK) {
             long deviceHandle = vulkanDevice.getVkDevice().address();
             if (initialized
-                    && initializedDevice == deviceHandle
-                    && supportChecked
-                    && supportCheckedDevice == deviceHandle) {
+                    && initializedDevice == deviceHandle) {
                 return supported;
             }
 
@@ -82,31 +78,28 @@ public final class NgxInitializer {
                 }
             }
 
-            if (!supportChecked || supportCheckedDevice != deviceHandle) {
-                supportChecked = true;
-                supportCheckedDevice = deviceHandle;
-                NgxFeatureRequirement requirements;
-                try {
-                    requirements = getFeatureRequirements(vulkanDevice, createFeatureInfo());
-                } catch (RuntimeException e) {
-                    supported = false;
-                    SuperResolution.LOGGER.info(
-                            "Skipping NGX initialization because DLSS compatibility could not be queried for this GPU",
-                            e
-                    );
-                    return false;
-                }
-                supported = requirements.featureSupported == 0;
-                if (!supported) {
-                    SuperResolution.LOGGER.info(
-                            "Skipping NGX initialization for this GPU. Feature support mask: {}, minimum GPU architecture: {}, minimum OS version: {}",
-                            requirements.featureSupported,
-                            requirements.minHardwareArchitecture,
-                            requirements.minOsVersion
-                    );
-                    return false;
-                }
+            NgxFeatureRequirement requirements;
+            try {
+                requirements = getFeatureRequirements(vulkanDevice, createFeatureInfo());
+            } catch (RuntimeException e) {
+                supported = false;
+                SuperResolution.LOGGER.info(
+                        "Skipping NGX initialization because DLSS compatibility could not be queried for this GPU",
+                        e
+                );
+                return false;
             }
+            supported = requirements.featureSupported == 0;
+            if (!supported) {
+                SuperResolution.LOGGER.info(
+                        "Skipping NGX initialization for this GPU. Feature support mask: {}, minimum GPU architecture: {}, minimum OS version: {}",
+                        requirements.featureSupported,
+                        requirements.minHardwareArchitecture,
+                        requirements.minOsVersion
+                );
+                return false;
+            }
+
             return true;
         }
     }
@@ -231,8 +224,6 @@ public final class NgxInitializer {
         }
         initialized = false;
         initializedDevice = 0L;
-        supportChecked = false;
-        supportCheckedDevice = 0L;
         supported = false;
     }
 
