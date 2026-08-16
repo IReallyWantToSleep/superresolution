@@ -24,6 +24,8 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 
+private val consoleReader = BufferedReader(InputStreamReader(System.`in`))
+
 plugins {
     id("net.neoforged.moddev") version "2.0.141" apply false
     id("multiversion")
@@ -309,15 +311,26 @@ tasks.named("buildAllVersions") {
 tasks.register("uploadToModrinth") {
     doLast {
         val (currentVersion, latestChangelog) = findLatestChangelog()
+        val autoConfirm = project.findProperty("modrinth.autoConfirm")
+            ?.toString()
+            ?.toBoolean() ?: false
 
         println("\n=== 最新版本更新日志 ($currentVersion) ===\n")
         println(latestChangelog)
         println("\n========================")
 
-        var confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().lowercase()
-        if (!confirm.startsWith("y")) {
-            println("上传已取消")
-            return@doLast
+        if (!autoConfirm) {
+            var confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().lowercase()
+            if (!confirm.startsWith("y")) {
+                println("上传已取消")
+                return@doLast
+            }
+
+            confirm = getConsoleInput("是否继续？(Y/N): ").trim().lowercase()
+            if (!confirm.startsWith("y")) {
+                println("上传已取消")
+                return@doLast
+            }
         }
 
         ModrinthUploader.init()
@@ -329,12 +342,6 @@ tasks.register("uploadToModrinth") {
             }
         }
 
-        confirm = getConsoleInput("是否继续？(Y/N): ").trim().lowercase()
-        if (!confirm.startsWith("y")) {
-            println("上传已取消")
-            return@doLast
-        }
-
         jarsDir.listFiles()?.forEach { file ->
             if (file.name.startsWith("super") && file.name.endsWith(".jar")) {
                 var notSucceed = true
@@ -344,8 +351,8 @@ tasks.register("uploadToModrinth") {
                         notSucceed = false
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        confirm = getConsoleInput("上传失败，是否重试？(Y/N): ").trim().lowercase()
-                        if (!confirm.startsWith("y")) {
+                        val retry = getConsoleInput("上传失败，是否重试？(Y/N): ").trim().lowercase()
+                        if (!retry.startsWith("y")) {
                             notSucceed = false
                         }
                     }
@@ -497,9 +504,8 @@ fun findLatestChangelog(): Pair<String?, String> {
 fun getConsoleInput(prompt: String): String {
     try {
         print(prompt)
-        val br = BufferedReader(InputStreamReader(System.`in`))
         println()
-        return br.readLine()
+        return consoleReader.readLine() ?: ""
     } catch (e: IOException) {
         throw GradleException("无法读取用户输入", e)
     }

@@ -187,10 +187,10 @@ jobs:
         if: matrix.upload_target == 'modrinth'
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-        run: printf 'Y\nY\n' | ./gradlew uploadToModrinth
+        run: ./gradlew uploadToModrinth -Pmodrinth.autoConfirm=true
 
       - name: Upload to CurseForge
         if: matrix.upload_target == 'curseforge'
         env:
           CURSEFORGE_API_TOKEN: ${{ secrets.CURSEFORGE_API_TOKEN }}
-        run: printf 'Y\n' | ./gradlew uploadToCurseForge
+        run: ./gradlew uploadToCurseForge -Pcurseforge.autoConfirm=true
