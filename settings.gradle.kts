@@ -31,7 +31,11 @@ pluginManagement {
 }
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    // 1.0.0 is the first release compatible with Gradle 9: every earlier version
+    // references JvmVendorSpec.IBM_SEMERU, which Gradle 9 removed. The failure only
+    // surfaces when a toolchain actually has to be provisioned, so it stays hidden
+    // as long as the requested JDK is already installed or cached in ~/.gradle/jdks.
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 rootProject.name = "superresolution"
