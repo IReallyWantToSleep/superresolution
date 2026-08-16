@@ -229,6 +229,7 @@
     "superresolution.screen.config.section.information": "系统信息",
     "superresolution.screen.config.section.performance": "性能",
     "superresolution.screen.config.section.performance.chart.frame": "帧时间",
+    "superresolution.screen.config.section.performance.chart.reflex_sleep": "Reflex 等待",
     "superresolution.screen.config.section.performance.chart.level_render": "世界渲染器",
     "superresolution.screen.config.section.performance.chart.main_render": "主渲染器",
     "superresolution.screen.config.section.performance.chart.upscale": "升采样",

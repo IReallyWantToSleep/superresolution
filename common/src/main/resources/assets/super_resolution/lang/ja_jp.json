@@ -231,6 +231,7 @@
     "superresolution.screen.config.section.information": "システム情報",
     "superresolution.screen.config.section.performance": "パフォーマンス",
     "superresolution.screen.config.section.performance.chart.frame": "フレーム時間",
+    "superresolution.screen.config.section.performance.chart.reflex_sleep": "Reflex スリープ",
     "superresolution.screen.config.section.performance.chart.level_render": "ワールドレンダラー",
     "superresolution.screen.config.section.performance.chart.main_render": "メインレンダラー",
     "superresolution.screen.config.section.performance.chart.upscale": "アップスケール",

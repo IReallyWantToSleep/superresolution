@@ -229,6 +229,7 @@
     "superresolution.screen.config.section.information": "System Information",
     "superresolution.screen.config.section.performance": "Performance",
     "superresolution.screen.config.section.performance.chart.frame": "Frame Time",
+    "superresolution.screen.config.section.performance.chart.reflex_sleep": "Reflex Sleep",
     "superresolution.screen.config.section.performance.chart.level_render": "World Renderer",
     "superresolution.screen.config.section.performance.chart.main_render": "Main Renderer",
     "superresolution.screen.config.section.performance.chart.upscale": "Upscale",

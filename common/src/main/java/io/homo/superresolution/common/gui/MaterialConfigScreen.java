@@ -1738,6 +1738,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         Pair<String, Text>[] operations = new Pair[]{
                 Pair.of("Frame", Text.translatable("superresolution.screen.config.section.performance.chart.frame")),
+                Pair.of("Reflex Sleep", Text.translatable("superresolution.screen.config.section.performance.chart.reflex_sleep")),
                 Pair.of("Main Render", Text.translatable("superresolution.screen.config.section.performance.chart.main_render")),
                 Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
                 Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),

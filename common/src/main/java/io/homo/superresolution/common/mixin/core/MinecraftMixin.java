@@ -91,7 +91,13 @@ public abstract class MinecraftMixin {
         if (SuperResolution.gameIsLoaded) {
             int frameIndex = GameFrameIndex.beginFrame();
             LowLatency.beginFrame(frameIndex);
+            // Tracked on its own so the Frame chart's variance can be attributed. The
+            // sleep stays inside the Frame sample by design (see above), but it is a
+            // latency control loop rather than render cost, and when the GPU is
+            // saturated it dominates the frame and hunts.
+            PerformanceTracker.push("Reflex Sleep");
             LowLatency.sleep();
+            PerformanceTracker.pop("Reflex Sleep");
             LowLatency.beginSimulation();
         }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {

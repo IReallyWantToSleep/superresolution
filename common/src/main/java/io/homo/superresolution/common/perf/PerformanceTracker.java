@@ -30,6 +30,7 @@ public class PerformanceTracker {
 
     static {
         addOperation("Frame");
+        addOperation("Reflex Sleep");
         addOperation("Level Render");
         addOperation("Main Render");
         addOperation("Upscale");
